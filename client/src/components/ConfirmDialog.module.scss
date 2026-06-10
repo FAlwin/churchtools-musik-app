@@ -1,0 +1,67 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 110;
+  background: rgba(20, 17, 15, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.12s ease both;
+}
+
+.card {
+  background: var(--surface2);
+  border-radius: 16px;
+  padding: 22px 20px;
+  width: min(320px, 86%);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 7px;
+  font-family: 'Candara', 'Trebuchet MS', sans-serif;
+  text-align: center;
+}
+
+.msg {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 18px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  flex: 1;
+  height: 46px;
+  border-radius: 11px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Montserrat', inherit;
+  transition: opacity 0.12s;
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+.cancel {
+  background: var(--surface3);
+  color: var(--text2);
+}
+
+.danger {
+  background: var(--orange);
+  color: var(--cream);
+}

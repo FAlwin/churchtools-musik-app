@@ -1,0 +1,67 @@
+import { useState } from 'react';
+import { Screen } from '../components/Screen';
+import { Spinner } from '../components/Spinner';
+import styles from './Login.module.scss';
+
+interface LoginProps {
+  /** Wird mit den Zugangsdaten aufgerufen. In Schritt 8 echte Anmeldung. */
+  onLogin: (email: string, password: string) => Promise<void> | void;
+}
+
+/** Anmelde-Screen mit ECG-Logo und ChurchTools-Zugangsdaten. */
+export function Login({ onLogin }: LoginProps) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await onLogin(email, password);
+    } catch {
+      setError('Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen.');
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Screen style={{ justifyContent: 'center', alignItems: 'center', overflowY: 'auto' }}>
+      <div className={styles.wrap}>
+        <img className={styles.logo} src="/logo.png" alt="ECG Donrath" />
+        <div className={styles.name}>Churchtools Musik App</div>
+        <div className={styles.sub}>ECG Donrath</div>
+        <form className={styles.form} onSubmit={submit}>
+          <div className={styles.field}>
+            <label className={styles.label}>E-Mail</label>
+            <input
+              className={styles.input}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@email.de"
+              autoComplete="username"
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>Passwort</label>
+            <input
+              className={styles.input}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
+          </div>
+          {error && <div className={styles.error}>{error}</div>}
+          <button className={styles.btn} type="submit" disabled={loading}>
+            {loading ? <Spinner /> : 'Anmelden'}
+          </button>
+        </form>
+      </div>
+    </Screen>
+  );
+}

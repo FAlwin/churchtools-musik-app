@@ -1,0 +1,107 @@
+.list {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    box-shadow 0.12s;
+  box-shadow: 0 2px 6px rgba(0, 97, 110, 0.07);
+
+  &:hover {
+    background: var(--surface3);
+    box-shadow: 0 4px 12px rgba(0, 97, 110, 0.11);
+  }
+  &:active {
+    background: var(--surface3);
+    transform: scale(0.99);
+  }
+}
+
+:global(html[data-theme='dark']) .row {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cream);
+  flex-shrink: 0;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+
+.chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.chipKey {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--chord-dim);
+  border: 1px solid rgba(235, 94, 40, 0.35);
+  border-radius: 6px;
+  padding: 1px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--chord);
+
+  .toArr {
+    color: var(--text3);
+    font-size: 10px;
+  }
+}
+
+.chipBpm {
+  font-size: 12px;
+  color: var(--text2);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+}
+
+.timeSig {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.arr {
+  color: var(--teal-light);
+  font-size: 16px;
+}

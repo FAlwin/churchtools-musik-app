@@ -1,9 +1,16 @@
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      // geteilte Typen: @shared/... -> ../shared/...
+      '@shared': fileURLToPath(new URL('../shared', import.meta.url)),
+    },
+  },
   plugins: [
     react(),
     VitePWA({

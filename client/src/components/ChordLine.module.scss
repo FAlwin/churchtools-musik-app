@@ -1,0 +1,58 @@
+// Akkord-/Text-Zeilen. Die Schriftart kommt per CSS-Variable --chart-font
+// vom umgebenden Chart-Body (dynamisch wählbar).
+
+.lyricsOnly {
+  font-family: var(--chart-font, 'JetBrains Mono', monospace);
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.plain {
+  font-family: var(--chart-font, 'JetBrains Mono', monospace);
+  line-height: 1.55;
+  color: var(--text);
+  white-space: pre;
+}
+
+.chordOnly {
+  font-family: var(--chart-font, 'JetBrains Mono', monospace);
+  font-weight: 700;
+  color: var(--chord);
+  letter-spacing: 0.05em;
+  line-height: 2;
+
+  span {
+    margin-right: 1.4ch;
+  }
+}
+
+.chordLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 1px;
+}
+
+.cpair {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.cChord {
+  font-family: var(--chart-font, 'JetBrains Mono', monospace);
+  font-weight: 700;
+  color: var(--chord);
+  line-height: 1.25;
+  white-space: nowrap;
+  display: block;
+  min-width: 1px;
+}
+
+.cLyric {
+  font-family: var(--chart-font, 'JetBrains Mono', monospace);
+  color: var(--text);
+  line-height: 1.45;
+  white-space: pre;
+  display: block;
+}

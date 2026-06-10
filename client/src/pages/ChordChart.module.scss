@@ -1,0 +1,424 @@
+.chartScreen {
+  background: var(--bg);
+}
+
+// ── Header ──
+.hdr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: var(--teal);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.ibtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  border: none;
+  background: transparent;
+  color: var(--cream);
+  font-size: 22px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s;
+
+  &:hover {
+    background: rgba(255, 252, 242, 0.12);
+  }
+}
+
+.center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.titleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.songTitle {
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: var(--cream);
+  font-family: 'Candara', 'Trebuchet MS', sans-serif;
+}
+
+.titleChevron {
+  font-size: 11px;
+  color: rgba(255, 252, 242, 0.6);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.keyRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.keyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.22);
+  border: none;
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.35);
+  }
+}
+
+.keyLabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--chord);
+}
+
+.keyChevron {
+  font-size: 11px;
+  color: rgba(255, 252, 242, 0.55);
+  line-height: 1;
+}
+
+.capoBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cream);
+  background: var(--orange);
+  border-radius: 7px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+.modeHint {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 252, 242, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.azGroup {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 9px;
+  padding: 2px;
+}
+
+.azBtn {
+  width: 33px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 252, 242, 0.6);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 7px;
+  transition:
+    background 0.1s,
+    color 0.1s;
+  font-family: 'Montserrat', inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(255, 252, 242, 0.15);
+    color: var(--cream);
+  }
+  &.on {
+    color: var(--cream);
+    background: rgba(255, 252, 242, 0.22);
+  }
+}
+
+.colTog {
+  display: none;
+  @media (min-width: 768px) {
+    display: flex;
+  }
+}
+
+.bpmChip {
+  font-size: 11px;
+  color: rgba(255, 252, 242, 0.45);
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0 4px;
+}
+
+// ── Mode-Menü (Dropdown unter dem Titel) ──
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 98;
+}
+
+.modeMenu {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 60px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99;
+  background: var(--surface2);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  padding: 6px;
+  min-width: 212px;
+  animation: fadeIn 0.14s ease both;
+}
+
+.menuLbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 12px 4px;
+}
+
+.mmItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: 'Montserrat', inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  transition: background 0.1s;
+
+  &:hover {
+    background: var(--surface3);
+  }
+  &.on {
+    color: var(--teal);
+  }
+}
+
+.mmCheck {
+  color: var(--teal);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.mmValue {
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.mmValueActive {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--orange);
+}
+
+// ── Chart-Body ──
+.body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  background: var(--bg);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.content {
+  padding: 24px 22px 32px;
+}
+
+.twoCol {
+  @media (min-width: 768px) {
+    columns: 2;
+    column-gap: 32px;
+  }
+}
+
+// ── Annotations-Leinwand ──
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  touch-action: none;
+
+  &.active {
+    pointer-events: all;
+    cursor: crosshair;
+  }
+}
+
+.textObj {
+  position: absolute;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  line-height: 1;
+  white-space: pre;
+  user-select: none;
+  touch-action: none;
+  z-index: 2;
+}
+
+.textObjDel {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.textInputWrap {
+  position: fixed;
+  z-index: 200;
+  transform: translate(-6px, -42px);
+  pointer-events: all;
+}
+
+.textInput {
+  background: rgba(20, 17, 15, 0.92);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  outline: none;
+  min-width: 110px;
+  max-width: 270px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+// ── Footer ──
+.ftr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  background: var(--teal);
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  border: none;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--cream);
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.12s;
+  flex-shrink: 0;
+
+  &:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+  &:not(:disabled):hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
+.ftrCenter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 252, 242, 0.3);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.on {
+    width: 18px;
+    border-radius: 3px;
+    background: var(--orange);
+  }
+}
+
+.ftrLabel {
+  font-size: 11px;
+  color: rgba(255, 252, 242, 0.65);
+  text-align: center;
+  font-weight: 500;
+}
+
+.ftrNext {
+  font-size: 11px;
+  color: rgba(255, 252, 242, 0.4);
+}

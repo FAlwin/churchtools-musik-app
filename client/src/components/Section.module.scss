@@ -1,0 +1,66 @@
+.sectionBlock {
+  margin-bottom: 28px;
+}
+
+.secLabel {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.gap {
+  height: 0.5em;
+}
+
+// Farbgebung je Abschnittstyp
+.verse .secLabel {
+  color: #00616e;
+  background: rgba(0, 97, 110, 0.08);
+  border: 1px solid rgba(0, 97, 110, 0.18);
+}
+.chorus .secLabel {
+  color: #eb5e28;
+  background: rgba(235, 94, 40, 0.09);
+  border: 1px solid rgba(235, 94, 40, 0.22);
+}
+.bridge .secLabel {
+  color: #3d7a48;
+  background: rgba(204, 215, 197, 0.35);
+  border: 1px solid rgba(100, 160, 110, 0.25);
+}
+.pre_chorus .secLabel {
+  color: #5898a0;
+  background: rgba(88, 152, 160, 0.1);
+  border: 1px solid rgba(88, 152, 160, 0.22);
+}
+.intro .secLabel,
+.outro .secLabel,
+.instrumental .secLabel {
+  color: var(--text2);
+  background: rgba(0, 97, 110, 0.05);
+  border: 1px solid rgba(0, 97, 110, 0.1);
+}
+.tag .secLabel {
+  color: #eb5e28;
+  background: rgba(235, 94, 40, 0.08);
+  border: 1px solid rgba(235, 94, 40, 0.2);
+}
+
+// Dark-Mode-Anpassungen
+:global(html[data-theme='dark']) {
+  .verse .secLabel {
+    color: #7fb3ba;
+    background: rgba(127, 179, 186, 0.12);
+    border-color: rgba(127, 179, 186, 0.25);
+  }
+  .bridge .secLabel {
+    color: #8fcf9b;
+    background: rgba(143, 207, 155, 0.12);
+    border-color: rgba(143, 207, 155, 0.25);
+  }
+}
