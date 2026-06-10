@@ -111,6 +111,21 @@ churchtools-musik-app/
 |------------|--------|---------------------------------------------|
 | 11.06.2026 | main   | Initial Setup (Git, Tooling, Struktur)      |
 | 11.06.2026 | main   | Server-Grundgerüst + Health-Endpoint        |
+| 11.06.2026 | main   | Frontend-MVP: alle 4 Screens + Chart-Logik (Mock-Daten), im Browser verifiziert |
+
+## So startest du die App lokal
+```
+cd ~/ecg-donrath/churchtools-musik-app
+npm install        # einmalig
+npm run dev:client # Frontend (Mock-Daten) -> http://localhost:5173
+npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
+```
+
+## Stand & nächster Schritt
+- **Erledigt:** Schritte 1–6 (Setup, Tooling, Struktur, Sicherheits-Basis, CLAUDE.md,
+  Frontend-MVP mit allen Screens + Chart-Logik, im Browser verifiziert)
+- **Nächster Schritt:** Schritt 7 (Express-Proxy + persönlicher ChurchTools-Login).
+  Pausiert auf Userwunsch (11.06.2026) – braucht Klärung an der echten Instanz (siehe Offene Punkte).
 
 ## Offene Punkte
 - [ ] An echter ChurchTools-Instanz klären: API-Kette Agenda→Song→Arrangement→Datei→Tonart-Feld
