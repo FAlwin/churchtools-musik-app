@@ -1,0 +1,14 @@
+{
+  "name": "@worship/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./types/index.ts",
+  "types": "./types/index.ts",
+  "exports": {
+    ".": "./types/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit"
+  }
+}

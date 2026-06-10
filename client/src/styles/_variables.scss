@@ -1,0 +1,43 @@
+// ── Globale Design-Variablen – ECG Donrath ──────────────────
+// Einzige Quelle für Farben, Abstände, Breakpoints.
+// Komponenten importieren diese Datei, statt Werte zu duplizieren.
+
+// Farben (Light Mode) – als CSS Custom Properties, damit Dark Mode
+// per [data-theme] umgeschaltet werden kann.
+:root {
+  --bg: #fffcf2;
+  --surface: #00616e;
+  --surface2: #ffffff;
+  --surface3: #f0ede3;
+  --border: rgba(0, 97, 110, 0.13);
+  --text: #14110f;
+  --text2: #363636;
+  --text3: #a0a0a0;
+  --chord: #eb5e28;
+  --chord-dim: rgba(235, 94, 40, 0.1);
+  --teal: #00616e;
+  --teal-light: #5898a0;
+  --orange: #eb5e28;
+  --sage: #ccd7c5;
+  --near-black: #14110f;
+  --cream: #fffcf2;
+}
+
+// Dark Mode
+html[data-theme='dark'] {
+  --bg: #0f1718;
+  --surface2: #1a2422;
+  --surface3: #243230;
+  --border: rgba(162, 202, 207, 0.15);
+  --text: #fffcf2;
+  --text2: #a2cacf;
+  --text3: #5d7479;
+}
+
+// SCSS-Konstanten (Schriftfamilien, Breakpoints)
+$font-sans: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+$font-display: 'Candara', 'Trebuchet MS', sans-serif;
+$font-mono: 'JetBrains Mono', monospace;
+$font-serif: 'Merriweather', serif;
+
+$bp-tablet: 768px;
