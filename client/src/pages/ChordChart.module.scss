@@ -273,6 +273,15 @@
   color: var(--orange);
 }
 
+// ── Chart-Bereich: fester Viewport zwischen Header und Footer ──
+.chartArea {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
 // ── Chart-Body – horizontal blätternde Seiten ──
 .body {
   flex: 1;
@@ -280,7 +289,8 @@
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
+  // bewusst KEIN scroll-behavior: smooth – sonst animiert der Sprung beim
+  // Liedwechsel in die falsche Richtung. Seitenwechsel scrollt gezielt smooth.
   position: relative;
   background: var(--bg);
 
@@ -298,20 +308,31 @@
   column-fill: auto;
 }
 
-// Seiten-Anzeige oben rechts
-.pageChip {
+// Seiten-Badge unten rechts – deutlicher Hinweis auf weitere Seiten
+.pageBadge {
   position: absolute;
-  top: 10px;
-  right: 12px;
+  bottom: 14px;
+  right: 14px;
   z-index: 40;
-  background: rgba(0, 97, 110, 0.85);
-  color: var(--cream);
-  font-size: 11px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  padding: 3px 9px;
-  border-radius: 8px;
-  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--orange);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: 'Montserrat', sans-serif;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(235, 94, 40, 0.4);
+  animation: fadeIn 0.18s ease both;
+}
+
+.pageBadgeArrow {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .empty {

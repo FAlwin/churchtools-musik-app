@@ -8,13 +8,14 @@
 
 .secLabel {
   display: inline-block;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: 6px;
-  margin-bottom: 10px;
+  padding: 5px 14px;
+  border-radius: 7px;
+  margin-bottom: 12px;
+  font-family: 'Montserrat', sans-serif; // immer kräftig, unabhängig von der Chart-Schrift
 }
 
 .gap {

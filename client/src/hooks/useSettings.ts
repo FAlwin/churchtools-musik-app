@@ -8,7 +8,7 @@ import type { Theme } from '../types/index';
  */
 export function useSettings() {
   const [theme, setTheme] = useLocalStorage<Theme>('worship_theme', 'light');
-  const [fontId, setFontId] = useLocalStorage<string>('worship_font', 'jetbrains');
+  const [fontId, setFontId] = useLocalStorage<string>('worship_font', 'inter');
   const [wakePref, setWakePref] = useLocalStorage<boolean>('worship_wake', false);
 
   useEffect(() => {

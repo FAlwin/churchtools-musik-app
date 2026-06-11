@@ -36,7 +36,10 @@ export function ChordLine({ line, semitones, fontSize, flat = false, lyricsOnly 
   if (!hasChord) {
     return (
       <div className={styles.plain} style={{ fontSize }}>
-        {pairs.map((p) => p.text).join('')}
+        {pairs
+          .map((p) => p.text)
+          .join('')
+          .replace(/ {2,}/g, ' ')}
       </div>
     );
   }
@@ -66,7 +69,7 @@ export function ChordLine({ line, semitones, fontSize, flat = false, lyricsOnly 
               {ch || '​'}
             </span>
             <span className={styles.cLyric} style={{ fontSize }}>
-              {p.text || (ch ? ' ' : '')}
+              {(p.text || (ch ? ' ' : '')).replace(/ {2,}/g, ' ')}
             </span>
           </span>
         );

@@ -7,10 +7,10 @@ export interface FontOption {
 }
 
 export const FONTS: FontOption[] = [
-  { id: 'jetbrains', label: 'JetBrains Mono', family: "'JetBrains Mono', monospace", desc: 'Standard · Technisch' },
-  { id: 'ibm', label: 'IBM Plex Mono', family: "'IBM Plex Mono', monospace", desc: 'Klar & Modern' },
-  { id: 'courier', label: 'Courier New', family: "'Courier New', monospace", desc: 'Klassisch · Vertraut' },
-  { id: 'merriweather', label: 'Merriweather', family: "'Merriweather', serif", desc: 'Lesbar · Serifenschrift' },
+  { id: 'inter', label: 'Inter', family: "'Inter', sans-serif", desc: 'Klar · Modern (Standard)' },
+  { id: 'atkinson', label: 'Atkinson Hyperlegible', family: "'Atkinson Hyperlegible', sans-serif", desc: 'Maximale Lesbarkeit' },
+  { id: 'lato', label: 'Lato', family: "'Lato', sans-serif", desc: 'Freundlich · Ruhig' },
+  { id: 'merriweather', label: 'Merriweather', family: "'Merriweather', serif", desc: 'Serifenschrift · Buchstil' },
   { id: 'georgia', label: 'Georgia', family: "'Georgia', serif", desc: 'Traditionell · Serif' },
 ];
 

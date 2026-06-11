@@ -158,6 +158,11 @@ export function ChordChart({
       setIdx(idx - 1);
     }
   }
+  function goToSong(target: number) {
+    if (target === idx) return;
+    drawing.saveDrawing(song.id);
+    setIdx(target);
+  }
   function goBack() {
     drawing.saveDrawing(song.id);
     onBack();
@@ -183,6 +188,17 @@ export function ChordChart({
     } else if (d < 0 && el.scrollLeft <= 2 && idx > 0) {
       prev(); // war auf erster Seite -> voriges Lied
     }
+  }
+
+  // Tippen am linken/rechten Rand wirkt wie die Pfeile (Mitte = nichts)
+  function onBodyClick(e: React.MouseEvent) {
+    if (drawMode) return;
+    const el = drawing.bodyRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    if (x < rect.width * 0.26) prev();
+    else if (x > rect.width * 0.74) next();
   }
 
   function clearDrawing() {
@@ -330,20 +346,15 @@ export function ChordChart({
           />
         )}
 
-        {/* Seiten-Anzeige oben rechts (nur bei mehr als einer Seite) */}
-        {paged.pageCount > 1 && (
-          <div className={styles.pageChip}>
-            Seite {paged.page + 1}/{paged.pageCount}
-          </div>
-        )}
-
-        {/* Chart-Body – seitenweise Spalten, durch Wischen/Pfeile blättern */}
+        {/* Chart-Bereich (fester Viewport; Body scrollt darin horizontal) */}
+        <div className={styles.chartArea}>
         <div
           className={styles.body}
           ref={drawing.bodyRef}
           onScroll={paged.onScroll}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
+          onClick={onBodyClick}
           style={{ ['--chart-font' as string]: fontFam }}
         >
           <div
@@ -402,6 +413,15 @@ export function ChordChart({
           ))}
         </div>
 
+        {/* Seiten-Badge unten rechts */}
+        {paged.pageCount > 1 && (
+          <button className={styles.pageBadge} onClick={next}>
+            Seite {paged.page + 1} / {paged.pageCount}
+            <span className={styles.pageBadgeArrow}>›</span>
+          </button>
+        )}
+        </div>
+
         {/* Zeichen-Werkzeugleiste */}
         {drawMode && (
           <DrawToolbar
@@ -452,22 +472,21 @@ export function ChordChart({
             ‹
           </button>
           <div className={styles.ftrCenter}>
-            {paged.pageCount > 1 && (
-              <div className={styles.dots}>
-                {Array.from({ length: paged.pageCount }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`${styles.dot}${i === paged.page ? ' ' + styles.on : ''}`}
-                    onClick={() => paged.goToPage(i)}
-                  />
-                ))}
-              </div>
-            )}
+            <div className={styles.dots}>
+              {songs.map((_, i) => (
+                <div
+                  key={i}
+                  className={`${styles.dot}${i === idx ? ' ' + styles.on : ''}`}
+                  onClick={() => goToSong(i)}
+                />
+              ))}
+            </div>
             <div className={styles.ftrInfo}>
-              <span className={styles.ftrSong}>
-                Lied {idx + 1}/{songs.length}
-              </span>
-              {nextSong && <span className={styles.ftrNext}>Nächstes Lied: {nextSong.title}</span>}
+              {nextSong ? (
+                <span className={styles.ftrNext}>Nächstes Lied: {nextSong.title}</span>
+              ) : (
+                <span className={styles.ftrSong}>Letztes Lied</span>
+              )}
             </div>
           </div>
           <button className={styles.navBtn} onClick={next} disabled={atEnd}>
