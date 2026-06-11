@@ -49,6 +49,7 @@ export function DocumentView({
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
   const lastTf = useRef({ scale: 1, positionX: 0, positionY: 0 }); // letzter Zoom/Ausschnitt
+  const ready = useRef(false); // erst nach dem Wiederherstellen darf gespeichert werden
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,11 +59,6 @@ export function DocumentView({
   const url = `/api/songs/${songId}/files/${doc.fileId}`;
   const storeKey = (p: number) => `worship_docdraw_${doc.fileId}_${p}`;
   const tfKey = (p: number) => `worship_doctf_${doc.fileId}_${p}`;
-
-  // aktuellen Zoom/Ausschnitt der Seite p sichern (aus dem zuletzt erfassten Zustand)
-  function saveTransform(p: number) {
-    localStorage.setItem(tfKey(p), JSON.stringify(lastTf.current));
-  }
 
   // Dokument laden → jede Seite in eine eigene (offscreen) Leinwand rendern
   useEffect(() => {
@@ -138,29 +134,24 @@ export function DocumentView({
       img.src = saved;
     }
     // gespeicherten Zoom/Ausschnitt dieser Seite wiederherstellen (sonst bildschirmfüllend)
+    ready.current = false; // bis dahin nicht speichern (sonst überschreibt die Zentrierung)
     const tf = localStorage.getItem(tfKey(pageIndex));
     requestAnimationFrame(() => {
+      let restored = false;
       if (tf) {
         try {
           const t = JSON.parse(tf) as { scale: number; positionX: number; positionY: number };
           transformRef.current?.setTransform(t.positionX, t.positionY, t.scale, 0);
-          return;
+          restored = true;
         } catch {
-          /* ungültig → zurücksetzen */
+          /* ungültig */
         }
       }
-      transformRef.current?.resetTransform(0);
+      if (!restored) transformRef.current?.resetTransform(0);
+      ready.current = true; // ab jetzt Änderungen speichern
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, pageIndex]);
-
-  // Beim Verlassen des Anpassen-Modus den Ausschnitt der aktuellen Seite sichern
-  const prevAdjust = useRef(adjust);
-  useEffect(() => {
-    if (prevAdjust.current && !adjust) saveTransform(pageIndex);
-    prevAdjust.current = adjust;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adjust]);
 
   // Löschen (aktuelle Seite) über gemeinsame Werkzeugleiste
   useEffect(() => {
@@ -225,12 +216,10 @@ export function DocumentView({
 
   // ── Blättern / Liednavigation (nur fixiert, ohne Zeichnen) ──
   function pageForward() {
-    saveTransform(pageIndex); // aktuellen Ausschnitt der Seite merken
     if (pageIndex < pageCount - 1) setPageIndex(pageIndex + 1);
     else onNext();
   }
   function pageBackward() {
-    saveTransform(pageIndex);
     if (pageIndex > 0) setPageIndex(pageIndex - 1);
     else onPrev();
   }
@@ -274,15 +263,23 @@ export function DocumentView({
       {/* Eine Zoom-Ebene: im Anpassen-Modus aktiv, sonst gesperrt (Zoom bleibt erhalten) */}
       <TransformWrapper
         ref={transformRef}
-        disabled={!adjust}
         minScale={1}
         maxScale={8}
         centerOnInit
         limitToBounds={false}
         doubleClick={{ disabled: true }}
-        panning={{ velocityDisabled: true }}
+        panning={{ disabled: !adjust, velocityDisabled: true }}
+        wheel={{ disabled: !adjust, step: 0.08 }}
+        pinch={{ disabled: !adjust }}
         onTransformed={(_ref, state) => {
           lastTf.current = { scale: state.scale, positionX: state.positionX, positionY: state.positionY };
+          if (ready.current) {
+            try {
+              localStorage.setItem(tfKey(pageIndex), JSON.stringify(lastTf.current));
+            } catch {
+              /* Speicher voll */
+            }
+          }
         }}
       >
         <TransformComponent
