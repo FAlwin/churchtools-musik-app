@@ -114,6 +114,7 @@ churchtools-musik-app/
 | 11.06.2026 | main   | Frontend-MVP: alle 4 Screens + Chart-Logik (Mock-Daten), im Browser verifiziert |
 | 11.06.2026 | main   | ChurchTools-API erkundet, Datenmodell bestätigt |
 | 11.06.2026 | main   | Schritt 7: Backend-Proxy + Login + Setlist-Pipeline, gegen echte Daten getestet |
+| 11.06.2026 | main   | Schritt 8: Frontend an Backend angebunden (TanStack Query, Mock-Daten ersetzt) |
 
 ## So startest du die App lokal
 ```
@@ -124,13 +125,16 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
-- **Erledigt:** Schritte 1–7. Frontend-MVP (Mock) + Backend (Express-Proxy, persönlicher
-  ChurchTools-Login, Setlist-Pipeline) – Backend gegen echte Instanz getestet.
-- **Nächster Schritt:** Schritt 8 – Frontend an das Backend anbinden (services/ + TanStack
-  Query statt Mock-Daten). Endpunkte: POST /api/auth/login, GET /api/auth/me, POST
-  /api/auth/logout, GET /api/services, GET /api/services/:eventId/setlist.
+- **Erledigt:** Schritte 1–8. Frontend ist an das echte Backend angebunden
+  (services/ + TanStack Query, keine Mock-Daten mehr). Login-Fehlerpfad im Browser
+  verifiziert, Setlist-Pipeline gegen echte Instanz getestet.
+- **Nächster Schritt:** Schritt 9 – Deployment (Docker auf NAS + Cloudflare Tunnel).
+- **Vom User selbst zu testen:** echter Voll-Durchlauf mit eigenem ChurchTools-Login
+  (App lokal starten, anmelden, Gottesdienst → Setlist → Chart).
+- **So lokal starten:** `npm run dev:server` UND `npm run dev:client` (beide!). Der Vite-
+  Dev-Proxy leitet `/api` an `localhost:3001` weiter.
 - **Bekannte Datenlücke:** Nicht alle Arrangements haben eine `.chordpro`-Datei (manche nur
-  `.sng`/`.txt`) → `chordpro` kommt dann leer; Frontend muss „keine Akkorddatei" anzeigen.
+  `.sng`/`.txt`) → Frontend zeigt dann „keine Akkord-Datei hinterlegt".
 
 ## API des eigenen Backends (für Schritt 8)
 - `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt Session-Cookie

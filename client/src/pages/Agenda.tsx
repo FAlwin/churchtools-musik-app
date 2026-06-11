@@ -3,12 +3,16 @@ import type { Service } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar, IconButton } from '../components/NavBar';
 import { Sheet } from '../components/Sheet';
+import { CenterMessage } from '../components/CenterMessage';
 import { FONTS } from '../utils/constants';
 import type { Theme } from '../types/index';
 import styles from './Agenda.module.scss';
 
 interface AgendaProps {
   services: Service[];
+  isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   onSelect: (service: Service) => void;
   onLogout: () => void;
   theme: Theme;
@@ -22,6 +26,9 @@ interface AgendaProps {
 /** Übersicht der Gottesdienste + Einstellungen (Theme, Display-Sperre, Schriftart). */
 export function Agenda({
   services,
+  isLoading,
+  isError,
+  onRetry,
   onSelect,
   onLogout,
   theme,
@@ -124,6 +131,13 @@ export function Agenda({
       )}
 
       <Scroll>
+        {isLoading ? (
+          <CenterMessage loading text="Gottesdienste werden geladen…" />
+        ) : isError ? (
+          <CenterMessage icon="⚠️" text="Gottesdienste konnten nicht geladen werden." onRetry={onRetry} />
+        ) : services.length === 0 ? (
+          <CenterMessage icon="📅" text="Keine Gottesdienste mit Setlist gefunden." />
+        ) : (
         <div className={styles.list}>
           {services.map((s) => (
             <div key={s.id} className={styles.card} onClick={() => onSelect(s)}>
@@ -145,6 +159,7 @@ export function Agenda({
             </div>
           ))}
         </div>
+        )}
       </Scroll>
     </Screen>
   );

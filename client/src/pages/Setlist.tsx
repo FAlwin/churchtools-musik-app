@@ -1,17 +1,21 @@
 import type { Service, SetlistSong } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar, IconButton } from '../components/NavBar';
+import { CenterMessage } from '../components/CenterMessage';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
   service: Service;
   songs: SetlistSong[];
+  isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   onSelect: (index: number) => void;
   onBack: () => void;
 }
 
 /** Songliste eines Gottesdienstes mit Tonart-, BPM- und Taktart-Chips. */
-export function Setlist({ service, songs, onSelect, onBack }: SetlistProps) {
+export function Setlist({ service, songs, isLoading, isError, onRetry, onSelect, onBack }: SetlistProps) {
   return (
     <Screen>
       <NavBar
@@ -20,6 +24,13 @@ export function Setlist({ service, songs, onSelect, onBack }: SetlistProps) {
         left={<IconButton onClick={onBack}>‹</IconButton>}
       />
       <Scroll>
+        {isLoading ? (
+          <CenterMessage loading text="Setlist wird geladen…" />
+        ) : isError ? (
+          <CenterMessage icon="⚠️" text="Setlist konnte nicht geladen werden." onRetry={onRetry} />
+        ) : songs.length === 0 ? (
+          <CenterMessage icon="🎵" text="Diese Setlist enthält keine Lieder." />
+        ) : (
         <div className={styles.list}>
           {songs.map((song, i) => {
             const savedKey = localStorage.getItem(`worship_key_${song.id}`);
@@ -48,6 +59,7 @@ export function Setlist({ service, songs, onSelect, onBack }: SetlistProps) {
             );
           })}
         </div>
+        )}
         <div style={{ height: 20 }} />
       </Scroll>
     </Screen>

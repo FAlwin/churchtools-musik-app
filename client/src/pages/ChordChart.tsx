@@ -263,15 +263,22 @@ export function ChordChart({ songs, startIndex, onBack, theme, wakePref, fontId 
         {/* Chart-Body */}
         <div className={styles.body} ref={drawing.bodyRef} style={{ ['--chart-font' as string]: fontFam }}>
           <div className={`${styles.content}${cols === 2 ? ' ' + styles.twoCol : ''}`}>
-            {sections.map((sec, i) => (
-              <Section
-                key={i}
-                section={sec}
-                semitones={gripOffset}
-                fontSize={fontSize}
-                lyricsOnly={lyricsOnly}
-              />
-            ))}
+            {sections.length === 0 ? (
+              <div className={styles.empty}>
+                <div className={styles.emptyIcon}>🎵</div>
+                <div>Für dieses Lied ist keine Akkord-Datei in ChurchTools hinterlegt.</div>
+              </div>
+            ) : (
+              sections.map((sec, i) => (
+                <Section
+                  key={i}
+                  section={sec}
+                  semitones={gripOffset}
+                  fontSize={fontSize}
+                  lyricsOnly={lyricsOnly}
+                />
+              ))
+            )}
           </div>
           <canvas
             ref={drawing.canvasRef}
