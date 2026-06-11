@@ -127,9 +127,28 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - **Nächster Schritt:** Schritt 7 (Express-Proxy + persönlicher ChurchTools-Login).
   Pausiert auf Userwunsch (11.06.2026) – braucht Klärung an der echten Instanz (siehe Offene Punkte).
 
+## ChurchTools-API – bestätigtes Datenmodell (11.06.2026, Instanz v3.133.0)
+Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend).
+
+- **Gottesdienste:** `GET /api/events?from=YYYY-MM-DD&to=YYYY-MM-DD`
+  (kommende Events haben oft noch KEINE Agenda – die wird erst kurz vorher angelegt)
+- **Setlist:** `GET /api/events/{id}/agenda` → `data.items[]`; Song-Items haben `item.song`:
+  `{ songId, arrangementId, title, arrangement, category, key, bpm, isDefault }`
+  → **`item.song.key` = Ziel-Tonart für diesen Gottesdienst**
+- **Song/Arrangement:** `GET /api/songs/{id}` → `arrangements[]` mit
+  `key` / `keyOfArrangement` (Standardtonart), `bpm`, `beat`, `tempo`, `files[]`
+- **Dateien:** `arrangements[].files[]` – Formate `.chordpro` (SongSelect-Dialekt!),
+  `.txt`, `.sng` (SongBeamer), `.pdf`. `.chordpro` ist das richtige für uns.
+  `file.fileUrl` ist eine `?q=public/filedownload&id=…`-URL.
+- **Datei-Download (wichtig):** Der `Authorization: Login <token>`-Header funktioniert für
+  `/api/*`, aber NICHT für `public/filedownload` (Redirect-Loop). Lösung: mit
+  `GET /api/whoami?login_token=<token>` ein Session-Cookie holen, dann die Datei mit
+  diesem Cookie laden. Im Backend (Schritt 7) hält der Proxy ohnehin die Session.
+- **Original- vs. Ziel-Tonart:** `.chordpro` enthält `{key:}` (Original) → transponieren auf
+  `item.song.key` (Ziel aus der Agenda).
+- **2-Faktor:** kein Problem – Login-Token-Zugriff klappt.
+
 ## Offene Punkte
-- [ ] An echter ChurchTools-Instanz klären: API-Kette Agenda→Song→Arrangement→Datei→Tonart-Feld
-- [ ] Feldname/Typ der Tonart am Arrangement (`key`?)
-- [ ] Erzwingt die Instanz 2-Faktor? → ggf. persönlicher Login-Token statt Passwort
+- [ ] Schritt 7: echten per-User-Login bauen (POST /api/login). Token-Erkundung erledigt.
 - [ ] NAS: Docker + Cloudflare Tunnel bereits eingerichtet?
-- [ ] WorshipTools-Migration: wie viele Lieder?
+- [ ] WorshipTools-Migration: wie viele Lieder? (Songs liegen teils schon als .chordpro in CT)
