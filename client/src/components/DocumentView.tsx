@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { SongDocument } from '@shared/types/index';
@@ -47,6 +47,7 @@ export function DocumentView({
   const drawing = useRef(false);
   const lastPt = useRef<{ x: number; y: number } | null>(null);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,8 +130,10 @@ export function DocumentView({
       img.onload = () => annoRef.current?.getContext('2d')?.drawImage(img, 0, 0);
       img.src = saved;
     }
+    // neue Seite immer wieder bildschirmfüllend zeigen (Zoom zurücksetzen)
+    transformRef.current?.resetTransform(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, pageIndex, adjust]);
+  }, [loading, pageIndex]);
 
   // Löschen (aktuelle Seite) über gemeinsame Werkzeugleiste
   useEffect(() => {
@@ -229,8 +232,6 @@ export function DocumentView({
     }
   }
 
-  const currentPage = pagesRef.current[pageIndex];
-
   return (
     <div className={styles.root} onClick={rootClick} onTouchStart={rootTouchStart} onTouchEnd={rootTouchEnd}>
       {loading && (
@@ -241,19 +242,22 @@ export function DocumentView({
       )}
       {error && <div className={styles.center}>⚠️ {error}</div>}
 
-      {!loading && !error && adjust && currentPage && (
-        // Anpassen-Modus: frei zoomen/verschieben
-        <TransformWrapper minScale={0.5} maxScale={8} centerOnInit doubleClick={{ disabled: true }}>
-          <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
-            <img src={currentPage.toDataURL()} className={styles.adjustImg} alt="" />
-          </TransformComponent>
-        </TransformWrapper>
-      )}
-
-      {!loading && !error && !adjust && (
-        // Fixiert: Seite an den Bildschirm angepasst, Wischen blättert
-        <div className={styles.fit}>
-          <div className={styles.pageBox}>
+      {/* Eine Zoom-Ebene: im Anpassen-Modus aktiv, sonst gesperrt (Zoom bleibt erhalten) */}
+      <TransformWrapper
+        ref={transformRef}
+        disabled={!adjust}
+        minScale={1}
+        maxScale={8}
+        centerOnInit
+        limitToBounds={false}
+        doubleClick={{ disabled: true }}
+        panning={{ velocityDisabled: true }}
+      >
+        <TransformComponent
+          wrapperStyle={{ width: '100%', height: '100%' }}
+          contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <div className={styles.pageBox} style={{ visibility: loading ? 'hidden' : 'visible' }}>
             <canvas ref={contentRef} className={styles.contentCanvas} />
             <canvas
               ref={annoRef}
@@ -265,8 +269,8 @@ export function DocumentView({
               onPointerLeave={dUp}
             />
           </div>
-        </div>
-      )}
+        </TransformComponent>
+      </TransformWrapper>
 
       {/* Seiten-Anzeige (Ecke, überdeckt die Noten nicht) */}
       {!loading && !error && pageCount > 1 && (
