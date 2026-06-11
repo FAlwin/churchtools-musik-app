@@ -12,8 +12,13 @@ import { DRAW_COLORS, fontFamilyById } from '../utils/constants';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { useDrawing } from '../hooks/useDrawing';
+import { usePagedColumns } from '../hooks/usePagedColumns';
 import type { DrawTool, Theme } from '../types/index';
 import styles from './ChordChart.module.scss';
+
+// Innenabstand und Spaltenabstand des Chart-Inhalts (für die Spaltenbreite)
+const CONTENT_PAD = 24;
+const COLUMN_GAP = 40;
 
 interface ChordChartProps {
   songs: SetlistSong[];
@@ -58,7 +63,6 @@ export function ChordChart({
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
   const [textSize, setTextSize] = useState(20);
 
-  const touchXRef = useRef<number | null>(null);
   const textInputRef = useRef<HTMLInputElement | null>(null);
 
   useWakeLock(wakePref);
@@ -82,11 +86,31 @@ export function ChordChart({
     layoutDeps: [fontSize, cols, lyricsOnly, fontId, drawMode],
   });
 
+  // Breite des Chart-Bereichs messen (für die Spaltenbreite je Seite)
+  const [bodyWidth, setBodyWidth] = useState(0);
+  useEffect(() => {
+    const el = drawing.bodyRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    setBodyWidth(el.clientWidth);
+    const ro = new ResizeObserver(() => setBodyWidth(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Spaltenbreite so, dass genau `cols` Spalten eine Seite füllen
+  const colWidthPx =
+    bodyWidth > 0
+      ? Math.floor((bodyWidth - 2 * CONTENT_PAD - (cols - 1) * COLUMN_GAP) / cols)
+      : undefined;
+
+  const paged = usePagedColumns(drawing.bodyRef, [song.id, fontSize, cols, lyricsOnly, fontId, bodyWidth]);
+
   // ── Persistenz pro Song / beim Songwechsel zurücksetzen ──
   useEffect(() => {
     setSelectedKey(localStorage.getItem(`worship_key_${song.id}`) || null);
     setCapo(parseInt(localStorage.getItem(`worship_capo_${song.id}`) || '0', 10));
-    if (drawing.bodyRef.current) drawing.bodyRef.current.scrollTop = 0;
+    if (drawing.bodyRef.current) drawing.bodyRef.current.scrollLeft = 0; // zurück auf Seite 1
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, song.id]);
 
@@ -116,18 +140,6 @@ export function ChordChart({
     drawing.saveDrawing(song.id);
     onBack();
   }
-  function onTouchStart(e: React.TouchEvent) {
-    touchXRef.current = e.touches[0].clientX;
-  }
-  function onTouchEnd(e: React.TouchEvent) {
-    if (touchXRef.current === null) return;
-    const d = touchXRef.current - e.changedTouches[0].clientX;
-    if (Math.abs(d) > 55) {
-      if (d > 0) next();
-      else prev();
-    }
-    touchXRef.current = null;
-  }
 
   function clearDrawing() {
     drawing.clearAll();
@@ -136,11 +148,7 @@ export function ChordChart({
 
   return (
     <Screen className={styles.chartScreen}>
-      <div
-        style={{ display: 'contents' }}
-        onTouchStart={drawMode ? undefined : onTouchStart}
-        onTouchEnd={drawMode ? undefined : onTouchEnd}
-      >
+      <>
         {/* Header */}
         <div className={styles.hdr}>
           <button className={styles.ibtn} onClick={goBack}>
@@ -281,9 +289,24 @@ export function ChordChart({
           />
         )}
 
-        {/* Chart-Body */}
-        <div className={styles.body} ref={drawing.bodyRef} style={{ ['--chart-font' as string]: fontFam }}>
-          <div className={`${styles.content}${cols === 2 ? ' ' + styles.twoCol : ''}`}>
+        {/* Seiten-Anzeige (nur bei mehr als einer Seite) */}
+        {paged.pageCount > 1 && (
+          <div className={styles.pageChip}>
+            {paged.page + 1} / {paged.pageCount}
+          </div>
+        )}
+
+        {/* Chart-Body – seitenweise Spalten, horizontal blättern */}
+        <div
+          className={styles.body}
+          ref={drawing.bodyRef}
+          onScroll={paged.onScroll}
+          style={{ ['--chart-font' as string]: fontFam }}
+        >
+          <div
+            className={styles.content}
+            style={{ columnWidth: colWidthPx ? `${colWidthPx}px` : undefined, columnGap: COLUMN_GAP }}
+          >
             {sections.length === 0 ? (
               <div className={styles.empty}>
                 <div className={styles.emptyIcon}>🎵</div>
@@ -418,7 +441,7 @@ export function ChordChart({
             ›
           </button>
         </div>
-      </div>
+      </>
     </Screen>
   );
 }

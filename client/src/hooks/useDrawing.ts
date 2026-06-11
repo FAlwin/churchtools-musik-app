@@ -65,8 +65,9 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
       const canvas = canvasRef.current;
       const wrap = bodyRef.current;
       if (!canvas || !wrap) return;
-      canvas.width = wrap.offsetWidth;
-      canvas.height = wrap.scrollHeight;
+      // Seitenweises Layout: Leinwand deckt die gesamte (horizontale) Scrollbreite ab
+      canvas.width = wrap.scrollWidth || wrap.offsetWidth;
+      canvas.height = wrap.clientHeight;
       loadDrawing(id);
     },
     [loadDrawing],
