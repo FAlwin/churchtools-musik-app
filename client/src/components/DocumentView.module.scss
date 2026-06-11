@@ -60,43 +60,18 @@
   max-width: none;
 }
 
-// Untere Statusleiste
-.docBar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 8px 12px;
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(4px);
-}
-
+// kleine Seiten-Anzeige oben links (überdeckt die Noten nicht)
 .pageInd {
-  font-size: 13px;
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 20;
+  font-size: 12px;
   font-weight: 700;
   color: #fff;
   font-family: 'Montserrat', sans-serif;
-}
-
-.docBtn {
-  height: 38px;
-  padding: 0 16px;
-  border: none;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
-
-  &.done {
-    background: var(--orange);
-  }
+  background: rgba(0, 0, 0, 0.55);
+  padding: 4px 9px;
+  border-radius: 8px;
+  pointer-events: none;
 }

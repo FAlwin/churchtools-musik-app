@@ -80,6 +80,7 @@ export function ChordChart({
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
   const [textSize, setTextSize] = useState(20);
   const [docClearSignal, setDocClearSignal] = useState(0); // löst Löschen im Dokument-Viewer aus
+  const [docAdjust, setDocAdjust] = useState(false); // Anpassen-Modus (Zoom/Verschieben) im Dokument
 
   const textInputRef = useRef<HTMLInputElement | null>(null);
   const touchX = useRef<number | null>(null);
@@ -169,6 +170,11 @@ export function ChordChart({
 
   const activeDoc: SongDocument | null =
     viewSource === 'chords' ? null : (song.documents.find((d) => d.fileId === viewSource) ?? null);
+
+  // Anpassen-Modus zurücksetzen, wenn Lied oder Anzeige-Quelle wechselt
+  useEffect(() => {
+    setDocAdjust(false);
+  }, [viewSource, song.id]);
 
   useEffect(() => {
     localStorage.setItem(`worship_fs_${song.id}`, String(fontSize));
@@ -352,6 +358,20 @@ export function ChordChart({
                 Aa
               </button>
             )}
+            {activeDoc && (
+              <button
+                className={`${styles.toolBtn}${docAdjust ? ' ' + styles.on : ''}`}
+                onClick={() => {
+                  setDocAdjust((a) => {
+                    if (!a) setDrawMode(false);
+                    return !a;
+                  });
+                }}
+                title={docAdjust ? 'Fertig' : 'Anpassen (Zoom)'}
+              >
+                {docAdjust ? '✓' : '🔍'}
+              </button>
+            )}
             {onReload && (
               <button className={styles.toolBtn} onClick={onReload} disabled={reloading} title="Aktualisieren">
                 <span className={reloading ? styles.spin : undefined}>↻</span>
@@ -359,7 +379,12 @@ export function ChordChart({
             )}
             <button
               className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
-              onClick={() => setDrawMode((d) => !d)}
+              onClick={() =>
+                setDrawMode((d) => {
+                  if (!d) setDocAdjust(false);
+                  return !d;
+                })
+              }
               title="Anmerkungen"
             >
               🖍️
@@ -551,6 +576,8 @@ export function ChordChart({
               drawColor={drawColor}
               drawTool={drawTool}
               clearSignal={docClearSignal}
+              adjust={docAdjust}
+              onAdjustChange={setDocAdjust}
               onPrev={prev}
               onNext={next}
             />

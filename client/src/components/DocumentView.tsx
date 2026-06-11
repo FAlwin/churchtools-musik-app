@@ -16,6 +16,9 @@ interface DocumentViewProps {
   drawColor: string;
   drawTool: DrawTool;
   clearSignal: number;
+  /** Anpassen-Modus (Zoom/Verschieben) – gesteuert von der Kopfleiste. */
+  adjust: boolean;
+  onAdjustChange: (v: boolean) => void;
   onPrev: () => void;
   onNext: () => void;
 }
@@ -33,6 +36,8 @@ export function DocumentView({
   drawColor,
   drawTool,
   clearSignal,
+  adjust,
+  onAdjustChange,
   onPrev,
   onNext,
 }: DocumentViewProps) {
@@ -47,7 +52,6 @@ export function DocumentView({
   const [error, setError] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState(1);
   const [pageIndex, setPageIndex] = useState(0);
-  const [adjust, setAdjust] = useState(false); // Zoom/Verschieben aktiv?
 
   const url = `/api/songs/${songId}/files/${doc.fileId}`;
   const storeKey = (p: number) => `worship_docdraw_${doc.fileId}_${p}`;
@@ -59,7 +63,6 @@ export function DocumentView({
     setError(null);
     pagesRef.current = [];
     setPageIndex(0);
-    setAdjust(false);
 
     async function load() {
       if (doc.type === 'image') {
@@ -127,7 +130,7 @@ export function DocumentView({
       img.src = saved;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, pageIndex]);
+  }, [loading, pageIndex, adjust]);
 
   // Löschen (aktuelle Seite) über gemeinsame Werkzeugleiste
   useEffect(() => {
@@ -209,7 +212,7 @@ export function DocumentView({
   function rootTouchStart(e: React.TouchEvent) {
     if (drawMode || adjust) return;
     if (e.touches.length >= 2) {
-      setAdjust(true); // zwei Finger = Anpassen-Modus
+      onAdjustChange(true); // zwei Finger = Anpassen-Modus
       swipeStart.current = null;
       return;
     }
@@ -265,23 +268,10 @@ export function DocumentView({
         </div>
       )}
 
-      {/* Statusleiste unten: Seite x/y + Anpassen/Fertig */}
-      {!loading && !error && !drawMode && (
-        <div className={styles.docBar}>
-          {pageCount > 1 && (
-            <span className={styles.pageInd}>
-              Seite {pageIndex + 1} / {pageCount}
-            </span>
-          )}
-          {adjust ? (
-            <button className={`${styles.docBtn} ${styles.done}`} onClick={() => setAdjust(false)}>
-              ✓ Fertig
-            </button>
-          ) : (
-            <button className={styles.docBtn} onClick={() => setAdjust(true)}>
-              🔍 Anpassen
-            </button>
-          )}
+      {/* Seiten-Anzeige (Ecke, überdeckt die Noten nicht) */}
+      {!loading && !error && pageCount > 1 && (
+        <div className={styles.pageInd}>
+          Seite {pageIndex + 1} / {pageCount}
         </div>
       )}
     </div>
