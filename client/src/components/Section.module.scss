@@ -1,5 +1,9 @@
 .sectionBlock {
   margin-bottom: 28px;
+  // Sektion nie über einen Spaltenumbruch zerreißen (hält Akkorde bei ihrem Text)
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .secLabel {

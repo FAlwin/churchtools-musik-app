@@ -29,8 +29,10 @@
   flex-shrink: 0;
   transition: background 0.12s;
 
-  &:hover {
-    background: rgba(255, 252, 242, 0.12);
+  @media (hover: hover) {
+    &:hover {
+      background: rgba(255, 252, 242, 0.12);
+    }
   }
 }
 
@@ -161,13 +163,20 @@
   align-items: center;
   justify-content: center;
 
-  &:hover {
-    background: rgba(255, 252, 242, 0.15);
-    color: var(--cream);
+  // Hover nur auf Geräten mit echter Maus – verhindert „klebenden" Zustand auf Touch
+  @media (hover: hover) {
+    &:hover {
+      background: rgba(255, 252, 242, 0.15);
+      color: var(--cream);
+    }
   }
   &.on {
     color: var(--cream);
     background: rgba(255, 252, 242, 0.22);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 }
 
@@ -399,8 +408,10 @@
     opacity: 0.25;
     cursor: default;
   }
-  &:not(:disabled):hover {
-    background: rgba(0, 0, 0, 0.4);
+  @media (hover: hover) {
+    &:not(:disabled):hover {
+      background: rgba(0, 0, 0, 0.4);
+    }
   }
 }
 
