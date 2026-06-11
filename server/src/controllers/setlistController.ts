@@ -1,6 +1,11 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { getServicesWithSetlists, getSetlistSongs } from '../services/setlistBuilder.js';
+import {
+  getServicesWithSetlists,
+  getSetlistSongs,
+  saveEcgChordpro,
+  deleteEcgChordpro,
+} from '../services/setlistBuilder.js';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -31,4 +36,27 @@ export async function getSetlist(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
   const songs = await getSetlistSongs(req.ctCookie as string, eventId);
   res.json(songs);
+}
+
+const editSchema = z.object({
+  arrangementId: z.coerce.number().int().positive(),
+  text: z.string().min(1, 'Text fehlt'),
+});
+
+/** PUT /api/songs/:songId/chordpro – bearbeitete ECG-Version speichern. */
+export async function putChordpro(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const { arrangementId, text } = editSchema.parse(req.body);
+  await saveEcgChordpro(req.ctCookie as string, songId, arrangementId, text);
+  res.json({ ok: true });
+}
+
+const deleteSchema = z.object({ arrangementId: z.coerce.number().int().positive() });
+
+/** DELETE /api/songs/:songId/chordpro – ECG-Version löschen (auf Original zurücksetzen). */
+export async function deleteChordpro(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const { arrangementId } = deleteSchema.parse(req.body);
+  await deleteEcgChordpro(req.ctCookie as string, songId, arrangementId);
+  res.json({ ok: true });
 }

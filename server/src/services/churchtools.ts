@@ -152,3 +152,57 @@ export async function downloadFileText(cookie: string, fileUrl: string): Promise
   }
   return res.text();
 }
+
+/** Extrahiert die Datei-ID aus einer ChurchTools-fileUrl (…&id=213&…). */
+export function fileIdFromUrl(fileUrl: string): number | null {
+  const m = fileUrl.match(/[?&]id=(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
+/** Holt ein CSRF-Token (für schreibende Anfragen mit Cookie-Session nötig). */
+async function getCsrfToken(cookie: string): Promise<string> {
+  const res = await fetch(`${BASE}/api/csrftoken`, {
+    headers: { Cookie: cookie, Accept: 'application/json' },
+  });
+  if (!res.ok) throw new HttpError(502, 'CSRF-Token konnte nicht geholt werden.');
+  const json = (await res.json()) as { data?: string };
+  return json.data ?? '';
+}
+
+/** Lädt eine .chordpro-Datei an ein Arrangement hoch (ersetzt vorhandene gleichen Namens nicht automatisch). */
+export async function uploadChordpro(
+  cookie: string,
+  arrangementId: number,
+  filename: string,
+  text: string,
+): Promise<void> {
+  const csrf = await getCsrfToken(cookie);
+  const form = new FormData();
+  form.append('files[]', new Blob([text], { type: 'text/plain' }), filename);
+  const res = await fetch(`${BASE}/api/files/song_arrangement/${arrangementId}`, {
+    method: 'POST',
+    headers: { Cookie: cookie, 'CSRF-Token': csrf },
+    body: form,
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new HttpError(403, 'Keine Berechtigung, in ChurchTools zu speichern.');
+  }
+  if (!res.ok) {
+    throw new HttpError(502, `Speichern in ChurchTools fehlgeschlagen (${res.status}).`);
+  }
+}
+
+/** Löscht eine Datei in ChurchTools (per Datei-ID). */
+export async function deleteFile(cookie: string, fileId: number): Promise<void> {
+  const csrf = await getCsrfToken(cookie);
+  const res = await fetch(`${BASE}/api/files/${fileId}`, {
+    method: 'DELETE',
+    headers: { Cookie: cookie, 'CSRF-Token': csrf },
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new HttpError(403, 'Keine Berechtigung zum Löschen in ChurchTools.');
+  }
+  if (!res.ok && res.status !== 404) {
+    throw new HttpError(502, `Löschen in ChurchTools fehlgeschlagen (${res.status}).`);
+  }
+}

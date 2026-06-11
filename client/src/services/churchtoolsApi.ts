@@ -26,3 +26,19 @@ export function getServices(): Promise<Service[]> {
 export function getSetlist(eventId: number): Promise<SetlistSong[]> {
   return apiFetch<SetlistSong[]>(`/api/services/${eventId}/setlist`);
 }
+
+/** Speichert die bearbeitete ECG-Version eines Songs in ChurchTools. */
+export function saveChordpro(songId: number, arrangementId: number, text: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/songs/${songId}/chordpro`, {
+    method: 'PUT',
+    body: JSON.stringify({ arrangementId, text }),
+  });
+}
+
+/** Löscht die ECG-Version (zurück zum Original). */
+export function deleteChordpro(songId: number, arrangementId: number): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/songs/${songId}/chordpro`, {
+    method: 'DELETE',
+    body: JSON.stringify({ arrangementId }),
+  });
+}

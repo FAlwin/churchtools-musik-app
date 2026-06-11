@@ -36,8 +36,10 @@ export interface SetlistSong {
   bpm: number | null;
   timeSig: string | null;
   ccli: string | null;
-  /** Roher ChordPro-Inhalt (SongSelect-Dialekt oder Standard) */
+  /** Roher ChordPro-Inhalt der Originaldatei (SongSelect-Dialekt oder Standard) */
   chordpro: string;
+  /** Bearbeitete ECG-Version, falls vorhanden (separate .chordpro-Datei) */
+  chordproEcg: string | null;
 }
 
 /** Komplette Setlist eines Gottesdienstes. */

@@ -120,6 +120,29 @@
   white-space: nowrap;
 }
 
+// Tonart als reine Anzeige (Ändern läuft übers Lied-Menü)
+.keyChip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--chord);
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 8px;
+  padding: 2px 9px;
+}
+
+// kennzeichnet, welche Version gerade angezeigt wird
+.ecgChip {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cream);
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
 .modeHint {
   display: inline-flex;
   align-items: center;

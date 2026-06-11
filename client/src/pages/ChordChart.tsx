@@ -6,6 +6,9 @@ import { KeyPicker } from '../components/KeyPicker';
 import { CapoPicker } from '../components/CapoPicker';
 import { DrawToolbar } from '../components/DrawToolbar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { ChordEditor } from '../components/ChordEditor';
+import { saveChordpro, deleteChordpro } from '../services/churchtoolsApi';
+import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { DRAW_COLORS, fontFamilyById } from '../utils/constants';
@@ -56,7 +59,14 @@ export function ChordChart({
   const [showKeyPicker, setShowKeyPicker] = useState(false);
   const [showCapoPicker, setShowCapoPicker] = useState(false);
   const [showAppearance, setShowAppearance] = useState(false);
+  const [showSongMenu, setShowSongMenu] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+
+  // Editor + Versionswahl (ECG-Bearbeitung vs. Original)
+  const [showEditor, setShowEditor] = useState(false);
+  const [editorSaving, setEditorSaving] = useState(false);
+  const [editorError, setEditorError] = useState<string | null>(null);
+  const [showOriginal, setShowOriginal] = useState(false);
 
   const [drawMode, setDrawMode] = useState(false);
   const [drawColor, setDrawColor] = useState(DRAW_COLORS[0]);
@@ -76,7 +86,9 @@ export function ChordChart({
   const totalOffset = getSemitoneOffset(song.originalKey, curKey);
   const gripOffset = totalOffset - capo; // Griff-Akkorde (mit Kapo)
   const shapeKey = shiftKey(curKey, -capo);
-  const sections = parseChordPro(song.chordpro);
+  const hasEcg = song.chordproEcg !== null;
+  const displayedChordpro = !showOriginal && song.chordproEcg ? song.chordproEcg : song.chordpro;
+  const sections = parseChordPro(displayedChordpro);
   const fontFam = fontFamilyById(fontId);
   // Schwarz im Dark Mode auf Creme umstellen, damit sichtbar
   const drawColors = DRAW_COLORS.map((c) => (c === '#14110F' ? (theme === 'dark' ? '#FFFCF2' : '#14110F') : c));
@@ -124,6 +136,7 @@ export function ChordChart({
     setFontSize(parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10));
     setCols(parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
     setLyricsOnly(localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
+    setShowOriginal(false); // beim Liedwechsel wieder die bevorzugte Version zeigen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, song.id]);
 
@@ -230,6 +243,36 @@ export function ChordChart({
     setConfirmClear(false);
   }
 
+  // ── Editor: ECG-Version speichern / zurücksetzen ──
+  async function handleSaveChordpro(text: string) {
+    setEditorSaving(true);
+    setEditorError(null);
+    try {
+      await saveChordpro(song.id, song.arrangementId, text);
+      setShowEditor(false);
+      setShowOriginal(false);
+      onReload?.(); // Setlist neu laden → bearbeitete Version erscheint
+    } catch (e) {
+      setEditorError(e instanceof ApiError ? e.message : 'Speichern fehlgeschlagen.');
+    } finally {
+      setEditorSaving(false);
+    }
+  }
+  async function handleResetChordpro() {
+    setEditorSaving(true);
+    setEditorError(null);
+    try {
+      await deleteChordpro(song.id, song.arrangementId);
+      setShowEditor(false);
+      setShowOriginal(false);
+      onReload?.();
+    } catch (e) {
+      setEditorError(e instanceof ApiError ? e.message : 'Zurücksetzen fehlgeschlagen.');
+    } finally {
+      setEditorSaving(false);
+    }
+  }
+
   const nextSong = idx < songs.length - 1 ? songs[idx + 1] : null;
 
   return (
@@ -241,21 +284,17 @@ export function ChordChart({
             ‹
           </button>
           <div className={styles.center}>
-            <span className={styles.songTitle}>{song.title}</span>
-            {!lyricsOnly ? (
-              <div className={styles.keyRow}>
-                <button className={styles.keyBtn} onClick={() => setShowKeyPicker(true)}>
-                  <span className={styles.keyLabel}>{curKey}</span>
-                  <span className={styles.keyChevron}>▾</span>
-                </button>
-                {capo > 0 && <span className={styles.capoBadge}>Capo {capo}</span>}
-                {song.bpm !== null && <span className={styles.bpmChip}>♩ {song.bpm}</span>}
-              </div>
-            ) : (
-              <div className={styles.keyRow}>
-                <span className={styles.modeHint}>Nur Text</span>
-              </div>
-            )}
+            <button className={styles.titleBtn} onClick={() => setShowSongMenu((v) => !v)}>
+              <span className={styles.songTitle}>{song.title}</span>
+              <span className={styles.titleChevron}>▾</span>
+            </button>
+            <div className={styles.keyRow}>
+              {!lyricsOnly && <span className={styles.keyChip}>{curKey}</span>}
+              {!lyricsOnly && capo > 0 && <span className={styles.capoBadge}>Capo {capo}</span>}
+              {lyricsOnly && <span className={styles.modeHint}>Nur Text</span>}
+              {hasEcg && <span className={styles.ecgChip}>{showOriginal ? 'Original' : 'ECG'}</span>}
+              {song.bpm !== null && <span className={styles.bpmChip}>♩ {song.bpm}</span>}
+            </div>
           </div>
           <div className={styles.right}>
             <button
@@ -321,21 +360,77 @@ export function ChordChart({
                   Nur Text
                 </button>
               </div>
+            </div>
+          </>
+        )}
 
+        {/* Lied-Menü (über den Titel): Transponieren, Kapo, Bearbeiten, Version */}
+        {showSongMenu && (
+          <>
+            <div className={styles.scrim} onClick={() => setShowSongMenu(false)} />
+            <div className={styles.modeMenu}>
               <button
-                className={styles.appKapo}
+                className={styles.mmItem}
+                onClick={() => {
+                  setShowKeyPicker(true);
+                  setShowSongMenu(false);
+                }}
+              >
+                <span>Transponieren</span>
+                <span className={styles.mmValueActive}>{curKey}</span>
+              </button>
+              <button
+                className={styles.mmItem}
                 onClick={() => {
                   setShowCapoPicker(true);
-                  setShowAppearance(false);
+                  setShowSongMenu(false);
                 }}
               >
                 <span>Kapo</span>
                 {capo > 0 ? (
                   <span className={styles.mmValueActive}>Bund {capo}</span>
                 ) : (
-                  <span className={styles.mmValue}>einstellen ›</span>
+                  <span className={styles.mmValue}>–</span>
                 )}
               </button>
+              <button
+                className={styles.mmItem}
+                onClick={() => {
+                  setShowEditor(true);
+                  setEditorError(null);
+                  setShowSongMenu(false);
+                }}
+              >
+                <span>Text bearbeiten</span>
+                <span className={styles.mmValue}>🖉</span>
+              </button>
+              {hasEcg && (
+                <>
+                  <div className={styles.menuLbl} style={{ marginTop: 6 }}>
+                    Version
+                  </div>
+                  <div className={styles.segGroup}>
+                    <button
+                      className={`${styles.segBtn}${!showOriginal ? ' ' + styles.on : ''}`}
+                      onClick={() => {
+                        setShowOriginal(false);
+                        setShowSongMenu(false);
+                      }}
+                    >
+                      ECG-Version
+                    </button>
+                    <button
+                      className={`${styles.segBtn}${showOriginal ? ' ' + styles.on : ''}`}
+                      onClick={() => {
+                        setShowOriginal(true);
+                        setShowSongMenu(false);
+                      }}
+                    >
+                      Original
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </>
         )}
@@ -491,6 +586,20 @@ export function ChordChart({
             confirmLabel="Löschen"
             onConfirm={clearDrawing}
             onCancel={() => setConfirmClear(false)}
+          />
+        )}
+
+        {/* Text-Editor (Vollbild) */}
+        {showEditor && (
+          <ChordEditor
+            songTitle={song.title}
+            initialText={displayedChordpro}
+            hasEcg={hasEcg}
+            saving={editorSaving}
+            error={editorError}
+            onSave={handleSaveChordpro}
+            onReset={handleResetChordpro}
+            onClose={() => setShowEditor(false)}
           />
         )}
 

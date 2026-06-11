@@ -9,9 +9,22 @@ import {
   getEvents,
   getSong,
   downloadFileText,
+  uploadChordpro,
+  deleteFile,
+  fileIdFromUrl,
   type CtAgendaSong,
+  type CtArrangementFile,
 } from './churchtools.js';
+import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
+
+/** Erkennt, ob eine Datei die bearbeitete ECG-Version ist (am Namen). */
+function isEcgFile(f: CtArrangementFile): boolean {
+  return /ecg/i.test(f.name) && /\.chordpro$/i.test(f.name);
+}
+function isOriginalChordpro(f: CtArrangementFile): boolean {
+  return /\.chordpro$/i.test(f.name) && !isEcgFile(f);
+}
 
 /** Liest einen Metadaten-Wert aus ChordPro-Text ({key: E} → "E"). */
 function metaValue(chordpro: string, key: string): string | null {
@@ -46,20 +59,25 @@ async function buildSong(cookie: string, agendaSong: CtAgendaSong): Promise<Setl
   const arr =
     song.arrangements.find((a) => a.id === agendaSong.arrangementId) ?? song.arrangements[0];
 
-  const chordproFile = arr?.files.find((f) => /\.chordpro$/i.test(f.name));
-  let chordpro = '';
-  if (chordproFile) {
-    try {
-      chordpro = await downloadFileText(cookie, chordproFile.fileUrl);
-    } catch {
-      chordpro = '';
-    }
-  }
+  const originalFile = arr?.files.find(isOriginalChordpro);
+  const ecgFile = arr?.files.find(isEcgFile);
 
-  const originalKey =
-    metaValue(chordpro, 'key') ?? arr?.keyOfArrangement ?? arr?.key ?? agendaSong.key ?? 'C';
+  const download = async (f?: CtArrangementFile): Promise<string> => {
+    if (!f) return '';
+    try {
+      return await downloadFileText(cookie, f.fileUrl);
+    } catch {
+      return '';
+    }
+  };
+  const chordpro = await download(originalFile);
+  const chordproEcg = ecgFile ? await download(ecgFile) : null;
+
+  // Tonart/Takt aus der angezeigten Version ableiten (ECG bevorzugt, sonst Original)
+  const source = chordproEcg || chordpro;
+  const originalKey = metaValue(source, 'key') ?? arr?.keyOfArrangement ?? arr?.key ?? agendaSong.key ?? 'C';
   const targetKey = agendaSong.key ?? arr?.key ?? originalKey;
-  const timeSig = metaValue(chordpro, 'time') ?? arr?.beat ?? null;
+  const timeSig = metaValue(source, 'time') ?? arr?.beat ?? null;
 
   return {
     id: agendaSong.songId,
@@ -72,7 +90,43 @@ async function buildSong(cookie: string, agendaSong: CtAgendaSong): Promise<Setl
     timeSig,
     ccli: song.ccli ?? null,
     chordpro,
+    chordproEcg,
   };
+}
+
+/** Erzeugt/aktualisiert die bearbeitete ECG-Version eines Arrangements. */
+export async function saveEcgChordpro(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+  text: string,
+): Promise<void> {
+  const song = await getSong(cookie, songId);
+  const arr = song.arrangements.find((a) => a.id === arrangementId);
+  if (!arr) throw new HttpError(404, 'Arrangement nicht gefunden.');
+  // vorhandene ECG-Datei zuerst entfernen (ersetzen)
+  const existing = arr.files.find(isEcgFile);
+  if (existing) {
+    const id = fileIdFromUrl(existing.fileUrl);
+    if (id) await deleteFile(cookie, id);
+  }
+  const safeTitle = song.name.replace(/[\\/:*?"<>|]/g, '').trim();
+  await uploadChordpro(cookie, arrangementId, `${safeTitle} — ECG.chordpro`, text);
+}
+
+/** Löscht die ECG-Version (Zurücksetzen auf Original). */
+export async function deleteEcgChordpro(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+): Promise<void> {
+  const song = await getSong(cookie, songId);
+  const arr = song.arrangements.find((a) => a.id === arrangementId);
+  if (!arr) throw new HttpError(404, 'Arrangement nicht gefunden.');
+  const existing = arr.files.find(isEcgFile);
+  if (!existing) return;
+  const id = fileIdFromUrl(existing.fileUrl);
+  if (id) await deleteFile(cookie, id);
 }
 
 /** Alle Songs einer Setlist (in Agenda-Reihenfolge). */
