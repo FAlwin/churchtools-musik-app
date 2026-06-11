@@ -64,6 +64,9 @@ export function ChordChart({
   const [textSize, setTextSize] = useState(20);
 
   const textInputRef = useRef<HTMLInputElement | null>(null);
+  const touchX = useRef<number | null>(null);
+  const touchScroll = useRef<number>(0);
+  const pendingLastPage = useRef(false);
 
   useWakeLock(wakePref);
 
@@ -86,13 +89,13 @@ export function ChordChart({
     layoutDeps: [fontSize, cols, lyricsOnly, fontId, drawMode],
   });
 
-  // Breite des Chart-Bereichs messen (für die Spaltenbreite je Seite)
-  const [bodyWidth, setBodyWidth] = useState(0);
+  // Sichtbare Breite messen (für die Spaltenbreite je Seite)
+  const [pageWidth, setPageWidth] = useState(0);
   useEffect(() => {
     const el = drawing.bodyRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    setBodyWidth(el.clientWidth);
-    const ro = new ResizeObserver(() => setBodyWidth(el.clientWidth));
+    setPageWidth(el.clientWidth);
+    const ro = new ResizeObserver(() => setPageWidth(el.clientWidth));
     ro.observe(el);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,19 +103,30 @@ export function ChordChart({
 
   // Spaltenbreite so, dass genau `cols` Spalten eine Seite füllen
   const colWidthPx =
-    bodyWidth > 0
-      ? Math.floor((bodyWidth - 2 * CONTENT_PAD - (cols - 1) * COLUMN_GAP) / cols)
+    pageWidth > 0
+      ? Math.floor((pageWidth - 2 * CONTENT_PAD - (cols - 1) * COLUMN_GAP) / cols)
       : undefined;
 
-  const paged = usePagedColumns(drawing.bodyRef, [song.id, fontSize, cols, lyricsOnly, fontId, bodyWidth]);
+  const paged = usePagedColumns(drawing.bodyRef, [song.id, fontSize, cols, lyricsOnly, fontId, pageWidth]);
 
-  // ── Persistenz pro Song / beim Songwechsel zurücksetzen ──
+  // ── Persistenz pro Song ──
   useEffect(() => {
     setSelectedKey(localStorage.getItem(`worship_key_${song.id}`) || null);
     setCapo(parseInt(localStorage.getItem(`worship_capo_${song.id}`) || '0', 10));
-    if (drawing.bodyRef.current) drawing.bodyRef.current.scrollLeft = 0; // zurück auf Seite 1
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, song.id]);
+
+  // Beim Songwechsel auf Seite 1 (oder ans Ende, wenn rückwärts geblättert)
+  useEffect(() => {
+    const el = drawing.bodyRef.current;
+    if (!el) return;
+    const r = requestAnimationFrame(() => {
+      el.scrollLeft = pendingLastPage.current ? el.scrollWidth : 0;
+      pendingLastPage.current = false;
+    });
+    return () => cancelAnimationFrame(r);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, song.id, pageWidth, fontSize, cols, lyricsOnly]);
 
   useEffect(() => {
     if (selectedKey) localStorage.setItem(`worship_key_${song.id}`, selectedKey);
@@ -123,17 +137,25 @@ export function ChordChart({
     localStorage.setItem(`worship_capo_${song.id}`, String(capo));
   }, [capo, song.id]);
 
-  // ── Navigation ──
-  function prev() {
-    if (idx > 0) {
-      drawing.saveDrawing(song.id);
-      setIdx(idx - 1);
-    }
-  }
+  // ── Einheitliche Navigation: erst durch die Seiten, dann zum nächsten/vorigen Lied ──
+  const atStart = idx === 0 && paged.page === 0;
+  const atEnd = idx === songs.length - 1 && paged.page >= paged.pageCount - 1;
+
   function next() {
-    if (idx < songs.length - 1) {
+    if (paged.page < paged.pageCount - 1) {
+      paged.goToPage(paged.page + 1);
+    } else if (idx < songs.length - 1) {
       drawing.saveDrawing(song.id);
       setIdx(idx + 1);
+    }
+  }
+  function prev() {
+    if (paged.page > 0) {
+      paged.goToPage(paged.page - 1);
+    } else if (idx > 0) {
+      drawing.saveDrawing(song.id);
+      pendingLastPage.current = true;
+      setIdx(idx - 1);
     }
   }
   function goBack() {
@@ -141,10 +163,34 @@ export function ChordChart({
     onBack();
   }
 
+  // Wischen: blättert Seiten (nativer Scroll); am Seitenrand wie die Pfeile zum Lied wechseln
+  function onTouchStart(e: React.TouchEvent) {
+    if (drawMode) return;
+    touchX.current = e.touches[0].clientX;
+    touchScroll.current = drawing.bodyRef.current?.scrollLeft ?? 0;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchX.current === null) return;
+    const el = drawing.bodyRef.current;
+    const d = touchX.current - e.changedTouches[0].clientX;
+    touchX.current = null;
+    if (!el || Math.abs(d) <= 55) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    const didScroll = Math.abs(el.scrollLeft - touchScroll.current) > 4;
+    if (didScroll) return; // native Seitenscroll hat schon geblättert
+    if (d > 0 && el.scrollLeft >= maxScroll - 2 && idx < songs.length - 1) {
+      next(); // war auf letzter Seite -> nächstes Lied
+    } else if (d < 0 && el.scrollLeft <= 2 && idx > 0) {
+      prev(); // war auf erster Seite -> voriges Lied
+    }
+  }
+
   function clearDrawing() {
     drawing.clearAll();
     setConfirmClear(false);
   }
+
+  const nextSong = idx < songs.length - 1 ? songs[idx + 1] : null;
 
   return (
     <Screen className={styles.chartScreen}>
@@ -176,12 +222,7 @@ export function ChordChart({
           <div className={styles.right}>
             <div className={styles.azGroup}>
               {onReload && (
-                <button
-                  className={styles.azBtn}
-                  onClick={onReload}
-                  disabled={reloading}
-                  title="Aktualisieren"
-                >
+                <button className={styles.azBtn} onClick={onReload} disabled={reloading} title="Aktualisieren">
                   <span className={reloading ? styles.spin : undefined}>↻</span>
                 </button>
               )}
@@ -289,18 +330,20 @@ export function ChordChart({
           />
         )}
 
-        {/* Seiten-Anzeige (nur bei mehr als einer Seite) */}
+        {/* Seiten-Anzeige oben rechts (nur bei mehr als einer Seite) */}
         {paged.pageCount > 1 && (
           <div className={styles.pageChip}>
-            {paged.page + 1} / {paged.pageCount}
+            Seite {paged.page + 1}/{paged.pageCount}
           </div>
         )}
 
-        {/* Chart-Body – seitenweise Spalten, horizontal blättern */}
+        {/* Chart-Body – seitenweise Spalten, durch Wischen/Pfeile blättern */}
         <div
           className={styles.body}
           ref={drawing.bodyRef}
           onScroll={paged.onScroll}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
           style={{ ['--chart-font' as string]: fontFam }}
         >
           <div
@@ -314,13 +357,7 @@ export function ChordChart({
               </div>
             ) : (
               sections.map((sec, i) => (
-                <Section
-                  key={i}
-                  section={sec}
-                  semitones={gripOffset}
-                  fontSize={fontSize}
-                  lyricsOnly={lyricsOnly}
-                />
+                <Section key={i} section={sec} semitones={gripOffset} fontSize={fontSize} lyricsOnly={lyricsOnly} />
               ))
             )}
           </div>
@@ -381,10 +418,7 @@ export function ChordChart({
 
         {/* Text-Eingabe-Overlay */}
         {drawing.pendingText && drawMode && (
-          <div
-            className={styles.textInputWrap}
-            style={{ left: drawing.pendingText.cx, top: drawing.pendingText.cy }}
-          >
+          <div className={styles.textInputWrap} style={{ left: drawing.pendingText.cx, top: drawing.pendingText.cy }}>
             <input
               ref={textInputRef}
               type="text"
@@ -414,30 +448,29 @@ export function ChordChart({
 
         {/* Footer */}
         <div className={styles.ftr}>
-          <button className={styles.navBtn} onClick={prev} disabled={idx === 0}>
+          <button className={styles.navBtn} onClick={prev} disabled={atStart}>
             ‹
           </button>
           <div className={styles.ftrCenter}>
-            <div className={styles.dots}>
-              {songs.map((_, i) => (
-                <div
-                  key={i}
-                  className={`${styles.dot}${i === idx ? ' ' + styles.on : ''}`}
-                  onClick={() => {
-                    drawing.saveDrawing(song.id);
-                    setIdx(i);
-                  }}
-                />
-              ))}
-            </div>
-            <div className={styles.ftrLabel}>
-              {idx + 1} / {songs.length}
-              {idx < songs.length - 1 && (
-                <span className={styles.ftrNext}> · weiter: {songs[idx + 1].title}</span>
-              )}
+            {paged.pageCount > 1 && (
+              <div className={styles.dots}>
+                {Array.from({ length: paged.pageCount }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`${styles.dot}${i === paged.page ? ' ' + styles.on : ''}`}
+                    onClick={() => paged.goToPage(i)}
+                  />
+                ))}
+              </div>
+            )}
+            <div className={styles.ftrInfo}>
+              <span className={styles.ftrSong}>
+                Lied {idx + 1}/{songs.length}
+              </span>
+              {nextSong && <span className={styles.ftrNext}>Nächstes Lied: {nextSong.title}</span>}
             </div>
           </div>
-          <button className={styles.navBtn} onClick={next} disabled={idx === songs.length - 1}>
+          <button className={styles.navBtn} onClick={next} disabled={atEnd}>
             ›
           </button>
         </div>

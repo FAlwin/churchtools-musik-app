@@ -13,6 +13,7 @@
   color: var(--text);
   white-space: pre-wrap; // bricht lange Zeilen um, behält Einrückung
   overflow-wrap: break-word;
+  text-wrap: pretty; // vermeidet einzelne Wörter am Zeilenende
 }
 
 .chordOnly {
@@ -57,5 +58,6 @@
   line-height: 1.45;
   white-space: pre-wrap; // langer Text umbricht an Leerzeichen, Akkord bleibt an der Silbe
   overflow-wrap: break-word;
+  text-wrap: pretty; // vermeidet einzelne Wörter am Zeilenende
   display: block;
 }
