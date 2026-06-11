@@ -91,11 +91,11 @@ churchtools-musik-app/
 
 ## Security-Checkliste
 - [x] .env + .gitignore korrekt eingerichtet
-- [ ] Zod-Validierung auf allen API-Routen (Schritt 7)
+- [x] Zod-Validierung auf allen API-Routen
 - [x] helmet eingerichtet
-- [x] express-rate-limit eingerichtet
+- [x] express-rate-limit eingerichtet (zusätzlich striktes Limit am Login)
 - [ ] Repository auf privat gestellt (kein Remote – vorerst lokal/NAS)
-- [ ] Authentifizierung (Schritt 7: persönlicher ChurchTools-Login)
+- [x] Authentifizierung: persönlicher ChurchTools-Login, Session in signiertem httpOnly-Cookie
 - [ ] HTTPS (via Cloudflare Tunnel beim Deployment)
 - [x] npm audit: zuletzt geprüft am 11.06.2026 – 3 moderate (esbuild/vite,
       nur Dev-Server, kein Prod-Risiko; Fix = vite@8 Breaking Change, zurückgestellt)
@@ -112,6 +112,8 @@ churchtools-musik-app/
 | 11.06.2026 | main   | Initial Setup (Git, Tooling, Struktur)      |
 | 11.06.2026 | main   | Server-Grundgerüst + Health-Endpoint        |
 | 11.06.2026 | main   | Frontend-MVP: alle 4 Screens + Chart-Logik (Mock-Daten), im Browser verifiziert |
+| 11.06.2026 | main   | ChurchTools-API erkundet, Datenmodell bestätigt |
+| 11.06.2026 | main   | Schritt 7: Backend-Proxy + Login + Setlist-Pipeline, gegen echte Daten getestet |
 
 ## So startest du die App lokal
 ```
@@ -122,10 +124,20 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
-- **Erledigt:** Schritte 1–6 (Setup, Tooling, Struktur, Sicherheits-Basis, CLAUDE.md,
-  Frontend-MVP mit allen Screens + Chart-Logik, im Browser verifiziert)
-- **Nächster Schritt:** Schritt 7 (Express-Proxy + persönlicher ChurchTools-Login).
-  Pausiert auf Userwunsch (11.06.2026) – braucht Klärung an der echten Instanz (siehe Offene Punkte).
+- **Erledigt:** Schritte 1–7. Frontend-MVP (Mock) + Backend (Express-Proxy, persönlicher
+  ChurchTools-Login, Setlist-Pipeline) – Backend gegen echte Instanz getestet.
+- **Nächster Schritt:** Schritt 8 – Frontend an das Backend anbinden (services/ + TanStack
+  Query statt Mock-Daten). Endpunkte: POST /api/auth/login, GET /api/auth/me, POST
+  /api/auth/logout, GET /api/services, GET /api/services/:eventId/setlist.
+- **Bekannte Datenlücke:** Nicht alle Arrangements haben eine `.chordpro`-Datei (manche nur
+  `.sng`/`.txt`) → `chordpro` kommt dann leer; Frontend muss „keine Akkorddatei" anzeigen.
+
+## API des eigenen Backends (für Schritt 8)
+- `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt Session-Cookie
+- `POST /api/auth/logout` → Session löschen
+- `GET  /api/auth/me` → `{authenticated, user?}`
+- `GET  /api/services?from=&to=` → `Service[]` (nur mit Setlist; Default-Fenster -7d…+42d)
+- `GET  /api/services/:eventId/setlist` → `SetlistSong[]` (inkl. ChordPro)
 
 ## ChurchTools-API – bestätigtes Datenmodell (11.06.2026, Instanz v3.133.0)
 Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend).

@@ -4,6 +4,8 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { config } from './config.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import authRoutes from './routes/auth.js';
+import setlistRoutes from './routes/setlist.js';
 
 const app = express();
 
@@ -27,7 +29,8 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: config.nodeEnv });
 });
 
-// ChurchTools-Proxy & Auth folgen in Schritt 7.
+app.use('/api/auth', authRoutes);
+app.use('/api', setlistRoutes);
 
 // ── Fehlerbehandlung (immer zuletzt) ────────────────────────
 app.use(notFoundHandler);
