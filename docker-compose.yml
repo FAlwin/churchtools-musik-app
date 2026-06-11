@@ -14,12 +14,15 @@ services:
     ports:
       - '3001:3001'
 
-  # Cloudflare-Tunnel: macht die App sicher von außen erreichbar.
-  # TUNNEL_TOKEN aus dem Cloudflare-Dashboard in die .env eintragen.
+  # Cloudflare-Tunnel: OPTIONAL (externer Zugang). Startet standardmäßig NICHT
+  # (Profil "tunnel"). Für lokalen WLAN-Betrieb einfach weglassen.
+  # Aktivieren: TUNNEL_TOKEN in .env setzen und die Zeile `profiles:` entfernen,
+  # dann das Projekt neu erstellen.
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: worship-tunnel
     restart: unless-stopped
+    profiles: ['tunnel']
     command: tunnel --no-autoupdate run
     environment:
       TUNNEL_TOKEN: ${TUNNEL_TOKEN}

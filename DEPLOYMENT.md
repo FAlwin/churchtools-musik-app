@@ -10,8 +10,10 @@ Ein zweiter Container (`cloudflared`) stellt die Verbindung nach außen her.
 
 ## 0. Voraussetzungen
 - Synology-NAS mit **Container Manager** (DSM 7) – siehe Schritt 1.
-- Ein **Cloudflare-Konto** (kostenlos) und eine Domain bei Cloudflare
-  (z.B. `ecg-donrath.de`). Die App bekommt dann z.B. `musik.ecg-donrath.de`.
+- **Empfohlenes Vorgehen:** zuerst **lokal im WLAN** in Betrieb nehmen
+  (Schritte 1–3, 5, 6). Der externe Zugang per **Cloudflare-Tunnel** (Schritt 4)
+  ist **optional** und braucht eine bei Cloudflare verwaltete Domain – das kann
+  später kommen.
 
 ---
 
@@ -38,13 +40,17 @@ Im Projektordner auf dem NAS eine Datei `.env` mit diesem Inhalt erstellen
 ```
 CHURCHTOOLS_BASE_URL=https://ecg-donrath.church.tools
 SESSION_SECRET=<langer-zufallsstring>
-TUNNEL_TOKEN=<kommt-aus-schritt-4>
 ```
 - `SESSION_SECRET`: ein langer Zufallsstring (z.B. am Mac im Terminal:
   `openssl rand -hex 32` – die Ausgabe einsetzen).
 - `CHURCHTOOLS_LOGIN_TOKEN` wird **nicht** gebraucht (war nur für die Entwicklung).
+- `TUNNEL_TOKEN` nur nötig, wenn du den externen Zugang (Schritt 4) einrichtest.
 
-## 4. Cloudflare-Tunnel erstellen
+## 4. Cloudflare-Tunnel erstellen *(OPTIONAL – externer Zugang, später)*
+Nur nötig, wenn die App auch von außerhalb des WLANs erreichbar sein soll. Setzt
+voraus, dass eine Domain bei **Cloudflare** verwaltet wird. Zum Aktivieren danach
+in der `docker-compose.yml` beim Dienst `cloudflared` die Zeile `profiles: ['tunnel']`
+entfernen und das Projekt neu erstellen.
 1. Auf **https://one.dash.cloudflare.com** anmelden → **Networks → Tunnels**.
 2. **Create a tunnel** → Typ **Cloudflared** → Namen vergeben (z.B. `worship`).
 3. Cloudflare zeigt einen **Token** (langer Text nach `--token `). Diesen Token
@@ -60,13 +66,14 @@ TUNNEL_TOKEN=<kommt-aus-schritt-4>
 2. Projektname `worship-charts`, Pfad = der hochgeladene Ordner; er erkennt die
    `docker-compose.yml` automatisch.
 3. **Erstellen/Starten**. Beim ersten Mal baut er das Image (dauert ein paar Minuten).
-4. Logs prüfen: Der `app`-Container sollte „Server läuft …" zeigen,
-   `cloudflared` „Registered tunnel connection".
+   Standardmäßig startet nur der `app`-Container (lokal); `cloudflared` nur, wenn
+   du den Tunnel aktiviert hast (Schritt 4).
+4. Logs prüfen: Der `app`-Container sollte „Server läuft …" zeigen.
 
 ## 6. Aufrufen & als App installieren
-- Im Browser `https://musik.ecg-donrath.de` öffnen → Login-Seite erscheint.
+- **Lokal im WLAN:** `http://<NAS-IP>:3001` im Browser öffnen → Login erscheint.
 - Auf iPad/iPhone: Teilen-Symbol → **„Zum Home-Bildschirm"** → läuft als PWA im Vollbild.
-- Lokal im WLAN alternativ: `http://<NAS-IP>:3001` (ohne HTTPS).
+- Mit Cloudflare-Tunnel (Schritt 4) zusätzlich von außen: `https://musik.<deine-domain>`.
 
 ---
 
