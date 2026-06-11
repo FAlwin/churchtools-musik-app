@@ -23,3 +23,6 @@ npm-debug.log*
 
 # Test / Coverage
 coverage/
+
+# versehentliche shared-Build-Artefakte
+shared/types/*.js
