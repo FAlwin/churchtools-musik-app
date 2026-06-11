@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -9,8 +11,17 @@ import setlistRoutes from './routes/setlist.js';
 
 const app = express();
 
+// Pfad zur gebauten Web-App (client/dist), relativ zu dieser Datei
+const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
+
+// Hinter dem Cloudflare-Tunnel/Reverse-Proxy: X-Forwarded-Proto vertrauen,
+// damit secure-Cookies korrekt gesetzt werden.
+if (config.isProduction) app.set('trust proxy', 1);
+
 // ── Sicherheit & Basis-Middleware ───────────────────────────
-app.use(helmet());
+// CSP aus: die App lädt externe Schriftarten + nutzt blob/worker (pdf.js).
+// Interne Gemeinde-App; die übrigen Helmet-Header bleiben aktiv.
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(express.json());
 app.use(cookieParser(config.sessionSecret));
 
@@ -31,6 +42,16 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api', setlistRoutes);
+
+// ── Im Produktionsbetrieb: die gebaute Web-App ausliefern ───
+if (config.isProduction) {
+  app.use(express.static(clientDist));
+  // SPA-Fallback: alle Nicht-API-Pfade auf index.html
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
 
 // ── Fehlerbehandlung (immer zuletzt) ────────────────────────
 app.use(notFoundHandler);

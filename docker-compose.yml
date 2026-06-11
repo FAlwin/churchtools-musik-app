@@ -1,0 +1,27 @@
+# Deployment auf dem Synology-NAS (Container Manager).
+# Werte kommen aus der .env-Datei im selben Ordner.
+services:
+  app:
+    build: .
+    container_name: worship-charts
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      CHURCHTOOLS_BASE_URL: ${CHURCHTOOLS_BASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+    # Lokaler Zugriff im WLAN über http://<NAS-IP>:3001 (optional, kann entfallen)
+    ports:
+      - '3001:3001'
+
+  # Cloudflare-Tunnel: macht die App sicher von außen erreichbar.
+  # TUNNEL_TOKEN aus dem Cloudflare-Dashboard in die .env eintragen.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: worship-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      - app
