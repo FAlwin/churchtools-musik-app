@@ -11,7 +11,8 @@
   font-family: var(--chart-font, 'JetBrains Mono', monospace);
   line-height: 1.55;
   color: var(--text);
-  white-space: pre;
+  white-space: pre-wrap; // bricht lange Zeilen um, behält Einrückung
+  overflow-wrap: break-word;
 }
 
 .chordOnly {
@@ -37,6 +38,7 @@
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
+  min-width: 0; // erlaubt dem Paar zu schrumpfen, damit langer Text umbrechen kann
 }
 
 .cChord {
@@ -53,6 +55,7 @@
   font-family: var(--chart-font, 'JetBrains Mono', monospace);
   color: var(--text);
   line-height: 1.45;
-  white-space: pre;
+  white-space: pre-wrap; // langer Text umbricht an Leerzeichen, Akkord bleibt an der Silbe
+  overflow-wrap: break-word;
   display: block;
 }
