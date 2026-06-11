@@ -521,6 +521,20 @@
   opacity: 0.5;
 }
 
+.createBtn {
+  margin-top: 6px;
+  height: 46px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 11px;
+  background: var(--teal);
+  color: var(--cream);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+}
+
 // ── Annotations-Leinwand ──
 .canvas {
   position: absolute;

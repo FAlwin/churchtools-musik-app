@@ -89,6 +89,10 @@ export function ChordChart({
   const hasEcg = song.chordproEcg !== null;
   const displayedChordpro = !showOriginal && song.chordproEcg ? song.chordproEcg : song.chordpro;
   const sections = parseChordPro(displayedChordpro);
+  // Startvorlage, wenn noch gar kein Text existiert (neues Lied erfassen)
+  const editorInitial =
+    displayedChordpro ||
+    `{title: ${song.title}}\n{key: ${song.targetKey || song.originalKey || 'C'}}\n\n{comment: Vers 1}\n[${song.targetKey || 'C'}]Hier Text mit Akkorden eingeben\n\n{comment: Chorus}\n`;
   const fontFam = fontFamilyById(fontId);
   // Schwarz im Dark Mode auf Creme umstellen, damit sichtbar
   const drawColors = DRAW_COLORS.map((c) => (c === '#14110F' ? (theme === 'dark' ? '#FFFCF2' : '#14110F') : c));
@@ -488,6 +492,15 @@ export function ChordChart({
               <div className={styles.empty}>
                 <div className={styles.emptyIcon}>🎵</div>
                 <div>Für dieses Lied ist keine Akkord-Datei in ChurchTools hinterlegt.</div>
+                <button
+                  className={styles.createBtn}
+                  onClick={() => {
+                    setEditorError(null);
+                    setShowEditor(true);
+                  }}
+                >
+                  Akkord-Datei erstellen
+                </button>
               </div>
             ) : (
               sections.map((sec, i) => (
@@ -593,7 +606,7 @@ export function ChordChart({
         {showEditor && (
           <ChordEditor
             songTitle={song.title}
-            initialText={displayedChordpro}
+            initialText={editorInitial}
             hasEcg={hasEcg}
             saving={editorSaving}
             error={editorError}
