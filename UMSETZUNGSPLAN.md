@@ -80,24 +80,29 @@ Aus Vorlage Abschnitt 2 befüllt (Tech-Stack, Konventionen, Security-Checkliste,
 - Einstellungen + Annotationen via localStorage
 - PWA-Manifest + Icons
 
-### ⬜ Schritt 7 – Backend: ChurchTools-Proxy & persönlicher Login *(nächster Schritt, pausiert)*
+### ✅ Schritt 7 – Backend: ChurchTools-Proxy & persönlicher Login *(erledigt)*
 - `routes/` → `controllers/` → `services/churchtools.ts`
-- `POST /api/auth/login`: Zod-validiert, ruft ChurchTools `POST /api/login`, Session serverseitig,
-  signiertes httpOnly-Cookie (Passwort verlässt den Browser nicht dauerhaft)
-- Proxy-Routen: events, agenda, songs, arrangements (inkl. Tonart-Feld), files
+- `POST /api/auth/login`: Zod-validiert, Session serverseitig, signiertes httpOnly-Cookie
+- Proxy: events, agenda, songs/arrangements (inkl. `key`), Datei-Download
 - helmet, strenges Rate-Limit am Login, zentraler Error-Handler
 
-### ⬜ Schritt 8 – Frontend an Backend anbinden
-`client/src/services/` + TanStack Query ersetzen die Mock-Daten:
-Gottesdienste → Setlist → Arrangement → `.chordpro` laden → automatisch auf Ziel-Tonart
-transponieren. Manuelles Transponieren bleibt lokal (kein Zurückschreiben).
+### ✅ Schritt 8 – Frontend an Backend anbinden *(erledigt)*
+`services/` + TanStack Query statt Mock-Daten; automatisches Transponieren auf Ziel-Tonart.
 
-### ⬜ Schritt 9 – Deployment
+### ✅ Phase 3 – Editor & Dokumente *(erledigt, vom User abgenommen 11.06.2026)*
+- **ChordPro-Editor:** Text bearbeiten mit Live-Vorschau; speichert als separate
+  `"<Titel> — ECG.chordpro"` in ChurchTools (Original bleibt), Umschalter ECG/Original,
+  „Zurücksetzen" löscht die ECG-Datei. Auch Neuanlage, wenn keine Datei existiert.
+- **Dokumenten-Viewer:** PDF/Bild eines Arrangements als Anzeige-Quelle (statt Akkorde),
+  integriert im normalen Ablauf; mehrseitiges Blättern, Zoom/Anpassen pro Seite (gespeichert),
+  Anmerkungen pro Seite. Auswahl pro Lied im Titel-Menü.
+
+### ⬜ Schritt 9 – Deployment *(nächster Schritt)*
 docker-compose.yml (client+server), Container auf Synology-NAS, Cloudflare Tunnel für HTTPS+Domain.
 PWA-Installation + Wake Lock testen. Offline-Cache (Service Worker) für Setlisten.
 
 ### Schritt 10 (optional, später)
-Liederbibliothek-Suche · Admin-Upload in der App · ChordPro-Editor · Metronom/BPM
+Liederbibliothek-Suche · Metronom/BPM · weiterer Viewer-Feinschliff
 
 ## Vor Schritt 7 an der echten ChurchTools-Instanz zu klären
 1. Exakte API-Kette: Agenda → Song → Arrangement → Datei → Tonart-Feld
