@@ -78,6 +78,7 @@
   align-items: center;
   gap: 8px;
   margin-top: 3px;
+  min-height: 28px; // feste Höhe, damit die Leiste bei „Nur Text" nicht schrumpft
 }
 
 .keyBtn {

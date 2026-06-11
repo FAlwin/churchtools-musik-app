@@ -37,24 +37,25 @@ export function DrawToolbar({
         className={`${styles.toolBtn}${drawTool === 'pen' ? ' ' + styles.on : ''}`}
         onClick={() => setDrawTool('pen')}
         title="Stift"
+        style={{ fontSize: 17 }}
       >
-        ✏
+        ✏️
       </button>
       <button
         className={`${styles.toolBtn}${drawTool === 'marker' ? ' ' + styles.on : ''}`}
         onClick={() => setDrawTool('marker')}
         title="Marker"
-        style={{ fontSize: 12, fontWeight: 700 }}
+        style={{ fontSize: 17 }}
       >
-        M
+        🖍️
       </button>
       <button
         className={`${styles.toolBtn}${drawTool === 'eraser' ? ' ' + styles.on : ''}`}
         onClick={() => setDrawTool('eraser')}
         title="Radierer"
-        style={{ fontSize: 12 }}
+        style={{ fontSize: 17 }}
       >
-        ◻
+        🧽
       </button>
       <button
         className={`${styles.toolBtn}${drawTool === 'text' ? ' ' + styles.on : ''}`}

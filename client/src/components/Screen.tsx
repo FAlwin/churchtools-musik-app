@@ -55,6 +55,7 @@ function PullScroll({ children, onRefresh }: { children: ReactNode; onRefresh: (
         )}
       </div>
       <div style={{ transform: refreshing ? 'translateY(0)' : `translateY(${pull}px)`, transition: pull === 0 ? 'transform .2s' : 'none' }}>
+        <div className={styles.refreshHint}>↓ Zum Aktualisieren nach unten ziehen</div>
         {children}
       </div>
     </div>

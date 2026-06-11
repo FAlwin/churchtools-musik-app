@@ -275,7 +275,7 @@ export function ChordChart({
               onClick={() => setDrawMode((d) => !d)}
               title="Anmerkungen"
             >
-              ✏
+              🖍️
             </button>
           </div>
         </div>

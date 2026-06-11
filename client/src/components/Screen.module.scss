@@ -37,3 +37,12 @@
   font-weight: 700;
   transition: transform 0.15s;
 }
+
+// dezenter Hinweis am Listenanfang
+.refreshHint {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text3);
+  padding: 8px 12px 2px;
+  font-weight: 500;
+}
