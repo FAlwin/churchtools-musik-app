@@ -1,5 +1,4 @@
 import type { Request, Response, NextFunction } from 'express';
-import { config } from '../config.js';
 import { HttpError } from './errorHandler.js';
 
 const COOKIE_NAME = 'ct_session';
@@ -14,11 +13,16 @@ declare global {
   }
 }
 
-/** Speichert das ChurchTools-Session-Cookie signiert + httpOnly im Client-Cookie. */
-export function setSession(res: Response, churchToolsCookie: string): void {
+/**
+ * Speichert das ChurchTools-Session-Cookie signiert + httpOnly im Client-Cookie.
+ * `secure` richtet sich nach der tatsächlichen Verbindung (req.secure): über HTTPS
+ * (z.B. Cloudflare) secure, über reines HTTP im LAN nicht – sonst speichert der
+ * Browser das Cookie dort nicht.
+ */
+export function setSession(res: Response, churchToolsCookie: string, secure: boolean): void {
   res.cookie(COOKIE_NAME, churchToolsCookie, {
     httpOnly: true,
-    secure: config.isProduction,
+    secure,
     sameSite: 'lax',
     signed: true,
     maxAge: 1000 * 60 * 60 * 12, // 12 Stunden

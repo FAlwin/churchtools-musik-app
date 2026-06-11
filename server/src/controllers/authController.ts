@@ -13,7 +13,7 @@ const loginSchema = z.object({
 export async function postLogin(req: Request, res: Response): Promise<void> {
   const { email, password } = loginSchema.parse(req.body);
   const { cookie, user } = await ct.login(email, password);
-  setSession(res, cookie);
+  setSession(res, cookie, req.secure);
   const status: AuthStatus = { authenticated: true, user };
   res.json(status);
 }
