@@ -40,6 +40,15 @@ export interface SetlistSong {
   chordpro: string;
   /** Bearbeitete ECG-Version, falls vorhanden (separate .chordpro-Datei) */
   chordproEcg: string | null;
+  /** Anzeigbare Dokumente des Arrangements (PDF / Bild) */
+  documents: SongDocument[];
+}
+
+/** Ein anzeigbares Dokument (PDF oder Bild) eines Arrangements. */
+export interface SongDocument {
+  fileId: number;
+  name: string;
+  type: 'pdf' | 'image';
 }
 
 /** Komplette Setlist eines Gottesdienstes. */

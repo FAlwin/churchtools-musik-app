@@ -6,6 +6,7 @@ import {
   getSetlist,
   putChordpro,
   deleteChordpro,
+  getFile,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -16,5 +17,6 @@ router.get('/services', asyncHandler(getServices));
 router.get('/services/:eventId/setlist', asyncHandler(getSetlist));
 router.put('/songs/:songId/chordpro', asyncHandler(putChordpro));
 router.delete('/songs/:songId/chordpro', asyncHandler(deleteChordpro));
+router.get('/songs/:songId/files/:fileId', asyncHandler(getFile));
 
 export default router;

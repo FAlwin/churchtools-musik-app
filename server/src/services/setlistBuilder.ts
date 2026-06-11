@@ -3,7 +3,7 @@
  *  - Liste der Gottesdienste, die tatsächlich eine Setlist (Agenda mit Songs) haben
  *  - die Songs einer Setlist inkl. heruntergeladenem ChordPro-Inhalt
  */
-import type { Service, SetlistSong } from '@shared/types/index';
+import type { Service, SetlistSong, SongDocument } from '@shared/types/index';
 import {
   getAgenda,
   getEvents,
@@ -24,6 +24,18 @@ function isEcgFile(f: CtArrangementFile): boolean {
 }
 function isOriginalChordpro(f: CtArrangementFile): boolean {
   return /\.chordpro$/i.test(f.name) && !isEcgFile(f);
+}
+
+/** PDF/Bild-Dokumente eines Arrangements (für die Dokumentenanzeige). */
+function documentsOf(files: CtArrangementFile[]): SongDocument[] {
+  const out: SongDocument[] = [];
+  for (const f of files) {
+    const fileId = fileIdFromUrl(f.fileUrl);
+    if (fileId === null) continue;
+    if (/\.pdf$/i.test(f.name)) out.push({ fileId, name: f.name, type: 'pdf' });
+    else if (/\.(jpe?g|png|gif|webp)$/i.test(f.name)) out.push({ fileId, name: f.name, type: 'image' });
+  }
+  return out;
 }
 
 /** Liest einen Metadaten-Wert aus ChordPro-Text ({key: E} → "E"). */
@@ -91,7 +103,22 @@ async function buildSong(cookie: string, agendaSong: CtAgendaSong): Promise<Setl
     ccli: song.ccli ?? null,
     chordpro,
     chordproEcg,
+    documents: arr ? documentsOf(arr.files) : [],
   };
+}
+
+/** Findet die ChurchTools-fileUrl einer Datei (per Datei-ID) zum Durchreichen. */
+export async function resolveFileUrl(
+  cookie: string,
+  songId: number,
+  fileId: number,
+): Promise<string> {
+  const song = await getSong(cookie, songId);
+  for (const arr of song.arrangements) {
+    const f = arr.files.find((x) => fileIdFromUrl(x.fileUrl) === fileId);
+    if (f) return f.fileUrl;
+  }
+  throw new HttpError(404, 'Datei nicht gefunden.');
 }
 
 /** Erzeugt/aktualisiert die bearbeitete ECG-Version eines Arrangements. */

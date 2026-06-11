@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { SetlistSong } from '@shared/types/index';
+import type { SetlistSong, SongDocument } from '@shared/types/index';
 import { Screen } from '../components/Screen';
 import { Section } from '../components/Section';
 import { KeyPicker } from '../components/KeyPicker';
@@ -7,6 +7,8 @@ import { CapoPicker } from '../components/CapoPicker';
 import { DrawToolbar } from '../components/DrawToolbar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
+import { DocumentViewer } from '../components/DocumentViewer';
+import { Sheet } from '../components/Sheet';
 import { saveChordpro, deleteChordpro } from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
@@ -67,6 +69,8 @@ export function ChordChart({
   const [editorSaving, setEditorSaving] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(false);
+  const [showDocPicker, setShowDocPicker] = useState(false);
+  const [activeDoc, setActiveDoc] = useState<SongDocument | null>(null);
 
   const [drawMode, setDrawMode] = useState(false);
   const [drawColor, setDrawColor] = useState(DRAW_COLORS[0]);
@@ -141,8 +145,17 @@ export function ChordChart({
     setCols(parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
     setLyricsOnly(localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
     setShowOriginal(false); // beim Liedwechsel wieder die bevorzugte Version zeigen
+    setActiveDoc(null);
+    setShowDocPicker(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, song.id]);
+
+  // Dokument öffnen: bei einem direkt, bei mehreren Auswahl zeigen
+  function openDocuments() {
+    setShowSongMenu(false);
+    if (song.documents.length === 1) setActiveDoc(song.documents[0]);
+    else if (song.documents.length > 1) setShowDocPicker(true);
+  }
 
   useEffect(() => {
     localStorage.setItem(`worship_fs_${song.id}`, String(fontSize));
@@ -408,6 +421,12 @@ export function ChordChart({
                 <span>Text bearbeiten</span>
                 <span className={styles.mmValue}>🖉</span>
               </button>
+              {song.documents.length > 0 && (
+                <button className={styles.mmItem} onClick={openDocuments}>
+                  <span>Dokumente (PDF/Bild)</span>
+                  <span className={styles.mmValue}>{song.documents.length}</span>
+                </button>
+              )}
               {hasEcg && (
                 <>
                   <div className={styles.menuLbl} style={{ marginTop: 6 }}>
@@ -601,6 +620,28 @@ export function ChordChart({
             onCancel={() => setConfirmClear(false)}
           />
         )}
+
+        {/* Dokument-Auswahl (bei mehreren Dateien) */}
+        {showDocPicker && (
+          <Sheet title="Dokumente" onClose={() => setShowDocPicker(false)}>
+            {song.documents.map((d) => (
+              <button
+                key={d.fileId}
+                className={styles.docRow}
+                onClick={() => {
+                  setActiveDoc(d);
+                  setShowDocPicker(false);
+                }}
+              >
+                <span>{d.type === 'pdf' ? '📄' : '🖼️'}</span>
+                <span className={styles.docName}>{d.name}</span>
+              </button>
+            ))}
+          </Sheet>
+        )}
+
+        {/* Dokument-Viewer (Vollbild) */}
+        {activeDoc && <DocumentViewer songId={song.id} doc={activeDoc} onClose={() => setActiveDoc(null)} />}
 
         {/* Text-Editor (Vollbild) */}
         {showEditor && (

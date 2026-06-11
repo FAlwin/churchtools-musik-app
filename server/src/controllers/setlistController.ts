@@ -5,7 +5,9 @@ import {
   getSetlistSongs,
   saveEcgChordpro,
   deleteEcgChordpro,
+  resolveFileUrl,
 } from '../services/setlistBuilder.js';
+import { fetchFileBytes } from '../services/churchtools.js';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -49,6 +51,18 @@ export async function putChordpro(req: Request, res: Response): Promise<void> {
   const { arrangementId, text } = editSchema.parse(req.body);
   await saveEcgChordpro(req.ctCookie as string, songId, arrangementId, text);
   res.json({ ok: true });
+}
+
+/** GET /api/songs/:songId/files/:fileId – Datei (PDF/Bild) aus ChurchTools durchreichen. */
+export async function getFile(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const fileId = idSchema.parse(req.params.fileId);
+  const cookie = req.ctCookie as string;
+  const fileUrl = await resolveFileUrl(cookie, songId, fileId);
+  const { buffer, contentType } = await fetchFileBytes(cookie, fileUrl);
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Cache-Control', 'private, max-age=300');
+  res.send(buffer);
 }
 
 const deleteSchema = z.object({ arrangementId: z.coerce.number().int().positive() });

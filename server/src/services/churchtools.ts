@@ -159,6 +159,17 @@ export function fileIdFromUrl(fileUrl: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
+/** Lädt eine Datei als Bytes + Content-Type (zum Durchreichen an den Client). */
+export async function fetchFileBytes(
+  cookie: string,
+  fileUrl: string,
+): Promise<{ buffer: Buffer; contentType: string }> {
+  const res = await fetch(fileUrl, { headers: { Cookie: cookie } });
+  if (!res.ok) throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
+  const buffer = Buffer.from(await res.arrayBuffer());
+  return { buffer, contentType: res.headers.get('content-type') ?? 'application/octet-stream' };
+}
+
 /** Holt ein CSRF-Token (für schreibende Anfragen mit Cookie-Session nötig). */
 async function getCsrfToken(cookie: string): Promise<string> {
   const res = await fetch(`${BASE}/api/csrftoken`, {
