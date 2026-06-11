@@ -56,6 +56,18 @@ export function DocumentView({
 
   const url = `/api/songs/${songId}/files/${doc.fileId}`;
   const storeKey = (p: number) => `worship_docdraw_${doc.fileId}_${p}`;
+  const tfKey = (p: number) => `worship_doctf_${doc.fileId}_${p}`;
+
+  // aktuellen Zoom/Ausschnitt der Seite p sichern
+  function saveTransform(p: number) {
+    const s = transformRef.current?.instance?.transformState;
+    if (s) {
+      localStorage.setItem(
+        tfKey(p),
+        JSON.stringify({ scale: s.scale, positionX: s.positionX, positionY: s.positionY }),
+      );
+    }
+  }
 
   // Dokument laden → jede Seite in eine eigene (offscreen) Leinwand rendern
   useEffect(() => {
@@ -130,10 +142,30 @@ export function DocumentView({
       img.onload = () => annoRef.current?.getContext('2d')?.drawImage(img, 0, 0);
       img.src = saved;
     }
-    // neue Seite immer wieder bildschirmfüllend zeigen (Zoom zurücksetzen)
-    transformRef.current?.resetTransform(0);
+    // gespeicherten Zoom/Ausschnitt dieser Seite wiederherstellen (sonst bildschirmfüllend)
+    const tf = localStorage.getItem(tfKey(pageIndex));
+    requestAnimationFrame(() => {
+      if (tf) {
+        try {
+          const t = JSON.parse(tf) as { scale: number; positionX: number; positionY: number };
+          transformRef.current?.setTransform(t.positionX, t.positionY, t.scale, 0);
+          return;
+        } catch {
+          /* ungültig → zurücksetzen */
+        }
+      }
+      transformRef.current?.resetTransform(0);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, pageIndex]);
+
+  // Beim Verlassen des Anpassen-Modus den Ausschnitt der aktuellen Seite sichern
+  const prevAdjust = useRef(adjust);
+  useEffect(() => {
+    if (prevAdjust.current && !adjust) saveTransform(pageIndex);
+    prevAdjust.current = adjust;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adjust]);
 
   // Löschen (aktuelle Seite) über gemeinsame Werkzeugleiste
   useEffect(() => {
@@ -198,10 +230,12 @@ export function DocumentView({
 
   // ── Blättern / Liednavigation (nur fixiert, ohne Zeichnen) ──
   function pageForward() {
+    saveTransform(pageIndex); // aktuellen Ausschnitt der Seite merken
     if (pageIndex < pageCount - 1) setPageIndex(pageIndex + 1);
     else onNext();
   }
   function pageBackward() {
+    saveTransform(pageIndex);
     if (pageIndex > 0) setPageIndex(pageIndex - 1);
     else onPrev();
   }
