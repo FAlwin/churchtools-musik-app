@@ -101,10 +101,10 @@ churchtools-musik-app/
       nur Dev-Server, kein Prod-Risiko; Fix = vite@8 Breaking Change, zurückgestellt)
 
 ## Deployment
-- **Ziel:** Synology NAS via Docker + Cloudflare Tunnel
-- **Domain:** noch offen
-- **docker-compose.yml:** noch nicht angelegt (Schritt 9)
-- **Deployment-Anleitung:** wird beim ersten Deployment ergänzt
+- **Ziel:** Synology NAS via Docker (+ Cloudflare Tunnel optional) → **umgesetzt**.
+- **docker-compose.yml + Dockerfile:** vorhanden; ein Container liefert API + App aus.
+- **Anleitung:** `DEPLOYMENT.md` (Schritt-für-Schritt, Synology Container Manager).
+- **Domain/HTTPS:** noch offen (Cloudflare-Tunnel optional; bisher lokal über HTTP).
 
 ## Changelog
 | Datum      | Branch | Was                                         |
@@ -118,6 +118,8 @@ churchtools-musik-app/
 | 11.06.2026 | main   | Chart-UX-Feinschliff (Blättern, Schriftarten, pro-Lied-Einstellungen, Steuerung) |
 | 11.06.2026 | main   | ChordPro-Editor mit Rückspeicherung als ECG-Version (gegen Test-Lied verifiziert) |
 | 11.06.2026 | main   | Dokumenten-Viewer (PDF/Bild) integriert: Anzeige-Auswahl, Blättern, Zoom/Anpassen pro Seite, Anmerkungen |
+| 11.06.2026 | main   | Schritt 9: Deployment-Setup (Docker + Cloudflare optional) |
+| 11.06.2026 | main   | **Auf NAS deployt** (Container Manager), lokal im WLAN live; Cookie-über-HTTP-Fix |
 
 ## So startest du die App lokal
 ```
@@ -128,12 +130,26 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
-- **Erledigt:** Schritte 1–8 **plus** Phase-3-Features: ChordPro-Editor (Rückspeicherung
-  als ECG-Version) und Dokumenten-Viewer (PDF/Bild inkl. Blättern, Zoom/Anpassen pro Seite,
-  Anmerkungen). App ist funktional vollständig und vom User abgenommen (11.06.2026).
-- **Nächster Schritt:** Schritt 9 – Deployment (Docker auf NAS + Cloudflare Tunnel).
-- **Offen / später:** Login-Token aus `.env` neu erzeugen/entfernen (nur Dev-Hilfe);
-  Remote-Repo optional; Feinschliff am Viewer im echten Einsatz.
+- **Erledigt:** Schritte 1–9. App funktional vollständig (inkl. ChordPro-Editor +
+  Dokumenten-Viewer), vom User abgenommen, und **auf dem Synology-NAS deployt**
+  (Container Manager, Projekt `worship-charts`), lokal im WLAN live unter
+  `http://<NAS-IP>:3001` (NAS-IP 192.168.10.188).
+- **Offen / optional:** externer Zugang per Cloudflare-Tunnel (Domain müsste zu
+  Cloudflare umziehen – `ecg-donrath.de` liegt aktuell woanders); Login-Token aus
+  lokaler Dev-`.env` neu erzeugen/entfernen; Remote-Repo optional.
+
+## Deployment-Stand (NAS)
+- Liegt auf dem NAS unter der `docker`-Freigabe: `docker/churchtools-musik-app`
+  (vom Mac über die gemountete Freigabe kopiert, ohne node_modules/.git/Dev-.env).
+- Container Manager → Projekt `worship-charts` (aus `docker-compose.yml`), Port 3001.
+- Prod-`.env` auf dem NAS: `CHURCHTOOLS_BASE_URL` + `SESSION_SECRET` (kein Login-Token!).
+- **Wichtige Lernpunkte fürs Re-Deploy:**
+  - Updates: Code in den NAS-Ordner kopieren, dann Projekt **neu erstellen** –
+    bei Zweifel an Cache: **Projekt löschen + Image löschen + neu erstellen** (sonst
+    nutzt Docker alten Stand; passiert bei Kopie über SMB).
+  - Cookie: bewusst **ohne `secure`**-Flag (LAN läuft über HTTP; sonst speichert der
+    Browser das Session-Cookie nicht → „nicht angemeldet" nach Login).
+  - `trust proxy` ist in Produktion gesetzt (für späteren HTTPS-Tunnel).
 - **So lokal starten:** `npm run dev:server` UND `npm run dev:client` (beide!). Der Vite-
   Dev-Proxy leitet `/api` an `localhost:3001` weiter.
 - **Bekannte Datenlücke:** Nicht alle Arrangements haben eine `.chordpro`-Datei (manche nur

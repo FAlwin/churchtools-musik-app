@@ -97,12 +97,15 @@ Aus Vorlage Abschnitt 2 befüllt (Tech-Stack, Konventionen, Security-Checkliste,
   integriert im normalen Ablauf; mehrseitiges Blättern, Zoom/Anpassen pro Seite (gespeichert),
   Anmerkungen pro Seite. Auswahl pro Lied im Titel-Menü.
 
-### ⬜ Schritt 9 – Deployment *(nächster Schritt)*
-docker-compose.yml (client+server), Container auf Synology-NAS, Cloudflare Tunnel für HTTPS+Domain.
-PWA-Installation + Wake Lock testen. Offline-Cache (Service Worker) für Setlisten.
+### ✅ Schritt 9 – Deployment *(lokal erledigt 11.06.2026)*
+Dockerfile + docker-compose.yml; ein Container liefert API + App aus. **Auf dem
+Synology-NAS deployt** (Container Manager, Projekt `worship-charts`), lokal im WLAN
+live unter `http://<NAS-IP>:3001`. Anleitung in `DEPLOYMENT.md`.
+- Offen/optional: Cloudflare-Tunnel (externer HTTPS-Zugang) – Domain müsste zu
+  Cloudflare umziehen. PWA-Installation (Homescreen) funktioniert bereits.
 
 ### Schritt 10 (optional, später)
-Liederbibliothek-Suche · Metronom/BPM · weiterer Viewer-Feinschliff
+Externer Zugang via Cloudflare · Liederbibliothek-Suche · Metronom/BPM · weiterer Feinschliff
 
 ## Vor Schritt 7 an der echten ChurchTools-Instanz zu klären
 1. Exakte API-Kette: Agenda → Song → Arrangement → Datei → Tonart-Feld

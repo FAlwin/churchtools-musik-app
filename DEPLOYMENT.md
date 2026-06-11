@@ -82,7 +82,20 @@ Neuen Stand auf den NAS kopieren (Schritt 2) und im Container Manager das
 Projekt **neu erstellen/„Build"** auslösen. Die Daten liegen alle in ChurchTools –
 der Container selbst hält keine Daten.
 
-## Hinweise
+## Updates richtig einspielen (wichtig!)
+Beim normalen „Erstellen" verwendet Docker manchmal einen alten Zwischenstand
+(Cache) – besonders, wenn die Dateien über das Netzwerk kopiert wurden. Wenn ein
+Update **nicht greift**, sicheren Weg gehen:
+1. Container Manager → **Projekt** → `worship-charts` → **Aktion → Stoppen**
+2. **Aktion → Löschen** (löscht nur Projekt/Container, **nicht** die Dateien)
+3. **Image** → `worship-charts-app:latest` → **Löschen**
+4. **Projekt → Erstellen** (baut alles frisch, ohne Cache)
+
+## Hinweise / Troubleshooting
 - Der App-Container speichert nichts dauerhaft (Notizen/Markierungen liegen im
   Browser des jeweiligen Geräts; Lieder/Setlisten in ChurchTools).
 - Sicherheit: `.env` enthält Geheimnisse (SESSION_SECRET, TUNNEL_TOKEN) – nicht teilen.
+- **„Nach Login: Gottesdienste konnten nicht geladen werden"** → Session-Cookie kam
+  nicht an. Schnelltest im Browser: `http://<NAS-IP>:3001/api/auth/me`
+  → `{"authenticated":true,...}` = ok; `false` = Cookie-Problem. Das Cookie ist
+  bewusst ohne `secure`-Flag gesetzt, damit es auch über HTTP (LAN) gespeichert wird.
