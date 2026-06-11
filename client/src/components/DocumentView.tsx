@@ -18,6 +18,9 @@ interface DocumentViewProps {
   drawTool: DrawTool;
   /** Zähler: erhöht sich, wenn die Anmerkungen gelöscht werden sollen. */
   clearSignal: number;
+  /** Liednavigation (Wischen/Tippen am Rand bei nicht-gezoomtem Dokument). */
+  onPrev: () => void;
+  onNext: () => void;
 }
 
 /**
@@ -25,11 +28,22 @@ interface DocumentViewProps {
  * Zoom/Verschieben via Geste; Anmerkungen werden über die gemeinsame
  * Werkzeugleiste der Chart-Ansicht gesteuert (drawMode/-Color/-Tool als Props).
  */
-export function DocumentView({ songId, doc, drawMode, drawColor, drawTool, clearSignal }: DocumentViewProps) {
+export function DocumentView({
+  songId,
+  doc,
+  drawMode,
+  drawColor,
+  drawTool,
+  clearSignal,
+  onPrev,
+  onNext,
+}: DocumentViewProps) {
   const contentRef = useRef<HTMLCanvasElement | null>(null);
   const annoRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
+  const scale = useRef(1);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -184,8 +198,32 @@ export function DocumentView({ songId, doc, drawMode, drawColor, drawTool, clear
     }
   }
 
+  // Liednavigation per Tippen am Rand / Wischen (nur, wenn nicht gezoomt & kein Zeichnen)
+  function rootClick(e: React.MouseEvent) {
+    if (drawMode) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    if (x < r.width * 0.24) onPrev();
+    else if (x > r.width * 0.76) onNext();
+  }
+  function rootTouchStart(e: React.TouchEvent) {
+    if (drawMode) return;
+    swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+  function rootTouchEnd(e: React.TouchEvent) {
+    if (drawMode || !swipeStart.current) return;
+    const dx = swipeStart.current.x - e.changedTouches[0].clientX;
+    const dy = swipeStart.current.y - e.changedTouches[0].clientY;
+    swipeStart.current = null;
+    if (scale.current > 1.05) return; // gezoomt: Wischen verschiebt das Dokument
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      if (dx > 0) onNext();
+      else onPrev();
+    }
+  }
+
   return (
-    <div className={styles.root}>
+    <div className={styles.root} onClick={rootClick} onTouchStart={rootTouchStart} onTouchEnd={rootTouchEnd}>
       {loading && (
         <div className={styles.center}>
           <Spinner />
@@ -201,6 +239,9 @@ export function DocumentView({ songId, doc, drawMode, drawColor, drawTool, clear
         centerOnInit
         doubleClick={{ disabled: true }}
         wheel={{ step: 0.08 }}
+        onTransformed={(r) => {
+          scale.current = r.state.scale;
+        }}
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}

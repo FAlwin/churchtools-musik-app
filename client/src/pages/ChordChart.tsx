@@ -68,8 +68,12 @@ export function ChordChart({
   const [editorSaving, setEditorSaving] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(false);
-  // Anzeige-Quelle pro Lied: 'chords' oder die fileId eines Dokuments
-  const [viewSource, setViewSource] = useState<'chords' | number>('chords');
+  // Anzeige-Quelle pro Lied: 'chords' oder die fileId eines Dokuments (aus Speicher initialisieren)
+  const [viewSource, setViewSource] = useState<'chords' | number>(() => {
+    const saved = localStorage.getItem(`worship_view_${song.id}`);
+    const id = saved ? Number(saved) : NaN;
+    return saved && !Number.isNaN(id) && song.documents.some((d) => d.fileId === id) ? id : 'chords';
+  });
 
   const [drawMode, setDrawMode] = useState(false);
   const [drawColor, setDrawColor] = useState(DRAW_COLORS[0]);
@@ -388,22 +392,6 @@ export function ChordChart({
                   2 Spalten
                 </button>
               </div>
-
-              <div className={styles.menuLbl}>Ansicht</div>
-              <div className={styles.segGroup}>
-                <button
-                  className={`${styles.segBtn}${!lyricsOnly ? ' ' + styles.on : ''}`}
-                  onClick={() => setLyricsOnly(false)}
-                >
-                  Akkorde &amp; Text
-                </button>
-                <button
-                  className={`${styles.segBtn}${lyricsOnly ? ' ' + styles.on : ''}`}
-                  onClick={() => setLyricsOnly(true)}
-                >
-                  Nur Text
-                </button>
-              </div>
             </div>
           </>
         )}
@@ -453,14 +441,26 @@ export function ChordChart({
                 Anzeige
               </div>
               <button
-                className={`${styles.mmItem}${viewSource === 'chords' ? ' ' + styles.on : ''}`}
+                className={`${styles.mmItem}${viewSource === 'chords' && !lyricsOnly ? ' ' + styles.on : ''}`}
                 onClick={() => {
                   setViewSource('chords');
+                  setLyricsOnly(false);
                   setShowSongMenu(false);
                 }}
               >
                 <span>Akkorde &amp; Text</span>
-                {viewSource === 'chords' && <span className={styles.mmCheck}>✓</span>}
+                {viewSource === 'chords' && !lyricsOnly && <span className={styles.mmCheck}>✓</span>}
+              </button>
+              <button
+                className={`${styles.mmItem}${viewSource === 'chords' && lyricsOnly ? ' ' + styles.on : ''}`}
+                onClick={() => {
+                  setViewSource('chords');
+                  setLyricsOnly(true);
+                  setShowSongMenu(false);
+                }}
+              >
+                <span>Nur Text</span>
+                {viewSource === 'chords' && lyricsOnly && <span className={styles.mmCheck}>✓</span>}
               </button>
               {song.documents.map((d) => (
                 <button
@@ -551,6 +551,8 @@ export function ChordChart({
               drawColor={drawColor}
               drawTool={drawTool}
               clearSignal={docClearSignal}
+              onPrev={prev}
+              onNext={next}
             />
           ) : (
             <>
