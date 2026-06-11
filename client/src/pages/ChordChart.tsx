@@ -19,13 +19,24 @@ interface ChordChartProps {
   songs: SetlistSong[];
   startIndex: number;
   onBack: () => void;
+  onReload?: () => void;
+  reloading?: boolean;
   theme: Theme;
   wakePref: boolean;
   fontId: string;
 }
 
 /** Chord-Chart-Anzeige mit Transponieren, Kapo, Ansichtsmodi und Zeichnen. */
-export function ChordChart({ songs, startIndex, onBack, theme, wakePref, fontId }: ChordChartProps) {
+export function ChordChart({
+  songs,
+  startIndex,
+  onBack,
+  onReload,
+  reloading,
+  theme,
+  wakePref,
+  fontId,
+}: ChordChartProps) {
   const [idx, setIdx] = useState(startIndex);
   const song = songs[idx];
 
@@ -156,6 +167,16 @@ export function ChordChart({ songs, startIndex, onBack, theme, wakePref, fontId 
           </div>
           <div className={styles.right}>
             <div className={styles.azGroup}>
+              {onReload && (
+                <button
+                  className={styles.azBtn}
+                  onClick={onReload}
+                  disabled={reloading}
+                  title="Aktualisieren"
+                >
+                  <span className={reloading ? styles.spin : undefined}>↻</span>
+                </button>
+              )}
               <button className={styles.azBtn} onClick={() => setFontSize((f) => Math.max(14, f - 2))}>
                 A−
               </button>

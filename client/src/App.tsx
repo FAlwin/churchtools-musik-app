@@ -94,6 +94,8 @@ export default function App() {
           songs={songs}
           startIndex={songIndex}
           onBack={() => setScreen('setlist')}
+          onReload={() => setlistQuery.refetch()}
+          reloading={setlistQuery.isFetching}
           theme={settings.theme}
           wakePref={settings.wakePref}
           fontId={settings.fontId}

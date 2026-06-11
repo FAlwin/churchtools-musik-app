@@ -23,7 +23,7 @@ export function Setlist({ service, songs, isLoading, isError, onRetry, onSelect,
         subtitle={`${service.weekday}, ${service.day}. ${service.month} · ${service.time}`}
         left={<IconButton onClick={onBack}>‹</IconButton>}
       />
-      <Scroll>
+      <Scroll onRefresh={onRetry}>
         {isLoading ? (
           <CenterMessage loading text="Setlist wird geladen…" />
         ) : isError ? (

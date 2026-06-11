@@ -130,7 +130,7 @@ export function Agenda({
         </Sheet>
       )}
 
-      <Scroll>
+      <Scroll onRefresh={onRetry}>
         {isLoading ? (
           <CenterMessage loading text="Gottesdienste werden geladen…" />
         ) : isError ? (

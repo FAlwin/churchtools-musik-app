@@ -185,6 +185,11 @@
   padding: 0 4px;
 }
 
+.spin {
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+}
+
 // ── Mode-Menü (Dropdown unter dem Titel) ──
 .scrim {
   position: absolute;

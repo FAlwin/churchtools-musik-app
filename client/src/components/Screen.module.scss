@@ -21,3 +21,19 @@
     border-radius: 2px;
   }
 }
+
+// Pull-to-Refresh-Anzeige (oberhalb des Inhalts)
+.pullIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.15s;
+  color: var(--teal);
+}
+
+.pullArrow {
+  font-size: 20px;
+  font-weight: 700;
+  transition: transform 0.15s;
+}
