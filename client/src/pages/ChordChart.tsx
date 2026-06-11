@@ -7,8 +7,7 @@ import { CapoPicker } from '../components/CapoPicker';
 import { DrawToolbar } from '../components/DrawToolbar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
-import { DocumentViewer } from '../components/DocumentViewer';
-import { Sheet } from '../components/Sheet';
+import { DocumentView } from '../components/DocumentView';
 import { saveChordpro, deleteChordpro } from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
@@ -69,8 +68,8 @@ export function ChordChart({
   const [editorSaving, setEditorSaving] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(false);
-  const [showDocPicker, setShowDocPicker] = useState(false);
-  const [activeDoc, setActiveDoc] = useState<SongDocument | null>(null);
+  // Anzeige-Quelle pro Lied: 'chords' oder die fileId eines Dokuments
+  const [viewSource, setViewSource] = useState<'chords' | number>('chords');
 
   const [drawMode, setDrawMode] = useState(false);
   const [drawColor, setDrawColor] = useState(DRAW_COLORS[0]);
@@ -145,17 +144,23 @@ export function ChordChart({
     setCols(parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
     setLyricsOnly(localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
     setShowOriginal(false); // beim Liedwechsel wieder die bevorzugte Version zeigen
-    setActiveDoc(null);
-    setShowDocPicker(false);
+    // gespeicherte Anzeige-Quelle laden (nur, wenn das Dokument noch existiert)
+    const savedView = localStorage.getItem(`worship_view_${song.id}`);
+    const savedId = savedView ? Number(savedView) : NaN;
+    if (savedView && !Number.isNaN(savedId) && song.documents.some((d) => d.fileId === savedId)) {
+      setViewSource(savedId);
+    } else {
+      setViewSource('chords');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, song.id]);
 
-  // Dokument öffnen: bei einem direkt, bei mehreren Auswahl zeigen
-  function openDocuments() {
-    setShowSongMenu(false);
-    if (song.documents.length === 1) setActiveDoc(song.documents[0]);
-    else if (song.documents.length > 1) setShowDocPicker(true);
-  }
+  useEffect(() => {
+    localStorage.setItem(`worship_view_${song.id}`, String(viewSource));
+  }, [viewSource, song.id]);
+
+  const activeDoc: SongDocument | null =
+    viewSource === 'chords' ? null : (song.documents.find((d) => d.fileId === viewSource) ?? null);
 
   useEffect(() => {
     localStorage.setItem(`worship_fs_${song.id}`, String(fontSize));
@@ -189,22 +194,26 @@ export function ChordChart({
   }, [capo, song.id]);
 
   // ── Einheitliche Navigation: erst durch die Seiten, dann zum nächsten/vorigen Lied ──
-  const atStart = idx === 0 && paged.page === 0;
-  const atEnd = idx === songs.length - 1 && paged.page >= paged.pageCount - 1;
+  const atStart = idx === 0 && (activeDoc !== null || paged.page === 0);
+  const atEnd = idx === songs.length - 1 && (activeDoc !== null || paged.page >= paged.pageCount - 1);
 
   function next() {
-    if (paged.page < paged.pageCount - 1) {
+    if (!activeDoc && paged.page < paged.pageCount - 1) {
       paged.goToPage(paged.page + 1); // innerhalb des Lieds: schneller Seitenwechsel
-    } else if (idx < songs.length - 1) {
+      return;
+    }
+    if (idx < songs.length - 1) {
       drawing.saveDrawing(song.id);
       slideDir.current = 'right';
       setIdx(idx + 1);
     }
   }
   function prev() {
-    if (paged.page > 0) {
+    if (!activeDoc && paged.page > 0) {
       paged.goToPage(paged.page - 1);
-    } else if (idx > 0) {
+      return;
+    }
+    if (idx > 0) {
       drawing.saveDrawing(song.id);
       slideDir.current = 'left';
       pendingLastPage.current = true;
@@ -306,33 +315,43 @@ export function ChordChart({
               <span className={styles.titleChevron}>▾</span>
             </button>
             <div className={styles.keyRow}>
-              {!lyricsOnly && <span className={styles.keyChip}>{curKey}</span>}
-              {!lyricsOnly && capo > 0 && <span className={styles.capoBadge}>Capo {capo}</span>}
-              {lyricsOnly && <span className={styles.modeHint}>Nur Text</span>}
-              {hasEcg && <span className={styles.ecgChip}>{showOriginal ? 'Original' : 'ECG'}</span>}
-              {song.bpm !== null && <span className={styles.bpmChip}>♩ {song.bpm}</span>}
+              {activeDoc ? (
+                <span className={styles.modeHint}>{activeDoc.type === 'pdf' ? 'PDF' : 'Bild'}</span>
+              ) : (
+                <>
+                  {!lyricsOnly && <span className={styles.keyChip}>{curKey}</span>}
+                  {!lyricsOnly && capo > 0 && <span className={styles.capoBadge}>Capo {capo}</span>}
+                  {lyricsOnly && <span className={styles.modeHint}>Nur Text</span>}
+                  {hasEcg && <span className={styles.ecgChip}>{showOriginal ? 'Original' : 'ECG'}</span>}
+                  {song.bpm !== null && <span className={styles.bpmChip}>♩ {song.bpm}</span>}
+                </>
+              )}
             </div>
           </div>
           <div className={styles.right}>
-            <button
-              className={`${styles.toolBtn}${showAppearance ? ' ' + styles.on : ''}`}
-              onClick={() => setShowAppearance((v) => !v)}
-              title="Aussehen"
-            >
-              Aa
-            </button>
+            {!activeDoc && (
+              <button
+                className={`${styles.toolBtn}${showAppearance ? ' ' + styles.on : ''}`}
+                onClick={() => setShowAppearance((v) => !v)}
+                title="Aussehen"
+              >
+                Aa
+              </button>
+            )}
             {onReload && (
               <button className={styles.toolBtn} onClick={onReload} disabled={reloading} title="Aktualisieren">
                 <span className={reloading ? styles.spin : undefined}>↻</span>
               </button>
             )}
-            <button
-              className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
-              onClick={() => setDrawMode((d) => !d)}
-              title="Anmerkungen"
-            >
-              🖍️
-            </button>
+            {!activeDoc && (
+              <button
+                className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
+                onClick={() => setDrawMode((d) => !d)}
+                title="Anmerkungen"
+              >
+                🖍️
+              </button>
+            )}
           </div>
         </div>
 
@@ -421,13 +440,37 @@ export function ChordChart({
                 <span>Text bearbeiten</span>
                 <span className={styles.mmValue}>🖉</span>
               </button>
-              {song.documents.length > 0 && (
-                <button className={styles.mmItem} onClick={openDocuments}>
-                  <span>Dokumente (PDF/Bild)</span>
-                  <span className={styles.mmValue}>{song.documents.length}</span>
+
+              <div className={styles.menuLbl} style={{ marginTop: 6 }}>
+                Anzeige
+              </div>
+              <button
+                className={`${styles.mmItem}${viewSource === 'chords' ? ' ' + styles.on : ''}`}
+                onClick={() => {
+                  setViewSource('chords');
+                  setShowSongMenu(false);
+                }}
+              >
+                <span>Akkorde &amp; Text</span>
+                {viewSource === 'chords' && <span className={styles.mmCheck}>✓</span>}
+              </button>
+              {song.documents.map((d) => (
+                <button
+                  key={d.fileId}
+                  className={`${styles.mmItem}${viewSource === d.fileId ? ' ' + styles.on : ''}`}
+                  onClick={() => {
+                    setViewSource(d.fileId);
+                    setShowSongMenu(false);
+                  }}
+                >
+                  <span>
+                    {d.type === 'pdf' ? '📄' : '🖼️'} {d.name}
+                  </span>
+                  {viewSource === d.fileId && <span className={styles.mmCheck}>✓</span>}
                 </button>
-              )}
-              {hasEcg && (
+              ))}
+
+              {viewSource === 'chords' && hasEcg && (
                 <>
                   <div className={styles.menuLbl} style={{ marginTop: 6 }}>
                     Version
@@ -490,8 +533,12 @@ export function ChordChart({
           />
         )}
 
-        {/* Chart-Bereich (fester Viewport; Body scrollt darin horizontal) */}
+        {/* Chart-Bereich (fester Viewport) */}
         <div className={styles.chartArea}>
+          {activeDoc ? (
+            <DocumentView songId={song.id} doc={activeDoc} />
+          ) : (
+            <>
         <div
           className={styles.body}
           ref={drawing.bodyRef}
@@ -575,6 +622,8 @@ export function ChordChart({
             <span className={styles.pageBadgeArrow}>›</span>
           </button>
         )}
+            </>
+          )}
         </div>
 
         {/* Zeichen-Werkzeugleiste */}
@@ -620,28 +669,6 @@ export function ChordChart({
             onCancel={() => setConfirmClear(false)}
           />
         )}
-
-        {/* Dokument-Auswahl (bei mehreren Dateien) */}
-        {showDocPicker && (
-          <Sheet title="Dokumente" onClose={() => setShowDocPicker(false)}>
-            {song.documents.map((d) => (
-              <button
-                key={d.fileId}
-                className={styles.docRow}
-                onClick={() => {
-                  setActiveDoc(d);
-                  setShowDocPicker(false);
-                }}
-              >
-                <span>{d.type === 'pdf' ? '📄' : '🖼️'}</span>
-                <span className={styles.docName}>{d.name}</span>
-              </button>
-            ))}
-          </Sheet>
-        )}
-
-        {/* Dokument-Viewer (Vollbild) */}
-        {activeDoc && <DocumentViewer songId={song.id} doc={activeDoc} onClose={() => setActiveDoc(null)} />}
 
         {/* Text-Editor (Vollbild) */}
         {showEditor && (

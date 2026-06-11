@@ -5,18 +5,20 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { SongDocument } from '@shared/types/index';
 import { Spinner } from './Spinner';
 import { DRAW_COLORS } from '../utils/constants';
-import styles from './DocumentViewer.module.scss';
+import styles from './DocumentView.module.scss';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-interface DocumentViewerProps {
+interface DocumentViewProps {
   songId: number;
   doc: SongDocument;
-  onClose: () => void;
 }
 
-/** Vollbild-Betrachter für PDF/Bild eines Lieds: zoomen, schieben, anmerken. */
-export function DocumentViewer({ songId, doc, onClose }: DocumentViewerProps) {
+/**
+ * Einbettbare Dokument-Anzeige (PDF/Bild) als Ersatz für den Chord-Text –
+ * zoom-/verschiebbar mit Anmerkungs-Ebene. Füllt den Eltern-Container.
+ */
+export function DocumentView({ songId, doc }: DocumentViewProps) {
   const contentRef = useRef<HTMLCanvasElement | null>(null);
   const annoRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
@@ -31,11 +33,11 @@ export function DocumentViewer({ songId, doc, onClose }: DocumentViewerProps) {
   const url = `/api/songs/${songId}/files/${doc.fileId}`;
   const storeKey = `worship_docdraw_${doc.fileId}`;
 
-  // Dokument laden und auf die Inhalts-Leinwand zeichnen
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setDims(null);
 
     async function renderImage() {
       const img = new Image();
@@ -56,13 +58,13 @@ export function DocumentViewer({ songId, doc, onClose }: DocumentViewerProps) {
     async function renderPdf() {
       const pdf = await pdfjsLib.getDocument({ url, withCredentials: true }).promise;
       const scale = 2;
-      const pages = [];
+      const rendered: { page: pdfjsLib.PDFPageProxy; vp: pdfjsLib.PageViewport }[] = [];
       let totalH = 0;
       let maxW = 0;
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const vp = page.getViewport({ scale });
-        pages.push({ page, vp });
+        rendered.push({ page, vp });
         totalH += Math.ceil(vp.height) + (i > 1 ? 16 : 0);
         maxW = Math.max(maxW, Math.ceil(vp.width));
       }
@@ -74,7 +76,7 @@ export function DocumentViewer({ songId, doc, onClose }: DocumentViewerProps) {
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, maxW, totalH);
       let y = 0;
-      for (const { page, vp } of pages) {
+      for (const { page, vp } of rendered) {
         ctx.save();
         ctx.translate((maxW - vp.width) / 2, y);
         await page.render({ canvasContext: ctx, viewport: vp }).promise;
@@ -100,7 +102,6 @@ export function DocumentViewer({ songId, doc, onClose }: DocumentViewerProps) {
     };
   }, [url, doc.type]);
 
-  // Anmerkungs-Leinwand an die Maße anpassen + gespeicherte Zeichnung laden
   useEffect(() => {
     if (!dims) return;
     const canvas = annoRef.current;
@@ -160,72 +161,68 @@ export function DocumentViewer({ songId, doc, onClose }: DocumentViewerProps) {
   }
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.bar}>
-        <button className={styles.btn} onClick={onClose}>
-          ‹
-        </button>
-        <span className={styles.title}>{doc.name}</span>
-        {drawMode && (
-          <div className={styles.colors}>
-            {DRAW_COLORS.slice(0, 4).map((c) => (
-              <div
-                key={c}
-                className={`${styles.color}${color === c ? ' ' + styles.on : ''}`}
-                style={{ background: c }}
-                onClick={() => setColor(c)}
-              />
-            ))}
-            <button className={styles.btn} onClick={clearAnno} title="Löschen" style={{ minWidth: 38 }}>
-              ✕
-            </button>
-          </div>
-        )}
-        <button
-          className={`${styles.btn}${drawMode ? ' ' + styles.on : ''}`}
-          onClick={() => setDrawMode((d) => !d)}
-          title="Anmerken"
-        >
-          🖍️
-        </button>
-      </div>
+    <div className={styles.root}>
+      {loading && (
+        <div className={styles.center}>
+          <Spinner />
+          <span>Dokument wird geladen…</span>
+        </div>
+      )}
+      {error && <div className={styles.center}>⚠️ {error}</div>}
 
-      <div className={styles.stage}>
-        {loading && (
-          <div className={styles.center}>
-            <Spinner />
-            <span>Dokument wird geladen…</span>
-          </div>
-        )}
-        {error && <div className={styles.center}>⚠️ {error}</div>}
-
-        <TransformWrapper
-          disabled={drawMode}
-          minScale={0.3}
-          maxScale={8}
-          centerOnInit
-          doubleClick={{ disabled: true }}
-          wheel={{ step: 0.08 }}
+      <TransformWrapper
+        disabled={drawMode}
+        minScale={0.3}
+        maxScale={8}
+        centerOnInit
+        doubleClick={{ disabled: true }}
+        wheel={{ step: 0.08 }}
+      >
+        <TransformComponent
+          wrapperStyle={{ width: '100%', height: '100%' }}
+          contentStyle={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}
         >
-          <TransformComponent
-            wrapperStyle={{ width: '100%', height: '100%' }}
-            contentStyle={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}
+          <div className={styles.docWrap} style={{ visibility: loading ? 'hidden' : 'visible' }}>
+            <canvas ref={contentRef} className={styles.contentCanvas} />
+            <canvas
+              ref={annoRef}
+              className={styles.annoCanvas}
+              style={{ pointerEvents: drawMode ? 'all' : 'none', cursor: drawMode ? 'crosshair' : 'default' }}
+              onPointerDown={down}
+              onPointerMove={move}
+              onPointerUp={up}
+              onPointerLeave={up}
+            />
+          </div>
+        </TransformComponent>
+      </TransformWrapper>
+
+      {!loading && !error && (
+        <div className={styles.tools}>
+          <button
+            className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
+            onClick={() => setDrawMode((d) => !d)}
+            title="Anmerken"
           >
-            <div className={styles.docWrap} style={{ visibility: loading ? 'hidden' : 'visible' }}>
-              <canvas ref={contentRef} className={styles.contentCanvas} />
-              <canvas
-                ref={annoRef}
-                className={styles.annoCanvas}
-                style={{ pointerEvents: drawMode ? 'all' : 'none', cursor: drawMode ? 'crosshair' : 'default' }}
-                onPointerDown={down}
-                onPointerMove={move}
-                onPointerUp={up}
-                onPointerLeave={up}
-              />
-            </div>
-          </TransformComponent>
-        </TransformWrapper>
-      </div>
+            🖍️
+          </button>
+          {drawMode && (
+            <>
+              {DRAW_COLORS.slice(0, 4).map((c) => (
+                <div
+                  key={c}
+                  className={`${styles.color}${color === c ? ' ' + styles.on : ''}`}
+                  style={{ background: c }}
+                  onClick={() => setColor(c)}
+                />
+              ))}
+              <button className={styles.toolBtn} onClick={clearAnno} title="Löschen">
+                ✕
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
