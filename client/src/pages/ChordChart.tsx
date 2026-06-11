@@ -9,7 +9,6 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { parseChordPro } from '../utils/chordpro';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { DRAW_COLORS, fontFamilyById } from '../utils/constants';
-import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { useDrawing } from '../hooks/useDrawing';
 import { usePagedColumns } from '../hooks/usePagedColumns';
@@ -49,13 +48,14 @@ export function ChordChart({
     () => localStorage.getItem(`worship_key_${song.id}`) || null,
   );
   const [capo, setCapo] = useState(() => parseInt(localStorage.getItem(`worship_capo_${song.id}`) || '0', 10));
-  const [fontSize, setFontSize] = useLocalStorage<number>('worship_fs', 20);
-  const [lyricsOnly, setLyricsOnly] = useLocalStorage<boolean>('worship_lyrics_only', false);
-  const [cols, setCols] = useState(1);
+  // Schriftgröße, Spalten und Ansicht werden je Lied gespeichert
+  const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10));
+  const [cols, setCols] = useState(() => parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
+  const [lyricsOnly, setLyricsOnly] = useState(() => localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
 
   const [showKeyPicker, setShowKeyPicker] = useState(false);
   const [showCapoPicker, setShowCapoPicker] = useState(false);
-  const [showModeMenu, setShowModeMenu] = useState(false);
+  const [showAppearance, setShowAppearance] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
   const [drawMode, setDrawMode] = useState(false);
@@ -67,6 +67,7 @@ export function ChordChart({
   const touchX = useRef<number | null>(null);
   const touchScroll = useRef<number>(0);
   const pendingLastPage = useRef(false);
+  const slideDir = useRef<'right' | 'left'>('right'); // Richtung des Liedwechsel-Übergangs
 
   useWakeLock(wakePref);
 
@@ -107,14 +108,34 @@ export function ChordChart({
       ? Math.floor((pageWidth - 2 * CONTENT_PAD - (cols - 1) * COLUMN_GAP) / cols)
       : undefined;
 
-  const paged = usePagedColumns(drawing.bodyRef, [song.id, fontSize, cols, lyricsOnly, fontId, pageWidth]);
+  const paged = usePagedColumns(drawing.bodyRef, drawing.contentRef, [
+    song.id,
+    fontSize,
+    cols,
+    lyricsOnly,
+    fontId,
+    pageWidth,
+  ]);
 
-  // ── Persistenz pro Song ──
+  // ── Persistenz pro Song: beim Liedwechsel die gespeicherten Werte laden ──
   useEffect(() => {
     setSelectedKey(localStorage.getItem(`worship_key_${song.id}`) || null);
     setCapo(parseInt(localStorage.getItem(`worship_capo_${song.id}`) || '0', 10));
+    setFontSize(parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10));
+    setCols(parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
+    setLyricsOnly(localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, song.id]);
+
+  useEffect(() => {
+    localStorage.setItem(`worship_fs_${song.id}`, String(fontSize));
+  }, [fontSize, song.id]);
+  useEffect(() => {
+    localStorage.setItem(`worship_cols_${song.id}`, String(cols));
+  }, [cols, song.id]);
+  useEffect(() => {
+    localStorage.setItem(`worship_lyrics_${song.id}`, lyricsOnly ? '1' : '0');
+  }, [lyricsOnly, song.id]);
 
   // Beim Songwechsel auf Seite 1 (oder ans Ende, wenn rückwärts geblättert)
   useEffect(() => {
@@ -143,9 +164,10 @@ export function ChordChart({
 
   function next() {
     if (paged.page < paged.pageCount - 1) {
-      paged.goToPage(paged.page + 1);
+      paged.goToPage(paged.page + 1); // innerhalb des Lieds: schneller Seitenwechsel
     } else if (idx < songs.length - 1) {
       drawing.saveDrawing(song.id);
+      slideDir.current = 'right';
       setIdx(idx + 1);
     }
   }
@@ -154,6 +176,7 @@ export function ChordChart({
       paged.goToPage(paged.page - 1);
     } else if (idx > 0) {
       drawing.saveDrawing(song.id);
+      slideDir.current = 'left';
       pendingLastPage.current = true;
       setIdx(idx - 1);
     }
@@ -161,6 +184,7 @@ export function ChordChart({
   function goToSong(target: number) {
     if (target === idx) return;
     drawing.saveDrawing(song.id);
+    slideDir.current = target > idx ? 'right' : 'left';
     setIdx(target);
   }
   function goBack() {
@@ -217,10 +241,7 @@ export function ChordChart({
             ‹
           </button>
           <div className={styles.center}>
-            <button className={styles.titleBtn} onClick={() => setShowModeMenu((v) => !v)}>
-              <span className={styles.songTitle}>{song.title}</span>
-              <span className={styles.titleChevron}>▾</span>
-            </button>
+            <span className={styles.songTitle}>{song.title}</span>
             {!lyricsOnly ? (
               <div className={styles.keyRow}>
                 <button className={styles.keyBtn} onClick={() => setShowKeyPicker(true)}>
@@ -228,6 +249,7 @@ export function ChordChart({
                   <span className={styles.keyChevron}>▾</span>
                 </button>
                 {capo > 0 && <span className={styles.capoBadge}>Capo {capo}</span>}
+                {song.bpm !== null && <span className={styles.bpmChip}>♩ {song.bpm}</span>}
               </div>
             ) : (
               <div className={styles.keyRow}>
@@ -236,78 +258,82 @@ export function ChordChart({
             )}
           </div>
           <div className={styles.right}>
-            <div className={styles.azGroup}>
-              {onReload && (
-                <button className={styles.azBtn} onClick={onReload} disabled={reloading} title="Aktualisieren">
-                  <span className={reloading ? styles.spin : undefined}>↻</span>
-                </button>
-              )}
-              <button className={styles.azBtn} onClick={() => setFontSize((f) => Math.max(14, f - 2))}>
-                A−
+            <button
+              className={`${styles.toolBtn}${showAppearance ? ' ' + styles.on : ''}`}
+              onClick={() => setShowAppearance((v) => !v)}
+              title="Aussehen"
+            >
+              Aa
+            </button>
+            {onReload && (
+              <button className={styles.toolBtn} onClick={onReload} disabled={reloading} title="Aktualisieren">
+                <span className={reloading ? styles.spin : undefined}>↻</span>
               </button>
-              <button className={styles.azBtn} onClick={() => setFontSize((f) => Math.min(32, f + 2))}>
-                A+
-              </button>
-              <button
-                className={`${styles.azBtn} ${styles.colTog}${cols === 2 ? ' ' + styles.on : ''}`}
-                onClick={() => setCols((c) => (c === 1 ? 2 : 1))}
-                title="Spalten"
-              >
-                ⊞
-              </button>
-              <button
-                className={`${styles.azBtn}${drawMode ? ' ' + styles.on : ''}`}
-                onClick={() => setDrawMode((d) => !d)}
-                title="Markierungen"
-              >
-                ✏
-              </button>
-            </div>
-            {song.bpm !== null && <span className={styles.bpmChip}>♩ {song.bpm}</span>}
+            )}
+            <button
+              className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
+              onClick={() => setDrawMode((d) => !d)}
+              title="Anmerkungen"
+            >
+              ✏
+            </button>
           </div>
         </div>
 
-        {/* Mode-Menü */}
-        {showModeMenu && (
+        {/* Aussehen-Dropdown (pro Lied: Schriftgröße, Spalten, Ansicht, Kapo) */}
+        {showAppearance && (
           <>
-            <div className={styles.scrim} onClick={() => setShowModeMenu(false)} />
-            <div className={styles.modeMenu}>
-              <div className={styles.menuLbl}>Ansicht</div>
-              <button
-                className={`${styles.mmItem}${!lyricsOnly ? ' ' + styles.on : ''}`}
-                onClick={() => {
-                  setLyricsOnly(false);
-                  setShowModeMenu(false);
-                }}
-              >
-                <span>Akkorde &amp; Text</span>
-                {!lyricsOnly && <span className={styles.mmCheck}>✓</span>}
-              </button>
-              <button
-                className={`${styles.mmItem}${lyricsOnly ? ' ' + styles.on : ''}`}
-                onClick={() => {
-                  setLyricsOnly(true);
-                  setShowModeMenu(false);
-                }}
-              >
-                <span>Nur Text</span>
-                {lyricsOnly && <span className={styles.mmCheck}>✓</span>}
-              </button>
-              <div className={styles.menuLbl} style={{ marginTop: 6 }}>
-                Optionen
+            <div className={styles.scrim} onClick={() => setShowAppearance(false)} />
+            <div className={styles.appMenu}>
+              <div className={styles.menuLbl}>Schriftgröße</div>
+              <div className={styles.appRow}>
+                <button className={styles.stepBtn} onClick={() => setFontSize((f) => Math.max(12, f - 2))}>
+                  A−
+                </button>
+                <span className={styles.stepValue}>{fontSize}</span>
+                <button className={styles.stepBtn} onClick={() => setFontSize((f) => Math.min(40, f + 2))}>
+                  A+
+                </button>
               </div>
+
+              <div className={styles.menuLbl}>Spalten</div>
+              <div className={styles.segGroup}>
+                <button className={`${styles.segBtn}${cols === 1 ? ' ' + styles.on : ''}`} onClick={() => setCols(1)}>
+                  1 Spalte
+                </button>
+                <button className={`${styles.segBtn}${cols === 2 ? ' ' + styles.on : ''}`} onClick={() => setCols(2)}>
+                  2 Spalten
+                </button>
+              </div>
+
+              <div className={styles.menuLbl}>Ansicht</div>
+              <div className={styles.segGroup}>
+                <button
+                  className={`${styles.segBtn}${!lyricsOnly ? ' ' + styles.on : ''}`}
+                  onClick={() => setLyricsOnly(false)}
+                >
+                  Akkorde &amp; Text
+                </button>
+                <button
+                  className={`${styles.segBtn}${lyricsOnly ? ' ' + styles.on : ''}`}
+                  onClick={() => setLyricsOnly(true)}
+                >
+                  Nur Text
+                </button>
+              </div>
+
               <button
-                className={styles.mmItem}
+                className={styles.appKapo}
                 onClick={() => {
                   setShowCapoPicker(true);
-                  setShowModeMenu(false);
+                  setShowAppearance(false);
                 }}
               >
                 <span>Kapo</span>
                 {capo > 0 ? (
                   <span className={styles.mmValueActive}>Bund {capo}</span>
                 ) : (
-                  <span className={styles.mmValue}>–</span>
+                  <span className={styles.mmValue}>einstellen ›</span>
                 )}
               </button>
             </div>
@@ -358,7 +384,9 @@ export function ChordChart({
           style={{ ['--chart-font' as string]: fontFam }}
         >
           <div
-            className={styles.content}
+            key={song.id}
+            ref={drawing.contentRef}
+            className={`${styles.content} ${slideDir.current === 'right' ? styles.slideRight : styles.slideLeft}`}
             style={{ columnWidth: colWidthPx ? `${colWidthPx}px` : undefined, columnGap: COLUMN_GAP }}
           >
             {sections.length === 0 ? (

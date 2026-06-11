@@ -25,6 +25,7 @@ interface Point {
 export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, layoutDeps }: UseDrawingArgs) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const drawingRef = useRef(false);
   const strokePtsRef = useRef<Point[]>([]);
   const snapshotRef = useRef<ImageData | null>(null);
@@ -65,8 +66,9 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
       const canvas = canvasRef.current;
       const wrap = bodyRef.current;
       if (!canvas || !wrap) return;
-      // Seitenweises Layout: Leinwand deckt die gesamte (horizontale) Scrollbreite ab
-      canvas.width = wrap.scrollWidth || wrap.offsetWidth;
+      // Leinwand deckt genau die Inhaltsbreite ab (nicht die Scrollbreite des
+      // Containers – sonst bläht die Leinwand selbst die Scrollbreite auf)
+      canvas.width = contentRef.current?.scrollWidth || wrap.offsetWidth;
       canvas.height = wrap.clientHeight;
       loadDrawing(id);
     },
@@ -226,6 +228,7 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
   return {
     canvasRef,
     bodyRef,
+    contentRef,
     textObjects,
     pendingText,
     handlers: { onPointerDown, onPointerMove, onPointerUp },
