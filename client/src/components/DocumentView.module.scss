@@ -5,28 +5,6 @@
   overflow: hidden;
 }
 
-.stage {
-  width: 100%;
-  height: 100%;
-}
-
-.docWrap {
-  position: relative;
-  line-height: 0;
-}
-
-.contentCanvas {
-  display: block;
-  background: #fff;
-}
-
-.annoCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  touch-action: none;
-}
-
 .center {
   position: absolute;
   inset: 0;
@@ -41,54 +19,84 @@
   text-align: center;
 }
 
-// schwebende Anmerkungs-Steuerung unten links
-.tools {
+// Fixierte Ansicht: Seite an den Bildschirm angepasst
+.fit {
   position: absolute;
-  left: 12px;
-  bottom: 14px;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  background: rgba(0, 0, 0, 0.55);
-  border-radius: 14px;
-  padding: 8px 10px;
-  backdrop-filter: blur(4px);
-}
-
-.toolBtn {
-  width: 38px;
-  height: 38px;
-  border: none;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-size: 17px;
-  cursor: pointer;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 8px;
+}
 
-  &.on {
+.pageBox {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  line-height: 0;
+}
+
+.contentCanvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  background: #fff;
+}
+
+.annoCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+// Anpassen-Modus
+.adjustImg {
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  max-width: none;
+}
+
+// Untere Statusleiste
+.docBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.pageInd {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.docBtn {
+  height: 38px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+
+  &.done {
     background: var(--orange);
   }
-}
-
-.color {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2.5px solid transparent;
-  cursor: pointer;
-  &.on {
-    border-color: #fff;
-    transform: scale(1.15);
-  }
-}
-
-.hint {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  text-align: center;
-  padding: 4px 0;
 }
