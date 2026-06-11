@@ -48,6 +48,7 @@ export function DocumentView({
   const lastPt = useRef<{ x: number; y: number } | null>(null);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
+  const lastTf = useRef({ scale: 1, positionX: 0, positionY: 0 }); // letzter Zoom/Ausschnitt
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,15 +59,9 @@ export function DocumentView({
   const storeKey = (p: number) => `worship_docdraw_${doc.fileId}_${p}`;
   const tfKey = (p: number) => `worship_doctf_${doc.fileId}_${p}`;
 
-  // aktuellen Zoom/Ausschnitt der Seite p sichern
+  // aktuellen Zoom/Ausschnitt der Seite p sichern (aus dem zuletzt erfassten Zustand)
   function saveTransform(p: number) {
-    const s = transformRef.current?.instance?.transformState;
-    if (s) {
-      localStorage.setItem(
-        tfKey(p),
-        JSON.stringify({ scale: s.scale, positionX: s.positionX, positionY: s.positionY }),
-      );
-    }
+    localStorage.setItem(tfKey(p), JSON.stringify(lastTf.current));
   }
 
   // Dokument laden → jede Seite in eine eigene (offscreen) Leinwand rendern
@@ -286,6 +281,9 @@ export function DocumentView({
         limitToBounds={false}
         doubleClick={{ disabled: true }}
         panning={{ velocityDisabled: true }}
+        onTransformed={(_ref, state) => {
+          lastTf.current = { scale: state.scale, positionX: state.positionX, positionY: state.positionY };
+        }}
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}
