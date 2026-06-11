@@ -49,7 +49,6 @@ export function DocumentView({
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
   const lastTf = useRef({ scale: 1, positionX: 0, positionY: 0 }); // letzter Zoom/Ausschnitt
-  const ready = useRef(false); // erst nach dem Wiederherstellen darf gespeichert werden
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,23 +132,7 @@ export function DocumentView({
       img.onload = () => annoRef.current?.getContext('2d')?.drawImage(img, 0, 0);
       img.src = saved;
     }
-    // gespeicherten Zoom/Ausschnitt dieser Seite wiederherstellen (sonst bildschirmfüllend)
-    ready.current = false; // bis dahin nicht speichern (sonst überschreibt die Zentrierung)
-    const tf = localStorage.getItem(tfKey(pageIndex));
-    requestAnimationFrame(() => {
-      let restored = false;
-      if (tf) {
-        try {
-          const t = JSON.parse(tf) as { scale: number; positionX: number; positionY: number };
-          transformRef.current?.setTransform(t.positionX, t.positionY, t.scale, 0);
-          restored = true;
-        } catch {
-          /* ungültig */
-        }
-      }
-      if (!restored) transformRef.current?.resetTransform(0);
-      ready.current = true; // ab jetzt Änderungen speichern
-    });
+    // Zoom-Wiederherstellung passiert über key + initiale Transform-Props (siehe unten)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, pageIndex]);
 
@@ -250,6 +233,15 @@ export function DocumentView({
     }
   }
 
+  // gespeicherten Zoom/Ausschnitt der aktuellen Seite (für initiale Transform-Werte)
+  let savedTf: { scale: number; positionX: number; positionY: number } | null = null;
+  try {
+    const s = localStorage.getItem(tfKey(pageIndex));
+    if (s) savedTf = JSON.parse(s);
+  } catch {
+    /* ignorieren */
+  }
+
   return (
     <div className={styles.root} onClick={rootClick} onTouchStart={rootTouchStart} onTouchEnd={rootTouchEnd}>
       {loading && (
@@ -260,12 +252,16 @@ export function DocumentView({
       )}
       {error && <div className={styles.center}>⚠️ {error}</div>}
 
-      {/* Eine Zoom-Ebene: im Anpassen-Modus aktiv, sonst gesperrt (Zoom bleibt erhalten) */}
+      {/* Pro Seite eine eigene Zoom-Ebene (key) – startet mit dem gespeicherten Zoom */}
       <TransformWrapper
+        key={`${doc.fileId}-${pageIndex}`}
         ref={transformRef}
         minScale={1}
         maxScale={8}
-        centerOnInit
+        centerOnInit={!savedTf}
+        initialScale={savedTf?.scale ?? 1}
+        initialPositionX={savedTf?.positionX}
+        initialPositionY={savedTf?.positionY}
         limitToBounds={false}
         doubleClick={{ disabled: true }}
         panning={{ disabled: !adjust, velocityDisabled: true }}
@@ -273,12 +269,10 @@ export function DocumentView({
         pinch={{ disabled: !adjust }}
         onTransformed={(_ref, state) => {
           lastTf.current = { scale: state.scale, positionX: state.positionX, positionY: state.positionY };
-          if (ready.current) {
-            try {
-              localStorage.setItem(tfKey(pageIndex), JSON.stringify(lastTf.current));
-            } catch {
-              /* Speicher voll */
-            }
+          try {
+            localStorage.setItem(tfKey(pageIndex), JSON.stringify(lastTf.current));
+          } catch {
+            /* Speicher voll */
           }
         }}
       >
@@ -301,11 +295,18 @@ export function DocumentView({
         </TransformComponent>
       </TransformWrapper>
 
-      {/* Seiten-Anzeige (Ecke, überdeckt die Noten nicht) */}
+      {/* Seiten-Anzeige unten rechts (wie bei ChordPro-Seiten) */}
       {!loading && !error && pageCount > 1 && (
-        <div className={styles.pageInd}>
+        <button
+          className={styles.pageBadge}
+          onClick={(e) => {
+            e.stopPropagation();
+            pageForward();
+          }}
+        >
           Seite {pageIndex + 1} / {pageCount}
-        </div>
+          <span className={styles.pageBadgeArrow}>›</span>
+        </button>
       )}
     </div>
   );

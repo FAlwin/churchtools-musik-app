@@ -118,6 +118,7 @@ export function ChordChart({
   // Sichtbare Breite messen (für die Spaltenbreite je Seite)
   const [pageWidth, setPageWidth] = useState(0);
   useEffect(() => {
+    // bei Wechsel Dokument↔Akkorde neu vermessen (der Body wird dabei neu eingehängt)
     const el = drawing.bodyRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
     setPageWidth(el.clientWidth);
@@ -125,7 +126,7 @@ export function ChordChart({
     ro.observe(el);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [viewSource]);
 
   // Spaltenbreite so, dass genau `cols` Spalten eine Seite füllen
   const colWidthPx =
