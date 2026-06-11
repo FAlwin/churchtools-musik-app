@@ -15,14 +15,14 @@ declare global {
 
 /**
  * Speichert das ChurchTools-Session-Cookie signiert + httpOnly im Client-Cookie.
- * `secure` richtet sich nach der tatsächlichen Verbindung (req.secure): über HTTPS
- * (z.B. Cloudflare) secure, über reines HTTP im LAN nicht – sonst speichert der
- * Browser das Cookie dort nicht.
+ * Bewusst OHNE `secure`: Die App läuft im LAN auch über HTTP (sonst würde der
+ * Browser das Cookie nicht speichern). Über HTTPS (Cloudflare) wird das Cookie
+ * ebenfalls gesendet. httpOnly + signiert bleiben aktiv.
  */
-export function setSession(res: Response, churchToolsCookie: string, secure: boolean): void {
+export function setSession(res: Response, churchToolsCookie: string): void {
   res.cookie(COOKIE_NAME, churchToolsCookie, {
     httpOnly: true,
-    secure,
+    secure: false,
     sameSite: 'lax',
     signed: true,
     maxAge: 1000 * 60 * 60 * 12, // 12 Stunden
