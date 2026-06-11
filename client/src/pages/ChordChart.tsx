@@ -75,6 +75,7 @@ export function ChordChart({
   const [drawColor, setDrawColor] = useState(DRAW_COLORS[0]);
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
   const [textSize, setTextSize] = useState(20);
+  const [docClearSignal, setDocClearSignal] = useState(0); // löst Löschen im Dokument-Viewer aus
 
   const textInputRef = useRef<HTMLInputElement | null>(null);
   const touchX = useRef<number | null>(null);
@@ -155,22 +156,28 @@ export function ChordChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, song.id]);
 
+  // Speichern NUR bei echter Wertänderung (song.id bewusst NICHT in den Deps –
+  // sonst überschreibt der Effekt beim Liedwechsel den gerade geladenen Wert).
   useEffect(() => {
     localStorage.setItem(`worship_view_${song.id}`, String(viewSource));
-  }, [viewSource, song.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewSource]);
 
   const activeDoc: SongDocument | null =
     viewSource === 'chords' ? null : (song.documents.find((d) => d.fileId === viewSource) ?? null);
 
   useEffect(() => {
     localStorage.setItem(`worship_fs_${song.id}`, String(fontSize));
-  }, [fontSize, song.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontSize]);
   useEffect(() => {
     localStorage.setItem(`worship_cols_${song.id}`, String(cols));
-  }, [cols, song.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cols]);
   useEffect(() => {
     localStorage.setItem(`worship_lyrics_${song.id}`, lyricsOnly ? '1' : '0');
-  }, [lyricsOnly, song.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lyricsOnly]);
 
   // Beim Songwechsel auf Seite 1 (oder ans Ende, wenn rückwärts geblättert)
   useEffect(() => {
@@ -187,11 +194,13 @@ export function ChordChart({
   useEffect(() => {
     if (selectedKey) localStorage.setItem(`worship_key_${song.id}`, selectedKey);
     else localStorage.removeItem(`worship_key_${song.id}`);
-  }, [selectedKey, song.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKey]);
 
   useEffect(() => {
     localStorage.setItem(`worship_capo_${song.id}`, String(capo));
-  }, [capo, song.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capo]);
 
   // ── Einheitliche Navigation: erst durch die Seiten, dann zum nächsten/vorigen Lied ──
   const atStart = idx === 0 && (activeDoc !== null || paged.page === 0);
@@ -265,7 +274,8 @@ export function ChordChart({
   }
 
   function clearDrawing() {
-    drawing.clearAll();
+    if (activeDoc) setDocClearSignal((n) => n + 1);
+    else drawing.clearAll();
     setConfirmClear(false);
   }
 
@@ -343,15 +353,13 @@ export function ChordChart({
                 <span className={reloading ? styles.spin : undefined}>↻</span>
               </button>
             )}
-            {!activeDoc && (
-              <button
-                className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
-                onClick={() => setDrawMode((d) => !d)}
-                title="Anmerkungen"
-              >
-                🖍️
-              </button>
-            )}
+            <button
+              className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
+              onClick={() => setDrawMode((d) => !d)}
+              title="Anmerkungen"
+            >
+              🖍️
+            </button>
           </div>
         </div>
 
@@ -536,7 +544,14 @@ export function ChordChart({
         {/* Chart-Bereich (fester Viewport) */}
         <div className={styles.chartArea}>
           {activeDoc ? (
-            <DocumentView songId={song.id} doc={activeDoc} />
+            <DocumentView
+              songId={song.id}
+              doc={activeDoc}
+              drawMode={drawMode}
+              drawColor={drawColor}
+              drawTool={drawTool}
+              clearSignal={docClearSignal}
+            />
           ) : (
             <>
         <div

@@ -3,8 +3,8 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { SongDocument } from '@shared/types/index';
+import type { DrawTool } from '../types/index';
 import { Spinner } from './Spinner';
-import { DRAW_COLORS } from '../utils/constants';
 import styles from './DocumentView.module.scss';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
@@ -12,13 +12,20 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 interface DocumentViewProps {
   songId: number;
   doc: SongDocument;
+  /** Anmerkungs-Modus (von der gemeinsamen Steuerung oben/unten rechts). */
+  drawMode: boolean;
+  drawColor: string;
+  drawTool: DrawTool;
+  /** Zähler: erhöht sich, wenn die Anmerkungen gelöscht werden sollen. */
+  clearSignal: number;
 }
 
 /**
- * Einbettbare Dokument-Anzeige (PDF/Bild) als Ersatz für den Chord-Text –
- * zoom-/verschiebbar mit Anmerkungs-Ebene. Füllt den Eltern-Container.
+ * Einbettbare Dokument-Anzeige (PDF/Bild) als Ersatz für den Chord-Text.
+ * Zoom/Verschieben via Geste; Anmerkungen werden über die gemeinsame
+ * Werkzeugleiste der Chart-Ansicht gesteuert (drawMode/-Color/-Tool als Props).
  */
-export function DocumentView({ songId, doc }: DocumentViewProps) {
+export function DocumentView({ songId, doc, drawMode, drawColor, drawTool, clearSignal }: DocumentViewProps) {
   const contentRef = useRef<HTMLCanvasElement | null>(null);
   const annoRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
@@ -27,8 +34,6 @@ export function DocumentView({ songId, doc }: DocumentViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
-  const [drawMode, setDrawMode] = useState(false);
-  const [color, setColor] = useState(DRAW_COLORS[0]);
 
   const url = `/api/songs/${songId}/files/${doc.fileId}`;
   const storeKey = `worship_docdraw_${doc.fileId}`;
@@ -102,6 +107,7 @@ export function DocumentView({ songId, doc }: DocumentViewProps) {
     };
   }, [url, doc.type]);
 
+  // Anmerkungs-Leinwand an die Maße anpassen + gespeicherte Zeichnung laden
   useEffect(() => {
     if (!dims) return;
     const canvas = annoRef.current;
@@ -116,6 +122,15 @@ export function DocumentView({ songId, doc }: DocumentViewProps) {
     }
   }, [dims, storeKey]);
 
+  // Löschen über die gemeinsame Werkzeugleiste
+  useEffect(() => {
+    if (clearSignal === 0) return;
+    const canvas = annoRef.current;
+    if (!canvas) return;
+    canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
+    localStorage.removeItem(storeKey);
+  }, [clearSignal, storeKey]);
+
   function pt(e: React.PointerEvent) {
     const canvas = annoRef.current!;
     const rect = canvas.getBoundingClientRect();
@@ -125,7 +140,7 @@ export function DocumentView({ songId, doc }: DocumentViewProps) {
     };
   }
   function down(e: React.PointerEvent) {
-    if (!drawMode) return;
+    if (!drawMode || drawTool === 'text') return;
     drawing.current = true;
     last.current = pt(e);
   }
@@ -133,14 +148,29 @@ export function DocumentView({ songId, doc }: DocumentViewProps) {
     if (!drawMode || !drawing.current) return;
     const ctx = annoRef.current!.getContext('2d')!;
     const p = pt(e);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    if (drawTool === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 26;
+      ctx.strokeStyle = 'rgba(0,0,0,1)';
+    } else if (drawTool === 'marker') {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 16;
+      ctx.strokeStyle = drawColor;
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = drawColor;
+    }
     ctx.beginPath();
     ctx.moveTo(last.current!.x, last.current!.y);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
+    ctx.globalAlpha = 1;
     last.current = p;
   }
   function up() {
@@ -152,12 +182,6 @@ export function DocumentView({ songId, doc }: DocumentViewProps) {
     } catch {
       /* Speicher voll */
     }
-  }
-  function clearAnno() {
-    const canvas = annoRef.current;
-    if (!canvas) return;
-    canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
-    localStorage.removeItem(storeKey);
   }
 
   return (
@@ -196,33 +220,6 @@ export function DocumentView({ songId, doc }: DocumentViewProps) {
           </div>
         </TransformComponent>
       </TransformWrapper>
-
-      {!loading && !error && (
-        <div className={styles.tools}>
-          <button
-            className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
-            onClick={() => setDrawMode((d) => !d)}
-            title="Anmerken"
-          >
-            🖍️
-          </button>
-          {drawMode && (
-            <>
-              {DRAW_COLORS.slice(0, 4).map((c) => (
-                <div
-                  key={c}
-                  className={`${styles.color}${color === c ? ' ' + styles.on : ''}`}
-                  style={{ background: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
-              <button className={styles.toolBtn} onClick={clearAnno} title="Löschen">
-                ✕
-              </button>
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 }
