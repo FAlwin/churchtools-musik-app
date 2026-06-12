@@ -1,13 +1,31 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../services/churchtoolsApi';
 
-/** Lädt die Gottesdienste mit Setlist. */
+/** Lädt die Gottesdienste mit Setlist (Standardfenster: ~1 Woche zurück bis 6 Wochen voraus). */
 export function useServices(enabled: boolean) {
   return useQuery({
     queryKey: ['services'],
-    queryFn: api.getServices,
+    queryFn: () => api.getServices(),
     enabled,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** Datum vor `monthsBack` Monaten als ISO-Datum (YYYY-MM-DD). */
+function monthsAgoIso(monthsBack: number): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() - monthsBack);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Lädt vergangene Gottesdienste der letzten `monthsBack` Monate (lazy, nur wenn enabled). */
+export function usePastServices(monthsBack: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['services', 'past', monthsBack],
+    queryFn: () => api.getServices({ from: monthsAgoIso(monthsBack), to: new Date().toISOString().slice(0, 10) }),
+    enabled,
+    staleTime: 1000 * 60 * 5,
+    placeholderData: (prev) => prev, // beim „Mehr laden" alte Liste behalten (kein Flackern)
   });
 }
 

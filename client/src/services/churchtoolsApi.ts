@@ -19,8 +19,12 @@ export function getMe(): Promise<AuthStatus> {
   return apiFetch<AuthStatus>('/api/auth/me');
 }
 
-export function getServices(): Promise<Service[]> {
-  return apiFetch<Service[]>('/api/services');
+export function getServices(range?: { from?: string; to?: string }): Promise<Service[]> {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return apiFetch<Service[]>(`/api/services${qs ? `?${qs}` : ''}`);
 }
 
 /** Alle Ablaufpunkte eines Gottesdienstes (Lieder inkl. ChordPro). */

@@ -42,9 +42,13 @@
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.12s;
+  -webkit-tap-highlight-color: transparent;
 
-  &:hover {
-    background: rgba(255, 252, 242, 0.12);
+  // Hover nur auf echten Hover-Geräten – sonst bleibt der Zustand auf Touch „kleben".
+  @media (hover: hover) {
+    &:hover {
+      background: rgba(255, 252, 242, 0.12);
+    }
   }
   &:active {
     background: rgba(255, 252, 242, 0.2);

@@ -12,10 +12,17 @@ interface ChordLineProps {
   flat?: boolean;
   /** Nur-Text-Modus: Akkorde ausblenden, reine Instrumentalzeilen überspringen. */
   lyricsOnly?: boolean;
+  /** Breite des Leerraums (in ch) für Taktstriche „[|]" statt eines sichtbaren Strichs. */
+  chordGap?: number;
+}
+
+/** Erkennt einen Taktstrich-„Akkord" (z.B. [|], [||]). */
+function isBar(chord: string | null): boolean {
+  return !!chord && /^[|¦/]+$/.test(chord.trim());
 }
 
 /** Rendert eine einzelne ChordPro-Zeile (Akkorde über dem Text). */
-export function ChordLine({ line, semitones, fontSize, flat = false, lyricsOnly = false }: ChordLineProps) {
+export function ChordLine({ line, semitones, fontSize, flat = false, lyricsOnly = false, chordGap = 2 }: ChordLineProps) {
   const pairs = parseLine(line);
   const hasChord = pairs.some((p) => p.chord);
   const hasLyric = pairs.some((p) => p.text && p.text.trim());
@@ -45,12 +52,15 @@ export function ChordLine({ line, semitones, fontSize, flat = false, lyricsOnly 
   }
 
   if (!hasLyric) {
+    // Reine Akkordzeile: Taktstriche weglassen, Abstand zwischen Akkorden = chordGap
     return (
       <div className={styles.chordOnly} style={{ fontSize }}>
         {pairs
-          .filter((p) => p.chord)
+          .filter((p) => p.chord && !isBar(p.chord))
           .map((p, i) => (
-            <span key={i}>{transposeChord(p.chord as string, semitones, flat)}</span>
+            <span key={i} style={{ marginRight: `${chordGap}ch` }}>
+              {transposeChord(p.chord as string, semitones, flat)}
+            </span>
           ))}
       </div>
     );
@@ -60,6 +70,29 @@ export function ChordLine({ line, semitones, fontSize, flat = false, lyricsOnly 
     <div className={styles.chordLine}>
       {pairs.map((p, i) => {
         const ch = p.chord ? transposeChord(p.chord, semitones, flat) : null;
+        const realLyric = !!(p.text && p.text.trim());
+
+        // Taktstrich „[|]" ganz weglassen – der Abstand kommt von den Akkord-Zellen
+        if (isBar(p.chord)) return null;
+
+        // Akkord ohne echten Text (Instrumental) → Akkord + einstellbarer Abstand dahinter
+        if (ch && !realLyric) {
+          return (
+            <span key={i} className={styles.cpair} style={{ marginRight: `${chordGap}ch` }}>
+              <span className={styles.cChord} style={{ fontSize: fontSize * 0.86 }}>
+                {ch}
+              </span>
+              <span className={styles.cLyric} style={{ fontSize }} aria-hidden>
+                {'​'}
+              </span>
+            </span>
+          );
+        }
+
+        // Reiner Leerraum ohne Akkord → weglassen (kein Strichrest)
+        if (!ch && !realLyric) return null;
+
+        // Normalfall: Akkord über Text (oder reiner Text)
         return (
           <span key={i} className={styles.cpair}>
             <span

@@ -56,6 +56,8 @@ export function ChordChart({
   const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10));
   const [cols, setCols] = useState(() => parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
   const [lyricsOnly, setLyricsOnly] = useState(() => localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
+  // Leerraum (in ch) für Taktstriche „[|]" – pro Lied einstellbar
+  const [chordGap, setChordGap] = useState(() => parseFloat(localStorage.getItem(`worship_gap_${song.id}`) || '2'));
 
   const [showKeyPicker, setShowKeyPicker] = useState(false);
   const [showCapoPicker, setShowCapoPicker] = useState(false);
@@ -142,6 +144,7 @@ export function ChordChart({
     lyricsOnly,
     fontId,
     pageWidth,
+    chordGap,
   ]);
 
   // ── Persistenz pro Song: beim Liedwechsel die gespeicherten Werte laden ──
@@ -151,6 +154,7 @@ export function ChordChart({
     setFontSize(parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10));
     setCols(parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
     setLyricsOnly(localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
+    setChordGap(parseFloat(localStorage.getItem(`worship_gap_${song.id}`) || '2'));
     setShowOriginal(false); // beim Liedwechsel wieder die bevorzugte Version zeigen
     // gespeicherte Anzeige-Quelle laden (nur, wenn das Dokument noch existiert)
     const savedView = localStorage.getItem(`worship_view_${song.id}`);
@@ -190,6 +194,10 @@ export function ChordChart({
     localStorage.setItem(`worship_lyrics_${song.id}`, lyricsOnly ? '1' : '0');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lyricsOnly]);
+  useEffect(() => {
+    localStorage.setItem(`worship_gap_${song.id}`, String(chordGap));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chordGap]);
 
   // Beim Songwechsel auf Seite 1 (oder ans Ende, wenn rückwärts geblättert)
   useEffect(() => {
@@ -201,7 +209,7 @@ export function ChordChart({
     });
     return () => cancelAnimationFrame(r);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx, song.id, pageWidth, fontSize, cols, lyricsOnly]);
+  }, [idx, song.id, pageWidth, fontSize, cols, lyricsOnly, chordGap]);
 
   useEffect(() => {
     if (selectedKey) localStorage.setItem(`worship_key_${song.id}`, selectedKey);
@@ -421,6 +429,23 @@ export function ChordChart({
                   2 Spalten
                 </button>
               </div>
+
+              <div className={styles.menuLbl}>Akkord-Abstand</div>
+              <div className={styles.appRow}>
+                <button
+                  className={styles.stepBtn}
+                  onClick={() => setChordGap((g) => Math.max(0, +(g - 0.5).toFixed(1)))}
+                >
+                  −
+                </button>
+                <span className={styles.stepValue}>{chordGap}</span>
+                <button
+                  className={styles.stepBtn}
+                  onClick={() => setChordGap((g) => Math.min(6, +(g + 0.5).toFixed(1)))}
+                >
+                  ＋
+                </button>
+              </div>
             </div>
           </>
         )}
@@ -618,7 +643,14 @@ export function ChordChart({
               </div>
             ) : (
               sections.map((sec, i) => (
-                <Section key={i} section={sec} semitones={gripOffset} fontSize={fontSize} lyricsOnly={lyricsOnly} />
+                <Section
+                  key={i}
+                  section={sec}
+                  semitones={gripOffset}
+                  fontSize={fontSize}
+                  lyricsOnly={lyricsOnly}
+                  chordGap={chordGap}
+                />
               ))
             )}
           </div>

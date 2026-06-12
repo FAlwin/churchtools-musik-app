@@ -9,10 +9,11 @@ interface SectionProps {
   fontSize: number;
   flat?: boolean;
   lyricsOnly?: boolean;
+  chordGap?: number;
 }
 
 /** Rendert einen ChordPro-Abschnitt (Vers, Chorus, …) mit Typ-Label. */
-export function Section({ section, semitones, fontSize, flat = false, lyricsOnly = false }: SectionProps) {
+export function Section({ section, semitones, fontSize, flat = false, lyricsOnly = false, chordGap }: SectionProps) {
   // Im Nur-Text-Modus reine Instrumental-Abschnitte (ohne Text) ausblenden
   if (lyricsOnly) {
     const anyLyric = section.lines.some(
@@ -37,6 +38,7 @@ export function Section({ section, semitones, fontSize, flat = false, lyricsOnly
             fontSize={fontSize}
             flat={flat}
             lyricsOnly={lyricsOnly}
+            chordGap={chordGap}
           />
         ),
       )}
