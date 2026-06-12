@@ -44,6 +44,25 @@ interface SetlistProps {
   onAdd: (data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number }) => Promise<void>;
 }
 
+/** Dezentes Linien-Icon für die Zuständigen (statt Emoji). */
+function RespIcon() {
+  return (
+    <svg
+      className={styles.respIcon}
+      viewBox="0 0 24 24"
+      width="13"
+      height="13"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="8" r="3.3" />
+      <path d="M5.5 19c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** Eine sortierbare Zeile im Bearbeiten-Modus. */
 function SortableRow({
   item,
@@ -258,7 +277,9 @@ export function Setlist({
                         {song.timeSig && <span className={styles.timeSig}>{song.timeSig}</span>}
                       </div>
                       {item.responsible.length > 0 && (
-                        <div className={styles.resp}>👤 {item.responsible.join(', ')}</div>
+                        <div className={styles.resp}>
+                          <RespIcon /> {item.responsible.join(', ')}
+                        </div>
                       )}
                     </div>
                     <span className={styles.arr}>›</span>
@@ -266,14 +287,13 @@ export function Setlist({
                 );
               }
               return (
-                <div key={item.id} className={styles.itemRow}>
-                  <span className={styles.bullet} />
-                  <div className={styles.itemInfo}>
-                    <div className={styles.itemTitle}>{item.title}</div>
-                    {item.responsible.length > 0 && (
-                      <div className={styles.resp}>👤 {item.responsible.join(', ')}</div>
-                    )}
-                  </div>
+                <div key={item.id} className={styles.textTile}>
+                  <div className={styles.textTitle}>{item.title}</div>
+                  {item.responsible.length > 0 && (
+                    <div className={styles.resp}>
+                      <RespIcon /> {item.responsible.join(', ')}
+                    </div>
+                  )}
                 </div>
               );
             })}
