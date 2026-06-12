@@ -84,7 +84,8 @@ export function ChordChart({
 
   const textInputRef = useRef<HTMLInputElement | null>(null);
   const touchX = useRef<number | null>(null);
-  const touchScroll = useRef<number>(0);
+  const touchY = useRef<number>(0);
+  const touchT = useRef<number>(0);
   const pendingLastPage = useRef(false);
   const slideDir = useRef<'right' | 'left'>('right'); // Richtung des Liedwechsel-Übergangs
 
@@ -251,25 +252,27 @@ export function ChordChart({
     onBack();
   }
 
-  // Wischen: blättert Seiten (nativer Scroll); am Seitenrand wie die Pfeile zum Lied wechseln
+  // Wischen verhält sich exakt wie das Tippen an den Rand: es ruft next()/prev() auf
+  // (Seitenwechsel sofort, Liedwechsel mit Gleit-Animation). Kein natives Schwung-Scrollen
+  // mehr – das Horizontal-Pannen ist per touch-action: pan-y unterbunden.
   function onTouchStart(e: React.TouchEvent) {
     if (drawMode) return;
     touchX.current = e.touches[0].clientX;
-    touchScroll.current = drawing.bodyRef.current?.scrollLeft ?? 0;
+    touchY.current = e.touches[0].clientY;
+    touchT.current = e.timeStamp;
   }
   function onTouchEnd(e: React.TouchEvent) {
     if (touchX.current === null) return;
-    const el = drawing.bodyRef.current;
-    const d = touchX.current - e.changedTouches[0].clientX;
+    const dx = touchX.current - e.changedTouches[0].clientX;
+    const dy = touchY.current - e.changedTouches[0].clientY;
+    const dt = Math.max(1, e.timeStamp - touchT.current);
     touchX.current = null;
-    if (!el || Math.abs(d) <= 55) return;
-    const maxScroll = el.scrollWidth - el.clientWidth;
-    const didScroll = Math.abs(el.scrollLeft - touchScroll.current) > 4;
-    if (didScroll) return; // native Seitenscroll hat schon geblättert
-    if (d > 0 && el.scrollLeft >= maxScroll - 2 && idx < songs.length - 1) {
-      next(); // war auf letzter Seite -> nächstes Lied
-    } else if (d < 0 && el.scrollLeft <= 2 && idx > 0) {
-      prev(); // war auf erster Seite -> voriges Lied
+    if (Math.abs(dx) <= Math.abs(dy) * 1.2) return; // vertikal -> ignorieren
+    const velocity = Math.abs(dx) / dt; // px pro ms
+    // klares Wischen ODER kurzes schnelles Wischen löst aus
+    if (Math.abs(dx) > 40 || (Math.abs(dx) > 14 && velocity > 0.4)) {
+      if (dx > 0) next();
+      else prev();
     }
   }
 

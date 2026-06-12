@@ -185,7 +185,8 @@
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 12px;
-  touch-action: none; /* verhindert Scroll-Konflikt beim Ziehen */
+  /* KEIN touch-action: none auf der ganzen Zeile – sonst lässt sich beim Start
+     auf einem Element nicht scrollen. Nur der Griff (.handle) fängt die Geste. */
 }
 
 .editHeaderRow {

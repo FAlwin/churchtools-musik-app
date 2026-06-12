@@ -256,7 +256,7 @@ export function DocumentView({
       <TransformWrapper
         key={`${doc.fileId}-${pageIndex}`}
         ref={transformRef}
-        minScale={1}
+        minScale={0.4}
         maxScale={8}
         centerOnInit={!savedTf}
         initialScale={savedTf?.scale ?? 1}

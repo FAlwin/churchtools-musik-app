@@ -429,6 +429,9 @@
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  // Horizontales Pannen per Touch unterbinden – Wischen wird in JS ausgewertet
+  // (gleiche Reaktion wie Tippen), Seitenwechsel passiert programmatisch.
+  touch-action: pan-y;
   // bewusst KEIN scroll-behavior: smooth – sonst animiert der Sprung beim
   // Liedwechsel in die falsche Richtung. Seitenwechsel scrollt gezielt smooth.
   position: relative;

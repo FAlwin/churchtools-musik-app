@@ -39,6 +39,8 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
+    // host: true -> auch im WLAN erreichbar (zum Testen auf Handy/Tablet)
+    host: true,
     // Proxy: API-Aufrufe im Dev an das Express-Backend weiterreichen
     proxy: {
       '/api': {
