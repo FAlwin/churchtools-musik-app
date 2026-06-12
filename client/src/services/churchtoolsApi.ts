@@ -28,6 +28,14 @@ export function getAgenda(eventId: number): Promise<AgendaItem[]> {
   return apiFetch<AgendaItem[]>(`/api/services/${eventId}/setlist`);
 }
 
+/** Speichert die neue Reihenfolge der Ablaufpunkte (Liste der Item-IDs in Wunschreihenfolge). */
+export function reorderAgenda(eventId: number, order: number[]): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/services/${eventId}/agenda/order`, {
+    method: 'PATCH',
+    body: JSON.stringify({ order }),
+  });
+}
+
 /** Speichert die bearbeitete ECG-Version eines Songs in ChurchTools. */
 export function saveChordpro(songId: number, arrangementId: number, text: string): Promise<{ ok: boolean }> {
   return apiFetch(`/api/songs/${songId}/chordpro`, {

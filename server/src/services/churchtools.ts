@@ -108,6 +108,12 @@ export interface CtAgendaItem {
   id: number;
   title: string;
   type?: string;
+  note?: string;
+  duration?: number;
+  isBeforeEvent?: boolean;
+  /** Beim Lesen ein Objekt; beim Schreiben wird nur `text` als String gesendet. */
+  responsible?: { text?: string };
+  position?: number;
   song?: CtAgendaSong;
 }
 
@@ -220,6 +226,58 @@ export async function uploadChordpro(
   }
   if (!res.ok) {
     throw new HttpError(502, `Speichern in ChurchTools fehlgeschlagen (${res.status}).`);
+  }
+}
+
+/**
+ * Schreibt die Reihenfolge des Ablaufs zurück: lädt die aktuellen Punkte frisch,
+ * sortiert sie nach `orderedItemIds` und speichert die ganze Liste per
+ * `PUT /api/events/{id}/agenda` (Position = Listenindex). `responsible` wird als
+ * String gesendet (Personen-Zuordnungen bleiben in ChurchTools erhalten).
+ */
+export async function reorderAgenda(
+  cookie: string,
+  eventId: number,
+  orderedItemIds: number[],
+): Promise<void> {
+  const csrf = await getCsrfToken(cookie);
+  const { items } = await getAgenda(cookie, eventId); // frische Live-Daten
+  const byId = new Map(items.map((i) => [i.id, i]));
+
+  // Schutz: nur erlauben, wenn die übergebene Reihenfolge exakt dieselben Punkte enthält.
+  const same =
+    orderedItemIds.length === items.length && orderedItemIds.every((id) => byId.has(id));
+  if (!same) {
+    throw new HttpError(409, 'Der Ablauf hat sich geändert. Bitte neu laden und erneut versuchen.');
+  }
+
+  const payload = orderedItemIds.map((id, index) => {
+    const it = byId.get(id) as CtAgendaItem;
+    return {
+      id: it.id,
+      title: it.title,
+      type: it.type,
+      note: it.note ?? '',
+      duration: it.duration ?? 0,
+      isBeforeEvent: it.isBeforeEvent ?? false,
+      responsible: it.responsible?.text ?? '',
+      position: index,
+      // Lied-Verknüpfung MUSS als top-level arrangementId gesendet werden.
+      // Ein verschachteltes song-Objekt ignoriert ChurchTools → Punkt wird auf „text" herabgestuft!
+      ...(it.song ? { arrangementId: it.song.arrangementId } : {}),
+    };
+  });
+
+  const res = await fetch(`${BASE}/api/events/${eventId}/agenda`, {
+    method: 'PUT',
+    headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items: payload }),
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+  }
+  if (!res.ok) {
+    throw new HttpError(502, `Ablauf-Reihenfolge speichern fehlgeschlagen (${res.status}).`);
   }
 }
 

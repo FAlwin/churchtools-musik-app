@@ -147,3 +147,72 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ── Bearbeiten-Modus (Drag & Drop) ───────────────────────── */
+.editHint {
+  padding: 12px 16px 4px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.editError {
+  margin: 4px 16px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--chord-dim);
+  border: 1px solid rgba(235, 94, 40, 0.35);
+  color: var(--chord);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.editRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  touch-action: none; /* verhindert Scroll-Konflikt beim Ziehen */
+}
+
+.editHeaderRow {
+  background: transparent;
+  border-style: dashed;
+
+  .editTitle {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text3);
+  }
+}
+
+.handle {
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  font-size: 20px;
+  line-height: 1;
+  cursor: grab;
+  padding: 4px 6px;
+  flex-shrink: 0;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.editTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

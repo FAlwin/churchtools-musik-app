@@ -7,6 +7,7 @@ import {
   putChordpro,
   deleteChordpro,
   getFile,
+  putAgendaOrder,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -15,6 +16,7 @@ const router = Router();
 router.use(requireSession);
 router.get('/services', asyncHandler(getServices));
 router.get('/services/:eventId/setlist', asyncHandler(getSetlist));
+router.patch('/services/:eventId/agenda/order', asyncHandler(putAgendaOrder));
 router.put('/songs/:songId/chordpro', asyncHandler(putChordpro));
 router.delete('/songs/:songId/chordpro', asyncHandler(deleteChordpro));
 router.get('/songs/:songId/files/:fileId', asyncHandler(getFile));

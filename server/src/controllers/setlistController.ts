@@ -7,7 +7,7 @@ import {
   deleteEcgChordpro,
   resolveFileUrl,
 } from '../services/setlistBuilder.js';
-import { fetchFileBytes } from '../services/churchtools.js';
+import { fetchFileBytes, reorderAgenda } from '../services/churchtools.js';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -32,6 +32,18 @@ export async function getServices(req: Request, res: Response): Promise<void> {
 }
 
 const idSchema = z.coerce.number().int().positive();
+
+const orderSchema = z.object({
+  order: z.array(z.coerce.number().int().positive()).min(1),
+});
+
+/** PATCH /api/services/:eventId/agenda/order – neue Reihenfolge der Ablaufpunkte speichern. */
+export async function putAgendaOrder(req: Request, res: Response): Promise<void> {
+  const eventId = idSchema.parse(req.params.eventId);
+  const { order } = orderSchema.parse(req.body);
+  await reorderAgenda(req.ctCookie as string, eventId, order);
+  res.json({ ok: true });
+}
 
 /** GET /api/services/:eventId/setlist – alle Ablaufpunkte (Lieder inkl. ChordPro). */
 export async function getSetlist(req: Request, res: Response): Promise<void> {

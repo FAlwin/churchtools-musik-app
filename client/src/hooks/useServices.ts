@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../services/churchtoolsApi';
 
 /** Lädt die Gottesdienste mit Setlist. */
@@ -18,5 +18,14 @@ export function useAgenda(eventId: number | null) {
     queryFn: () => api.getAgenda(eventId as number),
     enabled: eventId !== null,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** Speichert eine neue Ablauf-Reihenfolge und lädt den Ablauf danach neu. */
+export function useReorderAgenda(eventId: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (order: number[]) => api.reorderAgenda(eventId as number, order),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
   });
 }
