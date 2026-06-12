@@ -14,7 +14,7 @@ function parts(iso: string): { day: string; month: string; weekday: string; time
 }
 
 /** Wandelt ein ChurchTools-Event in unser Service-Format um. */
-export function mapEventToService(ev: CtEvent, songCount: number): Service {
+export function mapEventToService(ev: CtEvent, songCount: number, subtitle: string | null = null): Service {
   const p = parts(ev.startDate);
   return {
     id: ev.id,
@@ -22,6 +22,7 @@ export function mapEventToService(ev: CtEvent, songCount: number): Service {
     month: p.month,
     weekday: p.weekday,
     name: ev.name,
+    subtitle,
     date: ev.startDate.slice(0, 10),
     time: p.time,
     location: ev.calendar?.title ?? '',

@@ -13,6 +13,8 @@ export interface Service {
   month: string;
   weekday: string;
   name: string;
+  /** Untertitel des Termins (z.B. „Kennenlernabend"), falls gepflegt */
+  subtitle: string | null;
   /** ISO-Datum (für Sortierung/Logik) */
   date: string;
   time: string;

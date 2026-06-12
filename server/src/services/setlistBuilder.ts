@@ -7,6 +7,7 @@ import type { AgendaItem, Service, SetlistSong, SongDocument } from '@shared/typ
 import {
   getAgenda,
   getEvents,
+  getAppointmentSubtitle,
   getSong,
   downloadFileText,
   uploadChordpro,
@@ -54,10 +55,17 @@ export async function getServicesWithSetlists(
   const withCounts = await Promise.all(
     events.map(async (ev) => {
       try {
-        const agenda = await getAgenda(cookie, ev.id);
+        const calId = ev.calendar?.domainIdentifier;
+        // Agenda + Termin-Untertitel parallel laden.
+        const [agenda, subtitle] = await Promise.all([
+          getAgenda(cookie, ev.id),
+          calId && ev.appointmentId
+            ? getAppointmentSubtitle(cookie, calId, ev.appointmentId)
+            : Promise.resolve(null),
+        ]);
         const songCount = (agenda.items ?? []).filter((i) => i.song).length;
         // Sichtbar, sobald ein Ablaufplan existiert – auch ohne Lieder.
-        return mapEventToService(ev, songCount);
+        return mapEventToService(ev, songCount, subtitle);
       } catch {
         return null; // 404 = kein Ablaufplan
       }

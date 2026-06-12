@@ -90,7 +90,9 @@ export interface CtEvent {
   name: string;
   startDate: string;
   endDate: string;
-  calendar?: { title?: string };
+  /** ID des zugehörigen Kalender-Termins (für den Untertitel) */
+  appointmentId?: number;
+  calendar?: { title?: string; domainIdentifier?: string };
 }
 
 export interface CtAgendaSong {
@@ -134,6 +136,24 @@ export interface CtSong {
 
 export function getEvents(cookie: string, from: string, to: string): Promise<CtEvent[]> {
   return ctGet<CtEvent[]>(cookie, `/api/events?from=${from}&to=${to}`);
+}
+
+/** Liest den Untertitel eines Kalender-Termins (z.B. „Kennenlernabend"); null bei Fehler. */
+export async function getAppointmentSubtitle(
+  cookie: string,
+  calendarId: string,
+  appointmentId: number,
+): Promise<string | null> {
+  try {
+    const data = await ctGet<{ appointment?: { subtitle?: string }; subtitle?: string }>(
+      cookie,
+      `/api/calendars/${calendarId}/appointments/${appointmentId}`,
+    );
+    const subtitle = data.appointment?.subtitle ?? data.subtitle ?? null;
+    return subtitle && subtitle.trim() ? subtitle.trim() : null;
+  } catch {
+    return null;
+  }
 }
 
 export function getAgenda(cookie: string, eventId: number): Promise<{ items: CtAgendaItem[] }> {

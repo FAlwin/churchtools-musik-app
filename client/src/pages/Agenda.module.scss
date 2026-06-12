@@ -69,10 +69,15 @@
 .svcName {
   font-size: 16px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   color: var(--text);
+  // Umbruch erlaubt: auf breiten Screens eine Zeile, am Handy ggf. zweite Zeile.
+  overflow-wrap: anywhere;
+}
+
+// Untertitel-Teil in derselben Titelzeile (z.B. „… · Kennenlernabend")
+.subtitlePart {
+  font-weight: 500;
+  color: var(--text2);
 }
 
 .meta {

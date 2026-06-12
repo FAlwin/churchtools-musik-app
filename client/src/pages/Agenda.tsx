@@ -148,6 +148,7 @@ export function Agenda({
               <div className={styles.info}>
                 <div className={styles.svcName}>
                   {s.weekday} · {s.name}
+                  {s.subtitle && <span className={styles.subtitlePart}> · {s.subtitle}</span>}
                 </div>
                 <div className={styles.meta}>
                   <span>{s.time}</span>

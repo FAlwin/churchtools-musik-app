@@ -87,9 +87,10 @@ Beim normalen „Erstellen" verwendet Docker manchmal einen alten Zwischenstand
 (Cache) – besonders, wenn die Dateien über das Netzwerk kopiert wurden. Wenn ein
 Update **nicht greift**, sicheren Weg gehen:
 1. Container Manager → **Projekt** → `worship-charts` → **Aktion → Stoppen**
-2. **Aktion → Löschen** (löscht nur Projekt/Container, **nicht** die Dateien)
-3. **Image** → `worship-charts-app:latest` → **Löschen**
-4. **Projekt → Erstellen** (baut alles frisch, ohne Cache)
+2. **Aktion → Löschen** (löscht nur Projekt/Container, **nicht** die Dateien).
+   Auf unserem NAS wird dabei das Image `worship-charts-app:latest` **automatisch
+   mitgelöscht** – ein separater Image-Löschschritt ist also nicht nötig.
+3. **Projekt → Erstellen** (baut alles frisch, ohne Cache)
 
 ## Hinweise / Troubleshooting
 - Der App-Container speichert nichts dauerhaft (Notizen/Markierungen liegen im
