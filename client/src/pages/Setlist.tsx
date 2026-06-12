@@ -37,15 +37,19 @@ interface SetlistProps {
   isReordering?: boolean;
   /** Löscht einen Ablaufpunkt. Wirft bei Fehler (z.B. fehlende Rechte). */
   onDelete: (itemId: number) => Promise<void>;
+  /** Benennt einen Punkt um (nur Text/Überschrift). Wirft bei Fehler. */
+  onRename: (itemId: number, title: string) => Promise<void>;
 }
 
 /** Eine sortierbare Zeile im Bearbeiten-Modus. */
 function SortableRow({
   item,
   onRequestDelete,
+  onRename,
 }: {
   item: AgendaItem;
   onRequestDelete: (item: AgendaItem) => void;
+  onRename: (itemId: number, title: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -56,7 +60,6 @@ function SortableRow({
     opacity: isDragging ? 0.6 : 1,
     zIndex: isDragging ? 1 : undefined,
   };
-  const label = item.song ? item.song.title : item.title;
   return (
     <div
       ref={setNodeRef}
@@ -66,7 +69,23 @@ function SortableRow({
       <button className={styles.handle} {...attributes} {...listeners} aria-label="Verschieben">
         ⠿
       </button>
-      <span className={styles.editTitle}>{label}</span>
+      {item.song ? (
+        // Lieder: Titel = Songname, nicht hier umbenennbar
+        <span className={styles.editTitle}>{item.song.title}</span>
+      ) : (
+        <input
+          className={styles.editInput}
+          defaultValue={item.title}
+          aria-label="Titel"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur();
+          }}
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            if (v && v !== item.title) onRename(item.id, v);
+          }}
+        />
+      )}
       <button
         className={styles.delBtn}
         onClick={() => onRequestDelete(item)}
@@ -91,6 +110,7 @@ export function Setlist({
   onReorder,
   isReordering,
   onDelete,
+  onRename,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
   const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
@@ -119,6 +139,15 @@ export function Setlist({
     onReorder(next.map((i) => i.id)).catch((e: unknown) => {
       setLocalItems(items); // zurückrollen
       setErr(e instanceof Error ? e.message : 'Reihenfolge konnte nicht gespeichert werden.');
+    });
+  }
+
+  function handleRename(itemId: number, title: string) {
+    setErr(null);
+    setLocalItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, title } : i)));
+    onRename(itemId, title).catch((e: unknown) => {
+      setLocalItems(items); // zurückrollen
+      setErr(e instanceof Error ? e.message : 'Umbenennen fehlgeschlagen.');
     });
   }
 
@@ -168,14 +197,19 @@ export function Setlist({
         ) : editMode ? (
           <>
             <div className={styles.editHint}>
-              {isReordering ? 'Speichere…' : 'Ziehen (⠿) zum Sortieren · 🗑 zum Löschen.'}
+              {isReordering ? 'Speichere…' : 'Ziehen (⠿) zum Sortieren · Titel tippen zum Umbenennen · 🗑 zum Löschen.'}
             </div>
             {err && <div className={styles.editError}>{err}</div>}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={localItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                 <div className={styles.list}>
                   {localItems.map((item) => (
-                    <SortableRow key={item.id} item={item} onRequestDelete={setPendingDelete} />
+                    <SortableRow
+                      key={item.id}
+                      item={item}
+                      onRequestDelete={setPendingDelete}
+                      onRename={handleRename}
+                    />
                   ))}
                 </div>
               </SortableContext>

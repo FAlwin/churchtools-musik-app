@@ -281,6 +281,44 @@ export async function reorderAgenda(
   }
 }
 
+/**
+ * Ändert Felder eines Ablaufpunkts (z.B. Titel). Liest den Punkt frisch, überschreibt nur
+ * die übergebenen Felder und sendet alle übrigen unverändert mit. Lied-Verknüpfung bleibt
+ * über top-level `arrangementId` erhalten.
+ */
+export async function updateAgendaItem(
+  cookie: string,
+  eventId: number,
+  itemId: number,
+  fields: { title?: string; note?: string },
+): Promise<void> {
+  const csrf = await getCsrfToken(cookie);
+  const { items } = await getAgenda(cookie, eventId);
+  const it = items.find((i) => i.id === itemId);
+  if (!it) throw new HttpError(404, 'Ablaufpunkt nicht gefunden.');
+
+  const body = {
+    title: fields.title ?? it.title,
+    type: it.type,
+    note: fields.note ?? it.note ?? '',
+    duration: it.duration ?? 0,
+    isBeforeEvent: it.isBeforeEvent ?? false,
+    responsible: it.responsible?.text ?? '',
+    ...(it.song ? { arrangementId: it.song.arrangementId } : {}),
+  };
+  const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items/${itemId}`, {
+    method: 'PUT',
+    headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+  }
+  if (!res.ok) {
+    throw new HttpError(502, `Ablaufpunkt ändern fehlgeschlagen (${res.status}).`);
+  }
+}
+
 /** Löscht einen Ablaufpunkt aus der Agenda eines Events. */
 export async function deleteAgendaItem(
   cookie: string,

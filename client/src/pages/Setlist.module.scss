@@ -217,6 +217,24 @@
   text-overflow: ellipsis;
 }
 
+.editInput {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed var(--border);
+  padding: 2px 2px;
+
+  &:focus {
+    outline: none;
+    border-bottom-color: var(--teal);
+  }
+}
+
 .delBtn {
   border: none;
   background: transparent;

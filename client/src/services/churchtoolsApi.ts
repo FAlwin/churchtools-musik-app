@@ -36,6 +36,18 @@ export function reorderAgenda(eventId: number, order: number[]): Promise<{ ok: b
   });
 }
 
+/** Benennt einen Ablaufpunkt um (Titel). */
+export function renameAgendaItem(
+  eventId: number,
+  itemId: number,
+  title: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title }),
+  });
+}
+
 /** Löscht einen Ablaufpunkt. */
 export function deleteAgendaItem(eventId: number, itemId: number): Promise<{ ok: boolean }> {
   return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, { method: 'DELETE' });

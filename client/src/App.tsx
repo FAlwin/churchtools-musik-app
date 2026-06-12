@@ -6,7 +6,13 @@ import { Setlist } from './pages/Setlist';
 import { ChordChart } from './pages/ChordChart';
 import { useSettings } from './hooks/useSettings';
 import { useAuth } from './hooks/useAuth';
-import { useServices, useAgenda, useReorderAgenda, useDeleteAgendaItem } from './hooks/useServices';
+import {
+  useServices,
+  useAgenda,
+  useReorderAgenda,
+  useDeleteAgendaItem,
+  useRenameAgendaItem,
+} from './hooks/useServices';
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
 import type { Screen as ScreenName } from './types/index';
@@ -24,6 +30,7 @@ export default function App() {
   const agendaQuery = useAgenda(service?.id ?? null);
   const reorderAgenda = useReorderAgenda(service?.id ?? null);
   const deleteAgendaItem = useDeleteAgendaItem(service?.id ?? null);
+  const renameAgendaItem = useRenameAgendaItem(service?.id ?? null);
   const items = agendaQuery.data ?? [];
   // Nur die Lieder – für die Index-Navigation der Charts.
   const songs = items.flatMap((i) => (i.song ? [i.song] : []));
@@ -93,6 +100,9 @@ export default function App() {
           onReorder={(order) => reorderAgenda.mutateAsync(order).then(() => undefined)}
           isReordering={reorderAgenda.isPending}
           onDelete={(itemId) => deleteAgendaItem.mutateAsync(itemId).then(() => undefined)}
+          onRename={(itemId, title) =>
+            renameAgendaItem.mutateAsync({ itemId, title }).then(() => undefined)
+          }
         />
       )}
 

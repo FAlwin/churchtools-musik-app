@@ -9,6 +9,7 @@ import {
   getFile,
   putAgendaOrder,
   deleteAgendaItemCtrl,
+  putAgendaItem,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -18,6 +19,7 @@ router.use(requireSession);
 router.get('/services', asyncHandler(getServices));
 router.get('/services/:eventId/setlist', asyncHandler(getSetlist));
 router.patch('/services/:eventId/agenda/order', asyncHandler(putAgendaOrder));
+router.put('/services/:eventId/agenda/items/:itemId', asyncHandler(putAgendaItem));
 router.delete('/services/:eventId/agenda/items/:itemId', asyncHandler(deleteAgendaItemCtrl));
 router.put('/songs/:songId/chordpro', asyncHandler(putChordpro));
 router.delete('/songs/:songId/chordpro', asyncHandler(deleteChordpro));
