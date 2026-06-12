@@ -48,3 +48,13 @@ export function useRenameAgendaItem(eventId: number | null) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
   });
 }
+
+/** Legt einen neuen Ablaufpunkt an und lädt den Ablauf danach neu. */
+export function useCreateAgendaItem(eventId: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number }) =>
+      api.createAgendaItem(eventId as number, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
+  });
+}

@@ -1,0 +1,127 @@
+.err {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--chord-dim);
+  border: 1px solid rgba(235, 94, 40, 0.35);
+  color: var(--chord);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choice {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface3);
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.searchRow {
+  display: flex;
+  gap: 8px;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--teal);
+  }
+}
+
+.primary {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--teal);
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface3);
+  }
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.songName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.arrMeta {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 14px;
+}

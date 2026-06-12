@@ -112,7 +112,7 @@ export interface CtAgendaItem {
   duration?: number;
   isBeforeEvent?: boolean;
   /** Beim Lesen ein Objekt; beim Schreiben wird nur `text` als String gesendet. */
-  responsible?: { text?: string };
+  responsible?: { text?: string; persons?: { service?: string; person?: { title?: string } }[] };
   position?: number;
   song?: CtAgendaSong;
 }
@@ -279,6 +279,42 @@ export async function reorderAgenda(
   if (!res.ok) {
     throw new HttpError(502, `Ablauf-Reihenfolge speichern fehlgeschlagen (${res.status}).`);
   }
+}
+
+/** Legt einen neuen Ablaufpunkt an (am Ende). Für Lieder ist `arrangementId` Pflicht. */
+export async function createAgendaItem(
+  cookie: string,
+  eventId: number,
+  data: { type: 'header' | 'text' | 'song'; title: string; arrangementId?: number },
+): Promise<void> {
+  const csrf = await getCsrfToken(cookie);
+  const body: Record<string, unknown> = { type: data.type, title: data.title };
+  // Lied-Verknüpfung MUSS als top-level arrangementId gesendet werden (siehe reorderAgenda).
+  if (data.type === 'song' && data.arrangementId) body.arrangementId = data.arrangementId;
+  const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items`, {
+    method: 'POST',
+    headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+  }
+  if (!res.ok) {
+    throw new HttpError(502, `Ablaufpunkt anlegen fehlgeschlagen (${res.status}).`);
+  }
+}
+
+interface CtSongListEntry {
+  id: number;
+  name: string;
+  author: string | null;
+  arrangements: { id: number; name: string; key: string | null; keyOfArrangement: string | null }[];
+}
+
+/** Sucht Songs in ChurchTools (Name) und liefert sie mit ihren Arrangements zurück. */
+export async function searchSongs(cookie: string, query: string): Promise<CtSongListEntry[]> {
+  const q = encodeURIComponent(query);
+  return ctGet<CtSongListEntry[]>(cookie, `/api/songs?query=${q}&limit=25`);
 }
 
 /**

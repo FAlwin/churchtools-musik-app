@@ -170,6 +170,14 @@ function isHeaderType(type?: string): boolean {
   return !!type && /header|überschrift|heading|section/i.test(type);
 }
 
+/** Namen der tatsächlich besetzten Zuständigen, ohne Duplikate (unbesetzte Positionen weglassen). */
+function responsibleNames(item: { responsible?: { persons?: { person?: { title?: string } }[] } }): string[] {
+  const names = (item.responsible?.persons ?? [])
+    .map((p) => p.person?.title?.trim())
+    .filter((n): n is string => !!n);
+  return [...new Set(names)];
+}
+
 /** Alle Punkte eines Ablaufplans in Reihenfolge – Lieder aufgelöst, übrige nur als Eintrag. */
 export async function getAgendaItems(cookie: string, eventId: number): Promise<AgendaItem[]> {
   const agenda = await getAgenda(cookie, eventId);
@@ -182,6 +190,7 @@ export async function getAgendaItems(cookie: string, eventId: number): Promise<A
         title: item.title,
         type: item.type ?? null,
         isHeader: isHeaderType(item.type),
+        responsible: responsibleNames(item),
         song,
       };
     }),

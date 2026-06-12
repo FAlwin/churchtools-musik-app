@@ -12,7 +12,10 @@ import {
   reorderAgenda,
   deleteAgendaItem,
   updateAgendaItem,
+  createAgendaItem,
+  searchSongs,
 } from '../services/churchtools.js';
+import type { SongSearchResult } from '@shared/types/index';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -53,6 +56,48 @@ export async function putAgendaOrder(req: Request, res: Response): Promise<void>
 const updateItemSchema = z.object({
   title: z.string().trim().min(1, 'Titel fehlt').max(255),
 });
+
+const createItemSchema = z
+  .object({
+    type: z.enum(['header', 'text', 'song']),
+    title: z.string().trim().max(255).optional(),
+    arrangementId: z.coerce.number().int().positive().optional(),
+  })
+  .refine((d) => d.type !== 'song' || d.arrangementId !== undefined, {
+    message: 'Für ein Lied ist arrangementId erforderlich.',
+    path: ['arrangementId'],
+  });
+
+/** POST /api/services/:eventId/agenda/items – neuen Ablaufpunkt anlegen. */
+export async function postAgendaItem(req: Request, res: Response): Promise<void> {
+  const eventId = idSchema.parse(req.params.eventId);
+  const { type, title, arrangementId } = createItemSchema.parse(req.body);
+  await createAgendaItem(req.ctCookie as string, eventId, {
+    type,
+    title: title ?? (type === 'header' ? 'Überschrift' : type === 'song' ? 'Lied' : 'Neuer Punkt'),
+    arrangementId,
+  });
+  res.json({ ok: true });
+}
+
+const searchSchema = z.string().trim().min(1).max(100);
+
+/** GET /api/songs?query=… – Songsuche für „Lied hinzufügen". */
+export async function getSongs(req: Request, res: Response): Promise<void> {
+  const query = searchSchema.parse(req.query.query);
+  const songs = await searchSongs(req.ctCookie as string, query);
+  const result: SongSearchResult[] = songs.map((s) => ({
+    songId: s.id,
+    name: s.name,
+    author: s.author ?? null,
+    arrangements: (s.arrangements ?? []).map((a) => ({
+      arrangementId: a.id,
+      arrangementName: a.name,
+      key: a.keyOfArrangement ?? a.key ?? null,
+    })),
+  }));
+  res.json(result);
+}
 
 /** PUT /api/services/:eventId/agenda/items/:itemId – einen Ablaufpunkt umbenennen. */
 export async function putAgendaItem(req: Request, res: Response): Promise<void> {

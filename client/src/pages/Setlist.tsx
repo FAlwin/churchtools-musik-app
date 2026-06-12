@@ -21,6 +21,7 @@ import { Screen, Scroll } from '../components/Screen';
 import { NavBar, IconButton } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { AddItemSheet } from '../components/AddItemSheet';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
@@ -39,6 +40,8 @@ interface SetlistProps {
   onDelete: (itemId: number) => Promise<void>;
   /** Benennt einen Punkt um (nur Text/Überschrift). Wirft bei Fehler. */
   onRename: (itemId: number, title: string) => Promise<void>;
+  /** Legt einen neuen Punkt an. Wirft bei Fehler. */
+  onAdd: (data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number }) => Promise<void>;
 }
 
 /** Eine sortierbare Zeile im Bearbeiten-Modus. */
@@ -111,11 +114,13 @@ export function Setlist({
   isReordering,
   onDelete,
   onRename,
+  onAdd,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
   const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
   const [err, setErr] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
 
   // Server-Stand (auch nach dem Speichern) übernehmen.
   useEffect(() => {
@@ -214,6 +219,9 @@ export function Setlist({
                 </div>
               </SortableContext>
             </DndContext>
+            <button className={styles.addBtn} onClick={() => setShowAdd(true)}>
+              ＋ Punkt hinzufügen
+            </button>
           </>
         ) : (
           <div className={styles.list}>
@@ -249,6 +257,9 @@ export function Setlist({
                         {song.bpm !== null && <span className={styles.chipBpm}>♩ {song.bpm}</span>}
                         {song.timeSig && <span className={styles.timeSig}>{song.timeSig}</span>}
                       </div>
+                      {item.responsible.length > 0 && (
+                        <div className={styles.resp}>👤 {item.responsible.join(', ')}</div>
+                      )}
                     </div>
                     <span className={styles.arr}>›</span>
                   </div>
@@ -257,7 +268,12 @@ export function Setlist({
               return (
                 <div key={item.id} className={styles.itemRow}>
                   <span className={styles.bullet} />
-                  <div className={styles.itemTitle}>{item.title}</div>
+                  <div className={styles.itemInfo}>
+                    <div className={styles.itemTitle}>{item.title}</div>
+                    {item.responsible.length > 0 && (
+                      <div className={styles.resp}>👤 {item.responsible.join(', ')}</div>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -275,6 +291,8 @@ export function Setlist({
           onCancel={() => setPendingDelete(null)}
         />
       )}
+
+      {showAdd && <AddItemSheet onClose={() => setShowAdd(false)} onAdd={onAdd} />}
     </Screen>
   );
 }

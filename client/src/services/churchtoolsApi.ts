@@ -1,7 +1,7 @@
 /**
  * Konkrete Backend-Endpunkte der Worship-App. Alle UI-Datenzugriffe laufen hierüber.
  */
-import type { AgendaItem, AuthStatus, Service } from '@shared/types/index';
+import type { AgendaItem, AuthStatus, Service, SongSearchResult } from '@shared/types/index';
 import { apiFetch } from './api';
 
 export function login(email: string, password: string): Promise<AuthStatus> {
@@ -34,6 +34,22 @@ export function reorderAgenda(eventId: number, order: number[]): Promise<{ ok: b
     method: 'PATCH',
     body: JSON.stringify({ order }),
   });
+}
+
+/** Legt einen neuen Ablaufpunkt an (Text/Überschrift/Lied). */
+export function createAgendaItem(
+  eventId: number,
+  data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number },
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/services/${eventId}/agenda/items`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/** Sucht Songs in ChurchTools (für „Lied hinzufügen"). */
+export function searchSongs(query: string): Promise<SongSearchResult[]> {
+  return apiFetch<SongSearchResult[]>(`/api/songs?query=${encodeURIComponent(query)}`);
 }
 
 /** Benennt einen Ablaufpunkt um (Titel). */

@@ -46,6 +46,21 @@ export interface SetlistSong {
   documents: SongDocument[];
 }
 
+/** Ein Arrangement zur Auswahl bei der Songsuche. */
+export interface SongArrangementOption {
+  arrangementId: number;
+  arrangementName: string;
+  key: string | null;
+}
+
+/** Ein Songsuche-Treffer mit seinen Arrangements. */
+export interface SongSearchResult {
+  songId: number;
+  name: string;
+  author: string | null;
+  arrangements: SongArrangementOption[];
+}
+
 /** Ein anzeigbares Dokument (PDF oder Bild) eines Arrangements. */
 export interface SongDocument {
   fileId: number;
@@ -68,6 +83,8 @@ export interface AgendaItem {
   type: string | null;
   /** true, wenn es eine Überschrift / ein Abschnitt ist */
   isHeader: boolean;
+  /** Eingetragene Zuständige (nur besetzte Positionen) – nur Anzeige, in CT gepflegt. */
+  responsible: string[];
   /** Song-Daten, falls dieser Punkt ein Lied ist – sonst null */
   song: SetlistSong | null;
 }

@@ -12,6 +12,7 @@ import {
   useReorderAgenda,
   useDeleteAgendaItem,
   useRenameAgendaItem,
+  useCreateAgendaItem,
 } from './hooks/useServices';
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
@@ -31,6 +32,7 @@ export default function App() {
   const reorderAgenda = useReorderAgenda(service?.id ?? null);
   const deleteAgendaItem = useDeleteAgendaItem(service?.id ?? null);
   const renameAgendaItem = useRenameAgendaItem(service?.id ?? null);
+  const createAgendaItem = useCreateAgendaItem(service?.id ?? null);
   const items = agendaQuery.data ?? [];
   // Nur die Lieder – für die Index-Navigation der Charts.
   const songs = items.flatMap((i) => (i.song ? [i.song] : []));
@@ -103,6 +105,7 @@ export default function App() {
           onRename={(itemId, title) =>
             renameAgendaItem.mutateAsync({ itemId, title }).then(() => undefined)
           }
+          onAdd={(data) => createAgendaItem.mutateAsync(data).then(() => undefined)}
         />
       )}
 
