@@ -17,6 +17,7 @@ import {
   useSongLibrary,
   useSongUsage,
   useSongChart,
+  useCapabilities,
 } from './hooks/useServices';
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
@@ -32,14 +33,22 @@ export default function App() {
   const [songIndex, setSongIndex] = useState(0);
   const [libSel, setLibSel] = useState<{ songId: number; arrangementId?: number } | null>(null);
 
-  const servicesQuery = useServices(auth.isAuthenticated);
+  const capsQuery = useCapabilities(auth.isAuthenticated);
+  const caps = capsQuery.data;
+  const canViewAgendas = caps?.canViewAgendas ?? false;
+  const canViewSongs = caps?.canViewSongs ?? false;
+  const canEditAgendas = caps?.canEditAgendas ?? false;
+  const canEditSongs = caps?.canEditSongs ?? false;
+
+  const servicesQuery = useServices(auth.isAuthenticated && canViewAgendas);
   const agendaQuery = useAgenda(service?.id ?? null);
   const reorderAgenda = useReorderAgenda(service?.id ?? null);
   const deleteAgendaItem = useDeleteAgendaItem(service?.id ?? null);
   const renameAgendaItem = useRenameAgendaItem(service?.id ?? null);
   const createAgendaItem = useCreateAgendaItem(service?.id ?? null);
   const songLibrary = useSongLibrary(auth.isAuthenticated && (screen === 'songs' || screen === 'songchart'));
-  const songUsage = useSongUsage(auth.isAuthenticated && screen === 'songs');
+  // Statistik nur für Ablauf-Berechtigte (sie wird aus Abläufen berechnet).
+  const songUsage = useSongUsage(auth.isAuthenticated && screen === 'songs' && canViewAgendas);
   const songChart = useSongChart(screen === 'songchart' ? libSel : null);
   const items = agendaQuery.data ?? [];
   // Nur die Lieder – für die Index-Navigation der Charts.
@@ -52,6 +61,14 @@ export default function App() {
       setScreen('agenda');
     }
   }, [auth.isAuthenticated]);
+
+  // Wer keine Abläufe sehen darf, startet direkt im Liederbuch
+  useEffect(() => {
+    if (caps && !caps.canViewAgendas && caps.canViewSongs && screen === 'agenda') {
+      setScreen('songs');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caps]);
 
   // Initialer Auth-Check läuft noch
   if (auth.isLoading) {
@@ -73,9 +90,31 @@ export default function App() {
     );
   }
 
+  // Rechte werden noch geladen → kurz warten (verhindert Aufblitzen falscher Ansichten)
+  if (!caps) {
+    return (
+      <Screen>
+        {capsQuery.isError ? (
+          <CenterMessage icon="⚠️" text="Berechtigungen konnten nicht geladen werden." onRetry={() => capsQuery.refetch()} />
+        ) : (
+          <CenterMessage loading text="Einen Moment…" />
+        )}
+      </Screen>
+    );
+  }
+
+  // Weder Lieder noch Abläufe erlaubt
+  if (!canViewAgendas && !canViewSongs) {
+    return (
+      <Screen>
+        <CenterMessage icon="🔒" text="Dein ChurchTools-Konto hat keine Berechtigung für Lieder oder Abläufe." />
+      </Screen>
+    );
+  }
+
   return (
     <div style={{ height: '100%', position: 'relative' }}>
-      {screen === 'agenda' && (
+      {screen === 'agenda' && canViewAgendas && (
         <Agenda
           services={servicesQuery.data ?? []}
           isLoading={servicesQuery.isLoading}
@@ -86,7 +125,7 @@ export default function App() {
             setScreen('setlist');
           }}
           onLogout={() => auth.logout()}
-          onShowSongs={() => setScreen('songs')}
+          onShowSongs={canViewSongs ? () => setScreen('songs') : undefined}
           theme={settings.theme}
           onToggleTheme={settings.toggleTheme}
           wakePref={settings.wakePref}
@@ -96,11 +135,12 @@ export default function App() {
         />
       )}
 
-      {screen === 'songs' && (
+      {screen === 'songs' && canViewSongs && (
         <AllSongs
           songs={songLibrary.data ?? []}
           usage={songUsage.data}
           usageLoading={songUsage.isLoading}
+          showStats={canViewAgendas}
           isLoading={songLibrary.isLoading}
           isError={songLibrary.isError}
           onRetry={() => songLibrary.refetch()}
@@ -108,7 +148,8 @@ export default function App() {
             setLibSel({ songId: e.songId, arrangementId: e.arrangementId });
             setScreen('songchart');
           }}
-          onBack={() => setScreen('agenda')}
+          onBack={canViewAgendas ? () => setScreen('agenda') : undefined}
+          onLogout={() => auth.logout()}
         />
       )}
 
@@ -120,6 +161,7 @@ export default function App() {
             onBack={() => setScreen('songs')}
             onReload={() => songChart.refetch()}
             reloading={songChart.isFetching}
+            canEditSong={canEditSongs}
             theme={settings.theme}
             wakePref={settings.wakePref}
             fontId={settings.fontId}
@@ -153,6 +195,7 @@ export default function App() {
             renameAgendaItem.mutateAsync({ itemId, title }).then(() => undefined)
           }
           onAdd={(data) => createAgendaItem.mutateAsync(data).then(() => undefined)}
+          canEdit={canEditAgendas}
         />
       )}
 
@@ -163,6 +206,7 @@ export default function App() {
           onBack={() => setScreen('setlist')}
           onReload={() => agendaQuery.refetch()}
           reloading={agendaQuery.isFetching}
+          canEditSong={canEditSongs}
           theme={settings.theme}
           wakePref={settings.wakePref}
           fontId={settings.fontId}

@@ -29,6 +29,8 @@ interface ChordChartProps {
   onBack: () => void;
   onReload?: () => void;
   reloading?: boolean;
+  /** Darf der Nutzer den ChordPro-Text bearbeiten? (blendet Editor-Funktionen aus) */
+  canEditSong?: boolean;
   theme: Theme;
   wakePref: boolean;
   fontId: string;
@@ -41,6 +43,7 @@ export function ChordChart({
   onBack,
   onReload,
   reloading,
+  canEditSong = false,
   theme,
   wakePref,
   fontId,
@@ -479,17 +482,19 @@ export function ChordChart({
                   <span className={styles.mmValue}>–</span>
                 )}
               </button>
-              <button
-                className={styles.mmItem}
-                onClick={() => {
-                  setShowEditor(true);
-                  setEditorError(null);
-                  setShowSongMenu(false);
-                }}
-              >
-                <span>Text bearbeiten</span>
-                <span className={styles.mmValue}>🖉</span>
-              </button>
+              {canEditSong && (
+                <button
+                  className={styles.mmItem}
+                  onClick={() => {
+                    setShowEditor(true);
+                    setEditorError(null);
+                    setShowSongMenu(false);
+                  }}
+                >
+                  <span>Text bearbeiten</span>
+                  <span className={styles.mmValue}>🖉</span>
+                </button>
+              )}
 
               <div className={styles.menuLbl} style={{ marginTop: 6 }}>
                 Anzeige
@@ -631,15 +636,17 @@ export function ChordChart({
               <div className={styles.empty}>
                 <div className={styles.emptyIcon}>🎵</div>
                 <div>Für dieses Lied ist keine Akkord-Datei in ChurchTools hinterlegt.</div>
-                <button
-                  className={styles.createBtn}
-                  onClick={() => {
-                    setEditorError(null);
-                    setShowEditor(true);
-                  }}
-                >
-                  Akkord-Datei erstellen
-                </button>
+                {canEditSong && (
+                  <button
+                    className={styles.createBtn}
+                    onClick={() => {
+                      setEditorError(null);
+                      setShowEditor(true);
+                    }}
+                  >
+                    Akkord-Datei erstellen
+                  </button>
+                )}
               </div>
             ) : (
               sections.map((sec, i) => (

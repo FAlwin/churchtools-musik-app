@@ -11,11 +11,15 @@ interface AllSongsProps {
   /** Nutzungsdaten je Song-ID (lädt im Hintergrund nach). */
   usage?: SongUsageMap;
   usageLoading?: boolean;
+  /** Statistik (Häufigkeit/zuletzt + entsprechende Sortierung) anzeigen? */
+  showStats?: boolean;
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
   onSelect: (entry: SongLibraryEntry) => void;
-  onBack: () => void;
+  /** Zurück zur Übersicht – nur wenn der Nutzer Abläufe sehen darf. */
+  onBack?: () => void;
+  onLogout?: () => void;
 }
 
 type Sort = 'name' | 'count' | 'recent';
@@ -28,7 +32,18 @@ function fmtDate(iso: string | null): string {
 }
 
 /** Durchsuchbare Liste aller Lieder, sortierbar nach Name/Häufigkeit/zuletzt. */
-export function AllSongs({ songs, usage, usageLoading, isLoading, isError, onRetry, onSelect, onBack }: AllSongsProps) {
+export function AllSongs({
+  songs,
+  usage,
+  usageLoading,
+  showStats = false,
+  isLoading,
+  isError,
+  onRetry,
+  onSelect,
+  onBack,
+  onLogout,
+}: AllSongsProps) {
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<Sort>('name');
   const query = q.trim().toLowerCase();
@@ -50,7 +65,18 @@ export function AllSongs({ songs, usage, usageLoading, isLoading, isError, onRet
 
   return (
     <Screen>
-      <NavBar title="Lieder" subtitle="ECG Donrath" left={<IconButton onClick={onBack}>‹</IconButton>} />
+      <NavBar
+        title="Lieder"
+        subtitle="ECG Donrath"
+        left={onBack ? <IconButton onClick={onBack}>‹</IconButton> : undefined}
+        right={
+          onLogout ? (
+            <IconButton onClick={onLogout} title="Abmelden" style={{ fontSize: 18 }}>
+              ⏻
+            </IconButton>
+          ) : undefined
+        }
+      />
 
       <div className={styles.searchWrap}>
         <input
@@ -59,26 +85,28 @@ export function AllSongs({ songs, usage, usageLoading, isLoading, isError, onRet
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        <div className={styles.sortRow}>
-          <button
-            className={`${styles.sortBtn}${sort === 'name' ? ' ' + styles.sortOn : ''}`}
-            onClick={() => setSort('name')}
-          >
-            A–Z
-          </button>
-          <button
-            className={`${styles.sortBtn}${sort === 'count' ? ' ' + styles.sortOn : ''}`}
-            onClick={() => setSort('count')}
-          >
-            Häufigkeit
-          </button>
-          <button
-            className={`${styles.sortBtn}${sort === 'recent' ? ' ' + styles.sortOn : ''}`}
-            onClick={() => setSort('recent')}
-          >
-            Zuletzt
-          </button>
-        </div>
+        {showStats && (
+          <div className={styles.sortRow}>
+            <button
+              className={`${styles.sortBtn}${sort === 'name' ? ' ' + styles.sortOn : ''}`}
+              onClick={() => setSort('name')}
+            >
+              A–Z
+            </button>
+            <button
+              className={`${styles.sortBtn}${sort === 'count' ? ' ' + styles.sortOn : ''}`}
+              onClick={() => setSort('count')}
+            >
+              Häufigkeit
+            </button>
+            <button
+              className={`${styles.sortBtn}${sort === 'recent' ? ' ' + styles.sortOn : ''}`}
+              onClick={() => setSort('recent')}
+            >
+              Zuletzt
+            </button>
+          </div>
+        )}
       </div>
 
       <Scroll onRefresh={onRetry}>
@@ -99,16 +127,18 @@ export function AllSongs({ songs, usage, usageLoading, isLoading, isError, onRet
                     {s.key && <span className={styles.keyTag}>{s.key}</span>}
                   </div>
                   {s.author && <div className={styles.author}>{s.author}</div>}
-                  <div className={styles.stats}>
-                    {usageLoading ? (
-                      <span className={styles.statsLoading}>Statistik lädt…</span>
-                    ) : (
-                      <>
-                        <span className={styles.countBadge}>{countOf(s)}×&nbsp;gespielt</span>
-                        <span className={styles.last}>zuletzt {fmtDate(lastOf(s))}</span>
-                      </>
-                    )}
-                  </div>
+                  {showStats && (
+                    <div className={styles.stats}>
+                      {usageLoading ? (
+                        <span className={styles.statsLoading}>Statistik lädt…</span>
+                      ) : (
+                        <>
+                          <span className={styles.countBadge}>{countOf(s)}×&nbsp;gespielt</span>
+                          <span className={styles.last}>zuletzt {fmtDate(lastOf(s))}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <span className={styles.arr}>›</span>
               </div>

@@ -84,6 +84,26 @@ export async function whoami(cookie: string): Promise<ChurchToolsUser> {
   return { id: me.id, firstName: me.firstName, lastName: me.lastName };
 }
 
+export interface UserCapabilities {
+  canViewSongs: boolean;
+  canViewAgendas: boolean;
+  canEditAgendas: boolean;
+  canEditSongs: boolean;
+}
+
+/** Ermittelt aus den ChurchTools-Rechten (Modul churchservice), was der Nutzer darf. */
+export async function getCapabilities(cookie: string): Promise<UserCapabilities> {
+  const data = await ctGet<Record<string, Record<string, unknown>>>(cookie, '/api/permissions/global');
+  const cs = data?.churchservice ?? {};
+  const has = (v: unknown): boolean => (Array.isArray(v) ? v.length > 0 : Boolean(v));
+  return {
+    canViewSongs: has(cs['view songcategory']),
+    canViewAgendas: has(cs['view agenda']),
+    canEditAgendas: has(cs['edit agenda']),
+    canEditSongs: has(cs['edit songcategory']),
+  };
+}
+
 // ── Rohdaten-Typen (Ausschnitt der ChurchTools-Antworten) ──
 export interface CtEvent {
   id: number;

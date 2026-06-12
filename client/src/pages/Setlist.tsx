@@ -42,6 +42,8 @@ interface SetlistProps {
   onRename: (itemId: number, title: string) => Promise<void>;
   /** Legt einen neuen Punkt an. Wirft bei Fehler. */
   onAdd: (data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number }) => Promise<void>;
+  /** Darf der Nutzer den Ablauf bearbeiten? (blendet die Bearbeiten-UI aus) */
+  canEdit?: boolean;
 }
 
 /** Dezentes Linien-Icon für die Zuständigen (statt Emoji). */
@@ -134,6 +136,7 @@ export function Setlist({
   onDelete,
   onRename,
   onAdd,
+  canEdit = false,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
   const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
@@ -197,7 +200,7 @@ export function Setlist({
         subtitle={`${service.weekday}, ${service.day}. ${service.month} · ${service.time}`}
         left={<IconButton onClick={onBack}>‹</IconButton>}
         right={
-          items.length > 0 && !isLoading && !isError ? (
+          canEdit && items.length > 0 && !isLoading && !isError ? (
             <IconButton
               onClick={() => {
                 setErr(null);

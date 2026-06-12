@@ -15,6 +15,7 @@ import {
   getSongLibraryCtrl,
   getSongChartCtrl,
   getSongUsageCtrl,
+  getCapabilitiesCtrl,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -26,6 +27,7 @@ router.get('/services/:eventId/setlist', asyncHandler(getSetlist));
 router.get('/songs', asyncHandler(getSongs));
 router.get('/song-library', asyncHandler(getSongLibraryCtrl));
 router.get('/song-usage', asyncHandler(getSongUsageCtrl));
+router.get('/capabilities', asyncHandler(getCapabilitiesCtrl));
 router.get('/songs/:songId/chart', asyncHandler(getSongChartCtrl));
 router.patch('/services/:eventId/agenda/order', asyncHandler(putAgendaOrder));
 router.post('/services/:eventId/agenda/items', asyncHandler(postAgendaItem));

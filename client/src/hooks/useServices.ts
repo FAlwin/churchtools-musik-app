@@ -67,6 +67,16 @@ export function useRenameAgendaItem(eventId: number | null) {
   });
 }
 
+/** Lädt die Rechte des angemeldeten Nutzers. */
+export function useCapabilities(enabled: boolean) {
+  return useQuery({
+    queryKey: ['capabilities'],
+    queryFn: () => api.getCapabilities(),
+    enabled,
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
 /** Lädt alle Lieder (für die „Alle Lieder"-Ansicht). */
 export function useSongLibrary(enabled: boolean) {
   return useQuery({

@@ -110,6 +110,14 @@ export interface ChordProSection {
   lines: string[];
 }
 
+/** Was der angemeldete Nutzer laut ChurchTools darf (steuert die sichtbare UI). */
+export interface UserCapabilities {
+  canViewSongs: boolean;
+  canViewAgendas: boolean;
+  canEditAgendas: boolean;
+  canEditSongs: boolean;
+}
+
 /** Antwort des Login-Endpunkts. */
 export interface AuthStatus {
   authenticated: boolean;

@@ -8,6 +8,7 @@ import type {
   SetlistSong,
   SongLibraryEntry,
   SongSearchResult,
+  UserCapabilities,
 } from '@shared/types/index';
 import { apiFetch } from './api';
 
@@ -24,6 +25,11 @@ export function logout(): Promise<AuthStatus> {
 
 export function getMe(): Promise<AuthStatus> {
   return apiFetch<AuthStatus>('/api/auth/me');
+}
+
+/** Rechte des angemeldeten Nutzers (steuert die sichtbare UI). */
+export function getCapabilities(): Promise<UserCapabilities> {
+  return apiFetch<UserCapabilities>('/api/capabilities');
 }
 
 export function getServices(range?: { from?: string; to?: string }): Promise<Service[]> {

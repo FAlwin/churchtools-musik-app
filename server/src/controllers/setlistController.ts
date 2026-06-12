@@ -17,6 +17,7 @@ import {
   updateAgendaItem,
   createAgendaItem,
   searchSongs,
+  getCapabilities,
 } from '../services/churchtools.js';
 import type { SongSearchResult } from '@shared/types/index';
 
@@ -123,6 +124,12 @@ export async function deleteAgendaItemCtrl(req: Request, res: Response): Promise
 export async function getSongLibraryCtrl(req: Request, res: Response): Promise<void> {
   const songs = await getSongLibrary(req.ctCookie as string);
   res.json(songs);
+}
+
+/** GET /api/capabilities – was der angemeldete Nutzer laut ChurchTools darf. */
+export async function getCapabilitiesCtrl(req: Request, res: Response): Promise<void> {
+  const caps = await getCapabilities(req.ctCookie as string);
+  res.json(caps);
 }
 
 /** GET /api/song-usage – Nutzungsdaten je Song (Häufigkeit + zuletzt), separat/gecacht. */
