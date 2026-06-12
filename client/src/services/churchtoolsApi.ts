@@ -36,6 +36,11 @@ export function reorderAgenda(eventId: number, order: number[]): Promise<{ ok: b
   });
 }
 
+/** Löscht einen Ablaufpunkt. */
+export function deleteAgendaItem(eventId: number, itemId: number): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, { method: 'DELETE' });
+}
+
 /** Speichert die bearbeitete ECG-Version eines Songs in ChurchTools. */
 export function saveChordpro(songId: number, arrangementId: number, text: string): Promise<{ ok: boolean }> {
   return apiFetch(`/api/songs/${songId}/chordpro`, {

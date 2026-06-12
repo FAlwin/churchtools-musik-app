@@ -20,6 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar, IconButton } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
@@ -34,10 +35,18 @@ interface SetlistProps {
   /** Speichert die neue Reihenfolge (Item-IDs). Wirft bei Fehler (z.B. fehlende Rechte). */
   onReorder: (order: number[]) => Promise<void>;
   isReordering?: boolean;
+  /** Löscht einen Ablaufpunkt. Wirft bei Fehler (z.B. fehlende Rechte). */
+  onDelete: (itemId: number) => Promise<void>;
 }
 
 /** Eine sortierbare Zeile im Bearbeiten-Modus. */
-function SortableRow({ item }: { item: AgendaItem }) {
+function SortableRow({
+  item,
+  onRequestDelete,
+}: {
+  item: AgendaItem;
+  onRequestDelete: (item: AgendaItem) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });
@@ -58,6 +67,14 @@ function SortableRow({ item }: { item: AgendaItem }) {
         ⠿
       </button>
       <span className={styles.editTitle}>{label}</span>
+      <button
+        className={styles.delBtn}
+        onClick={() => onRequestDelete(item)}
+        aria-label="Punkt löschen"
+        title="Punkt löschen"
+      >
+        🗑
+      </button>
     </div>
   );
 }
@@ -73,10 +90,12 @@ export function Setlist({
   onBack,
   onReorder,
   isReordering,
+  onDelete,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
   const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
   const [err, setErr] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
 
   // Server-Stand (auch nach dem Speichern) übernehmen.
   useEffect(() => {
@@ -100,6 +119,18 @@ export function Setlist({
     onReorder(next.map((i) => i.id)).catch((e: unknown) => {
       setLocalItems(items); // zurückrollen
       setErr(e instanceof Error ? e.message : 'Reihenfolge konnte nicht gespeichert werden.');
+    });
+  }
+
+  function confirmDelete() {
+    const target = pendingDelete;
+    if (!target) return;
+    setPendingDelete(null);
+    setErr(null);
+    setLocalItems((prev) => prev.filter((i) => i.id !== target.id)); // optimistisch
+    onDelete(target.id).catch((e: unknown) => {
+      setLocalItems(items); // zurückrollen
+      setErr(e instanceof Error ? e.message : 'Punkt konnte nicht gelöscht werden.');
     });
   }
 
@@ -137,14 +168,14 @@ export function Setlist({
         ) : editMode ? (
           <>
             <div className={styles.editHint}>
-              {isReordering ? 'Speichere…' : 'Punkte am Griff ⠿ ziehen, um die Reihenfolge zu ändern.'}
+              {isReordering ? 'Speichere…' : 'Ziehen (⠿) zum Sortieren · 🗑 zum Löschen.'}
             </div>
             {err && <div className={styles.editError}>{err}</div>}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={localItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                 <div className={styles.list}>
                   {localItems.map((item) => (
-                    <SortableRow key={item.id} item={item} />
+                    <SortableRow key={item.id} item={item} onRequestDelete={setPendingDelete} />
                   ))}
                 </div>
               </SortableContext>
@@ -200,6 +231,16 @@ export function Setlist({
         )}
         <div style={{ height: 20 }} />
       </Scroll>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Punkt löschen?"
+          message={`„${pendingDelete.song ? pendingDelete.song.title : pendingDelete.title}" wird aus dem Ablauf in ChurchTools entfernt.`}
+          confirmLabel="Löschen"
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </Screen>
   );
 }

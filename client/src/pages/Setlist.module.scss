@@ -216,3 +216,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.delBtn {
+  border: none;
+  background: transparent;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  flex-shrink: 0;
+  opacity: 0.7;
+
+  &:hover {
+    opacity: 1;
+  }
+}

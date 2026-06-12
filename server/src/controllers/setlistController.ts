@@ -7,7 +7,7 @@ import {
   deleteEcgChordpro,
   resolveFileUrl,
 } from '../services/setlistBuilder.js';
-import { fetchFileBytes, reorderAgenda } from '../services/churchtools.js';
+import { fetchFileBytes, reorderAgenda, deleteAgendaItem } from '../services/churchtools.js';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -42,6 +42,14 @@ export async function putAgendaOrder(req: Request, res: Response): Promise<void>
   const eventId = idSchema.parse(req.params.eventId);
   const { order } = orderSchema.parse(req.body);
   await reorderAgenda(req.ctCookie as string, eventId, order);
+  res.json({ ok: true });
+}
+
+/** DELETE /api/services/:eventId/agenda/items/:itemId – einen Ablaufpunkt löschen. */
+export async function deleteAgendaItemCtrl(req: Request, res: Response): Promise<void> {
+  const eventId = idSchema.parse(req.params.eventId);
+  const itemId = idSchema.parse(req.params.itemId);
+  await deleteAgendaItem(req.ctCookie as string, eventId, itemId);
   res.json({ ok: true });
 }
 

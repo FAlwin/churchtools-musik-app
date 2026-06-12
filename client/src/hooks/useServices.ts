@@ -29,3 +29,12 @@ export function useReorderAgenda(eventId: number | null) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
   });
 }
+
+/** Löscht einen Ablaufpunkt und lädt den Ablauf danach neu. */
+export function useDeleteAgendaItem(eventId: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId: number) => api.deleteAgendaItem(eventId as number, itemId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
+  });
+}

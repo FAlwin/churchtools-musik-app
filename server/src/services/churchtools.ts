@@ -281,6 +281,25 @@ export async function reorderAgenda(
   }
 }
 
+/** Löscht einen Ablaufpunkt aus der Agenda eines Events. */
+export async function deleteAgendaItem(
+  cookie: string,
+  eventId: number,
+  itemId: number,
+): Promise<void> {
+  const csrf = await getCsrfToken(cookie);
+  const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items/${itemId}`, {
+    method: 'DELETE',
+    headers: { Cookie: cookie, 'CSRF-Token': csrf },
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+  }
+  if (!res.ok && res.status !== 404) {
+    throw new HttpError(502, `Ablaufpunkt löschen fehlgeschlagen (${res.status}).`);
+  }
+}
+
 /** Löscht eine Datei in ChurchTools (per Datei-ID). */
 export async function deleteFile(cookie: string, fileId: number): Promise<void> {
   const csrf = await getCsrfToken(cookie);
