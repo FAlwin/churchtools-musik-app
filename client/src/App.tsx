@@ -95,7 +95,13 @@ export default function App() {
     return (
       <Screen>
         {capsQuery.isError ? (
-          <CenterMessage icon="⚠️" text="Berechtigungen konnten nicht geladen werden." onRetry={() => capsQuery.refetch()} />
+          <CenterMessage
+            icon="⚠️"
+            text="Berechtigungen konnten nicht geladen werden."
+            onRetry={() => capsQuery.refetch()}
+            actionLabel="Abmelden"
+            onAction={() => auth.logout()}
+          />
         ) : (
           <CenterMessage loading text="Einen Moment…" />
         )}
@@ -107,7 +113,12 @@ export default function App() {
   if (!canViewAgendas && !canViewSongs) {
     return (
       <Screen>
-        <CenterMessage icon="🔒" text="Dein ChurchTools-Konto hat keine Berechtigung für Lieder oder Abläufe." />
+        <CenterMessage
+          icon="🔒"
+          text="Dein ChurchTools-Konto hat keine Berechtigung für Lieder oder Abläufe."
+          actionLabel="Abmelden"
+          onAction={() => auth.logout()}
+        />
       </Screen>
     );
   }

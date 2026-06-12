@@ -7,10 +7,13 @@ interface CenterMessageProps {
   icon?: string;
   text: string;
   onRetry?: () => void;
+  /** Optionale Zusatzaktion (z.B. Abmelden) mit eigenem Text. */
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 /** Zentrierte Statusmeldung (Laden, leer, Fehler) für Screen-Inhalte. */
-export function CenterMessage({ loading, icon, text, onRetry }: CenterMessageProps) {
+export function CenterMessage({ loading, icon, text, onRetry, actionLabel, onAction }: CenterMessageProps) {
   return (
     <div className={styles.wrap}>
       {loading ? <Spinner /> : icon && <div className={styles.icon}>{icon}</div>}
@@ -18,6 +21,11 @@ export function CenterMessage({ loading, icon, text, onRetry }: CenterMessagePro
       {onRetry && (
         <button className={styles.retry} onClick={onRetry}>
           Erneut versuchen
+        </button>
+      )}
+      {onAction && actionLabel && (
+        <button className={styles.retry} onClick={onAction}>
+          {actionLabel}
         </button>
       )}
     </div>
