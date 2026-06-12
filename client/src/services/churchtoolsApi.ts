@@ -1,7 +1,14 @@
 /**
  * Konkrete Backend-Endpunkte der Worship-App. Alle UI-Datenzugriffe laufen hierüber.
  */
-import type { AgendaItem, AuthStatus, Service, SongSearchResult } from '@shared/types/index';
+import type {
+  AgendaItem,
+  AuthStatus,
+  Service,
+  SetlistSong,
+  SongLibraryEntry,
+  SongSearchResult,
+} from '@shared/types/index';
 import { apiFetch } from './api';
 
 export function login(email: string, password: string): Promise<AuthStatus> {
@@ -54,6 +61,23 @@ export function createAgendaItem(
 /** Sucht Songs in ChurchTools (für „Lied hinzufügen"). */
 export function searchSongs(query: string): Promise<SongSearchResult[]> {
   return apiFetch<SongSearchResult[]>(`/api/songs?query=${encodeURIComponent(query)}`);
+}
+
+/** Alle Lieder (für die „Alle Lieder"-Ansicht) – ohne Statistik (lädt schnell). */
+export function getSongLibrary(): Promise<SongLibraryEntry[]> {
+  return apiFetch<SongLibraryEntry[]>('/api/song-library');
+}
+
+/** Nutzungsdaten je Song (Häufigkeit + zuletzt) – separat, gecacht. */
+export type SongUsageMap = Record<string, { count: number; lastUsed: string }>;
+export function getSongUsage(): Promise<SongUsageMap> {
+  return apiFetch<SongUsageMap>('/api/song-usage');
+}
+
+/** Chart-Daten eines einzelnen Lieds. */
+export function getSongChart(songId: number, arrangementId?: number): Promise<SetlistSong> {
+  const qs = arrangementId ? `?arrangementId=${arrangementId}` : '';
+  return apiFetch<SetlistSong>(`/api/songs/${songId}/chart${qs}`);
 }
 
 /** Benennt einen Ablaufpunkt um (Titel). */

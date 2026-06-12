@@ -4,6 +4,7 @@ import { Login } from './pages/Login';
 import { Agenda } from './pages/Agenda';
 import { Setlist } from './pages/Setlist';
 import { ChordChart } from './pages/ChordChart';
+import { AllSongs } from './pages/AllSongs';
 import { useSettings } from './hooks/useSettings';
 import { useAuth } from './hooks/useAuth';
 import {
@@ -13,6 +14,9 @@ import {
   useDeleteAgendaItem,
   useRenameAgendaItem,
   useCreateAgendaItem,
+  useSongLibrary,
+  useSongUsage,
+  useSongChart,
 } from './hooks/useServices';
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
@@ -26,6 +30,7 @@ export default function App() {
   const [screen, setScreen] = useState<ScreenName>('agenda');
   const [service, setService] = useState<Service | null>(null);
   const [songIndex, setSongIndex] = useState(0);
+  const [libSel, setLibSel] = useState<{ songId: number; arrangementId?: number } | null>(null);
 
   const servicesQuery = useServices(auth.isAuthenticated);
   const agendaQuery = useAgenda(service?.id ?? null);
@@ -33,6 +38,9 @@ export default function App() {
   const deleteAgendaItem = useDeleteAgendaItem(service?.id ?? null);
   const renameAgendaItem = useRenameAgendaItem(service?.id ?? null);
   const createAgendaItem = useCreateAgendaItem(service?.id ?? null);
+  const songLibrary = useSongLibrary(auth.isAuthenticated && (screen === 'songs' || screen === 'songchart'));
+  const songUsage = useSongUsage(auth.isAuthenticated && screen === 'songs');
+  const songChart = useSongChart(screen === 'songchart' ? libSel : null);
   const items = agendaQuery.data ?? [];
   // Nur die Lieder – für die Index-Navigation der Charts.
   const songs = items.flatMap((i) => (i.song ? [i.song] : []));
@@ -78,6 +86,7 @@ export default function App() {
             setScreen('setlist');
           }}
           onLogout={() => auth.logout()}
+          onShowSongs={() => setScreen('songs')}
           theme={settings.theme}
           onToggleTheme={settings.toggleTheme}
           wakePref={settings.wakePref}
@@ -86,6 +95,44 @@ export default function App() {
           setFontId={settings.setFontId}
         />
       )}
+
+      {screen === 'songs' && (
+        <AllSongs
+          songs={songLibrary.data ?? []}
+          usage={songUsage.data}
+          usageLoading={songUsage.isLoading}
+          isLoading={songLibrary.isLoading}
+          isError={songLibrary.isError}
+          onRetry={() => songLibrary.refetch()}
+          onSelect={(e) => {
+            setLibSel({ songId: e.songId, arrangementId: e.arrangementId });
+            setScreen('songchart');
+          }}
+          onBack={() => setScreen('agenda')}
+        />
+      )}
+
+      {screen === 'songchart' &&
+        (songChart.data ? (
+          <ChordChart
+            songs={[songChart.data]}
+            startIndex={0}
+            onBack={() => setScreen('songs')}
+            onReload={() => songChart.refetch()}
+            reloading={songChart.isFetching}
+            theme={settings.theme}
+            wakePref={settings.wakePref}
+            fontId={settings.fontId}
+          />
+        ) : (
+          <Screen>
+            {songChart.isError ? (
+              <CenterMessage icon="⚠️" text="Lied konnte nicht geladen werden." onRetry={() => songChart.refetch()} />
+            ) : (
+              <CenterMessage loading text="Lied wird geladen…" />
+            )}
+          </Screen>
+        ))}
 
       {screen === 'setlist' && service && (
         <Setlist

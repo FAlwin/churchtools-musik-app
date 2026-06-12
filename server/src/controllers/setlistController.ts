@@ -6,6 +6,9 @@ import {
   saveEcgChordpro,
   deleteEcgChordpro,
   resolveFileUrl,
+  getSongLibrary,
+  getSongChart,
+  getSongUsageMap,
 } from '../services/setlistBuilder.js';
 import {
   fetchFileBytes,
@@ -114,6 +117,28 @@ export async function deleteAgendaItemCtrl(req: Request, res: Response): Promise
   const itemId = idSchema.parse(req.params.itemId);
   await deleteAgendaItem(req.ctCookie as string, eventId, itemId);
   res.json({ ok: true });
+}
+
+/** GET /api/song-library – alle Lieder (Standard-Arrangement) für die „Alle Lieder"-Ansicht. */
+export async function getSongLibraryCtrl(req: Request, res: Response): Promise<void> {
+  const songs = await getSongLibrary(req.ctCookie as string);
+  res.json(songs);
+}
+
+/** GET /api/song-usage – Nutzungsdaten je Song (Häufigkeit + zuletzt), separat/gecacht. */
+export async function getSongUsageCtrl(req: Request, res: Response): Promise<void> {
+  const usage = await getSongUsageMap(req.ctCookie as string);
+  res.json(usage);
+}
+
+const arrSchema = z.coerce.number().int().positive().optional();
+
+/** GET /api/songs/:songId/chart – Chart-Daten eines einzelnen Lieds. */
+export async function getSongChartCtrl(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const arrangementId = arrSchema.parse(req.query.arrangementId);
+  const song = await getSongChart(req.ctCookie as string, songId, arrangementId);
+  res.json(song);
 }
 
 /** GET /api/services/:eventId/setlist – alle Ablaufpunkte (Lieder inkl. ChordPro). */

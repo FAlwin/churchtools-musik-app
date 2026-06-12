@@ -304,17 +304,35 @@ export async function createAgendaItem(
   }
 }
 
-interface CtSongListEntry {
+export interface CtSongListEntry {
   id: number;
   name: string;
   author: string | null;
-  arrangements: { id: number; name: string; key: string | null; keyOfArrangement: string | null }[];
+  arrangements: {
+    id: number;
+    name: string;
+    key: string | null;
+    keyOfArrangement: string | null;
+    isDefault?: boolean;
+    bpm?: number | null;
+  }[];
 }
 
 /** Sucht Songs in ChurchTools (Name) und liefert sie mit ihren Arrangements zurück. */
 export async function searchSongs(cookie: string, query: string): Promise<CtSongListEntry[]> {
   const q = encodeURIComponent(query);
   return ctGet<CtSongListEntry[]>(cookie, `/api/songs?query=${q}&limit=25`);
+}
+
+/** Lädt alle Songs (paginiert) für die „Alle Lieder"-Ansicht. */
+export async function getAllSongs(cookie: string): Promise<CtSongListEntry[]> {
+  const all: CtSongListEntry[] = [];
+  for (let page = 1; page <= 50; page++) {
+    const data = await ctGet<CtSongListEntry[]>(cookie, `/api/songs?limit=100&page=${page}`);
+    all.push(...data);
+    if (data.length < 100) break;
+  }
+  return all;
 }
 
 /**

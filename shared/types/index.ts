@@ -53,6 +53,20 @@ export interface SongArrangementOption {
   key: string | null;
 }
 
+/** Ein Eintrag der „Alle Lieder"-Bibliothek (ein Song mit Standard-Arrangement). */
+export interface SongLibraryEntry {
+  songId: number;
+  name: string;
+  author: string | null;
+  /** Tonart des Standard-Arrangements */
+  key: string | null;
+  arrangementId: number;
+  /** Wie oft in den letzten 12 Monaten im Ablauf verwendet */
+  usageCount: number;
+  /** ISO-Datum der letzten Verwendung (oder null) */
+  lastUsed: string | null;
+}
+
 /** Ein Songsuche-Treffer mit seinen Arrangements. */
 export interface SongSearchResult {
   songId: number;

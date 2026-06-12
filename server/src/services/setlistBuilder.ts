@@ -3,19 +3,20 @@
  *  - Liste der Gottesdienste, die tatsächlich eine Setlist (Agenda mit Songs) haben
  *  - die Songs einer Setlist inkl. heruntergeladenem ChordPro-Inhalt
  */
-import type { AgendaItem, Service, SetlistSong, SongDocument } from '@shared/types/index';
+import type { AgendaItem, Service, SetlistSong, SongDocument, SongLibraryEntry } from '@shared/types/index';
 import {
   getAgenda,
   getEvents,
   getAppointmentSubtitle,
   getSong,
+  getAllSongs,
   downloadFileText,
   uploadChordpro,
   deleteFile,
   fileIdFromUrl,
   type CtAgendaSong,
-  type CtArrangementFile,
 } from './churchtools.js';
+import type { CtArrangementFile } from './churchtools.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
 
@@ -176,6 +177,101 @@ function responsibleNames(item: { responsible?: { persons?: { person?: { title?:
     .map((p) => p.person?.title?.trim())
     .filter((n): n is string => !!n);
   return [...new Set(names)];
+}
+
+interface SongUsage {
+  count: number;
+  lastUsed: string;
+}
+
+// Org-weite Song-Nutzung (gleich für alle) – im Speicher gecacht (TTL 1 h).
+let usageCache: { at: number; data: Record<number, SongUsage> } | null = null;
+
+/** Führt `fn` über alle Items aus, aber maximal `limit` gleichzeitig (schont die CT-API). */
+async function mapLimit<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
+  let i = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) {
+      const idx = i++;
+      await fn(items[idx]);
+    }
+  });
+  await Promise.all(workers);
+}
+
+/** Zählt Song-Vorkommen in den Abläufen der letzten 12 Monate (gecacht). Wird separat geladen. */
+export async function getSongUsageMap(cookie: string): Promise<Record<number, SongUsage>> {
+  if (usageCache && Date.now() - usageCache.at < 3_600_000) return usageCache.data;
+  const today = new Date();
+  const to = today.toISOString().slice(0, 10);
+  const fromD = new Date(today);
+  fromD.setFullYear(fromD.getFullYear() - 1);
+  const from = fromD.toISOString().slice(0, 10);
+
+  const events = await getEvents(cookie, from, to);
+  const usage: Record<number, SongUsage> = {};
+  await mapLimit(events, 8, async (ev) => {
+    try {
+      const agenda = await getAgenda(cookie, ev.id);
+      const date = ev.startDate.slice(0, 10);
+      for (const it of agenda.items ?? []) {
+        const id = it.song?.songId;
+        if (!id) continue;
+        const cur = usage[id];
+        if (!cur) usage[id] = { count: 1, lastUsed: date };
+        else {
+          cur.count += 1;
+          if (date > cur.lastUsed) cur.lastUsed = date;
+        }
+      }
+    } catch {
+      /* 404 = kein Ablauf */
+    }
+  });
+  usageCache = { at: Date.now(), data: usage };
+  return usage;
+}
+
+/** Liefert alle Lieder (Standard-Arrangement), alphabetisch. Statistik wird separat geladen. */
+export async function getSongLibrary(cookie: string): Promise<SongLibraryEntry[]> {
+  const songs = await getAllSongs(cookie);
+  return songs
+    .map((s) => {
+      const arr = s.arrangements.find((a) => a.isDefault) ?? s.arrangements[0];
+      if (!arr) return null;
+      return {
+        songId: s.id,
+        name: s.name,
+        author: s.author ?? null,
+        key: arr.keyOfArrangement ?? arr.key ?? null,
+        arrangementId: arr.id,
+        usageCount: 0,
+        lastUsed: null,
+      } as SongLibraryEntry;
+    })
+    .filter((e): e is SongLibraryEntry => e !== null)
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+/** Baut die Chart-Daten eines einzelnen Lieds (für die „Alle Lieder"-Ansicht). */
+export async function getSongChart(
+  cookie: string,
+  songId: number,
+  arrangementId?: number,
+): Promise<SetlistSong> {
+  const song = await getSong(cookie, songId);
+  const arr =
+    (arrangementId && song.arrangements.find((a) => a.id === arrangementId)) ||
+    song.arrangements[0];
+  if (!arr) throw new HttpError(404, 'Kein Arrangement für dieses Lied gefunden.');
+  return buildSong(cookie, {
+    songId,
+    arrangementId: arr.id,
+    title: song.name,
+    arrangement: arr.name,
+    key: arr.keyOfArrangement ?? arr.key ?? null,
+    bpm: arr.bpm ?? null,
+  });
 }
 
 /** Alle Punkte eines Ablaufplans in Reihenfolge – Lieder aufgelöst, übrige nur als Eintrag. */

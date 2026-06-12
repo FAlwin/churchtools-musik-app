@@ -12,6 +12,9 @@ import {
   putAgendaItem,
   postAgendaItem,
   getSongs,
+  getSongLibraryCtrl,
+  getSongChartCtrl,
+  getSongUsageCtrl,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -21,6 +24,9 @@ router.use(requireSession);
 router.get('/services', asyncHandler(getServices));
 router.get('/services/:eventId/setlist', asyncHandler(getSetlist));
 router.get('/songs', asyncHandler(getSongs));
+router.get('/song-library', asyncHandler(getSongLibraryCtrl));
+router.get('/song-usage', asyncHandler(getSongUsageCtrl));
+router.get('/songs/:songId/chart', asyncHandler(getSongChartCtrl));
 router.patch('/services/:eventId/agenda/order', asyncHandler(putAgendaOrder));
 router.post('/services/:eventId/agenda/items', asyncHandler(postAgendaItem));
 router.put('/services/:eventId/agenda/items/:itemId', asyncHandler(putAgendaItem));

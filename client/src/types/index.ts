@@ -1,5 +1,5 @@
 /** Welcher Screen aktuell sichtbar ist. */
-export type Screen = 'login' | 'agenda' | 'setlist' | 'chart';
+export type Screen = 'login' | 'agenda' | 'setlist' | 'chart' | 'songs' | 'songchart';
 
 export type Theme = 'light' | 'dark';
 

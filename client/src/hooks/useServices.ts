@@ -67,6 +67,36 @@ export function useRenameAgendaItem(eventId: number | null) {
   });
 }
 
+/** Lädt alle Lieder (für die „Alle Lieder"-Ansicht). */
+export function useSongLibrary(enabled: boolean) {
+  return useQuery({
+    queryKey: ['song-library'],
+    queryFn: () => api.getSongLibrary(),
+    enabled,
+    staleTime: 1000 * 60 * 10,
+  });
+}
+
+/** Lädt die Song-Nutzungsdaten (Häufigkeit/zuletzt) im Hintergrund. */
+export function useSongUsage(enabled: boolean) {
+  return useQuery({
+    queryKey: ['song-usage'],
+    queryFn: () => api.getSongUsage(),
+    enabled,
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+/** Lädt die Chart-Daten eines einzelnen Lieds. */
+export function useSongChart(sel: { songId: number; arrangementId?: number } | null) {
+  return useQuery({
+    queryKey: ['song-chart', sel?.songId, sel?.arrangementId],
+    queryFn: () => api.getSongChart(sel!.songId, sel?.arrangementId),
+    enabled: sel !== null,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
 /** Legt einen neuen Ablaufpunkt an und lädt den Ablauf danach neu. */
 export function useCreateAgendaItem(eventId: number | null) {
   const qc = useQueryClient();

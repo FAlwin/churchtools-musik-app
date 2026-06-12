@@ -16,6 +16,7 @@ interface AgendaProps {
   onRetry?: () => void;
   onSelect: (service: Service) => void;
   onLogout: () => void;
+  onShowSongs: () => void;
   theme: Theme;
   onToggleTheme: () => void;
   wakePref: boolean;
@@ -32,6 +33,7 @@ export function Agenda({
   onRetry,
   onSelect,
   onLogout,
+  onShowSongs,
   theme,
   onToggleTheme,
   wakePref,
@@ -84,6 +86,9 @@ export function Agenda({
         subtitle="ECG Donrath"
         right={
           <>
+            <IconButton onClick={onShowSongs} title="Alle Lieder" style={{ fontSize: 18 }}>
+              ♪
+            </IconButton>
             <IconButton onClick={() => setShowSettings((v) => !v)} title="Einstellungen" style={{ fontSize: 18 }}>
               ⚙︎
             </IconButton>
