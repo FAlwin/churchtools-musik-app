@@ -1,7 +1,7 @@
 /**
  * Konkrete Backend-Endpunkte der Worship-App. Alle UI-Datenzugriffe laufen hierüber.
  */
-import type { AuthStatus, Service, SetlistSong } from '@shared/types/index';
+import type { AgendaItem, AuthStatus, Service } from '@shared/types/index';
 import { apiFetch } from './api';
 
 export function login(email: string, password: string): Promise<AuthStatus> {
@@ -23,8 +23,9 @@ export function getServices(): Promise<Service[]> {
   return apiFetch<Service[]>('/api/services');
 }
 
-export function getSetlist(eventId: number): Promise<SetlistSong[]> {
-  return apiFetch<SetlistSong[]>(`/api/services/${eventId}/setlist`);
+/** Alle Ablaufpunkte eines Gottesdienstes (Lieder inkl. ChordPro). */
+export function getAgenda(eventId: number): Promise<AgendaItem[]> {
+  return apiFetch<AgendaItem[]>(`/api/services/${eventId}/setlist`);
 }
 
 /** Speichert die bearbeitete ECG-Version eines Songs in ChurchTools. */

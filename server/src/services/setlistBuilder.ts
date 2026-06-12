@@ -3,7 +3,7 @@
  *  - Liste der Gottesdienste, die tatsächlich eine Setlist (Agenda mit Songs) haben
  *  - die Songs einer Setlist inkl. heruntergeladenem ChordPro-Inhalt
  */
-import type { Service, SetlistSong, SongDocument } from '@shared/types/index';
+import type { AgendaItem, Service, SetlistSong, SongDocument } from '@shared/types/index';
 import {
   getAgenda,
   getEvents,
@@ -44,7 +44,7 @@ function metaValue(chordpro: string, key: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-/** Gottesdienste im Zeitfenster, die eine Setlist haben (mit Song-Anzahl). */
+/** Gottesdienste im Zeitfenster, die einen Ablaufplan haben (mit Song-Anzahl). */
 export async function getServicesWithSetlists(
   cookie: string,
   from: string,
@@ -56,7 +56,8 @@ export async function getServicesWithSetlists(
       try {
         const agenda = await getAgenda(cookie, ev.id);
         const songCount = (agenda.items ?? []).filter((i) => i.song).length;
-        return songCount > 0 ? mapEventToService(ev, songCount) : null;
+        // Sichtbar, sobald ein Ablaufplan existiert – auch ohne Lieder.
+        return mapEventToService(ev, songCount);
       } catch {
         return null; // 404 = kein Ablaufplan
       }
@@ -156,11 +157,25 @@ export async function deleteEcgChordpro(
   if (id) await deleteFile(cookie, id);
 }
 
-/** Alle Songs einer Setlist (in Agenda-Reihenfolge). */
-export async function getSetlistSongs(cookie: string, eventId: number): Promise<SetlistSong[]> {
+/** Erkennt am ChurchTools-Typ, ob ein Agenda-Punkt eine Überschrift / ein Abschnitt ist. */
+function isHeaderType(type?: string): boolean {
+  return !!type && /header|überschrift|heading|section/i.test(type);
+}
+
+/** Alle Punkte eines Ablaufplans in Reihenfolge – Lieder aufgelöst, übrige nur als Eintrag. */
+export async function getAgendaItems(cookie: string, eventId: number): Promise<AgendaItem[]> {
   const agenda = await getAgenda(cookie, eventId);
-  const songItems = (agenda.items ?? [])
-    .filter((i) => i.song)
-    .map((i) => i.song as CtAgendaSong);
-  return Promise.all(songItems.map((s) => buildSong(cookie, s)));
+  const items = agenda.items ?? [];
+  return Promise.all(
+    items.map(async (item): Promise<AgendaItem> => {
+      const song = item.song ? await buildSong(cookie, item.song) : null;
+      return {
+        id: item.id,
+        title: item.title,
+        type: item.type ?? null,
+        isHeader: isHeaderType(item.type),
+        song,
+      };
+    }),
+  );
 }

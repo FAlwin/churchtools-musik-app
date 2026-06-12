@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import {
   getServicesWithSetlists,
-  getSetlistSongs,
+  getAgendaItems,
   saveEcgChordpro,
   deleteEcgChordpro,
   resolveFileUrl,
@@ -33,11 +33,11 @@ export async function getServices(req: Request, res: Response): Promise<void> {
 
 const idSchema = z.coerce.number().int().positive();
 
-/** GET /api/services/:eventId/setlist – Songs einer Setlist inkl. ChordPro. */
+/** GET /api/services/:eventId/setlist – alle Ablaufpunkte (Lieder inkl. ChordPro). */
 export async function getSetlist(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
-  const songs = await getSetlistSongs(req.ctCookie as string, eventId);
-  res.json(songs);
+  const items = await getAgendaItems(req.ctCookie as string, eventId);
+  res.json(items);
 }
 
 const editSchema = z.object({

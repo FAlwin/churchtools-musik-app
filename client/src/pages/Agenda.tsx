@@ -136,7 +136,7 @@ export function Agenda({
         ) : isError ? (
           <CenterMessage icon="⚠️" text="Gottesdienste konnten nicht geladen werden." onRetry={onRetry} />
         ) : services.length === 0 ? (
-          <CenterMessage icon="📅" text="Keine Gottesdienste mit Setlist gefunden." />
+          <CenterMessage icon="📅" text="Keine Gottesdienste gefunden." />
         ) : (
         <div className={styles.list}>
           {services.map((s) => (

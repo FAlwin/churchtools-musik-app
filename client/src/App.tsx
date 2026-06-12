@@ -6,7 +6,7 @@ import { Setlist } from './pages/Setlist';
 import { ChordChart } from './pages/ChordChart';
 import { useSettings } from './hooks/useSettings';
 import { useAuth } from './hooks/useAuth';
-import { useServices, useSetlist } from './hooks/useServices';
+import { useServices, useAgenda } from './hooks/useServices';
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
 import type { Screen as ScreenName } from './types/index';
@@ -21,8 +21,10 @@ export default function App() {
   const [songIndex, setSongIndex] = useState(0);
 
   const servicesQuery = useServices(auth.isAuthenticated);
-  const setlistQuery = useSetlist(service?.id ?? null);
-  const songs = setlistQuery.data ?? [];
+  const agendaQuery = useAgenda(service?.id ?? null);
+  const items = agendaQuery.data ?? [];
+  // Nur die Lieder – für die Index-Navigation der Charts.
+  const songs = items.flatMap((i) => (i.song ? [i.song] : []));
 
   // Nach dem Abmelden zurück auf die Agenda-Startansicht
   useEffect(() => {
@@ -77,10 +79,10 @@ export default function App() {
       {screen === 'setlist' && service && (
         <Setlist
           service={service}
-          songs={songs}
-          isLoading={setlistQuery.isLoading}
-          isError={setlistQuery.isError}
-          onRetry={() => setlistQuery.refetch()}
+          items={items}
+          isLoading={agendaQuery.isLoading}
+          isError={agendaQuery.isError}
+          onRetry={() => agendaQuery.refetch()}
           onSelect={(i) => {
             setSongIndex(i);
             setScreen('chart');
@@ -94,8 +96,8 @@ export default function App() {
           songs={songs}
           startIndex={songIndex}
           onBack={() => setScreen('setlist')}
-          onReload={() => setlistQuery.refetch()}
-          reloading={setlistQuery.isFetching}
+          onReload={() => agendaQuery.refetch()}
+          reloading={agendaQuery.isFetching}
           theme={settings.theme}
           wakePref={settings.wakePref}
           fontId={settings.fontId}

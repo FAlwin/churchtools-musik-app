@@ -57,6 +57,19 @@ export interface Setlist {
   songs: SetlistSong[];
 }
 
+/** Ein einzelner Punkt im Ablaufplan – Lied, Überschrift oder sonstiger Eintrag. */
+export interface AgendaItem {
+  /** ID des Agenda-Eintrags in ChurchTools */
+  id: number;
+  title: string;
+  /** ChurchTools-Typ des Punkts (z.B. 'song', 'header', 'normal'); null wenn unbekannt */
+  type: string | null;
+  /** true, wenn es eine Überschrift / ein Abschnitt ist */
+  isHeader: boolean;
+  /** Song-Daten, falls dieser Punkt ein Lied ist – sonst null */
+  song: SetlistSong | null;
+}
+
 /** Eine geparste ChordPro-Sektion (Vers, Chorus, …). */
 export interface ChordProSection {
   type: string;

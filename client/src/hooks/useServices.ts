@@ -11,11 +11,11 @@ export function useServices(enabled: boolean) {
   });
 }
 
-/** Lädt die Songs einer Setlist (inkl. ChordPro). */
-export function useSetlist(eventId: number | null) {
+/** Lädt alle Ablaufpunkte eines Gottesdienstes (Lieder inkl. ChordPro). */
+export function useAgenda(eventId: number | null) {
   return useQuery({
-    queryKey: ['setlist', eventId],
-    queryFn: () => api.getSetlist(eventId as number),
+    queryKey: ['agenda', eventId],
+    queryFn: () => api.getAgenda(eventId as number),
     enabled: eventId !== null,
     staleTime: 1000 * 60 * 5,
   });

@@ -105,3 +105,45 @@
   color: var(--teal-light);
   font-size: 16px;
 }
+
+/* Überschrift / Abschnitt im Ablauf */
+.header {
+  margin: 14px 4px 2px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+
+  &:first-child {
+    margin-top: 2px;
+  }
+}
+
+/* Sonstiger Ablaufpunkt (Begrüßung, Predigt …) – dezent, nicht anklickbar */
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  color: var(--text2);
+}
+
+.bullet {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+  margin-left: 11px;
+}
+
+.itemTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
