@@ -1,8 +1,10 @@
 .sectionBlock {
   margin-bottom: 28px;
-  // Abschnitte DÜRFEN über Spalten/Seiten umbrechen (sonst werden zu hohe Verse bei
-  // 2 Spalten + großem Zoom abgeschnitten). Zusammengehalten werden nur die einzelnen
-  // Akkord-Zeilen (siehe ChordLine: break-inside: avoid).
+  // Einen Abschnitt (Vers/Chorus) möglichst nicht mitten im Text auf die nächste Spalte
+  // umbrechen – er wandert als Ganzes weiter. (Nur bei extrem hohen Abschnitten greift der
+  // Browser-Notausstieg und bricht doch um, sonst würde nichts mehr passen.)
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
 
   // Letzter Abschnitt: kein nachlaufender Rand, der sonst eine leere Folgeseite erzeugt
   &:last-child {

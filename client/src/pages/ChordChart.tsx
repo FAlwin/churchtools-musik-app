@@ -61,8 +61,9 @@ export function ChordChart({
   const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10));
   const [cols, setCols] = useState(() => parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
   const [lyricsOnly, setLyricsOnly] = useState(() => localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
-  // Leerraum (in ch) für Taktstriche „[|]" – pro Lied einstellbar
-  const [chordGap, setChordGap] = useState(() => parseFloat(localStorage.getItem(`worship_gap_${song.id}`) || '2'));
+  // Fester Leerraum (in ch) für Taktstriche „[|]". Feinere Abstände macht man über
+  // Leerzeichen direkt im ChordPro-Text (kein eigenes Bedienelement mehr).
+  const chordGap = 2;
 
   const [showKeyPicker, setShowKeyPicker] = useState(false);
   const [showCapoPicker, setShowCapoPicker] = useState(false);
@@ -136,21 +137,24 @@ export function ChordChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewSource]);
 
-  // Spaltenbreite so, dass genau `cols` Spalten eine Seite füllen
+  // Spaltenbreite so, dass genau `cols` Spalten in die padded Content-Box passen.
   const colWidthPx =
     pageWidth > 0
       ? Math.floor((pageWidth - 2 * CONTENT_PAD - (cols - 1) * COLUMN_GAP) / cols)
       : undefined;
 
-  const paged = usePagedColumns(drawing.bodyRef, drawing.contentRef, [
-    song.id,
-    fontSize,
-    cols,
-    lyricsOnly,
-    fontId,
-    pageWidth,
-    chordGap,
-  ]);
+  // Geometrie fürs Blättern: eine Spalte = Breite + Lücke; eine Seite = cols Spalten.
+  // Beim Blättern wird um den echten Spalten-Takt gescrollt (NICHT um die Bildschirmbreite),
+  // sonst verschiebt sich jede Folgeseite, weil es das Innenpadding nur einmal links gibt.
+  const columnStep = colWidthPx ? colWidthPx + COLUMN_GAP : 0;
+  const endRef = useRef<HTMLDivElement | null>(null);
+  const paged = usePagedColumns(
+    drawing.bodyRef,
+    drawing.contentRef,
+    endRef,
+    { pageStep: cols * columnStep, columnStep, pad: CONTENT_PAD, cols },
+    [song.id, fontSize, cols, lyricsOnly, fontId, pageWidth, chordGap],
+  );
 
   // ── Persistenz pro Song: beim Liedwechsel die gespeicherten Werte laden ──
   useEffect(() => {
@@ -159,7 +163,6 @@ export function ChordChart({
     setFontSize(parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10));
     setCols(parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
     setLyricsOnly(localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
-    setChordGap(parseFloat(localStorage.getItem(`worship_gap_${song.id}`) || '2'));
     setShowOriginal(false); // beim Liedwechsel wieder die bevorzugte Version zeigen
     // gespeicherte Anzeige-Quelle laden (nur, wenn das Dokument noch existiert)
     const savedView = localStorage.getItem(`worship_view_${song.id}`);
@@ -199,11 +202,6 @@ export function ChordChart({
     localStorage.setItem(`worship_lyrics_${song.id}`, lyricsOnly ? '1' : '0');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lyricsOnly]);
-  useEffect(() => {
-    localStorage.setItem(`worship_gap_${song.id}`, String(chordGap));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chordGap]);
-
   // Beim Songwechsel auf Seite 1 (oder ans Ende, wenn rückwärts geblättert)
   useEffect(() => {
     const el = drawing.bodyRef.current;
@@ -434,23 +432,6 @@ export function ChordChart({
                   2 Spalten
                 </button>
               </div>
-
-              <div className={styles.menuLbl}>Akkord-Abstand</div>
-              <div className={styles.appRow}>
-                <button
-                  className={styles.stepBtn}
-                  onClick={() => setChordGap((g) => Math.max(0, +(g - 0.5).toFixed(1)))}
-                >
-                  −
-                </button>
-                <span className={styles.stepValue}>{chordGap}</span>
-                <button
-                  className={styles.stepBtn}
-                  onClick={() => setChordGap((g) => Math.min(6, +(g + 0.5).toFixed(1)))}
-                >
-                  ＋
-                </button>
-              </div>
             </div>
           </>
         )}
@@ -662,7 +643,15 @@ export function ChordChart({
                 />
               ))
             )}
+            {/* Unsichtbarer End-Marker: verrät per Layout-Position, in welcher Spalte der
+                Inhalt endet → zuverlässige Seitenzählung (unabhängig von WebKits scrollWidth). */}
+            <div ref={endRef} className={styles.endMarker} aria-hidden="true" />
           </div>
+          {/* Platzhalter erzwingt die korrekte scrollbare Breite, damit jede Seite erreichbar
+              ist (WebKit meldet die Multicol-Breite sonst zu klein). */}
+          {paged.contentWidth > 0 && (
+            <div className={styles.pageSpacer} style={{ left: paged.contentWidth }} aria-hidden="true" />
+          )}
           <canvas
             ref={drawing.canvasRef}
             className={`${styles.canvas}${drawMode ? ' ' + styles.active : ''}`}
