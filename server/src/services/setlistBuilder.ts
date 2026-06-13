@@ -16,7 +16,7 @@ import {
   fileIdFromUrl,
   type CtAgendaSong,
 } from './churchtools.js';
-import type { CtArrangementFile } from './churchtools.js';
+import type { CtArrangementFile, CtSong } from './churchtools.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
 
@@ -53,31 +53,38 @@ export async function getServicesWithSetlists(
   to: string,
 ): Promise<Service[]> {
   const events = await getEvents(cookie, from, to);
-  const withCounts = await Promise.all(
-    events.map(async (ev) => {
-      try {
-        const calId = ev.calendar?.domainIdentifier;
-        // Agenda + Termin-Untertitel parallel laden.
-        const [agenda, subtitle] = await Promise.all([
-          getAgenda(cookie, ev.id),
-          calId && ev.appointmentId
-            ? getAppointmentSubtitle(cookie, calId, ev.appointmentId)
-            : Promise.resolve(null),
-        ]);
-        const songCount = (agenda.items ?? []).filter((i) => i.song).length;
-        // Sichtbar, sobald ein Ablaufplan existiert – auch ohne Lieder.
-        return mapEventToService(ev, songCount, subtitle);
-      } catch {
-        return null; // 404 = kein Ablaufplan
-      }
-    }),
-  );
-  return withCounts.filter((s): s is Service => s !== null).sort((a, b) => a.date.localeCompare(b.date));
+  const services: Service[] = [];
+  // Max. 8 Events gleichzeitig (je 2 CT-Abrufe) – schont die ChurchTools-API.
+  await mapLimit(events, 8, async (ev) => {
+    try {
+      const calId = ev.calendar?.domainIdentifier;
+      // Agenda + Termin-Untertitel parallel laden.
+      const [agenda, subtitle] = await Promise.all([
+        getAgenda(cookie, ev.id),
+        calId && ev.appointmentId
+          ? getAppointmentSubtitle(cookie, calId, ev.appointmentId)
+          : Promise.resolve(null),
+      ]);
+      const songCount = (agenda.items ?? []).filter((i) => i.song).length;
+      // Sichtbar, sobald ein Ablaufplan existiert – auch ohne Lieder.
+      services.push(mapEventToService(ev, songCount, subtitle));
+    } catch {
+      /* 404 = kein Ablaufplan */
+    }
+  });
+  return services.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** Baut einen einzelnen SetlistSong aus dem Agenda-Song-Eintrag (lädt Datei + Details). */
-async function buildSong(cookie: string, agendaSong: CtAgendaSong): Promise<SetlistSong> {
-  const song = await getSong(cookie, agendaSong.songId);
+/**
+ * Baut einen einzelnen SetlistSong aus dem Agenda-Song-Eintrag (lädt Datei + Details).
+ * `preloadedSong` vermeidet einen erneuten getSong-Abruf, wenn der Song schon vorliegt.
+ */
+async function buildSong(
+  cookie: string,
+  agendaSong: CtAgendaSong,
+  preloadedSong?: CtSong,
+): Promise<SetlistSong> {
+  const song = preloadedSong ?? (await getSong(cookie, agendaSong.songId));
   const arr =
     song.arrangements.find((a) => a.id === agendaSong.arrangementId) ?? song.arrangements[0];
 
@@ -92,8 +99,11 @@ async function buildSong(cookie: string, agendaSong: CtAgendaSong): Promise<Setl
       return '';
     }
   };
-  const chordpro = await download(originalFile);
-  const chordproEcg = ecgFile ? await download(ecgFile) : null;
+  // Original- und ECG-ChordPro parallel laden
+  const [chordpro, chordproEcg] = await Promise.all([
+    download(originalFile),
+    ecgFile ? download(ecgFile) : Promise.resolve(null),
+  ]);
 
   // Tonart/Takt aus der angezeigten Version ableiten (ECG bevorzugt, sonst Original)
   const source = chordproEcg || chordpro;
@@ -245,8 +255,6 @@ export async function getSongLibrary(cookie: string): Promise<SongLibraryEntry[]
         author: s.author ?? null,
         key: arr.keyOfArrangement ?? arr.key ?? null,
         arrangementId: arr.id,
-        usageCount: 0,
-        lastUsed: null,
       } as SongLibraryEntry;
     })
     .filter((e): e is SongLibraryEntry => e !== null)
@@ -262,16 +270,22 @@ export async function getSongChart(
   const song = await getSong(cookie, songId);
   const arr =
     (arrangementId && song.arrangements.find((a) => a.id === arrangementId)) ||
+    song.arrangements.find((a) => a.isDefault) ||
     song.arrangements[0];
   if (!arr) throw new HttpError(404, 'Kein Arrangement für dieses Lied gefunden.');
-  return buildSong(cookie, {
-    songId,
-    arrangementId: arr.id,
-    title: song.name,
-    arrangement: arr.name,
-    key: arr.keyOfArrangement ?? arr.key ?? null,
-    bpm: arr.bpm ?? null,
-  });
+  // `song` direkt durchreichen → kein zweiter getSong-Abruf in buildSong.
+  return buildSong(
+    cookie,
+    {
+      songId,
+      arrangementId: arr.id,
+      title: song.name,
+      arrangement: arr.name,
+      key: arr.keyOfArrangement ?? arr.key ?? null,
+      bpm: arr.bpm ?? null,
+    },
+    song,
+  );
 }
 
 /** Alle Punkte eines Ablaufplans in Reihenfolge – Lieder aufgelöst, übrige nur als Eintrag. */

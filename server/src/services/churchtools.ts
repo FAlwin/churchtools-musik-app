@@ -149,6 +149,7 @@ export interface CtArrangement {
   keyOfArrangement: string | null;
   bpm: number | null;
   beat: string | null;
+  isDefault?: boolean;
   files: CtArrangementFile[];
 }
 
@@ -250,10 +251,32 @@ export async function uploadChordpro(
 }
 
 /**
+ * Baut den Schreib-Payload eines Ablaufpunkts aus den Live-Daten. Wichtig:
+ *  - `responsible` als Text (Personen-Zuordnungen bleiben in ChurchTools erhalten),
+ *  - Lied-Verknüpfung als **top-level `arrangementId`** – ein verschachteltes song-Objekt
+ *    ignoriert ChurchTools und stuft den Punkt auf „text" herab!
+ * `overrides` überschreibt einzelne Felder (z.B. title/note/position).
+ */
+function agendaItemWritePayload(
+  it: CtAgendaItem,
+  overrides: { title?: string; note?: string; position?: number } = {},
+): Record<string, unknown> {
+  return {
+    title: overrides.title ?? it.title,
+    type: it.type,
+    note: overrides.note ?? it.note ?? '',
+    duration: it.duration ?? 0,
+    isBeforeEvent: it.isBeforeEvent ?? false,
+    responsible: it.responsible?.text ?? '',
+    ...(overrides.position !== undefined ? { position: overrides.position } : {}),
+    ...(it.song ? { arrangementId: it.song.arrangementId } : {}),
+  };
+}
+
+/**
  * Schreibt die Reihenfolge des Ablaufs zurück: lädt die aktuellen Punkte frisch,
  * sortiert sie nach `orderedItemIds` und speichert die ganze Liste per
- * `PUT /api/events/{id}/agenda` (Position = Listenindex). `responsible` wird als
- * String gesendet (Personen-Zuordnungen bleiben in ChurchTools erhalten).
+ * `PUT /api/events/{id}/agenda` (Position = Listenindex).
  */
 export async function reorderAgenda(
   cookie: string,
@@ -271,22 +294,10 @@ export async function reorderAgenda(
     throw new HttpError(409, 'Der Ablauf hat sich geändert. Bitte neu laden und erneut versuchen.');
   }
 
-  const payload = orderedItemIds.map((id, index) => {
-    const it = byId.get(id) as CtAgendaItem;
-    return {
-      id: it.id,
-      title: it.title,
-      type: it.type,
-      note: it.note ?? '',
-      duration: it.duration ?? 0,
-      isBeforeEvent: it.isBeforeEvent ?? false,
-      responsible: it.responsible?.text ?? '',
-      position: index,
-      // Lied-Verknüpfung MUSS als top-level arrangementId gesendet werden.
-      // Ein verschachteltes song-Objekt ignoriert ChurchTools → Punkt wird auf „text" herabgestuft!
-      ...(it.song ? { arrangementId: it.song.arrangementId } : {}),
-    };
-  });
+  const payload = orderedItemIds.map((id, index) => ({
+    id,
+    ...agendaItemWritePayload(byId.get(id) as CtAgendaItem, { position: index }),
+  }));
 
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda`, {
     method: 'PUT',
@@ -371,15 +382,7 @@ export async function updateAgendaItem(
   const it = items.find((i) => i.id === itemId);
   if (!it) throw new HttpError(404, 'Ablaufpunkt nicht gefunden.');
 
-  const body = {
-    title: fields.title ?? it.title,
-    type: it.type,
-    note: fields.note ?? it.note ?? '',
-    duration: it.duration ?? 0,
-    isBeforeEvent: it.isBeforeEvent ?? false,
-    responsible: it.responsible?.text ?? '',
-    ...(it.song ? { arrangementId: it.song.arrangementId } : {}),
-  };
+  const body = agendaItemWritePayload(it, { title: fields.title, note: fields.note });
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items/${itemId}`, {
     method: 'PUT',
     headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { SongSearchResult } from '@shared/types/index';
 import { Sheet } from './Sheet';
 import { searchSongs } from '../services/churchtoolsApi';
@@ -21,6 +21,8 @@ export function AddItemSheet({ onClose, onAdd }: AddItemSheetProps) {
   const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Letzte gestartete Suchanfrage – verwirft Antworten überholter Anfragen.
+  const latestQuery = useRef('');
 
   async function add(data: Parameters<typeof onAdd>[0]) {
     setBusy(true);
@@ -44,21 +46,18 @@ export function AddItemSheet({ onClose, onAdd }: AddItemSheetProps) {
       return;
     }
     setSearching(true);
+    latestQuery.current = q;
     const handle = setTimeout(async () => {
       try {
         const res = await searchSongs(q);
-        // Nur übernehmen, wenn die Eingabe seither nicht weiter verändert wurde.
-        setQuery((cur) => {
-          if (cur.trim() === q) {
-            setResults(res);
-            setErr(null);
-          }
-          return cur;
-        });
+        // Nur übernehmen, wenn keine neuere Anfrage gestartet wurde.
+        if (latestQuery.current !== q) return;
+        setResults(res);
+        setErr(null);
       } catch (e) {
-        setErr(e instanceof Error ? e.message : 'Suche fehlgeschlagen.');
+        if (latestQuery.current === q) setErr(e instanceof Error ? e.message : 'Suche fehlgeschlagen.');
       } finally {
-        setSearching(false);
+        if (latestQuery.current === q) setSearching(false);
       }
     }, 300);
     return () => clearTimeout(handle);

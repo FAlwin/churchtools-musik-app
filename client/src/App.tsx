@@ -165,6 +165,7 @@ export default function App() {
       )}
 
       {screen === 'songchart' &&
+        canViewSongs &&
         (songChart.data ? (
           <ChordChart
             songs={[songChart.data]}

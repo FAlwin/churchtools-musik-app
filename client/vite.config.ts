@@ -37,6 +37,12 @@ export default defineConfig({
       },
     }),
   ],
+  // Moderne Sass-API verwenden (vermeidet die „legacy-js-api"-Deprecation-Warnung)
+  css: {
+    preprocessorOptions: {
+      scss: { api: 'modern-compiler' },
+    },
+  },
   server: {
     port: 5173,
     // host: true -> auch im WLAN erreichbar (zum Testen auf Handy/Tablet)

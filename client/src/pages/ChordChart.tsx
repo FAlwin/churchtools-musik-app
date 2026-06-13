@@ -49,7 +49,9 @@ export function ChordChart({
   fontId,
 }: ChordChartProps) {
   const [idx, setIdx] = useState(startIndex);
-  const song = songs[idx];
+  // Fallback, falls songs durch Bearbeiten/Reload schrumpft und idx nicht mehr passt
+  // (App rendert den Chart nur bei songs.length > 0, also ist songs[last] immer gültig).
+  const song = songs[idx] ?? songs[songs.length - 1];
 
   const [selectedKey, setSelectedKey] = useState<string | null>(
     () => localStorage.getItem(`worship_key_${song.id}`) || null,

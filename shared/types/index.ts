@@ -61,10 +61,6 @@ export interface SongLibraryEntry {
   /** Tonart des Standard-Arrangements */
   key: string | null;
   arrangementId: number;
-  /** Wie oft in den letzten 12 Monaten im Ablauf verwendet */
-  usageCount: number;
-  /** ISO-Datum der letzten Verwendung (oder null) */
-  lastUsed: string | null;
 }
 
 /** Ein Songsuche-Treffer mit seinen Arrangements. */

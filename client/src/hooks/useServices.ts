@@ -48,12 +48,15 @@ export function useReorderAgenda(eventId: number | null) {
   });
 }
 
-/** Löscht einen Ablaufpunkt und lädt den Ablauf danach neu. */
+/** Löscht einen Ablaufpunkt und lädt Ablauf + Übersicht (Song-Anzahl) neu. */
 export function useDeleteAgendaItem(eventId: number | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (itemId: number) => api.deleteAgendaItem(eventId as number, itemId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agenda', eventId] });
+      qc.invalidateQueries({ queryKey: ['services'] });
+    },
   });
 }
 
@@ -107,12 +110,15 @@ export function useSongChart(sel: { songId: number; arrangementId?: number } | n
   });
 }
 
-/** Legt einen neuen Ablaufpunkt an und lädt den Ablauf danach neu. */
+/** Legt einen neuen Ablaufpunkt an und lädt Ablauf + Übersicht (Song-Anzahl) neu. */
 export function useCreateAgendaItem(eventId: number | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number }) =>
       api.createAgendaItem(eventId as number, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agenda', eventId] });
+      qc.invalidateQueries({ queryKey: ['services'] });
+    },
   });
 }

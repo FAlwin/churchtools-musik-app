@@ -49,7 +49,7 @@ export function AllSongs({
   const query = q.trim().toLowerCase();
 
   const countOf = (s: SongLibraryEntry) => usage?.[s.songId]?.count ?? 0;
-  const lastOf = (s: SongLibraryEntry) => usage?.[s.songId]?.lastUsed ?? s.lastUsed;
+  const lastOf = (s: SongLibraryEntry) => usage?.[s.songId]?.lastUsed ?? null;
 
   const filtered = (
     query
