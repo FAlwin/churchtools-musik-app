@@ -90,6 +90,9 @@ andere Gemeinde: branding.ts + Logo-Dateien anpassen. Farben zusätzlich in `_va
 (SCSS) – beim Vollausbau aus einer Quelle speisen. Voller White-Label-Ausbau (mehrere Gemeinden
 umschaltbar, eigene CT-Instanz) ist ein eigenes Folgepaket.
 
+**Verteilung an andere Gemeinden:** Plan/Roadmap in `WHITE-LABEL.md` (Richtung: Selbst-Hosting;
+Branding zur Laufzeit + vorgebautes Docker-Image + Anleitung). Noch nicht umgesetzt.
+
 ## Anmerkungen (Zeichnen/Text)
 `useDrawing.ts` kapselt Canvas-Striche (Stift/Marker/Radierer) + Text-Anmerkungen (localStorage
 pro Song). Bedienung: Text **antippen** = auswählen (Rahmen), **nochmal antippen** = Inhalt
