@@ -10,7 +10,6 @@ import {
   getAppointmentSubtitle,
   getSong,
   getAllSongs,
-  getReadCookie,
   downloadFileText,
   uploadChordpro,
   deleteFile,
@@ -76,15 +75,8 @@ export async function getServicesWithSetlists(
   return withCounts.filter((s): s is Service => s !== null).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/**
- * Baut einen einzelnen SetlistSong. `cookie` = Nutzer (Metadaten/Rechte),
- * `fileCookie` = Datei-Lesezugriff (Service-Konto, falls konfiguriert).
- */
-async function buildSong(
-  cookie: string,
-  agendaSong: CtAgendaSong,
-  fileCookie: string = cookie,
-): Promise<SetlistSong> {
+/** Baut einen einzelnen SetlistSong aus dem Agenda-Song-Eintrag (lädt Datei + Details). */
+async function buildSong(cookie: string, agendaSong: CtAgendaSong): Promise<SetlistSong> {
   const song = await getSong(cookie, agendaSong.songId);
   const arr =
     song.arrangements.find((a) => a.id === agendaSong.arrangementId) ?? song.arrangements[0];
@@ -95,7 +87,7 @@ async function buildSong(
   const download = async (f?: CtArrangementFile): Promise<string> => {
     if (!f) return '';
     try {
-      return await downloadFileText(fileCookie, f.fileUrl);
+      return await downloadFileText(cookie, f.fileUrl);
     } catch {
       return '';
     }
@@ -272,29 +264,23 @@ export async function getSongChart(
     (arrangementId && song.arrangements.find((a) => a.id === arrangementId)) ||
     song.arrangements[0];
   if (!arr) throw new HttpError(404, 'Kein Arrangement für dieses Lied gefunden.');
-  const fileCookie = await getReadCookie(cookie);
-  return buildSong(
-    cookie,
-    {
-      songId,
-      arrangementId: arr.id,
-      title: song.name,
-      arrangement: arr.name,
-      key: arr.keyOfArrangement ?? arr.key ?? null,
-      bpm: arr.bpm ?? null,
-    },
-    fileCookie,
-  );
+  return buildSong(cookie, {
+    songId,
+    arrangementId: arr.id,
+    title: song.name,
+    arrangement: arr.name,
+    key: arr.keyOfArrangement ?? arr.key ?? null,
+    bpm: arr.bpm ?? null,
+  });
 }
 
 /** Alle Punkte eines Ablaufplans in Reihenfolge – Lieder aufgelöst, übrige nur als Eintrag. */
 export async function getAgendaItems(cookie: string, eventId: number): Promise<AgendaItem[]> {
   const agenda = await getAgenda(cookie, eventId);
   const items = agenda.items ?? [];
-  const fileCookie = await getReadCookie(cookie);
   return Promise.all(
     items.map(async (item): Promise<AgendaItem> => {
-      const song = item.song ? await buildSong(cookie, item.song, fileCookie) : null;
+      const song = item.song ? await buildSong(cookie, item.song) : null;
       return {
         id: item.id,
         title: item.title,

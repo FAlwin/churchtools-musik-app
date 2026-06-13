@@ -17,9 +17,6 @@ export const config = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   churchtoolsBaseUrl: required('CHURCHTOOLS_BASE_URL', 'https://ecg-donrath.church.tools'),
   sessionSecret: required('SESSION_SECRET', 'dev-only-insecure-secret'),
-  // Optionales Service-Konto (Login-Token) für Lied-Datei-Downloads, damit auch
-  // Nur-Lese-Mitglieder die Akkorde/PDFs sehen. Leer = aus (dann Nutzer-Cookie).
-  songServiceToken: process.env.SONG_SERVICE_TOKEN ?? '',
   get isProduction() {
     return this.nodeEnv === 'production';
   },
