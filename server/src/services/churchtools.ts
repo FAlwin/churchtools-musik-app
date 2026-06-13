@@ -64,6 +64,35 @@ export async function login(
   return { cookie, user };
 }
 
+// ── Service-Konto: ein Session-Cookie zum Lesen der Lied-Dateien (gecacht) ──
+let serviceSession: { cookie: string; at: number } | null = null;
+
+async function getServiceCookie(): Promise<string | null> {
+  const token = config.songServiceToken;
+  if (!token) return null;
+  if (serviceSession && Date.now() - serviceSession.at < 30 * 60 * 1000) return serviceSession.cookie;
+  try {
+    const res = await fetch(`${BASE}/api/whoami?login_token=${encodeURIComponent(token)}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const cookie = extractSessionCookie(res);
+    if (!cookie) return null;
+    serviceSession = { cookie, at: Date.now() };
+    return cookie;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Liefert das Cookie für **lesende Datei-Zugriffe** (ChordPro/PDF): das Service-Konto,
+ * falls konfiguriert – sonst das Nutzer-Cookie. So sehen auch Nur-Lese-Mitglieder die Inhalte.
+ */
+export async function getReadCookie(userCookie: string): Promise<string> {
+  return (await getServiceCookie()) ?? userCookie;
+}
+
 /** Führt eine authentifizierte JSON-Anfrage gegen die ChurchTools-API aus. */
 async function ctGet<T = unknown>(cookie: string, path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {

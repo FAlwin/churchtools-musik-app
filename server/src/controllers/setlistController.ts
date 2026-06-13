@@ -18,6 +18,7 @@ import {
   createAgendaItem,
   searchSongs,
   getCapabilities,
+  getReadCookie,
 } from '../services/churchtools.js';
 import type { SongSearchResult } from '@shared/types/index';
 
@@ -174,7 +175,8 @@ export async function getFile(req: Request, res: Response): Promise<void> {
   const fileId = idSchema.parse(req.params.fileId);
   const cookie = req.ctCookie as string;
   const fileUrl = await resolveFileUrl(cookie, songId, fileId);
-  const { buffer, contentType } = await fetchFileBytes(cookie, fileUrl);
+  const readCookie = await getReadCookie(cookie);
+  const { buffer, contentType } = await fetchFileBytes(readCookie, fileUrl);
   res.setHeader('Content-Type', contentType);
   res.setHeader('Cache-Control', 'private, max-age=300');
   res.send(buffer);
