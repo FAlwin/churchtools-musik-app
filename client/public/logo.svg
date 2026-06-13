@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100" role="img" aria-label="ECG Donrath Musik App Icon (gerundet)">
+  <defs>
+    <clipPath id="squircle"><rect width="100" height="100" rx="23"></rect></clipPath>
+  </defs>
+  <g clip-path="url(#squircle)">
+    <rect width="100" height="100" fill="#00616E"></rect>
+    <g>
+      <rect x="9.5" y="35.5" width="13" height="29" rx="6.5" fill="#A2CACF"></rect>
+      <rect x="26.5" y="23.5" width="13" height="53" rx="6.5" fill="#A2CACF"></rect>
+      <rect x="43.5" y="13" width="13" height="74" rx="6.5" fill="#EB5E28"></rect>
+      <rect x="60.5" y="23.5" width="13" height="53" rx="6.5" fill="#A2CACF"></rect>
+      <rect x="77.5" y="35.5" width="13" height="29" rx="6.5" fill="#A2CACF"></rect>
+    </g>
+  </g>
+</svg>

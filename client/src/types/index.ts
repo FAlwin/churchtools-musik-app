@@ -1,7 +1,10 @@
 /** Welcher Screen aktuell sichtbar ist. */
 export type Screen = 'login' | 'agenda' | 'setlist' | 'chart' | 'songs' | 'songchart';
 
+/** Tatsächlich angewandtes Erscheinungsbild. */
 export type Theme = 'light' | 'dark';
+/** Vom Nutzer gewählte Voreinstellung – „system" folgt dem Gerät. */
+export type ThemePref = 'light' | 'dark' | 'system';
 
 /** Eine frei platzierte Text-Anmerkung auf einem Chart. */
 export interface TextAnnotation {

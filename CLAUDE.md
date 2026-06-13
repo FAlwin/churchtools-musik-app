@@ -82,6 +82,22 @@ churchtools-musik-app/
 - `.env` wird nie committet – nur `.env.example` mit Platzhaltern
 - `npm audit` regelmäßig ausführen
 
+## White-Label (vorbereitet)
+Marken-Konfiguration zentral in `client/src/config/branding.ts` (Name, Kurzname, Beschreibung,
+Logo-Pfad, Org-Name, Theme-/Hintergrundfarbe). Genutzt vom PWA-Manifest (`vite.config.ts`) und
+dem Login. Logo-Dateien in `client/public/` (`logo.png`, `logo.svg`, `icon-192/512.png`). Für eine
+andere Gemeinde: branding.ts + Logo-Dateien anpassen. Farben zusätzlich in `_variables.scss`
+(SCSS) – beim Vollausbau aus einer Quelle speisen. Voller White-Label-Ausbau (mehrere Gemeinden
+umschaltbar, eigene CT-Instanz) ist ein eigenes Folgepaket.
+
+## Anmerkungen (Zeichnen/Text)
+`useDrawing.ts` kapselt Canvas-Striche (Stift/Marker/Radierer) + Text-Anmerkungen (localStorage
+pro Song). Bedienung: Text **antippen** = auswählen (Rahmen), **nochmal antippen** = Inhalt
+bearbeiten, **ziehen** = verschieben. Werkzeugleiste zeigt bei Auswahl Farbe/Größe (live) + 🗑.
+Farb-Voreinstellungen: Orange/Petrol/Schwarz-Weiß (`DRAW_COLORS`, `#14110F` → Creme im Dunkelmodus)
++ freier `<input type=color>`-Picker. **Undo/Redo** (↺/↻) über einen Verlauf aus Canvas-Bild +
+Text-Liste pro Schritt; „Alles löschen" ist ebenfalls rückgängig machbar.
+
 ## Domänen-Besonderheiten
 - **ChordPro:** zwei Dialekte unterstützen – Standard (`{start_of_verse}`) UND
   SongSelect (`{comment: Vers}`, optionale Akkorde `[(E)]`, Bass-Akkorde `[E/G#]`)
@@ -132,6 +148,10 @@ churchtools-musik-app/
 | 13.06.2026 | main   | Review/Cleanup; Gottesdienst-Sortierung nach Uhrzeit |
 | 13.06.2026 | main   | **Externer Zugang live:** `https://musik.ecg-donrath.de` (Reverse Proxy + DDNS) |
 | 13.06.2026 | main   | Spalten-Pagination robust (End-Marker statt scrollWidth); Akkord-Abstand-Regler entfernt |
+| 14.06.2026 | main   | Neues Logo (Schallwellen-Icon); PWA-Name „Churchtools Musik App" (short_name + apple-title) |
+| 14.06.2026 | main   | White-Label vorbereitet: Name/Logo/Org/Farben zentral in src/config/branding.ts |
+| 14.06.2026 | main   | Erscheinungsbild Hell/Dunkel/**System**; „Display anlassen" app-weit + Re-Acquire |
+| 14.06.2026 | main   | Anmerkungen: Farb-Palette (Orange/Petrol/SW + freier Picker), Text auswählen→Farbe/Größe/Inhalt live, Undo/Redo, sicheres Löschen (Leiste), „Alles löschen" rückgängig machbar |
 
 ## So startest du die App lokal
 ```
@@ -224,7 +244,7 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
 - **2-Faktor:** kein Problem – Login-Token-Zugriff klappt.
 
 ## Offene Punkte (optional)
-- [ ] Login-Token aus lokaler Dev-`.env` neu erzeugen/entfernen
-- [ ] Test-Service-Konto/Token #1012 in ChurchTools widerrufen
+- [x] Login-Token aus lokaler Dev-`.env` entfernt (14.06.2026) – in ChurchTools noch widerrufen
+- [x] Test-Service-Konto/Token #1012 in ChurchTools gelöscht (14.06.2026)
+- [x] White-Label vorbereitet (branding.ts) – Vollausbau (mehrere Gemeinden) offen
 - [ ] Musik-Abwesenheitsplaner (separate Flask-App) in diese App nachbauen
-- [ ] White-Label für andere Gemeinden (inkl. Farben)

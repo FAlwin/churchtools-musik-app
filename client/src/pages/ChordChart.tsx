@@ -13,7 +13,6 @@ import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { DRAW_COLORS, fontFamilyById } from '../utils/constants';
-import { useWakeLock } from '../hooks/useWakeLock';
 import { useDrawing } from '../hooks/useDrawing';
 import { usePagedColumns } from '../hooks/usePagedColumns';
 import type { DrawTool, Theme } from '../types/index';
@@ -32,7 +31,6 @@ interface ChordChartProps {
   /** Darf der Nutzer den ChordPro-Text bearbeiten? (blendet Editor-Funktionen aus) */
   canEditSong?: boolean;
   theme: Theme;
-  wakePref: boolean;
   fontId: string;
 }
 
@@ -45,7 +43,6 @@ export function ChordChart({
   reloading,
   canEditSong = false,
   theme,
-  wakePref,
   fontId,
 }: ChordChartProps) {
   const [idx, setIdx] = useState(startIndex);
@@ -96,8 +93,6 @@ export function ChordChart({
   const touchT = useRef<number>(0);
   const pendingLastPage = useRef(false);
   const slideDir = useRef<'right' | 'left'>('right'); // Richtung des Liedwechsel-Übergangs
-
-  useWakeLock(wakePref);
 
   // ── abgeleitete Werte ──
   const curKey = selectedKey || song.targetKey;
@@ -335,6 +330,8 @@ export function ChordChart({
   }
 
   const nextSong = idx < songs.length - 1 ? songs[idx + 1] : null;
+  // Aktuell ausgewählte Text-Anmerkung (für die Werkzeugleiste: Farbe/Größe live ändern)
+  const selectedText = drawing.textObjects.find((o) => o.id === drawing.selectedTextId) ?? null;
 
   return (
     <Screen className={styles.chartScreen}>
@@ -671,24 +668,14 @@ export function ChordChart({
                 color: obj.color,
                 pointerEvents: drawMode ? 'all' : 'none',
                 cursor: drawMode ? 'grab' : 'default',
+                outline: obj.id === drawing.selectedTextId ? '2px dashed var(--orange)' : undefined,
+                outlineOffset: 4,
               }}
               onPointerDown={drawMode ? (e) => drawing.startDragText(e, obj) : undefined}
               onPointerMove={drawMode ? (e) => drawing.moveDragText(e, obj.id) : undefined}
               onPointerUp={drawMode ? drawing.endDragText : undefined}
             >
               {obj.text}
-              {drawMode && (
-                <button
-                  className={styles.textObjDel}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    drawing.deleteText(obj.id);
-                  }}
-                >
-                  ×
-                </button>
-              )}
             </div>
           ))}
         </div>
@@ -711,10 +698,29 @@ export function ChordChart({
             drawColor={drawColor}
             setDrawColor={setDrawColor}
             drawTool={drawTool}
-            setDrawTool={setDrawTool}
+            setDrawTool={(t) => {
+              drawing.clearTextSelection();
+              setDrawTool(t);
+            }}
             textSize={textSize}
             setTextSize={setTextSize}
             onClear={() => setConfirmClear(true)}
+            isTextSelected={drawing.selectedTextId !== null}
+            selectedColor={selectedText?.color}
+            selectedSize={selectedText?.size}
+            onSelectedColor={(c) => {
+              if (drawing.selectedTextId !== null) drawing.setTextColor(drawing.selectedTextId, c);
+            }}
+            onSelectedResize={(d) => {
+              if (drawing.selectedTextId !== null) drawing.resizeText(drawing.selectedTextId, d);
+            }}
+            onUndo={drawing.undo}
+            canUndo={drawing.canUndo}
+            onRedo={drawing.redo}
+            canRedo={drawing.canRedo}
+            onDeleteSelected={() => {
+              if (drawing.selectedTextId !== null) drawing.deleteText(drawing.selectedTextId);
+            }}
           />
         )}
 
@@ -725,6 +731,7 @@ export function ChordChart({
               ref={textInputRef}
               type="text"
               autoFocus
+              defaultValue={drawing.pendingText.initial ?? ''}
               placeholder="Text..."
               className={styles.textInput}
               style={{ color: drawColor, border: `2px solid ${drawColor}`, fontSize: textSize }}

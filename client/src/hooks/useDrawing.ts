@@ -31,8 +31,31 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
   const snapshotRef = useRef<ImageData | null>(null);
 
   const [textObjects, setTextObjects] = useState<TextAnnotation[]>([]);
-  const [pendingText, setPendingText] = useState<{ x: number; y: number; cx: number; cy: number } | null>(null);
-  const dragRef = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number } | null>(null);
+  // pendingText: Eingabe-Overlay. Mit editId/initial wird ein VORHANDENER Text bearbeitet.
+  const [pendingText, setPendingText] = useState<{
+    x: number;
+    y: number;
+    cx: number;
+    cy: number;
+    editId?: number;
+    initial?: string;
+  } | null>(null);
+  // Aktuell ausgewählte Text-Anmerkung (zum nachträglichen Ändern von Farbe/Größe/Inhalt).
+  const [selectedTextId, setSelectedTextId] = useState<number | null>(null);
+  const dragRef = useRef<{
+    id: number;
+    sx: number;
+    sy: number;
+    ox: number;
+    oy: number;
+    moved: boolean;
+    wasSelected: boolean;
+  } | null>(null);
+  // Verlauf für „Rückgängig"/„Wiederherstellen" (Canvas-Bild + Text-Liste je Schritt).
+  const historyRef = useRef<{ img: string | null; texts: TextAnnotation[] }[]>([]);
+  const redoRef = useRef<{ img: string | null; texts: TextAnnotation[] }[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
   // ── Persistenz: Strich-Bild laden / speichern ──
   const loadDrawing = useCallback((id: number) => {
@@ -79,7 +102,79 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
   useEffect(() => {
     const saved = localStorage.getItem(`worship_text_${songId}`);
     setTextObjects(saved ? (JSON.parse(saved) as TextAnnotation[]) : []);
+    setSelectedTextId(null);
+    historyRef.current = []; // Verlauf gilt nur pro Lied
+    redoRef.current = [];
+    setCanUndo(false);
+    setCanRedo(false);
   }, [songId]);
+
+  // ── Rückgängig / Wiederherstellen ──
+  /** Aktuellen Zustand (Canvas-Bild + Text-Liste) als Schnappschuss. */
+  function captureSnapshot() {
+    const canvas = canvasRef.current;
+    const img = canvas && canvas.width ? canvas.toDataURL('image/png', 0.7) : null;
+    return { img, texts: textObjects };
+  }
+
+  /** Schnappschuss anwenden (Canvas neu zeichnen + Texte setzen). */
+  function applySnapshot(snap: { img: string | null; texts: TextAnnotation[] }) {
+    setSelectedTextId(null);
+    setTextObjects(snap.texts);
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (snap.img) {
+      const im = new Image();
+      im.onload = () => {
+        const c = canvasRef.current;
+        const cc = c?.getContext('2d');
+        if (c && cc) {
+          cc.clearRect(0, 0, c.width, c.height);
+          cc.drawImage(im, 0, 0);
+        }
+        saveDrawing(songId);
+      };
+      im.src = snap.img;
+    } else {
+      saveDrawing(songId);
+    }
+  }
+
+  /** Zustand sichern – VOR einer Änderung aufrufen. Setzt den Wiederherstellen-Verlauf zurück. */
+  function pushHistory() {
+    historyRef.current.push(captureSnapshot());
+    if (historyRef.current.length > 30) historyRef.current.shift();
+    redoRef.current = []; // eine neue Aktion macht „Wiederherstellen" ungültig
+    setCanUndo(true);
+    setCanRedo(false);
+  }
+
+  /** Letzte Änderung rückgängig machen. */
+  function undo() {
+    const prev = historyRef.current.pop();
+    if (!prev) return;
+    redoRef.current.push(captureSnapshot());
+    setCanUndo(historyRef.current.length > 0);
+    setCanRedo(true);
+    applySnapshot(prev);
+  }
+
+  /** Rückgängig gemachte Änderung wiederherstellen. */
+  function redo() {
+    const next = redoRef.current.pop();
+    if (!next) return;
+    historyRef.current.push(captureSnapshot());
+    setCanRedo(redoRef.current.length > 0);
+    setCanUndo(true);
+    applySnapshot(next);
+  }
+
+  // Auswahl aufheben, sobald der Zeichenmodus verlassen wird
+  useEffect(() => {
+    if (!drawMode) setSelectedTextId(null);
+  }, [drawMode]);
 
   // Text-Anmerkungen speichern
   useEffect(() => {
@@ -150,6 +245,11 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
 
   function onPointerDown(e: React.PointerEvent) {
     if (!drawMode) return;
+    // Ist gerade ein Text-Eingabefeld offen, beendet dieser Tipp NUR die Eingabe
+    // (das onBlur des Felds speichert) – es wird KEIN neuer Text angelegt.
+    if (pendingText) return;
+    // Tippen auf eine leere Stelle hebt die Text-Auswahl auf (Texte stoppen das Event selbst).
+    setSelectedTextId(null);
     if (drawTool === 'text') {
       e.preventDefault();
       e.stopPropagation();
@@ -159,6 +259,7 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     }
     e.preventDefault();
     e.stopPropagation();
+    pushHistory(); // Zustand vor dem Strich sichern (für Rückgängig)
     drawingRef.current = true;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -185,43 +286,96 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
   // ── Text-Anmerkungen ──
   function confirmText(text: string) {
     if (!pendingText) return;
-    if (text && text.trim()) {
+    const trimmed = text.trim();
+    if (pendingText.editId != null) {
+      // Vorhandenen Text ändern – oder löschen, wenn er leer geräumt wurde.
+      pushHistory();
+      setTextObjects((prev) =>
+        trimmed
+          ? prev.map((o) => (o.id === pendingText.editId ? { ...o, text: trimmed } : o))
+          : prev.filter((o) => o.id !== pendingText.editId),
+      );
+    } else if (trimmed) {
+      pushHistory();
       setTextObjects((prev) => [
         ...prev,
-        { id: Date.now(), x: pendingText.x, y: pendingText.y, text: text.trim(), color: drawColor, size: textSize },
+        { id: Date.now(), x: pendingText.x, y: pendingText.y, text: trimmed, color: drawColor, size: textSize },
       ]);
     }
     setPendingText(null);
   }
 
+  /** Inhalt einer vorhandenen Text-Anmerkung bearbeiten (öffnet das Eingabefeld). */
+  function editText(obj: TextAnnotation) {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    setPendingText({
+      x: obj.x,
+      y: obj.y,
+      cx: (rect?.left ?? 0) + obj.x,
+      cy: (rect?.top ?? 0) + obj.y,
+      editId: obj.id,
+      initial: obj.text,
+    });
+  }
+
   function deleteText(id: number) {
+    pushHistory();
     setTextObjects((prev) => prev.filter((o) => o.id !== id));
   }
 
   function startDragText(e: React.PointerEvent, obj: TextAnnotation) {
     e.stopPropagation();
-    dragRef.current = { id: obj.id, sx: e.clientX, sy: e.clientY, ox: obj.x, oy: obj.y };
+    // War der Text schon ausgewählt? Dann gilt ein reiner Tipp (ohne Verschieben) als
+    // „Bearbeiten" (siehe endDragText). Erster Tipp wählt nur aus.
+    const wasSelected = selectedTextId === obj.id;
+    setSelectedTextId(obj.id);
+    dragRef.current = { id: obj.id, sx: e.clientX, sy: e.clientY, ox: obj.x, oy: obj.y, moved: false, wasSelected };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  /** Farbe einer vorhandenen Text-Anmerkung ändern (live). */
+  function setTextColor(id: number, color: string) {
+    setTextObjects((prev) => prev.map((o) => (o.id === id ? { ...o, color } : o)));
+  }
+
+  /** Größe einer vorhandenen Text-Anmerkung ändern (live, begrenzt 12–56). */
+  function resizeText(id: number, delta: number) {
+    setTextObjects((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, size: Math.max(12, Math.min(56, o.size + delta)) } : o)),
+    );
   }
 
   function moveDragText(e: React.PointerEvent, id: number) {
     if (!dragRef.current || dragRef.current.id !== id) return;
     const dx = e.clientX - dragRef.current.sx;
     const dy = e.clientY - dragRef.current.sy;
+    // Erst beim tatsächlichen Verschieben den Zustand für Rückgängig sichern (nicht beim reinen Antippen).
+    if (!dragRef.current.moved && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
+      dragRef.current.moved = true;
+      pushHistory();
+    }
     setTextObjects((prev) =>
       prev.map((o) => (o.id === id ? { ...o, x: dragRef.current!.ox + dx, y: dragRef.current!.oy + dy } : o)),
     );
   }
 
   function endDragText() {
+    const d = dragRef.current;
     dragRef.current = null;
+    // Reiner Tipp (kein Verschieben) auf einen BEREITS ausgewählten Text → bearbeiten.
+    if (d && !d.moved && d.wasSelected) {
+      const obj = textObjects.find((o) => o.id === d.id);
+      if (obj) editText(obj);
+    }
   }
 
   function clearAll() {
+    pushHistory(); // „Alles löschen" rückgängig machbar: ↺ holt alles zurück
     const canvas = canvasRef.current;
     if (canvas) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
     localStorage.removeItem(`worship_draw_${songId}`);
     localStorage.removeItem(`worship_text_${songId}`);
+    setSelectedTextId(null);
     setTextObjects([]);
   }
 
@@ -231,9 +385,18 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     contentRef,
     textObjects,
     pendingText,
+    selectedTextId,
+    canUndo,
+    canRedo,
     handlers: { onPointerDown, onPointerMove, onPointerUp },
     confirmText,
+    editText,
     deleteText,
+    setTextColor,
+    resizeText,
+    undo,
+    redo,
+    clearTextSelection: () => setSelectedTextId(null),
     startDragText,
     moveDragText,
     endDragText,

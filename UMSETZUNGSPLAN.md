@@ -111,6 +111,10 @@ live unter `http://192.168.10.188:3001`. Anleitung in `DEPLOYMENT.md`.
 - **Externer Zugang live:** `https://musik.ecg-donrath.de` über Synology Reverse Proxy +
   DDNS + Let's Encrypt (kein Cloudflare). PWA-Installation (Homescreen) funktioniert.
 - Pagination-Feinschliff (2 Spalten + Zoom robust).
+- **Feinschliff 14.06.:** neues Schallwellen-Logo + PWA-Name; White-Label vorbereitet
+  (`src/config/branding.ts`); Erscheinungsbild Hell/Dunkel/System; „Display anlassen" app-weit;
+  Anmerkungen überarbeitet (Farb-Palette + freier Picker, Text auswählen→bearbeiten,
+  Undo/Redo, sicheres Löschen).
 
 ### Optionale Folgethemen (nicht begonnen)
 Musik-Abwesenheitsplaner nachbauen · White-Label für andere Gemeinden · Metronom/BPM

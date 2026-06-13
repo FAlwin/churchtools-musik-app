@@ -6,8 +6,14 @@ import { Sheet } from '../components/Sheet';
 import { CenterMessage } from '../components/CenterMessage';
 import { usePastServices } from '../hooks/useServices';
 import { FONTS } from '../utils/constants';
-import type { Theme } from '../types/index';
+import type { ThemePref } from '../types/index';
 import styles from './Agenda.module.scss';
+
+const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
+  { value: 'light', label: 'Hell' },
+  { value: 'dark', label: 'Dunkel' },
+  { value: 'system', label: 'System' },
+];
 
 interface AgendaProps {
   services: Service[];
@@ -17,8 +23,8 @@ interface AgendaProps {
   onSelect: (service: Service) => void;
   onLogout: () => void;
   onShowSongs?: () => void;
-  theme: Theme;
-  onToggleTheme: () => void;
+  themePref: ThemePref;
+  setThemePref: (t: ThemePref) => void;
   wakePref: boolean;
   onToggleWake: () => void;
   fontId: string;
@@ -34,8 +40,8 @@ export function Agenda({
   onSelect,
   onLogout,
   onShowSongs,
-  theme,
-  onToggleTheme,
+  themePref,
+  setThemePref,
   wakePref,
   onToggleWake,
   fontId,
@@ -106,17 +112,19 @@ export function Agenda({
           <div className={styles.scrim} onClick={() => setShowSettings(false)} />
           <div className={styles.menu}>
             <div className={styles.menuLbl}>Einstellungen</div>
-            <div className={styles.mmItem} onClick={onToggleTheme} style={{ cursor: 'pointer' }}>
-              <span>Erscheinungsbild</span>
-              <button
-                className={`${styles.switch}${theme === 'dark' ? ' ' + styles.on : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleTheme();
-                }}
-              >
-                <span className={styles.thumb} />
-              </button>
+            <div className={styles.settingBlock}>
+              <span className={styles.settingLabel}>Erscheinungsbild</span>
+              <div className={styles.segGroup}>
+                {THEME_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    className={`${styles.segBtn}${themePref === opt.value ? ' ' + styles.on : ''}`}
+                    onClick={() => setThemePref(opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className={styles.mmItem} onClick={onToggleWake} style={{ cursor: 'pointer' }}>
               <span>Display anlassen</span>

@@ -14,7 +14,10 @@ export const FONTS: FontOption[] = [
   { id: 'georgia', label: 'Georgia', family: "'Georgia', serif", desc: 'Traditionell · Serif' },
 ];
 
-export const DRAW_COLORS = ['#EB5E28', '#00616E', '#14110F', '#c0392b', '#5898A0'];
+// Voreingestellte Anmerkungs-Farben: Orange + Petrol (CD) + Schwarz/Weiß.
+// '#14110F' wird im Dunkelmodus auf Creme gemappt (siehe ChordChart) → „adaptiv".
+// Beliebige Farben gibt es zusätzlich über den freien Farbwähler in der Werkzeugleiste.
+export const DRAW_COLORS = ['#EB5E28', '#00616E', '#14110F'];
 
 export function fontFamilyById(id: string): string {
   return (FONTS.find((f) => f.id === id) ?? FONTS[0]).family;

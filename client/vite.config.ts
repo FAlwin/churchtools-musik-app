@@ -2,6 +2,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { branding } from './src/config/branding';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -17,11 +18,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'logo.png'],
       manifest: {
-        name: 'Churchtools Musik App',
-        short_name: 'Worship Charts',
-        description: 'Chord Charts der ECG Donrath aus ChurchTools',
-        theme_color: '#00616E',
-        background_color: '#FFFCF2',
+        name: branding.appName,
+        short_name: branding.shortName,
+        description: branding.description,
+        theme_color: branding.themeColor,
+        background_color: branding.backgroundColor,
         display: 'standalone',
         orientation: 'portrait',
         icons: [

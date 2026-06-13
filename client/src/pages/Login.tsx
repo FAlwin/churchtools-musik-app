@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Screen } from '../components/Screen';
 import { Spinner } from '../components/Spinner';
+import { branding } from '../config/branding';
 import styles from './Login.module.scss';
 
 interface LoginProps {
@@ -30,9 +31,9 @@ export function Login({ onLogin }: LoginProps) {
   return (
     <Screen style={{ justifyContent: 'center', alignItems: 'center', overflowY: 'auto' }}>
       <div className={styles.wrap}>
-        <img className={styles.logo} src="/logo.png" alt="ECG Donrath" />
-        <div className={styles.name}>Churchtools Musik App</div>
-        <div className={styles.sub}>ECG Donrath</div>
+        <img className={styles.logo} src={branding.logo} alt={branding.orgName} />
+        <div className={styles.name}>{branding.appName}</div>
+        <div className={styles.sub}>{branding.orgName}</div>
         <form className={styles.form} onSubmit={submit}>
           <div className={styles.field}>
             <label className={styles.label}>E-Mail</label>

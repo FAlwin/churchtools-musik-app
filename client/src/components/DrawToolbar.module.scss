@@ -32,10 +32,52 @@
   }
 }
 
+// Freier Farbwähler – Regenbogen-Feld, öffnet den System-Farbwähler
+.colorPicker {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: conic-gradient(red, orange, yellow, lime, aqua, blue, magenta, red);
+  transition:
+    transform 0.12s,
+    border-color 0.12s;
+
+  &.on {
+    border-color: var(--teal);
+    transform: scale(1.2);
+  }
+
+  input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+  }
+}
+
 .sep {
   width: 22px;
   height: 1px;
   background: var(--border);
+}
+
+// Aktuelle Textgröße zwischen A− und A+
+.sizeValue {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 20px;
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .toolBtn {
@@ -60,6 +102,10 @@
   }
   &:hover:not(.on) {
     background: var(--surface3);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 }
 

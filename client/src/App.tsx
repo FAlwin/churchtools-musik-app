@@ -6,6 +6,7 @@ import { Setlist } from './pages/Setlist';
 import { ChordChart } from './pages/ChordChart';
 import { AllSongs } from './pages/AllSongs';
 import { useSettings } from './hooks/useSettings';
+import { useWakeLock } from './hooks/useWakeLock';
 import { useAuth } from './hooks/useAuth';
 import {
   useServices,
@@ -26,6 +27,8 @@ import type { Screen as ScreenName } from './types/index';
 /** Wurzel-Komponente: Auth-Status + Screen-Navigation mit echten ChurchTools-Daten. */
 export default function App() {
   const settings = useSettings();
+  // „Display anlassen" wirkt app-weit (nicht nur in der Liedansicht).
+  useWakeLock(settings.wakePref);
   const auth = useAuth();
 
   const [screen, setScreen] = useState<ScreenName>('agenda');
@@ -137,8 +140,8 @@ export default function App() {
           }}
           onLogout={() => auth.logout()}
           onShowSongs={canViewSongs ? () => setScreen('songs') : undefined}
-          theme={settings.theme}
-          onToggleTheme={settings.toggleTheme}
+          themePref={settings.themePref}
+          setThemePref={settings.setThemePref}
           wakePref={settings.wakePref}
           onToggleWake={settings.toggleWake}
           fontId={settings.fontId}
@@ -175,7 +178,6 @@ export default function App() {
             reloading={songChart.isFetching}
             canEditSong={canEditSongs}
             theme={settings.theme}
-            wakePref={settings.wakePref}
             fontId={settings.fontId}
           />
         ) : (
@@ -220,7 +222,6 @@ export default function App() {
           reloading={agendaQuery.isFetching}
           canEditSong={canEditSongs}
           theme={settings.theme}
-          wakePref={settings.wakePref}
           fontId={settings.fontId}
         />
       )}

@@ -200,6 +200,48 @@
   color: var(--text3);
 }
 
+// ── Einstellungs-Block mit Label oben + Auswahl darunter ─────
+.settingBlock {
+  padding: 9px 14px 11px;
+}
+
+.settingLabel {
+  display: block;
+  font-family: 'Montserrat', inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.segGroup {
+  display: flex;
+  gap: 6px;
+}
+
+.segBtn {
+  flex: 1;
+  padding: 8px 6px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.1s;
+
+  &.on {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: var(--cream);
+  }
+  &:hover:not(.on) {
+    background: var(--surface3);
+  }
+}
+
 // ── Toggle-Switch ───────────────────────────────────────────
 .switch {
   width: 48px;

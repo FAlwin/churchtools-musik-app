@@ -630,6 +630,25 @@
   line-height: 1;
 }
 
+.textObjEdit {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
 .textInputWrap {
   position: fixed;
   z-index: 200;
