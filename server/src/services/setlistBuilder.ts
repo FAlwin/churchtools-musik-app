@@ -53,7 +53,9 @@ export async function getServicesWithSetlists(
   to: string,
 ): Promise<Service[]> {
   const events = await getEvents(cookie, from, to);
-  const services: Service[] = [];
+  // mapLimit liefert in Fertigstellungs-Reihenfolge → Start-Zeitpunkt (ISO inkl. Uhrzeit)
+  // mitführen und am Ende danach sortieren (sonst stehen gleich-tägige Events falsch).
+  const rows: { service: Service; start: string }[] = [];
   // Max. 8 Events gleichzeitig (je 2 CT-Abrufe) – schont die ChurchTools-API.
   await mapLimit(events, 8, async (ev) => {
     try {
@@ -67,12 +69,12 @@ export async function getServicesWithSetlists(
       ]);
       const songCount = (agenda.items ?? []).filter((i) => i.song).length;
       // Sichtbar, sobald ein Ablaufplan existiert – auch ohne Lieder.
-      services.push(mapEventToService(ev, songCount, subtitle));
+      rows.push({ service: mapEventToService(ev, songCount, subtitle), start: ev.startDate });
     } catch {
       /* 404 = kein Ablaufplan */
     }
   });
-  return services.sort((a, b) => a.date.localeCompare(b.date));
+  return rows.sort((a, b) => a.start.localeCompare(b.start)).map((r) => r.service);
 }
 
 /**
