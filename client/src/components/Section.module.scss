@@ -1,9 +1,8 @@
 .sectionBlock {
   margin-bottom: 28px;
-  // Sektion nie über einen Spaltenumbruch zerreißen (hält Akkorde bei ihrem Text)
-  break-inside: avoid;
-  -webkit-column-break-inside: avoid;
-  page-break-inside: avoid;
+  // Abschnitte DÜRFEN über Spalten/Seiten umbrechen (sonst werden zu hohe Verse bei
+  // 2 Spalten + großem Zoom abgeschnitten). Zusammengehalten werden nur die einzelnen
+  // Akkord-Zeilen (siehe ChordLine: break-inside: avoid).
 
   // Letzter Abschnitt: kein nachlaufender Rand, der sonst eine leere Folgeseite erzeugt
   &:last-child {
@@ -21,6 +20,9 @@
   border-radius: 7px;
   margin-bottom: 12px;
   font-family: 'Montserrat', sans-serif; // immer kräftig, unabhängig von der Chart-Schrift
+  // Label nicht allein am Spaltenende stehen lassen
+  break-after: avoid;
+  -webkit-column-break-after: avoid;
 }
 
 .gap {

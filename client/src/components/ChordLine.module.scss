@@ -1,6 +1,16 @@
 // Akkord-/Text-Zeilen. Die Schriftart kommt per CSS-Variable --chart-font
 // vom umgebenden Chart-Body (dynamisch wählbar).
 
+// Einzelne Zeilen nie über Spalten-/Seitenumbruch zerreißen (Akkord bleibt bei seinem Text).
+// Der umgebende Abschnitt darf dagegen umbrechen (siehe Section).
+.lyricsOnly,
+.plain,
+.chordOnly,
+.chordLine {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+}
+
 .lyricsOnly {
   font-family: var(--chart-font, 'JetBrains Mono', monospace);
   line-height: 1.5;
