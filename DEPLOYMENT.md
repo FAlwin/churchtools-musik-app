@@ -1,19 +1,21 @@
-# Deployment – Churchtools Musik App (Synology NAS + Cloudflare Tunnel)
+# Deployment – Churchtools Musik App (Synology NAS + Reverse Proxy)
 
 Ziel: Die App läuft als Docker-Container auf dem NAS und ist über eine sichere
-HTTPS-Adresse (Cloudflare Tunnel) erreichbar – auch von unterwegs.
+HTTPS-Adresse erreichbar – intern im WLAN und **extern** unter
+`https://musik.ecg-donrath.de`.
+
+Der externe Zugang läuft über den **Synology Reverse Proxy** (KEIN Cloudflare):
+DDNS hält die wechselnde Heim-IP, ein Hetzner-CNAME zeigt auf den DDNS-Host, der
+Reverse Proxy reicht HTTPS an den Container auf `localhost:3001` weiter.
 
 Ein Container (`app`) liefert sowohl die Web-App als auch die API aus.
-Ein zweiter Container (`cloudflared`) stellt die Verbindung nach außen her.
 
 ---
 
 ## 0. Voraussetzungen
 - Synology-NAS mit **Container Manager** (DSM 7) – siehe Schritt 1.
-- **Empfohlenes Vorgehen:** zuerst **lokal im WLAN** in Betrieb nehmen
-  (Schritte 1–3, 5, 6). Der externe Zugang per **Cloudflare-Tunnel** (Schritt 4)
-  ist **optional** und braucht eine bei Cloudflare verwaltete Domain – das kann
-  später kommen.
+- **Vorgehen:** zuerst **lokal im WLAN** in Betrieb nehmen (Schritte 1–3, 5, 6),
+  dann optional den **externen Zugang** (Schritt 4) einrichten.
 
 ---
 
@@ -44,36 +46,43 @@ SESSION_SECRET=<langer-zufallsstring>
 - `SESSION_SECRET`: ein langer Zufallsstring (z.B. am Mac im Terminal:
   `openssl rand -hex 32` – die Ausgabe einsetzen).
 - `CHURCHTOOLS_LOGIN_TOKEN` wird **nicht** gebraucht (war nur für die Entwicklung).
-- `TUNNEL_TOKEN` nur nötig, wenn du den externen Zugang (Schritt 4) einrichtest.
 
-## 4. Cloudflare-Tunnel erstellen *(OPTIONAL – externer Zugang, später)*
-Nur nötig, wenn die App auch von außerhalb des WLANs erreichbar sein soll. Setzt
-voraus, dass eine Domain bei **Cloudflare** verwaltet wird. Zum Aktivieren danach
-in der `docker-compose.yml` beim Dienst `cloudflared` die Zeile `profiles: ['tunnel']`
-entfernen und das Projekt neu erstellen.
-1. Auf **https://one.dash.cloudflare.com** anmelden → **Networks → Tunnels**.
-2. **Create a tunnel** → Typ **Cloudflared** → Namen vergeben (z.B. `worship`).
-3. Cloudflare zeigt einen **Token** (langer Text nach `--token `). Diesen Token
-   in die `.env` als `TUNNEL_TOKEN=...` eintragen.
-4. Unter **Public Hostnames** einen Eintrag anlegen:
-   - **Subdomain/Domain:** z.B. `musik` + `ecg-donrath.de`
-   - **Service:** `HTTP` → `app:3001`
-     (im Docker-Netz erreicht der Tunnel den App-Container unter dem Namen `app`).
-5. Speichern.
+## 4. Externer Zugang über Synology Reverse Proxy *(umgesetzt 13.06.2026)*
+So ist `https://musik.ecg-donrath.de` erreichbar – ohne Cloudflare. Reihenfolge wichtig:
+
+**4a) DDNS (hält die wechselnde Heim-IP):**
+- NAS → Systemsteuerung → Externer Zugriff → **DDNS** → Hinzufügen.
+- Anbieter **Synology**, Hostname z.B. `ecgdonrath.synology.me`. Test muss „Normal" zeigen.
+
+**4b) DNS bei Hetzner (CNAME):**
+- In der DNS-Zone `ecg-donrath.de` einen Eintrag: Typ **CNAME**, Name `musik`,
+  Wert `ecgdonrath.synology.me.` (**abschließender Punkt!** sonst hängt Hetzner die Zone an).
+- ⚠️ `@`, `www`, `MX`, `SPF`, `DKIM`, `autodiscover` NICHT anfassen (Website + M365-Mail).
+
+**4c) Portweiterleitung im Router (UniFi):**
+- WAN **443** → `192.168.10.188:443` (TCP), WAN **80** → `:80` (für Let's-Encrypt-Prüfung/Renewal).
+- ⚠️ DSM-Ports **5000/5001 NICHT** weiterleiten (bleiben intern/VPN).
+
+**4d) Let's-Encrypt-Zertifikat:**
+- NAS → Sicherheit → Zertifikat → Hinzufügen → „Von Let's Encrypt", Domäne `musik.ecg-donrath.de`.
+
+**4e) Reverse Proxy:**
+- NAS → Anmeldeportal → Erweitert → **Reverse Proxy** → Erstellen.
+- Quelle: HTTPS, `musik.ecg-donrath.de`, Port 443 → Ziel: HTTP, `localhost`, Port 3001.
+- Danach unter **Zertifikat → Einstellungen** dem Dienst `musik.ecg-donrath.de` das
+  Let's-Encrypt-Zertifikat zuweisen (sonst liefert das NAS sein Standardzertifikat → „nicht sicher").
 
 ## 5. In Container Manager starten
 1. Container Manager → **Projekt** → **Erstellen**.
 2. Projektname `worship-charts`, Pfad = der hochgeladene Ordner; er erkennt die
    `docker-compose.yml` automatisch.
 3. **Erstellen/Starten**. Beim ersten Mal baut er das Image (dauert ein paar Minuten).
-   Standardmäßig startet nur der `app`-Container (lokal); `cloudflared` nur, wenn
-   du den Tunnel aktiviert hast (Schritt 4).
 4. Logs prüfen: Der `app`-Container sollte „Server läuft …" zeigen.
 
 ## 6. Aufrufen & als App installieren
 - **Lokal im WLAN:** `http://<NAS-IP>:3001` im Browser öffnen → Login erscheint.
 - Auf iPad/iPhone: Teilen-Symbol → **„Zum Home-Bildschirm"** → läuft als PWA im Vollbild.
-- Mit Cloudflare-Tunnel (Schritt 4) zusätzlich von außen: `https://musik.<deine-domain>`.
+- Von außen (Schritt 4, Reverse Proxy): `https://musik.ecg-donrath.de`.
 
 ---
 
@@ -95,7 +104,7 @@ Update **nicht greift**, sicheren Weg gehen:
 ## Hinweise / Troubleshooting
 - Der App-Container speichert nichts dauerhaft (Notizen/Markierungen liegen im
   Browser des jeweiligen Geräts; Lieder/Setlisten in ChurchTools).
-- Sicherheit: `.env` enthält Geheimnisse (SESSION_SECRET, TUNNEL_TOKEN) – nicht teilen.
+- Sicherheit: `.env` enthält Geheimnisse (SESSION_SECRET) – nicht teilen.
 - **„Nach Login: Gottesdienste konnten nicht geladen werden"** → Session-Cookie kam
   nicht an. Schnelltest im Browser: `http://<NAS-IP>:3001/api/auth/me`
   → `{"authenticated":true,...}` = ok; `false` = Cookie-Problem. Das Cookie ist

@@ -8,8 +8,9 @@
   abruft, automatisch auf die hinterlegte Tonart transponiert und im Gottesdienst anzeigt.
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
-- **Status:** In Entwicklung (Grundgerüst steht)
-- **Repository:** lokal (Remote-Repo später – Entscheidung 11.06.2026: vorerst nur lokal/NAS)
+- **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
+  extern unter `https://musik.ecg-donrath.de` live (Stand 13.06.2026).
+- **Repository:** privates GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main).
 
 ## Tech-Stack
 | Bereich        | Technologie                        |
@@ -21,8 +22,8 @@
 | Backend        | Node.js + Express + TypeScript     |
 | Datenbank      | keine (ChurchTools ist Datenquelle; Notizen/Annotationen lokal im Browser) |
 | Validierung    | Zod (serverseitig)                 |
-| Deployment     | Docker auf Synology NAS            |
-| Tunnel         | Cloudflare Tunnel                  |
+| Deployment     | Docker auf Synology NAS (Container Manager) |
+| Externer Zugang| Synology Reverse Proxy + DDNS + Let's Encrypt (KEIN Cloudflare) |
 
 ## Ordnerstruktur
 Monorepo mit npm-Workspaces:
@@ -94,17 +95,20 @@ churchtools-musik-app/
 - [x] Zod-Validierung auf allen API-Routen
 - [x] helmet eingerichtet
 - [x] express-rate-limit eingerichtet (zusätzlich striktes Limit am Login)
-- [ ] Repository auf privat gestellt (kein Remote – vorerst lokal/NAS)
+- [x] Repository privat (GitHub `FAlwin/churchtools-musik-app`)
 - [x] Authentifizierung: persönlicher ChurchTools-Login, Session in signiertem httpOnly-Cookie
-- [ ] HTTPS (via Cloudflare Tunnel beim Deployment)
+- [x] HTTPS extern via Synology Reverse Proxy + Let's Encrypt (`musik.ecg-donrath.de`)
 - [x] npm audit: zuletzt geprüft am 11.06.2026 – 3 moderate (esbuild/vite,
       nur Dev-Server, kein Prod-Risiko; Fix = vite@8 Breaking Change, zurückgestellt)
 
 ## Deployment
-- **Ziel:** Synology NAS via Docker (+ Cloudflare Tunnel optional) → **umgesetzt**.
-- **docker-compose.yml + Dockerfile:** vorhanden; ein Container liefert API + App aus.
-- **Anleitung:** `DEPLOYMENT.md` (Schritt-für-Schritt, Synology Container Manager).
-- **Domain/HTTPS:** noch offen (Cloudflare-Tunnel optional; bisher lokal über HTTP).
+- **Synology NAS via Docker** (Container Manager, Projekt `worship-charts`) → **umgesetzt & live**.
+- **docker-compose.yml + Dockerfile:** vorhanden; ein Container liefert API + App aus (Port 3001).
+- **Intern (WLAN):** `http://192.168.10.188:3001`.
+- **Extern (HTTPS):** `https://musik.ecg-donrath.de` über **Synology Reverse Proxy** → `localhost:3001`,
+  DNS via Synology-DDNS (`ecgdonrath.synology.me`) + Hetzner-CNAME, Zertifikat Let's Encrypt,
+  Portweiterleitung 443/80 im UniFi-Router (DSM 5000/5001 bleiben zu). **Kein Cloudflare.**
+- **Anleitung:** `DEPLOYMENT.md` (Schritt-für-Schritt, Container Manager + externer Zugang).
 
 ## Changelog
 | Datum      | Branch | Was                                         |
@@ -118,8 +122,16 @@ churchtools-musik-app/
 | 11.06.2026 | main   | Chart-UX-Feinschliff (Blättern, Schriftarten, pro-Lied-Einstellungen, Steuerung) |
 | 11.06.2026 | main   | ChordPro-Editor mit Rückspeicherung als ECG-Version (gegen Test-Lied verifiziert) |
 | 11.06.2026 | main   | Dokumenten-Viewer (PDF/Bild) integriert: Anzeige-Auswahl, Blättern, Zoom/Anpassen pro Seite, Anmerkungen |
-| 11.06.2026 | main   | Schritt 9: Deployment-Setup (Docker + Cloudflare optional) |
+| 11.06.2026 | main   | Schritt 9: Deployment-Setup (Docker) |
 | 11.06.2026 | main   | **Auf NAS deployt** (Container Manager), lokal im WLAN live; Cookie-über-HTTP-Fix |
+| 12.06.2026 | main   | Privates GitHub-Remote angelegt; Termin-Untertitel in Übersicht |
+| 12.06.2026 | main   | Kompletten Ablauf anzeigen (nicht nur Lieder); Zuständig-Personen |
+| 12.06.2026 | main   | Ablauf VOLL bearbeiten (Drag&Drop/Löschen/Umbenennen/Hinzufügen) → ChurchTools |
+| 12.06.2026 | main   | UX-Feinschliff; „Alle Lieder"-Ansicht mit Suche + Nutzungsstatistik |
+| 12.06.2026 | main   | Rechtebewusste UI (`/api/capabilities`): Mitglied = nur Liederbuch |
+| 13.06.2026 | main   | Review/Cleanup; Gottesdienst-Sortierung nach Uhrzeit |
+| 13.06.2026 | main   | **Externer Zugang live:** `https://musik.ecg-donrath.de` (Reverse Proxy + DDNS) |
+| 13.06.2026 | main   | Spalten-Pagination robust (End-Marker statt scrollWidth); Akkord-Abstand-Regler entfernt |
 
 ## So startest du die App lokal
 ```
@@ -130,13 +142,13 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
-- **Erledigt:** Schritte 1–9. App funktional vollständig (inkl. ChordPro-Editor +
-  Dokumenten-Viewer), vom User abgenommen, und **auf dem Synology-NAS deployt**
-  (Container Manager, Projekt `worship-charts`), lokal im WLAN live unter
-  `http://<NAS-IP>:3001` (NAS-IP 192.168.10.188).
-- **Offen / optional:** externer Zugang per Cloudflare-Tunnel (Domain müsste zu
-  Cloudflare umziehen – `ecg-donrath.de` liegt aktuell woanders); Login-Token aus
-  lokaler Dev-`.env` neu erzeugen/entfernen; Remote-Repo optional.
+- **Fertig & produktiv:** App funktional vollständig (Charts + automatisches Transponieren,
+  ChordPro-Editor, Dokumenten-Viewer, kompletter Ablauf + Bearbeiten, „Alle Lieder" mit
+  Statistik, rechtebewusste UI). Auf dem NAS deployt (Container Manager, `worship-charts`),
+  **intern** `http://192.168.10.188:3001` und **extern** `https://musik.ecg-donrath.de` live.
+- **Offen / optional:** Login-Token aus lokaler Dev-`.env` neu erzeugen/entfernen;
+  Test-Service-Konto/Token #1012 in ChurchTools widerrufen; Musik-Abwesenheitsplaner nachbauen
+  (separates Projekt); White-Label für andere Gemeinden.
 
 ## Deployment-Stand (NAS)
 - Liegt auf dem NAS unter der `docker`-Freigabe: `docker/churchtools-musik-app`
@@ -155,15 +167,32 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - **Bekannte Datenlücke:** Nicht alle Arrangements haben eine `.chordpro`-Datei (manche nur
   `.sng`/`.txt`) → Frontend zeigt dann „keine Akkord-Datei hinterlegt".
 
-## API des eigenen Backends (für Schritt 8)
+## API des eigenen Backends
 - `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt Session-Cookie
 - `POST /api/auth/logout` → Session löschen
 - `GET  /api/auth/me` → `{authenticated, user?}`
+- `GET  /api/capabilities` → Rechte des Nutzers (view/edit agenda, view/edit songcategory) → steuert UI
 - `GET  /api/services?from=&to=` → `Service[]` (nur mit Setlist; Default-Fenster -7d…+42d)
-- `GET  /api/services/:eventId/setlist` → `SetlistSong[]` (inkl. ChordPro original + ECG, documents[])
+- `GET  /api/services/:eventId/setlist` → kompletter Ablauf (`AgendaItem[]`, Lieder mit ChordPro + ECG, documents[])
+- `PATCH /api/services/:eventId/agenda/order` → Reihenfolge zurückschreiben (ganze Liste)
+- `POST/PUT/DELETE /api/services/:eventId/agenda/items[/:itemId]` → Ablaufpunkt anlegen/ändern/löschen
+- `GET  /api/songs?query=` → Songsuche (Lied zum Ablauf hinzufügen)
+- `GET  /api/song-library` → alle Lieder (Ansicht „Alle Lieder")
+- `GET  /api/song-usage` → Nutzungsstatistik letzte 12 Monate (1h-Cache)
+- `GET  /api/songs/:songId/chart` → Chart eines einzelnen Lieds (aus „Alle Lieder")
 - `PUT  /api/songs/:songId/chordpro` {arrangementId, text} → bearbeitete ECG-.chordpro speichern
 - `DELETE /api/songs/:songId/chordpro` {arrangementId} → ECG-Version löschen (zurück zum Original)
 - `GET  /api/songs/:songId/files/:fileId` → PDF/Bild aus ChurchTools durchreichen (Viewer)
+
+## ChurchTools-Schreibzugriff Ablauf – Eigenheiten (verifiziert 12.06.2026, Event 1500)
+- **Umsortieren:** `PUT /api/events/{id}/agenda` mit `{items:[…]}` (ganze Liste, position = Index).
+- **Einzelpunkt:** `PUT /…/agenda/items/{id}` (Titel/Notiz/responsible) – ignoriert `position`.
+- **`responsible` als String** senden (Text), nicht als Objekt – Personen bleiben erhalten.
+- **KRITISCH Lied-Punkte:** Verknüpfung als **top-level `arrangementId`**, NICHT verschachteltes
+  `song:{…}` – sonst stuft CT den Punkt unwiderruflich auf `text` herab.
+- Payload immer aus **frischen Live-Daten** bauen (Backup-Daten → 422). CSRF-Token nötig.
+- **Rechte „Liederbuch für alle Mitglieder":** CT-Rolle braucht „Veranstaltungen sehen (view)"
+  + „Einzelne Song-Kategorien sehen (view songcategory)" – sonst nichts. Kein Service-Konto nötig.
 
 ## Schreibzugriff (Editor) – ChurchTools-Eigenheiten
 - Schreibende Calls brauchen ein CSRF-Token (`GET /api/csrftoken`) + Session-Cookie.
@@ -194,7 +223,8 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
   `item.song.key` (Ziel aus der Agenda).
 - **2-Faktor:** kein Problem – Login-Token-Zugriff klappt.
 
-## Offene Punkte
-- [ ] Schritt 7: echten per-User-Login bauen (POST /api/login). Token-Erkundung erledigt.
-- [ ] NAS: Docker + Cloudflare Tunnel bereits eingerichtet?
-- [ ] WorshipTools-Migration: wie viele Lieder? (Songs liegen teils schon als .chordpro in CT)
+## Offene Punkte (optional)
+- [ ] Login-Token aus lokaler Dev-`.env` neu erzeugen/entfernen
+- [ ] Test-Service-Konto/Token #1012 in ChurchTools widerrufen
+- [ ] Musik-Abwesenheitsplaner (separate Flask-App) in diese App nachbauen
+- [ ] White-Label für andere Gemeinden (inkl. Farben)

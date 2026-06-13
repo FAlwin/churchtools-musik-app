@@ -10,21 +10,7 @@ services:
       PORT: 3001
       CHURCHTOOLS_BASE_URL: ${CHURCHTOOLS_BASE_URL}
       SESSION_SECRET: ${SESSION_SECRET}
-    # Lokaler Zugriff im WLAN über http://<NAS-IP>:3001 (optional, kann entfallen)
+    # Zugriff im WLAN über http://<NAS-IP>:3001; extern über den Synology Reverse Proxy
+    # (https://musik.ecg-donrath.de → localhost:3001), siehe DEPLOYMENT.md Schritt 4.
     ports:
       - '3001:3001'
-
-  # Cloudflare-Tunnel: OPTIONAL (externer Zugang). Startet standardmäßig NICHT
-  # (Profil "tunnel"). Für lokalen WLAN-Betrieb einfach weglassen.
-  # Aktivieren: TUNNEL_TOKEN in .env setzen und die Zeile `profiles:` entfernen,
-  # dann das Projekt neu erstellen.
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: worship-tunnel
-    restart: unless-stopped
-    profiles: ['tunnel']
-    command: tunnel --no-autoupdate run
-    environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
-    depends_on:
-      - app

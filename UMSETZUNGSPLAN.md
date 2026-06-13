@@ -1,6 +1,6 @@
 # Umsetzungsplan – Churchtools Musik App (Worship Charts)
 
-*ECG Donrath · Technische Leitung: Alwin · Stand: 11. Juni 2026*
+*ECG Donrath · Technische Leitung: Alwin · Stand: 13. Juni 2026 · **fertig & produktiv***
 
 ## Kontext
 
@@ -13,9 +13,10 @@ Grundlage ist ein nahezu vollständiger Design-Prototyp (Claude-Design-Handoff).
 verbindlich der ECG-Projektvorlage (`vorlage_neues-projekt.md`).
 
 Festgelegte Entscheidungen:
-- **Hosting:** Synology-NAS via Docker + Cloudflare Tunnel
+- **Hosting:** Synology-NAS via Docker; externer Zugang über Synology Reverse Proxy + DDNS
+  (`https://musik.ecg-donrath.de`) – **kein Cloudflare** (Entscheidung 13.06.2026)
 - **Anmeldung:** persönlicher ChurchTools-Login pro Musiker
-- **Repository:** vorerst nur lokal/NAS (kein GitHub-Remote)
+- **Repository:** privates GitHub-Repo `FAlwin/churchtools-musik-app` (seit 12.06.2026)
 - **Design:** Prototyp 1:1 als echte App umsetzen
 
 ## Tech-Stack (laut Vorlage)
@@ -29,7 +30,7 @@ Festgelegte Entscheidungen:
 | Backend | Node.js + Express + TypeScript |
 | Datenbank | keine (ChurchTools ist Datenquelle; Notizen/Annotationen lokal) |
 | Validierung | Zod (serverseitig auf allen Routen) |
-| Deployment | Docker auf Synology NAS + Cloudflare Tunnel |
+| Deployment | Docker auf Synology NAS + Synology Reverse Proxy (extern) |
 
 ## Architektur
 
@@ -97,21 +98,22 @@ Aus Vorlage Abschnitt 2 befüllt (Tech-Stack, Konventionen, Security-Checkliste,
   integriert im normalen Ablauf; mehrseitiges Blättern, Zoom/Anpassen pro Seite (gespeichert),
   Anmerkungen pro Seite. Auswahl pro Lied im Titel-Menü.
 
-### ✅ Schritt 9 – Deployment *(lokal erledigt 11.06.2026)*
+### ✅ Schritt 9 – Deployment *(erledigt 11.06.2026)*
 Dockerfile + docker-compose.yml; ein Container liefert API + App aus. **Auf dem
 Synology-NAS deployt** (Container Manager, Projekt `worship-charts`), lokal im WLAN
-live unter `http://<NAS-IP>:3001`. Anleitung in `DEPLOYMENT.md`.
-- Offen/optional: Cloudflare-Tunnel (externer HTTPS-Zugang) – Domain müsste zu
-  Cloudflare umziehen. PWA-Installation (Homescreen) funktioniert bereits.
+live unter `http://192.168.10.188:3001`. Anleitung in `DEPLOYMENT.md`.
 
-### Schritt 10 (optional, später)
-Externer Zugang via Cloudflare · Liederbibliothek-Suche · Metronom/BPM · weiterer Feinschliff
+### ✅ Schritt 10 – Ausbau & externer Zugang *(erledigt 12./13.06.2026)*
+- Kompletten Ablauf anzeigen + **voll bearbeiten** (Drag&Drop/Löschen/Umbenennen/Hinzufügen,
+  Rückschreiben nach ChurchTools), Termin-Untertitel.
+- **„Alle Lieder"-Ansicht** mit Suche + Nutzungsstatistik (12 Monate).
+- **Rechtebewusste UI** (`/api/capabilities`): Mitglieder sehen nur das Liederbuch.
+- **Externer Zugang live:** `https://musik.ecg-donrath.de` über Synology Reverse Proxy +
+  DDNS + Let's Encrypt (kein Cloudflare). PWA-Installation (Homescreen) funktioniert.
+- Pagination-Feinschliff (2 Spalten + Zoom robust).
 
-## Vor Schritt 7 an der echten ChurchTools-Instanz zu klären
-1. Exakte API-Kette: Agenda → Song → Arrangement → Datei → Tonart-Feld
-2. Name/Typ des Tonart-Felds am Arrangement (`key`?)
-3. Erzwingt die Instanz 2-Faktor? → ggf. persönlicher Login-Token statt Passwort
-4. NAS: Docker + Cloudflare Tunnel bereits eingerichtet?
+### Optionale Folgethemen (nicht begonnen)
+Musik-Abwesenheitsplaner nachbauen · White-Label für andere Gemeinden · Metronom/BPM
 
 ## App lokal starten
 ```
