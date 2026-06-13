@@ -429,6 +429,16 @@ export function ChordChart({
                   2 Spalten
                 </button>
               </div>
+
+              {/* Sperr-Schicht: liegt halbtransparent über der Steuerung, wenn Anmerkungen da sind */}
+              {drawing.hasAnnotations && (
+                <div className={styles.lockOverlay}>
+                  <div className={styles.lockOverlayText}>
+                    🔒 Gesperrt
+                    <span>Erst Anmerkungen löschen</span>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}

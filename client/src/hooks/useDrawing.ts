@@ -56,6 +56,8 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
   const redoRef = useRef<{ img: string | null; texts: TextAnnotation[] }[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  // Gibt es überhaupt Striche auf der Leinwand? (Texte werden separat über textObjects erkannt.)
+  const [hasInk, setHasInk] = useState(false);
 
   // ── Persistenz: Strich-Bild laden / speichern ──
   const loadDrawing = useCallback((id: number) => {
@@ -65,6 +67,7 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const saved = localStorage.getItem(`worship_draw_${id}`);
+    setHasInk(!!saved);
     if (saved) {
       const img = new Image();
       img.onload = () => {
@@ -121,6 +124,7 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
   function applySnapshot(snap: { img: string | null; texts: TextAnnotation[] }) {
     setSelectedTextId(null);
     setTextObjects(snap.texts);
+    setHasInk(!!snap.img);
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
@@ -280,6 +284,7 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     drawingRef.current = false;
     snapshotRef.current = null;
     strokePtsRef.current = [];
+    setHasInk(true);
     saveDrawing(songId);
   }
 
@@ -377,6 +382,7 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     localStorage.removeItem(`worship_text_${songId}`);
     setSelectedTextId(null);
     setTextObjects([]);
+    setHasInk(false);
   }
 
   return {
@@ -388,6 +394,8 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     selectedTextId,
     canUndo,
     canRedo,
+    // Sind Anmerkungen vorhanden? (Striche oder Texte) – sperrt Schrift/Spalten.
+    hasAnnotations: hasInk || textObjects.length > 0,
     handlers: { onPointerDown, onPointerMove, onPointerUp },
     confirmText,
     editText,

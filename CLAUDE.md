@@ -96,7 +96,9 @@ pro Song). Bedienung: Text **antippen** = auswählen (Rahmen), **nochmal antippe
 bearbeiten, **ziehen** = verschieben. Werkzeugleiste zeigt bei Auswahl Farbe/Größe (live) + 🗑.
 Farb-Voreinstellungen: Orange/Petrol/Schwarz-Weiß (`DRAW_COLORS`, `#14110F` → Creme im Dunkelmodus)
 + freier `<input type=color>`-Picker. **Undo/Redo** (↺/↻) über einen Verlauf aus Canvas-Bild +
-Text-Liste pro Schritt; „Alles löschen" ist ebenfalls rückgängig machbar.
+Text-Liste pro Schritt; „Alles löschen" ist ebenfalls rückgängig machbar. **Wichtig:** Solange
+Anmerkungen existieren (`hasAnnotations`), sind Schriftgröße/Spalten gesperrt (halbtransparente
+Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen beim Umbruch verrutschen.
 
 ## Domänen-Besonderheiten
 - **ChordPro:** zwei Dialekte unterstützen – Standard (`{start_of_verse}`) UND
@@ -152,6 +154,7 @@ Text-Liste pro Schritt; „Alles löschen" ist ebenfalls rückgängig machbar.
 | 14.06.2026 | main   | White-Label vorbereitet: Name/Logo/Org/Farben zentral in src/config/branding.ts |
 | 14.06.2026 | main   | Erscheinungsbild Hell/Dunkel/**System**; „Display anlassen" app-weit + Re-Acquire |
 | 14.06.2026 | main   | Anmerkungen: Farb-Palette (Orange/Petrol/SW + freier Picker), Text auswählen→Farbe/Größe/Inhalt live, Undo/Redo, sicheres Löschen (Leiste), „Alles löschen" rückgängig machbar |
+| 14.06.2026 | main   | Schrift/Spalten gesperrt, solange Anmerkungen vorhanden (verhindert verrutschte Anmerkungen beim Zoomen); halbtransparente Sperr-Schicht im Aussehen-Menü |
 
 ## So startest du die App lokal
 ```

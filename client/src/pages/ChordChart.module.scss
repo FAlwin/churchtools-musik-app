@@ -224,6 +224,42 @@
   font-size: 16px;
   cursor: pointer;
   font-family: 'Montserrat', sans-serif;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+// Sperr-Schicht über der Steuerung (Schrift/Spalten), wenn Anmerkungen vorhanden sind.
+// Liegt halbtransparent über den Knöpfen – das Menü behält dadurch seine Größe.
+.lockOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: 14px;
+  background: rgba(0, 97, 110, 0.82); // Teal, leicht durchscheinend
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px;
+}
+
+.lockOverlayText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--cream);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+
+  span {
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.92;
+  }
 }
 
 .stepValue {
@@ -256,6 +292,10 @@
     background: var(--teal);
     color: var(--cream);
     border-color: var(--teal);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 }
 
