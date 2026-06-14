@@ -160,6 +160,8 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 | 14.06.2026 | main   | Schrift/Spalten gesperrt, solange Anmerkungen vorhanden (verhindert verrutschte Anmerkungen beim Zoomen); halbtransparente Sperr-Schicht im Aussehen-Menü |
 | 14.06.2026 | main   | Ablauf-Bearbeiten: Punkt antippen → Aktionsmenü (Umbenennen / 🎵 Lied verknüpfen / 🔗 Verknüpfung aufheben / Löschen); bestehender Text-Punkt wird in-place zum Lied und zurück |
 | 14.06.2026 | main   | Verantwortliche setzbar über CT-Dienst-Tokens (`[Musik]` etc.) per Chips+Freitext (Hinzufügen + nachträglich); CT füllt Personen aus dem Dienstplan; offene Dienste als oranger „Dienst ?"-Chip hervorgehoben |
+| 14.06.2026 | main   | Lied-Statistik bezieht kommende 3 Monate ein (eingeplante Lieder zählen mit, „zuletzt" zeigt auch zukünftige Termine); Cache wird bei Ablauf-Änderungen sofort invalidiert (Server + Client) |
+| 14.06.2026 | main   | Fix: Dienst-Chips säubern jetzt alle Klammern + nachgestelltes „?" (z.B. „[Kamera Studio]?" → „Kamera Studio ?") |
 
 ## So startest du die App lokal
 ```
