@@ -3,6 +3,7 @@
  */
 import type {
   AgendaItem,
+  AgendaServiceOption,
   AuthStatus,
   Service,
   SetlistSong,
@@ -56,11 +57,28 @@ export function reorderAgenda(eventId: number, order: number[]): Promise<{ ok: b
 /** Legt einen neuen Ablaufpunkt an (Text/Überschrift/Lied). */
 export function createAgendaItem(
   eventId: number,
-  data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number },
+  data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number; responsible?: string },
 ): Promise<{ ok: boolean }> {
   return apiFetch(`/api/services/${eventId}/agenda/items`, {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+/** Lädt die ChurchTools-Dienste (für die Verantwortlich-Chips). */
+export function getAgendaServices(): Promise<AgendaServiceOption[]> {
+  return apiFetch<AgendaServiceOption[]>('/api/agenda-services');
+}
+
+/** Setzt das Verantwortlich-Textfeld eines Punkts (z.B. „[Musik]"); CT löst Dienste auf. */
+export function setAgendaItemResponsible(
+  eventId: number,
+  itemId: number,
+  responsible: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ responsible }),
   });
 }
 
@@ -95,6 +113,30 @@ export function renameAgendaItem(
   return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
     method: 'PUT',
     body: JSON.stringify({ title }),
+  });
+}
+
+/** Verknüpft einen bestehenden Ablaufpunkt mit einem Lied (wandelt ihn in ein Lied um). */
+export function linkSongToAgendaItem(
+  eventId: number,
+  itemId: number,
+  arrangementId: number,
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ arrangementId }),
+  });
+}
+
+/** Hebt die Lied-Verknüpfung eines Punkts auf (Punkt bleibt als Text mit dem Liedtitel). */
+export function unlinkSongFromAgendaItem(
+  eventId: number,
+  itemId: number,
+  title: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ unlink: true, title }),
   });
 }
 

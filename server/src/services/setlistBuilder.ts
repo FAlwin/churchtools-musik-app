@@ -3,7 +3,14 @@
  *  - Liste der Gottesdienste, die tatsächlich eine Setlist (Agenda mit Songs) haben
  *  - die Songs einer Setlist inkl. heruntergeladenem ChordPro-Inhalt
  */
-import type { AgendaItem, Service, SetlistSong, SongDocument, SongLibraryEntry } from '@shared/types/index';
+import type {
+  AgendaItem,
+  ResponsibleEntry,
+  Service,
+  SetlistSong,
+  SongDocument,
+  SongLibraryEntry,
+} from '@shared/types/index';
 import {
   getAgenda,
   getEvents,
@@ -183,12 +190,31 @@ function isHeaderType(type?: string): boolean {
   return !!type && /header|überschrift|heading|section/i.test(type);
 }
 
-/** Namen der tatsächlich besetzten Zuständigen, ohne Duplikate (unbesetzte Positionen weglassen). */
-function responsibleNames(item: { responsible?: { persons?: { person?: { title?: string } }[] } }): string[] {
-  const names = (item.responsible?.persons ?? [])
-    .map((p) => p.person?.title?.trim())
-    .filter((n): n is string => !!n);
-  return [...new Set(names)];
+/** Entfernt die eckigen Klammern eines Dienst-Tokens: „[Musik]" → „Musik". */
+function cleanServiceName(service?: string): string {
+  return (service ?? '').replace(/^\[+|\]+$/g, '').trim();
+}
+
+/**
+ * Zuständige als Einträge, ohne Duplikate: für besetzte Plätze der Personenname (open=false),
+ * für offene Dienst-Plätze (z.B. „[Musik]") der Dienstname (open=true).
+ */
+function responsibleEntries(
+  item: { responsible?: { persons?: { service?: string; person?: { title?: string } }[] } },
+): ResponsibleEntry[] {
+  const entries: ResponsibleEntry[] = [];
+  const seen = new Set<string>();
+  for (const p of item.responsible?.persons ?? []) {
+    const name = p.person?.title?.trim();
+    const label = name || cleanServiceName(p.service);
+    if (!label) continue;
+    const open = !name;
+    const key = `${label}|${open}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    entries.push({ label, open });
+  }
+  return entries;
 }
 
 interface SongUsage {
@@ -302,7 +328,8 @@ export async function getAgendaItems(cookie: string, eventId: number): Promise<A
         title: item.title,
         type: item.type ?? null,
         isHeader: isHeaderType(item.type),
-        responsible: responsibleNames(item),
+        responsible: responsibleEntries(item),
+        responsibleText: item.responsible?.text ?? '',
         song,
       };
     }),

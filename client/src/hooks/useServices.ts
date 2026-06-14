@@ -70,6 +70,52 @@ export function useRenameAgendaItem(eventId: number | null) {
   });
 }
 
+/** Verknüpft einen bestehenden Ablaufpunkt mit einem Lied und lädt Ablauf + Übersicht neu. */
+export function useLinkSongToAgendaItem(eventId: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { itemId: number; arrangementId: number }) =>
+      api.linkSongToAgendaItem(eventId as number, v.itemId, v.arrangementId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agenda', eventId] });
+      qc.invalidateQueries({ queryKey: ['services'] });
+    },
+  });
+}
+
+/** Hebt die Lied-Verknüpfung eines Punkts auf und lädt Ablauf + Übersicht neu. */
+export function useUnlinkSongFromAgendaItem(eventId: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { itemId: number; title: string }) =>
+      api.unlinkSongFromAgendaItem(eventId as number, v.itemId, v.title),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agenda', eventId] });
+      qc.invalidateQueries({ queryKey: ['services'] });
+    },
+  });
+}
+
+/** Setzt das Verantwortlich-Textfeld eines Punkts und lädt den Ablauf neu. */
+export function useSetAgendaItemResponsible(eventId: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { itemId: number; responsible: string }) =>
+      api.setAgendaItemResponsible(eventId as number, v.itemId, v.responsible),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
+  });
+}
+
+/** Lädt die ChurchTools-Dienste (für die Verantwortlich-Chips). */
+export function useAgendaServices(enabled: boolean) {
+  return useQuery({
+    queryKey: ['agenda-services'],
+    queryFn: () => api.getAgendaServices(),
+    enabled,
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
 /** Lädt die Rechte des angemeldeten Nutzers. */
 export function useCapabilities(enabled: boolean) {
   return useQuery({
@@ -114,8 +160,12 @@ export function useSongChart(sel: { songId: number; arrangementId?: number } | n
 export function useCreateAgendaItem(eventId: number | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number }) =>
-      api.createAgendaItem(eventId as number, data),
+    mutationFn: (data: {
+      type: 'header' | 'text' | 'song';
+      title?: string;
+      arrangementId?: number;
+      responsible?: string;
+    }) => api.createAgendaItem(eventId as number, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });
       qc.invalidateQueries({ queryKey: ['services'] });

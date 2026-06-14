@@ -93,10 +93,26 @@ export interface AgendaItem {
   type: string | null;
   /** true, wenn es eine Überschrift / ein Abschnitt ist */
   isHeader: boolean;
-  /** Eingetragene Zuständige (nur besetzte Positionen) – nur Anzeige, in CT gepflegt. */
-  responsible: string[];
+  /** Zuständige: zugesagte Personen (besetzt) + Dienstnamen offener Plätze (open), dedupliziert. */
+  responsible: ResponsibleEntry[];
+  /** Roher responsible-Text (z.B. „[Musik], [Predigt]") – für die Bearbeitung im Editor. */
+  responsibleText: string;
   /** Song-Daten, falls dieser Punkt ein Lied ist – sonst null */
   song: SetlistSong | null;
+}
+
+/** Ein Eintrag der Zuständigen-Anzeige: Personenname (besetzt) oder offener Dienst-Platz. */
+export interface ResponsibleEntry {
+  /** Anzeigename: Personenname oder Dienstname (z.B. „Musik"). */
+  label: string;
+  /** true = offener Dienst-Platz (noch niemand zugesagt) – wird hervorgehoben. */
+  open: boolean;
+}
+
+/** Ein ChurchTools-Dienst (z.B. „Musik", „Predigt") – als Chip im Verantwortlich-Editor. */
+export interface AgendaServiceOption {
+  id: number;
+  name: string;
 }
 
 /** Eine geparste ChordPro-Sektion (Vers, Chorus, …). */

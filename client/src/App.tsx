@@ -14,6 +14,10 @@ import {
   useReorderAgenda,
   useDeleteAgendaItem,
   useRenameAgendaItem,
+  useLinkSongToAgendaItem,
+  useUnlinkSongFromAgendaItem,
+  useSetAgendaItemResponsible,
+  useAgendaServices,
   useCreateAgendaItem,
   useSongLibrary,
   useSongUsage,
@@ -48,6 +52,10 @@ export default function App() {
   const reorderAgenda = useReorderAgenda(service?.id ?? null);
   const deleteAgendaItem = useDeleteAgendaItem(service?.id ?? null);
   const renameAgendaItem = useRenameAgendaItem(service?.id ?? null);
+  const linkSongToAgendaItem = useLinkSongToAgendaItem(service?.id ?? null);
+  const unlinkSongFromAgendaItem = useUnlinkSongFromAgendaItem(service?.id ?? null);
+  const setAgendaItemResponsible = useSetAgendaItemResponsible(service?.id ?? null);
+  const agendaServices = useAgendaServices(auth.isAuthenticated && canEditAgendas && screen === 'setlist');
   const createAgendaItem = useCreateAgendaItem(service?.id ?? null);
   const songLibrary = useSongLibrary(auth.isAuthenticated && (screen === 'songs' || screen === 'songchart'));
   // Statistik nur für Ablauf-Berechtigte (sie wird aus Abläufen berechnet).
@@ -208,7 +216,17 @@ export default function App() {
           onRename={(itemId, title) =>
             renameAgendaItem.mutateAsync({ itemId, title }).then(() => undefined)
           }
+          onLinkSong={(itemId, arrangementId) =>
+            linkSongToAgendaItem.mutateAsync({ itemId, arrangementId }).then(() => undefined)
+          }
+          onUnlinkSong={(itemId, title) =>
+            unlinkSongFromAgendaItem.mutateAsync({ itemId, title }).then(() => undefined)
+          }
+          onSetResponsible={(itemId, responsible) =>
+            setAgendaItemResponsible.mutateAsync({ itemId, responsible }).then(() => undefined)
+          }
           onAdd={(data) => createAgendaItem.mutateAsync(data).then(() => undefined)}
+          services={agendaServices.data ?? []}
           canEdit={canEditAgendas}
         />
       )}

@@ -138,7 +138,7 @@
 .resp {
   margin-top: 5px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   font-size: 13px;
   color: var(--text2);
@@ -148,6 +148,35 @@
 .respIcon {
   flex-shrink: 0;
   opacity: 0.85;
+  margin-top: 2px;
+}
+
+.respList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+
+.respName {
+  /* Komma nur zwischen zwei Namen, nicht vor einem offenen Dienst-Chip. */
+  &:has(+ .respName)::after {
+    content: ',';
+  }
+}
+
+/* Offener Dienst-Platz: orange umrandeter Chip mit „?" – eindeutig „noch unbesetzt". */
+.respOpen {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border: 1px solid var(--chord);
+  border-radius: 999px;
+  color: var(--chord);
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
 }
 
 /* ── Bearbeiten-Modus (Drag & Drop) ───────────────────────── */
@@ -184,7 +213,7 @@
   background: transparent;
   border-style: dashed;
 
-  .editTitle {
+  .editTitleText {
     font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
@@ -209,7 +238,22 @@
   }
 }
 
-.editTitle {
+.editTitleBtn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.editTitleText {
   flex: 1;
   min-width: 0;
   font-size: 15px;
@@ -220,22 +264,17 @@
   text-overflow: ellipsis;
 }
 
-.editInput {
-  flex: 1;
-  min-width: 0;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  background: transparent;
-  border: none;
-  border-bottom: 1px dashed var(--border);
-  padding: 2px 2px;
+.editSongTag {
+  flex-shrink: 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
 
-  &:focus {
-    outline: none;
-    border-bottom-color: var(--teal);
-  }
+.editChevron {
+  flex-shrink: 0;
+  color: var(--text3);
+  font-size: 18px;
+  line-height: 1;
 }
 
 .addBtn {
@@ -256,17 +295,3 @@
   }
 }
 
-.delBtn {
-  border: none;
-  background: transparent;
-  font-size: 17px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 4px 6px;
-  flex-shrink: 0;
-  opacity: 0.7;
-
-  &:hover {
-    opacity: 1;
-  }
-}

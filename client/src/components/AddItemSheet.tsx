@@ -1,28 +1,32 @@
-import { useEffect, useRef, useState } from 'react';
-import type { SongSearchResult } from '@shared/types/index';
+import { useState } from 'react';
+import type { AgendaServiceOption } from '@shared/types/index';
 import { Sheet } from './Sheet';
-import { searchSongs } from '../services/churchtoolsApi';
+import { SongSearch } from './SongSearch';
+import { ResponsibleField } from './ResponsibleField';
 import styles from './AddItemSheet.module.scss';
 
 interface AddItemSheetProps {
   onClose: () => void;
   /** Legt einen Punkt an. Wirft bei Fehler (z.B. fehlende Rechte). */
-  onAdd: (data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number }) => Promise<void>;
+  onAdd: (data: {
+    type: 'header' | 'text' | 'song';
+    title?: string;
+    arrangementId?: number;
+    responsible?: string;
+  }) => Promise<void>;
+  /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Feld). */
+  services: AgendaServiceOption[];
 }
 
 type Mode = 'choose' | 'header' | 'text' | 'song';
 
 /** Sheet zum Hinzufügen eines Ablaufpunkts: Überschrift, Text oder Lied (per Songsuche). */
-export function AddItemSheet({ onClose, onAdd }: AddItemSheetProps) {
+export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
   const [mode, setMode] = useState<Mode>('choose');
   const [title, setTitle] = useState('');
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SongSearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [responsible, setResponsible] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  // Letzte gestartete Suchanfrage – verwirft Antworten überholter Anfragen.
-  const latestQuery = useRef('');
 
   async function add(data: Parameters<typeof onAdd>[0]) {
     setBusy(true);
@@ -35,33 +39,6 @@ export function AddItemSheet({ onClose, onAdd }: AddItemSheetProps) {
       setBusy(false);
     }
   }
-
-  // Live-Suche: tippt der Nutzer, wird nach kurzer Pause (Debounce) automatisch gesucht.
-  useEffect(() => {
-    if (mode !== 'song') return;
-    const q = query.trim();
-    if (q.length < 2) {
-      setResults([]);
-      setSearching(false);
-      return;
-    }
-    setSearching(true);
-    latestQuery.current = q;
-    const handle = setTimeout(async () => {
-      try {
-        const res = await searchSongs(q);
-        // Nur übernehmen, wenn keine neuere Anfrage gestartet wurde.
-        if (latestQuery.current !== q) return;
-        setResults(res);
-        setErr(null);
-      } catch (e) {
-        if (latestQuery.current === q) setErr(e instanceof Error ? e.message : 'Suche fehlgeschlagen.');
-      } finally {
-        if (latestQuery.current === q) setSearching(false);
-      }
-    }, 300);
-    return () => clearTimeout(handle);
-  }, [query, mode]);
 
   const titleText =
     mode === 'header' ? 'Überschrift hinzufügen' : mode === 'text' ? 'Punkt hinzufügen' : mode === 'song' ? 'Lied hinzufügen' : 'Hinzufügen';
@@ -87,13 +64,17 @@ export function AddItemSheet({ onClose, onAdd }: AddItemSheetProps) {
             autoFocus
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && title.trim()) add({ type: mode, title: title.trim() });
+              if (e.key === 'Enter' && title.trim())
+                add({ type: mode, title: title.trim(), responsible: responsible.trim() || undefined });
             }}
           />
+          {mode === 'text' && (
+            <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
+          )}
           <button
             className={styles.primary}
             disabled={!title.trim() || busy}
-            onClick={() => add({ type: mode, title: title.trim() })}
+            onClick={() => add({ type: mode, title: title.trim(), responsible: responsible.trim() || undefined })}
           >
             {busy ? 'Füge hinzu…' : 'Hinzufügen'}
           </button>
@@ -101,37 +82,11 @@ export function AddItemSheet({ onClose, onAdd }: AddItemSheetProps) {
       )}
 
       {mode === 'song' && (
-        <div className={styles.form}>
-          <input
-            className={styles.input}
-            placeholder="Lied suchen…"
-            value={query}
-            autoFocus
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <div className={styles.results}>
-            {results.flatMap((s) =>
-              s.arrangements.map((a) => (
-                <button
-                  key={`${s.songId}-${a.arrangementId}`}
-                  className={styles.result}
-                  disabled={busy}
-                  onClick={() => add({ type: 'song', title: s.name, arrangementId: a.arrangementId })}
-                >
-                  <span className={styles.songName}>{s.name}</span>
-                  <span className={styles.arrMeta}>
-                    {a.arrangementName}
-                    {a.key ? ` · ${a.key}` : ''}
-                  </span>
-                </button>
-              )),
-            )}
-            {searching && <div className={styles.empty}>Suche…</div>}
-            {!searching && query.trim().length >= 2 && results.length === 0 && (
-              <div className={styles.empty}>Keine Treffer.</div>
-            )}
-          </div>
-        </div>
+        <SongSearch
+          autoFocus
+          busy={busy}
+          onPick={(arrangementId, songName) => add({ type: 'song', title: songName, arrangementId })}
+        />
       )}
     </Sheet>
   );

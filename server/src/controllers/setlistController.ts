@@ -18,8 +18,9 @@ import {
   createAgendaItem,
   searchSongs,
   getCapabilities,
+  getCtServices,
 } from '../services/churchtools.js';
-import type { SongSearchResult } from '@shared/types/index';
+import type { AgendaServiceOption, SongSearchResult } from '@shared/types/index';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -57,15 +58,31 @@ export async function putAgendaOrder(req: Request, res: Response): Promise<void>
   res.json({ ok: true });
 }
 
-const updateItemSchema = z.object({
-  title: z.string().trim().min(1, 'Titel fehlt').max(255),
-});
+const updateItemSchema = z
+  .object({
+    title: z.string().trim().min(1, 'Titel fehlt').max(255).optional(),
+    // arrangementId verknüpft einen bestehenden Punkt mit einem Lied (wandelt ihn in type 'song').
+    arrangementId: z.coerce.number().int().positive().optional(),
+    // unlink löst eine bestehende Lied-Verknüpfung wieder (Punkt bleibt als Text erhalten).
+    unlink: z.boolean().optional(),
+    // responsible: Textfeld der Zuständigen (z.B. „[Musik]"); CT löst Dienst-Tokens selbst auf.
+    responsible: z.string().trim().max(1000).optional(),
+  })
+  .refine(
+    (d) =>
+      d.title !== undefined ||
+      d.arrangementId !== undefined ||
+      d.unlink === true ||
+      d.responsible !== undefined,
+    { message: 'Titel, arrangementId, unlink oder responsible erforderlich.' },
+  );
 
 const createItemSchema = z
   .object({
     type: z.enum(['header', 'text', 'song']),
     title: z.string().trim().max(255).optional(),
     arrangementId: z.coerce.number().int().positive().optional(),
+    responsible: z.string().trim().max(1000).optional(),
   })
   .refine((d) => d.type !== 'song' || d.arrangementId !== undefined, {
     message: 'Für ein Lied ist arrangementId erforderlich.',
@@ -75,11 +92,12 @@ const createItemSchema = z
 /** POST /api/services/:eventId/agenda/items – neuen Ablaufpunkt anlegen. */
 export async function postAgendaItem(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
-  const { type, title, arrangementId } = createItemSchema.parse(req.body);
+  const { type, title, arrangementId, responsible } = createItemSchema.parse(req.body);
   await createAgendaItem(req.ctCookie as string, eventId, {
     type,
     title: title ?? (type === 'header' ? 'Überschrift' : type === 'song' ? 'Lied' : 'Neuer Punkt'),
     arrangementId,
+    responsible,
   });
   res.json({ ok: true });
 }
@@ -103,12 +121,17 @@ export async function getSongs(req: Request, res: Response): Promise<void> {
   res.json(result);
 }
 
-/** PUT /api/services/:eventId/agenda/items/:itemId – einen Ablaufpunkt umbenennen. */
+/** PUT /api/services/:eventId/agenda/items/:itemId – Punkt umbenennen oder mit Lied verknüpfen. */
 export async function putAgendaItem(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
   const itemId = idSchema.parse(req.params.itemId);
-  const { title } = updateItemSchema.parse(req.body);
-  await updateAgendaItem(req.ctCookie as string, eventId, itemId, { title });
+  const { title, arrangementId, unlink, responsible } = updateItemSchema.parse(req.body);
+  await updateAgendaItem(req.ctCookie as string, eventId, itemId, {
+    title,
+    arrangementId,
+    unlink,
+    responsible,
+  });
   res.json({ ok: true });
 }
 
@@ -130,6 +153,13 @@ export async function getSongLibraryCtrl(req: Request, res: Response): Promise<v
 export async function getCapabilitiesCtrl(req: Request, res: Response): Promise<void> {
   const caps = await getCapabilities(req.ctCookie as string);
   res.json(caps);
+}
+
+/** GET /api/agenda-services – ChurchTools-Dienste (für die Verantwortlich-Chips). */
+export async function getAgendaServicesCtrl(req: Request, res: Response): Promise<void> {
+  const services = await getCtServices(req.ctCookie as string);
+  const result: AgendaServiceOption[] = services.map((s) => ({ id: s.id, name: s.name }));
+  res.json(result);
 }
 
 /** GET /api/song-usage – Nutzungsdaten je Song (Häufigkeit + zuletzt), separat/gecacht. */

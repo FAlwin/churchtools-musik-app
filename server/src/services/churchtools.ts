@@ -191,6 +191,18 @@ export function getSong(cookie: string, songId: number): Promise<CtSong> {
   return ctGet<CtSong>(cookie, `/api/songs/${songId}`);
 }
 
+export interface CtService {
+  id: number;
+  name: string;
+  sortKey?: number;
+}
+
+/** Lädt die ChurchTools-Dienste (z.B. „Musik", „Predigt") für die Verantwortlich-Chips. */
+export async function getCtServices(cookie: string): Promise<CtService[]> {
+  const data = await ctGet<CtService[]>(cookie, `/api/services`);
+  return [...data].sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0) || a.name.localeCompare(b.name, 'de'));
+}
+
 /** Lädt eine Arrangement-Datei (z.B. .chordpro) als Text – mit Session-Cookie. */
 export async function downloadFileText(cookie: string, fileUrl: string): Promise<string> {
   const res = await fetch(fileUrl, { headers: { Cookie: cookie } });
@@ -259,17 +271,32 @@ export async function uploadChordpro(
  */
 function agendaItemWritePayload(
   it: CtAgendaItem,
-  overrides: { title?: string; note?: string; position?: number } = {},
+  overrides: {
+    title?: string;
+    note?: string;
+    position?: number;
+    arrangementId?: number;
+    unlink?: boolean;
+    responsible?: string;
+  } = {},
 ): Record<string, unknown> {
+  // Lied-Verknüpfung: ein übergebenes arrangementId hebt den Punkt auf type 'song' an
+  // (verifiziert: PUT mit type 'song' + top-level arrangementId wandelt einen text-Punkt
+  // sauber um, ohne Herabstufung); sonst bleibt eine vorhandene Verknüpfung erhalten.
+  // unlink=true löst die Verknüpfung wieder (verifiziert: type 'text' ohne arrangementId).
+  const arrangementId = overrides.unlink ? undefined : (overrides.arrangementId ?? it.song?.arrangementId);
+  const isSong = !overrides.unlink && (overrides.arrangementId !== undefined || !!it.song);
   return {
     title: overrides.title ?? it.title,
-    type: it.type,
+    type: isSong ? 'song' : overrides.unlink ? 'text' : it.type,
     note: overrides.note ?? it.note ?? '',
     duration: it.duration ?? 0,
     isBeforeEvent: it.isBeforeEvent ?? false,
-    responsible: it.responsible?.text ?? '',
+    // responsible ist ein Textfeld; ChurchTools löst Dienst-Tokens wie „[Musik]" selbst
+    // zu den im Dienstplan zugewiesenen Personen auf.
+    responsible: overrides.responsible ?? it.responsible?.text ?? '',
     ...(overrides.position !== undefined ? { position: overrides.position } : {}),
-    ...(it.song ? { arrangementId: it.song.arrangementId } : {}),
+    ...(arrangementId ? { arrangementId } : {}),
   };
 }
 
@@ -316,12 +343,13 @@ export async function reorderAgenda(
 export async function createAgendaItem(
   cookie: string,
   eventId: number,
-  data: { type: 'header' | 'text' | 'song'; title: string; arrangementId?: number },
+  data: { type: 'header' | 'text' | 'song'; title: string; arrangementId?: number; responsible?: string },
 ): Promise<void> {
   const csrf = await getCsrfToken(cookie);
   const body: Record<string, unknown> = { type: data.type, title: data.title };
   // Lied-Verknüpfung MUSS als top-level arrangementId gesendet werden (siehe reorderAgenda).
   if (data.type === 'song' && data.arrangementId) body.arrangementId = data.arrangementId;
+  if (data.responsible) body.responsible = data.responsible;
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items`, {
     method: 'POST',
     headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },
@@ -375,14 +403,20 @@ export async function updateAgendaItem(
   cookie: string,
   eventId: number,
   itemId: number,
-  fields: { title?: string; note?: string },
+  fields: { title?: string; note?: string; arrangementId?: number; unlink?: boolean; responsible?: string },
 ): Promise<void> {
   const csrf = await getCsrfToken(cookie);
   const { items } = await getAgenda(cookie, eventId);
   const it = items.find((i) => i.id === itemId);
   if (!it) throw new HttpError(404, 'Ablaufpunkt nicht gefunden.');
 
-  const body = agendaItemWritePayload(it, { title: fields.title, note: fields.note });
+  const body = agendaItemWritePayload(it, {
+    title: fields.title,
+    note: fields.note,
+    arrangementId: fields.arrangementId,
+    unlink: fields.unlink,
+    responsible: fields.responsible,
+  });
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items/${itemId}`, {
     method: 'PUT',
     headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },

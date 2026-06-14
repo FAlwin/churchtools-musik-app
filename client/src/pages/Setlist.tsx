@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { AgendaItem, Service } from '@shared/types/index';
+import type { AgendaItem, AgendaServiceOption, Service } from '@shared/types/index';
 import {
   DndContext,
   closestCenter,
@@ -22,6 +22,7 @@ import { NavBar, IconButton } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddItemSheet } from '../components/AddItemSheet';
+import { ItemActionSheet } from '../components/ItemActionSheet';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
@@ -40,8 +41,21 @@ interface SetlistProps {
   onDelete: (itemId: number) => Promise<void>;
   /** Benennt einen Punkt um (nur Text/Überschrift). Wirft bei Fehler. */
   onRename: (itemId: number, title: string) => Promise<void>;
+  /** Verknüpft einen bestehenden Punkt mit einem Lied. Wirft bei Fehler. */
+  onLinkSong: (itemId: number, arrangementId: number) => Promise<void>;
+  /** Hebt die Lied-Verknüpfung eines Punkts wieder auf. Wirft bei Fehler. */
+  onUnlinkSong: (itemId: number, title: string) => Promise<void>;
+  /** Setzt das Verantwortlich-Textfeld eines Punkts. Wirft bei Fehler. */
+  onSetResponsible: (itemId: number, responsible: string) => Promise<void>;
   /** Legt einen neuen Punkt an. Wirft bei Fehler. */
-  onAdd: (data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number }) => Promise<void>;
+  onAdd: (data: {
+    type: 'header' | 'text' | 'song';
+    title?: string;
+    arrangementId?: number;
+    responsible?: string;
+  }) => Promise<void>;
+  /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
+  services: AgendaServiceOption[];
   /** Darf der Nutzer den Ablauf bearbeiten? (blendet die Bearbeiten-UI aus) */
   canEdit?: boolean;
 }
@@ -65,15 +79,36 @@ function RespIcon() {
   );
 }
 
-/** Eine sortierbare Zeile im Bearbeiten-Modus. */
+/** Zeile der Zuständigen: besetzte als Name, offene Dienste als orange Chip mit „?". */
+function ResponsibleLine({ entries }: { entries: AgendaItem['responsible'] }) {
+  if (entries.length === 0) return null;
+  return (
+    <div className={styles.resp}>
+      <RespIcon />
+      <span className={styles.respList}>
+        {entries.map((e, i) =>
+          e.open ? (
+            <span key={i} className={styles.respOpen}>
+              {e.label} ?
+            </span>
+          ) : (
+            <span key={i} className={styles.respName}>
+              {e.label}
+            </span>
+          ),
+        )}
+      </span>
+    </div>
+  );
+}
+
+/** Eine sortierbare Zeile im Bearbeiten-Modus. Tippen auf den Titel öffnet das Aktionsmenü. */
 function SortableRow({
   item,
-  onRequestDelete,
-  onRename,
+  onOpenActions,
 }: {
   item: AgendaItem;
-  onRequestDelete: (item: AgendaItem) => void;
-  onRename: (itemId: number, title: string) => void;
+  onOpenActions: (item: AgendaItem) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -93,30 +128,10 @@ function SortableRow({
       <button className={styles.handle} {...attributes} {...listeners} aria-label="Verschieben">
         ⠿
       </button>
-      {item.song ? (
-        // Lieder: Titel = Songname, nicht hier umbenennbar
-        <span className={styles.editTitle}>{item.song.title}</span>
-      ) : (
-        <input
-          className={styles.editInput}
-          defaultValue={item.title}
-          aria-label="Titel"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') e.currentTarget.blur();
-          }}
-          onBlur={(e) => {
-            const v = e.target.value.trim();
-            if (v && v !== item.title) onRename(item.id, v);
-          }}
-        />
-      )}
-      <button
-        className={styles.delBtn}
-        onClick={() => onRequestDelete(item)}
-        aria-label="Punkt löschen"
-        title="Punkt löschen"
-      >
-        🗑
+      <button className={styles.editTitleBtn} onClick={() => onOpenActions(item)}>
+        <span className={styles.editTitleText}>{item.song ? item.song.title : item.title}</span>
+        {item.song && <span className={styles.editSongTag}>🎵</span>}
+        <span className={styles.editChevron}>›</span>
       </button>
     </div>
   );
@@ -135,7 +150,11 @@ export function Setlist({
   isReordering,
   onDelete,
   onRename,
+  onLinkSong,
+  onUnlinkSong,
+  onSetResponsible,
   onAdd,
+  services,
   canEdit = false,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
@@ -143,6 +162,7 @@ export function Setlist({
   const [err, setErr] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [actionItem, setActionItem] = useState<AgendaItem | null>(null);
 
   // Server-Stand (auch nach dem Speichern) übernehmen.
   useEffect(() => {
@@ -169,12 +189,13 @@ export function Setlist({
     });
   }
 
-  function handleRename(itemId: number, title: string) {
+  function handleRename(itemId: number, title: string): Promise<void> {
     setErr(null);
     setLocalItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, title } : i)));
-    onRename(itemId, title).catch((e: unknown) => {
-      setLocalItems(items); // zurückrollen
-      setErr(e instanceof Error ? e.message : 'Umbenennen fehlgeschlagen.');
+    // Fehler wird vom Aktionsmenü angezeigt – hier nur lokal zurückrollen und weiterwerfen.
+    return onRename(itemId, title).catch((e: unknown) => {
+      setLocalItems(items);
+      throw e;
     });
   }
 
@@ -224,19 +245,14 @@ export function Setlist({
         ) : editMode ? (
           <>
             <div className={styles.editHint}>
-              {isReordering ? 'Speichere…' : 'Ziehen (⠿) zum Sortieren · Titel tippen zum Umbenennen · 🗑 zum Löschen.'}
+              {isReordering ? 'Speichere…' : 'Ziehen (⠿) zum Sortieren · Punkt antippen für Umbenennen / Lied verknüpfen / Löschen.'}
             </div>
             {err && <div className={styles.editError}>{err}</div>}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={localItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                 <div className={styles.list}>
                   {localItems.map((item) => (
-                    <SortableRow
-                      key={item.id}
-                      item={item}
-                      onRequestDelete={setPendingDelete}
-                      onRename={handleRename}
-                    />
+                    <SortableRow key={item.id} item={item} onOpenActions={setActionItem} />
                   ))}
                 </div>
               </SortableContext>
@@ -279,11 +295,7 @@ export function Setlist({
                         {song.bpm !== null && <span className={styles.chipBpm}>♩ {song.bpm}</span>}
                         {song.timeSig && <span className={styles.timeSig}>{song.timeSig}</span>}
                       </div>
-                      {item.responsible.length > 0 && (
-                        <div className={styles.resp}>
-                          <RespIcon /> {item.responsible.join(', ')}
-                        </div>
-                      )}
+                      <ResponsibleLine entries={item.responsible} />
                     </div>
                     <span className={styles.arr}>›</span>
                   </div>
@@ -292,11 +304,7 @@ export function Setlist({
               return (
                 <div key={item.id} className={styles.textTile}>
                   <div className={styles.textTitle}>{item.title}</div>
-                  {item.responsible.length > 0 && (
-                    <div className={styles.resp}>
-                      <RespIcon /> {item.responsible.join(', ')}
-                    </div>
-                  )}
+                  <ResponsibleLine entries={item.responsible} />
                 </div>
               );
             })}
@@ -315,7 +323,20 @@ export function Setlist({
         />
       )}
 
-      {showAdd && <AddItemSheet onClose={() => setShowAdd(false)} onAdd={onAdd} />}
+      {showAdd && <AddItemSheet onClose={() => setShowAdd(false)} onAdd={onAdd} services={services} />}
+
+      {actionItem && (
+        <ItemActionSheet
+          item={actionItem}
+          services={services}
+          onClose={() => setActionItem(null)}
+          onRename={(title) => handleRename(actionItem.id, title)}
+          onLinkSong={(arrangementId) => onLinkSong(actionItem.id, arrangementId)}
+          onUnlinkSong={() => onUnlinkSong(actionItem.id, actionItem.song?.title ?? actionItem.title)}
+          onSetResponsible={(responsible) => onSetResponsible(actionItem.id, responsible)}
+          onRequestDelete={() => setPendingDelete(actionItem)}
+        />
+      )}
     </Screen>
   );
 }
