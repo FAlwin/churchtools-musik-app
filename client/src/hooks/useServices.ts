@@ -56,6 +56,7 @@ export function useDeleteAgendaItem(eventId: number | null) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });
       qc.invalidateQueries({ queryKey: ['services'] });
+      qc.invalidateQueries({ queryKey: ['song-usage'] });
     },
   });
 }
@@ -79,6 +80,7 @@ export function useLinkSongToAgendaItem(eventId: number | null) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });
       qc.invalidateQueries({ queryKey: ['services'] });
+      qc.invalidateQueries({ queryKey: ['song-usage'] });
     },
   });
 }
@@ -92,6 +94,7 @@ export function useUnlinkSongFromAgendaItem(eventId: number | null) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });
       qc.invalidateQueries({ queryKey: ['services'] });
+      qc.invalidateQueries({ queryKey: ['song-usage'] });
     },
   });
 }
@@ -169,6 +172,7 @@ export function useCreateAgendaItem(eventId: number | null) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });
       qc.invalidateQueries({ queryKey: ['services'] });
+      qc.invalidateQueries({ queryKey: ['song-usage'] });
     },
   });
 }

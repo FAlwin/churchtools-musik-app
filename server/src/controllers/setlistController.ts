@@ -9,6 +9,7 @@ import {
   getSongLibrary,
   getSongChart,
   getSongUsageMap,
+  invalidateSongUsageCache,
 } from '../services/setlistBuilder.js';
 import {
   fetchFileBytes,
@@ -99,6 +100,7 @@ export async function postAgendaItem(req: Request, res: Response): Promise<void>
     arrangementId,
     responsible,
   });
+  invalidateSongUsageCache(); // Liederzahl/„zuletzt" können sich geändert haben
   res.json({ ok: true });
 }
 
@@ -132,6 +134,7 @@ export async function putAgendaItem(req: Request, res: Response): Promise<void> 
     unlink,
     responsible,
   });
+  invalidateSongUsageCache(); // Verknüpfen/Lösen ändert die Liederzahl/„zuletzt"
   res.json({ ok: true });
 }
 
@@ -140,6 +143,7 @@ export async function deleteAgendaItemCtrl(req: Request, res: Response): Promise
   const eventId = idSchema.parse(req.params.eventId);
   const itemId = idSchema.parse(req.params.itemId);
   await deleteAgendaItem(req.ctCookie as string, eventId, itemId);
+  invalidateSongUsageCache(); // entferntes Lied soll aus der Statistik verschwinden
   res.json({ ok: true });
 }
 

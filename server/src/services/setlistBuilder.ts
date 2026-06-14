@@ -190,9 +190,15 @@ function isHeaderType(type?: string): boolean {
   return !!type && /header|überschrift|heading|section/i.test(type);
 }
 
-/** Entfernt die eckigen Klammern eines Dienst-Tokens: „[Musik]" → „Musik". */
+/**
+ * Säubert ein CT-Dienst-Token zum reinen Namen: entfernt alle eckigen Klammern und ein
+ * etwaiges nachgestelltes „?" (CT-Offen-Marker). „[Kamera Studio]?" → „Kamera Studio".
+ */
 function cleanServiceName(service?: string): string {
-  return (service ?? '').replace(/^\[+|\]+$/g, '').trim();
+  return (service ?? '')
+    .replace(/[[\]]/g, '')
+    .replace(/\?+\s*$/, '')
+    .trim();
 }
 
 /**
@@ -225,6 +231,11 @@ interface SongUsage {
 // Org-weite Song-Nutzung (gleich für alle) – im Speicher gecacht (TTL 1 h).
 let usageCache: { at: number; data: Record<number, SongUsage> } | null = null;
 
+/** Leert den Statistik-Cache – nach Ablauf-Änderungen aufrufen, damit Zahlen/Daten frisch sind. */
+export function invalidateSongUsageCache(): void {
+  usageCache = null;
+}
+
 /** Führt `fn` über alle Items aus, aber maximal `limit` gleichzeitig (schont die CT-API). */
 async function mapLimit<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
   let i = 0;
@@ -237,11 +248,17 @@ async function mapLimit<T>(items: T[], limit: number, fn: (item: T) => Promise<v
   await Promise.all(workers);
 }
 
-/** Zählt Song-Vorkommen in den Abläufen der letzten 12 Monate (gecacht). Wird separat geladen. */
+/**
+ * Zählt Song-Vorkommen in den Abläufen der letzten 12 Monate UND der kommenden 3 Monate
+ * (gecacht). So zählen eingeplante Lieder mit; `lastUsed` ist das jeweils späteste Datum –
+ * liegt also in der Zukunft, wenn das Lied demnächst eingeplant ist.
+ */
 export async function getSongUsageMap(cookie: string): Promise<Record<number, SongUsage>> {
   if (usageCache && Date.now() - usageCache.at < 3_600_000) return usageCache.data;
   const today = new Date();
-  const to = today.toISOString().slice(0, 10);
+  const toD = new Date(today);
+  toD.setMonth(toD.getMonth() + 3);
+  const to = toD.toISOString().slice(0, 10);
   const fromD = new Date(today);
   fromD.setFullYear(fromD.getFullYear() - 1);
   const from = fromD.toISOString().slice(0, 10);
