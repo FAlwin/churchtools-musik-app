@@ -158,6 +158,8 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 | 14.06.2026 | main   | Erscheinungsbild Hell/Dunkel/**System**; „Display anlassen" app-weit + Re-Acquire |
 | 14.06.2026 | main   | Anmerkungen: Farb-Palette (Orange/Petrol/SW + freier Picker), Text auswählen→Farbe/Größe/Inhalt live, Undo/Redo, sicheres Löschen (Leiste), „Alles löschen" rückgängig machbar |
 | 14.06.2026 | main   | Schrift/Spalten gesperrt, solange Anmerkungen vorhanden (verhindert verrutschte Anmerkungen beim Zoomen); halbtransparente Sperr-Schicht im Aussehen-Menü |
+| 14.06.2026 | main   | Ablauf-Bearbeiten: Punkt antippen → Aktionsmenü (Umbenennen / 🎵 Lied verknüpfen / 🔗 Verknüpfung aufheben / Löschen); bestehender Text-Punkt wird in-place zum Lied und zurück |
+| 14.06.2026 | main   | Verantwortliche setzbar über CT-Dienst-Tokens (`[Musik]` etc.) per Chips+Freitext (Hinzufügen + nachträglich); CT füllt Personen aus dem Dienstplan; offene Dienste als oranger „Dienst ?"-Chip hervorgehoben |
 
 ## So startest du die App lokal
 ```
@@ -216,6 +218,13 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - **`responsible` als String** senden (Text), nicht als Objekt – Personen bleiben erhalten.
 - **KRITISCH Lied-Punkte:** Verknüpfung als **top-level `arrangementId`**, NICHT verschachteltes
   `song:{…}` – sonst stuft CT den Punkt unwiderruflich auf `text` herab.
+- **Text↔Lied umwandeln (verifiziert 14.06., Event 776):** `PUT` mit `type:'song'` + top-level
+  `arrangementId` macht aus einem `text`-Punkt sauber ein Lied; `PUT` mit `type:'text'` ohne
+  `arrangementId` löst die Verknüpfung wieder (Titel bleibt). Kein Downgrade.
+- **`responsible` ist ein TEXTFELD (max 1000 Zeichen), KEIN Personen-Objekt** (Objekt → 400).
+  Dienst-Tokens wie `[Musik]`/`[Predigt]` als Text senden – CT expandiert sie selbst zu den im
+  Dienstplan zugewiesenen Personen (`persons[]`, `person:null` solange unbesetzt → CT zeigt rote `?`).
+  Dienst-Liste: `GET /api/services` (id, name). Personen-Objekte lassen sich hier NICHT schreiben.
 - Payload immer aus **frischen Live-Daten** bauen (Backup-Daten → 422). CSRF-Token nötig.
 - **Rechte „Liederbuch für alle Mitglieder":** CT-Rolle braucht „Veranstaltungen sehen (view)"
   + „Einzelne Song-Kategorien sehen (view songcategory)" – sonst nichts. Kein Service-Konto nötig.
