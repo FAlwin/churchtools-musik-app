@@ -143,37 +143,22 @@ export interface AuthStatus {
 }
 
 /**
- * Laufzeit-Branding einer Instanz (White-Label). Wird vom Server aus `site.json`
- * gelesen/geschrieben und vom Client beim Start angewendet. Eine fremde Gemeinde
- * stellt diese Werte über die Einstellungsseite ein – kein Neubau nötig.
+ * Feste ChurchTools-Version: Aussehen (Farben/Logo) ist fix. Veränderbar bleibt
+ * nur der Name der Gemeinde (Admin, über die Einstellungen). Wird vom Server aus
+ * `site.json` gelesen/geschrieben.
  */
 export interface SiteConfig {
-  /** Voller App-Name (PWA-Manifest, Titel). */
+  /** Voller App-Name (fest). */
   appName: string;
-  /** Kurzname (Home-Bildschirm). */
-  shortName: string;
-  /** Beschreibung im Manifest. */
+  /** Beschreibung (fest). */
   description: string;
-  /** Name der Gemeinde/Organisation (Login-Untertitel). */
+  /** Name der Gemeinde/Organisation – einziger anpassbarer Wert. */
   orgName: string;
-  /** Logo als Data-URL (base64) oder null = mitgeliefertes Standard-Logo. */
-  logoDataUrl: string | null;
-  /** Hauptfarbe (Teal-Ersatz) als Hex. */
-  primaryColor: string;
-  /** Akkordfarbe (Orange-Ersatz) als Hex. */
-  accentColor: string;
-  /** CCLI-Lizenznummer der Gemeinde oder null. */
-  ccli: string | null;
 }
 
-/** Standard-Branding (ECG Donrath) – Fallback, solange nichts eingestellt ist. */
+/** Standardwerte. `appName`/`description` sind fest; nur `orgName` ist anpassbar. */
 export const DEFAULT_SITE_CONFIG: SiteConfig = {
   appName: 'Churchtools Musik App',
-  shortName: 'Churchtools Musik App',
   description: 'Chord Charts aus ChurchTools',
   orgName: 'ECG Donrath',
-  logoDataUrl: null,
-  primaryColor: '#00616E',
-  accentColor: '#EB5E28',
-  ccli: '2395145',
 };

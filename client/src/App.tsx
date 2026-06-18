@@ -104,6 +104,7 @@ export default function App() {
     return (
       <Login
         site={site}
+        theme={settings.theme}
         onLogin={async (email, password) => {
           await auth.login(email, password);
         }}
