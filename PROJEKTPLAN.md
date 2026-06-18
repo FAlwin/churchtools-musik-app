@@ -46,8 +46,8 @@ Entscheidungen → `docs/entscheidungen.md`.
 
 ### Phase 6 – Offen / optional
 - [ ] 6.1 Musik-Abwesenheitsplaner (separate Flask-App) in diese App nachbauen
-- [~] 6.2 White-Label für andere Gemeinden (Phase A+B umgesetzt: Laufzeit-Branding +
-      Admin-Einstellungsseite; offen C dynamisches PWA-Manifest, D Docker-Image/Anleitung – `WHITE-LABEL.md`)
+- [~] 6.2 White-Label für andere Gemeinden (Phase A–C umgesetzt: Laufzeit-Branding +
+      Admin-Einstellungsseite + dynamisches PWA-Manifest; offen D Docker-Image/Anleitung/Lizenz – `WHITE-LABEL.md`)
 - [ ] 6.3 vite@8-Upgrade (behebt die zurückgestellten moderate npm-audit-Findings)
 
 **Definition of Done:** je Teilprojekt eigener Plan; hier nur als Merker.
