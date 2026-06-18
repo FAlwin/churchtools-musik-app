@@ -2,6 +2,10 @@
 
 > Dieses Dokument ist die verbindliche Referenz für alle
 > Entwicklungssessions in diesem Projekt. Immer zuerst lesen!
+> **Grober Fahrplan: `PROJEKTPLAN.md`** · Architektur-Entscheidungen:
+> `docs/entscheidungen.md` · Testkonzept: `docs/testkonzept.md` ·
+> Konfig/Umgebungen: `docs/konfigurationsmanagement.md`.
+> Granulare Aufgaben/Bugs: GitHub Issues + Projects-Board.
 
 ## Projektübersicht
 - **Was:** Progressive Web App (PWA), die Chord Charts der aktuellen Setlist aus ChurchTools
@@ -24,6 +28,8 @@
 | Validierung    | Zod (serverseitig)                 |
 | Deployment     | Docker auf Synology NAS (Container Manager) |
 | Externer Zugang| Synology Reverse Proxy + DDNS + Let's Encrypt (KEIN Cloudflare) |
+| Tests          | Vitest (Unit, nur reine Logik in `client/src/utils`) |
+| CI             | GitHub Actions: lint + build + test je PR |
 
 ## Ordnerstruktur
 Monorepo mit npm-Workspaces:
@@ -111,6 +117,17 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 - **CCLI:** Lizenznummer 2395145, SongSelect Premium; CCLI-Infos pro Song anzeigen
 - **Branding:** Teal #00616E, Orange #EB5E28 (Akkorde), Cream #FFFCF2
 
+## Tests & CI
+- **Befehle:** `npm test` (alle), `npm run test:cov` (Coverage), im Client
+  `npm run test:watch`.
+- **Umfang (bewusst schlank):** Vitest-Unit-Tests nur für die kniffligste reine Logik –
+  `client/src/utils/transpose.ts` (Transponieren) und `chordpro.ts` (zwei Dialekte).
+  Kein API/E2E: UI + Proxy werden manuell geprüft (Begründung: `docs/testkonzept.md`).
+- **CI:** `.github/workflows/ci.yml` läuft `lint` + `build` + `test` bei jedem PR
+  und Push auf `main`. Kein DB-Service nötig.
+- **Regel:** Jeder Bug → Issue (Vorlage „Fehlerbericht"); betrifft er reine Logik,
+  zusätzlich ein Regressionstest.
+
 ## Security-Checkliste
 - [x] .env + .gitignore korrekt eingerichtet
 - [x] Zod-Validierung auf allen API-Routen
@@ -162,6 +179,7 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 | 14.06.2026 | main   | Verantwortliche setzbar über CT-Dienst-Tokens (`[Musik]` etc.) per Chips+Freitext (Hinzufügen + nachträglich); CT füllt Personen aus dem Dienstplan; offene Dienste als oranger „Dienst ?"-Chip hervorgehoben |
 | 14.06.2026 | main   | Lied-Statistik bezieht kommende 3 Monate ein (eingeplante Lieder zählen mit, „zuletzt" zeigt auch zukünftige Termine); Cache wird bei Ablauf-Änderungen sofort invalidiert (Server + Client) |
 | 14.06.2026 | main   | Fix: Dienst-Chips säubern jetzt alle Klammern + nachgestelltes „?" (z.B. „[Kamera Studio]?" → „Kamera Studio ?") |
+| 18.06.2026 | chore/blueprint-angleichen | An Blueprint angeglichen: PROJEKTPLAN.md + docs/ (entscheidungen, testkonzept, konfigurationsmanagement); Vitest-Unit-Tests für transpose.ts + chordpro.ts (30 Tests); CI (GitHub Actions: lint+build+test); Issue-Vorlagen + Projects-Board |
 
 ## So startest du die App lokal
 ```
