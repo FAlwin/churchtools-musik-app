@@ -2,7 +2,7 @@
 
 > Stand: 18.06.2026. **Gewählte Richtung: Selbst-Hosting (jede Gemeinde betreibt
 > eine eigene Instanz).** Einrichtung erfolgt **per Klick in der App**, nicht über Dateien.
-> Phase A+B (Laufzeit-Branding + Einstellungsseite) sind umgesetzt; C+D offen.
+> Phase A–C (Laufzeit-Branding + Einstellungsseite + dynamisches Manifest) sind umgesetzt; D offen.
 
 ## Getroffene Entscheidungen (18.06.2026)
 - **Hosting:** jede Gemeinde selbst (eine Instanz pro Gemeinde). Rechtlich sauber.
@@ -19,8 +19,10 @@
   `applyBranding`). Speicher: `site.json` auf Volume (kein DB-Bruch).
 - **[x] Phase B – Einstellungsseite (nur Admin):** `PUT /api/site-config`
   (Session + Admin, Zod-validiert); Seite `pages/Settings.tsx` mit Live-Vorschau.
-- **[ ] Phase C – PWA-Manifest dynamisch:** Manifest aktuell noch Build-Zeit
-  (`branding.ts`). Server muss `/manifest.webmanifest` aus der Config erzeugen.
+- **[x] Phase C – PWA-Manifest dynamisch:** `GET /api/manifest.webmanifest` aus der Config
+  (Name/Farben/Logo); `index.html` verweist fest darauf, vite-plugin-pwa nur noch für den
+  Service Worker (`manifest: false`). `config/branding.ts` entfernt (Defaults in `DEFAULT_SITE_CONFIG`).
+  *iOS-Grenze:* `apple-mobile-web-app-title` bleibt statisch (Android nutzt `short_name`).
 - **[ ] Phase D – Auslieferung:** versioniertes Docker-Image (GHCR), `docker-compose`
   mit Volume, Installations-Anleitung, Lizenz/Haftungsausschluss.
 

@@ -96,15 +96,20 @@ andere Gemeinde: branding.ts + Logo-Dateien anpassen. Farben zusätzlich in `_va
 (SCSS) – beim Vollausbau aus einer Quelle speisen. Voller White-Label-Ausbau (mehrere Gemeinden
 umschaltbar, eigene CT-Instanz) ist ein eigenes Folgepaket.
 
-**Laufzeit-Branding (umgesetzt, Phase A+B):** Name/Kurzname/Logo/Farben/CCLI werden zur Laufzeit
+**Laufzeit-Branding (umgesetzt, Phase A–C):** Name/Kurzname/Logo/Farben/CCLI werden zur Laufzeit
 aus `site.json` (Volume) gelesen und vom Client angewendet (`useSiteConfig` + `utils/applyBranding.ts`).
 Ein ChurchTools-**Admin** stellt sie per Klick auf der Seite `pages/Settings.tsx` ein
-(`PUT /api/site-config`). `client/src/config/branding.ts` liefert nur noch die **Build-Zeit-Defaults**
-fürs PWA-Manifest (Phase C macht auch das dynamisch). Speicherpfad: `SITE_CONFIG_PATH`,
-Admin-Recht: `ADMIN_PERMISSION` (Default `churchcore:administer persons`, je Instanz prüfen).
+(`PUT /api/site-config`). Das **PWA-Manifest ist dynamisch**: der Server liefert
+`/api/manifest.webmanifest` aus der Config (Name/Farben/Logo), `index.html` verweist fest darauf,
+vite-plugin-pwa generiert nur noch den Service Worker (`manifest: false`). Die Standard-Defaults
+liegen zentral in `DEFAULT_SITE_CONFIG` (`shared/types`); das frühere `client/src/config/branding.ts`
+ist entfernt. Speicherpfad: `SITE_CONFIG_PATH`, Admin-Recht: `ADMIN_PERMISSION`
+(Default `churchcore:administer persons`, je Instanz prüfen).
+**iOS-Grenze:** `apple-mobile-web-app-title` in `index.html` bleibt statisch (iOS liest ihn beim
+„Zum Home-Bildschirm"); Android nutzt `short_name` aus dem dynamischen Manifest.
 
-**Verteilung an andere Gemeinden:** Plan/Stand in `WHITE-LABEL.md` (Selbst-Hosting; Phase A+B fertig,
-C = dynamisches Manifest + D = Docker-Image/Anleitung offen).
+**Verteilung an andere Gemeinden:** Plan/Stand in `WHITE-LABEL.md` (Selbst-Hosting; Phase A–C fertig,
+D = Docker-Image/Anleitung/Lizenz offen).
 
 ## Anmerkungen (Zeichnen/Text)
 `useDrawing.ts` kapselt Canvas-Striche (Stift/Marker/Radierer) + Text-Anmerkungen (localStorage
@@ -188,6 +193,7 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 | 14.06.2026 | main   | Fix: Dienst-Chips säubern jetzt alle Klammern + nachgestelltes „?" (z.B. „[Kamera Studio]?" → „Kamera Studio ?") |
 | 18.06.2026 | chore/blueprint-angleichen | An Blueprint angeglichen: PROJEKTPLAN.md + docs/ (entscheidungen, testkonzept, konfigurationsmanagement); Vitest-Unit-Tests für transpose.ts + chordpro.ts (30 Tests); CI (GitHub Actions: lint+build+test); Issue-Vorlagen + Projects-Board |
 | 18.06.2026 | feature/white-label-runtime | White-Label Phase A+B: Laufzeit-Branding (site.json auf Volume, `GET /api/site-config` + `/api/site-logo`, Client wendet Farben/Name/Logo an); Admin-Einstellungsseite (`PUT /api/site-config`, CT-Admin-Recht, Logo-Upload/Farben/CCLI per Klick); Farb-Utils + 7 Tests |
+| 18.06.2026 | feature/white-label-manifest | White-Label Phase C: PWA-Manifest dynamisch (`GET /api/manifest.webmanifest` aus dem Branding, `manifest:false` im vite-plugin-pwa, fester Link in index.html); `config/branding.ts` entfernt (Defaults nun in `DEFAULT_SITE_CONFIG`) |
 
 ## So startest du die App lokal
 ```
@@ -226,6 +232,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ## API des eigenen Backends
 - `GET  /api/site-config` → Laufzeit-Branding (öffentlich, auch für den Login-Screen)
 - `GET  /api/site-logo` → hochgeladenes Logo als Bild (404, wenn keins gesetzt → Standard-Logo)
+- `GET  /api/manifest.webmanifest` → PWA-Manifest, zur Laufzeit aus dem Branding erzeugt
 - `PUT  /api/site-config` → Branding speichern (nur Admin, Zod-validiert)
 - `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt Session-Cookie
 - `POST /api/auth/logout` → Session löschen
