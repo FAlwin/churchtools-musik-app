@@ -29,7 +29,7 @@
 .chordOnly {
   font-family: var(--ui);
   font-weight: 700;
-  color: var(--text); // SongSelect-Stil: Akkorde dick + schwarz
+  color: var(--blue); // Akkorde in der Akzentfarbe, deutlich vom Text abgehoben
   letter-spacing: 0.05em;
   line-height: 2;
 
@@ -55,7 +55,7 @@
 .cChord {
   font-family: var(--ui);
   font-weight: 700;
-  color: var(--text); // SongSelect-Stil: Akkorde dick + schwarz
+  color: var(--blue); // Akkorde in der Akzentfarbe, deutlich vom Text abgehoben
   line-height: 1.25;
   white-space: nowrap;
   display: block;
