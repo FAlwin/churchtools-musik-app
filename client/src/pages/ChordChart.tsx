@@ -8,6 +8,7 @@ import { DrawToolbar } from '../components/DrawToolbar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
 import { DocumentView } from '../components/DocumentView';
+import { Icon } from '../components/icons';
 import { saveChordpro, deleteChordpro } from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
@@ -339,7 +340,7 @@ export function ChordChart({
         {/* Header */}
         <div className={styles.hdr}>
           <button className={styles.ibtn} onClick={goBack}>
-            ‹
+            <Icon name="chev-left" size={22} stroke={2.4} />
           </button>
           <div className={styles.center}>
             <button className={styles.titleBtn} onClick={() => setShowSongMenu((v) => !v)}>
