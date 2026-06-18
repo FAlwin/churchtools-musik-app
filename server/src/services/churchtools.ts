@@ -89,6 +89,7 @@ export interface UserCapabilities {
   canViewAgendas: boolean;
   canEditAgendas: boolean;
   canEditSongs: boolean;
+  isAdmin: boolean;
 }
 
 /** Ermittelt aus den ChurchTools-Rechten (Modul churchservice), was der Nutzer darf. */
@@ -96,11 +97,15 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
   const data = await ctGet<Record<string, Record<string, unknown>>>(cookie, '/api/permissions/global');
   const cs = data?.churchservice ?? {};
   const has = (v: unknown): boolean => (Array.isArray(v) ? v.length > 0 : Boolean(v));
+  // Admin-Recht aus der Konfiguration (Form `modul:recht`).
+  const [adminModule, adminPerm] = config.adminPermission.split(':');
+  const isAdmin = has(data?.[adminModule]?.[adminPerm]);
   return {
     canViewSongs: has(cs['view songcategory']),
     canViewAgendas: has(cs['view agenda']),
     canEditAgendas: has(cs['edit agenda']),
     canEditSongs: has(cs['edit songcategory']),
+    isAdmin,
   };
 }
 

@@ -17,6 +17,14 @@ export const config = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   churchtoolsBaseUrl: required('CHURCHTOOLS_BASE_URL', 'https://ecg-donrath.church.tools'),
   sessionSecret: required('SESSION_SECRET', 'dev-only-insecure-secret'),
+  /** Ablageort der Laufzeit-Branding-Datei (persistentes Docker-Volume). */
+  siteConfigPath: process.env.SITE_CONFIG_PATH ?? './data/site.json',
+  /**
+   * ChurchTools-Recht, das als „Administrator" gilt (steuert Zugriff auf die
+   * Branding-Einstellungen). Form `modul:recht`. Default deckt Voll-Admins ab;
+   * je nach Instanz ggf. anpassen.
+   */
+  adminPermission: process.env.ADMIN_PERMISSION ?? 'churchcore:administer persons',
   get isProduction() {
     return this.nodeEnv === 'production';
   },

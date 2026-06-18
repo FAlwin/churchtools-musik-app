@@ -5,9 +5,11 @@ import { Agenda } from './pages/Agenda';
 import { Setlist } from './pages/Setlist';
 import { ChordChart } from './pages/ChordChart';
 import { AllSongs } from './pages/AllSongs';
+import { Settings } from './pages/Settings';
 import { useSettings } from './hooks/useSettings';
 import { useWakeLock } from './hooks/useWakeLock';
 import { useAuth } from './hooks/useAuth';
+import { useSiteConfig } from './hooks/useSiteConfig';
 import {
   useServices,
   useAgenda,
@@ -34,6 +36,8 @@ export default function App() {
   // „Display anlassen" wirkt app-weit (nicht nur in der Liedansicht).
   useWakeLock(settings.wakePref);
   const auth = useAuth();
+  // Laufzeit-Branding (wird im Hook auf das Dokument angewendet).
+  const site = useSiteConfig().data;
 
   const [screen, setScreen] = useState<ScreenName>('agenda');
   const [service, setService] = useState<Service | null>(null);
@@ -46,6 +50,7 @@ export default function App() {
   const canViewSongs = caps?.canViewSongs ?? false;
   const canEditAgendas = caps?.canEditAgendas ?? false;
   const canEditSongs = caps?.canEditSongs ?? false;
+  const isAdmin = caps?.isAdmin ?? false;
 
   const servicesQuery = useServices(auth.isAuthenticated && canViewAgendas);
   const agendaQuery = useAgenda(service?.id ?? null);
@@ -94,6 +99,7 @@ export default function App() {
   if (!auth.isAuthenticated) {
     return (
       <Login
+        site={site}
         onLogin={async (email, password) => {
           await auth.login(email, password);
         }}
@@ -148,6 +154,8 @@ export default function App() {
           }}
           onLogout={() => auth.logout()}
           onShowSongs={canViewSongs ? () => setScreen('songs') : undefined}
+          onShowSettings={isAdmin ? () => setScreen('settings') : undefined}
+          orgName={site.orgName}
           themePref={settings.themePref}
           setThemePref={settings.setThemePref}
           wakePref={settings.wakePref}
@@ -229,6 +237,10 @@ export default function App() {
           services={agendaServices.data ?? []}
           canEdit={canEditAgendas}
         />
+      )}
+
+      {screen === 'settings' && isAdmin && (
+        <Settings site={site} onBack={() => setScreen('agenda')} />
       )}
 
       {screen === 'chart' && service && songs.length > 0 && (

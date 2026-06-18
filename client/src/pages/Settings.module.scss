@@ -1,0 +1,170 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 20px 18px 48px;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-radius: 16px;
+  padding: 24px 16px;
+  color: #fff;
+  text-align: center;
+}
+
+.previewLogo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.15);
+  margin-bottom: 8px;
+}
+
+.previewName {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: 'Candara', 'Trebuchet MS', sans-serif;
+}
+
+.previewOrg {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.input {
+  height: 48px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  padding: 0 14px;
+  font-size: 16px;
+  outline: none;
+  width: 100%;
+  font-family: 'Montserrat', inherit;
+  transition: border-color 0.18s;
+
+  &:focus {
+    border-color: var(--teal);
+  }
+  &::placeholder {
+    color: var(--text3);
+  }
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logoThumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1.5px solid var(--border);
+  background: var(--surface3);
+}
+
+.logoBtns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btnGhost {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--teal);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: 'Montserrat', inherit;
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.colorsRow {
+  display: flex;
+  gap: 14px;
+
+  .field {
+    flex: 1;
+  }
+}
+
+.color {
+  height: 48px;
+  width: 100%;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  padding: 4px;
+  cursor: pointer;
+}
+
+.err {
+  font-size: 13px;
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.ok {
+  font-size: 14px;
+  color: var(--teal);
+  font-weight: 700;
+  text-align: center;
+}
+
+.save {
+  height: 52px;
+  border-radius: 12px;
+  border: none;
+  background: var(--teal);
+  color: var(--cream);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: 'Montserrat', inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    transform: scale(0.98);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}

@@ -1,8 +1,28 @@
 # White-Label & Verteilung an andere Gemeinden
 
-> Roadmap/Notiz für eine spätere Session. Stand der Besprechung: 14.06.2026.
-> **Gewählte Richtung: Selbst-Hosting (jede Gemeinde betreibt es selbst).**
-> Noch NICHT umgesetzt – hier nur der Plan.
+> Stand: 18.06.2026. **Gewählte Richtung: Selbst-Hosting (jede Gemeinde betreibt
+> eine eigene Instanz).** Einrichtung erfolgt **per Klick in der App**, nicht über Dateien.
+> Phase A+B (Laufzeit-Branding + Einstellungsseite) sind umgesetzt; C+D offen.
+
+## Getroffene Entscheidungen (18.06.2026)
+- **Hosting:** jede Gemeinde selbst (eine Instanz pro Gemeinde). Rechtlich sauber.
+- **Konfiguration:** in der App per Klick (Einstellungsseite), kein Datei-Editieren.
+- **CT-Adresse:** bleibt in der `.env` (kein Setup-Bildschirm vor dem Login nötig).
+- **Admin-Schutz:** ChurchTools-Admin-Recht (`ADMIN_PERMISSION`, Default
+  `churchcore:administer persons` – je Instanz prüfen).
+- **Einstellbar:** App-Name, Kurzname, Beschreibung, Org-Name, Logo (Upload),
+  Haupt-/Akkordfarbe, CCLI-Nummer.
+
+## Umsetzungsstand
+- **[x] Phase A – Branding zur Laufzeit (Lesen):** `GET /api/site-config` +
+  `GET /api/site-logo`; Client wendet Farben/Name/Logo beim Start an (`useSiteConfig` +
+  `applyBranding`). Speicher: `site.json` auf Volume (kein DB-Bruch).
+- **[x] Phase B – Einstellungsseite (nur Admin):** `PUT /api/site-config`
+  (Session + Admin, Zod-validiert); Seite `pages/Settings.tsx` mit Live-Vorschau.
+- **[ ] Phase C – PWA-Manifest dynamisch:** Manifest aktuell noch Build-Zeit
+  (`branding.ts`). Server muss `/manifest.webmanifest` aus der Config erzeugen.
+- **[ ] Phase D – Auslieferung:** versioniertes Docker-Image (GHCR), `docker-compose`
+  mit Volume, Installations-Anleitung, Lizenz/Haftungsausschluss.
 
 ## Ziel
 Das Programm so aufbereiten, dass es jede Gemeinde mit wenigen Schritten an ihre eigene
