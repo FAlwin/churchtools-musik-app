@@ -42,7 +42,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  margin-bottom: 1px;
+  margin-bottom: 0.4em; // Luft zwischen den Akkord/Text-Zeilenpaaren
 }
 
 .cpair {
@@ -60,6 +60,8 @@
   white-space: nowrap;
   display: block;
   min-width: 1px;
+  margin-bottom: 0.15em; // Abstand Akkord ↔ Text darunter
+  padding-right: 0.7ch;  // Mindestabstand zum nächsten Akkord, auch über kurzen Silben
 }
 
 .cLyric {
