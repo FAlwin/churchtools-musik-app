@@ -51,6 +51,15 @@ Recht ist konfigurierbar (`ADMIN_PERMISSION`, Default `churchcore:administer per
 **Offen:** Das exakte Admin-Recht variiert je CT-Instanz und sollte vor dem Ausrollen an eine
 fremde Gemeinde an deren Instanz verifiziert werden.
 
+## White-Label: Verteilung über privates GHCR-Image, Lizenz proprietär
+**Entscheidung:** Das fertige Docker-Image liegt **privat** in der GitHub Container Registry und
+wird per Versions-Tag (`v*`) durch einen Release-Workflow gepusht. Die Software steht **nicht** unter
+einer offenen Lizenz – Nutzung durch andere Gemeinden nur **auf Anfrage** (`LIZENZ.md`).
+**Begründung:** Verteilung bewusst kontrolliert (wer es nutzt, wird freigegeben). Privates Image +
+Zugangstoken pro Gemeinde geben diese Kontrolle. Es liegen keine Secrets im Image (Env nur zur Laufzeit).
+**Folge:** Empfangende Gemeinden brauchen einen GitHub-Token (`read:packages`) für `docker login ghcr.io`
+(in `deploy/ANLEITUNG.md` beschrieben).
+
 ## Schrift/Spalten gesperrt bei vorhandenen Anmerkungen
 **Entscheidung:** Solange Anmerkungen existieren, sind Schriftgröße/Spaltenzahl gesperrt.
 **Begründung:** Anmerkungen sind pixelbasiert (Canvas). Würde der Text neu umbrechen,

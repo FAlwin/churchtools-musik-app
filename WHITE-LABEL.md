@@ -2,7 +2,7 @@
 
 > Stand: 18.06.2026. **Gewählte Richtung: Selbst-Hosting (jede Gemeinde betreibt
 > eine eigene Instanz).** Einrichtung erfolgt **per Klick in der App**, nicht über Dateien.
-> Phase A–C (Laufzeit-Branding + Einstellungsseite + dynamisches Manifest) sind umgesetzt; D offen.
+> Phase A–D umgesetzt. Verteilung: privates GHCR-Image (auf Anfrage), Lizenz proprietär.
 
 ## Getroffene Entscheidungen (18.06.2026)
 - **Hosting:** jede Gemeinde selbst (eine Instanz pro Gemeinde). Rechtlich sauber.
@@ -23,8 +23,13 @@
   (Name/Farben/Logo); `index.html` verweist fest darauf, vite-plugin-pwa nur noch für den
   Service Worker (`manifest: false`). `config/branding.ts` entfernt (Defaults in `DEFAULT_SITE_CONFIG`).
   *iOS-Grenze:* `apple-mobile-web-app-title` bleibt statisch (Android nutzt `short_name`).
-- **[ ] Phase D – Auslieferung:** versioniertes Docker-Image (GHCR), `docker-compose`
-  mit Volume, Installations-Anleitung, Lizenz/Haftungsausschluss.
+- **[x] Phase D – Auslieferung:** Release-Workflow (`.github/workflows/release.yml`) baut bei
+  einem Tag `v*` das Image und pusht es **privat** nach `ghcr.io/<owner>/churchtools-musik-app`
+  (bei PRs nur Build-Validierung, kein Push). Verteil-Paket unter `deploy/` (image-basiertes
+  `docker-compose.yml` mit Volume + `.env.example` + `ANLEITUNG.md`). Produktives
+  `docker-compose.yml` (ECG) hat jetzt ebenfalls ein Volume (`worship-data`). Lizenz: `LIZENZ.md`
+  (proprietär, Nutzung auf Anfrage). **Release auslösen:** `git tag vX.Y.Z && git push --tags`.
+  Andere Gemeinden brauchen einen GitHub-Token (`read:packages`) für `docker login ghcr.io`.
 
 ## Ziel
 Das Programm so aufbereiten, dass es jede Gemeinde mit wenigen Schritten an ihre eigene

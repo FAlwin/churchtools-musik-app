@@ -108,8 +108,12 @@ ist entfernt. Speicherpfad: `SITE_CONFIG_PATH`, Admin-Recht: `ADMIN_PERMISSION`
 **iOS-Grenze:** `apple-mobile-web-app-title` in `index.html` bleibt statisch (iOS liest ihn beim
 „Zum Home-Bildschirm"); Android nutzt `short_name` aus dem dynamischen Manifest.
 
-**Verteilung an andere Gemeinden:** Plan/Stand in `WHITE-LABEL.md` (Selbst-Hosting; Phase A–C fertig,
-D = Docker-Image/Anleitung/Lizenz offen).
+**Verteilung an andere Gemeinden (Phase D umgesetzt):** Release-Workflow `.github/workflows/release.yml`
+baut bei Tag `v*` das Image und pusht es **privat** nach `ghcr.io/<owner>/churchtools-musik-app`
+(bei PRs nur Build-Validierung). Verteil-Paket `deploy/` (image-basiertes `docker-compose.yml` mit
+Volume + `.env.example` + `ANLEITUNG.md`). Lizenz proprietär (`LIZENZ.md`, Nutzung auf Anfrage,
+Image privat → Gemeinden brauchen GitHub-Token `read:packages`). **Release auslösen:**
+`git tag vX.Y.Z && git push --tags`. Stand/Details: `WHITE-LABEL.md`.
 
 ## Anmerkungen (Zeichnen/Text)
 `useDrawing.ts` kapselt Canvas-Striche (Stift/Marker/Radierer) + Text-Anmerkungen (localStorage
@@ -194,6 +198,7 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 | 18.06.2026 | chore/blueprint-angleichen | An Blueprint angeglichen: PROJEKTPLAN.md + docs/ (entscheidungen, testkonzept, konfigurationsmanagement); Vitest-Unit-Tests für transpose.ts + chordpro.ts (30 Tests); CI (GitHub Actions: lint+build+test); Issue-Vorlagen + Projects-Board |
 | 18.06.2026 | feature/white-label-runtime | White-Label Phase A+B: Laufzeit-Branding (site.json auf Volume, `GET /api/site-config` + `/api/site-logo`, Client wendet Farben/Name/Logo an); Admin-Einstellungsseite (`PUT /api/site-config`, CT-Admin-Recht, Logo-Upload/Farben/CCLI per Klick); Farb-Utils + 7 Tests |
 | 18.06.2026 | feature/white-label-manifest | White-Label Phase C: PWA-Manifest dynamisch (`GET /api/manifest.webmanifest` aus dem Branding, `manifest:false` im vite-plugin-pwa, fester Link in index.html); `config/branding.ts` entfernt (Defaults nun in `DEFAULT_SITE_CONFIG`) |
+| 18.06.2026 | feature/white-label-deploy | White-Label Phase D: Release-Workflow (Tag `v*` → privates GHCR-Image, PR = nur Build-Check); `deploy/`-Paket (image-basiertes compose + .env.example + ANLEITUNG.md); Volume `worship-data`/`musik-data` für Branding-Persistenz; Lizenz `LIZENZ.md` (proprietär, auf Anfrage) |
 
 ## So startest du die App lokal
 ```
@@ -224,6 +229,9 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   - Cookie: bewusst **ohne `secure`**-Flag (LAN läuft über HTTP; sonst speichert der
     Browser das Session-Cookie nicht → „nicht angemeldet" nach Login).
   - `trust proxy` ist in Produktion gesetzt (für späteren HTTPS-Tunnel).
+  - **Branding-Volume (seit Phase D):** `docker-compose.yml` mountet `worship-data:/app/data`
+    (Laufzeit-Branding `site.json`). Beim Re-Deploy das Volume behalten – sonst sind die per
+    Einstellungsseite gesetzten Werte nach dem Neubau weg (fallen zurück auf ECG-Defaults).
 - **So lokal starten:** `npm run dev:server` UND `npm run dev:client` (beide!). Der Vite-
   Dev-Proxy leitet `/api` an `localhost:3001` weiter.
 - **Bekannte Datenlücke:** Nicht alle Arrangements haben eine `.chordpro`-Datei (manche nur

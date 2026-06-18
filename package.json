@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Worship Charts PWA für die ECG Donrath – Chord Charts aus ChurchTools",
+  "license": "UNLICENSED",
   "workspaces": [
     "client",
     "server",
