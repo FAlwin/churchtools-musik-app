@@ -23,6 +23,9 @@ import { CenterMessage } from '../components/CenterMessage';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddItemSheet } from '../components/AddItemSheet';
 import { ItemActionSheet } from '../components/ItemActionSheet';
+import { Icon } from '../components/icons';
+import { NoteTile } from '../components/NoteTile';
+import { ACCENTS } from '../utils/constants';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
@@ -219,7 +222,8 @@ export function Setlist({
       <NavBar
         title={service.name}
         subtitle={`${service.weekday}, ${service.day}. ${service.month} · ${service.time}`}
-        left={<IconButton onClick={onBack}>‹</IconButton>}
+        back={onBack}
+        backLabel="Termine"
         right={
           canEdit && items.length > 0 && !isLoading && !isError ? (
             <IconButton
@@ -228,9 +232,8 @@ export function Setlist({
                 setEditMode((v) => !v);
               }}
               title={editMode ? 'Fertig' : 'Ablauf bearbeiten'}
-              style={{ fontSize: 18 }}
             >
-              {editMode ? '✓' : '✎'}
+              <Icon name={editMode ? 'check' : 'pencil'} size={20} stroke={2.2} />
             </IconButton>
           ) : undefined
         }
@@ -266,7 +269,7 @@ export function Setlist({
             {items.map((item) => {
               if (item.isHeader) {
                 return (
-                  <div key={item.id} className={styles.header}>
+                  <div key={item.id} className={styles.sectionBand}>
                     {item.title}
                   </div>
                 );
@@ -277,28 +280,26 @@ export function Setlist({
                 const song = item.song;
                 const savedKey = localStorage.getItem(`worship_key_${song.id}`);
                 const dispKey = savedKey || song.targetKey;
+                const transposed = song.originalKey !== dispKey;
                 return (
-                  <div key={item.id} className={styles.row} onClick={() => onSelect(idx)}>
+                  <button key={item.id} className={styles.songRow} onClick={() => onSelect(idx)}>
                     <div className={styles.num}>{idx + 1}</div>
+                    <NoteTile size={38} accent={ACCENTS[idx % ACCENTS.length]} />
                     <div className={styles.info}>
                       <div className={styles.name}>{song.title}</div>
-                      <div className={styles.chips}>
-                        <span className={styles.chipKey}>
-                          {song.originalKey}
-                          {song.originalKey !== dispKey && (
-                            <>
-                              <span className={styles.toArr}>→</span>
-                              {dispKey}
-                            </>
-                          )}
-                        </span>
-                        {song.bpm !== null && <span className={styles.chipBpm}>♩ {song.bpm}</span>}
-                        {song.timeSig && <span className={styles.timeSig}>{song.timeSig}</span>}
+                      <div className={styles.sub}>
+                        {song.bpm !== null && <span>♩ {song.bpm}</span>}
+                        {song.bpm !== null && song.timeSig && <span className={styles.dotSep}>·</span>}
+                        {song.timeSig && <span>{song.timeSig}</span>}
                       </div>
                       <ResponsibleLine entries={item.responsible} />
                     </div>
-                    <span className={styles.arr}>›</span>
-                  </div>
+                    <span className={styles.keyPill}>
+                      {transposed && <span className={styles.keyOrig}>{song.originalKey}</span>}
+                      {dispKey}
+                    </span>
+                    <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
+                  </button>
                 );
               }
               return (
