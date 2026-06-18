@@ -33,11 +33,11 @@
 
 // Dark Mode
 html[data-theme='dark'] {
-  --bg: #16212a;
-  --surface2: #1e2a35;
-  --surface3: #283744;
-  --border: rgba(255, 255, 255, 0.08);
-  --hair: rgba(255, 255, 255, 0.06);
+  --bg: #0f1822; // dunklere Basis → Karten/Leisten heben sich klar ab
+  --surface2: #1e2a35; // Karten / Listen
+  --surface3: #2b3a49; // Sekundärflächen, etwas heller
+  --border: rgba(255, 255, 255, 0.11);
+  --hair: rgba(255, 255, 255, 0.09);
 
   --text: #f4f7f9;
   --text2: #9db0bf;
@@ -49,8 +49,8 @@ html[data-theme='dark'] {
 
   --chord: #f6a552;
 
-  --nav-bg: rgba(22, 33, 42, 0.82);
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --nav-bg: rgba(32, 45, 58, 0.85); // Leisten heller als die Basis → klar abgesetzt
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 // SCHRIFTEN

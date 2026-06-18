@@ -45,8 +45,8 @@
   color: #fff;
 }
 .save {
-  background: var(--orange);
-  color: #fff;
+  background: #fff;
+  color: var(--blue);
   &:disabled {
     opacity: 0.5;
     cursor: default;
@@ -54,8 +54,8 @@
 }
 
 .error {
-  background: rgba(235, 94, 40, 0.12);
-  color: var(--orange);
+  background: rgba(178, 34, 71, 0.12);
+  color: var(--red);
   font-size: 13px;
   font-weight: 600;
   padding: 8px 14px;
@@ -125,8 +125,8 @@
 
 .reset {
   background: transparent;
-  border: 1.5px solid rgba(235, 94, 40, 0.4);
-  color: var(--orange);
+  border: 1.5px solid var(--border);
+  color: var(--blue-ink);
   height: 38px;
   padding: 0 12px;
   border-radius: 10px;

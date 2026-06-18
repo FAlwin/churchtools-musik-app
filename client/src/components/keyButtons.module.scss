@@ -54,9 +54,9 @@
   height: 40px;
   margin-top: 8px;
   border-radius: 10px;
-  border: 1.5px solid rgba(235, 94, 40, 0.3);
+  border: 1.5px solid var(--border);
   background: transparent;
-  color: var(--orange);
+  color: var(--blue-ink);
   font-weight: 600;
   cursor: pointer;
   font-size: 13px;
@@ -71,8 +71,9 @@
 }
 
 .capoShape {
-  color: var(--chord);
-  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  font-weight: 700;
+  font-family: var(--ui);
 }
 
 .capoSounds {

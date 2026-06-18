@@ -113,7 +113,7 @@
   width: 32px;
   height: 30px;
   border-radius: 8px;
-  border: 1.5px solid rgba(235, 94, 40, 0.3);
+  border: 1.5px solid rgba(178, 34, 71, 0.35);
   background: var(--surface2);
   cursor: pointer;
   font-size: 13px;
@@ -121,11 +121,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--orange);
+  color: var(--red);
   transition: all 0.1s;
   flex-shrink: 0;
 
   &:hover {
-    background: rgba(235, 94, 40, 0.08);
+    background: rgba(178, 34, 71, 0.08);
   }
 }
