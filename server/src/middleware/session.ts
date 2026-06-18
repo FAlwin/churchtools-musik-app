@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { HttpError } from './errorHandler.js';
+import { getCapabilities } from '../services/churchtools.js';
 
 const COOKIE_NAME = 'ct_session';
 
@@ -41,5 +42,17 @@ export function requireSession(req: Request, _res: Response, next: NextFunction)
     throw new HttpError(401, 'Nicht angemeldet.');
   }
   req.ctCookie = cookie;
+  next();
+}
+
+/**
+ * Middleware (nach requireSession): nur ChurchTools-Administratoren dürfen weiter.
+ * Schützt das Schreiben der Branding-Einstellungen.
+ */
+export async function requireAdmin(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  const caps = await getCapabilities(req.ctCookie as string);
+  if (!caps.isAdmin) {
+    throw new HttpError(403, 'Nur Administratoren dürfen die Einstellungen ändern.');
+  }
   next();
 }

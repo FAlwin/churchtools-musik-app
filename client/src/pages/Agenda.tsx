@@ -23,6 +23,10 @@ interface AgendaProps {
   onSelect: (service: Service) => void;
   onLogout: () => void;
   onShowSongs?: () => void;
+  /** Nur für Admins gesetzt: öffnet die Branding-Einstellungen. */
+  onShowSettings?: () => void;
+  /** Gemeinde-Name (Laufzeit-Branding) für den Untertitel. */
+  orgName: string;
   themePref: ThemePref;
   setThemePref: (t: ThemePref) => void;
   wakePref: boolean;
@@ -40,6 +44,8 @@ export function Agenda({
   onSelect,
   onLogout,
   onShowSongs,
+  onShowSettings,
+  orgName,
   themePref,
   setThemePref,
   wakePref,
@@ -89,7 +95,7 @@ export function Agenda({
     <Screen>
       <NavBar
         title="Gottesdienste"
-        subtitle="ECG Donrath"
+        subtitle={orgName}
         right={
           <>
             {onShowSongs && (
@@ -150,6 +156,18 @@ export function Agenda({
                 {currentFont.label}
               </span>
             </button>
+            {onShowSettings && (
+              <button
+                className={styles.mmItem}
+                onClick={() => {
+                  onShowSettings();
+                  setShowSettings(false);
+                }}
+              >
+                <span>Branding (Admin)</span>
+                <span className={styles.fontValue}>›</span>
+              </button>
+            )}
           </div>
         </>
       )}

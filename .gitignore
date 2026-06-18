@@ -24,5 +24,9 @@ npm-debug.log*
 # Test / Coverage
 coverage/
 
+# Laufzeit-Branding (White-Label) – pro Instanz, nicht committen
+data/
+server/data/
+
 # versehentliche shared-Build-Artefakte
 shared/types/*.js

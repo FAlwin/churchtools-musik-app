@@ -1,16 +1,18 @@
 import { useState } from 'react';
+import type { SiteConfig } from '@shared/types/index';
 import { Screen } from '../components/Screen';
 import { Spinner } from '../components/Spinner';
-import { branding } from '../config/branding';
 import styles from './Login.module.scss';
 
 interface LoginProps {
   /** Wird mit den Zugangsdaten aufgerufen. In Schritt 8 echte Anmeldung. */
   onLogin: (email: string, password: string) => Promise<void> | void;
+  /** Laufzeit-Branding (Name, Logo, Org, CCLI). */
+  site: SiteConfig;
 }
 
-/** Anmelde-Screen mit ECG-Logo und ChurchTools-Zugangsdaten. */
-export function Login({ onLogin }: LoginProps) {
+/** Anmelde-Screen mit Gemeinde-Logo und ChurchTools-Zugangsdaten. */
+export function Login({ onLogin, site }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,9 +33,9 @@ export function Login({ onLogin }: LoginProps) {
   return (
     <Screen style={{ justifyContent: 'center', alignItems: 'center', overflowY: 'auto' }}>
       <div className={styles.wrap}>
-        <img className={styles.logo} src={branding.logo} alt={branding.orgName} />
-        <div className={styles.name}>{branding.appName}</div>
-        <div className={styles.sub}>{branding.orgName}</div>
+        <img className={styles.logo} src={site.logoDataUrl ?? '/logo.png'} alt={site.orgName} />
+        <div className={styles.name}>{site.appName}</div>
+        <div className={styles.sub}>{site.orgName}</div>
         <form className={styles.form} onSubmit={submit}>
           <div className={styles.field}>
             <label className={styles.label}>E-Mail</label>

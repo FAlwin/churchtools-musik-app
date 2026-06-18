@@ -34,6 +34,23 @@ nicht nötig. DSM-Ports (5000/5001) bleiben geschlossen.
 **Begründung:** Kein Risiko, von SongSelect bezogene Originale zu überschreiben;
 jederzeit auf das Original zurückführbar.
 
+## White-Label: Laufzeit-Branding in einer JSON-Datei (statt DB)
+**Entscheidung:** Name/Logo/Farben/CCLI werden zur Laufzeit aus `site.json` auf einem
+persistenten Docker-Volume gelesen/geschrieben (`SITE_CONFIG_PATH`), nicht in einer Datenbank.
+Das Logo liegt als base64-Data-URL in derselben Datei und wird über `GET /api/site-logo`
+als Bild ausgeliefert.
+**Begründung:** Bleibt der „keine DB"-Linie treu (siehe oben). Eine einzelne kleine Datei
+genügt für die wenigen Branding-Werte einer Instanz, übersteht Updates und ist leicht zu sichern.
+**Folge:** Ein gemeinsames Docker-Image für alle Gemeinden – Branding kommt zur Laufzeit,
+kein Neubau pro Gemeinde.
+
+## White-Label: Admin-Schutz über ChurchTools-Recht
+**Entscheidung:** Nur ChurchTools-Administratoren dürfen das Branding ändern. Das maßgebliche
+Recht ist konfigurierbar (`ADMIN_PERMISSION`, Default `churchcore:administer persons`).
+**Begründung:** Keine zweite Passwortverwaltung; konsistent zur restlichen rechtebewussten UI.
+**Offen:** Das exakte Admin-Recht variiert je CT-Instanz und sollte vor dem Ausrollen an eine
+fremde Gemeinde an deren Instanz verifiziert werden.
+
 ## Schrift/Spalten gesperrt bei vorhandenen Anmerkungen
 **Entscheidung:** Solange Anmerkungen existieren, sind Schriftgröße/Spaltenzahl gesperrt.
 **Begründung:** Anmerkungen sind pixelbasiert (Canvas). Würde der Text neu umbrechen,
