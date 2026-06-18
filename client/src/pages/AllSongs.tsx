@@ -1,30 +1,27 @@
 import { useState } from 'react';
 import type { SongLibraryEntry } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
-import { NavBar, IconButton } from '../components/NavBar';
+import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
+import { Icon } from '../components/icons';
+import { NoteTile } from '../components/NoteTile';
+import { ACCENTS } from '../utils/constants';
 import type { SongUsageMap } from '../services/churchtoolsApi';
 import styles from './AllSongs.module.scss';
 
 interface AllSongsProps {
   songs: SongLibraryEntry[];
-  /** Nutzungsdaten je Song-ID (lädt im Hintergrund nach). */
   usage?: SongUsageMap;
   usageLoading?: boolean;
-  /** Statistik (Häufigkeit/zuletzt + entsprechende Sortierung) anzeigen? */
   showStats?: boolean;
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
   onSelect: (entry: SongLibraryEntry) => void;
-  /** Zurück zur Übersicht – nur wenn der Nutzer Abläufe sehen darf. */
-  onBack?: () => void;
-  onLogout?: () => void;
 }
 
 type Sort = 'name' | 'count' | 'recent';
 
-/** Formatiert ein ISO-Datum als TT.MM.JJJJ (oder „noch nie"). */
 function fmtDate(iso: string | null): string {
   if (!iso) return 'noch nie';
   const [y, m, d] = iso.split('-');
@@ -41,8 +38,6 @@ export function AllSongs({
   isError,
   onRetry,
   onSelect,
-  onBack,
-  onLogout,
 }: AllSongsProps) {
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<Sort>('name');
@@ -59,52 +54,37 @@ export function AllSongs({
       : [...songs]
   ).sort((a, b) => {
     if (sort === 'count') return countOf(b) - countOf(a) || a.name.localeCompare(b.name, 'de');
-    if (sort === 'recent') return (lastOf(b) ?? '').localeCompare(lastOf(a) ?? '') || a.name.localeCompare(b.name, 'de');
+    if (sort === 'recent')
+      return (lastOf(b) ?? '').localeCompare(lastOf(a) ?? '') || a.name.localeCompare(b.name, 'de');
     return a.name.localeCompare(b.name, 'de');
   });
 
+  const SORTS: { id: Sort; label: string }[] = [
+    { id: 'name', label: 'A–Z' },
+    { id: 'count', label: 'Häufigkeit' },
+    { id: 'recent', label: 'Zuletzt' },
+  ];
+
   return (
     <Screen>
-      <NavBar
-        title="Lieder"
-        subtitle="ECG Donrath"
-        left={onBack ? <IconButton onClick={onBack}>‹</IconButton> : undefined}
-        right={
-          onLogout ? (
-            <IconButton onClick={onLogout} title="Abmelden" style={{ fontSize: 18 }}>
-              ⏻
-            </IconButton>
-          ) : undefined
-        }
-      />
+      <NavBar title="Lieder" />
 
       <div className={styles.searchWrap}>
-        <input
-          className={styles.search}
-          placeholder="Lied oder Autor suchen…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
+        <div className={styles.search}>
+          <Icon name="search" size={18} stroke={2} className={styles.searchIcon} />
+          <input placeholder="Lied oder Autor suchen…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
         {showStats && (
-          <div className={styles.sortRow}>
-            <button
-              className={`${styles.sortBtn}${sort === 'name' ? ' ' + styles.sortOn : ''}`}
-              onClick={() => setSort('name')}
-            >
-              A–Z
-            </button>
-            <button
-              className={`${styles.sortBtn}${sort === 'count' ? ' ' + styles.sortOn : ''}`}
-              onClick={() => setSort('count')}
-            >
-              Häufigkeit
-            </button>
-            <button
-              className={`${styles.sortBtn}${sort === 'recent' ? ' ' + styles.sortOn : ''}`}
-              onClick={() => setSort('recent')}
-            >
-              Zuletzt
-            </button>
+          <div className={styles.seg}>
+            {SORTS.map((s) => (
+              <button
+                key={s.id}
+                className={`${styles.segBtn}${sort === s.id ? ' ' + styles.segOn : ''}`}
+                onClick={() => setSort(s.id)}
+              >
+                {s.label}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -115,37 +95,40 @@ export function AllSongs({
         ) : isError ? (
           <CenterMessage icon="⚠️" text="Lieder konnten nicht geladen werden." onRetry={onRetry} />
         ) : filtered.length === 0 ? (
-          <CenterMessage icon="🎵" text={query ? 'Keine Treffer.' : 'Keine Lieder gefunden.'} />
+          <CenterMessage icon="🎵" text={query ? `Keine Treffer für „${q}"` : 'Keine Lieder gefunden.'} />
         ) : (
-          <div className={styles.list}>
-            <div className={styles.count}>{filtered.length} Lieder</div>
-            {filtered.map((s) => (
-              <div key={s.songId} className={styles.row} onClick={() => onSelect(s)}>
-                <div className={styles.info}>
-                  <div className={styles.nameRow}>
-                    <span className={styles.name}>{s.name}</span>
-                    {s.key && <span className={styles.keyTag}>{s.key}</span>}
-                  </div>
-                  {s.author && <div className={styles.author}>{s.author}</div>}
-                  {showStats && (
-                    <div className={styles.stats}>
-                      {usageLoading ? (
-                        <span className={styles.statsLoading}>Statistik lädt…</span>
-                      ) : (
+          <div className={styles.group}>
+            <div className={styles.groupHdr}>{filtered.length} Lieder</div>
+            <div className={styles.cardList}>
+              {filtered.map((s, i) => (
+                <button key={s.songId} className={styles.row} onClick={() => onSelect(s)}>
+                  <NoteTile accent={ACCENTS[i % ACCENTS.length]} />
+                  <div className={styles.info}>
+                    <div className={styles.name}>{s.name}</div>
+                    <div className={styles.sub}>
+                      {s.author && <span>{s.author}</span>}
+                      {showStats && (
                         <>
-                          <span className={styles.countBadge}>{countOf(s)}×&nbsp;gespielt</span>
-                          <span className={styles.last}>zuletzt {fmtDate(lastOf(s))}</span>
+                          {s.author && <span className={styles.dotSep}>·</span>}
+                          {usageLoading ? (
+                            <span>Statistik lädt…</span>
+                          ) : (
+                            <span>
+                              {countOf(s)}× · zuletzt {fmtDate(lastOf(s))}
+                            </span>
+                          )}
                         </>
                       )}
                     </div>
-                  )}
-                </div>
-                <span className={styles.arr}>›</span>
-              </div>
-            ))}
+                  </div>
+                  {s.key && <span className={styles.keyPill}>{s.key}</span>}
+                  <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
+                </button>
+              ))}
+            </div>
           </div>
         )}
-        <div style={{ height: 20 }} />
+        <div style={{ height: 16 }} />
       </Scroll>
     </Screen>
   );

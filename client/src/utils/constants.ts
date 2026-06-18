@@ -19,6 +19,9 @@ export const FONTS: FontOption[] = [
 // Beliebige Farben gibt es zusätzlich über den freien Farbwähler in der Werkzeugleiste.
 export const DRAW_COLORS = ['#EB5E28', '#00616E', '#14110F'];
 
+/** Rotierende Akzentfarben der Noten-Kacheln (ChurchTools-Markenpalette). */
+export const ACCENTS = ['#0061A1', '#12B2A2', '#F2820C', '#B22247'];
+
 export function fontFamilyById(id: string): string {
   return (FONTS.find((f) => f.id === id) ?? FONTS[0]).family;
 }

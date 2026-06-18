@@ -1,164 +1,143 @@
 .searchWrap {
-  padding: 12px 16px 0;
+  padding: 14px 16px 2px;
+  flex-shrink: 0;
+}
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface3);
+  border-radius: 8px;
+  padding: 9px 12px;
+
+  input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    color: var(--text);
+    font-family: var(--ui);
+
+    &::placeholder {
+      color: var(--text3);
+    }
+  }
+}
+.searchIcon {
+  color: var(--text3);
   flex-shrink: 0;
 }
 
-.search {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+.seg {
+  display: flex;
+  background: var(--surface3);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+  margin-top: 10px;
+}
+.segBtn {
+  flex: 1;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text2);
+  padding: 7px 8px;
+  border-radius: 5px;
+  transition: all 0.14s;
+}
+.segOn {
   background: var(--surface2);
   color: var(--text);
-  font-family: inherit;
-  font-size: 16px;
-
-  &:focus {
-    outline: none;
-    border-color: var(--teal);
-  }
+  box-shadow: 0 1px 3px rgba(22, 33, 42, 0.12);
+}
+:global(html[data-theme='dark']) .segOn {
+  background: #3a4d5e;
 }
 
-.sortRow {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
+.group {
+  margin: 18px 16px 0;
 }
-
-.sortBtn {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: transparent;
+.groupHdr {
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--text2);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.sortOn {
-  background: var(--teal);
-  border-color: var(--teal);
-  color: var(--cream);
-}
-
-.list {
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.count {
-  font-size: 12px;
-  color: var(--text3);
-  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 2px 2px 4px;
+  letter-spacing: 0.04em;
+  padding: 0 4px 8px;
+}
+.cardList {
+  background: var(--surface2);
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  gap: 13px;
+  width: 100%;
+  padding: 13px 14px;
+  background: none;
+  border: none;
   cursor: pointer;
+  text-align: left;
   transition: background 0.12s;
 
-  @media (hover: hover) {
-    &:hover {
-      background: var(--surface3);
-    }
+  & + & {
+    box-shadow: inset 0 1px 0 var(--hair);
   }
   &:active {
     background: var(--surface3);
-    transform: scale(0.99);
   }
 }
-
 .info {
   flex: 1;
   min-width: 0;
 }
-
-.nameRow {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-
 .name {
-  font-size: 17px;
-  font-weight: 500;
+  font-size: 15.5px;
+  font-weight: 600;
   color: var(--text);
+  letter-spacing: -0.1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-// Tonart dezent (nur kleine, unaufdringliche Angabe)
-.keyTag {
-  flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text3);
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.author {
-  font-size: 13px;
+.sub {
+  font-size: 12.5px;
   color: var(--text2);
   margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
 }
-
-// Statistik klar lesbar
-.stats {
-  display: flex;
-  flex-wrap: wrap;
+.dotSep {
+  color: var(--text3);
+  font-weight: 400;
+}
+.keyPill {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.countBadge {
-  background: rgba(0, 97, 110, 0.1);
-  color: var(--teal);
-  border-radius: 6px;
-  padding: 2px 9px;
+  background: var(--surface3);
+  border-radius: 5px;
+  padding: 3px 9px;
   font-size: 13px;
   font-weight: 700;
-  white-space: nowrap;
-}
-
-:global(html[data-theme='dark']) .countBadge {
-  color: var(--teal-light);
-}
-
-.last {
-  font-size: 13px;
-  color: var(--text2);
-  white-space: nowrap;
-}
-
-.statsLoading {
-  font-size: 13px;
-  color: var(--text3);
-}
-
-.arr {
-  color: var(--teal-light);
-  font-size: 18px;
+  color: var(--text);
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.chev {
+  color: var(--text3);
+  display: flex;
+  flex-shrink: 0;
+  margin-left: -2px;
 }

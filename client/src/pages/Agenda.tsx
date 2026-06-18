@@ -3,6 +3,7 @@ import type { Service } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
+import { Icon } from '../components/icons';
 import { usePastServices } from '../hooks/useServices';
 import styles from './Agenda.module.scss';
 
@@ -14,54 +15,98 @@ interface AgendaProps {
   onSelect: (service: Service) => void;
 }
 
-/** Übersicht der Gottesdienste (kommend + vergangen). */
+const MONTHS = [
+  'Januar',
+  'Februar',
+  'März',
+  'April',
+  'Mai',
+  'Juni',
+  'Juli',
+  'August',
+  'September',
+  'Oktober',
+  'November',
+  'Dezember',
+];
+
+/** Gruppiert Gottesdienste nach „Monat JJJJ" (Reihenfolge der Eingabe bleibt erhalten). */
+function groupByMonth(list: Service[]): { key: string; items: Service[] }[] {
+  const groups: { key: string; items: Service[] }[] = [];
+  for (const s of list) {
+    const [y, m] = s.date.split('-');
+    const key = `${MONTHS[Number(m) - 1]} ${y}`;
+    let g = groups.find((x) => x.key === key);
+    if (!g) {
+      g = { key, items: [] };
+      groups.push(g);
+    }
+    g.items.push(s);
+  }
+  return groups;
+}
+
+/** Übersicht der Gottesdienste (kommend + vergangen), nach Monat gruppiert. */
 export function Agenda({ services, isLoading, isError, onRetry, onSelect }: AgendaProps) {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [monthsBack, setMonthsBack] = useState(1);
 
   const today = new Date().toISOString().slice(0, 10);
   const pastQuery = usePastServices(monthsBack, tab === 'past');
-  const upcoming = services.filter((s) => s.date >= today);
+  const upcoming = services
+    .filter((s) => s.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date));
   const past = [...(pastQuery.data ?? [])]
     .filter((s) => s.date < today)
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  function card(s: Service) {
+  function row(s: Service) {
     return (
-      <div key={s.id} className={styles.card} onClick={() => onSelect(s)}>
+      <button key={s.id} className={styles.card} onClick={() => onSelect(s)}>
         <div className={styles.dateBadge}>
           <span className={styles.day}>{s.day}</span>
           <span className={styles.month}>{s.month}</span>
         </div>
         <div className={styles.info}>
           <div className={styles.svcName}>
-            {s.weekday} · {s.name}
+            {s.name}
             {s.subtitle && <span className={styles.subtitlePart}> · {s.subtitle}</span>}
           </div>
           <div className={styles.meta}>
+            <span>{s.weekday}</span>
+            <span className={styles.dotSep}>·</span>
             <span>{s.time}</span>
-            <span>{s.location}</span>
-            <span>{s.songCount} Songs</span>
+            <span className={styles.dotSep}>·</span>
+            <span>{s.songCount} Lieder</span>
           </div>
         </div>
-        <span className={styles.arr}>›</span>
-      </div>
+        <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
+      </button>
     );
+  }
+
+  function groups(list: Service[]) {
+    return groupByMonth(list).map((g) => (
+      <div key={g.key} className={styles.group}>
+        <div className={styles.groupHdr}>{g.key}</div>
+        <div className={styles.cardList}>{g.items.map(row)}</div>
+      </div>
+    ));
   }
 
   return (
     <Screen>
       <NavBar title="Termine" />
 
-      <div className={styles.tabs}>
+      <div className={styles.seg}>
         <button
-          className={`${styles.tab}${tab === 'upcoming' ? ' ' + styles.tabOn : ''}`}
+          className={`${styles.segBtn}${tab === 'upcoming' ? ' ' + styles.segOn : ''}`}
           onClick={() => setTab('upcoming')}
         >
           Kommende
         </button>
         <button
-          className={`${styles.tab}${tab === 'past' ? ' ' + styles.tabOn : ''}`}
+          className={`${styles.segBtn}${tab === 'past' ? ' ' + styles.segOn : ''}`}
           onClick={() => setTab('past')}
         >
           Vergangene
@@ -77,7 +122,7 @@ export function Agenda({ services, isLoading, isError, onRetry, onSelect }: Agen
           ) : upcoming.length === 0 ? (
             <CenterMessage icon="📅" text="Keine kommenden Gottesdienste." />
           ) : (
-            <div className={styles.list}>{upcoming.map(card)}</div>
+            groups(upcoming)
           )
         ) : pastQuery.isLoading ? (
           <CenterMessage loading text="Vergangene werden geladen…" />
@@ -92,7 +137,7 @@ export function Agenda({ services, isLoading, isError, onRetry, onSelect }: Agen
             {past.length === 0 ? (
               <CenterMessage icon="📅" text="Keine vergangenen Gottesdienste im Zeitraum." />
             ) : (
-              <div className={styles.list}>{past.map(card)}</div>
+              groups(past)
             )}
             <button
               className={styles.loadMore}
@@ -103,6 +148,7 @@ export function Agenda({ services, isLoading, isError, onRetry, onSelect }: Agen
             </button>
           </>
         )}
+        <div style={{ height: 16 }} />
       </Scroll>
     </Screen>
   );
