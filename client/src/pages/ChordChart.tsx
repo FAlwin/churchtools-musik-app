@@ -82,7 +82,8 @@ export function ChordChart({
   });
 
   const [drawMode, setDrawMode] = useState(false);
-  const [drawColor, setDrawColor] = useState(DRAW_COLORS[0]);
+  // Standardfarbe = adaptives Schwarz/Weiß (Creme im Dunkelmodus), passend zur Palette.
+  const [drawColor, setDrawColor] = useState(() => (theme === 'dark' ? '#FFFCF2' : '#14110F'));
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
   const [textSize, setTextSize] = useState(20);
   const [docClearSignal, setDocClearSignal] = useState(0); // löst Löschen im Dokument-Viewer aus

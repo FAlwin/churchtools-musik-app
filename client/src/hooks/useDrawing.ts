@@ -16,6 +16,17 @@ interface Point {
   y: number;
 }
 
+/** Ist die Leinwand komplett leer (kein einziger gezeichneter Pixel)? */
+function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
+  const ctx = canvas.getContext('2d');
+  if (!ctx || !canvas.width || !canvas.height) return true;
+  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] !== 0) return false; // ein nicht-transparenter Pixel reicht
+  }
+  return true;
+}
+
 /**
  * Kapselt das Zeichnen auf einer Canvas-Ebene über dem Chart:
  * Stift/Marker/Radierer, Text-Anmerkungen, Persistenz pro Song in localStorage.
@@ -67,19 +78,36 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const saved = localStorage.getItem(`worship_draw_${id}`);
-    setHasInk(!!saved);
-    if (saved) {
-      const img = new Image();
-      img.onload = () => {
-        canvasRef.current?.getContext('2d')?.drawImage(img, 0, 0);
-      };
-      img.src = saved;
+    if (!saved) {
+      setHasInk(false);
+      return;
     }
+    const img = new Image();
+    img.onload = () => {
+      const c = canvasRef.current;
+      const cx = c?.getContext('2d');
+      if (!c || !cx) return;
+      cx.drawImage(img, 0, 0);
+      // Alt-Einträge mit leerer Leinwand selbst heilen (sonst dauerhaft „gesperrt").
+      if (isCanvasBlank(c)) {
+        setHasInk(false);
+        localStorage.removeItem(`worship_draw_${id}`);
+      } else {
+        setHasInk(true);
+      }
+    };
+    img.src = saved;
   }, []);
 
   const saveDrawing = useCallback((id: number) => {
     const canvas = canvasRef.current;
     if (!canvas || canvas.width === 0) return;
+    // Leere Leinwand NICHT speichern – sonst gilt das Lied fälschlich als „angemerkt"
+    // und der Bearbeiten-Modus bliebe gesperrt, obwohl nichts gezeichnet wurde.
+    if (isCanvasBlank(canvas)) {
+      localStorage.removeItem(`worship_draw_${id}`);
+      return;
+    }
     try {
       localStorage.setItem(`worship_draw_${id}`, canvas.toDataURL('image/png', 0.7));
     } catch {
@@ -116,7 +144,7 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
   /** Aktuellen Zustand (Canvas-Bild + Text-Liste) als Schnappschuss. */
   function captureSnapshot() {
     const canvas = canvasRef.current;
-    const img = canvas && canvas.width ? canvas.toDataURL('image/png', 0.7) : null;
+    const img = canvas && canvas.width && !isCanvasBlank(canvas) ? canvas.toDataURL('image/png', 0.7) : null;
     return { img, texts: textObjects };
   }
 

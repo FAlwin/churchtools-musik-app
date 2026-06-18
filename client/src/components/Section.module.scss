@@ -8,15 +8,17 @@
   }
 }
 
-// Abschnittslabel: deutlich sichtbarer Marker (blau, fett, Großbuchstaben).
+// Abschnittslabel: deutlicher Marker als blaue Pille (Größe skaliert mit dem Zoom).
 .secLabel {
   display: inline-block;
-  font-size: 14.5px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: 10px;
+  padding: 3px 10px;
+  border-radius: 6px;
   color: var(--blue-ink);
+  background: var(--blue-soft);
   font-family: var(--ui);
   break-after: avoid;
   -webkit-column-break-after: avoid;

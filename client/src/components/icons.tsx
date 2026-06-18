@@ -30,7 +30,9 @@ export type IconName =
   | 'trash'
   | 'heading'
   | 'plus'
-  | 'more';
+  | 'more'
+  | 'marker'
+  | 'eraser';
 
 interface IconProps {
   name: IconName;
@@ -229,6 +231,21 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
           <circle cx="5" cy="12" r="1.7" />
           <circle cx="12" cy="12" r="1.7" />
           <circle cx="19" cy="12" r="1.7" />
+        </svg>
+      );
+    case 'marker':
+      return (
+        <svg {...p}>
+          <path d="M3 21h6" />
+          <path d="M8.5 17.5l-3 1 1-3 9-9a2.1 2.1 0 0 1 3 3l-9 9Z" />
+          <path d="M13.5 6.5l3 3" />
+        </svg>
+      );
+    case 'eraser':
+      return (
+        <svg {...p}>
+          <path d="M4 20h16" />
+          <path d="M14.5 6.4l3.1 3.1a2 2 0 0 1 0 2.8L13 17H8.5l-3.6-3.6a2 2 0 0 1 0-2.8l6.8-4.2a2 2 0 0 1 2.8 0Z" />
         </svg>
       );
     default:
