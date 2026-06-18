@@ -263,6 +263,7 @@ export default function App() {
             wakePref={settings.wakePref}
             onToggleWake={settings.toggleWake}
             isAdmin={isAdmin}
+            userName={auth.user ? `${auth.user.firstName} ${auth.user.lastName}`.trim() : undefined}
             onLogout={() => auth.logout()}
           />
         )}

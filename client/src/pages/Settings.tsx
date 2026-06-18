@@ -17,6 +17,8 @@ interface SettingsProps {
   wakePref: boolean;
   onToggleWake: () => void;
   isAdmin: boolean;
+  /** Name des angemeldeten ChurchTools-Kontos (für die Profilkarte). */
+  userName?: string;
   onLogout: () => void;
 }
 
@@ -35,6 +37,7 @@ export function Settings({
   wakePref,
   onToggleWake,
   isAdmin,
+  userName,
   onLogout,
 }: SettingsProps) {
   const [showOrg, setShowOrg] = useState(false);
@@ -58,7 +61,7 @@ export function Settings({
           <img className={styles.profileLogo} src={logo} alt="" />
           <div>
             <div className={styles.profileName}>{site.orgName}</div>
-            <div className={styles.profileSub}>Worship-Team</div>
+            {userName && <div className={styles.profileSub}>Angemeldet als {userName}</div>}
           </div>
         </div>
 
