@@ -25,7 +25,11 @@ export type IconName =
   | 'columns'
   | 'people'
   | 'clock'
-  | 'pin';
+  | 'pin'
+  | 'link'
+  | 'trash'
+  | 'heading'
+  | 'plus';
 
 interface IconProps {
   name: IconName;
@@ -186,6 +190,32 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11Z" />
           <circle cx="12" cy="10" r="2.6" />
+        </svg>
+      );
+    case 'link':
+      return (
+        <svg {...p}>
+          <path d="M9.5 14.5l5-5" />
+          <path d="M11.5 7.5l1-1a4 4 0 0 1 5.66 5.66l-1 1" />
+          <path d="M12.5 16.5l-1 1a4 4 0 0 1-5.66-5.66l1-1" />
+        </svg>
+      );
+    case 'trash':
+      return (
+        <svg {...p}>
+          <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" />
+        </svg>
+      );
+    case 'heading':
+      return (
+        <svg {...p}>
+          <path d="M6 4v16M18 4v16M6 12h12" />
+        </svg>
+      );
+    case 'plus':
+      return (
+        <svg {...p}>
+          <path d="M12 5v14M5 12h14" />
         </svg>
       );
     default:
