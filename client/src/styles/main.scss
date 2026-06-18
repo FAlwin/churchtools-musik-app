@@ -14,7 +14,7 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: $font-sans;
+  font-family: var(--ui);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -48,5 +48,27 @@ button {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+// Bottom-Sheet (von unten einfahren)
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+// Dropdown-Menü (Chart-Titelmenü)
+@keyframes menuPop {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 }
