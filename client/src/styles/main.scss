@@ -27,9 +27,23 @@ button {
   font-family: inherit;
   outline: none;
   -webkit-tap-highlight-color: transparent;
+}
 
-  &:focus {
-    outline: none;
+// Barrierefreiheit: sichtbarer Fokusring NUR bei Tastatur-Navigation (nicht bei Maus/Touch).
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+// Bewegungsreduzierung respektieren: Animationen/Übergänge praktisch ausschalten.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
 

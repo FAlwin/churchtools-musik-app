@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DrawTool, TextAnnotation } from '../types/index';
+import { hasOpaquePixel } from '../utils/canvas';
 
 interface UseDrawingArgs {
   songId: number;
@@ -20,11 +21,7 @@ interface Point {
 function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
   const ctx = canvas.getContext('2d');
   if (!ctx || !canvas.width || !canvas.height) return true;
-  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  for (let i = 3; i < data.length; i += 4) {
-    if (data[i] !== 0) return false; // ein nicht-transparenter Pixel reicht
-  }
-  return true;
+  return !hasOpaquePixel(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
 }
 
 /**

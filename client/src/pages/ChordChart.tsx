@@ -340,7 +340,7 @@ export function ChordChart({
       <>
         {/* Header */}
         <div className={styles.hdr}>
-          <button className={styles.ibtn} onClick={goBack}>
+          <button className={styles.ibtn} onClick={goBack} aria-label="Zurück">
             <Icon name="chev-left" size={22} stroke={2.4} />
           </button>
           <div className={styles.center}>
@@ -783,7 +783,7 @@ export function ChordChart({
 
         {/* Footer */}
         <div className={styles.ftr}>
-          <button className={styles.navBtn} onClick={prev} disabled={atStart}>
+          <button className={styles.navBtn} onClick={prev} disabled={atStart} aria-label="Zurück / vorige Seite">
             <Icon name="chev-left" size={22} stroke={2.4} />
           </button>
           <div className={styles.ftrCenter}>
@@ -808,7 +808,7 @@ export function ChordChart({
               </div>
             ) : null}
           </div>
-          <button className={styles.navBtn} onClick={next} disabled={atEnd}>
+          <button className={styles.navBtn} onClick={next} disabled={atEnd} aria-label="Weiter / nächste Seite">
             <Icon name="chev-right" size={22} stroke={2.4} />
           </button>
         </div>
