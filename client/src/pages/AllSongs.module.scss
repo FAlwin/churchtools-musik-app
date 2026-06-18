@@ -123,6 +123,18 @@
   color: var(--text3);
   font-weight: 400;
 }
+// Statistik-Pille (Häufigkeit bzw. Zuletzt) – deutlich sichtbar
+.stat {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue-ink);
+  background: var(--blue-soft);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-variant-numeric: tabular-nums;
+}
 .keyPill {
   display: inline-flex;
   align-items: center;

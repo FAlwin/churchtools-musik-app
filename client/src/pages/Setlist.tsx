@@ -25,7 +25,6 @@ import { AddItemSheet } from '../components/AddItemSheet';
 import { ItemActionSheet } from '../components/ItemActionSheet';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
-import { ACCENTS } from '../utils/constants';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
@@ -82,7 +81,7 @@ function RespIcon() {
   );
 }
 
-/** Zeile der Zuständigen: besetzte als Name, offene Dienste als orange Chip mit „?". */
+/** Zeile der Zuständigen: besetzte als Name, offene Dienste rot mit „?". */
 function ResponsibleLine({ entries }: { entries: AgendaItem['responsible'] }) {
   if (entries.length === 0) return null;
   return (
@@ -284,7 +283,7 @@ export function Setlist({
                 return (
                   <button key={item.id} className={styles.songRow} onClick={() => onSelect(idx)}>
                     <div className={styles.num}>{idx + 1}</div>
-                    <NoteTile size={38} accent={ACCENTS[idx % ACCENTS.length]} />
+                    <NoteTile size={38} />
                     <div className={styles.info}>
                       <div className={styles.name}>{song.title}</div>
                       <div className={styles.sub}>

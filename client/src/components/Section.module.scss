@@ -8,15 +8,15 @@
   }
 }
 
+// SongSelect-Stil: Abschnittslabel fett, schwarz, Großbuchstaben – ohne farbige Fläche.
 .secLabel {
   display: inline-block;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: 5px;
-  margin-bottom: 11px;
+  margin-bottom: 8px;
+  color: var(--text);
   font-family: var(--ui);
   break-after: avoid;
   -webkit-column-break-after: avoid;
@@ -24,32 +24,4 @@
 
 .gap {
   height: 0.5em;
-}
-
-// Farbgebung je Abschnittstyp (ChurchTools-Look)
-.verse .secLabel {
-  color: var(--blue-ink);
-  background: var(--blue-soft);
-}
-.chorus .secLabel {
-  color: var(--orange);
-  background: rgba(242, 130, 12, 0.12);
-}
-.bridge .secLabel {
-  color: var(--teal);
-  background: rgba(18, 178, 162, 0.13);
-}
-.pre_chorus .secLabel {
-  color: var(--red);
-  background: rgba(178, 34, 71, 0.1);
-}
-.intro .secLabel,
-.outro .secLabel,
-.instrumental .secLabel {
-  color: var(--text2);
-  background: var(--surface3);
-}
-.tag .secLabel {
-  color: var(--orange);
-  background: rgba(242, 130, 12, 0.1);
 }

@@ -260,8 +260,6 @@ export default function App() {
             theme={settings.theme}
             themePref={settings.themePref}
             setThemePref={settings.setThemePref}
-            fontId={settings.fontId}
-            setFontId={settings.setFontId}
             wakePref={settings.wakePref}
             onToggleWake={settings.toggleWake}
             isAdmin={isAdmin}

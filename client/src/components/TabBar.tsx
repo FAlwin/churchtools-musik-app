@@ -3,10 +3,10 @@ import styles from './TabBar.module.scss';
 
 export type TabId = 'termine' | 'lieder' | 'mehr';
 
-const TAB_META: Record<TabId, { label: string; icon: IconName; iconOn: IconName }> = {
-  termine: { label: 'Termine', icon: 'calendar', iconOn: 'calendar-fill' },
-  lieder: { label: 'Lieder', icon: 'music', iconOn: 'music-fill' },
-  mehr: { label: 'Mehr', icon: 'cog', iconOn: 'cog-fill' },
+const TAB_META: Record<TabId, { label: string; icon: IconName }> = {
+  termine: { label: 'Termine', icon: 'calendar' },
+  lieder: { label: 'Lieder', icon: 'music' },
+  mehr: { label: 'Mehr', icon: 'more' },
 };
 
 interface TabBarProps {
@@ -29,7 +29,7 @@ export function TabBar({ active, tabs, onChange }: TabBarProps) {
             className={`${styles.tab}${on ? ' ' + styles.on : ''}`}
             onClick={() => onChange(id)}
           >
-            <Icon name={on ? meta.iconOn : meta.icon} size={24} stroke={1.9} />
+            <Icon name={meta.icon} size={24} stroke={1.9} />
             <span>{meta.label}</span>
           </button>
         );

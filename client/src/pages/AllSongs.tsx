@@ -5,7 +5,6 @@ import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
-import { ACCENTS } from '../utils/constants';
 import type { SongUsageMap } from '../services/churchtoolsApi';
 import styles from './AllSongs.module.scss';
 
@@ -100,26 +99,21 @@ export function AllSongs({
           <div className={styles.group}>
             <div className={styles.groupHdr}>{filtered.length} Lieder</div>
             <div className={styles.cardList}>
-              {filtered.map((s, i) => (
+              {filtered.map((s) => (
                 <button key={s.songId} className={styles.row} onClick={() => onSelect(s)}>
-                  <NoteTile accent={ACCENTS[i % ACCENTS.length]} />
+                  <NoteTile />
                   <div className={styles.info}>
                     <div className={styles.name}>{s.name}</div>
-                    <div className={styles.sub}>
-                      {s.author && <span>{s.author}</span>}
-                      {showStats && (
-                        <>
-                          {s.author && <span className={styles.dotSep}>·</span>}
-                          {usageLoading ? (
-                            <span>Statistik lädt…</span>
-                          ) : (
-                            <span>
-                              {countOf(s)}× · zuletzt {fmtDate(lastOf(s))}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </div>
+                    {s.author && <div className={styles.sub}>{s.author}</div>}
+                    {showStats && sort !== 'name' && (
+                      <span className={styles.stat}>
+                        {usageLoading
+                          ? 'Statistik lädt…'
+                          : sort === 'count'
+                            ? `${countOf(s)}× gespielt`
+                            : `zuletzt ${fmtDate(lastOf(s))}`}
+                      </span>
+                    )}
                   </div>
                   {s.key && <span className={styles.keyPill}>{s.key}</span>}
                   <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />

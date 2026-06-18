@@ -6,7 +6,6 @@ import { NavBar } from '../components/NavBar';
 import { Sheet } from '../components/Sheet';
 import { Spinner } from '../components/Spinner';
 import { Icon } from '../components/icons';
-import { FONTS } from '../utils/constants';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
 import styles from './Settings.module.scss';
 
@@ -15,8 +14,6 @@ interface SettingsProps {
   theme: Theme;
   themePref: ThemePref;
   setThemePref: (t: ThemePref) => void;
-  fontId: string;
-  setFontId: (id: string) => void;
   wakePref: boolean;
   onToggleWake: () => void;
   isAdmin: boolean;
@@ -35,18 +32,14 @@ export function Settings({
   theme,
   themePref,
   setThemePref,
-  fontId,
-  setFontId,
   wakePref,
   onToggleWake,
   isAdmin,
   onLogout,
 }: SettingsProps) {
-  const [showFonts, setShowFonts] = useState(false);
   const [showOrg, setShowOrg] = useState(false);
   const [orgDraft, setOrgDraft] = useState(site.orgName);
   const update = useUpdateSiteConfig();
-  const currentFont = FONTS.find((f) => f.id === fontId) ?? FONTS[0];
   const logo = theme === 'dark' ? '/logo-rund-dunkel.png' : '/logo-rund-hell.png';
 
   function saveOrg() {
@@ -87,12 +80,6 @@ export function Settings({
                 ))}
               </div>
             </div>
-            <button className={`${styles.setRow} ${styles.tappable}`} onClick={() => setShowFonts(true)}>
-              <span className={styles.setLabel}>Schriftart (Charts)</span>
-              <span className={styles.setValue} style={{ fontFamily: currentFont.family }}>
-                {currentFont.label}
-              </span>
-            </button>
           </div>
         </div>
 
@@ -147,32 +134,6 @@ export function Settings({
 
         <div className={styles.version}>Churchtools Musik App · v2.0</div>
       </Scroll>
-
-      {showFonts && (
-        <Sheet title="Schriftart" onClose={() => setShowFonts(false)}>
-          {FONTS.map((f) => (
-            <button
-              key={f.id}
-              className={`${styles.fontRow}${fontId === f.id ? ' ' + styles.fontActive : ''}`}
-              onClick={() => {
-                setFontId(f.id);
-                setShowFonts(false);
-              }}
-            >
-              <span className={styles.fontSample} style={{ fontFamily: f.family }}>
-                Ag
-              </span>
-              <span className={styles.fontMeta}>
-                <span className={styles.fontName} style={{ fontFamily: f.family }}>
-                  {f.label}
-                </span>
-                <span className={styles.fontDesc}>{f.desc}</span>
-              </span>
-              {fontId === f.id && <Icon name="check" size={18} className={styles.fontCheck} />}
-            </button>
-          ))}
-        </Sheet>
-      )}
 
       {showOrg && (
         <Sheet title="Organisation / Name" onClose={() => setShowOrg(false)}>
