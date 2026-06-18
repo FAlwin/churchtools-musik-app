@@ -6,7 +6,7 @@ export type TabId = 'termine' | 'lieder' | 'mehr';
 const TAB_META: Record<TabId, { label: string; icon: IconName }> = {
   termine: { label: 'Termine', icon: 'calendar' },
   lieder: { label: 'Lieder', icon: 'music' },
-  mehr: { label: 'Mehr', icon: 'more' },
+  mehr: { label: 'Mehr', icon: 'cog-fill' },
 };
 
 interface TabBarProps {
