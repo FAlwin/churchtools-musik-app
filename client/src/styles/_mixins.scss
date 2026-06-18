@@ -1,0 +1,56 @@
+// Wiederverwendbare Layout-Bausteine (ChurchTools-Listen).
+// In Komponenten: `@use '../styles/mixins' as m;` und z. B. `@include m.card-list;`.
+
+// Weiße, abgerundete Listen-Karte mit Schatten.
+@mixin card-list {
+  background: var(--surface2);
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+// Gruppen-Überschrift in Großbuchstaben.
+@mixin group-header {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 4px 8px;
+}
+
+// Antippbare Listen-Zeile mit Haarlinien-Trenner.
+@mixin list-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 13px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  transition: background 0.12s;
+
+  & + & {
+    box-shadow: inset 0 1px 0 var(--hair);
+  }
+  &:active {
+    background: var(--surface3);
+  }
+}
+
+// Tonart-Pille rechts in einer Zeile.
+@mixin key-pill {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface3);
+  border-radius: 5px;
+  padding: 3px 9px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}

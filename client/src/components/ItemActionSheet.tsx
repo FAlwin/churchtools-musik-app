@@ -3,6 +3,7 @@ import type { AgendaItem, AgendaServiceOption } from '@shared/types/index';
 import { Sheet } from './Sheet';
 import { SongSearch } from './SongSearch';
 import { ResponsibleField } from './ResponsibleField';
+import { Icon } from './icons';
 import styles from './ItemActionSheet.module.scss';
 
 interface ItemActionSheetProps {
@@ -74,10 +75,12 @@ export function ItemActionSheet({
           {!isSong && (
             <>
               <button className={styles.choice} onClick={() => setMode('rename')}>
-                ✏️ Umbenennen
+                <Icon name="pencil" size={20} className={styles.choiceIcon} />
+                <span>Umbenennen</span>
               </button>
               <button className={styles.choice} onClick={() => setMode('song')}>
-                🎵 Lied verknüpfen
+                <Icon name="music" size={20} className={styles.choiceIcon} />
+                <span>Lied verknüpfen</span>
               </button>
             </>
           )}
@@ -87,11 +90,13 @@ export function ItemActionSheet({
               disabled={busy}
               onClick={() => run(onUnlinkSong, 'Verknüpfung aufheben fehlgeschlagen.')}
             >
-              🔗 Verknüpfung aufheben
+              <Icon name="link" size={20} className={styles.choiceIcon} />
+              <span>Verknüpfung aufheben</span>
             </button>
           )}
           <button className={styles.choice} onClick={() => setMode('responsible')}>
-            👤 Verantwortlich
+            <Icon name="people" size={20} className={styles.choiceIcon} />
+            <span>Verantwortlich</span>
           </button>
           <button
             className={`${styles.choice} ${styles.danger}`}
@@ -100,7 +105,8 @@ export function ItemActionSheet({
               onRequestDelete();
             }}
           >
-            🗑 Löschen
+            <Icon name="trash" size={20} className={styles.choiceIcon} />
+            <span>Löschen</span>
           </button>
         </div>
       )}

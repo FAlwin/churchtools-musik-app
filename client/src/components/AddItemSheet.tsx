@@ -3,6 +3,7 @@ import type { AgendaServiceOption } from '@shared/types/index';
 import { Sheet } from './Sheet';
 import { SongSearch } from './SongSearch';
 import { ResponsibleField } from './ResponsibleField';
+import { Icon } from './icons';
 import styles from './AddItemSheet.module.scss';
 
 interface AddItemSheetProps {
@@ -49,9 +50,18 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
 
       {mode === 'choose' && (
         <div className={styles.choices}>
-          <button className={styles.choice} onClick={() => setMode('song')}>🎵 Lied</button>
-          <button className={styles.choice} onClick={() => setMode('header')}>▸ Überschrift</button>
-          <button className={styles.choice} onClick={() => setMode('text')}>≡ Punkt / Text</button>
+          <button className={styles.choice} onClick={() => setMode('song')}>
+            <Icon name="music" size={20} className={styles.choiceIcon} />
+            <span>Lied</span>
+          </button>
+          <button className={styles.choice} onClick={() => setMode('header')}>
+            <Icon name="heading" size={20} className={styles.choiceIcon} />
+            <span>Überschrift</span>
+          </button>
+          <button className={styles.choice} onClick={() => setMode('text')}>
+            <Icon name="type" size={20} className={styles.choiceIcon} />
+            <span>Punkt / Text</span>
+          </button>
         </div>
       )}
 

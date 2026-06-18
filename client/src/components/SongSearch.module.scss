@@ -8,9 +8,9 @@
   margin: 0;
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--chord-dim);
-  border: 1px solid rgba(235, 94, 40, 0.35);
-  color: var(--chord);
+  background: rgba(178, 34, 71, 0.1);
+  border: 1px solid rgba(178, 34, 71, 0.3);
+  color: var(--red);
   font-size: 13px;
   font-weight: 600;
 }
@@ -28,7 +28,7 @@
 
   &:focus {
     outline: none;
-    border-color: var(--teal);
+    border-color: var(--blue);
   }
 }
 

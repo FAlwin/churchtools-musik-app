@@ -14,7 +14,7 @@
   gap: 8px;
   padding: 12px 14px;
   padding-top: max(12px, env(safe-area-inset-top));
-  background: var(--teal);
+  background: var(--blue);
   flex-shrink: 0;
 }
 
@@ -23,8 +23,8 @@
   min-width: 0;
   font-size: 16px;
   font-weight: 700;
-  color: var(--cream);
-  font-family: 'Montserrat', sans-serif;
+  color: #fff;
+  font-family: var(--ui);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -38,15 +38,15 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
 }
 .cancel {
   background: rgba(0, 0, 0, 0.22);
-  color: var(--cream);
+  color: #fff;
 }
 .save {
-  background: var(--orange);
-  color: #fff;
+  background: #fff;
+  color: var(--blue);
   &:disabled {
     opacity: 0.5;
     cursor: default;
@@ -54,8 +54,8 @@
 }
 
 .error {
-  background: rgba(235, 94, 40, 0.12);
-  color: var(--orange);
+  background: rgba(178, 34, 71, 0.12);
+  color: var(--red);
   font-size: 13px;
   font-weight: 600;
   padding: 8px 14px;
@@ -125,13 +125,13 @@
 
 .reset {
   background: transparent;
-  border: 1.5px solid rgba(235, 94, 40, 0.4);
-  color: var(--orange);
+  border: 1.5px solid var(--border);
+  color: var(--blue-ink);
   height: 38px;
   padding: 0 12px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
 }

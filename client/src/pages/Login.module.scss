@@ -3,39 +3,37 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 400px;
-  padding: 40px 28px;
+  max-width: 360px;
+  padding: 40px 30px;
   margin: 0 auto;
 }
 
 .logo {
-  width: 96px;
-  height: 96px;
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 22px;
-  box-shadow: 0 6px 24px rgba(0, 97, 110, 0.22);
+  margin-bottom: 20px;
 }
 
 .name {
-  font-size: 26px;
+  font-size: 23px;
   font-weight: 700;
-  letter-spacing: -0.3px;
-  color: var(--teal);
-  font-family: 'Candara', 'Trebuchet MS', sans-serif;
+  letter-spacing: -0.4px;
+  color: var(--text);
+  text-align: center;
 }
 
 .sub {
   font-size: 14px;
   color: var(--text2);
-  margin-top: 4px;
-  margin-bottom: 44px;
+  margin-top: 3px;
+  margin-bottom: 36px;
   font-weight: 500;
 }
 
 .form {
   width: 100%;
-  max-width: 380px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -44,34 +42,34 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
+  padding-left: 2px;
 }
 
 .input {
-  height: 52px;
-  border-radius: 12px;
+  height: 48px;
+  border-radius: 8px;
   border: 1.5px solid var(--border);
   background: var(--surface2);
   color: var(--text);
-  padding: 0 16px;
+  padding: 0 14px;
   font-size: 16px;
   outline: none;
-  transition: border-color 0.18s;
-  font-family: 'Montserrat', inherit;
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s;
   width: 100%;
-  box-shadow: 0 1px 4px rgba(0, 97, 110, 0.07);
+  font-family: var(--ui);
 
   &:focus {
-    border-color: var(--teal);
-    box-shadow: 0 0 0 3px rgba(0, 97, 110, 0.1);
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-soft);
   }
   &::placeholder {
     color: var(--text3);
@@ -80,36 +78,37 @@
 
 .error {
   font-size: 13px;
-  color: var(--orange);
+  color: var(--red);
   font-weight: 600;
   text-align: center;
 }
 
 .btn {
-  height: 52px;
-  border-radius: 12px;
+  height: 48px;
+  border-radius: 8px;
   border: none;
-  background: var(--teal);
-  color: var(--cream);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  background: var(--blue);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 4px;
+  margin-top: 6px;
   transition:
-    opacity 0.15s,
+    filter 0.15s,
     transform 0.1s;
-  font-family: 'Montserrat', inherit;
-  text-transform: uppercase;
+  font-family: var(--ui);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
-    opacity: 0.88;
+    filter: brightness(1.06);
   }
   &:active {
-    transform: scale(0.97);
+    transform: scale(0.98);
   }
   &:disabled {
-    opacity: 0.45;
+    opacity: 0.6;
     cursor: default;
   }
 }

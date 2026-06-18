@@ -12,13 +12,13 @@
 }
 
 .lyricsOnly {
-  font-family: var(--chart-font, 'JetBrains Mono', monospace);
+  font-family: var(--ui);
   line-height: 1.5;
   color: var(--text);
 }
 
 .plain {
-  font-family: var(--chart-font, 'JetBrains Mono', monospace);
+  font-family: var(--ui);
   line-height: 1.55;
   color: var(--text);
   white-space: pre-wrap; // bricht lange Zeilen um, behält Einrückung
@@ -27,9 +27,9 @@
 }
 
 .chordOnly {
-  font-family: var(--chart-font, 'JetBrains Mono', monospace);
+  font-family: var(--ui);
   font-weight: 700;
-  color: var(--chord);
+  color: var(--text); // SongSelect-Stil: Akkorde dick + schwarz
   letter-spacing: 0.05em;
   line-height: 2;
 
@@ -53,9 +53,9 @@
 }
 
 .cChord {
-  font-family: var(--chart-font, 'JetBrains Mono', monospace);
+  font-family: var(--ui);
   font-weight: 700;
-  color: var(--chord);
+  color: var(--text); // SongSelect-Stil: Akkorde dick + schwarz
   line-height: 1.25;
   white-space: nowrap;
   display: block;
@@ -63,7 +63,7 @@
 }
 
 .cLyric {
-  font-family: var(--chart-font, 'JetBrains Mono', monospace);
+  font-family: var(--ui);
   color: var(--text);
   line-height: 1.45;
   white-space: pre-wrap; // langer Text umbricht an Leerzeichen, Akkord bleibt an der Silbe

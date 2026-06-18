@@ -2,7 +2,7 @@
   position: absolute;
   inset: 0;
   z-index: 110;
-  background: rgba(20, 17, 15, 0.5);
+  background: var(--scrim);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
@@ -23,7 +23,7 @@
   font-weight: 700;
   color: var(--text);
   margin-bottom: 7px;
-  font-family: 'Candara', 'Trebuchet MS', sans-serif;
+  font-family: var(--ui);
   text-align: center;
 }
 
@@ -48,7 +48,7 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Montserrat', inherit;
+  font-family: var(--ui);
   transition: opacity 0.12s;
 
   &:active {
@@ -62,6 +62,6 @@
 }
 
 .danger {
-  background: var(--orange);
-  color: var(--cream);
+  background: var(--red);
+  color: #fff;
 }

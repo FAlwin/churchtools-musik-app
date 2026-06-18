@@ -1,42 +1,61 @@
-// ── Globale Design-Variablen – ECG Donrath ──────────────────
-// Einzige Quelle für Farben, Abstände, Breakpoints.
+// ── Globale Design-Variablen – ChurchTools-Look ─────────────
+// Einzige Quelle für Farben, Schriften, Breakpoints.
 // Komponenten importieren diese Datei, statt Werte zu duplizieren.
+// Theme-Umschaltung über [data-theme] auf <html>.
 
-// Farben (Light Mode) – als CSS Custom Properties, damit Dark Mode
-// per [data-theme] umgeschaltet werden kann.
+// Farben (Light Mode)
 :root {
-  --bg: #fffcf2;
-  --surface: #00616e;
-  --surface2: #ffffff;
-  --surface3: #f0ede3;
-  --border: rgba(0, 97, 110, 0.13);
-  --text: #14110f;
-  --text2: #363636;
-  --text3: #a0a0a0;
-  --chord: #eb5e28;
-  --chord-dim: rgba(235, 94, 40, 0.1);
-  --teal: #00616e;
-  --teal-light: #5898a0;
-  --orange: #eb5e28;
-  --sage: #ccd7c5;
-  --near-black: #14110f;
-  --cream: #fffcf2;
+  --bg: #f2f3f5; // Seitenhintergrund
+  --surface2: #ffffff; // Karten / Listen / Header
+  --surface3: #ebedf0; // Sekundärflächen (Suchfeld, Kacheln, Segmente, Pills)
+  --border: #e4e7eb; // Rahmen / Input-Border
+  --hair: #ebedf0; // Haarlinien-Trenner (1px)
+
+  --text: #16212a; // Primärtext (ChurchTools-Dunkel)
+  --text2: #5c6b7a; // Sekundärtext
+  --text3: #9aa7b2; // Tertiär / inaktive Icons / Platzhalter
+
+  --blue: #0061a1; // Primärfarbe (Buttons, Links, aktive Tabs, Akzentbalken)
+  --blue-ink: #0061a1;
+  --blue-soft: rgba(0, 97, 161, 0.1); // Blau-Flächen (Datums-Badge, Verse-Label)
+  --red: #b22247; // Destruktiv (Abmelden, Löschen, offene Dienste)
+
+  --seg-on: #ffffff; // aktives Segment / Toggle-Hintergrund
+  --track-off: #c9cfd6; // Toggle-Schiene (aus)
+  --scrim: rgba(15, 22, 28, 0.5); // Overlay hinter Sheets/Dialogen
+
+  --nav-bg: rgba(255, 255, 255, 0.86); // Header / Tab-Bar / Footer (mit Blur)
+  --shadow: 0 1px 3px rgba(22, 33, 42, 0.07), 0 1px 2px rgba(22, 33, 42, 0.04); // Karten-Schatten
+  --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 // Dark Mode
 html[data-theme='dark'] {
-  --bg: #0f1718;
-  --surface2: #1a2422;
-  --surface3: #243230;
-  --border: rgba(162, 202, 207, 0.15);
-  --text: #fffcf2;
-  --text2: #a2cacf;
-  --text3: #5d7479;
+  --bg: #0f1822; // dunklere Basis → Karten/Leisten heben sich klar ab
+  --surface2: #1e2a35; // Karten / Listen
+  --surface3: #2b3a49; // Sekundärflächen, etwas heller
+  --border: rgba(255, 255, 255, 0.11);
+  --hair: rgba(255, 255, 255, 0.09);
+
+  --text: #f4f7f9;
+  --text2: #9db0bf;
+  --text3: #67788a;
+
+  --blue: #54a6e8;
+  --blue-ink: #54a6e8;
+  --blue-soft: rgba(84, 166, 232, 0.14);
+
+  --seg-on: #3a4d5e;
+  --track-off: #3a4856;
+
+  --nav-bg: rgba(32, 45, 58, 0.85); // Leisten heller als die Basis → klar abgesetzt
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
-// SCSS-Konstanten (Schriftfamilien, Breakpoints)
-$font-sans: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
-$font-display: 'Candara', 'Trebuchet MS', sans-serif;
+// SCHRIFTEN
+// UI ist der System-Font (bewusst wie ChurchTools). $font-sans = Spiegelung als SCSS-Konstante.
+$font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-display: $font-sans;
 $font-mono: 'JetBrains Mono', monospace;
 $font-serif: 'Merriweather', serif;
 

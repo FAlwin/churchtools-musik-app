@@ -1,0 +1,40 @@
+.tabbar {
+  display: flex;
+  align-items: stretch;
+  background: var(--nav-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--hair);
+  flex-shrink: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 20;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 4px 7px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text3);
+  transition: color 0.15s;
+
+  span {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+  }
+
+  &:active {
+    opacity: 0.6;
+  }
+}
+
+.on {
+  color: var(--blue-ink);
+}

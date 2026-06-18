@@ -26,7 +26,11 @@ export function Section({ section, semitones, fontSize, flat = false, lyricsOnly
 
   return (
     <div className={`${styles.sectionBlock} ${typeClass}`}>
-      {section.label && <div className={styles.secLabel}>{section.label}</div>}
+      {section.label && (
+        <div className={styles.secLabel} style={{ fontSize: Math.max(12, Math.round(fontSize * 0.8)) }}>
+          {section.label}
+        </div>
+      )}
       {section.lines.map((ln, i) =>
         ln === '' ? (
           <div key={i} className={styles.gap} />

@@ -2,15 +2,17 @@
   background: var(--bg);
 }
 
-// ── Header ──
+// ── Header (ChurchTools-Stil: hell / blur) ──
 .hdr {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   padding-top: max(10px, env(safe-area-inset-top));
-  background: var(--teal);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  background: var(--nav-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--hair);
   flex-shrink: 0;
 }
 
@@ -18,21 +20,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 11px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
   border: none;
   background: transparent;
-  color: var(--cream);
-  font-size: 22px;
+  color: var(--blue-ink);
+  font-size: 20px;
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.12s;
 
   @media (hover: hover) {
     &:hover {
-      background: rgba(255, 252, 242, 0.12);
+      background: var(--surface3);
     }
+  }
+  &:active {
+    background: var(--surface3);
   }
 }
 
@@ -47,7 +52,7 @@
 .titleBtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   max-width: 100%;
   background: transparent;
   border: none;
@@ -56,19 +61,20 @@
 }
 
 .songTitle {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  color: var(--cream);
-  font-family: 'Candara', 'Trebuchet MS', sans-serif;
+  color: var(--text);
+  font-family: var(--ui);
+  letter-spacing: -0.2px;
 }
 
 .titleChevron {
   font-size: 11px;
-  color: rgba(255, 252, 242, 0.6);
+  color: var(--text3);
   line-height: 1;
   flex-shrink: 0;
 }
@@ -78,57 +84,59 @@
   align-items: center;
   gap: 8px;
   margin-top: 3px;
-  min-height: 28px; // feste Höhe, damit die Leiste bei „Nur Text" nicht schrumpft
+  min-height: 26px; // feste Höhe, damit die Leiste bei „Nur Text" nicht schrumpft
 }
 
 .keyBtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(0, 0, 0, 0.22);
+  background: var(--surface3);
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   padding: 4px 10px;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: opacity 0.12s;
 
-  &:hover {
-    background: rgba(0, 0, 0, 0.35);
+  &:active {
+    opacity: 0.7;
   }
 }
 
 .keyLabel {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--chord);
+  font-family: var(--ui);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 .keyChevron {
   font-size: 11px;
-  color: rgba(255, 252, 242, 0.55);
+  color: var(--text3);
   line-height: 1;
 }
 
 .capoBadge {
   font-size: 11px;
   font-weight: 700;
-  color: var(--cream);
-  background: var(--orange);
-  border-radius: 7px;
+  color: #fff;
+  background: var(--blue);
+  border-radius: 6px;
   padding: 3px 9px;
   white-space: nowrap;
 }
 
 // Tonart als reine Anzeige (Ändern läuft übers Lied-Menü)
 .keyChip {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 16px;
+  font-family: var(--ui);
+  font-size: 14px;
   font-weight: 700;
-  color: var(--chord);
-  background: rgba(0, 0, 0, 0.22);
-  border-radius: 8px;
-  padding: 2px 9px;
+  color: var(--text);
+  background: var(--surface3);
+  border-radius: 5px;
+  padding: 3px 9px;
+  font-variant-numeric: tabular-nums;
 }
 
 // kennzeichnet, welche Version gerade angezeigt wird
@@ -137,9 +145,9 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--cream);
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 6px;
+  color: var(--text2);
+  background: var(--surface3);
+  border-radius: 5px;
   padding: 2px 7px;
 }
 
@@ -148,7 +156,7 @@
   align-items: center;
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 252, 242, 0.6);
+  color: var(--text2);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -156,34 +164,38 @@
 .right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
-// Klarere, größere Werkzeug-Buttons im Header
+// Werkzeug-Buttons im Header (ChurchTools-Stil)
 .toolBtn {
-  height: 38px;
-  min-width: 42px;
-  padding: 0 10px;
+  height: 34px;
+  min-width: 36px;
+  padding: 0 8px;
   border: none;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.22);
-  color: var(--cream);
-  font-size: 16px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--blue-ink);
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   transition: background 0.12s;
 
   @media (hover: hover) {
     &:hover {
-      background: rgba(0, 0, 0, 0.35);
+      background: var(--surface3);
     }
   }
+  &:active {
+    background: var(--surface3);
+  }
   &.on {
-    background: var(--orange);
+    background: var(--blue);
+    color: #fff;
   }
   &:disabled {
     opacity: 0.5;
@@ -223,7 +235,7 @@
   font-weight: 700;
   font-size: 16px;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
 
   &:disabled {
     opacity: 0.4;
@@ -238,7 +250,7 @@
   inset: 0;
   z-index: 5;
   border-radius: 14px;
-  background: rgba(0, 97, 110, 0.82); // Teal, leicht durchscheinend
+  background: rgba(15, 22, 28, 0.82); // neutraler dunkler Schleier
   display: flex;
   align-items: center;
   justify-content: center;
@@ -250,8 +262,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  color: var(--cream);
-  font-family: 'Montserrat', sans-serif;
+  color: #fff;
+  font-family: var(--ui);
   font-size: 16px;
   font-weight: 800;
 
@@ -286,12 +298,12 @@
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
 
   &.on {
-    background: var(--teal);
-    color: var(--cream);
-    border-color: var(--teal);
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
   }
   &:disabled {
     opacity: 0.4;
@@ -310,7 +322,7 @@
   border-radius: 10px;
   background: var(--surface3);
   color: var(--text);
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -330,7 +342,7 @@
   height: 28px;
   border: none;
   background: transparent;
-  color: rgba(255, 252, 242, 0.6);
+  color: var(--text2);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -338,7 +350,7 @@
   transition:
     background 0.1s,
     color 0.1s;
-  font-family: 'Montserrat', inherit;
+  font-family: var(--ui);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -346,13 +358,13 @@
   // Hover nur auf Geräten mit echter Maus – verhindert „klebenden" Zustand auf Touch
   @media (hover: hover) {
     &:hover {
-      background: rgba(255, 252, 242, 0.15);
-      color: var(--cream);
+      background: var(--surface3);
+      color: var(--text);
     }
   }
   &.on {
-    color: var(--cream);
-    background: rgba(255, 252, 242, 0.22);
+    color: #fff;
+    background: var(--blue);
   }
   &:disabled {
     opacity: 0.5;
@@ -369,8 +381,8 @@
 
 .bpmChip {
   font-size: 11px;
-  color: rgba(255, 252, 242, 0.45);
-  font-family: 'JetBrains Mono', monospace;
+  color: var(--text3);
+  font-family: var(--ui);
   padding: 0 4px;
 }
 
@@ -421,7 +433,7 @@
   background: transparent;
   border-radius: 9px;
   cursor: pointer;
-  font-family: 'Montserrat', inherit;
+  font-family: var(--ui);
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
@@ -432,12 +444,12 @@
     background: var(--surface3);
   }
   &.on {
-    color: var(--teal);
+    color: var(--blue);
   }
 }
 
 .mmCheck {
-  color: var(--teal);
+  color: var(--blue);
   font-weight: 700;
   font-size: 15px;
 }
@@ -450,7 +462,7 @@
 .mmValueActive {
   font-size: 12px;
   font-weight: 700;
-  color: var(--orange);
+  color: var(--blue-ink);
 }
 
 // ── Chart-Bereich: fester Viewport zwischen Header und Footer ──
@@ -548,16 +560,16 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--orange);
+  background: var(--blue);
   color: #fff;
   font-size: 14px;
   font-weight: 800;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   padding: 9px 14px;
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(235, 94, 40, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 97, 161, 0.4);
   animation: fadeIn 0.18s ease both;
 }
 
@@ -593,7 +605,7 @@
   background: transparent;
   border-radius: 10px;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
@@ -618,12 +630,12 @@
   padding: 0 22px;
   border: none;
   border-radius: 11px;
-  background: var(--teal);
-  color: var(--cream);
+  background: var(--blue);
+  color: #fff;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
 }
 
 // ── Annotations-Leinwand ──
@@ -642,7 +654,7 @@
 
 .textObj {
   position: absolute;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   font-weight: 700;
   line-height: 1;
   white-space: pre;
@@ -658,7 +670,7 @@
   width: 19px;
   height: 19px;
   border-radius: 50%;
-  background: var(--orange);
+  background: var(--red);
   color: #fff;
   border: none;
   font-size: 13px;
@@ -677,7 +689,7 @@
   width: 19px;
   height: 19px;
   border-radius: 50%;
-  background: var(--teal);
+  background: var(--blue);
   color: #fff;
   border: none;
   font-size: 11px;
@@ -700,7 +712,7 @@
   background: rgba(20, 17, 15, 0.92);
   border-radius: 8px;
   padding: 5px 10px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   font-weight: 700;
   outline: none;
   min-width: 110px;
@@ -708,15 +720,17 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-// ── Footer ──
+// ── Footer (ChurchTools-Stil: hell / blur) ──
 .ftr {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
-  background: var(--teal);
-  border-top: 1px solid rgba(0, 0, 0, 0.2);
+  padding: 8px 14px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  background: var(--nav-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--hair);
   flex-shrink: 0;
 }
 
@@ -724,24 +738,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 11px;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
   border: none;
-  background: rgba(0, 0, 0, 0.25);
-  color: var(--cream);
+  background: var(--surface3);
+  color: var(--blue-ink);
   font-size: 20px;
   cursor: pointer;
   transition: background 0.12s;
   flex-shrink: 0;
 
   &:disabled {
-    opacity: 0.25;
+    opacity: 0.35;
     cursor: default;
+    color: var(--text3);
   }
   @media (hover: hover) {
     &:not(:disabled):hover {
-      background: rgba(0, 0, 0, 0.4);
+      background: var(--border);
     }
   }
 }
@@ -764,14 +779,14 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(255, 252, 242, 0.3);
+  background: var(--border);
   cursor: pointer;
   transition: all 0.2s;
 
   &.on {
     width: 18px;
     border-radius: 3px;
-    background: var(--orange);
+    background: var(--blue);
   }
 }
 
@@ -785,12 +800,12 @@
 
 .ftrSong {
   font-size: 11px;
-  color: rgba(255, 252, 242, 0.6);
+  color: var(--text2);
   font-weight: 600;
 }
 
 .ftrNext {
   font-size: 14px;
   font-weight: 700;
-  color: var(--cream);
+  color: var(--text);
 }

@@ -1,235 +1,182 @@
+@use '../styles/mixins' as m;
+
 .list {
-  padding: 12px 16px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.row {
+// Abschnitts-Band (Header-Punkt), wie CT-Ablaufplan
+.sectionBand {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 14px 4px 2px;
+}
+
+// Lied-Zeile (Karte mit blauem Akzentbalken)
+.songRow {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 14px;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px 11px 16px;
   background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: none;
+  border-radius: 9px;
+  box-shadow: var(--shadow);
   cursor: pointer;
+  text-align: left;
   transition: background 0.12s;
 
-  &:hover {
-    background: var(--surface3);
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--blue);
   }
   &:active {
     background: var(--surface3);
-    transform: scale(0.99);
   }
 }
 
 .num {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: transparent;
-  border: 1.5px solid var(--teal-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
+  width: 18px;
+  text-align: center;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--teal);
+  color: var(--text3);
   flex-shrink: 0;
-}
-
-:global(html[data-theme='dark']) .num {
-  color: var(--teal-light);
+  font-variant-numeric: tabular-nums;
 }
 
 .info {
   flex: 1;
   min-width: 0;
 }
-
 .name {
-  font-size: 18px;
+  font-size: 15.5px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   color: var(--text);
-}
-
-.chips {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.chipKey {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--chord-dim);
-  border: 1px solid rgba(235, 94, 40, 0.35);
-  border-radius: 6px;
-  padding: 2px 9px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--chord);
-
-  .toArr {
-    color: var(--text3);
-    font-size: 10px;
-  }
-}
-
-.chipBpm {
-  font-size: 14px;
-  color: var(--text2);
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-weight: 500;
-}
-
-.timeSig {
-  font-size: 14px;
-  color: var(--text2);
-}
-
-.arr {
-  color: var(--teal-light);
-  font-size: 16px;
-}
-
-/* Überschrift / Abschnitt im Ablauf */
-.header {
-  margin: 18px 4px 6px;
-  font-size: 15px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text);
-
-  &:first-child {
-    margin-top: 2px;
-  }
-}
-
-/* Sonstiger Ablaufpunkt (Begrüßung, Predigt …) – dezente Kachel, nicht anklickbar */
-.textTile {
-  padding: 13px 14px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
-.textTitle {
-  font-size: 17px;
-  font-weight: 500;
-  color: var(--text);
+  letter-spacing: -0.1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* Zuständige (nur Anzeige, in ChurchTools gepflegt) */
-.resp {
-  margin-top: 5px;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  font-size: 13px;
+.sub {
+  font-size: 12.5px;
   color: var(--text2);
-  line-height: 1.3;
-}
-
-.respIcon {
-  flex-shrink: 0;
-  opacity: 0.85;
   margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+.dotSep {
+  color: var(--text3);
+  font-weight: 400;
 }
 
+.keyPill {
+  @include m.key-pill;
+  gap: 5px;
+}
+.keyOrig {
+  color: var(--text3);
+  font-weight: 600;
+  text-decoration: line-through;
+  font-size: 11.5px;
+}
+.chev {
+  color: var(--text3);
+  display: flex;
+  flex-shrink: 0;
+  margin-left: -2px;
+}
+
+// Text-Punkt (ohne Lied)
+.textTile {
+  padding: 12px 14px;
+  background: var(--surface2);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+}
+.textTitle {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--text2);
+}
+
+// Zuständige
+.resp {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+}
+.respIcon {
+  color: var(--text3);
+  flex-shrink: 0;
+}
 .respList {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 6px;
-}
-
-.respName {
-  /* Komma nur zwischen zwei Namen, nicht vor einem offenen Dienst-Chip. */
-  &:has(+ .respName)::after {
-    content: ',';
-  }
-}
-
-/* Offener Dienst-Platz: orange umrandeter Chip mit „?" – eindeutig „noch unbesetzt". */
-.respOpen {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 8px;
-  border: 1px solid var(--chord);
-  border-radius: 999px;
-  color: var(--chord);
-  font-weight: 700;
+  gap: 4px 7px;
   font-size: 12px;
-  line-height: 1.5;
-  white-space: nowrap;
 }
-
-/* ── Bearbeiten-Modus (Drag & Drop) ───────────────────────── */
-.editHint {
-  padding: 12px 16px 4px;
-  font-size: 13px;
+.respName {
   color: var(--text2);
+  font-weight: 500;
+}
+.respOpen {
+  color: var(--red); // offene Dienste wie in ChurchTools rot
+  font-weight: 700;
 }
 
+// ── Bearbeiten-Modus ──
+.editHint {
+  font-size: 12.5px;
+  color: var(--text2);
+  padding: 12px 16px 4px;
+  line-height: 1.4;
+}
 .editError {
-  margin: 4px 16px 0;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--chord-dim);
-  border: 1px solid rgba(235, 94, 40, 0.35);
-  color: var(--chord);
   font-size: 13px;
+  color: var(--red);
   font-weight: 600;
+  padding: 4px 16px;
 }
 
 .editRow {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 8px;
   background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  /* KEIN touch-action: none auf der ganzen Zeile – sonst lässt sich beim Start
-     auf einem Element nicht scrollen. Nur der Griff (.handle) fängt die Geste. */
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+  padding: 4px 8px 4px 4px;
 }
-
 .editHeaderRow {
-  background: transparent;
-  border-style: dashed;
-
-  .editTitleText {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text3);
-  }
+  background: var(--surface3);
+  box-shadow: none;
 }
-
 .handle {
+  width: 38px;
+  height: 40px;
   border: none;
-  background: transparent;
+  background: none;
   color: var(--text3);
-  font-size: 20px;
-  line-height: 1;
+  font-size: 18px;
   cursor: grab;
-  padding: 4px 6px;
   flex-shrink: 0;
   touch-action: none;
 
@@ -237,25 +184,20 @@
     cursor: grabbing;
   }
 }
-
 .editTitleBtn {
   flex: 1;
-  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  text-align: left;
+  gap: 7px;
+  background: none;
   border: none;
-  background: transparent;
-  color: var(--text);
-  font-family: inherit;
   cursor: pointer;
-  padding: 4px 0;
+  padding: 10px 6px;
+  text-align: left;
+  min-width: 0;
 }
-
 .editTitleText {
   flex: 1;
-  min-width: 0;
   font-size: 15px;
   font-weight: 600;
   color: var(--text);
@@ -263,35 +205,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .editSongTag {
-  flex-shrink: 0;
   font-size: 13px;
-  opacity: 0.8;
-}
-
-.editChevron {
   flex-shrink: 0;
+}
+.editChevron {
   color: var(--text3);
   font-size: 18px;
-  line-height: 1;
+  flex-shrink: 0;
 }
 
 .addBtn {
-  margin: 12px 16px 0;
+  margin: 14px 16px 0;
   width: calc(100% - 32px);
-  padding: 13px;
-  border: 1px dashed var(--teal);
-  border-radius: 12px;
-  background: transparent;
-  color: var(--teal);
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
+  padding: 12px;
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  background: none;
+  color: var(--blue-ink);
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-
-  &:hover {
-    background: var(--surface2);
-  }
 }
-

@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import type { SiteConfig } from '@shared/types/index';
+import type { Theme } from '../types/index';
 import { Screen } from '../components/Screen';
 import { Spinner } from '../components/Spinner';
 import styles from './Login.module.scss';
 
 interface LoginProps {
-  /** Wird mit den Zugangsdaten aufgerufen. In Schritt 8 echte Anmeldung. */
+  /** Wird mit den Zugangsdaten aufgerufen. */
   onLogin: (email: string, password: string) => Promise<void> | void;
-  /** Laufzeit-Branding (Name, Logo, Org, CCLI). */
+  /** Name (fest) + Gemeinde-Name. */
   site: SiteConfig;
+  theme: Theme;
 }
 
-/** Anmelde-Screen mit Gemeinde-Logo und ChurchTools-Zugangsdaten. */
-export function Login({ onLogin, site }: LoginProps) {
+/** Anmelde-Screen mit Logo und ChurchTools-Zugangsdaten. */
+export function Login({ onLogin, site, theme }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,11 @@ export function Login({ onLogin, site }: LoginProps) {
   return (
     <Screen style={{ justifyContent: 'center', alignItems: 'center', overflowY: 'auto' }}>
       <div className={styles.wrap}>
-        <img className={styles.logo} src={site.logoDataUrl ?? '/logo.png'} alt={site.orgName} />
+        <img
+          className={styles.logo}
+          src={theme === 'dark' ? '/logo-rund-dunkel.png' : '/logo-rund-hell.png'}
+          alt={site.orgName}
+        />
         <div className={styles.name}>{site.appName}</div>
         <div className={styles.sub}>{site.orgName}</div>
         <form className={styles.form} onSubmit={submit}>

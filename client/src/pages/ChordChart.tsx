@@ -8,6 +8,7 @@ import { DrawToolbar } from '../components/DrawToolbar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
 import { DocumentView } from '../components/DocumentView';
+import { Icon } from '../components/icons';
 import { saveChordpro, deleteChordpro } from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
@@ -81,7 +82,8 @@ export function ChordChart({
   });
 
   const [drawMode, setDrawMode] = useState(false);
-  const [drawColor, setDrawColor] = useState(DRAW_COLORS[0]);
+  // Standardfarbe = adaptives Schwarz/Weiß (Creme im Dunkelmodus), passend zur Palette.
+  const [drawColor, setDrawColor] = useState(() => (theme === 'dark' ? '#FFFCF2' : '#14110F'));
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
   const [textSize, setTextSize] = useState(20);
   const [docClearSignal, setDocClearSignal] = useState(0); // löst Löschen im Dokument-Viewer aus
@@ -338,8 +340,8 @@ export function ChordChart({
       <>
         {/* Header */}
         <div className={styles.hdr}>
-          <button className={styles.ibtn} onClick={goBack}>
-            ‹
+          <button className={styles.ibtn} onClick={goBack} aria-label="Zurück">
+            <Icon name="chev-left" size={22} stroke={2.4} />
           </button>
           <div className={styles.center}>
             <button className={styles.titleBtn} onClick={() => setShowSongMenu((v) => !v)}>
@@ -381,7 +383,7 @@ export function ChordChart({
                 }}
                 title={docAdjust ? 'Fertig' : 'Anpassen (Zoom)'}
               >
-                {docAdjust ? '✓' : '🔍'}
+                {docAdjust ? <Icon name="check" size={18} stroke={2.4} /> : <Icon name="search" size={18} stroke={2} />}
               </button>
             )}
             {onReload && (
@@ -399,7 +401,7 @@ export function ChordChart({
               }
               title="Anmerkungen"
             >
-              🖍️
+              <Icon name="pencil" size={18} stroke={2.2} />
             </button>
           </div>
         </div>
@@ -678,7 +680,7 @@ export function ChordChart({
                 color: obj.color,
                 pointerEvents: drawMode ? 'all' : 'none',
                 cursor: drawMode ? 'grab' : 'default',
-                outline: obj.id === drawing.selectedTextId ? '2px dashed var(--orange)' : undefined,
+                outline: obj.id === drawing.selectedTextId ? '2px dashed var(--blue)' : undefined,
                 outlineOffset: 4,
               }}
               onPointerDown={drawMode ? (e) => drawing.startDragText(e, obj) : undefined}
@@ -781,29 +783,33 @@ export function ChordChart({
 
         {/* Footer */}
         <div className={styles.ftr}>
-          <button className={styles.navBtn} onClick={prev} disabled={atStart}>
-            ‹
+          <button className={styles.navBtn} onClick={prev} disabled={atStart} aria-label="Zurück / vorige Seite">
+            <Icon name="chev-left" size={22} stroke={2.4} />
           </button>
           <div className={styles.ftrCenter}>
-            <div className={styles.dots}>
-              {songs.map((_, i) => (
-                <div
-                  key={i}
-                  className={`${styles.dot}${i === idx ? ' ' + styles.on : ''}`}
-                  onClick={() => goToSong(i)}
-                />
-              ))}
-            </div>
-            <div className={styles.ftrInfo}>
-              {nextSong ? (
+            {songs.length > 1 && (
+              <div className={styles.dots}>
+                {songs.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`${styles.dot}${i === idx ? ' ' + styles.on : ''}`}
+                    onClick={() => goToSong(i)}
+                  />
+                ))}
+              </div>
+            )}
+            {nextSong ? (
+              <div className={styles.ftrInfo}>
                 <span className={styles.ftrNext}>Nächstes Lied: {nextSong.title}</span>
-              ) : (
+              </div>
+            ) : songs.length > 1 ? (
+              <div className={styles.ftrInfo}>
                 <span className={styles.ftrSong}>Letztes Lied</span>
-              )}
-            </div>
+              </div>
+            ) : null}
           </div>
-          <button className={styles.navBtn} onClick={next} disabled={atEnd}>
-            ›
+          <button className={styles.navBtn} onClick={next} disabled={atEnd} aria-label="Weiter / nächste Seite">
+            <Icon name="chev-right" size={22} stroke={2.4} />
           </button>
         </div>
       </>

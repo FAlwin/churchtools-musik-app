@@ -88,38 +88,32 @@ churchtools-musik-app/
 - `.env` wird nie committet – nur `.env.example` mit Platzhaltern
 - `npm audit` regelmäßig ausführen
 
-## White-Label (vorbereitet)
-Marken-Konfiguration zentral in `client/src/config/branding.ts` (Name, Kurzname, Beschreibung,
-Logo-Pfad, Org-Name, Theme-/Hintergrundfarbe). Genutzt vom PWA-Manifest (`vite.config.ts`) und
-dem Login. Logo-Dateien in `client/public/` (`logo.png`, `logo.svg`, `icon-192/512.png`). Für eine
-andere Gemeinde: branding.ts + Logo-Dateien anpassen. Farben zusätzlich in `_variables.scss`
-(SCSS) – beim Vollausbau aus einer Quelle speisen. Voller White-Label-Ausbau (mehrere Gemeinden
-umschaltbar, eigene CT-Instanz) ist ein eigenes Folgepaket.
+## Design & Branding (feste ChurchTools-Version)
+Das frühere White-Label (Farb-/Logo-Anpassung pro Gemeinde) wurde **zurückgebaut**: Die App ist eine
+**feste ChurchTools-Version** mit eigenem Schallwellen-Logo. Aussehen = ChurchTools-Designsprache
+(helle gruppierte Listen auf Grau, **blaue** Primärfarbe `#0061A1`, System-Font, untere Tab-Bar,
+Light/Dark). Alle Design-Tokens in `styles/_variables.scss` (Single Source); `applyBranding.ts` setzt
+**keine** Laufzeit-Farben mehr. Logo-Assets in `client/public/` (`logo-rund-hell/-dunkel.png`,
+`icon-192/512.png`, `favicon.svg`); PWA-Manifest ist **statisch** (`public/manifest.webmanifest`).
 
-**Laufzeit-Branding (umgesetzt, Phase A–C):** Name/Kurzname/Logo/Farben/CCLI werden zur Laufzeit
-aus `site.json` (Volume) gelesen und vom Client angewendet (`useSiteConfig` + `utils/applyBranding.ts`).
-Ein ChurchTools-**Admin** stellt sie per Klick auf der Seite `pages/Settings.tsx` ein
-(`PUT /api/site-config`). Das **PWA-Manifest ist dynamisch**: der Server liefert
-`/api/manifest.webmanifest` aus der Config (Name/Farben/Logo), `index.html` verweist fest darauf,
-vite-plugin-pwa generiert nur noch den Service Worker (`manifest: false`). Die Standard-Defaults
-liegen zentral in `DEFAULT_SITE_CONFIG` (`shared/types`); das frühere `client/src/config/branding.ts`
-ist entfernt. Speicherpfad: `SITE_CONFIG_PATH`, Admin-Recht: `ADMIN_PERMISSION`
-(Default `churchcore:administer persons`, je Instanz prüfen).
-**iOS-Grenze:** `apple-mobile-web-app-title` in `index.html` bleibt statisch (iOS liest ihn beim
-„Zum Home-Bildschirm"); Android nutzt `short_name` aus dem dynamischen Manifest.
+**Einziger anpassbarer Wert:** der **Gemeinde-Name** (`orgName`) – ein ChurchTools-**Admin** ändert ihn
+im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site.json` (Volume,
+`SITE_CONFIG_PATH`). Admin-Recht über `ADMIN_PERMISSION` (Default `churchcore:administer persons`).
+`SiteConfig` (`shared/types`) ist auf `{ appName(fest), description(fest), orgName }` geschrumpft.
 
-**Verteilung an andere Gemeinden (Phase D umgesetzt):** Release-Workflow `.github/workflows/release.yml`
-baut bei Tag `v*` das Image und pusht es **privat** nach `ghcr.io/<owner>/churchtools-musik-app`
-(bei PRs nur Build-Validierung). Verteil-Paket `deploy/` (image-basiertes `docker-compose.yml` mit
-Volume + `.env.example` + `ANLEITUNG.md`). Lizenz proprietär (`LIZENZ.md`, Nutzung auf Anfrage,
-Image privat → Gemeinden brauchen GitHub-Token `read:packages`). **Release auslösen:**
-`git tag vX.Y.Z && git push --tags`. Stand/Details: `WHITE-LABEL.md`.
+**Navigation:** untere Tab-Bar `Termine`/`Lieder`/`Mehr` (`components/TabBar.tsx`), Detailseiten
+(Setlist, Chart) als Vollbild-Push. Routing in `App.tsx` über `tab` + `view` (rechteabhängig).
+
+**Design-Regeln (verbindlich):** `docs/design-system.md` – Farben nur über Tokens (es gibt **kein**
+`--orange`/`--teal`/`--chord`; Akzent = Blau, Destruktiv = Rot), System-Font, gemeinsame Bausteine
+(SCSS-Mixins `styles/_mixins.scss`, `<Segment>`, `Icon`/Line-Icons statt Emojis).
+*Entfernt (durch feste Version): `deploy/`, `.github/workflows/release.yml`, `LIZENZ.md`.*
 
 ## Anmerkungen (Zeichnen/Text)
 `useDrawing.ts` kapselt Canvas-Striche (Stift/Marker/Radierer) + Text-Anmerkungen (localStorage
 pro Song). Bedienung: Text **antippen** = auswählen (Rahmen), **nochmal antippen** = Inhalt
 bearbeiten, **ziehen** = verschieben. Werkzeugleiste zeigt bei Auswahl Farbe/Größe (live) + 🗑.
-Farb-Voreinstellungen: Orange/Petrol/Schwarz-Weiß (`DRAW_COLORS`, `#14110F` → Creme im Dunkelmodus)
+Farb-Voreinstellungen: Schwarz/Weiß-adaptiv + Rot + Gelb (`DRAW_COLORS`, `#14110F` → Creme im Dunkelmodus)
 + freier `<input type=color>`-Picker. **Undo/Redo** (↺/↻) über einen Verlauf aus Canvas-Bild +
 Text-Liste pro Schritt; „Alles löschen" ist ebenfalls rückgängig machbar. **Wichtig:** Solange
 Anmerkungen existieren (`hasAnnotations`), sind Schriftgröße/Spalten gesperrt (halbtransparente
@@ -131,7 +125,8 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 - **Transponieren:** Original-Tonart aus der .chordpro-Datei, Ziel-Tonart aus dem
   ChurchTools-Arrangement-Feld; manuelles Transponieren nur lokal, kein Zurückschreiben
 - **CCLI:** Lizenznummer 2395145, SongSelect Premium; CCLI-Infos pro Song anzeigen
-- **Branding:** Teal #00616E, Orange #EB5E28 (Akkorde), Cream #FFFCF2
+- **Farben:** Primär Blau `#0061A1`, Destruktiv Rot `#B22247`; Akkorde im Chart schwarz/fett
+  (SongSelect-Stil). Details: `docs/design-system.md`
 
 ## Tests & CI
 - **Befehle:** `npm test` (alle), `npm run test:cov` (Coverage), im Client
@@ -199,6 +194,8 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 | 18.06.2026 | feature/white-label-runtime | White-Label Phase A+B: Laufzeit-Branding (site.json auf Volume, `GET /api/site-config` + `/api/site-logo`, Client wendet Farben/Name/Logo an); Admin-Einstellungsseite (`PUT /api/site-config`, CT-Admin-Recht, Logo-Upload/Farben/CCLI per Klick); Farb-Utils + 7 Tests |
 | 18.06.2026 | feature/white-label-manifest | White-Label Phase C: PWA-Manifest dynamisch (`GET /api/manifest.webmanifest` aus dem Branding, `manifest:false` im vite-plugin-pwa, fester Link in index.html); `config/branding.ts` entfernt (Defaults nun in `DEFAULT_SITE_CONFIG`) |
 | 18.06.2026 | feature/white-label-deploy | White-Label Phase D: Release-Workflow (Tag `v*` → privates GHCR-Image, PR = nur Build-Check); `deploy/`-Paket (image-basiertes compose + .env.example + ANLEITUNG.md); Volume `worship-data`/`musik-data` für Branding-Persistenz; Lizenz `LIZENZ.md` (proprietär, auf Anfrage) |
+| 18.06.2026 | redesign/churchtools-look | Design-Hausputz: Token-Hygiene (tote `--orange`/`--teal`/`--chord` entfernt, Roh-Hex→Tokens, neue `--seg-on`/`--track-off`/`--scrim`, Fonts→`var(--ui)`, Google-Fonts raus), gemeinsame Bausteine (`_mixins.scss`, `<Segment>`), Altlasten (`deploy/`, `release.yml`, `LIZENZ.md`) entfernt, `docs/design-system.md`; Fix: Spinner folgt currentColor |
+| 18.06.2026 | redesign/churchtools-look | **Komplettes Redesign im ChurchTools-Look** (Plan-Änderung: feste CT-Version statt White-Label): neue Token-Palette (blau `#0061A1`, System-Font, Light/Dark); untere Tab-Bar Termine/Lieder/Mehr + `tab`/`view`-Routing; ct-nav-Header; alle Seiten neu gestaltet (Termine-Karten/Monatsgruppen, Lieder mit NoteTile/key-pill, Setlist mit Akzentbalken, Chart-Sektionsfarben, Mehr-Tab mit Segment/Toggle); neues Schallwellen-Logo; White-Label zurückgebaut (nur `orgName` admin-anpassbar, feste Palette/Logo, statisches Manifest); Funktionalität unverändert |
 
 ## So startest du die App lokal
 ```
@@ -238,10 +235,8 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   `.sng`/`.txt`) → Frontend zeigt dann „keine Akkord-Datei hinterlegt".
 
 ## API des eigenen Backends
-- `GET  /api/site-config` → Laufzeit-Branding (öffentlich, auch für den Login-Screen)
-- `GET  /api/site-logo` → hochgeladenes Logo als Bild (404, wenn keins gesetzt → Standard-Logo)
-- `GET  /api/manifest.webmanifest` → PWA-Manifest, zur Laufzeit aus dem Branding erzeugt
-- `PUT  /api/site-config` → Branding speichern (nur Admin, Zod-validiert)
+- `GET  /api/site-config` → `{ appName, description, orgName }` (öffentlich, für Login/Mehr)
+- `PUT  /api/site-config` → Gemeinde-Name speichern (nur Admin, Zod-validiert)
 - `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt Session-Cookie
 - `POST /api/auth/logout` → Session löschen
 - `GET  /api/auth/me` → `{authenticated, user?}`

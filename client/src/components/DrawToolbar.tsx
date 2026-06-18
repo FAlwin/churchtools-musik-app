@@ -1,4 +1,5 @@
 import type { DrawTool } from '../types/index';
+import { Icon } from './icons';
 import styles from './DrawToolbar.module.scss';
 
 interface DrawToolbarProps {
@@ -103,25 +104,22 @@ export function DrawToolbar({
         className={`${styles.toolBtn}${drawTool === 'pen' ? ' ' + styles.on : ''}`}
         onClick={() => chooseTool('pen')}
         title="Stift"
-        style={{ fontSize: 17 }}
       >
-        ✏️
+        <Icon name="pencil" size={18} stroke={2} />
       </button>
       <button
         className={`${styles.toolBtn}${drawTool === 'marker' ? ' ' + styles.on : ''}`}
         onClick={() => chooseTool('marker')}
         title="Marker"
-        style={{ fontSize: 17 }}
       >
-        🖍️
+        <Icon name="marker" size={18} stroke={2} />
       </button>
       <button
         className={`${styles.toolBtn}${drawTool === 'eraser' ? ' ' + styles.on : ''}`}
         onClick={() => chooseTool('eraser')}
         title="Radierer"
-        style={{ fontSize: 17 }}
       >
-        🧽
+        <Icon name="eraser" size={18} stroke={2} />
       </button>
       <button
         className={`${styles.toolBtn}${drawTool === 'text' ? ' ' + styles.on : ''}`}

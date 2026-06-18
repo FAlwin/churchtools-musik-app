@@ -30,7 +30,7 @@
   background: var(--surface2);
   color: var(--text);
   cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--ui);
   font-size: 14px;
   font-weight: 700;
   transition: all 0.1s;
@@ -40,12 +40,12 @@
 
   &:hover {
     background: var(--surface3);
-    border-color: var(--teal);
+    border-color: var(--blue);
   }
   &.active {
-    background: var(--teal);
-    color: var(--cream);
-    border-color: var(--teal);
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
   }
 }
 
@@ -54,9 +54,9 @@
   height: 40px;
   margin-top: 8px;
   border-radius: 10px;
-  border: 1.5px solid rgba(235, 94, 40, 0.3);
+  border: 1.5px solid var(--border);
   background: transparent;
-  color: var(--orange);
+  color: var(--blue-ink);
   font-weight: 600;
   cursor: pointer;
   font-size: 13px;
@@ -71,14 +71,15 @@
 }
 
 .capoShape {
-  color: var(--chord);
-  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  font-weight: 700;
+  font-family: var(--ui);
 }
 
 .capoSounds {
-  color: var(--cream);
-  background: var(--teal);
+  color: #fff;
+  background: var(--blue);
   border-radius: 5px;
   padding: 2px 8px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--ui);
 }

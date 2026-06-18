@@ -27,10 +27,10 @@
   padding: 0 22px;
   border-radius: 11px;
   border: none;
-  background: var(--teal);
-  color: var(--cream);
+  background: var(--blue);
+  color: #fff;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Montserrat', inherit;
+  font-family: var(--ui);
 }
