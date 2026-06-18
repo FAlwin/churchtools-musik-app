@@ -40,16 +40,19 @@ Entscheidungen → `docs/entscheidungen.md`.
 - [x] 5.1 Unit-Tests für die kniffligste reine Logik (`transpose.ts`, `chordpro.ts`)
 - [x] 5.2 CI (GitHub Actions): lint + build + test je PR
 - [x] 5.3 Testkonzept dokumentiert (`docs/testkonzept.md`)
-- [ ] 5.4 Bei Bedarf weitere Tests, wenn neue Logik dazukommt
+- [x] 5.4 Tests zum Redesign: `hasOpaquePixel` + Render-Tests `<Segment>`/`<Section>` (44 Tests grün);
+      Barrierefreiheit (Fokusring, `prefers-reduced-motion`, aria-labels)
 
 **Definition of Done:** Kernlogik durch grüne Tests abgesichert, CI bei jedem PR grün.
 
 ### Phase 6 – Offen / optional
 - [ ] 6.1 Musik-Abwesenheitsplaner (separate Flask-App) in diese App nachbauen
-- [x] 6.2 ~~White-Label~~ **verworfen** → stattdessen **Redesign zur festen ChurchTools-Version**
-      (`redesign/churchtools-look`): ChurchTools-Look, Tab-Bar, neues Logo, Design-Tokens/Bausteine.
-      Nur `orgName` admin-anpassbar. Siehe `docs/design-system.md`, `WHITE-LABEL.md` (verworfen-Notiz).
-      Offen: nach `main` mergen + auf Produktiv-Instanz deployen.
+- [x] 6.2 ~~White-Label~~ **verworfen** → **Redesign zur festen ChurchTools-Version** ✅ live
+      (ChurchTools-Look, Tab-Bar, neues Logo, Design-Tokens/Bausteine; nur `orgName` admin-anpassbar).
+      Nach `main` gemerged (PR #14) + **produktiv deployt** (musik.ecg-donrath.de, 19.06.2026, verifiziert)
+      inkl. Chart-Lesbarkeits-Politur (Akkord-Abstände + Akkorde in Blau). Siehe `docs/design-system.md`.
 - [ ] 6.3 vite@8-Upgrade (behebt die zurückgestellten moderate npm-audit-Findings)
+- [ ] 6.4 **Verteilung an andere Gemeinden (Selbst-Hosting)** – geplant, Fahrplan in `WHITE-LABEL.md`
+      (öffentliches Repo + GHCR-Images, Entkopplung von ECG, Lizenz/Disclaimer, Onboarding-Doku)
 
 **Definition of Done:** je Teilprojekt eigener Plan; hier nur als Merker.

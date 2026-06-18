@@ -196,6 +196,8 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 | 18.06.2026 | feature/white-label-deploy | White-Label Phase D: Release-Workflow (Tag `v*` → privates GHCR-Image, PR = nur Build-Check); `deploy/`-Paket (image-basiertes compose + .env.example + ANLEITUNG.md); Volume `worship-data`/`musik-data` für Branding-Persistenz; Lizenz `LIZENZ.md` (proprietär, auf Anfrage) |
 | 18.06.2026 | redesign/churchtools-look | Design-Hausputz: Token-Hygiene (tote `--orange`/`--teal`/`--chord` entfernt, Roh-Hex→Tokens, neue `--seg-on`/`--track-off`/`--scrim`, Fonts→`var(--ui)`, Google-Fonts raus), gemeinsame Bausteine (`_mixins.scss`, `<Segment>`), Altlasten (`deploy/`, `release.yml`, `LIZENZ.md`) entfernt, `docs/design-system.md`; Fix: Spinner folgt currentColor |
 | 18.06.2026 | redesign/churchtools-look | **Komplettes Redesign im ChurchTools-Look** (Plan-Änderung: feste CT-Version statt White-Label): neue Token-Palette (blau `#0061A1`, System-Font, Light/Dark); untere Tab-Bar Termine/Lieder/Mehr + `tab`/`view`-Routing; ct-nav-Header; alle Seiten neu gestaltet (Termine-Karten/Monatsgruppen, Lieder mit NoteTile/key-pill, Setlist mit Akzentbalken, Chart-Sektionsfarben, Mehr-Tab mit Segment/Toggle); neues Schallwellen-Logo; White-Label zurückgebaut (nur `orgName` admin-anpassbar, feste Palette/Logo, statisches Manifest); Funktionalität unverändert |
+| 19.06.2026 | main   | Tests/A11y zum Redesign: `hasOpaquePixel` aus der Bearbeiten-Sperre extrahiert + getestet, Render-Tests für `<Segment>`/`<Section>` (44 Tests grün), Fokusring + `prefers-reduced-motion` + aria-labels. **Redesign nach `main` gemerged (PR #14) und produktiv deployt** (`worship-charts`, musik.ecg-donrath.de) – extern verifiziert |
+| 19.06.2026 | main   | Chart-Lesbarkeit (`ChordLine.module.scss`): Abstand Akkord↔Text (`margin-bottom`), Zeilenpaar-Abstand `1px`→`0.4em`, Mindestabstand zwischen Akkorden (`padding-right: 0.7ch`, kein „Dm7Am" mehr); **Akkorde in Akzentfarbe Blau** (`--blue`) statt schwarz – produktiv deployt + verifiziert |
 
 ## So startest du die App lokal
 ```
@@ -210,9 +212,13 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   ChordPro-Editor, Dokumenten-Viewer, kompletter Ablauf + Bearbeiten, „Alle Lieder" mit
   Statistik, rechtebewusste UI). Auf dem NAS deployt (Container Manager, `worship-charts`),
   **intern** `http://192.168.10.188:3001` und **extern** `https://musik.ecg-donrath.de` live.
+- **Redesign live (19.06.2026):** ChurchTools-Look ist auf `main`, getestet (44 Tests) und
+  **produktiv** unter `https://musik.ecg-donrath.de` (extern verifiziert, neues Bundle). Test-
+  Instanz (`worship-charts-test`, `:3002`) war nur temporär und wurde nach Abnahme gelöscht.
 - **Offen / optional:** Login-Token aus lokaler Dev-`.env` neu erzeugen/entfernen;
   Test-Service-Konto/Token #1012 in ChurchTools widerrufen; Musik-Abwesenheitsplaner nachbauen
-  (separates Projekt); White-Label für andere Gemeinden.
+  (separates Projekt); **Verteilung an andere Gemeinden (Selbst-Hosting)** – Fahrplan steht in
+  `WHITE-LABEL.md`.
 
 ## Deployment-Stand (NAS)
 - Liegt auf dem NAS unter der `docker`-Freigabe: `docker/churchtools-musik-app`
@@ -302,5 +308,6 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
 ## Offene Punkte (optional)
 - [x] Login-Token aus lokaler Dev-`.env` entfernt (14.06.2026) – in ChurchTools noch widerrufen
 - [x] Test-Service-Konto/Token #1012 in ChurchTools gelöscht (14.06.2026)
-- [x] White-Label vorbereitet (branding.ts) – Vollausbau (mehrere Gemeinden) offen
+- [x] White-Label (Farb-Anpassung) verworfen → feste CT-Version (Redesign live, 19.06.2026)
+- [ ] Verteilung an andere Gemeinden (Selbst-Hosting) – Fahrplan in `WHITE-LABEL.md`
 - [ ] Musik-Abwesenheitsplaner (separate Flask-App) in diese App nachbauen
