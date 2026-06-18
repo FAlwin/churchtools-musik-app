@@ -1,170 +1,244 @@
-.wrap {
+.profileCard {
   display: flex;
-  flex-direction: column;
-  gap: 18px;
-  width: 100%;
-  max-width: 440px;
-  margin: 0 auto;
-  padding: 20px 18px 48px;
-}
-
-.preview {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  border-radius: 16px;
-  padding: 24px 16px;
-  color: #fff;
-  text-align: center;
+  gap: 14px;
+  margin: 18px 16px 0;
+  padding: 16px;
+  background: var(--surface2);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
 }
-
-.previewLogo {
-  width: 64px;
-  height: 64px;
+.profileLogo {
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   object-fit: cover;
-  background: rgba(255, 255, 255, 0.15);
-  margin-bottom: 8px;
+  flex-shrink: 0;
 }
-
-.previewName {
-  font-size: 20px;
+.profileName {
+  font-size: 17px;
   font-weight: 700;
-  font-family: 'Candara', 'Trebuchet MS', sans-serif;
+  color: var(--text);
+  letter-spacing: -0.2px;
 }
-
-.previewOrg {
+.profileSub {
   font-size: 13px;
-  opacity: 0.85;
+  color: var(--text2);
+  margin-top: 2px;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.group {
+  margin: 18px 16px 0;
 }
-
-.label {
-  font-size: 11px;
+.groupHdr {
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text2);
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.04em;
+  padding: 0 4px 8px;
+}
+.cardList {
+  background: var(--surface2);
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
-.input {
+.setRow {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 13px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  position: relative;
+  color: var(--text);
+
+  & + & {
+    box-shadow: inset 0 1px 0 var(--hair);
+  }
+}
+.tappable {
+  cursor: pointer;
+  transition: background 0.12s;
+  &:active {
+    background: var(--surface3);
+  }
+}
+.setLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  flex: 1;
+}
+.setValue {
+  font-size: 14px;
+  color: var(--text2);
+  font-weight: 500;
+}
+.danger {
+  color: var(--red);
+  flex: 1;
+}
+.dangerIcon {
+  color: var(--red);
+}
+
+.version {
+  text-align: center;
+  color: var(--text3);
+  font-size: 12px;
+  margin: 22px 0 max(22px, env(safe-area-inset-bottom));
+}
+
+// Segment-Control (Hell/Dunkel/Auto)
+.seg {
+  display: flex;
+  background: var(--surface3);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+}
+.segBtn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text2);
+  padding: 6px 11px;
+  border-radius: 5px;
+  transition: all 0.14s;
+
+  &.on {
+    background: var(--surface2);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(22, 33, 42, 0.12);
+  }
+}
+:global(html[data-theme='dark']) .segBtn.on {
+  background: #3a4d5e;
+}
+
+// Toggle-Switch
+.tog {
+  width: 48px;
+  height: 29px;
+  border-radius: 15px;
+  border: none;
+  padding: 3px;
+  cursor: pointer;
+  transition: background 0.22s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background: #c9cfd6;
+}
+:global(html[data-theme='dark']) .tog {
+  background: #3a4856;
+}
+.togOn {
+  background: var(--blue);
+}
+.togThumb {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.22s;
+  pointer-events: none;
+}
+.togOn .togThumb {
+  transform: translateX(19px);
+}
+
+// Font-Picker-Zeilen (im Sheet)
+.fontRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 8px;
+  text-align: left;
+
+  & + & {
+    box-shadow: inset 0 1px 0 var(--hair);
+  }
+  &:active {
+    background: var(--surface3);
+  }
+}
+.fontSample {
+  font-size: 21px;
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+  color: var(--chord);
+  font-weight: 700;
+}
+.fontMeta {
+  flex: 1;
+}
+.fontName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+}
+.fontDesc {
+  font-size: 12.5px;
+  color: var(--text2);
+}
+.fontCheck {
+  color: var(--blue-ink);
+}
+
+// Org-Name-Edit (im Sheet)
+.orgInput {
   height: 48px;
-  border-radius: 12px;
+  width: 100%;
+  border-radius: 8px;
   border: 1.5px solid var(--border);
   background: var(--surface2);
   color: var(--text);
   padding: 0 14px;
   font-size: 16px;
   outline: none;
-  width: 100%;
-  font-family: 'Montserrat', inherit;
-  transition: border-color 0.18s;
+  font-family: var(--ui);
 
   &:focus {
-    border-color: var(--teal);
-  }
-  &::placeholder {
-    color: var(--text3);
+    border-color: var(--blue);
   }
 }
-
-.logoRow {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.orgErr {
+  font-size: 13px;
+  color: var(--red);
+  margin-top: 8px;
 }
-
-.logoThumb {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  object-fit: cover;
-  border: 1.5px solid var(--border);
-  background: var(--surface3);
-}
-
-.logoBtns {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.btnGhost {
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border);
-  background: var(--surface2);
-  color: var(--teal);
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  font-family: 'Montserrat', inherit;
-
-  &:active {
-    transform: scale(0.97);
-  }
-}
-
-.colorsRow {
-  display: flex;
-  gap: 14px;
-
-  .field {
-    flex: 1;
-  }
-}
-
-.color {
+.orgSave {
   height: 48px;
   width: 100%;
-  border-radius: 12px;
-  border: 1.5px solid var(--border);
-  background: var(--surface2);
-  padding: 4px;
-  cursor: pointer;
-}
-
-.err {
-  font-size: 13px;
-  color: var(--orange);
-  font-weight: 600;
-}
-
-.ok {
-  font-size: 14px;
-  color: var(--teal);
-  font-weight: 700;
-  text-align: center;
-}
-
-.save {
-  height: 52px;
-  border-radius: 12px;
+  margin-top: 12px;
+  border-radius: 8px;
   border: none;
-  background: var(--teal);
-  color: var(--cream);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  background: var(--blue);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  font-family: 'Montserrat', inherit;
   display: flex;
   align-items: center;
   justify-content: center;
 
-  &:active {
-    transform: scale(0.98);
-  }
   &:disabled {
-    opacity: 0.5;
-    cursor: default;
+    opacity: 0.6;
   }
 }
