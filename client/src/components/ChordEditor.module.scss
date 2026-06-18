@@ -14,7 +14,7 @@
   gap: 8px;
   padding: 12px 14px;
   padding-top: max(12px, env(safe-area-inset-top));
-  background: var(--teal);
+  background: var(--blue);
   flex-shrink: 0;
 }
 
@@ -23,7 +23,7 @@
   min-width: 0;
   font-size: 16px;
   font-weight: 700;
-  color: var(--cream);
+  color: #fff;
   font-family: 'Montserrat', sans-serif;
   white-space: nowrap;
   overflow: hidden;
@@ -42,7 +42,7 @@
 }
 .cancel {
   background: rgba(0, 0, 0, 0.22);
-  color: var(--cream);
+  color: #fff;
 }
 .save {
   background: var(--orange);

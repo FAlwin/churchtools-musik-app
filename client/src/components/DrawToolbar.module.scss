@@ -27,7 +27,7 @@
   flex-shrink: 0;
 
   &.on {
-    border-color: var(--teal);
+    border-color: var(--blue);
     transform: scale(1.2);
   }
 }
@@ -48,7 +48,7 @@
     border-color 0.12s;
 
   &.on {
-    border-color: var(--teal);
+    border-color: var(--blue);
     transform: scale(1.2);
   }
 
@@ -96,9 +96,9 @@
   color: var(--text);
 
   &.on {
-    background: var(--teal);
-    border-color: var(--teal);
-    color: var(--cream);
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
   }
   &:hover:not(.on) {
     background: var(--surface3);

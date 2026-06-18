@@ -40,12 +40,12 @@
 
   &:hover {
     background: var(--surface3);
-    border-color: var(--teal);
+    border-color: var(--blue);
   }
   &.active {
-    background: var(--teal);
-    color: var(--cream);
-    border-color: var(--teal);
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
   }
 }
 
@@ -76,8 +76,8 @@
 }
 
 .capoSounds {
-  color: var(--cream);
-  background: var(--teal);
+  color: #fff;
+  background: var(--blue);
   border-radius: 5px;
   padding: 2px 8px;
   font-family: 'JetBrains Mono', monospace;

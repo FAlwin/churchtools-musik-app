@@ -1,12 +1,8 @@
 .sectionBlock {
-  margin-bottom: 28px;
-  // Einen Abschnitt (Vers/Chorus) möglichst nicht mitten im Text auf die nächste Spalte
-  // umbrechen – er wandert als Ganzes weiter. (Nur bei extrem hohen Abschnitten greift der
-  // Browser-Notausstieg und bricht doch um, sonst würde nichts mehr passen.)
+  margin-bottom: 26px;
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
 
-  // Letzter Abschnitt: kein nachlaufender Rand, der sonst eine leere Folgeseite erzeugt
   &:last-child {
     margin-bottom: 0;
   }
@@ -14,15 +10,14 @@
 
 .secLabel {
   display: inline-block;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 5px 14px;
-  border-radius: 7px;
-  margin-bottom: 12px;
-  font-family: 'Montserrat', sans-serif; // immer kräftig, unabhängig von der Chart-Schrift
-  // Label nicht allein am Spaltenende stehen lassen
+  padding: 3px 10px;
+  border-radius: 5px;
+  margin-bottom: 11px;
+  font-family: var(--ui);
   break-after: avoid;
   -webkit-column-break-after: avoid;
 }
@@ -31,50 +26,30 @@
   height: 0.5em;
 }
 
-// Farbgebung je Abschnittstyp
+// Farbgebung je Abschnittstyp (ChurchTools-Look)
 .verse .secLabel {
-  color: #00616e;
-  background: rgba(0, 97, 110, 0.08);
-  border: 1px solid rgba(0, 97, 110, 0.18);
+  color: var(--blue-ink);
+  background: var(--blue-soft);
 }
 .chorus .secLabel {
-  color: #eb5e28;
-  background: rgba(235, 94, 40, 0.09);
-  border: 1px solid rgba(235, 94, 40, 0.22);
+  color: var(--orange);
+  background: rgba(242, 130, 12, 0.12);
 }
 .bridge .secLabel {
-  color: #3d7a48;
-  background: rgba(204, 215, 197, 0.35);
-  border: 1px solid rgba(100, 160, 110, 0.25);
+  color: var(--teal);
+  background: rgba(18, 178, 162, 0.13);
 }
 .pre_chorus .secLabel {
-  color: #5898a0;
-  background: rgba(88, 152, 160, 0.1);
-  border: 1px solid rgba(88, 152, 160, 0.22);
+  color: var(--red);
+  background: rgba(178, 34, 71, 0.1);
 }
 .intro .secLabel,
 .outro .secLabel,
 .instrumental .secLabel {
   color: var(--text2);
-  background: rgba(0, 97, 110, 0.05);
-  border: 1px solid rgba(0, 97, 110, 0.1);
+  background: var(--surface3);
 }
 .tag .secLabel {
-  color: #eb5e28;
-  background: rgba(235, 94, 40, 0.08);
-  border: 1px solid rgba(235, 94, 40, 0.2);
-}
-
-// Dark-Mode-Anpassungen
-:global(html[data-theme='dark']) {
-  .verse .secLabel {
-    color: #7fb3ba;
-    background: rgba(127, 179, 186, 0.12);
-    border-color: rgba(127, 179, 186, 0.25);
-  }
-  .bridge .secLabel {
-    color: #8fcf9b;
-    background: rgba(143, 207, 155, 0.12);
-    border-color: rgba(143, 207, 155, 0.25);
-  }
+  color: var(--orange);
+  background: rgba(242, 130, 12, 0.1);
 }

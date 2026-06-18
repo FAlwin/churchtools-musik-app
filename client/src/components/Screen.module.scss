@@ -17,7 +17,7 @@
     width: 3px;
   }
   &::-webkit-scrollbar-thumb {
-    background: var(--sage);
+    background: var(--blue);
     border-radius: 2px;
   }
 }
@@ -29,7 +29,7 @@
   justify-content: center;
   overflow: hidden;
   transition: opacity 0.15s;
-  color: var(--teal);
+  color: var(--blue);
 }
 
 .pullArrow {

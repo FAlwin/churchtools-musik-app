@@ -9,7 +9,7 @@
   gap: 6px;
   padding: 10px 12px;
   padding-top: max(10px, env(safe-area-inset-top));
-  background: var(--teal);
+  background: var(--blue);
   border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   flex-shrink: 0;
 }
@@ -23,7 +23,7 @@
   border-radius: 11px;
   border: none;
   background: transparent;
-  color: var(--cream);
+  color: #fff;
   font-size: 22px;
   cursor: pointer;
   flex-shrink: 0;
@@ -62,7 +62,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  color: var(--cream);
+  color: #fff;
   font-family: 'Candara', 'Trebuchet MS', sans-serif;
 }
 
@@ -113,7 +113,7 @@
 .capoBadge {
   font-size: 11px;
   font-weight: 700;
-  color: var(--cream);
+  color: #fff;
   background: var(--orange);
   border-radius: 7px;
   padding: 3px 9px;
@@ -137,7 +137,7 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--cream);
+  color: #fff;
   background: rgba(255, 255, 255, 0.18);
   border-radius: 6px;
   padding: 2px 7px;
@@ -167,7 +167,7 @@
   border: none;
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.22);
-  color: var(--cream);
+  color: #fff;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -250,7 +250,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  color: var(--cream);
+  color: #fff;
   font-family: 'Montserrat', sans-serif;
   font-size: 16px;
   font-weight: 800;
@@ -289,9 +289,9 @@
   font-family: 'Montserrat', sans-serif;
 
   &.on {
-    background: var(--teal);
-    color: var(--cream);
-    border-color: var(--teal);
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
   }
   &:disabled {
     opacity: 0.4;
@@ -347,11 +347,11 @@
   @media (hover: hover) {
     &:hover {
       background: rgba(255, 252, 242, 0.15);
-      color: var(--cream);
+      color: #fff;
     }
   }
   &.on {
-    color: var(--cream);
+    color: #fff;
     background: rgba(255, 252, 242, 0.22);
   }
   &:disabled {
@@ -432,12 +432,12 @@
     background: var(--surface3);
   }
   &.on {
-    color: var(--teal);
+    color: var(--blue);
   }
 }
 
 .mmCheck {
-  color: var(--teal);
+  color: var(--blue);
   font-weight: 700;
   font-size: 15px;
 }
@@ -618,8 +618,8 @@
   padding: 0 22px;
   border: none;
   border-radius: 11px;
-  background: var(--teal);
-  color: var(--cream);
+  background: var(--blue);
+  color: #fff;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -677,7 +677,7 @@
   width: 19px;
   height: 19px;
   border-radius: 50%;
-  background: var(--teal);
+  background: var(--blue);
   color: #fff;
   border: none;
   font-size: 11px;
@@ -715,7 +715,7 @@
   gap: 8px;
   padding: 10px 16px;
   padding-bottom: max(10px, env(safe-area-inset-bottom));
-  background: var(--teal);
+  background: var(--blue);
   border-top: 1px solid rgba(0, 0, 0, 0.2);
   flex-shrink: 0;
 }
@@ -729,7 +729,7 @@
   border-radius: 11px;
   border: none;
   background: rgba(0, 0, 0, 0.25);
-  color: var(--cream);
+  color: #fff;
   font-size: 20px;
   cursor: pointer;
   transition: background 0.12s;
@@ -792,5 +792,5 @@
 .ftrNext {
   font-size: 14px;
   font-weight: 700;
-  color: var(--cream);
+  color: #fff;
 }

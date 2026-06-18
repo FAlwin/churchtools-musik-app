@@ -57,7 +57,7 @@
 
   &:focus {
     outline: none;
-    border-color: var(--teal);
+    border-color: var(--blue);
   }
 }
 
@@ -65,8 +65,8 @@
   padding: 12px 18px;
   border: none;
   border-radius: 10px;
-  background: var(--teal);
-  color: var(--cream);
+  background: var(--blue);
+  color: #fff;
   font-family: inherit;
   font-size: 15px;
   font-weight: 700;

@@ -28,13 +28,7 @@
   --shadow: 0 1px 3px rgba(22, 33, 42, 0.07), 0 1px 2px rgba(22, 33, 42, 0.04); // Karten-Schatten
   --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-  // Alt-Tokens (werden in der Politur-Phase entfernt, sobald alle Referenzen weg sind)
-  --surface: #0061a1;
-  --teal-light: #4f93c4;
-  --sage: #ccd7c5;
-  --cream: #ffffff;
-  --near-black: #14110f;
-  --chord-dim: rgba(224, 118, 10, 0.1);
+  --chord-dim: rgba(224, 118, 10, 0.1); // gedämpfte Akkordfläche
 }
 
 // Dark Mode
@@ -57,11 +51,6 @@ html[data-theme='dark'] {
 
   --nav-bg: rgba(22, 33, 42, 0.82);
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-
-  // Alt-Tokens (Dark)
-  --surface: #1e2a35;
-  --teal-light: #54a6e8;
-  --cream: #f4f7f9;
 }
 
 // SCHRIFTEN
