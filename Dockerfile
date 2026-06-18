@@ -16,7 +16,10 @@ RUN npm run build --workspace=client
 
 ENV NODE_ENV=production
 ENV PORT=3001
+# Laufzeit-Branding (White-Label) liegt im Volume /app/data – übersteht Updates.
+ENV SITE_CONFIG_PATH=/app/data/site.json
 EXPOSE 3001
+VOLUME ["/app/data"]
 
 # Server starten (liefert /api + die gebaute App unter client/dist aus)
 CMD ["npm", "run", "start", "--workspace=server"]
