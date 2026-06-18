@@ -5,6 +5,7 @@ import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
 import { Sheet } from '../components/Sheet';
 import { Spinner } from '../components/Spinner';
+import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
 import styles from './Settings.module.scss';
@@ -71,17 +72,12 @@ export function Settings({
           <div className={styles.cardList}>
             <div className={styles.setRow}>
               <span className={styles.setLabel}>Erscheinungsbild</span>
-              <div className={styles.seg}>
-                {THEME_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    className={`${styles.segBtn}${themePref === opt.value ? ' ' + styles.on : ''}`}
-                    onClick={() => setThemePref(opt.value)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+              <Segment
+                className={styles.themeSeg}
+                value={themePref}
+                options={THEME_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                onChange={setThemePref}
+              />
             </div>
           </div>
         </div>

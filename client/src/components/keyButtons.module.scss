@@ -30,7 +30,7 @@
   background: var(--surface2);
   color: var(--text);
   cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--ui);
   font-size: 14px;
   font-weight: 700;
   transition: all 0.1s;
@@ -81,5 +81,5 @@
   background: var(--blue);
   border-radius: 5px;
   padding: 2px 8px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--ui);
 }

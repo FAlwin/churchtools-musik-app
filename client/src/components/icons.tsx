@@ -30,7 +30,6 @@ export type IconName =
   | 'trash'
   | 'heading'
   | 'plus'
-  | 'more'
   | 'marker'
   | 'eraser';
 
@@ -223,14 +222,6 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
       return (
         <svg {...p}>
           <path d="M12 5v14M5 12h14" />
-        </svg>
-      );
-    case 'more':
-      return (
-        <svg {...f}>
-          <circle cx="5" cy="12" r="1.7" />
-          <circle cx="12" cy="12" r="1.7" />
-          <circle cx="19" cy="12" r="1.7" />
         </svg>
       );
     case 'marker':

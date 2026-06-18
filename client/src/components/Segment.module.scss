@@ -1,0 +1,27 @@
+.seg {
+  display: flex;
+  background: var(--surface3);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.btn {
+  flex: 1;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  padding: 8px 11px;
+  border-radius: 5px;
+  transition: all 0.14s;
+  font-family: var(--ui);
+}
+
+.on {
+  background: var(--seg-on);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(22, 33, 42, 0.12);
+}

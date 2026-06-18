@@ -3,6 +3,7 @@ import type { Service } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
+import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
 import { usePastServices } from '../hooks/useServices';
 import styles from './Agenda.module.scss';
@@ -98,20 +99,15 @@ export function Agenda({ services, isLoading, isError, onRetry, onSelect }: Agen
     <Screen>
       <NavBar title="Termine" />
 
-      <div className={styles.seg}>
-        <button
-          className={`${styles.segBtn}${tab === 'upcoming' ? ' ' + styles.segOn : ''}`}
-          onClick={() => setTab('upcoming')}
-        >
-          Kommende
-        </button>
-        <button
-          className={`${styles.segBtn}${tab === 'past' ? ' ' + styles.segOn : ''}`}
-          onClick={() => setTab('past')}
-        >
-          Vergangene
-        </button>
-      </div>
+      <Segment
+        className={styles.segWrap}
+        value={tab}
+        options={[
+          { value: 'upcoming', label: 'Kommende' },
+          { value: 'past', label: 'Vergangene' },
+        ]}
+        onChange={setTab}
+      />
 
       <Scroll onRefresh={tab === 'upcoming' ? onRetry : () => pastQuery.refetch()}>
         {tab === 'upcoming' ? (

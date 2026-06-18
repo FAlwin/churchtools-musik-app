@@ -46,9 +46,10 @@ Entscheidungen → `docs/entscheidungen.md`.
 
 ### Phase 6 – Offen / optional
 - [ ] 6.1 Musik-Abwesenheitsplaner (separate Flask-App) in diese App nachbauen
-- [x] 6.2 White-Label für andere Gemeinden (A–D umgesetzt: Laufzeit-Branding +
-      Admin-Einstellungsseite + dynamisches PWA-Manifest + Auslieferung via privatem GHCR-Image,
-      `deploy/`-Paket, Lizenz – `WHITE-LABEL.md`). Erstes Release-Tag noch zu setzen.
+- [x] 6.2 ~~White-Label~~ **verworfen** → stattdessen **Redesign zur festen ChurchTools-Version**
+      (`redesign/churchtools-look`): ChurchTools-Look, Tab-Bar, neues Logo, Design-Tokens/Bausteine.
+      Nur `orgName` admin-anpassbar. Siehe `docs/design-system.md`, `WHITE-LABEL.md` (verworfen-Notiz).
+      Offen: nach `main` mergen + auf Produktiv-Instanz deployen.
 - [ ] 6.3 vite@8-Upgrade (behebt die zurückgestellten moderate npm-audit-Findings)
 
 **Definition of Done:** je Teilprojekt eigener Plan; hier nur als Merker.

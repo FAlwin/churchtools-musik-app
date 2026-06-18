@@ -2,7 +2,7 @@
   position: absolute;
   inset: 0;
   z-index: 100;
-  background: rgba(20, 17, 15, 0.55);
+  background: var(--scrim);
   backdrop-filter: blur(3px);
   display: flex;
   align-items: flex-end;
@@ -51,6 +51,6 @@
   transition: background 0.12s;
 
   &:hover {
-    background: #e0ddd3;
+    background: var(--border);
   }
 }

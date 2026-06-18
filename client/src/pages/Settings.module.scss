@@ -1,3 +1,5 @@
+@use '../styles/mixins' as m;
+
 .profileCard {
   display: flex;
   align-items: center;
@@ -31,18 +33,10 @@
   margin: 18px 16px 0;
 }
 .groupHdr {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0 4px 8px;
+  @include m.group-header;
 }
 .cardList {
-  background: var(--surface2);
-  border-radius: 9px;
-  overflow: hidden;
-  box-shadow: var(--shadow);
+  @include m.card-list;
 }
 
 .setRow {
@@ -94,33 +88,9 @@
   margin: 22px 0 max(22px, env(safe-area-inset-bottom));
 }
 
-// Segment-Control (Hell/Dunkel/Auto)
-.seg {
-  display: flex;
-  background: var(--surface3);
-  border-radius: 7px;
-  padding: 2px;
-  gap: 2px;
-}
-.segBtn {
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text2);
-  padding: 6px 11px;
-  border-radius: 5px;
-  transition: all 0.14s;
-
-  &.on {
-    background: var(--surface2);
-    color: var(--text);
-    box-shadow: 0 1px 3px rgba(22, 33, 42, 0.12);
-  }
-}
-:global(html[data-theme='dark']) .segBtn.on {
-  background: #3a4d5e;
+// Theme-Segment sitzt rechts in der Zeile
+.themeSeg {
+  flex-shrink: 0;
 }
 
 // Toggle-Switch
@@ -135,10 +105,7 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  background: #c9cfd6;
-}
-:global(html[data-theme='dark']) .tog {
-  background: #3a4856;
+  background: var(--track-off);
 }
 .togOn {
   background: var(--blue);

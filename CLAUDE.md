@@ -104,14 +104,16 @@ im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site
 **Navigation:** untere Tab-Bar `Termine`/`Lieder`/`Mehr` (`components/TabBar.tsx`), Detailseiten
 (Setlist, Chart) als Vollbild-Push. Routing in `App.tsx` über `tab` + `view` (rechteabhängig).
 
-**Obsolet (durch feste Version), noch im Repo – kann separat entfernt werden:** `deploy/`-Paket,
-`.github/workflows/release.yml`, `LIZENZ.md` (stammen aus der White-Label-Verteilung).
+**Design-Regeln (verbindlich):** `docs/design-system.md` – Farben nur über Tokens (es gibt **kein**
+`--orange`/`--teal`/`--chord`; Akzent = Blau, Destruktiv = Rot), System-Font, gemeinsame Bausteine
+(SCSS-Mixins `styles/_mixins.scss`, `<Segment>`, `Icon`/Line-Icons statt Emojis).
+*Entfernt (durch feste Version): `deploy/`, `.github/workflows/release.yml`, `LIZENZ.md`.*
 
 ## Anmerkungen (Zeichnen/Text)
 `useDrawing.ts` kapselt Canvas-Striche (Stift/Marker/Radierer) + Text-Anmerkungen (localStorage
 pro Song). Bedienung: Text **antippen** = auswählen (Rahmen), **nochmal antippen** = Inhalt
 bearbeiten, **ziehen** = verschieben. Werkzeugleiste zeigt bei Auswahl Farbe/Größe (live) + 🗑.
-Farb-Voreinstellungen: Orange/Petrol/Schwarz-Weiß (`DRAW_COLORS`, `#14110F` → Creme im Dunkelmodus)
+Farb-Voreinstellungen: Schwarz/Weiß-adaptiv + Rot + Gelb (`DRAW_COLORS`, `#14110F` → Creme im Dunkelmodus)
 + freier `<input type=color>`-Picker. **Undo/Redo** (↺/↻) über einen Verlauf aus Canvas-Bild +
 Text-Liste pro Schritt; „Alles löschen" ist ebenfalls rückgängig machbar. **Wichtig:** Solange
 Anmerkungen existieren (`hasAnnotations`), sind Schriftgröße/Spalten gesperrt (halbtransparente
@@ -123,7 +125,8 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 - **Transponieren:** Original-Tonart aus der .chordpro-Datei, Ziel-Tonart aus dem
   ChurchTools-Arrangement-Feld; manuelles Transponieren nur lokal, kein Zurückschreiben
 - **CCLI:** Lizenznummer 2395145, SongSelect Premium; CCLI-Infos pro Song anzeigen
-- **Branding:** Teal #00616E, Orange #EB5E28 (Akkorde), Cream #FFFCF2
+- **Farben:** Primär Blau `#0061A1`, Destruktiv Rot `#B22247`; Akkorde im Chart schwarz/fett
+  (SongSelect-Stil). Details: `docs/design-system.md`
 
 ## Tests & CI
 - **Befehle:** `npm test` (alle), `npm run test:cov` (Coverage), im Client
@@ -191,6 +194,7 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 | 18.06.2026 | feature/white-label-runtime | White-Label Phase A+B: Laufzeit-Branding (site.json auf Volume, `GET /api/site-config` + `/api/site-logo`, Client wendet Farben/Name/Logo an); Admin-Einstellungsseite (`PUT /api/site-config`, CT-Admin-Recht, Logo-Upload/Farben/CCLI per Klick); Farb-Utils + 7 Tests |
 | 18.06.2026 | feature/white-label-manifest | White-Label Phase C: PWA-Manifest dynamisch (`GET /api/manifest.webmanifest` aus dem Branding, `manifest:false` im vite-plugin-pwa, fester Link in index.html); `config/branding.ts` entfernt (Defaults nun in `DEFAULT_SITE_CONFIG`) |
 | 18.06.2026 | feature/white-label-deploy | White-Label Phase D: Release-Workflow (Tag `v*` → privates GHCR-Image, PR = nur Build-Check); `deploy/`-Paket (image-basiertes compose + .env.example + ANLEITUNG.md); Volume `worship-data`/`musik-data` für Branding-Persistenz; Lizenz `LIZENZ.md` (proprietär, auf Anfrage) |
+| 18.06.2026 | redesign/churchtools-look | Design-Hausputz: Token-Hygiene (tote `--orange`/`--teal`/`--chord` entfernt, Roh-Hex→Tokens, neue `--seg-on`/`--track-off`/`--scrim`, Fonts→`var(--ui)`, Google-Fonts raus), gemeinsame Bausteine (`_mixins.scss`, `<Segment>`), Altlasten (`deploy/`, `release.yml`, `LIZENZ.md`) entfernt, `docs/design-system.md`; Fix: Spinner folgt currentColor |
 | 18.06.2026 | redesign/churchtools-look | **Komplettes Redesign im ChurchTools-Look** (Plan-Änderung: feste CT-Version statt White-Label): neue Token-Palette (blau `#0061A1`, System-Font, Light/Dark); untere Tab-Bar Termine/Lieder/Mehr + `tab`/`view`-Routing; ct-nav-Header; alle Seiten neu gestaltet (Termine-Karten/Monatsgruppen, Lieder mit NoteTile/key-pill, Setlist mit Akzentbalken, Chart-Sektionsfarben, Mehr-Tab mit Segment/Toggle); neues Schallwellen-Logo; White-Label zurückgebaut (nur `orgName` admin-anpassbar, feste Palette/Logo, statisches Manifest); Funktionalität unverändert |
 
 ## So startest du die App lokal

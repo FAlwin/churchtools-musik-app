@@ -2,7 +2,7 @@
   position: absolute;
   inset: 0;
   z-index: 110;
-  background: rgba(20, 17, 15, 0.5);
+  background: var(--scrim);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;

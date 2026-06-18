@@ -3,6 +3,7 @@ import type { SongLibraryEntry } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
+import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
 import type { SongUsageMap } from '../services/churchtoolsApi';
@@ -74,17 +75,12 @@ export function AllSongs({
           <input placeholder="Lied oder Autor suchen…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         {showStats && (
-          <div className={styles.seg}>
-            {SORTS.map((s) => (
-              <button
-                key={s.id}
-                className={`${styles.segBtn}${sort === s.id ? ' ' + styles.segOn : ''}`}
-                onClick={() => setSort(s.id)}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
+          <Segment
+            className={styles.segWrap}
+            value={sort}
+            options={SORTS.map((s) => ({ value: s.id, label: s.label }))}
+            onChange={setSort}
+          />
         )}
       </div>
 

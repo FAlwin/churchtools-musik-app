@@ -235,7 +235,7 @@
   font-weight: 700;
   font-size: 16px;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
 
   &:disabled {
     opacity: 0.4;
@@ -250,7 +250,7 @@
   inset: 0;
   z-index: 5;
   border-radius: 14px;
-  background: rgba(0, 97, 110, 0.82); // Teal, leicht durchscheinend
+  background: rgba(15, 22, 28, 0.82); // neutraler dunkler Schleier
   display: flex;
   align-items: center;
   justify-content: center;
@@ -263,7 +263,7 @@
   flex-direction: column;
   gap: 4px;
   color: #fff;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   font-size: 16px;
   font-weight: 800;
 
@@ -298,7 +298,7 @@
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
 
   &.on {
     background: var(--blue);
@@ -322,7 +322,7 @@
   border-radius: 10px;
   background: var(--surface3);
   color: var(--text);
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -342,7 +342,7 @@
   height: 28px;
   border: none;
   background: transparent;
-  color: rgba(255, 252, 242, 0.6);
+  color: var(--text2);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -350,7 +350,7 @@
   transition:
     background 0.1s,
     color 0.1s;
-  font-family: 'Montserrat', inherit;
+  font-family: var(--ui);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -358,13 +358,13 @@
   // Hover nur auf Geräten mit echter Maus – verhindert „klebenden" Zustand auf Touch
   @media (hover: hover) {
     &:hover {
-      background: rgba(255, 252, 242, 0.15);
-      color: #fff;
+      background: var(--surface3);
+      color: var(--text);
     }
   }
   &.on {
     color: #fff;
-    background: rgba(255, 252, 242, 0.22);
+    background: var(--blue);
   }
   &:disabled {
     opacity: 0.5;
@@ -381,8 +381,8 @@
 
 .bpmChip {
   font-size: 11px;
-  color: rgba(255, 252, 242, 0.45);
-  font-family: 'JetBrains Mono', monospace;
+  color: var(--text3);
+  font-family: var(--ui);
   padding: 0 4px;
 }
 
@@ -433,7 +433,7 @@
   background: transparent;
   border-radius: 9px;
   cursor: pointer;
-  font-family: 'Montserrat', inherit;
+  font-family: var(--ui);
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
@@ -605,7 +605,7 @@
   background: transparent;
   border-radius: 10px;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
@@ -635,7 +635,7 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
 }
 
 // ── Annotations-Leinwand ──
@@ -654,7 +654,7 @@
 
 .textObj {
   position: absolute;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   font-weight: 700;
   line-height: 1;
   white-space: pre;
@@ -712,7 +712,7 @@
   background: rgba(20, 17, 15, 0.92);
   border-radius: 8px;
   padding: 5px 10px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   font-weight: 700;
   outline: none;
   min-width: 110px;

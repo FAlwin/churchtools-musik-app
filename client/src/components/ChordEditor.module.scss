@@ -24,7 +24,7 @@
   font-size: 16px;
   font-weight: 700;
   color: #fff;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -38,7 +38,7 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
 }
 .cancel {
   background: rgba(0, 0, 0, 0.22);
@@ -133,5 +133,5 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--ui);
 }
