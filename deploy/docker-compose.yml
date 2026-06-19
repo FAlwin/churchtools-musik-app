@@ -7,7 +7,7 @@ services:
   app:
     image: ghcr.io/falwin/churchtools-musik-app:latest
     # Für reproduzierbare Updates eine feste Version pinnen statt :latest, z. B.
-    #   image: ghcr.io/falwin/churchtools-musik-app:v2.0.0
+    #   image: ghcr.io/falwin/churchtools-musik-app:2.0.0
     container_name: churchtools-musik-app
     restart: unless-stopped
     environment:

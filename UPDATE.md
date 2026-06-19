@@ -24,7 +24,7 @@ Version ein:
 
 ```yaml
 # in docker-compose.yml
-image: ghcr.io/falwin/churchtools-musik-app:v2.0.0
+image: ghcr.io/falwin/churchtools-musik-app:2.0.0
 ```
 
 Zum Aktualisieren dann die Versionsnummer hochsetzen und `docker compose pull && up -d` ausführen.
