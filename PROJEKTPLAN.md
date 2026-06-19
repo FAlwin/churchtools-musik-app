@@ -52,7 +52,9 @@ Entscheidungen → `docs/entscheidungen.md`.
       Nach `main` gemerged (PR #14) + **produktiv deployt** (musik.ecg-donrath.de, 19.06.2026, verifiziert)
       inkl. Chart-Lesbarkeits-Politur (Akkord-Abstände + Akkorde in Blau). Siehe `docs/design-system.md`.
 - [ ] 6.3 vite@8-Upgrade (behebt die zurückgestellten moderate npm-audit-Findings)
-- [ ] 6.4 **Verteilung an andere Gemeinden (Selbst-Hosting)** – geplant, Fahrplan in `WHITE-LABEL.md`
-      (öffentliches Repo + GHCR-Images, Entkopplung von ECG, Lizenz/Disclaimer, Onboarding-Doku)
+- [ ] 6.4 **Verteilung an andere Gemeinden (Selbst-Hosting)** – Schritte 1–4 umgesetzt (Branch
+      `feature/decouple-ecg`: Entkopplung, GHCR-Release-Pipeline, Doku, MIT-Lizenz); offen ist nur
+      noch Schritt 5 (main-Merge, Tag `v2.0.0`, Repo + GHCR-Package öffentlich, ECG-Re-Deploy).
+      Fahrplan in `WHITE-LABEL.md`. Plus neues Feature: konfigurierbare Links (Mehr-Tab/Login).
 
 **Definition of Done:** je Teilprojekt eigener Plan; hier nur als Merker.

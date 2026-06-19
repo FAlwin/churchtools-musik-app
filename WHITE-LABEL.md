@@ -1,8 +1,9 @@
 # Verteilung an andere Gemeinden (Selbst-Hosting)
 
-> **Status: geplant, noch nicht umgesetzt.** Dieses Dokument ist der Fahrplan, um die App
-> anderen Gemeinden zur Verfügung zu stellen. Umsetzung in einer eigenen Session.
-> Letzte Aktualisierung: 19.06.2026.
+> **Status (19.06.2026): Schritte 1–4 umgesetzt** auf Branch `feature/decouple-ecg`
+> (Entkopplung, Image-/Release-Pipeline, Doku, MIT-Lizenz) – noch nicht gepusht/gemergt.
+> **Offen: Reihenfolge-Schritt 5** – Branch → main, Tag `v2.0.0`, Repo öffentlich schalten,
+> GHCR-Package öffentlich, ECG-Re-Deploy. Dieses Dokument bleibt der Fahrplan dazu.
 
 ## Kontext & Abgrenzung
 Die **alte** White-Label-Idee (jede Gemeinde passt Farben/Logo selbst an) bleibt **verworfen**
