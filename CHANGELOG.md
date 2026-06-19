@@ -5,12 +5,14 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
-## [Unreleased] → geplant als v2.0.0
+## [Unreleased]
 
-Erster für die Verteilung an andere Gemeinden vorbereiteter Release
+_(noch keine Änderungen)_
+
+## [2.0.0] – 2026-06-19
+
+Erster **öffentlicher** Release, für die Verteilung an andere Gemeinden
 (jede Gemeinde betreibt ihre eigene, autarke Instanz desselben Codes).
-Wird getaggt, sobald das Repo öffentlich geht (dann auch mit schneller
-Multi-Arch-Pipeline über native ARM-Runner).
 
 ### Geändert
 - **ChurchTools-Look** als feste App-Optik (Tab-Navigation, neue Farb-/Schrift-Tokens,
