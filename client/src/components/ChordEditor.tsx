@@ -7,8 +7,8 @@ import styles from './ChordEditor.module.scss';
 interface ChordEditorProps {
   songTitle: string;
   initialText: string;
-  /** true, wenn bereits eine ECG-Version existiert (Zurücksetzen anbieten). */
-  hasEcg: boolean;
+  /** true, wenn bereits eine bearbeitete Version existiert (Zurücksetzen anbieten). */
+  hasEdited: boolean;
   saving: boolean;
   error: string | null;
   onSave: (text: string) => void;
@@ -20,7 +20,7 @@ interface ChordEditorProps {
 export function ChordEditor({
   songTitle,
   initialText,
-  hasEcg,
+  hasEdited,
   saving,
   error,
   onSave,
@@ -46,8 +46,8 @@ export function ChordEditor({
 
       <div className={styles.hint}>
         Bearbeite den Text. Akkorde stehen in eckigen Klammern direkt vor der Silbe, z.B.
-        <code> [G]Halleluja</code>. Abschnitte mit <code>{'{comment: Vers}'}</code>. Wird als ECG-Version
-        in ChurchTools gespeichert – das Original bleibt erhalten.
+        <code> [G]Halleluja</code>. Abschnitte mit <code>{'{comment: Vers}'}</code>. Wird als bearbeitete
+        Version in ChurchTools gespeichert – das Original bleibt erhalten.
       </div>
 
       <div className={styles.split}>
@@ -72,7 +72,7 @@ export function ChordEditor({
         </div>
       </div>
 
-      {hasEcg && (
+      {hasEdited && (
         <div style={{ padding: '10px 14px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}>
           <button className={styles.reset} onClick={onReset} disabled={saving}>
             Auf Original zurücksetzen

@@ -27,12 +27,19 @@ import type { CtArrangementFile, CtSong } from './churchtools.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
 
-/** Erkennt, ob eine Datei die bearbeitete ECG-Version ist (am Namen). */
-function isEcgFile(f: CtArrangementFile): boolean {
-  return /ecg/i.test(f.name) && /\.chordpro$/i.test(f.name);
+/** Datei-Suffix-Marker für die bearbeitete Version (Original bleibt unangetastet). */
+const EDITED_SUFFIX = 'Bearbeitet';
+
+/**
+ * Erkennt am Namen, ob eine Datei die bearbeitete Version ist.
+ * Matcht den neuen Marker „— Bearbeitet.chordpro" UND – aus Abwärtskompatibilität –
+ * den alten „— ECG.chordpro" (Bestandsdateien älterer Instanzen funktionieren weiter).
+ */
+function isEditedFile(f: CtArrangementFile): boolean {
+  return /[—-]\s*(?:bearbeitet|ecg)\.chordpro$/i.test(f.name);
 }
 function isOriginalChordpro(f: CtArrangementFile): boolean {
-  return /\.chordpro$/i.test(f.name) && !isEcgFile(f);
+  return /\.chordpro$/i.test(f.name) && !isEditedFile(f);
 }
 
 /** PDF/Bild-Dokumente eines Arrangements (für die Dokumentenanzeige). */
@@ -98,7 +105,7 @@ async function buildSong(
     song.arrangements.find((a) => a.id === agendaSong.arrangementId) ?? song.arrangements[0];
 
   const originalFile = arr?.files.find(isOriginalChordpro);
-  const ecgFile = arr?.files.find(isEcgFile);
+  const editedFile = arr?.files.find(isEditedFile);
 
   const download = async (f?: CtArrangementFile): Promise<string> => {
     if (!f) return '';
@@ -108,14 +115,14 @@ async function buildSong(
       return '';
     }
   };
-  // Original- und ECG-ChordPro parallel laden
-  const [chordpro, chordproEcg] = await Promise.all([
+  // Original- und bearbeitete ChordPro parallel laden
+  const [chordpro, chordproEdited] = await Promise.all([
     download(originalFile),
-    ecgFile ? download(ecgFile) : Promise.resolve(null),
+    editedFile ? download(editedFile) : Promise.resolve(null),
   ]);
 
-  // Tonart/Takt aus der angezeigten Version ableiten (ECG bevorzugt, sonst Original)
-  const source = chordproEcg || chordpro;
+  // Tonart/Takt aus der angezeigten Version ableiten (bearbeitet bevorzugt, sonst Original)
+  const source = chordproEdited || chordpro;
   const originalKey = metaValue(source, 'key') ?? arr?.keyOfArrangement ?? arr?.key ?? agendaSong.key ?? 'C';
   const targetKey = agendaSong.key ?? arr?.key ?? originalKey;
   const timeSig = metaValue(source, 'time') ?? arr?.beat ?? null;
@@ -131,7 +138,7 @@ async function buildSong(
     timeSig,
     ccli: song.ccli ?? null,
     chordpro,
-    chordproEcg,
+    chordproEdited,
     documents: arr ? documentsOf(arr.files) : [],
   };
 }
@@ -150,8 +157,8 @@ export async function resolveFileUrl(
   throw new HttpError(404, 'Datei nicht gefunden.');
 }
 
-/** Erzeugt/aktualisiert die bearbeitete ECG-Version eines Arrangements. */
-export async function saveEcgChordpro(
+/** Erzeugt/aktualisiert die bearbeitete Version eines Arrangements. */
+export async function saveEditedChordpro(
   cookie: string,
   songId: number,
   arrangementId: number,
@@ -160,18 +167,18 @@ export async function saveEcgChordpro(
   const song = await getSong(cookie, songId);
   const arr = song.arrangements.find((a) => a.id === arrangementId);
   if (!arr) throw new HttpError(404, 'Arrangement nicht gefunden.');
-  // vorhandene ECG-Datei zuerst entfernen (ersetzen)
-  const existing = arr.files.find(isEcgFile);
+  // vorhandene bearbeitete Datei zuerst entfernen (ersetzen) – matcht auch alte „— ECG"-Dateien
+  const existing = arr.files.find(isEditedFile);
   if (existing) {
     const id = fileIdFromUrl(existing.fileUrl);
     if (id) await deleteFile(cookie, id);
   }
   const safeTitle = song.name.replace(/[\\/:*?"<>|]/g, '').trim();
-  await uploadChordpro(cookie, arrangementId, `${safeTitle} — ECG.chordpro`, text);
+  await uploadChordpro(cookie, arrangementId, `${safeTitle} — ${EDITED_SUFFIX}.chordpro`, text);
 }
 
-/** Löscht die ECG-Version (Zurücksetzen auf Original). */
-export async function deleteEcgChordpro(
+/** Löscht die bearbeitete Version (Zurücksetzen auf Original). */
+export async function deleteEditedChordpro(
   cookie: string,
   songId: number,
   arrangementId: number,
@@ -179,7 +186,7 @@ export async function deleteEcgChordpro(
   const song = await getSong(cookie, songId);
   const arr = song.arrangements.find((a) => a.id === arrangementId);
   if (!arr) throw new HttpError(404, 'Arrangement nicht gefunden.');
-  const existing = arr.files.find(isEcgFile);
+  const existing = arr.files.find(isEditedFile);
   if (!existing) return;
   const id = fileIdFromUrl(existing.fileUrl);
   if (id) await deleteFile(cookie, id);

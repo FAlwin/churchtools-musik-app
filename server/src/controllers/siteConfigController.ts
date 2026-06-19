@@ -16,5 +16,5 @@ export async function putSiteConfigCtrl(req: Request, res: Response): Promise<vo
   if (!parsed.success) {
     throw new HttpError(400, parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
   }
-  res.json(await saveSiteConfig(parsed.data.orgName));
+  res.json(await saveSiteConfig(parsed.data.orgName, parsed.data.links));
 }

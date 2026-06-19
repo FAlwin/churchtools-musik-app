@@ -2,8 +2,8 @@
   "name": "churchtools-musik-app",
   "version": "0.1.0",
   "private": true,
-  "description": "Worship Charts PWA für die ECG Donrath – Chord Charts aus ChurchTools",
-  "license": "UNLICENSED",
+  "description": "Worship-Charts-PWA für ChurchTools – Chord Charts aus der Setlist, automatisch transponiert",
+  "license": "MIT",
   "workspaces": [
     "client",
     "server",

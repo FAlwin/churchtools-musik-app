@@ -13,6 +13,9 @@ export function useSiteConfig() {
     queryKey: ['site-config'],
     queryFn: api.getSiteConfig,
     initialData: DEFAULT_SITE_CONFIG,
+    // Defaults sofort anzeigen (kein Aufblitzen), aber als „veraltet" markieren,
+    // damit die echte Konfig (orgName, Links) beim Laden direkt nachgeladen wird.
+    initialDataUpdatedAt: 0,
     staleTime: 1000 * 60 * 10,
   });
 

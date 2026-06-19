@@ -145,7 +145,7 @@ export function deleteAgendaItem(eventId: number, itemId: number): Promise<{ ok:
   return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, { method: 'DELETE' });
 }
 
-/** Speichert die bearbeitete ECG-Version eines Songs in ChurchTools. */
+/** Speichert die bearbeitete Version eines Songs in ChurchTools. */
 export function saveChordpro(songId: number, arrangementId: number, text: string): Promise<{ ok: boolean }> {
   return apiFetch(`/api/songs/${songId}/chordpro`, {
     method: 'PUT',
@@ -153,7 +153,7 @@ export function saveChordpro(songId: number, arrangementId: number, text: string
   });
 }
 
-/** Löscht die ECG-Version (zurück zum Original). */
+/** Löscht die bearbeitete Version (zurück zum Original). */
 export function deleteChordpro(songId: number, arrangementId: number): Promise<{ ok: boolean }> {
   return apiFetch(`/api/songs/${songId}/chordpro`, {
     method: 'DELETE',

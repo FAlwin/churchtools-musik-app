@@ -1,0 +1,28 @@
+# Fertiges Image aus der GitHub Container Registry – KEIN lokaler Build nötig.
+#
+# So nutzt ihr es: diese Datei + eine .env (siehe .env.example) in einen Ordner
+# legen und starten mit:  docker compose up -d
+# Updates: siehe UPDATE.md.
+services:
+  app:
+    image: ghcr.io/falwin/churchtools-musik-app:latest
+    # Für reproduzierbare Updates eine feste Version pinnen statt :latest, z. B.
+    #   image: ghcr.io/falwin/churchtools-musik-app:v2.0.0
+    container_name: churchtools-musik-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      CHURCHTOOLS_BASE_URL: ${CHURCHTOOLS_BASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
+    ports:
+      # links = Host-Port (bei Bedarf ändern), rechts = im Container fest auf 3001.
+      # Extern bindet ihr das üblicherweise hinter einen Reverse Proxy mit HTTPS.
+      - '3001:3001'
+    volumes:
+      # Persistente Einstellungen (u. a. der Gemeindename). NICHT löschen –
+      # sonst sind die Einstellungen nach einem Update weg.
+      - musik-data:/app/data
+
+volumes:
+  musik-data:

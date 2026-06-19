@@ -27,6 +27,7 @@ export type IconName =
   | 'clock'
   | 'pin'
   | 'link'
+  | 'external'
   | 'trash'
   | 'heading'
   | 'plus'
@@ -204,6 +205,13 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
           <path d="M9.5 14.5l5-5" />
           <path d="M11.5 7.5l1-1a4 4 0 0 1 5.66 5.66l-1 1" />
           <path d="M12.5 16.5l-1 1a4 4 0 0 1-5.66-5.66l1-1" />
+        </svg>
+      );
+    case 'external':
+      return (
+        <svg {...p}>
+          <path d="M14 5h5v5M19 5l-8 8" />
+          <path d="M18 13.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.5" />
         </svg>
       );
     case 'trash':
