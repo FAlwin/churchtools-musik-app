@@ -147,6 +147,18 @@ export interface AuthStatus {
  * nur der Name der Gemeinde (Admin, über die Einstellungen). Wird vom Server aus
  * `site.json` gelesen/geschrieben.
  */
+/** Frei konfigurierbarer externer Link (z. B. zu einem anderen Gemeinde-Angebot). */
+export interface SiteLink {
+  /** Stabile ID (für React-Keys und Umsortieren). */
+  id: string;
+  /** Sichtbarer Button-/Zeilentext. */
+  label: string;
+  /** Zieladresse – nur http(s). */
+  url: string;
+  /** Zusätzlich auf der Login-Seite anzeigen (sonst nur im „Mehr"-Tab). */
+  showOnLogin: boolean;
+}
+
 export interface SiteConfig {
   /** Voller App-Name (fest). */
   appName: string;
@@ -154,11 +166,14 @@ export interface SiteConfig {
   description: string;
   /** Name der Gemeinde/Organisation – einziger anpassbarer Wert. */
   orgName: string;
+  /** Frei konfigurierbare externe Links (Mehr-Tab; optional auch Login-Seite). */
+  links: SiteLink[];
 }
 
-/** Standardwerte. `appName`/`description` sind fest; nur `orgName` ist anpassbar. */
+/** Standardwerte. `appName`/`description` sind fest; `orgName`/`links` sind anpassbar. */
 export const DEFAULT_SITE_CONFIG: SiteConfig = {
   appName: 'Churchtools Musik App',
   description: 'Chord Charts aus ChurchTools',
   orgName: 'Meine Gemeinde',
+  links: [],
 };

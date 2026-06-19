@@ -7,6 +7,7 @@ import { Sheet } from '../components/Sheet';
 import { Spinner } from '../components/Spinner';
 import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
+import { LinksManager } from '../components/LinksManager';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
 import styles from './Settings.module.scss';
 
@@ -42,6 +43,7 @@ export function Settings({
   onLogout,
 }: SettingsProps) {
   const [showOrg, setShowOrg] = useState(false);
+  const [showLinks, setShowLinks] = useState(false);
   const [orgDraft, setOrgDraft] = useState(site.orgName);
   const update = useUpdateSiteConfig();
   const logo = theme === 'dark' ? '/logo-rund-dunkel.png' : '/logo-rund-hell.png';
@@ -102,6 +104,27 @@ export function Settings({
           </div>
         </div>
 
+        {/* Weitere Angebote: frei konfigurierbare externe Links (für alle sichtbar) */}
+        {site.links.length > 0 && (
+          <div className={styles.group}>
+            <div className={styles.groupHdr}>Weitere Angebote</div>
+            <div className={styles.cardList}>
+              {site.links.map((link) => (
+                <a
+                  key={link.id}
+                  className={`${styles.setRow} ${styles.tappable} ${styles.linkRow}`}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className={styles.setLabel}>{link.label}</span>
+                  <Icon name="external" size={18} className={styles.extIcon} />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Organisation (nur Admin) */}
         {isAdmin && (
           <div className={styles.group}>
@@ -116,6 +139,17 @@ export function Settings({
               >
                 <span className={styles.setLabel}>Organisation / Name</span>
                 <span className={styles.setValue}>{site.orgName}</span>
+              </button>
+              <button
+                className={`${styles.setRow} ${styles.tappable}`}
+                onClick={() => setShowLinks(true)}
+              >
+                <span className={styles.setLabel}>Links verwalten</span>
+                <span className={styles.setValue}>
+                  {site.links.length === 0
+                    ? 'keine'
+                    : `${site.links.length} ${site.links.length === 1 ? 'Link' : 'Links'}`}
+                </span>
               </button>
             </div>
           </div>
@@ -148,6 +182,12 @@ export function Settings({
           <button className={styles.orgSave} onClick={saveOrg} disabled={update.isPending}>
             {update.isPending ? <Spinner /> : 'Speichern'}
           </button>
+        </Sheet>
+      )}
+
+      {showLinks && (
+        <Sheet title="Links verwalten" onClose={() => setShowLinks(false)}>
+          <LinksManager site={site} onClose={() => setShowLinks(false)} />
         </Sheet>
       )}
     </Screen>

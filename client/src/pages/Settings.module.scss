@@ -73,6 +73,15 @@
   color: var(--text2);
   font-weight: 500;
 }
+
+// Externe-Link-Zeile (Gruppe „Weitere Angebote")
+.linkRow {
+  text-decoration: none;
+}
+.extIcon {
+  color: var(--text3);
+  flex-shrink: 0;
+}
 .danger {
   color: var(--red);
   flex: 1;

@@ -1,0 +1,166 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.handle {
+  border: none;
+  background: none;
+  color: var(--text3);
+  font-size: 18px;
+  line-height: 1;
+  cursor: grab;
+  padding: 4px 2px;
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.labelInput,
+.urlInput {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface2);
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 14px;
+  outline: none;
+  font-family: var(--ui);
+
+  &:focus {
+    border-color: var(--blue);
+  }
+  &::placeholder {
+    color: var(--text3);
+  }
+}
+
+.labelInput {
+  flex: 1;
+  font-weight: 500;
+}
+
+.urlInput {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.del {
+  border: none;
+  background: none;
+  color: var(--red);
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.loginRow {
+  width: 100%;
+  margin-top: 10px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.loginLbl {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.tog {
+  width: 42px;
+  height: 25px;
+  border-radius: 13px;
+  padding: 3px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background: var(--track-off);
+  transition: background 0.22s;
+}
+.togOn {
+  background: var(--blue);
+}
+.togThumb {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.22s;
+}
+.togOn .togThumb {
+  transform: translateX(17px);
+}
+
+.add {
+  margin-top: 12px;
+  border: 1.5px dashed var(--blue);
+  border-radius: 9px;
+  background: none;
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: var(--ui);
+}
+
+.err {
+  font-size: 13px;
+  color: var(--red);
+  margin-top: 10px;
+  text-align: center;
+}
+
+.save {
+  height: 48px;
+  width: 100%;
+  margin-top: 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--blue);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ui);
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
