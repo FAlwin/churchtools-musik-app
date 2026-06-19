@@ -725,8 +725,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  padding: 6px 14px;
+  // Nur ein kleiner Abstand zum iOS-Home-Strich – nicht die volle Safe-Area,
+  // sonst entsteht im Homescreen-/PWA-Modus ein großes leeres Band unter den Pfeilen.
+  padding-bottom: max(6px, calc(env(safe-area-inset-bottom) - 20px));
   background: var(--nav-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
