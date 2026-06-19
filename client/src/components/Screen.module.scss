@@ -12,6 +12,9 @@
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  // Platz am Ende, damit der letzte Eintrag über den Home-Strich hinaus gescrollt werden kann
+  // (sonst klebt er in Detailansichten ohne Leiste hinter der unteren Safe-Area).
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
 
   &::-webkit-scrollbar {
     width: 3px;

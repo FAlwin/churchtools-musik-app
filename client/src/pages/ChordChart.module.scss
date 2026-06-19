@@ -726,9 +726,9 @@
   align-items: center;
   gap: 8px;
   padding: 6px 14px;
-  // Nur ein kleiner Abstand zum iOS-Home-Strich – nicht die volle Safe-Area,
-  // sonst entsteht im Homescreen-/PWA-Modus ein großes leeres Band unter den Pfeilen.
-  padding-bottom: max(6px, calc(env(safe-area-inset-bottom) - 24px));
+  // Abstand der Pfeile über dem Home-Strich. ~62px auf dem iPhone (Safe-Area 34px + 28px),
+  // 42px auf Geräten ohne Strich. (Wert beim Feinschliff festgelegt.)
+  padding-bottom: max(42px, calc(env(safe-area-inset-bottom) + 28px));
   background: var(--nav-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -768,7 +768,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 5px;
+  // Feste Mindesthöhe (Platz für Punkte + bis zu 2 Titelzeilen), damit der Footer NICHT springt,
+  // wenn der nächste Lied-Titel mal 1- und mal 2-zeilig ist. Inhalt wird darin zentriert.
+  min-height: 50px;
 }
 
 .dots {
@@ -810,4 +814,11 @@
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
+  line-height: 1.25;
+  // Höchstens 2 Zeilen, sonst Auslassungspunkte – verhindert, dass ein sehr langer Titel den
+  // Footer auf 3 Zeilen aufbläht (zusammen mit der Mindesthöhe bleibt die Leiste stabil).
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

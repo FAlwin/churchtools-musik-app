@@ -19,15 +19,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-// iOS-PWA: `height: 100%` füllt im Homescreen-Modus NICHT die volle Bildschirmhöhe (bekannter
-// iOS-Bug) → unten bleibt der Safe-Area-Streifen als grauer Balken sichtbar. `100dvh` füllt
-// dagegen voll (auf dem Gerät verifiziert: docH==innerH==812). Browser ohne dvh behalten 100%.
+// iOS-PWA-Höhe – knifflig: `window.innerHeight` (von `syncAppHeight()` in main.tsx als `--app-h`
+// gesetzt) trackt zwar beide Ausrichtungen, schließt im Standalone-Modus aber die UNTERE
+// Safe-Area (Home-Strich-Zone) aus → die App bliebe ~34px zu kurz, darunter ein dunkler Streifen.
+// Deshalb die Safe-Area wieder dazurechnen: volle Bildschirmhöhe = innerHeight + safe-area-bottom.
+// (`100dvh`-Fallback, bis das Script einmal lief; außerhalb iOS ist safe-area-bottom = 0.)
 html {
-  height: 100dvh;
+  height: calc(var(--app-h, 100dvh) + env(safe-area-inset-bottom));
 }
 
 #root {
   height: 100%;
+  // Bezugsrahmen für die absolut positionierten `.screen`-Detailansichten (Setlist/Chart).
+  // Ohne dies richten sie sich nach dem Layout-Viewport (= innerHeight, OHNE untere Safe-Area)
+  // und bleiben ~34px zu kurz → leerer Balken / dunkler Streifen unten. Mit `relative` füllen
+  // sie die volle App-Höhe (#root = innerHeight + Safe-Area).
+  position: relative;
 }
 
 button {

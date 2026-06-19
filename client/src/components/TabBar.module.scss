@@ -6,10 +6,9 @@
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid var(--hair);
   flex-shrink: 0;
-  // Nur ein kleiner Abstand zum iOS-Home-Strich – nicht die volle Safe-Area (sonst wirkt unten
-  // ein großer leerer Balken). Die App füllt den Bildschirm bereits voll; dies ist der einzige
-  // Abstand unten. iPhone ~10px, iPad/ohne Home-Strich ~6px.
-  padding-bottom: max(6px, calc(env(safe-area-inset-bottom) - 24px));
+  // Abstand der Symbole über dem Home-Strich. ~54px auf dem iPhone (Safe-Area 34px + 20px),
+  // 34px auf Geräten ohne Strich. (Wert beim Feinschliff festgelegt.)
+  padding-bottom: max(34px, calc(env(safe-area-inset-bottom) + 20px));
   z-index: 20;
 }
 
@@ -20,7 +19,7 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 8px 4px 7px;
+  padding: 8px 4px 6px;
   background: none;
   border: none;
   cursor: pointer;

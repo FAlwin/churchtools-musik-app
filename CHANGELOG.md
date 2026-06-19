@@ -7,7 +7,22 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
-_(noch keine Änderungen)_
+### Behoben
+
+- **iOS-PWA-Layout (Homescreen/Standalone):** App füllt jetzt zuverlässig den vollen Bildschirm
+  in **beiden** Ausrichtungen. Ursachen behoben:
+  - `100dvh` aktualisierte sich beim Drehen nicht (Tab-Leiste rutschte im Querformat unter den
+    Bildschirm) → App-Höhe wird jetzt aus `window.innerHeight` gesetzt (`--app-h`, mehrfach
+    nachgesetzt bei `load`/`pageshow`/rAF) **plus** der unteren Safe-Area, die `innerHeight` im
+    Standalone-Modus ausschließt (sonst dunkler Streifen unter der Leiste).
+  - Detailansichten (Setlist/Chart) richteten ihr `position:absolute`-Layout am Layout-Viewport
+    aus (ohne untere Safe-Area) → `#root` ist jetzt Bezugsrahmen, die Ansichten füllen die volle
+    Höhe (kein leerer Balken / dunkler Streifen mehr).
+  - Scrollbereiche bekommen unten Platz, damit der letzte Eintrag über den Home-Strich hinaus
+    scrollbar ist.
+- **Chord-Chart-Footer** springt nicht mehr zwischen 1- und 2-zeiligen „Nächstes Lied"-Titeln
+  (feste Mindesthöhe, max. 2 Zeilen) und sitzt mit stabilem Abstand über dem Home-Strich.
+- Tab-Leiste: Abstand der Symbole über dem Home-Strich vereinheitlicht und feinjustiert.
 
 ## [2.0.0] – 2026-06-19
 
