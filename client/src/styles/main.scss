@@ -19,6 +19,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+// iOS-PWA: `height: 100%` füllt im Homescreen-Modus NICHT die volle Bildschirmhöhe (bekannter
+// iOS-Bug) → unten bleibt der Safe-Area-Streifen als grauer Balken sichtbar. `100dvh` füllt
+// dagegen voll (auf dem Gerät verifiziert: docH==innerH==812). Browser ohne dvh behalten 100%.
+html {
+  height: 100dvh;
+}
+
 #root {
   height: 100%;
 }
