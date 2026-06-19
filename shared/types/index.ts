@@ -40,8 +40,8 @@ export interface SetlistSong {
   ccli: string | null;
   /** Roher ChordPro-Inhalt der Originaldatei (SongSelect-Dialekt oder Standard) */
   chordpro: string;
-  /** Bearbeitete ECG-Version, falls vorhanden (separate .chordpro-Datei) */
-  chordproEcg: string | null;
+  /** Bearbeitete Version, falls vorhanden (separate .chordpro-Datei) */
+  chordproEdited: string | null;
   /** Anzeigbare Dokumente des Arrangements (PDF / Bild) */
   documents: SongDocument[];
 }
@@ -160,5 +160,5 @@ export interface SiteConfig {
 export const DEFAULT_SITE_CONFIG: SiteConfig = {
   appName: 'Churchtools Musik App',
   description: 'Chord Charts aus ChurchTools',
-  orgName: 'ECG Donrath',
+  orgName: 'Meine Gemeinde',
 };

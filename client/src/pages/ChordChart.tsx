@@ -69,7 +69,7 @@ export function ChordChart({
   const [showSongMenu, setShowSongMenu] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
-  // Editor + Versionswahl (ECG-Bearbeitung vs. Original)
+  // Editor + Versionswahl (bearbeitete Version vs. Original)
   const [showEditor, setShowEditor] = useState(false);
   const [editorSaving, setEditorSaving] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
@@ -101,8 +101,9 @@ export function ChordChart({
   const totalOffset = getSemitoneOffset(song.originalKey, curKey);
   const gripOffset = totalOffset - capo; // Griff-Akkorde (mit Kapo)
   const shapeKey = shiftKey(curKey, -capo);
-  const hasEcg = song.chordproEcg !== null;
-  const displayedChordpro = !showOriginal && song.chordproEcg ? song.chordproEcg : song.chordpro;
+  const hasEdited = song.chordproEdited !== null;
+  const displayedChordpro =
+    !showOriginal && song.chordproEdited ? song.chordproEdited : song.chordpro;
   const sections = parseChordPro(displayedChordpro);
   // Startvorlage, wenn noch gar kein Text existiert (neues Lied erfassen)
   const editorInitial =
@@ -301,7 +302,7 @@ export function ChordChart({
     setConfirmClear(false);
   }
 
-  // ── Editor: ECG-Version speichern / zurücksetzen ──
+  // ── Editor: bearbeitete Version speichern / zurücksetzen ──
   async function handleSaveChordpro(text: string) {
     setEditorSaving(true);
     setEditorError(null);
@@ -356,7 +357,9 @@ export function ChordChart({
                   {!lyricsOnly && <span className={styles.keyChip}>{curKey}</span>}
                   {!lyricsOnly && capo > 0 && <span className={styles.capoBadge}>Capo {capo}</span>}
                   {lyricsOnly && <span className={styles.modeHint}>Nur Text</span>}
-                  {hasEcg && <span className={styles.ecgChip}>{showOriginal ? 'Original' : 'ECG'}</span>}
+                  {hasEdited && (
+                    <span className={styles.editedChip}>{showOriginal ? 'Original' : 'Bearbeitet'}</span>
+                  )}
                   {song.bpm !== null && <span className={styles.bpmChip}>♩ {song.bpm}</span>}
                 </>
               )}
@@ -529,7 +532,7 @@ export function ChordChart({
                 </button>
               ))}
 
-              {viewSource === 'chords' && hasEcg && (
+              {viewSource === 'chords' && hasEdited && (
                 <>
                   <div className={styles.menuLbl} style={{ marginTop: 6 }}>
                     Version
@@ -542,7 +545,7 @@ export function ChordChart({
                         setShowSongMenu(false);
                       }}
                     >
-                      ECG-Version
+                      Bearbeitet
                     </button>
                     <button
                       className={`${styles.segBtn}${showOriginal ? ' ' + styles.on : ''}`}
@@ -772,7 +775,7 @@ export function ChordChart({
           <ChordEditor
             songTitle={song.title}
             initialText={editorInitial}
-            hasEcg={hasEcg}
+            hasEdited={hasEdited}
             saving={editorSaving}
             error={editorError}
             onSave={handleSaveChordpro}

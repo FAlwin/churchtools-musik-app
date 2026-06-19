@@ -3,8 +3,8 @@ import { z } from 'zod';
 import {
   getServicesWithSetlists,
   getAgendaItems,
-  saveEcgChordpro,
-  deleteEcgChordpro,
+  saveEditedChordpro,
+  deleteEditedChordpro,
   resolveFileUrl,
   getSongLibrary,
   getSongChart,
@@ -194,11 +194,11 @@ const editSchema = z.object({
   text: z.string().min(1, 'Text fehlt'),
 });
 
-/** PUT /api/songs/:songId/chordpro – bearbeitete ECG-Version speichern. */
+/** PUT /api/songs/:songId/chordpro – bearbeitete Version speichern. */
 export async function putChordpro(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
   const { arrangementId, text } = editSchema.parse(req.body);
-  await saveEcgChordpro(req.ctCookie as string, songId, arrangementId, text);
+  await saveEditedChordpro(req.ctCookie as string, songId, arrangementId, text);
   res.json({ ok: true });
 }
 
@@ -216,10 +216,10 @@ export async function getFile(req: Request, res: Response): Promise<void> {
 
 const deleteSchema = z.object({ arrangementId: z.coerce.number().int().positive() });
 
-/** DELETE /api/songs/:songId/chordpro – ECG-Version löschen (auf Original zurücksetzen). */
+/** DELETE /api/songs/:songId/chordpro – bearbeitete Version löschen (auf Original zurücksetzen). */
 export async function deleteChordpro(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
   const { arrangementId } = deleteSchema.parse(req.body);
-  await deleteEcgChordpro(req.ctCookie as string, songId, arrangementId);
+  await deleteEditedChordpro(req.ctCookie as string, songId, arrangementId);
   res.json({ ok: true });
 }

@@ -141,7 +141,7 @@ export function Settings({
             value={orgDraft}
             maxLength={80}
             onChange={(e) => setOrgDraft(e.target.value)}
-            placeholder="z. B. ECG Donrath"
+            placeholder="z. B. Meine Gemeinde"
             autoFocus
           />
           {update.isError && <div className={styles.orgErr}>Speichern fehlgeschlagen.</div>}

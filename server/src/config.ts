@@ -15,7 +15,9 @@ function required(name: string, fallback?: string): string {
 export const config = {
   port: Number(process.env.PORT ?? 3001),
   nodeEnv: process.env.NODE_ENV ?? 'development',
-  churchtoolsBaseUrl: required('CHURCHTOOLS_BASE_URL', 'https://ecg-donrath.church.tools'),
+  // Pflichtfeld ohne Default: jede Instanz MUSS ihre eigene ChurchTools-URL setzen.
+  // Verhindert, dass eine fehlkonfigurierte Instanz still mit einem fremden ChurchTools redet.
+  churchtoolsBaseUrl: required('CHURCHTOOLS_BASE_URL'),
   sessionSecret: required('SESSION_SECRET', 'dev-only-insecure-secret'),
   /** Ablageort der Laufzeit-Branding-Datei (persistentes Docker-Volume). */
   siteConfigPath: process.env.SITE_CONFIG_PATH ?? './data/site.json',
