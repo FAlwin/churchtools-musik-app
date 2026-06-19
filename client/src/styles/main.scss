@@ -23,6 +23,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+// iOS Homescreen-/PWA-Modus: volle sichtbare Höhe inkl. Safe-Area füllen, sonst bleibt unten
+// ein leerer Streifen frei (zeigte den grauen Hintergrund unter der Tab-Leiste). `100dvh`
+// statt `100%`; Browser ohne dvh-Unterstützung ignorieren die Zeile und behalten `100%`.
+html {
+  height: 100dvh;
+}
+
 #root {
   height: 100%;
 }
