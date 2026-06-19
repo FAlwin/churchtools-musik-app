@@ -101,7 +101,7 @@ Aus Vorlage Abschnitt 2 befüllt (Tech-Stack, Konventionen, Security-Checkliste,
 ### ✅ Schritt 9 – Deployment *(erledigt 11.06.2026)*
 Dockerfile + docker-compose.yml; ein Container liefert API + App aus. **Auf dem
 Synology-NAS deployt** (Container Manager, Projekt `worship-charts`), lokal im WLAN
-live unter `http://192.168.10.188:3001`. Anleitung in `DEPLOYMENT.md`.
+live unter `http://<NAS-IP>:3001`. Anleitung in `DEPLOYMENT.md`.
 
 ### ✅ Schritt 10 – Ausbau & externer Zugang *(erledigt 12./13.06.2026)*
 - Kompletten Ablauf anzeigen + **voll bearbeiten** (Drag&Drop/Löschen/Umbenennen/Hinzufügen,

@@ -25,7 +25,7 @@ wer sieht nur das Liederbuch) kommen direkt aus ChurchTools (`/api/capabilities`
 **Entscheidung:** Externer Zugang über Synology Reverse Proxy + DDNS + Let's Encrypt,
 **kein** Cloudflare Tunnel (anders als im Blueprint vorgeschlagen).
 **Begründung:** Das NAS bringt Reverse Proxy und Zertifikatsverwaltung mit; der
-UniFi-Router leitet nur 443/80 weiter. Eine zusätzliche Cloudflare-Abhängigkeit ist
+Router leitet nur 443/80 weiter. Eine zusätzliche Cloudflare-Abhängigkeit ist
 nicht nötig. DSM-Ports (5000/5001) bleiben geschlossen.
 
 ## ChordPro-Bearbeitung als separate ECG-Version

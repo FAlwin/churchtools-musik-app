@@ -144,7 +144,7 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 - [x] Zod-Validierung auf allen API-Routen
 - [x] helmet eingerichtet
 - [x] express-rate-limit eingerichtet (zusätzlich striktes Limit am Login)
-- [x] Repository privat (GitHub `FAlwin/churchtools-musik-app`)
+- [x] Öffentliches Repo unter MIT-Lizenz (`FAlwin/churchtools-musik-app`); keine Secrets im Code/in der Historie (`.env` nie eingecheckt)
 - [x] Authentifizierung: persönlicher ChurchTools-Login, Session in signiertem httpOnly-Cookie
 - [x] HTTPS extern via Synology Reverse Proxy + Let's Encrypt (`musik.ecg-donrath.de`)
 - [x] npm audit: zuletzt geprüft am 11.06.2026 – 3 moderate (esbuild/vite,
@@ -153,10 +153,10 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 ## Deployment
 - **Synology NAS via Docker** (Container Manager, Projekt `worship-charts`) → **umgesetzt & live**.
 - **docker-compose.yml + Dockerfile:** vorhanden; ein Container liefert API + App aus (Port 3001).
-- **Intern (WLAN):** `http://192.168.10.188:3001`.
+- **Intern (WLAN):** `http://<NAS-IP>:3001`.
 - **Extern (HTTPS):** `https://musik.ecg-donrath.de` über **Synology Reverse Proxy** → `localhost:3001`,
-  DNS via Synology-DDNS (`ecgdonrath.synology.me`) + Hetzner-CNAME, Zertifikat Let's Encrypt,
-  Portweiterleitung 443/80 im UniFi-Router (DSM 5000/5001 bleiben zu). **Kein Cloudflare.**
+  DNS via DDNS (`<euer-ddns>.synology.me`) + CNAME, Zertifikat Let's Encrypt,
+  Portweiterleitung 443/80 im Router (DSM-Admin-Ports bleiben zu). **Kein Cloudflare.**
 - **Anleitung:** `DEPLOYMENT.md` (Schritt-für-Schritt, Container Manager + externer Zugang).
 
 ## Changelog
@@ -211,7 +211,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - **Fertig & produktiv:** App funktional vollständig (Charts + automatisches Transponieren,
   ChordPro-Editor, Dokumenten-Viewer, kompletter Ablauf + Bearbeiten, „Alle Lieder" mit
   Statistik, rechtebewusste UI). Auf dem NAS deployt (Container Manager, `worship-charts`),
-  **intern** `http://192.168.10.188:3001` und **extern** `https://musik.ecg-donrath.de` live.
+  **intern** `http://<NAS-IP>:3001` und **extern** `https://musik.ecg-donrath.de` live.
 - **Redesign live (19.06.2026):** ChurchTools-Look ist auf `main`, getestet (44 Tests) und
   **produktiv** unter `https://musik.ecg-donrath.de` (extern verifiziert, neues Bundle). Test-
   Instanz (`worship-charts-test`, `:3002`) war nur temporär und wurde nach Abnahme gelöscht.
