@@ -223,7 +223,7 @@ export default function App() {
   tabs.push('mehr');
 
   return (
-    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         {tab === 'termine' && canViewAgendas && (
           <Agenda
