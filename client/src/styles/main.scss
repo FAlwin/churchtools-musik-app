@@ -12,7 +12,11 @@
 html,
 body {
   height: 100%;
-  background: var(--bg);
+  // Leistenfarbe statt Seitengrau: Auf iOS reicht die App im Homescreen-/PWA-Modus nicht in die
+  // untere Safe-Area; dort scheint der html-/Canvas-Hintergrund durch. Mit der deckenden
+  // Leistenfarbe verschmilzt dieser Streifen mit der Tab-Leiste (kein grauer Balken mehr).
+  // Die Inhaltsflächen setzen ihren eigenen Hintergrund (var(--bg)) über die Screen-Komponente.
+  background: var(--nav-solid);
   color: var(--text);
   font-family: var(--ui);
   overflow: hidden;
