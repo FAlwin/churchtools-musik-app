@@ -6,7 +6,9 @@
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid var(--hair);
   flex-shrink: 0;
-  padding-bottom: env(safe-area-inset-bottom);
+  // Nur kleiner Abstand zum iOS-Home-Strich – nicht die volle Safe-Area, sonst
+  // entsteht im Homescreen-/PWA-Modus ein großer leerer grauer Balken unter den Tabs.
+  padding-bottom: max(2px, calc(env(safe-area-inset-bottom) - 24px));
   z-index: 20;
 }
 

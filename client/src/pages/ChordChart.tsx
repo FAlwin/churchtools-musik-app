@@ -95,6 +95,7 @@ export function ChordChart({
   const touchT = useRef<number>(0);
   const pendingLastPage = useRef(false);
   const slideDir = useRef<'right' | 'left'>('right'); // Richtung des Liedwechsel-Übergangs
+  const lastPageTimer = useRef<number | null>(null); // räumt das pendingLastPage-Flag auf
 
   // ── abgeleitete Werte ──
   const curKey = selectedKey || song.targetKey;
@@ -200,17 +201,30 @@ export function ChordChart({
     localStorage.setItem(`worship_lyrics_${song.id}`, lyricsOnly ? '1' : '0');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lyricsOnly]);
-  // Beim Songwechsel auf Seite 1 (oder ans Ende, wenn rückwärts geblättert)
+  // Vorwärts / neues Lied → auf Seite 1. (Rückwärts wird unten separat behandelt.)
   useEffect(() => {
     const el = drawing.bodyRef.current;
-    if (!el) return;
+    if (!el || pendingLastPage.current) return;
     const r = requestAnimationFrame(() => {
-      el.scrollLeft = pendingLastPage.current ? el.scrollWidth : 0;
-      pendingLastPage.current = false;
+      el.scrollLeft = 0;
     });
     return () => cancelAnimationFrame(r);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, song.id, pageWidth, fontSize, cols, lyricsOnly, chordGap]);
+
+  // Rückwärts geblättert → auf die LETZTE Seite des vorigen Lieds. Aber erst, wenn die
+  // Seitenzahl gemessen ist: früher wurde `scrollLeft = scrollWidth` gesetzt, bevor das neue
+  // Lied vermessen war → man landete fälschlich auf Seite 1.
+  useEffect(() => {
+    if (!pendingLastPage.current || activeDoc) return;
+    paged.goToPage(paged.pageCount - 1);
+    // Flag erst nach kurzer Ruhe löschen – mehrere Mess-Updates konvergieren so auf die letzte Seite.
+    if (lastPageTimer.current) clearTimeout(lastPageTimer.current);
+    lastPageTimer.current = window.setTimeout(() => {
+      pendingLastPage.current = false;
+    }, 320);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paged.pageCount, activeDoc]);
 
   useEffect(() => {
     if (selectedKey) localStorage.setItem(`worship_key_${song.id}`, selectedKey);
@@ -235,6 +249,7 @@ export function ChordChart({
     if (idx < songs.length - 1) {
       drawing.saveDrawing(song.id);
       slideDir.current = 'right';
+      pendingLastPage.current = false; // nächstes Lied: auf Seite 1
       setIdx(idx + 1);
     }
   }
@@ -254,12 +269,34 @@ export function ChordChart({
     if (target === idx) return;
     drawing.saveDrawing(song.id);
     slideDir.current = target > idx ? 'right' : 'left';
+    pendingLastPage.current = false; // direkter Sprung: auf Seite 1
     setIdx(target);
   }
   function goBack() {
     drawing.saveDrawing(song.id);
     onBack();
   }
+
+  // Tastatur: ←/→ blättern wie die Pfeil-Buttons (praktisch mit Tastatur/Fußschalter am iPad).
+  // Ein Ref hält die aktuellen Handler, damit der Listener nur einmal registriert wird.
+  const navRef = useRef({ next, prev, blocked: false });
+  navRef.current = { next, prev, blocked: showEditor || drawMode };
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (navRef.current.blocked) return;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        navRef.current.next();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        navRef.current.prev();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Wischen verhält sich exakt wie das Tippen an den Rand: es ruft next()/prev() auf
   // (Seitenwechsel sofort, Liedwechsel mit Gleit-Animation). Kein natives Schwung-Scrollen
