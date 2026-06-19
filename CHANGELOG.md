@@ -23,6 +23,9 @@ Erster **öffentlicher** Release, vorbereitet für die Verteilung an andere Geme
 - **Verteilung per fertigem Image:** automatischer Build bei jedem Versions-Tag
   (`v*`) → Multi-Arch-Image (amd64 **und** arm64) nach GHCR.
 - End-User-Verteilpaket unter `deploy/` (image-basiertes `docker-compose.yml` + `.env.example`).
+- **Frei konfigurierbare Links** (Mehr-Tab + optional Login-Seite), pro Instanz anpassbar.
+- **Dokumentation:** `README.md`, `INSTALL.md`, `UPDATE.md` und interne Onboarding-Checkliste.
+- **MIT-Lizenz** + Disclaimer (inoffizielles Community-Projekt, nicht mit der ChurchTools GmbH verbunden).
 
 ## [1.0.0] – 2026-06-18
 
