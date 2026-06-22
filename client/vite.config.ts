@@ -14,7 +14,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' statt 'autoUpdate': ein neuer Service Worker lädt die laufende App NICHT
+      // automatisch mitten im Betrieb neu (störend im Gottesdienst). Das Update wird beim
+      // nächsten Kaltstart aktiv, wenn keine Instanz der App mehr offen ist.
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'logo.png'],
       // Manifest wird zur Laufzeit vom Server geliefert (/api/manifest.webmanifest,
       // gebrandet pro Gemeinde). Das Plugin generiert daher KEIN statisches Manifest;
