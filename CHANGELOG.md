@@ -7,6 +7,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **Wartung:** Build-Werkzeug **Vite auf 8** angehoben (inkl. Vitest 3, `@vitejs/plugin-react`,
+  `vite-plugin-pwa`). Behebt die zurückgestellten `npm audit`-Findings in `esbuild` (betrafen nur
+  den lokalen Dev-Server, kein Produktivrisiko): von 7 Hinweisen (u. a. „high"/„critical") auf 1
+  „low" (Windows-only Dev-Server). Build/Tests (44)/Lint grün. Keine Änderung am App-Verhalten.
+- Basis-Image und CI auf **Node 22** (Vite 8 setzt Node ≥ 20.19 voraus).
+- Vitest: deprecated `environmentMatchGlobs` entfernt – Komponenten-Tests setzen ihre
+  jsdom-Umgebung per `// @vitest-environment`-Docblock.
+
 ## [2.0.1] – 2026-06-22
 
 ### Behoben

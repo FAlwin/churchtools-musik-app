@@ -18,9 +18,10 @@ export default defineConfig({
     },
   },
   test: {
+    // Standard 'node' (reine Logik); Komponenten-Tests (*.test.tsx) setzen
+    // ihre Umgebung per `// @vitest-environment jsdom`-Docblock selbst.
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
-    environmentMatchGlobs: [['**/*.test.tsx', 'jsdom']],
     coverage: {
       provider: 'v8',
       include: ['src/utils/**', 'src/components/**'],
