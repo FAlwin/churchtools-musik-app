@@ -46,15 +46,16 @@ Entscheidungen → `docs/entscheidungen.md`.
 **Definition of Done:** Kernlogik durch grüne Tests abgesichert, CI bei jedem PR grün.
 
 ### Phase 6 – Offen / optional
-- [ ] 6.1 Musik-Abwesenheitsplaner (separate Flask-App) in diese App nachbauen
+- [x] 6.1 ~~Musik-Abwesenheitsplaner nachbauen~~ **aus diesem Projekt herausgenommen** (22.06.2026):
+      nur ECG-intern, läuft eigenständig und entfällt, sobald ChurchTools das selbst abdeckt.
+      Wird NICHT mitverteilt – diese App bleibt das einzige verteilte Produkt.
 - [x] 6.2 ~~White-Label~~ **verworfen** → **Redesign zur festen ChurchTools-Version** ✅ live
       (ChurchTools-Look, Tab-Bar, neues Logo, Design-Tokens/Bausteine; nur `orgName` admin-anpassbar).
       Nach `main` gemerged (PR #14) + **produktiv deployt** (musik.ecg-donrath.de, 19.06.2026, verifiziert)
       inkl. Chart-Lesbarkeits-Politur (Akkord-Abstände + Akkorde in Blau). Siehe `docs/design-system.md`.
 - [ ] 6.3 vite@8-Upgrade (behebt die zurückgestellten moderate npm-audit-Findings)
-- [ ] 6.4 **Verteilung an andere Gemeinden (Selbst-Hosting)** – Schritte 1–4 umgesetzt (Branch
-      `feature/decouple-ecg`: Entkopplung, GHCR-Release-Pipeline, Doku, MIT-Lizenz); offen ist nur
-      noch Schritt 5 (main-Merge, Tag `v2.0.0`, Repo + GHCR-Package öffentlich, ECG-Re-Deploy).
-      Fahrplan in `WHITE-LABEL.md`. Plus neues Feature: konfigurierbare Links (Mehr-Tab/Login).
+- [x] 6.4 **Verteilung an andere Gemeinden (Selbst-Hosting)** ✅ **abgeschlossen** (22.06.2026):
+      Code entkoppelt, GHCR-Release-Pipeline, Doku, MIT-Lizenz, konfigurierbare Links.
+      Repo **öffentlich**, GHCR-Image **anonym ziehbar**, `v2.0.0` released. Fahrplan in `WHITE-LABEL.md`.
 
 **Definition of Done:** je Teilprojekt eigener Plan; hier nur als Merker.
