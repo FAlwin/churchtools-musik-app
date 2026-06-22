@@ -53,7 +53,8 @@ Entscheidungen → `docs/entscheidungen.md`.
       (ChurchTools-Look, Tab-Bar, neues Logo, Design-Tokens/Bausteine; nur `orgName` admin-anpassbar).
       Nach `main` gemerged (PR #14) + **produktiv deployt** (musik.ecg-donrath.de, 19.06.2026, verifiziert)
       inkl. Chart-Lesbarkeits-Politur (Akkord-Abstände + Akkorde in Blau). Siehe `docs/design-system.md`.
-- [ ] 6.3 vite@8-Upgrade (behebt die zurückgestellten moderate npm-audit-Findings)
+- [x] 6.3 ~~vite@8-Upgrade~~ ✅ **erledigt** (22.06.2026, PR #22): Vite 5→8, Vitest 2→3, Node 22;
+      npm-audit von 7 (high/critical) auf 1 low (Windows-only Dev-Server). Kein App-Verhalten geändert.
 - [x] 6.4 **Verteilung an andere Gemeinden (Selbst-Hosting)** ✅ **abgeschlossen** (22.06.2026):
       Code entkoppelt, GHCR-Release-Pipeline, Doku, MIT-Lizenz, konfigurierbare Links.
       Repo **öffentlich**, GHCR-Image **anonym ziehbar**, `v2.0.0` released. Fahrplan in `WHITE-LABEL.md`.
