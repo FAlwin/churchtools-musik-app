@@ -29,14 +29,20 @@
   padding: 8px;
 }
 
+// Inhalt + Anmerkungen exakt übereinander (CSS-Grid, gleiche Zelle, gleiche max-Constraints).
+// Beide Canvas haben dieselben Pixelmaße (Seitenauflösung) → identische Anzeigegröße → die
+// Anmerkungs-Ebene deckt die Seite immer deckungsgleich ab (auch wenn die Seite höhenbegrenzt
+// skaliert wird). Verhindert, dass Zeichnungen nur auf einem Teil der Seite landen.
 .pageBox {
   position: relative;
+  display: grid;
   max-width: 100%;
   max-height: 100%;
   line-height: 0;
 }
 
 .contentCanvas {
+  grid-area: 1 / 1;
   display: block;
   max-width: 100%;
   max-height: 100%;
@@ -44,11 +50,9 @@
 }
 
 .annoCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  grid-area: 1 / 1;
+  max-width: 100%;
+  max-height: 100%;
   touch-action: none;
 }
 
