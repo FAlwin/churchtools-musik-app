@@ -8,29 +8,28 @@ interface DrawToolbarProps {
   setDrawColor: (c: string) => void;
   drawTool: DrawTool;
   setDrawTool: (t: DrawTool) => void;
-  textSize: number;
-  setTextSize: (fn: (s: number) => number) => void;
   onClear: () => void;
+  /** Text-Werkzeug anbieten? (PDF-Viewer: aktuell nur Freihand → false) */
+  allowText?: boolean;
+  textSize?: number;
+  setTextSize?: (fn: (s: number) => number) => void;
   /** Ist eine vorhandene Text-Anmerkung ausgewählt? Dann wirken Farbe/Größe auf sie. */
-  isTextSelected: boolean;
+  isTextSelected?: boolean;
   /** Farbe der ausgewählten Anmerkung (für die Markierung der Farbfelder). */
   selectedColor?: string;
   /** Größe der ausgewählten Anmerkung (für die Anzeige). */
   selectedSize?: number;
   /** Farbe der ausgewählten Anmerkung ändern. */
-  onSelectedColor: (c: string) => void;
+  onSelectedColor?: (c: string) => void;
   /** Größe der ausgewählten Anmerkung ändern (Delta). */
-  onSelectedResize: (delta: number) => void;
-  /** Letzte Anmerkungs-Aktion rückgängig machen. */
-  onUndo: () => void;
-  /** Gibt es etwas zum Rückgängigmachen? */
-  canUndo: boolean;
-  /** Rückgängig gemachte Aktion wiederherstellen. */
-  onRedo: () => void;
-  /** Gibt es etwas zum Wiederherstellen? */
-  canRedo: boolean;
+  onSelectedResize?: (delta: number) => void;
+  /** Letzte Anmerkungs-Aktion rückgängig machen (nur wenn angeboten). */
+  onUndo?: () => void;
+  canUndo?: boolean;
+  onRedo?: () => void;
+  canRedo?: boolean;
   /** Ausgewählten Text löschen (Knopf erscheint nur bei Auswahl). */
-  onDeleteSelected: () => void;
+  onDeleteSelected?: () => void;
 }
 
 /**
@@ -43,10 +42,11 @@ export function DrawToolbar({
   setDrawColor,
   drawTool,
   setDrawTool,
-  textSize,
-  setTextSize,
   onClear,
-  isTextSelected,
+  allowText = true,
+  textSize = 20,
+  setTextSize,
+  isTextSelected = false,
   selectedColor,
   selectedSize,
   onSelectedColor,
@@ -64,14 +64,15 @@ export function DrawToolbar({
   const shownSize = isTextSelected ? (selectedSize ?? textSize) : textSize;
   // Größen-Regler zeigen, wenn Text-Werkzeug aktiv ODER eine Anmerkung ausgewählt ist.
   const showSize = drawTool === 'text' || isTextSelected;
+  const showUndo = !!onUndo;
 
   function pickColor(c: string) {
-    if (isTextSelected) onSelectedColor(c);
+    if (isTextSelected) onSelectedColor?.(c);
     else setDrawColor(c);
   }
   function changeSize(delta: number) {
-    if (isTextSelected) onSelectedResize(delta);
-    else setTextSize((s) => Math.max(12, Math.min(56, s + delta)));
+    if (isTextSelected) onSelectedResize?.(delta);
+    else setTextSize?.((s) => Math.max(12, Math.min(56, s + delta)));
   }
   function chooseTool(t: DrawTool) {
     setDrawTool(t);
@@ -121,14 +122,16 @@ export function DrawToolbar({
       >
         <Icon name="eraser" size={18} stroke={2} />
       </button>
-      <button
-        className={`${styles.toolBtn}${drawTool === 'text' ? ' ' + styles.on : ''}`}
-        onClick={() => chooseTool('text')}
-        title="Text"
-        style={{ fontSize: 13, fontWeight: 800 }}
-      >
-        T
-      </button>
+      {allowText && (
+        <button
+          className={`${styles.toolBtn}${drawTool === 'text' ? ' ' + styles.on : ''}`}
+          onClick={() => chooseTool('text')}
+          title="Text"
+          style={{ fontSize: 13, fontWeight: 800 }}
+        >
+          T
+        </button>
+      )}
       {showSize && (
         <>
           <div className={styles.sep} />
@@ -151,7 +154,7 @@ export function DrawToolbar({
           </button>
         </>
       )}
-      {isTextSelected && (
+      {isTextSelected && onDeleteSelected && (
         <>
           <div className={styles.sep} />
           <button className={styles.clear} onClick={onDeleteSelected} title="Text löschen" style={{ fontSize: 15 }}>
@@ -160,12 +163,16 @@ export function DrawToolbar({
         </>
       )}
       <div className={styles.sep} />
-      <button className={styles.toolBtn} onClick={onUndo} disabled={!canUndo} title="Rückgängig" style={{ fontSize: 19 }}>
-        ↺
-      </button>
-      <button className={styles.toolBtn} onClick={onRedo} disabled={!canRedo} title="Wiederherstellen" style={{ fontSize: 19 }}>
-        ↻
-      </button>
+      {showUndo && (
+        <>
+          <button className={styles.toolBtn} onClick={onUndo} disabled={!canUndo} title="Rückgängig" style={{ fontSize: 19 }}>
+            ↺
+          </button>
+          <button className={styles.toolBtn} onClick={onRedo} disabled={!canRedo} title="Wiederherstellen" style={{ fontSize: 19 }}>
+            ↻
+          </button>
+        </>
+      )}
       <button className={styles.clear} onClick={onClear} title="Alles löschen">
         ✕
       </button>

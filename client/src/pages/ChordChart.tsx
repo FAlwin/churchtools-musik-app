@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SetlistSong, SongDocument } from '@shared/types/index';
 import { Screen } from '../components/Screen';
-import { Section } from '../components/Section';
 import { KeyPicker } from '../components/KeyPicker';
 import { CapoPicker } from '../components/CapoPicker';
 import { SectionTransposeSheet } from '../components/SectionTransposeSheet';
@@ -16,15 +15,9 @@ import { parseChordPro } from '../utils/chordpro';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
-import { DRAW_COLORS, fontFamilyById } from '../utils/constants';
-import { useDrawing } from '../hooks/useDrawing';
-import { usePagedColumns } from '../hooks/usePagedColumns';
+import { DRAW_COLORS } from '../utils/constants';
 import type { DrawTool, Theme } from '../types/index';
 import styles from './ChordChart.module.scss';
-
-// Innenabstand und Spaltenabstand des Chart-Inhalts (für die Spaltenbreite)
-const CONTENT_PAD = 24;
-const COLUMN_GAP = 40;
 
 // Abschnitts-Transponierung (Issue #16): Halbton-Versatz je Abschnitts-Index, pro Lied gespeichert.
 function loadSecShift(songId: number): Record<number, number> {
@@ -64,7 +57,6 @@ export function ChordChart({
   reloading,
   canEditSong = false,
   theme,
-  fontId,
 }: ChordChartProps) {
   const [idx, setIdx] = useState(startIndex);
   // Fallback, falls songs durch Bearbeiten/Reload schrumpft und idx nicht mehr passt
@@ -81,9 +73,6 @@ export function ChordChart({
   const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10));
   const [cols, setCols] = useState(() => parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
   const [lyricsOnly, setLyricsOnly] = useState(() => localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
-  // Fester Leerraum (in ch) für Taktstriche „[|]". Feinere Abstände macht man über
-  // Leerzeichen direkt im ChordPro-Text (kein eigenes Bedienelement mehr).
-  const chordGap = 2;
 
   const [showKeyPicker, setShowKeyPicker] = useState(false);
   const [showCapoPicker, setShowCapoPicker] = useState(false);
@@ -108,17 +97,8 @@ export function ChordChart({
   // Standardfarbe = adaptives Schwarz/Weiß (Creme im Dunkelmodus), passend zur Palette.
   const [drawColor, setDrawColor] = useState(() => (theme === 'dark' ? '#FFFCF2' : '#14110F'));
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
-  const [textSize, setTextSize] = useState(20);
-  const [docClearSignal, setDocClearSignal] = useState(0); // löst Löschen im Dokument-Viewer aus
-  const [docAdjust, setDocAdjust] = useState(false); // Anpassen-Modus (Zoom/Verschieben) im Dokument
-
-  const textInputRef = useRef<HTMLInputElement | null>(null);
-  const touchX = useRef<number | null>(null);
-  const touchY = useRef<number>(0);
-  const touchT = useRef<number>(0);
-  const pendingLastPage = useRef(false);
-  const slideDir = useRef<'right' | 'left'>('right'); // Richtung des Liedwechsel-Übergangs
-  const lastPageTimer = useRef<number | null>(null); // räumt das pendingLastPage-Flag auf
+  const [docClearSignal, setDocClearSignal] = useState(0); // löst Löschen im Viewer aus
+  const [docAdjust, setDocAdjust] = useState(false); // Anpassen-Modus (Zoom/Verschieben)
 
   // ── abgeleitete Werte ──
   const curKey = selectedKey || song.targetKey;
@@ -133,50 +113,27 @@ export function ChordChart({
   const editorInitial =
     displayedChordpro ||
     `{title: ${song.title}}\n{key: ${song.targetKey || song.originalKey || 'C'}}\n\n{comment: Vers 1}\n[${song.targetKey || 'C'}]Hier Text mit Akkorden eingeben\n\n{comment: Chorus}\n`;
-  const fontFam = fontFamilyById(fontId);
   // Schwarz im Dark Mode auf Creme umstellen, damit sichtbar
   const drawColors = DRAW_COLORS.map((c) => (c === '#14110F' ? (theme === 'dark' ? '#FFFCF2' : '#14110F') : c));
 
-  const drawing = useDrawing({
-    songId: song.id,
-    drawMode,
-    drawColor,
-    drawTool,
-    textSize,
-    layoutDeps: [fontSize, cols, lyricsOnly, fontId, drawMode],
-  });
-
-  // Sichtbare Breite messen (für die Spaltenbreite je Seite)
-  const [pageWidth, setPageWidth] = useState(0);
-  useEffect(() => {
-    // bei Wechsel Dokument↔Akkorde neu vermessen (der Body wird dabei neu eingehängt)
-    const el = drawing.bodyRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    setPageWidth(el.clientWidth);
-    const ro = new ResizeObserver(() => setPageWidth(el.clientWidth));
-    ro.observe(el);
-    return () => ro.disconnect();
+  // Akkord-Ansicht = in-app erzeugte PDF (PDF-Pivot). Wird neu erzeugt bei Inhalt/Tonart/Kapo/
+  // Spalten/Schrift/„Nur Text"/Abschnitts-Transponierung. ChordPro bleibt die Quelle.
+  const chordPdfData = useMemo(() => {
+    if (viewSource !== 'chords' || sections.length === 0) return null;
+    const fontPt = Math.max(8, Math.round(fontSize * 0.6));
+    const docPdf = generateChordPdf(
+      { ...song, chordpro: displayedChordpro },
+      {
+        semitones: gripOffset,
+        cols: (cols === 2 ? 2 : 1) as 1 | 2,
+        fontPt,
+        lyricsOnly,
+        sectionSemitones: secShift,
+      },
+    );
+    return docPdf.output('arraybuffer');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewSource]);
-
-  // Spaltenbreite so, dass genau `cols` Spalten in die padded Content-Box passen.
-  const colWidthPx =
-    pageWidth > 0
-      ? Math.floor((pageWidth - 2 * CONTENT_PAD - (cols - 1) * COLUMN_GAP) / cols)
-      : undefined;
-
-  // Geometrie fürs Blättern: eine Spalte = Breite + Lücke; eine Seite = cols Spalten.
-  // Beim Blättern wird um den echten Spalten-Takt gescrollt (NICHT um die Bildschirmbreite),
-  // sonst verschiebt sich jede Folgeseite, weil es das Innenpadding nur einmal links gibt.
-  const columnStep = colWidthPx ? colWidthPx + COLUMN_GAP : 0;
-  const endRef = useRef<HTMLDivElement | null>(null);
-  const paged = usePagedColumns(
-    drawing.bodyRef,
-    drawing.contentRef,
-    endRef,
-    { pageStep: cols * columnStep, columnStep, pad: CONTENT_PAD, cols },
-    [song.id, fontSize, cols, lyricsOnly, fontId, pageWidth, chordGap],
-  );
+  }, [viewSource, sections.length, song.id, displayedChordpro, gripOffset, cols, fontSize, lyricsOnly, secShift]);
 
   // ── Persistenz pro Song: beim Liedwechsel die gespeicherten Werte laden ──
   useEffect(() => {
@@ -225,31 +182,6 @@ export function ChordChart({
     localStorage.setItem(`worship_lyrics_${song.id}`, lyricsOnly ? '1' : '0');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lyricsOnly]);
-  // Vorwärts / neues Lied → auf Seite 1. (Rückwärts wird unten separat behandelt.)
-  useEffect(() => {
-    const el = drawing.bodyRef.current;
-    if (!el || pendingLastPage.current) return;
-    const r = requestAnimationFrame(() => {
-      el.scrollLeft = 0;
-    });
-    return () => cancelAnimationFrame(r);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx, song.id, pageWidth, fontSize, cols, lyricsOnly, chordGap]);
-
-  // Rückwärts geblättert → auf die LETZTE Seite des vorigen Lieds. Aber erst, wenn die
-  // Seitenzahl gemessen ist: früher wurde `scrollLeft = scrollWidth` gesetzt, bevor das neue
-  // Lied vermessen war → man landete fälschlich auf Seite 1.
-  useEffect(() => {
-    if (!pendingLastPage.current || activeDoc) return;
-    paged.goToPage(paged.pageCount - 1);
-    // Flag erst nach kurzer Ruhe löschen – mehrere Mess-Updates konvergieren so auf die letzte Seite.
-    if (lastPageTimer.current) clearTimeout(lastPageTimer.current);
-    lastPageTimer.current = window.setTimeout(() => {
-      pendingLastPage.current = false;
-    }, 320);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paged.pageCount, activeDoc]);
-
   useEffect(() => {
     if (selectedKey) localStorage.setItem(`worship_key_${song.id}`, selectedKey);
     else localStorage.removeItem(`worship_key_${song.id}`);
@@ -268,43 +200,21 @@ export function ChordChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secShift]);
 
-  // ── Einheitliche Navigation: erst durch die Seiten, dann zum nächsten/vorigen Lied ──
-  const atStart = idx === 0 && (activeDoc !== null || paged.page === 0);
-  const atEnd = idx === songs.length - 1 && (activeDoc !== null || paged.page >= paged.pageCount - 1);
+  // ── Navigation zwischen den Liedern (das Blättern innerhalb eines Lieds/Dokuments
+  //    übernimmt der Viewer selbst und ruft an den Rändern next()/prev() auf). ──
+  const atStart = idx === 0;
+  const atEnd = idx === songs.length - 1;
 
   function next() {
-    if (!activeDoc && paged.page < paged.pageCount - 1) {
-      paged.goToPage(paged.page + 1); // innerhalb des Lieds: schneller Seitenwechsel
-      return;
-    }
-    if (idx < songs.length - 1) {
-      drawing.saveDrawing(song.id);
-      slideDir.current = 'right';
-      pendingLastPage.current = false; // nächstes Lied: auf Seite 1
-      setIdx(idx + 1);
-    }
+    if (idx < songs.length - 1) setIdx(idx + 1);
   }
   function prev() {
-    if (!activeDoc && paged.page > 0) {
-      paged.goToPage(paged.page - 1);
-      return;
-    }
-    if (idx > 0) {
-      drawing.saveDrawing(song.id);
-      slideDir.current = 'left';
-      pendingLastPage.current = true;
-      setIdx(idx - 1);
-    }
+    if (idx > 0) setIdx(idx - 1);
   }
   function goToSong(target: number) {
-    if (target === idx) return;
-    drawing.saveDrawing(song.id);
-    slideDir.current = target > idx ? 'right' : 'left';
-    pendingLastPage.current = false; // direkter Sprung: auf Seite 1
-    setIdx(target);
+    if (target !== idx) setIdx(target);
   }
   function goBack() {
-    drawing.saveDrawing(song.id);
     onBack();
   }
 
@@ -329,44 +239,8 @@ export function ChordChart({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Wischen verhält sich exakt wie das Tippen an den Rand: es ruft next()/prev() auf
-  // (Seitenwechsel sofort, Liedwechsel mit Gleit-Animation). Kein natives Schwung-Scrollen
-  // mehr – das Horizontal-Pannen ist per touch-action: pan-y unterbunden.
-  function onTouchStart(e: React.TouchEvent) {
-    if (drawMode) return;
-    touchX.current = e.touches[0].clientX;
-    touchY.current = e.touches[0].clientY;
-    touchT.current = e.timeStamp;
-  }
-  function onTouchEnd(e: React.TouchEvent) {
-    if (touchX.current === null) return;
-    const dx = touchX.current - e.changedTouches[0].clientX;
-    const dy = touchY.current - e.changedTouches[0].clientY;
-    const dt = Math.max(1, e.timeStamp - touchT.current);
-    touchX.current = null;
-    if (Math.abs(dx) <= Math.abs(dy) * 1.2) return; // vertikal -> ignorieren
-    const velocity = Math.abs(dx) / dt; // px pro ms
-    // klares Wischen ODER kurzes schnelles Wischen löst aus
-    if (Math.abs(dx) > 40 || (Math.abs(dx) > 14 && velocity > 0.4)) {
-      if (dx > 0) next();
-      else prev();
-    }
-  }
-
-  // Tippen am linken/rechten Rand wirkt wie die Pfeile (Mitte = nichts)
-  function onBodyClick(e: React.MouseEvent) {
-    if (drawMode) return;
-    const el = drawing.bodyRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    if (x < rect.width * 0.26) prev();
-    else if (x > rect.width * 0.74) next();
-  }
-
   function clearDrawing() {
-    if (activeDoc) setDocClearSignal((n) => n + 1);
-    else drawing.clearAll();
+    setDocClearSignal((n) => n + 1); // löscht die Anmerkungen der aktuellen Seite im Viewer
     setConfirmClear(false);
   }
 
@@ -401,9 +275,6 @@ export function ChordChart({
   }
 
   const nextSong = idx < songs.length - 1 ? songs[idx + 1] : null;
-  // Aktuell ausgewählte Text-Anmerkung (für die Werkzeugleiste: Farbe/Größe live ändern)
-  const selectedText = drawing.textObjects.find((o) => o.id === drawing.selectedTextId) ?? null;
-
   return (
     <Screen className={styles.chartScreen}>
       <>
@@ -443,20 +314,18 @@ export function ChordChart({
                 Aa
               </button>
             )}
-            {activeDoc && (
-              <button
-                className={`${styles.toolBtn}${docAdjust ? ' ' + styles.on : ''}`}
-                onClick={() => {
-                  setDocAdjust((a) => {
-                    if (!a) setDrawMode(false);
-                    return !a;
-                  });
-                }}
-                title={docAdjust ? 'Fertig' : 'Anpassen (Zoom)'}
-              >
-                {docAdjust ? <Icon name="check" size={18} stroke={2.4} /> : <Icon name="search" size={18} stroke={2} />}
-              </button>
-            )}
+            <button
+              className={`${styles.toolBtn}${docAdjust ? ' ' + styles.on : ''}`}
+              onClick={() => {
+                setDocAdjust((a) => {
+                  if (!a) setDrawMode(false);
+                  return !a;
+                });
+              }}
+              title={docAdjust ? 'Fertig' : 'Anpassen (Zoom)'}
+            >
+              {docAdjust ? <Icon name="check" size={18} stroke={2.4} /> : <Icon name="search" size={18} stroke={2} />}
+            </button>
             {onReload && (
               <button className={styles.toolBtn} onClick={onReload} disabled={reloading} title="Aktualisieren">
                 <span className={reloading ? styles.spin : undefined}>↻</span>
@@ -503,15 +372,6 @@ export function ChordChart({
                 </button>
               </div>
 
-              {/* Sperr-Schicht: liegt halbtransparent über der Steuerung, wenn Anmerkungen da sind */}
-              {drawing.hasAnnotations && (
-                <div className={styles.lockOverlay}>
-                  <div className={styles.lockOverlayText}>
-                    🔒 Gesperrt
-                    <span>Erst Anmerkungen löschen</span>
-                  </div>
-                </div>
-              )}
             </div>
           </>
         )}
@@ -732,154 +592,51 @@ export function ChordChart({
               onPrev={prev}
               onNext={next}
             />
+          ) : chordPdfData ? (
+            <DocumentView
+              key={`song${song.id}`}
+              songId={song.id}
+              pdfData={chordPdfData}
+              storeId={`song${song.id}`}
+              drawMode={drawMode}
+              drawColor={drawColor}
+              drawTool={drawTool}
+              clearSignal={docClearSignal}
+              adjust={docAdjust}
+              onAdjustChange={setDocAdjust}
+              onPrev={prev}
+              onNext={next}
+            />
           ) : (
-            <>
-        <div
-          className={styles.body}
-          ref={drawing.bodyRef}
-          onScroll={paged.onScroll}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-          onClick={onBodyClick}
-          style={{ ['--chart-font' as string]: fontFam }}
-        >
-          <div
-            key={song.id}
-            ref={drawing.contentRef}
-            className={`${styles.content} ${slideDir.current === 'right' ? styles.slideRight : styles.slideLeft}`}
-            style={{ columnWidth: colWidthPx ? `${colWidthPx}px` : undefined, columnGap: COLUMN_GAP }}
-          >
-            {sections.length === 0 ? (
-              <div className={styles.empty}>
-                <div className={styles.emptyIcon}>🎵</div>
-                <div>Für dieses Lied ist keine Akkord-Datei in ChurchTools hinterlegt.</div>
-                {canEditSong && (
-                  <button
-                    className={styles.createBtn}
-                    onClick={() => {
-                      setEditorError(null);
-                      setShowEditor(true);
-                    }}
-                  >
-                    Akkord-Datei erstellen
-                  </button>
-                )}
-              </div>
-            ) : (
-              sections.map((sec, i) => (
-                <Section
-                  key={i}
-                  section={sec}
-                  semitones={gripOffset + (secShift[i] ?? 0)}
-                  shift={secShift[i] ?? 0}
-                  fontSize={fontSize}
-                  lyricsOnly={lyricsOnly}
-                  chordGap={chordGap}
-                />
-              ))
-            )}
-            {/* Unsichtbarer End-Marker: verrät per Layout-Position, in welcher Spalte der
-                Inhalt endet → zuverlässige Seitenzählung (unabhängig von WebKits scrollWidth). */}
-            <div ref={endRef} className={styles.endMarker} aria-hidden="true" />
-          </div>
-          {/* Platzhalter erzwingt die korrekte scrollbare Breite, damit jede Seite erreichbar
-              ist (WebKit meldet die Multicol-Breite sonst zu klein). */}
-          {paged.contentWidth > 0 && (
-            <div className={styles.pageSpacer} style={{ left: paged.contentWidth }} aria-hidden="true" />
-          )}
-          <canvas
-            ref={drawing.canvasRef}
-            className={`${styles.canvas}${drawMode ? ' ' + styles.active : ''}`}
-            onPointerDown={drawing.handlers.onPointerDown}
-            onPointerMove={drawing.handlers.onPointerMove}
-            onPointerUp={drawing.handlers.onPointerUp}
-            onPointerLeave={drawing.handlers.onPointerUp}
-          />
-          {drawing.textObjects.map((obj) => (
-            <div
-              key={obj.id}
-              className={styles.textObj}
-              style={{
-                top: obj.y - obj.size,
-                left: obj.x,
-                fontSize: obj.size,
-                color: obj.color,
-                pointerEvents: drawMode ? 'all' : 'none',
-                cursor: drawMode ? 'grab' : 'default',
-                outline: obj.id === drawing.selectedTextId ? '2px dashed var(--blue)' : undefined,
-                outlineOffset: 4,
-              }}
-              onPointerDown={drawMode ? (e) => drawing.startDragText(e, obj) : undefined}
-              onPointerMove={drawMode ? (e) => drawing.moveDragText(e, obj.id) : undefined}
-              onPointerUp={drawMode ? drawing.endDragText : undefined}
-            >
-              {obj.text}
+            <div className={styles.empty}>
+              <div className={styles.emptyIcon}>🎵</div>
+              <div>Für dieses Lied ist keine Akkord-Datei in ChurchTools hinterlegt.</div>
+              {canEditSong && (
+                <button
+                  className={styles.createBtn}
+                  onClick={() => {
+                    setEditorError(null);
+                    setShowEditor(true);
+                  }}
+                >
+                  Akkord-Datei erstellen
+                </button>
+              )}
             </div>
-          ))}
-        </div>
-
-        {/* Seiten-Badge unten rechts */}
-        {paged.pageCount > 1 && (
-          <button className={styles.pageBadge} onClick={next}>
-            Seite {paged.page + 1} / {paged.pageCount}
-            <span className={styles.pageBadgeArrow}>›</span>
-          </button>
-        )}
-            </>
           )}
         </div>
 
-        {/* Zeichen-Werkzeugleiste */}
+        {/* Zeichen-Werkzeugleiste (Freihand: Stift/Marker/Radierer + Löschen) */}
         {drawMode && (
           <DrawToolbar
             colors={drawColors}
             drawColor={drawColor}
             setDrawColor={setDrawColor}
             drawTool={drawTool}
-            setDrawTool={(t) => {
-              drawing.clearTextSelection();
-              setDrawTool(t);
-            }}
-            textSize={textSize}
-            setTextSize={setTextSize}
+            setDrawTool={setDrawTool}
             onClear={() => setConfirmClear(true)}
-            isTextSelected={drawing.selectedTextId !== null}
-            selectedColor={selectedText?.color}
-            selectedSize={selectedText?.size}
-            onSelectedColor={(c) => {
-              if (drawing.selectedTextId !== null) drawing.setTextColor(drawing.selectedTextId, c);
-            }}
-            onSelectedResize={(d) => {
-              if (drawing.selectedTextId !== null) drawing.resizeText(drawing.selectedTextId, d);
-            }}
-            onUndo={drawing.undo}
-            canUndo={drawing.canUndo}
-            onRedo={drawing.redo}
-            canRedo={drawing.canRedo}
-            onDeleteSelected={() => {
-              if (drawing.selectedTextId !== null) drawing.deleteText(drawing.selectedTextId);
-            }}
+            allowText={false}
           />
-        )}
-
-        {/* Text-Eingabe-Overlay */}
-        {drawing.pendingText && drawMode && (
-          <div className={styles.textInputWrap} style={{ left: drawing.pendingText.cx, top: drawing.pendingText.cy }}>
-            <input
-              ref={textInputRef}
-              type="text"
-              autoFocus
-              defaultValue={drawing.pendingText.initial ?? ''}
-              placeholder="Text..."
-              className={styles.textInput}
-              style={{ color: drawColor, border: `2px solid ${drawColor}`, fontSize: textSize }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') drawing.confirmText((e.target as HTMLInputElement).value);
-                if (e.key === 'Escape') drawing.confirmText('');
-              }}
-              onBlur={(e) => drawing.confirmText(e.target.value)}
-            />
-          </div>
         )}
 
         {/* Löschen bestätigen */}
