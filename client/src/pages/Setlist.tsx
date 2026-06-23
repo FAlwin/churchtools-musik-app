@@ -25,6 +25,9 @@ import { AddItemSheet } from '../components/AddItemSheet';
 import { ItemActionSheet } from '../components/ItemActionSheet';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
+import { generateSetlistPdf } from '../utils/chordPdf';
+import { sharePdf } from '../utils/sharePdf';
+import { getSemitoneOffset } from '../utils/transpose';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
@@ -213,6 +216,18 @@ export function Setlist({
     });
   }
 
+  // Alle Lieder des Ablaufs als eine PDF teilen (jeweils in ihrer Zieltonart).
+  const exportableSongs = items.filter((i) => i.song && i.song.chordpro).map((i) => i.song!);
+  function handleExportPdf() {
+    if (exportableSongs.length === 0) return;
+    const doc = generateSetlistPdf(exportableSongs, (s) => ({
+      semitones: getSemitoneOffset(s.originalKey, s.targetKey),
+      cols: 1,
+      fontPt: 11,
+    }));
+    void sharePdf(doc, service.name || 'Ablauf');
+  }
+
   // Laufender Zähler über die Lieder – für die Charts-Navigation (Index ins Songs-Array).
   let songIndex = -1;
 
@@ -224,16 +239,25 @@ export function Setlist({
         back={onBack}
         backLabel="Termine"
         right={
-          canEdit && items.length > 0 && !isLoading && !isError ? (
-            <IconButton
-              onClick={() => {
-                setErr(null);
-                setEditMode((v) => !v);
-              }}
-              title={editMode ? 'Fertig' : 'Ablauf bearbeiten'}
-            >
-              <Icon name={editMode ? 'check' : 'pencil'} size={20} stroke={2.2} />
-            </IconButton>
+          !isLoading && !isError && items.length > 0 ? (
+            <>
+              {exportableSongs.length > 0 && !editMode && (
+                <IconButton onClick={handleExportPdf} title="Alle Lieder als PDF teilen">
+                  <Icon name="external" size={20} stroke={2.2} />
+                </IconButton>
+              )}
+              {canEdit && (
+                <IconButton
+                  onClick={() => {
+                    setErr(null);
+                    setEditMode((v) => !v);
+                  }}
+                  title={editMode ? 'Fertig' : 'Ablauf bearbeiten'}
+                >
+                  <Icon name={editMode ? 'check' : 'pencil'} size={20} stroke={2.2} />
+                </IconButton>
+              )}
+            </>
           ) : undefined
         }
       />

@@ -14,6 +14,8 @@ import { saveChordpro, deleteChordpro } from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
+import { generateChordPdf } from '../utils/chordPdf';
+import { sharePdf } from '../utils/sharePdf';
 import { DRAW_COLORS, fontFamilyById } from '../utils/constants';
 import { useDrawing } from '../hooks/useDrawing';
 import { usePagedColumns } from '../hooks/usePagedColumns';
@@ -559,6 +561,25 @@ export function ChordChart({
                   ) : (
                     <span className={styles.mmValue}>–</span>
                   )}
+                </button>
+              )}
+              {viewSource === 'chords' && sections.length > 0 && (
+                <button
+                  className={styles.mmItem}
+                  onClick={() => {
+                    setShowSongMenu(false);
+                    const fontPt = Math.max(8, Math.round(fontSize * 0.6));
+                    const doc = generateChordPdf(song, {
+                      semitones: totalOffset,
+                      cols: (cols === 2 ? 2 : 1) as 1 | 2,
+                      fontPt,
+                      lyricsOnly,
+                    });
+                    void sharePdf(doc, song.title);
+                  }}
+                >
+                  <span>Als PDF teilen</span>
+                  <span className={styles.mmValue}>⤴</span>
                 </button>
               )}
               {canEditSong && (
