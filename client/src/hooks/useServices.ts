@@ -159,6 +159,33 @@ export function useSongChart(sel: { songId: number; arrangementId?: number } | n
   });
 }
 
+/** Lädt die Arrangements eines bekannten Lieds (für „Zu Ablauf hinzufügen"). */
+export function useSongArrangements(songId: number | null) {
+  return useQuery({
+    queryKey: ['song-arrangements', songId],
+    queryFn: () => api.getSongArrangements(songId as number),
+    enabled: songId !== null,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * Fügt ein Lied (per Arrangement) ans Ende des Ablaufs eines beliebigen Termins.
+ * Im Gegensatz zu useCreateAgendaItem ist der Termin nicht fest, sondern wird pro Aufruf übergeben.
+ */
+export function useAddSongToService() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { eventId: number; arrangementId: number; title: string }) =>
+      api.createAgendaItem(v.eventId, { type: 'song', title: v.title, arrangementId: v.arrangementId }),
+    onSuccess: (_data, v) => {
+      qc.invalidateQueries({ queryKey: ['agenda', v.eventId] });
+      qc.invalidateQueries({ queryKey: ['services'] });
+      qc.invalidateQueries({ queryKey: ['song-usage'] });
+    },
+  });
+}
+
 /** Legt einen neuen Ablaufpunkt an und lädt Ablauf + Übersicht (Song-Anzahl) neu. */
 export function useCreateAgendaItem(eventId: number | null) {
   const qc = useQueryClient();

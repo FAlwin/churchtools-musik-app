@@ -18,10 +18,15 @@ import {
   updateAgendaItem,
   createAgendaItem,
   searchSongs,
+  getSong,
   getCapabilities,
   getCtServices,
 } from '../services/churchtools.js';
-import type { AgendaServiceOption, SongSearchResult } from '@shared/types/index';
+import type {
+  AgendaServiceOption,
+  SongArrangementOption,
+  SongSearchResult,
+} from '@shared/types/index';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -119,6 +124,18 @@ export async function getSongs(req: Request, res: Response): Promise<void> {
       arrangementName: a.name,
       key: a.keyOfArrangement ?? a.key ?? null,
     })),
+  }));
+  res.json(result);
+}
+
+/** GET /api/songs/:songId/arrangements – Arrangements eines bekannten Lieds (für „Zu Ablauf hinzufügen"). */
+export async function getSongArrangementsCtrl(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const song = await getSong(req.ctCookie as string, songId);
+  const result: SongArrangementOption[] = (song.arrangements ?? []).map((a) => ({
+    arrangementId: a.id,
+    arrangementName: a.name,
+    key: a.keyOfArrangement ?? a.key ?? null,
   }));
   res.json(result);
 }

@@ -340,6 +340,8 @@ export default function App() {
               setLibSel({ songId: e.songId, arrangementId: e.arrangementId });
               setView({ type: 'chart', source: 'lieder' });
             }}
+            canAddToAgenda={canEditAgendas}
+            services={servicesQuery.data ?? []}
           />
         )}
 

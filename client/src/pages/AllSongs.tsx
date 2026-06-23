@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import type { SongLibraryEntry } from '@shared/types/index';
+import type { Service, SongLibraryEntry } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
 import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
+import { AddToAgendaSheet } from '../components/AddToAgendaSheet';
 import type { SongUsageMap } from '../services/churchtoolsApi';
 import styles from './AllSongs.module.scss';
 
@@ -18,6 +19,10 @@ interface AllSongsProps {
   isError?: boolean;
   onRetry?: () => void;
   onSelect: (entry: SongLibraryEntry) => void;
+  /** Wenn true: pro Lied eine „+"-Aktion „Zu Ablauf hinzufügen". */
+  canAddToAgenda?: boolean;
+  /** Termine zur Auswahl beim Hinzufügen (kommende + vergangene). */
+  services?: Service[];
 }
 
 type Sort = 'name' | 'count' | 'recent';
@@ -38,9 +43,12 @@ export function AllSongs({
   isError,
   onRetry,
   onSelect,
+  canAddToAgenda = false,
+  services = [],
 }: AllSongsProps) {
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<Sort>('name');
+  const [addSong, setAddSong] = useState<SongLibraryEntry | null>(null);
   const query = q.trim().toLowerCase();
 
   const countOf = (s: SongLibraryEntry) => usage?.[s.songId]?.count ?? 0;
@@ -96,30 +104,46 @@ export function AllSongs({
             <div className={styles.groupHdr}>{filtered.length} Lieder</div>
             <div className={styles.cardList}>
               {filtered.map((s) => (
-                <button key={s.songId} className={styles.row} onClick={() => onSelect(s)}>
-                  <NoteTile />
-                  <div className={styles.info}>
-                    <div className={styles.name}>{s.name}</div>
-                    {s.author && <div className={styles.sub}>{s.author}</div>}
-                    {showStats && sort !== 'name' && (
-                      <span className={styles.stat}>
-                        {usageLoading
-                          ? 'Statistik lädt…'
-                          : sort === 'count'
-                            ? `${countOf(s)}× gespielt`
-                            : `zuletzt ${fmtDate(lastOf(s))}`}
-                      </span>
-                    )}
-                  </div>
-                  {s.key && <span className={styles.keyPill}>{s.key}</span>}
-                  <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-                </button>
+                <div key={s.songId} className={styles.rowWrap}>
+                  <button className={styles.row} onClick={() => onSelect(s)}>
+                    <NoteTile />
+                    <div className={styles.info}>
+                      <div className={styles.name}>{s.name}</div>
+                      {s.author && <div className={styles.sub}>{s.author}</div>}
+                      {showStats && sort !== 'name' && (
+                        <span className={styles.stat}>
+                          {usageLoading
+                            ? 'Statistik lädt…'
+                            : sort === 'count'
+                              ? `${countOf(s)}× gespielt`
+                              : `zuletzt ${fmtDate(lastOf(s))}`}
+                        </span>
+                      )}
+                    </div>
+                    {s.key && <span className={styles.keyPill}>{s.key}</span>}
+                    <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
+                  </button>
+                  {canAddToAgenda && (
+                    <button
+                      className={styles.addBtn}
+                      onClick={() => setAddSong(s)}
+                      aria-label={`„${s.name}" zu einem Ablauf hinzufügen`}
+                      title="Zu Ablauf hinzufügen"
+                    >
+                      <Icon name="plus" size={20} stroke={2.4} />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
         )}
         <div style={{ height: 16 }} />
       </Scroll>
+
+      {addSong && (
+        <AddToAgendaSheet song={addSong} services={services} onClose={() => setAddSong(null)} />
+      )}
     </Screen>
   );
 }

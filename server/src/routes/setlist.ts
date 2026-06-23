@@ -12,6 +12,7 @@ import {
   putAgendaItem,
   postAgendaItem,
   getSongs,
+  getSongArrangementsCtrl,
   getSongLibraryCtrl,
   getSongChartCtrl,
   getSongUsageCtrl,
@@ -30,6 +31,7 @@ router.get('/song-library', asyncHandler(getSongLibraryCtrl));
 router.get('/song-usage', asyncHandler(getSongUsageCtrl));
 router.get('/capabilities', asyncHandler(getCapabilitiesCtrl));
 router.get('/agenda-services', asyncHandler(getAgendaServicesCtrl));
+router.get('/songs/:songId/arrangements', asyncHandler(getSongArrangementsCtrl));
 router.get('/songs/:songId/chart', asyncHandler(getSongChartCtrl));
 router.patch('/services/:eventId/agenda/order', asyncHandler(putAgendaOrder));
 router.post('/services/:eventId/agenda/items', asyncHandler(postAgendaItem));
