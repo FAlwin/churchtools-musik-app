@@ -1,0 +1,101 @@
+.hint {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 9px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.step {
+  width: 36px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--blue-ink);
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: background 0.12s;
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background: var(--surface3);
+    }
+  }
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+}
+
+.value {
+  min-width: 38px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+.valueActive {
+  color: var(--orange, #eb5e28);
+}
+
+.reset {
+  margin-top: 12px;
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 14px;
+}

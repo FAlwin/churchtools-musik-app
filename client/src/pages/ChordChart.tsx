@@ -4,6 +4,7 @@ import { Screen } from '../components/Screen';
 import { Section } from '../components/Section';
 import { KeyPicker } from '../components/KeyPicker';
 import { CapoPicker } from '../components/CapoPicker';
+import { SectionTransposeSheet } from '../components/SectionTransposeSheet';
 import { DrawToolbar } from '../components/DrawToolbar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
@@ -22,6 +23,23 @@ import styles from './ChordChart.module.scss';
 // Innenabstand und Spaltenabstand des Chart-Inhalts (für die Spaltenbreite)
 const CONTENT_PAD = 24;
 const COLUMN_GAP = 40;
+
+// Abschnitts-Transponierung (Issue #16): Halbton-Versatz je Abschnitts-Index, pro Lied gespeichert.
+function loadSecShift(songId: number): Record<number, number> {
+  try {
+    const raw = localStorage.getItem(`worship_secshift_${songId}`);
+    if (!raw) return {};
+    const obj = JSON.parse(raw) as Record<string, number>;
+    const out: Record<number, number> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      const n = Number(k);
+      if (Number.isInteger(n) && typeof v === 'number' && v !== 0) out[n] = v;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
 
 interface ChordChartProps {
   songs: SetlistSong[];
@@ -55,6 +73,8 @@ export function ChordChart({
     () => localStorage.getItem(`worship_key_${song.id}`) || null,
   );
   const [capo, setCapo] = useState(() => parseInt(localStorage.getItem(`worship_capo_${song.id}`) || '0', 10));
+  // Abschnitts-Transponierung: Halbton-Versatz je Abschnitts-Index (Issue #16).
+  const [secShift, setSecShift] = useState<Record<number, number>>(() => loadSecShift(song.id));
   // Schriftgröße, Spalten und Ansicht werden je Lied gespeichert
   const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10));
   const [cols, setCols] = useState(() => parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
@@ -65,6 +85,7 @@ export function ChordChart({
 
   const [showKeyPicker, setShowKeyPicker] = useState(false);
   const [showCapoPicker, setShowCapoPicker] = useState(false);
+  const [showSecTranspose, setShowSecTranspose] = useState(false);
   const [showAppearance, setShowAppearance] = useState(false);
   const [showSongMenu, setShowSongMenu] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -159,6 +180,7 @@ export function ChordChart({
   useEffect(() => {
     setSelectedKey(localStorage.getItem(`worship_key_${song.id}`) || null);
     setCapo(parseInt(localStorage.getItem(`worship_capo_${song.id}`) || '0', 10));
+    setSecShift(loadSecShift(song.id));
     setFontSize(parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10));
     setCols(parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10));
     setLyricsOnly(localStorage.getItem(`worship_lyrics_${song.id}`) === '1');
@@ -236,6 +258,13 @@ export function ChordChart({
     localStorage.setItem(`worship_capo_${song.id}`, String(capo));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [capo]);
+
+  useEffect(() => {
+    const key = `worship_secshift_${song.id}`;
+    if (Object.keys(secShift).length > 0) localStorage.setItem(key, JSON.stringify(secShift));
+    else localStorage.removeItem(key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [secShift]);
 
   // ── Einheitliche Navigation: erst durch die Seiten, dann zum nächsten/vorigen Lied ──
   const atStart = idx === 0 && (activeDoc !== null || paged.page === 0);
@@ -514,6 +543,24 @@ export function ChordChart({
                   <span className={styles.mmValue}>–</span>
                 )}
               </button>
+              {viewSource === 'chords' && (
+                <button
+                  className={styles.mmItem}
+                  onClick={() => {
+                    setShowSecTranspose(true);
+                    setShowSongMenu(false);
+                  }}
+                >
+                  <span>Abschnitte transponieren</span>
+                  {Object.keys(secShift).length > 0 ? (
+                    <span className={styles.mmValueActive}>
+                      {Object.keys(secShift).length} aktiv
+                    </span>
+                  ) : (
+                    <span className={styles.mmValue}>–</span>
+                  )}
+                </button>
+              )}
               {canEditSong && (
                 <button
                   className={styles.mmItem}
@@ -632,6 +679,23 @@ export function ChordChart({
           />
         )}
 
+        {showSecTranspose && (
+          <SectionTransposeSheet
+            sections={sections}
+            value={secShift}
+            onChange={(index, semitones) =>
+              setSecShift((prev) => {
+                const next = { ...prev };
+                if (semitones === 0) delete next[index];
+                else next[index] = semitones;
+                return next;
+              })
+            }
+            onReset={() => setSecShift({})}
+            onClose={() => setShowSecTranspose(false)}
+          />
+        )}
+
         {/* Chart-Bereich (fester Viewport) */}
         <div className={styles.chartArea}>
           {activeDoc ? (
@@ -685,7 +749,8 @@ export function ChordChart({
                 <Section
                   key={i}
                   section={sec}
-                  semitones={gripOffset}
+                  semitones={gripOffset + (secShift[i] ?? 0)}
+                  shift={secShift[i] ?? 0}
                   fontSize={fontSize}
                   lyricsOnly={lyricsOnly}
                   chordGap={chordGap}
