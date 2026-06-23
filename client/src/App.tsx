@@ -33,6 +33,52 @@ import { TabBar, type TabId } from './components/TabBar';
 /** Eine gepushte Vollbild-Ansicht über der Tab-Ebene. */
 type View = null | { type: 'setlist' } | { type: 'chart'; source: 'setlist' | 'lieder' };
 
+// ── Wiederherstellung der letzten Ansicht (gegen iOS-PWA-Kaltstart) ──
+// iOS verwirft eine installierte PWA beim Wegwechseln oft aus dem Speicher; die Rückkehr ist ein
+// Kaltstart. Wir können das nicht verhindern, machen es aber unsichtbar: den letzten Stand sichern
+// und beim Start wiederherstellen.
+const NAV_KEY = 'worship:nav-v1';
+// Lebensdauer des gespeicherten Stands: überlebt ein Recycling (Minuten/Stunden),
+// startet aber nicht Tage später noch im alten Lied.
+const NAV_TTL_MS = 1000 * 60 * 60 * 8;
+
+interface PersistedNav {
+  tab: TabId;
+  view: View;
+  serviceId: number | null;
+  songIndex: number;
+  libSel: { songId: number; arrangementId?: number } | null;
+  savedAt: number;
+}
+
+function loadNav(): PersistedNav | null {
+  try {
+    const raw = localStorage.getItem(NAV_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as PersistedNav;
+    if (typeof p?.savedAt !== 'number' || Date.now() - p.savedAt > NAV_TTL_MS) return null;
+    return p;
+  } catch {
+    return null;
+  }
+}
+
+function saveNav(nav: PersistedNav): void {
+  try {
+    localStorage.setItem(NAV_KEY, JSON.stringify(nav));
+  } catch {
+    // Speicher nicht verfügbar – Wiederherstellung entfällt dann eben
+  }
+}
+
+function clearNav(): void {
+  try {
+    localStorage.removeItem(NAV_KEY);
+  } catch {
+    // ignorieren
+  }
+}
+
 /** Wurzel-Komponente: Auth + Tab-Navigation (Termine/Lieder/Mehr) mit echten ChurchTools-Daten. */
 export default function App() {
   const settings = useSettings();
@@ -40,11 +86,15 @@ export default function App() {
   const auth = useAuth();
   const site = useSiteConfig().data;
 
-  const [tab, setTab] = useState<TabId>('termine');
-  const [view, setView] = useState<View>(null);
+  // Einmalig beim Mount den gespeicherten Stand lesen (oder null).
+  const [restored] = useState(loadNav);
+  const [tab, setTab] = useState<TabId>(() => restored?.tab ?? 'termine');
+  const [view, setView] = useState<View>(() => restored?.view ?? null);
   const [service, setService] = useState<Service | null>(null);
-  const [songIndex, setSongIndex] = useState(0);
-  const [libSel, setLibSel] = useState<{ songId: number; arrangementId?: number } | null>(null);
+  const [songIndex, setSongIndex] = useState(() => restored?.songIndex ?? 0);
+  const [libSel, setLibSel] = useState<{ songId: number; arrangementId?: number } | null>(
+    () => restored?.libSel ?? null,
+  );
 
   const capsQuery = useCapabilities(auth.isAuthenticated);
   const caps = capsQuery.data;
@@ -75,14 +125,18 @@ export default function App() {
   const items = agendaQuery.data ?? [];
   const songs = items.flatMap((i) => (i.song ? [i.song] : []));
 
-  // Nach dem Abmelden zurück in den Startzustand
+  // Nach dem Abmelden (nicht: während des initialen Auth-Ladens) zurück in den Startzustand
+  // und gespeicherte Ansicht verwerfen.
   useEffect(() => {
-    if (!auth.isAuthenticated) {
+    if (!auth.isLoading && !auth.isAuthenticated) {
       setService(null);
       setView(null);
       setTab('termine');
+      setSongIndex(0);
+      setLibSel(null);
+      clearNav();
     }
-  }, [auth.isAuthenticated]);
+  }, [auth.isLoading, auth.isAuthenticated]);
 
   // Wer keine Abläufe sehen darf, startet im Lieder-Tab
   useEffect(() => {
@@ -91,6 +145,24 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caps]);
+
+  // Wiederherstellung: gespeicherten Gottesdienst anhand der ID erneut auswählen, sobald die
+  // Terminliste geladen ist. Nur wenn eine Ansicht wiederhergestellt wurde (view != null).
+  // Lässt er sich nicht finden (z. B. nicht mehr in der Liste), zurück zur Startansicht –
+  // damit hängt nichts im Lade-Screen.
+  useEffect(() => {
+    if (!restored?.serviceId || service || !auth.isAuthenticated || !view) return;
+    if (servicesQuery.isLoading) return;
+    const found = servicesQuery.data?.find((s) => s.id === restored.serviceId);
+    if (found) setService(found);
+    else setView(null);
+  }, [restored, service, auth.isAuthenticated, view, servicesQuery.isLoading, servicesQuery.data]);
+
+  // Aktuellen Stand sichern (nur eingeloggt), damit ein iOS-PWA-Kaltstart unsichtbar bleibt.
+  useEffect(() => {
+    if (!auth.isAuthenticated) return;
+    saveNav({ tab, view, serviceId: service?.id ?? null, songIndex, libSel, savedAt: Date.now() });
+  }, [auth.isAuthenticated, tab, view, service, songIndex, libSel]);
 
   if (auth.isLoading) {
     return (
@@ -139,6 +211,23 @@ export default function App() {
           actionLabel="Abmelden"
           onAction={() => auth.logout()}
         />
+      </Screen>
+    );
+  }
+
+  // Während eine wiederhergestellte Ansicht ihre Daten nachlädt: kurzer Lade-Screen, statt
+  // kurz zur Tab-Ebene zu springen. Greift nur nach einem Kaltstart mit gespeichertem Stand.
+  const restoringView =
+    !!restored &&
+    view !== null &&
+    ((view.type === 'setlist' && !service) ||
+      (view.type === 'chart' &&
+        view.source === 'setlist' &&
+        (!service || (songs.length === 0 && agendaQuery.isLoading))));
+  if (restoringView) {
+    return (
+      <Screen>
+        <CenterMessage loading text="Einen Moment…" />
       </Screen>
     );
   }
