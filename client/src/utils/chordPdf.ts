@@ -15,6 +15,8 @@ export interface ChordPdfOptions {
   lyricsOnly?: boolean;
   /** Mit Flats statt Sharps spelling. */
   flat?: boolean;
+  /** Zusätzlicher Halbton-Versatz je Abschnitts-Index (Issue #16). */
+  sectionSemitones?: Record<number, number>;
 }
 
 const PT_TO_MM = 0.352777;
@@ -33,7 +35,7 @@ const TEXT_COLOR: [number, number, number] = [20, 17, 15];
  * die erzeugte Ansicht/das Export-Format. Liefert das fertige jsPDF-Dokument zurück.
  */
 export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, doc?: jsPDF): jsPDF {
-  const { semitones = 0, cols = 1, fontPt = 11, lyricsOnly = false, flat = false } = opts;
+  const { semitones = 0, cols = 1, fontPt = 11, lyricsOnly = false, flat = false, sectionSemitones } = opts;
   const d = doc ?? new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
   const lyricH = fontPt * PT_TO_MM * 1.18; // Höhe einer Textzeile
@@ -81,7 +83,8 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
 
   const sections = parseChordPro(song.chordpro);
 
-  for (const sec of sections) {
+  sections.forEach((sec, si) => {
+    const secSemi = semitones + (sectionSemitones?.[si] ?? 0);
     // Label
     if (sec.label) {
       ensure(labelH + rowH);
@@ -98,7 +101,7 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
         continue;
       }
       const pairs = parseLine(rawLine).map((p) => ({
-        chord: p.chord && !lyricsOnly ? transposeChord(p.chord, semitones, flat) : null,
+        chord: p.chord && !lyricsOnly ? transposeChord(p.chord, secSemi, flat) : null,
         text: p.text,
       }));
 
@@ -151,7 +154,7 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
       }
     }
     y += sectionGap;
-  }
+  });
 
   return d;
 }
