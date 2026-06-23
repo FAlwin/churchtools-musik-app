@@ -144,6 +144,7 @@ export function ChordChart({
     drawColor,
     drawTool,
     textSize,
+    layoutKey: `c${cols}`, // Anmerkungen pro Ausrichtung (Issue #25, Weg B)
     layoutDeps: [fontSize, cols, lyricsOnly, fontId, drawMode],
   });
 

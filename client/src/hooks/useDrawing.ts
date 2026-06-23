@@ -8,6 +8,12 @@ interface UseDrawingArgs {
   drawColor: string;
   drawTool: DrawTool;
   textSize: number;
+  /**
+   * Layout-Kennung (Issue #25, Weg B): Anmerkungen werden pro Layout gespeichert (z. B. `c1`/`c2`
+   * für Hoch-/Querformat). So passen sie immer zur aktuellen Ausrichtung – beim Drehen lädt das
+   * jeweils eigene Set, nichts verrutscht. (Schrift bleibt gesperrt, solange Anmerkungen da sind.)
+   */
+  layoutKey: string;
   /** Layout-Werte, bei deren Änderung die Leinwand neu vermessen wird. */
   layoutDeps: unknown[];
 }
@@ -30,15 +36,33 @@ function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
  *
  * Gibt Refs für <canvas> und Scroll-Container sowie Pointer-Handler zurück.
  */
-export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, layoutDeps }: UseDrawingArgs) {
+export function useDrawing({
+  songId,
+  drawMode,
+  drawColor,
+  drawTool,
+  textSize,
+  layoutKey,
+  layoutDeps,
+}: UseDrawingArgs) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const drawingRef = useRef(false);
   const strokePtsRef = useRef<Point[]>([]);
   const snapshotRef = useRef<ImageData | null>(null);
+  // Aktuelle Layout-Kennung als Ref, damit die useCallback-Funktionen sie ohne Neuanlage lesen.
+  const layoutRef = useRef(layoutKey);
+  layoutRef.current = layoutKey;
+  // Wechsel-Steuerung: zuletzt geladenes "songId|layoutKey" und ein Flag, das den Text-Auto-Save
+  // während eines Wechsels pausiert (sonst liefe das alte Set unter den neuen Schlüssel).
+  const loadedRef = useRef<string>('');
+  const switchingRef = useRef(false);
 
   const [textObjects, setTextObjects] = useState<TextAnnotation[]>([]);
+  // Aktuelle Text-Liste als Ref, um beim Wechsel das ALTE Set noch sichern zu können.
+  const textObjectsRef = useRef(textObjects);
+  textObjectsRef.current = textObjects;
   // pendingText: Eingabe-Overlay. Mit editId/initial wird ein VORHANDENER Text bearbeitet.
   const [pendingText, setPendingText] = useState<{
     x: number;
@@ -74,7 +98,8 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const saved = localStorage.getItem(`worship_draw_${id}`);
+    const key = `worship_draw_${id}_${layoutRef.current}`;
+    const saved = localStorage.getItem(key);
     if (!saved) {
       setHasInk(false);
       return;
@@ -88,7 +113,7 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
       // Alt-Einträge mit leerer Leinwand selbst heilen (sonst dauerhaft „gesperrt").
       if (isCanvasBlank(c)) {
         setHasInk(false);
-        localStorage.removeItem(`worship_draw_${id}`);
+        localStorage.removeItem(key);
       } else {
         setHasInk(true);
       }
@@ -96,17 +121,18 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     img.src = saved;
   }, []);
 
-  const saveDrawing = useCallback((id: number) => {
+  const saveDrawing = useCallback((id: number, lk: string = layoutRef.current) => {
     const canvas = canvasRef.current;
     if (!canvas || canvas.width === 0) return;
+    const key = `worship_draw_${id}_${lk}`;
     // Leere Leinwand NICHT speichern – sonst gilt das Lied fälschlich als „angemerkt"
     // und der Bearbeiten-Modus bliebe gesperrt, obwohl nichts gezeichnet wurde.
     if (isCanvasBlank(canvas)) {
-      localStorage.removeItem(`worship_draw_${id}`);
+      localStorage.removeItem(key);
       return;
     }
     try {
-      localStorage.setItem(`worship_draw_${id}`, canvas.toDataURL('image/png', 0.7));
+      localStorage.setItem(key, canvas.toDataURL('image/png', 0.7));
     } catch {
       // Speicher voll – ignorieren
     }
@@ -126,16 +152,36 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     [loadDrawing],
   );
 
-  // Text-Anmerkungen pro Song laden
+  // ── Wechsel von Song ODER Layout (Issue #25, Weg B): altes (Song,Layout)-Set sichern,
+  //    danach das passende neue Set laden. So passen Anmerkungen immer zur Ausrichtung. ──
   useEffect(() => {
-    const saved = localStorage.getItem(`worship_text_${songId}`);
-    setTextObjects(saved ? (JSON.parse(saved) as TextAnnotation[]) : []);
+    const target = `${songId}|${layoutKey}`;
+    if (loadedRef.current === target) return;
+    switchingRef.current = true;
+    // Altes Set sichern (Striche + Texte), falls schon eines geladen war.
+    if (loadedRef.current) {
+      const [oldIdStr, oldLk] = loadedRef.current.split('|');
+      const oldId = Number(oldIdStr);
+      saveDrawing(oldId, oldLk);
+      const old = textObjectsRef.current;
+      const tk = `worship_text_${oldId}_${oldLk}`;
+      if (old.length > 0) localStorage.setItem(tk, JSON.stringify(old));
+      else localStorage.removeItem(tk);
+    }
+    loadedRef.current = target;
+    // Neues Text-Set laden (die Leinwand lädt der Re-Fit-Effekt unten).
+    const savedText = localStorage.getItem(`worship_text_${songId}_${layoutKey}`);
+    setTextObjects(savedText ? (JSON.parse(savedText) as TextAnnotation[]) : []);
     setSelectedTextId(null);
-    historyRef.current = []; // Verlauf gilt nur pro Lied
+    historyRef.current = []; // Verlauf gilt pro (Lied, Layout)
     redoRef.current = [];
     setCanUndo(false);
     setCanRedo(false);
-  }, [songId]);
+    // Auto-Save erst wieder freigeben, wenn das neue Set steht (verhindert Save/Load-Race).
+    const r = requestAnimationFrame(() => requestAnimationFrame(() => (switchingRef.current = false)));
+    return () => cancelAnimationFrame(r);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [songId, layoutKey]);
 
   // ── Rückgängig / Wiederherstellen ──
   /** Aktuellen Zustand (Canvas-Bild + Text-Liste) als Schnappschuss. */
@@ -205,12 +251,14 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     if (!drawMode) setSelectedTextId(null);
   }, [drawMode]);
 
-  // Text-Anmerkungen speichern
+  // Text-Anmerkungen speichern (nicht während eines Wechsels – sonst altes Set unter neuem Schlüssel).
   useEffect(() => {
+    if (switchingRef.current) return;
+    const key = `worship_text_${songId}_${layoutRef.current}`;
     if (textObjects.length > 0) {
-      localStorage.setItem(`worship_text_${songId}`, JSON.stringify(textObjects));
+      localStorage.setItem(key, JSON.stringify(textObjects));
     } else {
-      localStorage.removeItem(`worship_text_${songId}`);
+      localStorage.removeItem(key);
     }
   }, [textObjects, songId]);
 
@@ -403,8 +451,8 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     pushHistory(); // „Alles löschen" rückgängig machbar: ↺ holt alles zurück
     const canvas = canvasRef.current;
     if (canvas) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
-    localStorage.removeItem(`worship_draw_${songId}`);
-    localStorage.removeItem(`worship_text_${songId}`);
+    localStorage.removeItem(`worship_draw_${songId}_${layoutRef.current}`);
+    localStorage.removeItem(`worship_text_${songId}_${layoutRef.current}`);
     setSelectedTextId(null);
     setTextObjects([]);
     setHasInk(false);
