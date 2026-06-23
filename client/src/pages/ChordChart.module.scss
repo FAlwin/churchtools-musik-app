@@ -474,37 +474,36 @@
   flex-direction: column;
 }
 
-// ── Chart-Bühne (Issue #25): feste, skalierte Seiten statt Scroll-Layout ──
-.stage {
+// ── Chart-Body – horizontal blätternde Seiten ──
+.body {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
-  // Wischen wird in JS ausgewertet (gleiche Reaktion wie Tippen).
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  // Horizontales Pannen per Touch unterbinden – Wischen wird in JS ausgewertet
+  // (gleiche Reaktion wie Tippen), Seitenwechsel passiert programmatisch.
   touch-action: pan-y;
+  // bewusst KEIN scroll-behavior: smooth – sonst animiert der Sprung beim
+  // Liedwechsel in die falsche Richtung. Seitenwechsel scrollt gezielt smooth.
   position: relative;
   background: var(--bg);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-// Skalierter Seiten-Stapel: transform (scale+translate) wird inline gesetzt (useFixedPages).
-// Die weiche Transform-Transition lässt das Blättern gleiten – Canvas/Text liegen darin und
-// wandern automatisch mit (Issue #26).
-.scaleWrap {
-  position: absolute;
-  top: 0;
-  left: 0;
-  will-change: transform;
-  transition: transform 0.22s ease;
-}
-
-// Ein Seiten-Fluss: feste Breite/Höhe + Multicol (Werte inline gesetzt). Überlauf erzeugt
-// weitere Spalten = weitere Seiten nach rechts.
-.flow {
+// Inhalt füllt die Höhe; Spalten füllen sich der Reihe nach (links zuerst),
+// Überlauf erzeugt weitere Seiten nach rechts.
+.content {
+  height: 100%;
   box-sizing: border-box;
+  padding: 24px;
   column-fill: auto;
-  position: relative;
 }
 
-// Unsichtbarer End-Marker am Inhaltsende (Spalten-/Seitenzählung, siehe useFixedPages).
+// Unsichtbarer End-Marker am Inhaltsende (Spalten-/Seitenzählung, siehe usePagedColumns).
 .endMarker {
   width: 0;
   height: 0;
@@ -512,18 +511,43 @@
   -webkit-column-break-inside: avoid;
 }
 
-// Sanftes Einblenden beim Liedwechsel (nur Opacity – KEIN transform, sonst Konflikt mit
-// dem Layout-transform des Seiten-Stapels).
-.slideRight,
-.slideLeft {
-  animation: chartFadeIn 0.2s ease both;
+// Unsichtbarer Platzhalter, der die scrollbare Breite des Bodys auf die echte Inhaltsbreite
+// zieht (WebKit meldet die Multicol-Breite sonst zu klein → Folgeseiten unerreichbar).
+.pageSpacer {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  visibility: hidden;
 }
-@keyframes chartFadeIn {
+
+// Übergang beim Liedwechsel (gleitet von der jeweiligen Seite herein).
+// Seitenwechsel innerhalb eines Lieds löst das NICHT aus (gleicher key).
+.slideRight {
+  animation: chartSlideRight 0.24s ease both;
+}
+.slideLeft {
+  animation: chartSlideLeft 0.24s ease both;
+}
+@keyframes chartSlideRight {
   from {
     opacity: 0;
+    transform: translateX(38px);
   }
   to {
     opacity: 1;
+    transform: none;
+  }
+}
+@keyframes chartSlideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-38px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
