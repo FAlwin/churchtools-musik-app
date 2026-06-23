@@ -8,6 +8,9 @@ interface UseDrawingArgs {
   drawColor: string;
   drawTool: DrawTool;
   textSize: number;
+  /** Feste logische Seitenhöhe (Issue #25). Ist sie gesetzt, deckt die Leinwand die feste
+   *  Seitenhöhe ab (nicht die sichtbare Container-Höhe) und skaliert per CSS-transform mit. */
+  pageHeight?: number;
   /** Layout-Werte, bei deren Änderung die Leinwand neu vermessen wird. */
   layoutDeps: unknown[];
 }
@@ -30,7 +33,15 @@ function isCanvasBlank(canvas: HTMLCanvasElement): boolean {
  *
  * Gibt Refs für <canvas> und Scroll-Container sowie Pointer-Handler zurück.
  */
-export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, layoutDeps }: UseDrawingArgs) {
+export function useDrawing({
+  songId,
+  drawMode,
+  drawColor,
+  drawTool,
+  textSize,
+  pageHeight,
+  layoutDeps,
+}: UseDrawingArgs) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -118,12 +129,13 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
       const wrap = bodyRef.current;
       if (!canvas || !wrap) return;
       // Leinwand deckt genau die Inhaltsbreite ab (nicht die Scrollbreite des
-      // Containers – sonst bläht die Leinwand selbst die Scrollbreite auf)
+      // Containers – sonst bläht die Leinwand selbst die Scrollbreite auf).
       canvas.width = contentRef.current?.scrollWidth || wrap.offsetWidth;
-      canvas.height = wrap.clientHeight;
+      // Höhe: feste Seitenhöhe (Issue #25), sonst die sichtbare Container-Höhe.
+      canvas.height = pageHeight ?? wrap.clientHeight;
       loadDrawing(id);
     },
-    [loadDrawing],
+    [loadDrawing, pageHeight],
   );
 
   // Text-Anmerkungen pro Song laden
@@ -226,7 +238,11 @@ export function useDrawing({ songId, drawMode, drawColor, drawTool, textSize, la
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    // Auf die internen Canvas-Maße umrechnen – berücksichtigt automatisch eine CSS-Skalierung
+    // (Issue #25: die Leinwand sitzt im skalierten Seiten-Container).
+    const sx = rect.width > 0 ? canvas.width / rect.width : 1;
+    const sy = rect.height > 0 ? canvas.height / rect.height : 1;
+    return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
   }
 
   // Ganzen Strich aus dem Snapshot neu zeichnen (gleichmäßiger Marker statt Punkte)

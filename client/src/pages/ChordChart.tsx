@@ -16,13 +16,17 @@ import { parseChordPro } from '../utils/chordpro';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { DRAW_COLORS, fontFamilyById } from '../utils/constants';
 import { useDrawing } from '../hooks/useDrawing';
-import { usePagedColumns } from '../hooks/usePagedColumns';
+import { useFixedPages } from '../hooks/useFixedPages';
 import type { DrawTool, Theme } from '../types/index';
 import styles from './ChordChart.module.scss';
 
 // Innenabstand und Spaltenabstand des Chart-Inhalts (für die Spaltenbreite)
 const CONTENT_PAD = 24;
 const COLUMN_GAP = 40;
+// Geschätzte feste Höhe von Kopf-/Tonart-/Fußleiste – fließt in die feste Seitenhöhe ein.
+// Muss NICHT exakt sein: die Seite wird ohnehin auf den verfügbaren Platz skaliert; wichtig ist
+// nur, dass der Wert konstant ist (sonst würde sich die Seitenhöhe beim Drehen ändern → Drift).
+const CHART_CHROME = 150;
 
 // Abschnitts-Transponierung (Issue #16): Halbton-Versatz je Abschnitts-Index, pro Lied gespeichert.
 function loadSecShift(songId: number): Record<number, number> {
@@ -135,45 +139,41 @@ export function ChordChart({
   // Schwarz im Dark Mode auf Creme umstellen, damit sichtbar
   const drawColors = DRAW_COLORS.map((c) => (c === '#14110F' ? (theme === 'dark' ? '#FFFCF2' : '#14110F') : c));
 
+  // ── Feste Seitengeometrie (Issue #25, Weg B): orientierungs-invariant aus den Fenstermaßen,
+  // damit beim Drehen nichts neu umbricht und Anmerkungen fest an der Seite kleben. ──
+  const [win, setWin] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
+  useEffect(() => {
+    const update = () => setWin({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, []);
+  const shortSide = Math.min(win.w, win.h);
+  const longSide = Math.max(win.w, win.h);
+  const pageW = shortSide; // feste Seitenbreite = kurze Bildschirmseite (Hochformat-Breite)
+  const pageH = Math.max(360, longSide - CHART_CHROME); // feste Seitenhöhe (stabil bei Drehung)
+  const perView = win.w > win.h ? 2 : 1; // Querformat: zwei Seiten nebeneinander (#20)
+
   const drawing = useDrawing({
     songId: song.id,
     drawMode,
     drawColor,
     drawTool,
     textSize,
-    layoutDeps: [fontSize, cols, lyricsOnly, fontId, drawMode],
+    pageHeight: pageH,
+    layoutDeps: [fontSize, lyricsOnly, fontId, drawMode, pageW, pageH, secShift],
   });
 
-  // Sichtbare Breite messen (für die Spaltenbreite je Seite)
-  const [pageWidth, setPageWidth] = useState(0);
-  useEffect(() => {
-    // bei Wechsel Dokument↔Akkorde neu vermessen (der Body wird dabei neu eingehängt)
-    const el = drawing.bodyRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    setPageWidth(el.clientWidth);
-    const ro = new ResizeObserver(() => setPageWidth(el.clientWidth));
-    ro.observe(el);
-    return () => ro.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewSource]);
-
-  // Spaltenbreite so, dass genau `cols` Spalten in die padded Content-Box passen.
-  const colWidthPx =
-    pageWidth > 0
-      ? Math.floor((pageWidth - 2 * CONTENT_PAD - (cols - 1) * COLUMN_GAP) / cols)
-      : undefined;
-
-  // Geometrie fürs Blättern: eine Spalte = Breite + Lücke; eine Seite = cols Spalten.
-  // Beim Blättern wird um den echten Spalten-Takt gescrollt (NICHT um die Bildschirmbreite),
-  // sonst verschiebt sich jede Folgeseite, weil es das Innenpadding nur einmal links gibt.
-  const columnStep = colWidthPx ? colWidthPx + COLUMN_GAP : 0;
   const endRef = useRef<HTMLDivElement | null>(null);
-  const paged = usePagedColumns(
+  const paged = useFixedPages(
     drawing.bodyRef,
     drawing.contentRef,
     endRef,
-    { pageStep: cols * columnStep, columnStep, pad: CONTENT_PAD, cols },
-    [song.id, fontSize, cols, lyricsOnly, fontId, pageWidth, chordGap],
+    { pageW, pageH, pad: CONTENT_PAD, gap: COLUMN_GAP, perView },
+    [song.id, fontSize, lyricsOnly, fontId, chordGap, secShift, pageW, pageH],
   );
 
   // ── Persistenz pro Song: beim Liedwechsel die gespeicherten Werte laden ──
@@ -225,14 +225,10 @@ export function ChordChart({
   }, [lyricsOnly]);
   // Vorwärts / neues Lied → auf Seite 1. (Rückwärts wird unten separat behandelt.)
   useEffect(() => {
-    const el = drawing.bodyRef.current;
-    if (!el || pendingLastPage.current) return;
-    const r = requestAnimationFrame(() => {
-      el.scrollLeft = 0;
-    });
-    return () => cancelAnimationFrame(r);
+    if (pendingLastPage.current) return;
+    paged.goToPage(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx, song.id, pageWidth, fontSize, cols, lyricsOnly, chordGap]);
+  }, [idx, song.id, fontSize, lyricsOnly, chordGap]);
 
   // Rückwärts geblättert → auf die LETZTE Seite des vorigen Lieds. Aber erst, wenn die
   // Seitenzahl gemessen ist: früher wurde `scrollLeft = scrollWidth` gesetzt, bevor das neue
@@ -268,11 +264,12 @@ export function ChordChart({
 
   // ── Einheitliche Navigation: erst durch die Seiten, dann zum nächsten/vorigen Lied ──
   const atStart = idx === 0 && (activeDoc !== null || paged.page === 0);
-  const atEnd = idx === songs.length - 1 && (activeDoc !== null || paged.page >= paged.pageCount - 1);
+  const atEnd =
+    idx === songs.length - 1 && (activeDoc !== null || paged.page >= paged.pageCount - perView);
 
   function next() {
-    if (!activeDoc && paged.page < paged.pageCount - 1) {
-      paged.goToPage(paged.page + 1); // innerhalb des Lieds: schneller Seitenwechsel
+    if (!activeDoc && paged.page < paged.pageCount - perView) {
+      paged.goToPage(paged.page + perView); // innerhalb des Lieds: nächste(s) Seite(n)
       return;
     }
     if (idx < songs.length - 1) {
@@ -284,7 +281,7 @@ export function ChordChart({
   }
   function prev() {
     if (!activeDoc && paged.page > 0) {
-      paged.goToPage(paged.page - 1);
+      paged.goToPage(paged.page - perView);
       return;
     }
     if (idx > 0) {
@@ -714,96 +711,107 @@ export function ChordChart({
           ) : (
             <>
         <div
-          className={styles.body}
+          className={styles.stage}
           ref={drawing.bodyRef}
-          onScroll={paged.onScroll}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
           onClick={onBodyClick}
           style={{ ['--chart-font' as string]: fontFam }}
         >
+          {/* Skalierter Seiten-Stapel: feste Seitengeometrie, per transform eingepasst (Issue #25).
+              Canvas + Text liegen DARIN → Anmerkungen skalieren/animieren automatisch mit. */}
           <div
             key={song.id}
-            ref={drawing.contentRef}
-            className={`${styles.content} ${slideDir.current === 'right' ? styles.slideRight : styles.slideLeft}`}
-            style={{ columnWidth: colWidthPx ? `${colWidthPx}px` : undefined, columnGap: COLUMN_GAP }}
+            className={`${styles.scaleWrap} ${slideDir.current === 'right' ? styles.slideRight : styles.slideLeft}`}
+            style={{ transform: paged.transform, transformOrigin: 'top left' }}
           >
-            {sections.length === 0 ? (
-              <div className={styles.empty}>
-                <div className={styles.emptyIcon}>🎵</div>
-                <div>Für dieses Lied ist keine Akkord-Datei in ChurchTools hinterlegt.</div>
-                {canEditSong && (
-                  <button
-                    className={styles.createBtn}
-                    onClick={() => {
-                      setEditorError(null);
-                      setShowEditor(true);
-                    }}
-                  >
-                    Akkord-Datei erstellen
-                  </button>
-                )}
-              </div>
-            ) : (
-              sections.map((sec, i) => (
-                <Section
-                  key={i}
-                  section={sec}
-                  semitones={gripOffset + (secShift[i] ?? 0)}
-                  shift={secShift[i] ?? 0}
-                  fontSize={fontSize}
-                  lyricsOnly={lyricsOnly}
-                  chordGap={chordGap}
-                />
-              ))
-            )}
-            {/* Unsichtbarer End-Marker: verrät per Layout-Position, in welcher Spalte der
-                Inhalt endet → zuverlässige Seitenzählung (unabhängig von WebKits scrollWidth). */}
-            <div ref={endRef} className={styles.endMarker} aria-hidden="true" />
-          </div>
-          {/* Platzhalter erzwingt die korrekte scrollbare Breite, damit jede Seite erreichbar
-              ist (WebKit meldet die Multicol-Breite sonst zu klein). */}
-          {paged.contentWidth > 0 && (
-            <div className={styles.pageSpacer} style={{ left: paged.contentWidth }} aria-hidden="true" />
-          )}
-          <canvas
-            ref={drawing.canvasRef}
-            className={`${styles.canvas}${drawMode ? ' ' + styles.active : ''}`}
-            onPointerDown={drawing.handlers.onPointerDown}
-            onPointerMove={drawing.handlers.onPointerMove}
-            onPointerUp={drawing.handlers.onPointerUp}
-            onPointerLeave={drawing.handlers.onPointerUp}
-          />
-          {drawing.textObjects.map((obj) => (
             <div
-              key={obj.id}
-              className={styles.textObj}
+              ref={drawing.contentRef}
+              className={styles.flow}
               style={{
-                top: obj.y - obj.size,
-                left: obj.x,
-                fontSize: obj.size,
-                color: obj.color,
-                pointerEvents: drawMode ? 'all' : 'none',
-                cursor: drawMode ? 'grab' : 'default',
-                outline: obj.id === drawing.selectedTextId ? '2px dashed var(--blue)' : undefined,
-                outlineOffset: 4,
+                width: pageW,
+                height: pageH,
+                columnWidth: pageW - 2 * CONTENT_PAD,
+                columnGap: COLUMN_GAP + 2 * CONTENT_PAD,
+                padding: CONTENT_PAD,
               }}
-              onPointerDown={drawMode ? (e) => drawing.startDragText(e, obj) : undefined}
-              onPointerMove={drawMode ? (e) => drawing.moveDragText(e, obj.id) : undefined}
-              onPointerUp={drawMode ? drawing.endDragText : undefined}
             >
-              {obj.text}
+              {sections.length === 0 ? (
+                <div className={styles.empty}>
+                  <div className={styles.emptyIcon}>🎵</div>
+                  <div>Für dieses Lied ist keine Akkord-Datei in ChurchTools hinterlegt.</div>
+                  {canEditSong && (
+                    <button
+                      className={styles.createBtn}
+                      onClick={() => {
+                        setEditorError(null);
+                        setShowEditor(true);
+                      }}
+                    >
+                      Akkord-Datei erstellen
+                    </button>
+                  )}
+                </div>
+              ) : (
+                sections.map((sec, i) => (
+                  <Section
+                    key={i}
+                    section={sec}
+                    semitones={gripOffset + (secShift[i] ?? 0)}
+                    shift={secShift[i] ?? 0}
+                    fontSize={fontSize}
+                    lyricsOnly={lyricsOnly}
+                    chordGap={chordGap}
+                  />
+                ))
+              )}
+              {/* Unsichtbarer End-Marker: verrät per Layout-Position, in welcher Spalte der
+                  Inhalt endet → zuverlässige Seitenzählung (unabhängig von WebKits scrollWidth). */}
+              <div ref={endRef} className={styles.endMarker} aria-hidden="true" />
             </div>
-          ))}
-        </div>
+            <canvas
+              ref={drawing.canvasRef}
+              className={`${styles.canvas}${drawMode ? ' ' + styles.active : ''}`}
+              onPointerDown={drawing.handlers.onPointerDown}
+              onPointerMove={drawing.handlers.onPointerMove}
+              onPointerUp={drawing.handlers.onPointerUp}
+              onPointerLeave={drawing.handlers.onPointerUp}
+            />
+            {drawing.textObjects.map((obj) => (
+              <div
+                key={obj.id}
+                className={styles.textObj}
+                style={{
+                  top: obj.y - obj.size,
+                  left: obj.x,
+                  fontSize: obj.size,
+                  color: obj.color,
+                  pointerEvents: drawMode ? 'all' : 'none',
+                  cursor: drawMode ? 'grab' : 'default',
+                  outline: obj.id === drawing.selectedTextId ? '2px dashed var(--blue)' : undefined,
+                  outlineOffset: 4,
+                }}
+                onPointerDown={drawMode ? (e) => drawing.startDragText(e, obj) : undefined}
+                onPointerMove={drawMode ? (e) => drawing.moveDragText(e, obj.id) : undefined}
+                onPointerUp={drawMode ? drawing.endDragText : undefined}
+              >
+                {obj.text}
+              </div>
+            ))}
+          </div>
 
-        {/* Seiten-Badge unten rechts */}
-        {paged.pageCount > 1 && (
-          <button className={styles.pageBadge} onClick={next}>
-            Seite {paged.page + 1} / {paged.pageCount}
-            <span className={styles.pageBadgeArrow}>›</span>
-          </button>
-        )}
+          {/* Seiten-Badge unten rechts (außerhalb des skalierten Stapels → unskaliert) */}
+          {paged.pageCount > 1 && (
+            <button className={styles.pageBadge} onClick={next}>
+              Seite {paged.page + 1}
+              {perView > 1 && Math.min(paged.page + perView, paged.pageCount) > paged.page + 1
+                ? `–${Math.min(paged.page + perView, paged.pageCount)}`
+                : ''}{' '}
+              / {paged.pageCount}
+              <span className={styles.pageBadgeArrow}>›</span>
+            </button>
+          )}
+        </div>
             </>
           )}
         </div>
