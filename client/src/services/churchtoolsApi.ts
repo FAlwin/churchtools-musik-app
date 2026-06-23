@@ -7,6 +7,7 @@ import type {
   AuthStatus,
   Service,
   SetlistSong,
+  SongArrangementOption,
   SongLibraryEntry,
   SongSearchResult,
   UserCapabilities,
@@ -96,6 +97,11 @@ export function getSongLibrary(): Promise<SongLibraryEntry[]> {
 export type SongUsageMap = Record<string, { count: number; lastUsed: string }>;
 export function getSongUsage(): Promise<SongUsageMap> {
   return apiFetch<SongUsageMap>('/api/song-usage');
+}
+
+/** Arrangements eines bekannten Lieds (für „Zu Ablauf hinzufügen"). */
+export function getSongArrangements(songId: number): Promise<SongArrangementOption[]> {
+  return apiFetch<SongArrangementOption[]>(`/api/songs/${songId}/arrangements`);
 }
 
 /** Chart-Daten eines einzelnen Lieds. */

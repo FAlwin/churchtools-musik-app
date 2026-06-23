@@ -45,8 +45,37 @@
   @include m.card-list;
 }
 
+.rowWrap {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
 .row {
   @include m.list-row;
+  flex: 1;
+  min-width: 0;
+}
+.addBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--blue-ink);
+  cursor: pointer;
+  transition: background 0.12s;
+
+  @media (hover: hover) {
+    &:hover {
+      background: var(--surface3);
+    }
+  }
+  &:active {
+    background: var(--surface3);
+  }
 }
 .info {
   flex: 1;

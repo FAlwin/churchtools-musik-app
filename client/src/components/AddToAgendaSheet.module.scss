@@ -1,0 +1,135 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.songLabel {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.group {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  margin: 6px 2px 0;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 15px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--ui);
+  cursor: pointer;
+  transition: background 0.12s;
+
+  @media (hover: hover) {
+    &:hover {
+      background: var(--surface3);
+    }
+  }
+  &:active {
+    background: var(--surface3);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.choiceText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.choiceTitle {
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+.choiceMeta {
+  font-size: 12.5px;
+  color: var(--text2);
+}
+
+.choiceIcon {
+  color: var(--text2);
+  flex-shrink: 0;
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 6px 4px;
+  border: none;
+  background: none;
+  color: var(--blue-ink);
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.err {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(178, 34, 71, 0.1);
+  border: 1px solid rgba(178, 34, 71, 0.3);
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 14px;
+}
+
+.success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 12px 8px;
+  text-align: center;
+  font-size: 15.5px;
+  color: var(--text);
+}
+
+.successIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(22, 138, 22, 0.12);
+  color: var(--green, #168a16);
+}
