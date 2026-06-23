@@ -10,10 +10,20 @@ interface SectionProps {
   flat?: boolean;
   lyricsOnly?: boolean;
   chordGap?: number;
+  /** Zusätzlicher Halbton-Versatz nur dieses Abschnitts (Issue #16) – für die Markierung. */
+  shift?: number;
 }
 
 /** Rendert einen ChordPro-Abschnitt (Vers, Chorus, …) mit Typ-Label. */
-export function Section({ section, semitones, fontSize, flat = false, lyricsOnly = false, chordGap }: SectionProps) {
+export function Section({
+  section,
+  semitones,
+  fontSize,
+  flat = false,
+  lyricsOnly = false,
+  chordGap,
+  shift = 0,
+}: SectionProps) {
   // Im Nur-Text-Modus reine Instrumental-Abschnitte (ohne Text) ausblenden
   if (lyricsOnly) {
     const anyLyric = section.lines.some(
@@ -23,12 +33,18 @@ export function Section({ section, semitones, fontSize, flat = false, lyricsOnly
   }
 
   const typeClass = styles[section.type] ?? styles.verse;
+  const shiftLabel = shift ? (shift > 0 ? `+${shift}` : `${shift}`) : null;
 
   return (
     <div className={`${styles.sectionBlock} ${typeClass}`}>
-      {section.label && (
+      {(section.label || shiftLabel) && (
         <div className={styles.secLabel} style={{ fontSize: Math.max(12, Math.round(fontSize * 0.8)) }}>
           {section.label}
+          {shiftLabel && (
+            <span className={styles.shiftBadge} title="Dieser Abschnitt ist transponiert">
+              {shiftLabel}
+            </span>
+          )}
         </div>
       )}
       {section.lines.map((ln, i) =>

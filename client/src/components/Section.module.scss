@@ -24,6 +24,19 @@
   -webkit-column-break-after: avoid;
 }
 
+// Markierung „dieser Abschnitt ist transponiert" (+1 / −2) neben dem Abschnitts-Label (Issue #16).
+.shiftBadge {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--orange, #eb5e28);
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
 .gap {
   height: 0.5em;
 }
