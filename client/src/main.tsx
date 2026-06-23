@@ -27,10 +27,23 @@ const queryClient = new QueryClient({
   },
 });
 
+// NUR Entwicklung: Chart-Demo zum Prüfen des Seiten-/Skalier-Layouts (#25) ohne CT-Login.
+// Aktiv über `?demo=chart`; im Produktiv-Build (import.meta.env.DEV === false) nie geladen.
+const demo = import.meta.env.DEV && new URLSearchParams(window.location.search).get('demo');
+const DemoChart = demo === 'chart'
+  ? React.lazy(() => import('./dev/DemoChart').then((m) => ({ default: m.DemoChart })))
+  : null;
+
+const rootNode = DemoChart ? (
+  <React.Suspense fallback={null}>
+    <DemoChart />
+  </React.Suspense>
+) : (
+  <App />
+);
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{rootNode}</QueryClientProvider>
   </React.StrictMode>,
 );
