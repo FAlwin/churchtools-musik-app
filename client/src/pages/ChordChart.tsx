@@ -646,8 +646,10 @@ export function ChordChart({
               onActivePage={setActivePage}
               drawMode={drawMode}
               drawColor={drawColor}
+              setDrawColor={setDrawColor}
               drawTool={drawTool}
-              clearSignal={docClearSignal}
+              setDrawTool={setDrawTool}
+              drawColors={drawColors}
             />
           ) : (
             <div className={styles.empty}>
@@ -668,8 +670,8 @@ export function ChordChart({
           )}
         </div>
 
-        {/* Zeichen-Werkzeugleiste (Freihand) */}
-        {drawMode && (
+        {/* Zeichen-Werkzeugleiste (nur für hochgeladene Einzeldokumente; der Strom bringt seine eigene mit) */}
+        {drawMode && activeDoc && (
           <DrawToolbar
             colors={drawColors}
             drawColor={drawColor}
@@ -681,7 +683,7 @@ export function ChordChart({
           />
         )}
 
-        {confirmClear && (
+        {confirmClear && activeDoc && (
           <ConfirmDialog
             title="Markierungen löschen?"
             message={`Alle Zeichnungen auf der aktiven Seite werden entfernt. Das kann nicht rückgängig gemacht werden.`}

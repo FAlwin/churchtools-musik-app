@@ -13,6 +13,10 @@ interface DrawToolbarProps {
   allowText?: boolean;
   textSize?: number;
   setTextSize?: (fn: (s: number) => number) => void;
+  /** Schrittweite/Grenzen der Textgröße (Default px 4/12/56; PDF-Viewer cqh 1/2/14). */
+  sizeStep?: number;
+  sizeMin?: number;
+  sizeMax?: number;
   /** Ist eine vorhandene Text-Anmerkung ausgewählt? Dann wirken Farbe/Größe auf sie. */
   isTextSelected?: boolean;
   /** Farbe der ausgewählten Anmerkung (für die Markierung der Farbfelder). */
@@ -46,6 +50,9 @@ export function DrawToolbar({
   allowText = true,
   textSize = 20,
   setTextSize,
+  sizeStep = 4,
+  sizeMin = 12,
+  sizeMax = 56,
   isTextSelected = false,
   selectedColor,
   selectedSize,
@@ -72,7 +79,7 @@ export function DrawToolbar({
   }
   function changeSize(delta: number) {
     if (isTextSelected) onSelectedResize?.(delta);
-    else setTextSize?.((s) => Math.max(12, Math.min(56, s + delta)));
+    else setTextSize?.((s) => Math.max(sizeMin, Math.min(sizeMax, s + delta)));
   }
   function chooseTool(t: DrawTool) {
     setDrawTool(t);
@@ -137,7 +144,7 @@ export function DrawToolbar({
           <div className={styles.sep} />
           <button
             className={styles.toolBtn}
-            onClick={() => changeSize(-4)}
+            onClick={() => changeSize(-sizeStep)}
             title="Kleiner"
             style={{ fontSize: 10, fontWeight: 700 }}
           >
@@ -146,7 +153,7 @@ export function DrawToolbar({
           <span className={styles.sizeValue}>{shownSize}</span>
           <button
             className={styles.toolBtn}
-            onClick={() => changeSize(4)}
+            onClick={() => changeSize(sizeStep)}
             title="Größer"
             style={{ fontSize: 10, fontWeight: 700 }}
           >

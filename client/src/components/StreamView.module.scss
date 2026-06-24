@@ -36,38 +36,75 @@
   min-width: 0;
   height: 100%;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-// Seite + Anmerkungen mittig im Bereich, an die Höhe eingepasst.
+// Seitenrechteck exakt in A4-Verhältnis (per aspectRatio), an die Höhe eingepasst. container-type:size
+// macht die Schriftgröße der Text-Anmerkungen über cqh (% der Seitenhöhe) seiten-relativ → skaliert
+// und zoomt verlustfrei mit. Alle Ebenen füllen das Rechteck deckungsgleich.
 .pageBox {
   position: relative;
-  display: grid;
-  grid-template: 1fr / 1fr;
-  place-items: center;
-  width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  container-type: size;
   line-height: 0;
 }
 
-// Inhalts- und Anmerkungs-Canvas exakt übereinander (gleiche Zelle, gleiche max-Constraints).
+.contentCanvas,
+.annoCanvas,
+.textLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .contentCanvas {
-  grid-area: 1 / 1;
-  // min-*: 0 hebt die automatische Mindestgröße von Grid-Items auf, damit max-height greift und
-  // die Seite an der HÖHE eingepasst wird (nicht an der Breite). Element-Box = sichtbare Seite.
-  min-width: 0;
-  min-height: 0;
-  max-width: 100%;
-  max-height: 100%;
   background: #fff;
 }
 
 .annoCanvas {
-  grid-area: 1 / 1;
-  min-width: 0;
-  min-height: 0;
-  max-width: 100%;
-  max-height: 100%;
   touch-action: none;
+}
+
+// Text-Anmerkungs-Ebene
+.textLayer {
+  line-height: 1;
+}
+
+.textObj {
+  position: absolute;
+  font-family: var(--ui);
+  font-weight: 700;
+  white-space: nowrap;
+  user-select: none;
+  touch-action: none;
+}
+
+.textSel {
+  outline: 0.4cqh dashed var(--blue);
+  outline-offset: 0.5cqh;
+}
+
+// Text-Eingabefeld (über der Seite, in Bildschirm-Koordinaten)
+.textInputWrap {
+  position: fixed;
+  z-index: 40;
+  transform: translate(-2px, -4px);
+}
+
+.textInput {
+  font-family: var(--ui);
+  font-size: 18px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #fff;
+  outline: none;
+  min-width: 120px;
 }
 
 // Zoom-Anpassen-Leiste (erscheint nach einer Zoom-Geste), mittig unten.

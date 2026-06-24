@@ -4,6 +4,9 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { SetlistPageOwner } from '../utils/chordPdf';
 import type { DrawTool } from '../types/index';
+import { usePageDraw } from '../hooks/usePageDraw';
+import { DrawToolbar } from './DrawToolbar';
+import { ConfirmDialog } from './ConfirmDialog';
 import { Icon } from './icons';
 import { Spinner } from './Spinner';
 import styles from './StreamView.module.scss';
@@ -11,21 +14,18 @@ import styles from './StreamView.module.scss';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 interface StreamViewProps {
-  /** Zusammengefasste PDF des ganzen Ablaufs (alle Lieder hintereinander). */
   pdfData: ArrayBuffer;
-  /** Pro PDF-Seite das zugehörige Lied + die Seite darin (für Anmerkungs-Schlüssel & aktives Lied). */
   owners: SetlistPageOwner[];
-  /** Linke (erste) sichtbare Seite im Strom. */
   pageIndex: number;
   onPageIndex: (i: number) => void;
-  /** Aktive Seite (im 2-up die angetippte Hälfte) – steuert Kopfzeile/Menüs. */
   activePage: number;
   onActivePage: (i: number) => void;
   drawMode: boolean;
   drawColor: string;
+  setDrawColor: (c: string) => void;
   drawTool: DrawTool;
-  /** Löscht die Anmerkungen der AKTIVEN Seite (Zähler). */
-  clearSignal: number;
+  setDrawTool: (t: DrawTool) => void;
+  drawColors: string[];
 }
 
 function isLandscape(): boolean {
@@ -33,11 +33,9 @@ function isLandscape(): boolean {
 }
 
 /**
- * Durchgehender Seitenstrom über den ganzen Ablauf. Hochformat zeigt 1 Seite, Querformat IMMER 2
- * Seiten nebeneinander (auch über Liedgrenzen) – jede Seite ein eigener Bereich mit EIGENEM Zoom.
- * Wischen blättert um 1 Seite (rechte rückt nach links), Antippen einer Hälfte macht sie aktiv.
- * Eine Zoom-Geste schaltet pro Seite einen Anpassen-Modus (✓/✗) frei; solange der an ist, ist
- * Wischen/Tippen aus – danach wieder normal.
+ * Durchgehender Seitenstrom über den ganzen Ablauf. Hochformat 1 Seite, Querformat IMMER 2 Seiten
+ * nebeneinander – jede Seite ein eigener Bereich mit eigenem Zoom (dauerhaft gespeichert) und
+ * vollen Anmerkungen (Stift/Marker/Radierer + Textfelder + Rückgängig), persistiert pro Lied-Seite.
  */
 export function StreamView({
   pdfData,
@@ -48,16 +46,19 @@ export function StreamView({
   onActivePage,
   drawMode,
   drawColor,
+  setDrawColor,
   drawTool,
-  clearSignal,
+  setDrawTool,
+  drawColors,
 }: StreamViewProps) {
-  const pagesRef = useRef<HTMLCanvasElement[]>([]); // alle Seiten offscreen gerendert
+  const pagesRef = useRef<HTMLCanvasElement[]>([]);
   const contentRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
   const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
+  const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
   const transformRefs = [useRef<ReactZoomPanPinchRef | null>(null), useRef<ReactZoomPanPinchRef | null>(null)];
-  const drawing = useRef(false);
-  const drawCanvas = useRef<HTMLCanvasElement | null>(null);
-  const drawPage = useRef(0);
+  const stroke = useRef(false);
+  const strokeCanvas = useRef<HTMLCanvasElement | null>(null);
+  const strokeSlot = useRef(0);
   const lastPt = useRef<{ x: number; y: number } | null>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -66,15 +67,18 @@ export function StreamView({
   const [pageCount, setPageCount] = useState(0);
   const [renderVersion, setRenderVersion] = useState(0);
   const [landscape, setLandscape] = useState(isLandscape());
-  const [adjustSlot, setAdjustSlot] = useState<number | null>(null); // Seite im Zoom-Anpassen-Modus
+  const [adjustSlot, setAdjustSlot] = useState<number | null>(null);
+  const [aspects, setAspects] = useState<string[]>(['210 / 297', '210 / 297']);
+  const [textSize, setTextSize] = useState(4); // cqh = % der Seitenhöhe
+  const [confirmClear, setConfirmClear] = useState(false);
   const firstDone = useRef(false);
 
   const perView = landscape ? 2 : 1;
   const adjusting = adjustSlot !== null;
 
-  const keyFor = (page: number): string => {
+  const keyFor = (page: number): string | null => {
     const o = owners[page];
-    return o ? `worship_docdraw_song${o.songId}_${o.localPage}` : `worship_docdraw_p${page}`;
+    return o ? `worship_docdraw_song${o.songId}_${o.localPage}` : null;
   };
   const zoomKeyFor = (page: number): string => {
     const o = owners[page];
@@ -93,7 +97,13 @@ export function StreamView({
     return null;
   }
 
-  // Ausrichtung verfolgen
+  // Ein Anmerkungs-Zustand je sichtbarer Seite (fixe Anzahl Hooks – Regeln der Hooks).
+  const drawA = usePageDraw(keyFor(pageIndex), annoRefs[0], layerRefs[0]);
+  const drawB = usePageDraw(keyFor(pageIndex + 1), annoRefs[1], layerRefs[1]);
+  const draws = [drawA, drawB];
+  const activeSlot = Math.max(0, Math.min(perView - 1, activePage - pageIndex));
+  const activeDraw = draws[activeSlot];
+
   useEffect(() => {
     const onResize = () => setLandscape(isLandscape());
     window.addEventListener('resize', onResize);
@@ -104,8 +114,7 @@ export function StreamView({
     };
   }, []);
 
-  // PDF laden → jede Seite offscreen rendern. Beim ERSTEN Mal Spinner; bei späteren Neu-Erzeugungen
-  // (Transponieren etc.) im Hintergrund rendern und die alten Seiten stehen lassen, bis fertig.
+  // PDF laden (erstes Mal Spinner, später im Hintergrund tauschen)
   useEffect(() => {
     let cancelled = false;
     setError(null);
@@ -143,9 +152,10 @@ export function StreamView({
     };
   }, [pdfData]);
 
-  // Sichtbare Seiten malen + Anmerkungen laden
+  // Sichtbare Seiten malen + Striche laden + Seitenverhältnis setzen
   useEffect(() => {
     if (loading) return;
+    const nextAspects = [...aspects];
     for (let j = 0; j < perView; j++) {
       const content = contentRefs[j].current;
       const anno = annoRefs[j].current;
@@ -159,25 +169,27 @@ export function StreamView({
       anno.height = src.height;
       const ctx = anno.getContext('2d')!;
       ctx.clearRect(0, 0, anno.width, anno.height);
-      const saved = localStorage.getItem(keyFor(pageIndex + j));
+      const key = keyFor(pageIndex + j);
+      const saved = key ? localStorage.getItem(key) : null;
       if (saved) {
         const img = new Image();
         img.onload = () => ctx.drawImage(img, 0, 0);
         img.src = saved;
       }
+      nextAspects[j] = `${src.width} / ${src.height}`;
     }
+    setAspects(nextAspects);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, renderVersion, pageIndex, perView]);
 
-  // Aktive Seite immer im sichtbaren Fenster halten (Hochformat: = sichtbare Seite).
+  // Aktive Seite im sichtbaren Fenster halten
   useEffect(() => {
     const maxVisible = pageIndex + perView - 1;
     if (activePage < pageIndex || activePage > maxVisible) onActivePage(pageIndex);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [perView, pageIndex, activePage]);
 
-  // Beim Blättern/Drehen Zoom-Modus verlassen und den GESPEICHERTEN Zoom der Seite wiederherstellen
-  // (oder auf Fit, falls keiner gespeichert ist) – Zoom ist so dauerhaft pro Lied-Seite.
+  // Beim Blättern/Drehen Zoom-Modus verlassen + gespeicherten Zoom je Seite wiederherstellen
   useEffect(() => {
     setAdjustSlot(null);
     if (loading) return;
@@ -193,37 +205,30 @@ export function StreamView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, perView, loading]);
 
-  // Anmerkungen der aktiven Seite löschen
-  useEffect(() => {
-    if (clearSignal === 0) return;
-    const j = activePage - pageIndex;
-    const anno = annoRefs[j]?.current;
-    if (anno) anno.getContext('2d')!.clearRect(0, 0, anno.width, anno.height);
-    localStorage.removeItem(keyFor(activePage));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clearSignal]);
-
-  // ── Zeichnen ──
-  function pt(e: React.PointerEvent, canvas: HTMLCanvasElement) {
+  // ── Striche zeichnen (auf der Anno-Canvas der jeweiligen Seite) ──
+  function ptOf(e: React.PointerEvent, canvas: HTMLCanvasElement) {
     const rect = canvas.getBoundingClientRect();
     return {
       x: ((e.clientX - rect.left) / rect.width) * canvas.width,
       y: ((e.clientY - rect.top) / rect.height) * canvas.height,
     };
   }
-  function dDown(e: React.PointerEvent, slot: number) {
-    if (!drawMode) return;
+  function strokeDown(e: React.PointerEvent, slot: number) {
+    if (!drawMode || drawTool === 'text') return;
     const canvas = annoRefs[slot].current;
     if (!canvas) return;
-    drawing.current = true;
-    drawCanvas.current = canvas;
-    drawPage.current = pageIndex + slot;
-    lastPt.current = pt(e, canvas);
+    e.stopPropagation();
+    draws[slot].setSelectedId(null);
+    draws[slot].pushHistory();
+    stroke.current = true;
+    strokeCanvas.current = canvas;
+    strokeSlot.current = slot;
+    lastPt.current = ptOf(e, canvas);
   }
-  function dMove(e: React.PointerEvent) {
-    if (!drawMode || !drawing.current || !drawCanvas.current) return;
-    const ctx = drawCanvas.current.getContext('2d')!;
-    const p = pt(e, drawCanvas.current);
+  function strokeMove(e: React.PointerEvent) {
+    if (!stroke.current || !strokeCanvas.current) return;
+    const ctx = strokeCanvas.current.getContext('2d')!;
+    const p = ptOf(e, strokeCanvas.current);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     if (drawTool === 'eraser') {
@@ -234,7 +239,7 @@ export function StreamView({
     } else if (drawTool === 'marker') {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 0.3;
-      ctx.lineWidth = 16;
+      ctx.lineWidth = 18;
       ctx.strokeStyle = drawColor;
     } else {
       ctx.globalCompositeOperation = 'source-over';
@@ -249,19 +254,27 @@ export function StreamView({
     ctx.globalAlpha = 1;
     lastPt.current = p;
   }
-  function dUp() {
-    if (!drawing.current || !drawCanvas.current) return;
-    drawing.current = false;
+  function strokeUp() {
+    if (!stroke.current) return;
+    stroke.current = false;
     lastPt.current = null;
-    try {
-      localStorage.setItem(keyFor(drawPage.current), drawCanvas.current.toDataURL('image/png', 0.7));
-    } catch {
-      /* Speicher voll */
-    }
-    drawCanvas.current = null;
+    draws[strokeSlot.current].saveStrokes();
+    strokeCanvas.current = null;
   }
 
-  // ── Blättern (Wischen) / aktive Hälfte (Tippen) ──
+  // Text platzieren (Tipp mit Text-Werkzeug auf leere Stelle der Seite)
+  function layerDown(e: React.PointerEvent, slot: number) {
+    if (!drawMode || drawTool !== 'text') return;
+    const layer = layerRefs[slot].current;
+    if (!layer) return;
+    e.stopPropagation();
+    const rect = layer.getBoundingClientRect();
+    const fx = (e.clientX - rect.left) / rect.width;
+    const fy = (e.clientY - rect.top) / rect.height;
+    draws[slot].placeText(fx, fy, e.clientX, e.clientY);
+  }
+
+  // ── Blättern / aktive Hälfte ──
   function go(delta: number) {
     const nextP = Math.min(Math.max(0, pageIndex + delta), Math.max(0, pageCount - 1));
     if (nextP !== pageIndex) {
@@ -282,11 +295,8 @@ export function StreamView({
     const dy = touchStart.current.y - e.changedTouches[0].clientY;
     const startX = touchStart.current.x;
     touchStart.current = null;
-    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-      go(dx > 0 ? 1 : -1);
-    } else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
-      tapAt(startX, e.currentTarget as HTMLElement);
-    }
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) go(dx > 0 ? 1 : -1);
+    else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) tapAt(startX, e.currentTarget as HTMLElement);
   }
   function tapAt(clientX: number, root: HTMLElement) {
     if (perView < 2) return;
@@ -301,10 +311,8 @@ export function StreamView({
   }
 
   function confirmAdjust() {
-    // aktuelle (gezoomte) Ansicht der Seite dauerhaft speichern
     if (adjustSlot !== null) {
-      const ref = transformRefs[adjustSlot].current;
-      const t = ref?.instance?.transformState;
+      const t = transformRefs[adjustSlot].current?.instance?.transformState;
       if (t) {
         try {
           localStorage.setItem(
@@ -332,6 +340,8 @@ export function StreamView({
     slots.push(j);
   }
 
+  const selectedText = activeDraw.texts.find((o) => o.id === activeDraw.selectedId) ?? null;
+
   return (
     <div className={styles.root} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={onClick}>
       {loading && (
@@ -343,47 +353,145 @@ export function StreamView({
       {error && <div className={styles.center}>⚠️ {error}</div>}
 
       <div className={styles.row} style={{ visibility: loading ? 'hidden' : 'visible' }}>
-        {slots.map((j) => (
-          <div key={j} className={styles.slot}>
-            <TransformWrapper
-              ref={transformRefs[j]}
-              minScale={1}
-              maxScale={6}
-              centerOnInit
-              centerZoomedOut
-              initialScale={1}
-              limitToBounds
-              doubleClick={{ disabled: true }}
-              panning={{ disabled: drawMode || adjustSlot !== j, velocityDisabled: true }}
-              pinch={{ disabled: drawMode }}
-              wheel={{ disabled: drawMode, step: 0.08 }}
-              onZoomStart={() => {
-                if (!drawMode) setAdjustSlot(j);
-              }}
-            >
-              <TransformComponent
-                wrapperStyle={{ width: '100%', height: '100%' }}
-                contentStyle={{ width: '100%', height: '100%' }}
+        {slots.map((j) => {
+          const d = draws[j];
+          return (
+            <div key={j} className={styles.slot}>
+              <TransformWrapper
+                ref={transformRefs[j]}
+                minScale={1}
+                maxScale={6}
+                centerOnInit
+                centerZoomedOut
+                initialScale={1}
+                limitToBounds
+                doubleClick={{ disabled: true }}
+                panning={{ disabled: drawMode || adjustSlot !== j, velocityDisabled: true }}
+                pinch={{ disabled: drawMode }}
+                wheel={{ disabled: drawMode, step: 0.08 }}
+                onZoomStart={() => {
+                  if (!drawMode) setAdjustSlot(j);
+                }}
               >
-                <div className={styles.pageBox}>
-                  <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
-                  <canvas
-                    ref={annoRefs[j]}
-                    className={styles.annoCanvas}
-                    style={{ pointerEvents: drawMode ? 'all' : 'none', cursor: drawMode ? 'crosshair' : 'default' }}
-                    onPointerDown={(e) => dDown(e, j)}
-                    onPointerMove={dMove}
-                    onPointerUp={dUp}
-                    onPointerLeave={dUp}
-                  />
-                </div>
-              </TransformComponent>
-            </TransformWrapper>
-          </div>
-        ))}
+                <TransformComponent
+                  wrapperStyle={{ width: '100%', height: '100%' }}
+                  contentStyle={{ width: '100%', height: '100%' }}
+                >
+                  <div className={styles.pageBox} style={{ aspectRatio: aspects[j] }}>
+                    <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
+                    <canvas
+                      ref={annoRefs[j]}
+                      className={styles.annoCanvas}
+                      style={{
+                        pointerEvents: drawMode && drawTool !== 'text' ? 'all' : 'none',
+                        cursor: drawMode ? 'crosshair' : 'default',
+                      }}
+                      onPointerDown={(e) => strokeDown(e, j)}
+                      onPointerMove={strokeMove}
+                      onPointerUp={strokeUp}
+                      onPointerLeave={strokeUp}
+                    />
+                    <div
+                      ref={layerRefs[j]}
+                      className={styles.textLayer}
+                      style={{ pointerEvents: drawMode && drawTool === 'text' ? 'all' : 'none' }}
+                      onPointerDown={(e) => layerDown(e, j)}
+                    >
+                      {d.texts.map((o) => (
+                        <div
+                          key={o.id}
+                          className={`${styles.textObj}${o.id === d.selectedId ? ' ' + styles.textSel : ''}`}
+                          style={{
+                            left: `${o.fx * 100}%`,
+                            top: `${o.fy * 100}%`,
+                            fontSize: `${o.sizeCqh}cqh`,
+                            color: o.color,
+                            pointerEvents: drawMode ? 'all' : 'none',
+                            cursor: drawMode ? 'grab' : 'default',
+                          }}
+                          onPointerDown={(e) => d.startDrag(e, o)}
+                          onPointerMove={(e) => d.moveDrag(e, o.id)}
+                          onPointerUp={d.endDrag}
+                        >
+                          {o.text}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TransformComponent>
+              </TransformWrapper>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Zoom-Anpassen-Knöpfe (erscheinen nach einer Zoom-Geste) */}
+      {/* Text-Eingabe-Overlay (Bildschirm-Koordinaten, außerhalb der Zoom-Ebene) */}
+      {slots.map((j) => {
+        const d = draws[j];
+        if (!d.pending) return null;
+        return (
+          <div key={`in${j}`} className={styles.textInputWrap} style={{ left: d.pending.cx, top: d.pending.cy }}>
+            <input
+              type="text"
+              autoFocus
+              defaultValue={d.pending.initial ?? ''}
+              placeholder="Text…"
+              className={styles.textInput}
+              style={{ color: drawColor, border: `2px solid ${drawColor}` }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') d.confirmText((e.target as HTMLInputElement).value, drawColor, textSize);
+                if (e.key === 'Escape') d.cancelText();
+              }}
+              onBlur={(e) => d.confirmText(e.target.value, drawColor, textSize)}
+            />
+          </div>
+        );
+      })}
+
+      {/* Werkzeugleiste (volle Anmerkungen für die aktive Seite) */}
+      {drawMode && (
+        <DrawToolbar
+          colors={drawColors}
+          drawColor={drawColor}
+          setDrawColor={setDrawColor}
+          drawTool={drawTool}
+          setDrawTool={(t) => {
+            activeDraw.setSelectedId(null);
+            setDrawTool(t);
+          }}
+          textSize={textSize}
+          setTextSize={setTextSize}
+          sizeStep={1}
+          sizeMin={2}
+          sizeMax={14}
+          allowText
+          onClear={() => setConfirmClear(true)}
+          isTextSelected={activeDraw.selectedId !== null}
+          selectedColor={selectedText?.color}
+          selectedSize={selectedText?.sizeCqh}
+          onSelectedColor={(c) => activeDraw.selectedId !== null && activeDraw.setColor(activeDraw.selectedId, c)}
+          onSelectedResize={(delta) => activeDraw.selectedId !== null && activeDraw.resize(activeDraw.selectedId, delta)}
+          onUndo={activeDraw.undo}
+          canUndo={activeDraw.canUndo}
+          onRedo={activeDraw.redo}
+          canRedo={activeDraw.canRedo}
+          onDeleteSelected={() => activeDraw.selectedId !== null && activeDraw.deleteText(activeDraw.selectedId)}
+        />
+      )}
+
+      {confirmClear && (
+        <ConfirmDialog
+          title="Markierungen löschen?"
+          message="Alle Zeichnungen und Texte auf der aktiven Seite werden entfernt."
+          confirmLabel="Löschen"
+          onConfirm={() => {
+            activeDraw.clearAll();
+            setConfirmClear(false);
+          }}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
+
       {adjusting && (
         <div className={styles.zoomBar}>
           <button className={styles.zoomCancel} onClick={cancelAdjust} aria-label="Zoom verwerfen">
@@ -395,7 +503,7 @@ export function StreamView({
         </div>
       )}
 
-      {!loading && !error && pageCount > 0 && (
+      {!loading && !error && pageCount > 0 && !drawMode && (
         <div className={styles.pageBadge}>
           Seite {pageIndex + 1}
           {perView > 1 && pageIndex + 1 < pageCount ? `–${Math.min(pageIndex + perView, pageCount)}` : ''} / {pageCount}
