@@ -16,6 +16,9 @@ body {
   color: var(--text);
   font-family: var(--ui);
   overflow: hidden;
+  // Kein Mitscrollen/Überscrollen der ganzen Seite (v.a. im Browser/WebApp). Listen scrollen
+  // weiterhin in ihren eigenen `.scroll`-Containern.
+  overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
 }
 

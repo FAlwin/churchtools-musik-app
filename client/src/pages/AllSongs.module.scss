@@ -47,34 +47,41 @@
 
 .rowWrap {
   display: flex;
-  align-items: stretch;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
+  padding-right: 12px;
 }
 .row {
   @include m.list-row;
   flex: 1;
   min-width: 0;
+  // Einheitliche Zeilenhöhe, egal ob mit oder ohne Autorzeile.
+  min-height: 62px;
 }
+// Runder Akzent-Knopf zum Hinzufügen (statt eckigem Kasten).
 .addBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface2);
+  border: none;
+  border-radius: 50%;
+  background: var(--blue-soft);
   color: var(--blue-ink);
   cursor: pointer;
   transition: background 0.12s;
 
   @media (hover: hover) {
     &:hover {
-      background: var(--surface3);
+      background: var(--blue);
+      color: #fff;
     }
   }
   &:active {
-    background: var(--surface3);
+    background: var(--blue);
+    color: #fff;
   }
 }
 .info {

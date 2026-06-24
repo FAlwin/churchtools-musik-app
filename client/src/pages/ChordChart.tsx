@@ -190,8 +190,22 @@ export function ChordChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songIds, settings, logoImg]);
 
+  // Ausrichtung (für die Navigations-Grenze: im Querformat nie eine Seite allein lassen).
+  const [landscape, setLandscape] = useState(() => window.innerWidth > window.innerHeight);
+  useEffect(() => {
+    const f = () => setLandscape(window.innerWidth > window.innerHeight);
+    window.addEventListener('resize', f);
+    window.addEventListener('orientationchange', f);
+    return () => {
+      window.removeEventListener('resize', f);
+      window.removeEventListener('orientationchange', f);
+    };
+  }, []);
+
   const owners = stream?.owners ?? [];
   const lastPage = Math.max(0, owners.length - 1);
+  // Max. linke Seite: im 2-up stoppt die Navigation eine Seite früher (Paar bleibt voll).
+  const maxLeft = landscape && owners.length > 1 ? owners.length - 2 : lastPage;
   const pageIdx = Math.min(streamPage, lastPage);
   const activeIdx = Math.min(activePage, lastPage);
   const activeSongIdx = owners[activeIdx]?.songIdx ?? 0;
@@ -230,7 +244,7 @@ export function ChordChart({
 
   // ── Navigation im Strom (Wischen/Footer): immer um 1 Seite; aktive = neue linke Seite ──
   function go(delta: number) {
-    const next = Math.min(Math.max(0, pageIdx + delta), lastPage);
+    const next = Math.min(Math.max(0, pageIdx + delta), maxLeft);
     setStreamPage(next);
     setActivePage(next);
   }
@@ -243,12 +257,12 @@ export function ChordChart({
   function goToSong(target: number) {
     const p = owners.findIndex((o) => o.songIdx === target);
     if (p >= 0) {
-      setStreamPage(p);
+      setStreamPage(Math.min(p, maxLeft));
       setActivePage(p);
     }
   }
   const atStart = pageIdx <= 0;
-  const atEnd = pageIdx >= lastPage;
+  const atEnd = pageIdx >= maxLeft;
 
   // Tastatur ←/→
   const navRef = useRef({ next, prev, blocked: false });

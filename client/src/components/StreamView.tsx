@@ -61,6 +61,7 @@ export function StreamView({
   const strokeSlot = useRef(0);
   const lastPt = useRef<{ x: number; y: number } | null>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const suppressClick = useRef(false); // verhindert doppelte Navigation (Touch löst auch click aus)
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,9 +109,16 @@ export function StreamView({
     const onResize = () => setLandscape(isLandscape());
     window.addEventListener('resize', onResize);
     window.addEventListener('orientationchange', onResize);
+    // Nach App-Wechsel/Wiederkehr (iOS-PWA) sind die Maße kurz falsch → Ausrichtung neu prüfen.
+    window.addEventListener('pageshow', onResize);
+    window.addEventListener('focus', onResize);
+    document.addEventListener('visibilitychange', onResize);
     return () => {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('orientationchange', onResize);
+      window.removeEventListener('pageshow', onResize);
+      window.removeEventListener('focus', onResize);
+      document.removeEventListener('visibilitychange', onResize);
     };
   }, []);
 
@@ -275,8 +283,11 @@ export function StreamView({
   }
 
   // ── Blättern / aktive Hälfte ──
+  // Max. linke Seite: im 2-up so, dass NIE eine Seite allein rechts steht (immer 2 sichtbar);
+  // nur bei genau 1 Seite gesamt bleibt eine einzelne (linksbündige) Seite.
+  const maxLeft = perView === 2 && pageCount > 1 ? pageCount - 2 : Math.max(0, pageCount - 1);
   function go(delta: number) {
-    const nextP = Math.min(Math.max(0, pageIndex + delta), Math.max(0, pageCount - 1));
+    const nextP = Math.min(Math.max(0, pageIndex + delta), maxLeft);
     if (nextP !== pageIndex) {
       onPageIndex(nextP);
       onActivePage(nextP);
@@ -297,6 +308,9 @@ export function StreamView({
     touchStart.current = null;
     if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) go(dx > 0 ? 1 : -1);
     else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) tapAt(startX, e.currentTarget as HTMLElement);
+    // den von iOS nachgereichten Klick unterdrücken (sonst doppelte Navigation = Seite übersprungen)
+    suppressClick.current = true;
+    window.setTimeout(() => (suppressClick.current = false), 500);
   }
   function tapAt(clientX: number, root: HTMLElement) {
     const r = root.getBoundingClientRect();
@@ -316,6 +330,10 @@ export function StreamView({
   }
   function onClick(e: React.MouseEvent) {
     if (drawMode || adjusting) return;
+    if (suppressClick.current) {
+      suppressClick.current = false; // war ein Touch-Tap (schon behandelt) → Klick ignorieren
+      return;
+    }
     tapAt(e.clientX, e.currentTarget as HTMLElement);
   }
 
@@ -360,6 +378,7 @@ export function StreamView({
         </div>
       )}
       {error && <div className={styles.center}>⚠️ {error}</div>}
+      {!loading && slots.length === 2 && <div className={styles.divider} />}
 
       <div className={styles.row} style={{ visibility: loading ? 'hidden' : 'visible' }}>
         {slots.map((j) => {
@@ -388,7 +407,7 @@ export function StreamView({
                 >
                   <div
                     className={styles.pageBox}
-                    style={{ justifyItems: perView < 2 ? 'center' : j === 0 ? 'end' : 'start' }}
+                    style={{ justifyItems: perView === 2 && slots.length === 1 ? 'start' : 'center' }}
                   >
                     <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
                     <canvas

@@ -1,8 +1,23 @@
 .root {
   position: absolute;
   inset: 0;
-  background: #2b2b2b;
+  background: #fff;
   overflow: hidden;
+  // Keine Browser-Scroll-/Zoom-Gesten im Chart-Bereich (wir steuern Wischen/Zoom selbst).
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+// Dünner Mittelstreifen als Abgrenzung der beiden Seiten (nur im 2-up).
+.divider {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  width: 1px;
+  background: rgba(0, 0, 0, 0.12);
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .center {
@@ -13,7 +28,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: rgba(255, 255, 255, 0.85);
+  color: #555;
   font-size: 14px;
   padding: 20px;
   text-align: center;
