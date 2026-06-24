@@ -67,7 +67,6 @@ export function DocumentView({
   // Schlüssel-Basis: erzeugte PDF → pro Lied (storeId), sonst pro Datei.
   const keyBase = pdfData ? (storeId ?? `song${songId}`) : `${doc?.fileId ?? 'none'}`;
   const storeKey = (p: number) => `worship_docdraw_${keyBase}_${p}`;
-  const tfKey = (p: number) => `worship_doctf_${keyBase}_${p}`;
 
   // Dokument laden → jede Seite in eine eigene (offscreen) Leinwand rendern
   useEffect(() => {
@@ -260,15 +259,6 @@ export function DocumentView({
     }
   }
 
-  // gespeicherten Zoom/Ausschnitt der aktuellen Seite (für initiale Transform-Werte)
-  let savedTf: { scale: number; positionX: number; positionY: number } | null = null;
-  try {
-    const s = localStorage.getItem(tfKey(pageIndex));
-    if (s) savedTf = JSON.parse(s);
-  } catch {
-    /* ignorieren */
-  }
-
   return (
     <div className={styles.root} onClick={rootClick} onTouchStart={rootTouchStart} onTouchEnd={rootTouchEnd}>
       {loading && (
@@ -285,22 +275,16 @@ export function DocumentView({
         ref={transformRef}
         minScale={0.4}
         maxScale={8}
-        centerOnInit={!savedTf}
-        initialScale={savedTf?.scale ?? 1}
-        initialPositionX={savedTf?.positionX}
-        initialPositionY={savedTf?.positionY}
+        centerOnInit
+        initialScale={1}
         limitToBounds={false}
         doubleClick={{ disabled: true }}
         panning={{ disabled: !adjust, velocityDisabled: true }}
         wheel={{ disabled: !adjust, step: 0.08 }}
         pinch={{ disabled: !adjust }}
         onTransformed={(_ref, state) => {
+          // Zoom NICHT mehr persistent speichern – die Seite startet immer höhenfüllend (Fit).
           lastTf.current = { scale: state.scale, positionX: state.positionX, positionY: state.positionY };
-          try {
-            localStorage.setItem(tfKey(pageIndex), JSON.stringify(lastTf.current));
-          } catch {
-            /* Speicher voll */
-          }
         }}
       >
         <TransformComponent

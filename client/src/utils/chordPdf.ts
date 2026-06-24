@@ -50,6 +50,7 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
   const colW = (PAGE_W - 2 * MARGIN - (cols - 1) * COL_GAP) / cols;
   const bottom = PAGE_H - MARGIN;
   let col = 0;
+  let pageNo = 0; // 0 = erste Seite (mit Titelkopf); darunter beginnen die Spalten tiefer
   let x = MARGIN;
   let y = MARGIN;
 
@@ -61,9 +62,11 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
     if (col >= cols) {
       d.addPage();
       col = 0;
+      pageNo += 1;
     }
     x = colX(col);
-    y = MARGIN;
+    // Auf Seite 1 beginnen ALLE Spalten unter dem Titelkopf (sonst überlappt Spalte 2 den Titel).
+    y = pageNo === 0 ? startY : MARGIN;
   }
   function ensure(space: number) {
     if (y + space > bottom) nextColumn();
@@ -105,19 +108,37 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
         text: p.text,
       }));
 
-      // In Zeilen umbrechen, die in die Spaltenbreite passen (an Paar-Grenzen).
+      // In Wort-Token zerlegen (der Akkord bleibt am ersten Wort seines Paars) und an Wort-
+      // grenzen umbrechen, damit auch lange Zeilen (z. B. ganze Sätze ohne Akkordwechsel oder
+      // 2 Spalten) sauber in die Spaltenbreite passen statt rechts abgeschnitten zu werden.
       d.setFont('helvetica', 'normal');
       d.setFontSize(fontPt);
+      const toks: { chord: string | null; text: string }[] = [];
+      for (const p of pairs) {
+        const words = (p.text || '').match(/\S+\s*|\s+/g);
+        if (!words) {
+          toks.push({ chord: p.chord, text: p.text || '' });
+          continue;
+        }
+        words.forEach((w, wi) => toks.push({ chord: wi === 0 ? p.chord : null, text: w }));
+      }
       const rows: { chord: string | null; text: string }[][] = [[]];
       let lineW = 0;
-      for (const p of pairs) {
-        const w = d.getTextWidth(p.text || '');
-        if (lineW + w > colW && rows[rows.length - 1].length > 0) {
+      for (const t of toks) {
+        let adv = d.getTextWidth(t.text);
+        if (t.chord) {
+          d.setFont('helvetica', 'bold');
+          d.setFontSize(chordPt);
+          adv = Math.max(adv, d.getTextWidth(t.chord) + 1.5);
+          d.setFont('helvetica', 'normal');
+          d.setFontSize(fontPt);
+        }
+        if (lineW + adv > colW && rows[rows.length - 1].length > 0) {
           rows.push([]);
           lineW = 0;
         }
-        rows[rows.length - 1].push(p);
-        lineW += w;
+        rows[rows.length - 1].push(t);
+        lineW += adv;
       }
 
       for (const row of rows) {

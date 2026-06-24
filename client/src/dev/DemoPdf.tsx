@@ -11,37 +11,30 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
  * auf Canvas (screenshot-bar), um die ChordPro→PDF-Qualität zu prüfen.
  */
 
-const DEMO_CHORDPRO = `{title: Großer Gott wir loben dich}
+// Bewusst lange Zeilen (nur am Zeilenanfang ein Akkord) zum Prüfen des Wort-Umbruchs in 1/2 Spalten.
+const DEMO_CHORDPRO = `{title: Welch ein Freund ist unser Jesus}
 {key: G}
 
 {comment: Vers 1}
-[G]Großer Gott, wir [D]loben dich,
-[Em]Herr, wir [C]preisen deine [G]Stärke.
-[G]Vor dir neigt die [D]Erde sich
-[Em]und bewundert [C]deine [G]Werke.
-[C]Wie du warst vor [G]aller Zeit,
-[D]so bleibst du in [G]Ewigkeit.
+[G]Welch ein Freund ist unser Jesus, [C]o wie hoch ist er erhöht.
+[G]Er hat uns mit Gott versöhnet [C]und vertritt uns im Gebet.
+[D]Wer mag sagen und ermessen, [D7]wieviel [G]Heil verloren geht,
+[C]wenn wir nicht zu ihm uns [G]wenden und ihn [D]suchen im Ge[G]bet.
+
+{comment: Vers 2}
+[G]Wenn des Feindes Macht uns drohet [C]und manch Sturm rings um uns weht,
+[G]brauchen wir uns nicht zu fürchten, [C]stehn wir gläubig im Gebet.
+[D]Da erweist sich Jesu Treue, [D7]der mit [G]uns durch alles geht,
+[C]der die ganze Last uns [G]abnimmt, [D]wenn wir kommen ins Ge[G]bet.
 
 {comment: Refrain}
 [C]Halleluja, [G]singt dem Herrn,
-[D]preist ihn, alle [Em]Welt.
-[C]Halleluja, [G]lobt den Herrn,
-[D]der uns treu er[G]hält.
-
-{comment: Vers 2}
-[G]Alles, was dich [D]preisen kann,
-[Em]Cherubim und [C]Serafi[G]nen,
-[G]stimmen dir ein [D]Loblied an,
-[Em]alle Engel, [C]die dir [G]dienen.
-
-{comment: Bridge}
-[Am]Herr, erbarme [C]dich,
-[G]führe uns zu [D]dir.`;
+[D]preist ihn, alle [Em]Welt.`;
 
 const SONG: SetlistSong = {
   id: 999001,
   arrangementId: 999001,
-  title: 'Großer Gott wir loben dich',
+  title: 'Welch ein Freund ist unser Jesus',
   author: 'Demo',
   originalKey: 'G',
   targetKey: 'G',
