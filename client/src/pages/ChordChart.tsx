@@ -105,6 +105,11 @@ export function ChordChart({
     Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])),
   );
   const songIds = songs.map((s) => s.id).join(',');
+  // Signatur über den INHALT (auch bearbeitete Version) → der Strom wird neu erzeugt, sobald sich
+  // ein Lied-Text ändert (z. B. nach dem Bearbeiten), nicht nur wenn sich die Lied-Liste ändert.
+  const songsSig = songs
+    .map((s) => `${s.id}:${s.chordpro?.length ?? 0}:${s.chordproEdited?.length ?? 0}`)
+    .join(',');
   useEffect(() => {
     setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,6 +147,7 @@ export function ChordChart({
   const [showAppearance, setShowAppearance] = useState(false);
   const [showSongMenu, setShowSongMenu] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmDelEdited, setConfirmDelEdited] = useState(false);
 
   const [showEditor, setShowEditor] = useState(false);
   const [editorSaving, setEditorSaving] = useState(false);
@@ -188,7 +194,7 @@ export function ChordChart({
     });
     return { data: doc.output('arraybuffer') as ArrayBuffer, owners };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songIds, settings, logoImg]);
+  }, [songsSig, settings, logoImg]);
 
   // Ausrichtung (für die Navigations-Grenze: im Querformat nie eine Seite allein lassen).
   const [landscape, setLandscape] = useState(() => window.innerWidth > window.innerHeight);
@@ -579,6 +585,18 @@ export function ChordChart({
                       Original
                     </button>
                   </div>
+                  {canEditSong && (
+                    <button
+                      className={styles.mmItem}
+                      onClick={() => {
+                        setShowSongMenu(false);
+                        setConfirmDelEdited(true);
+                      }}
+                    >
+                      <span className={styles.mmDanger}>Bearbeitete Version löschen</span>
+                      <span className={styles.mmValue}>🗑</span>
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -717,6 +735,19 @@ export function ChordChart({
             onSave={handleSaveChordpro}
             onReset={handleResetChordpro}
             onClose={() => setShowEditor(false)}
+          />
+        )}
+
+        {confirmDelEdited && (
+          <ConfirmDialog
+            title="Bearbeitete Version löschen?"
+            message={`Die bearbeitete Version von „${song.title}" wird aus ChurchTools entfernt. Das Original bleibt erhalten.`}
+            confirmLabel={editorSaving ? 'Löschen…' : 'Löschen'}
+            onConfirm={() => {
+              setConfirmDelEdited(false);
+              void handleResetChordpro();
+            }}
+            onCancel={() => setConfirmDelEdited(false)}
           />
         )}
 
