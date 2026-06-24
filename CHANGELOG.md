@@ -7,6 +7,25 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Neu
+
+- **Akkord-Ansicht als PDF (SongSelect-Look):** Jedes Lied wird aus dem ChordPro-Text als
+  sauberes PDF erzeugt und angezeigt. Komplett **schwarz** (saubere S/W-Ausdrucke), deutliche
+  Abschnitts-Labels (Vers/Refrain), Kopfzeile mit Tonart/Taktart/BPM und dem
+  **ChurchTools-Musik-App-Logo oben rechts**. Lange Zeilen werden umbrochen, Abschnitte bleiben
+  zusammen, 2-spaltiger Satz ohne Überlappung.
+- **Zoom als Modus:** Pinch zum Zoomen, dann **✓ (Fertig) / ✗ (Zurück)** zum Festsetzen der
+  Ansicht – danach funktionieren Wischen und Tippen wieder normal. Der Zoom wird **pro Lied-Seite
+  dauerhaft gespeichert** (kein blauer Aktiv-Balken im Live-Betrieb).
+- **2-Seiten-Querformat-Strom:** Im Querformat laufen zwei Seiten nebeneinander als ein Strom
+  über den ganzen Ablauf; jede Seite ist ein eigener Bereich mit eigenem Zoom. Seiten mittig auf
+  weißem Grund mit Mittelstreifen; eine einzelne Seite ist linksbündig, das letzte Lied steht nie
+  allein.
+- **Volle Anmerkungen pro Lied-Seite:** Stift, Marker, Radierer (Farben Schwarz/Rot/Gelb),
+  Textfelder sowie **Rückgängig/Wiederholen** – alles **dauerhaft pro Lied gespeichert**.
+- **Ablauf-Export als PDF** (Teilen-Symbol) – exportiert die Lieder genau wie angezeigt.
+- **Bearbeitete Liedversion** erscheint sofort und ist über das Lied-Menü wieder löschbar.
+
 ### Geändert
 
 - **Wartung:** Build-Werkzeug **Vite auf 8** angehoben (inkl. Vitest 3, `@vitejs/plugin-react`,
@@ -16,6 +35,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 - Basis-Image und CI auf **Node 22** (Vite 8 setzt Node ≥ 20.19 voraus).
 - Vitest: deprecated `environmentMatchGlobs` entfernt – Komponenten-Tests setzen ihre
   jsdom-Umgebung per `// @vitest-environment`-Docblock.
+
+### Behoben
+
+- **Anmerkungen zuverlässiger:** kein Festhängen mehr (Pointer-Capture, nur Primär-Finger,
+  Abbruch-Behandlung); über Textfeldern kann nun mit Stift/Marker gezeichnet werden.
+- Akkord-Seiten füllen im **Hoch- und Querformat** korrekt die Höhe (kein zu kleines Dokument).
+- Rand-Tippen überspringt keine zweite Seite mehr; nach Rückkehr in die App stimmt die
+  Querformat-Ansicht wieder.
+- Liederliste: runder **Hinzufügen-Knopf** statt eckigem Kasten, einheitliche Zeilenhöhen;
+  keine ungewollte vertikale Scroll-Bewegung der ganzen WebApp mehr.
 
 ## [2.0.1] – 2026-06-22
 
