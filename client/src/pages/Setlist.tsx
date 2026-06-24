@@ -27,7 +27,7 @@ import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
 import { generateSetlistPdf } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
-import { getSemitoneOffset } from '../utils/transpose';
+import { loadSongPdfOpts, loadAppLogo } from '../utils/songPdfOpts';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
@@ -216,15 +216,15 @@ export function Setlist({
     });
   }
 
-  // Alle Lieder des Ablaufs als eine PDF teilen (jeweils in ihrer Zieltonart).
-  const exportableSongs = items.filter((i) => i.song && i.song.chordpro).map((i) => i.song!);
-  function handleExportPdf() {
+  // Alle Lieder des Ablaufs als eine PDF teilen – jedes Lied EXAKT wie in der App angezeigt
+  // (gespeicherte Tonart/Kapo/Schrift/Spalten + bearbeitete Version + Logo im Kopf).
+  const exportableSongs = items
+    .filter((i) => i.song && (i.song.chordproEdited || i.song.chordpro))
+    .map((i) => ({ ...i.song!, chordpro: i.song!.chordproEdited || i.song!.chordpro }));
+  async function handleExportPdf() {
     if (exportableSongs.length === 0) return;
-    const doc = generateSetlistPdf(exportableSongs, (s) => ({
-      semitones: getSemitoneOffset(s.originalKey, s.targetKey),
-      cols: 1,
-      fontPt: 11,
-    }));
+    const logo = await loadAppLogo();
+    const doc = generateSetlistPdf(exportableSongs, (s) => loadSongPdfOpts(s, logo));
     void sharePdf(doc, service.name || 'Ablauf');
   }
 
@@ -242,8 +242,8 @@ export function Setlist({
           !isLoading && !isError && items.length > 0 ? (
             <>
               {exportableSongs.length > 0 && !editMode && (
-                <IconButton onClick={handleExportPdf} title="Alle Lieder als PDF teilen">
-                  <Icon name="external" size={20} stroke={2.2} />
+                <IconButton onClick={() => void handleExportPdf()} title="Alle Lieder als PDF teilen">
+                  <Icon name="share" size={20} stroke={2.2} />
                 </IconButton>
               )}
               {canEdit && (

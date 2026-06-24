@@ -76,6 +76,22 @@ export function StreamView({
     const o = owners[page];
     return o ? `worship_docdraw_song${o.songId}_${o.localPage}` : `worship_docdraw_p${page}`;
   };
+  const zoomKeyFor = (page: number): string => {
+    const o = owners[page];
+    return o ? `worship_doczoom_song${o.songId}_${o.localPage}` : `worship_doczoom_p${page}`;
+  };
+  function loadZoom(page: number): { x: number; y: number; scale: number } | null {
+    try {
+      const s = localStorage.getItem(zoomKeyFor(page));
+      if (s) {
+        const o = JSON.parse(s);
+        if (o && typeof o.scale === 'number') return o;
+      }
+    } catch {
+      /* ignorieren */
+    }
+    return null;
+  }
 
   // Ausrichtung verfolgen
   useEffect(() => {
@@ -160,13 +176,22 @@ export function StreamView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [perView, pageIndex, activePage]);
 
-  // Beim Blättern/Drehen Zoom-Modus verlassen UND jede Seite wieder auf Fit zurücksetzen
-  // (sonst bliebe die neu eingeblendete Seite gezoomt).
+  // Beim Blättern/Drehen Zoom-Modus verlassen und den GESPEICHERTEN Zoom der Seite wiederherstellen
+  // (oder auf Fit, falls keiner gespeichert ist) – Zoom ist so dauerhaft pro Lied-Seite.
   useEffect(() => {
     setAdjustSlot(null);
-    transformRefs.forEach((r) => r.current?.resetTransform(0));
+    if (loading) return;
+    requestAnimationFrame(() => {
+      for (let j = 0; j < perView; j++) {
+        const ref = transformRefs[j].current;
+        if (!ref) continue;
+        const saved = loadZoom(pageIndex + j);
+        if (saved) ref.setTransform(saved.x, saved.y, saved.scale, 0);
+        else ref.resetTransform(0);
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, perView]);
+  }, [pageIndex, perView, loading]);
 
   // Anmerkungen der aktiven Seite löschen
   useEffect(() => {
@@ -276,10 +301,28 @@ export function StreamView({
   }
 
   function confirmAdjust() {
-    setAdjustSlot(null); // aktuelle (gezoomte) Ansicht behalten
+    // aktuelle (gezoomte) Ansicht der Seite dauerhaft speichern
+    if (adjustSlot !== null) {
+      const ref = transformRefs[adjustSlot].current;
+      const t = ref?.instance?.transformState;
+      if (t) {
+        try {
+          localStorage.setItem(
+            zoomKeyFor(pageIndex + adjustSlot),
+            JSON.stringify({ x: t.positionX, y: t.positionY, scale: t.scale }),
+          );
+        } catch {
+          /* Speicher voll */
+        }
+      }
+    }
+    setAdjustSlot(null);
   }
   function cancelAdjust() {
-    if (adjustSlot !== null) transformRefs[adjustSlot].current?.resetTransform(150);
+    if (adjustSlot !== null) {
+      transformRefs[adjustSlot].current?.resetTransform(150);
+      localStorage.removeItem(zoomKeyFor(pageIndex + adjustSlot));
+    }
     setAdjustSlot(null);
   }
 
