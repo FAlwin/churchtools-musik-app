@@ -29,15 +29,20 @@
   padding: 8px;
 }
 
-// Inhalt + Anmerkungen exakt übereinander (CSS-Grid, gleiche Zelle, gleiche max-Constraints).
-// Beide Canvas haben dieselben Pixelmaße (Seitenauflösung) → identische Anzeigegröße → die
-// Anmerkungs-Ebene deckt die Seite immer deckungsgleich ab (auch wenn die Seite höhenbegrenzt
-// skaliert wird). Verhindert, dass Zeichnungen nur auf einem Teil der Seite landen.
+// Inhalt + Anmerkungen exakt übereinander. Der Trick: pageBox hat eine DEFINITE Größe
+// (100 % des Viewports), beide Canvas liegen in derselben Grid-Zelle (1/1) und werden über
+// `max-width/height: 100%` + `place-items: center` höhenfüllend eingepasst. Da beide Canvas
+// dieselben Pixelmaße (Seitenauflösung) und dieselben Constraints haben, ergeben sie EXAKT
+// dieselbe Anzeigegröße und -position → die Anmerkungs-Ebene deckt die Seite deckungsgleich ab.
+// Definite pageBox-Größe ist nötig, damit die Prozent-Constraints überhaupt greifen (sonst
+// rendern die Canvas in voller Pixelgröße → „komische" Auflösung).
 .pageBox {
   position: relative;
   display: grid;
-  max-width: 100%;
-  max-height: 100%;
+  grid-template: 1fr / 1fr;
+  place-items: center;
+  width: 100%;
+  height: 100%;
   line-height: 0;
 }
 
