@@ -18,7 +18,7 @@ function song(id: number, title: string, key: string, chordpro: string): Setlist
     timeSig: '4/4',
     ccli: null,
     chordpro,
-    chordproEdited: null,
+    versions: [],
     documents: [],
   };
 }

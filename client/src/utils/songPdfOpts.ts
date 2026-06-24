@@ -1,11 +1,12 @@
 import type { SetlistSong } from '@shared/types/index';
 import { getSemitoneOffset } from './transpose';
 import type { ChordPdfOptions } from './chordPdf';
+import { lsVersion, selectedVersionKey } from './songVersions';
 
-/** Abschnitts-Transponierung eines Lieds aus dem Speicher lesen (wie in ChordChart). */
-function loadSecShift(songId: number): Record<number, number> {
+/** Abschnitts-Transponierung einer Lied-Version aus dem Speicher lesen (wie in ChordChart). */
+function loadSecShift(songId: number, versionKey: string): Record<number, number> {
   try {
-    const raw = localStorage.getItem(`worship_secshift_${songId}`);
+    const raw = lsVersion('secshift', songId, versionKey);
     if (!raw) return {};
     const obj = JSON.parse(raw) as Record<string, number>;
     const out: Record<number, number> = {};
@@ -19,24 +20,27 @@ function loadSecShift(songId: number): Record<number, number> {
   }
 }
 
-function int(key: string, def: number): number {
-  const v = localStorage.getItem(key);
-  const n = v ? parseInt(v, 10) : NaN;
+function int(value: string | null, def: number): number {
+  const n = value ? parseInt(value, 10) : NaN;
   return Number.isNaN(n) ? def : n;
 }
 
 /**
- * Baut die PDF-Optionen eines Lieds aus den gespeicherten Pro-Lied-Einstellungen (Tonart, Kapo,
+ * Baut die PDF-Optionen eines Lieds aus den gespeicherten Pro-Version-Einstellungen (Tonart, Kapo,
  * Schrift, Spalten, Nur-Text, Abschnitts-Transponierung). So sieht der Export EXAKT so aus wie die
- * Anzeige in der App – inklusive Logo/Tonart im Kopf.
+ * Anzeige in der App – inklusive Logo/Tonart im Kopf. `versionKey` standardmäßig die gewählte Version.
  */
-export function loadSongPdfOpts(song: SetlistSong, logo?: HTMLImageElement | string | null): ChordPdfOptions {
-  const key = localStorage.getItem(`worship_key_${song.id}`) || song.targetKey || song.originalKey || '';
-  const capo = int(`worship_capo_${song.id}`, 0);
-  const fs = int(`worship_fs_${song.id}`, 20);
-  const cols = (int(`worship_cols_${song.id}`, 1) === 2 ? 2 : 1) as 1 | 2;
-  const lyricsOnly = localStorage.getItem(`worship_lyrics_${song.id}`) === '1';
-  const secShift = loadSecShift(song.id);
+export function loadSongPdfOpts(
+  song: SetlistSong,
+  logo?: HTMLImageElement | string | null,
+  versionKey: string = selectedVersionKey(song),
+): ChordPdfOptions {
+  const key = lsVersion('key', song.id, versionKey) || song.targetKey || song.originalKey || '';
+  const capo = int(lsVersion('capo', song.id, versionKey), 0);
+  const fs = int(lsVersion('fs', song.id, versionKey), 20);
+  const cols = (int(lsVersion('cols', song.id, versionKey), 1) === 2 ? 2 : 1) as 1 | 2;
+  const lyricsOnly = lsVersion('lyrics', song.id, versionKey) === '1';
+  const secShift = loadSecShift(song.id, versionKey);
   return {
     semitones: getSemitoneOffset(song.originalKey, key) - capo,
     cols,

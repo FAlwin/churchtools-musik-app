@@ -42,7 +42,7 @@ const SONG: SetlistSong = {
   timeSig: '4/4',
   ccli: null,
   chordpro: DEMO_CHORDPRO,
-  chordproEdited: null,
+  versions: [],
   documents: [],
 };
 

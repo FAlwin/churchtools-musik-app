@@ -7,28 +7,34 @@ import styles from './ChordEditor.module.scss';
 interface ChordEditorProps {
   songTitle: string;
   initialText: string;
-  /** true, wenn bereits eine bearbeitete Version existiert (Zurücksetzen anbieten). */
-  hasEdited: boolean;
+  /** Vorbelegter Versionsname (leer = neue Version). */
+  initialName: string;
+  /** true = neue Version anlegen (Name erforderlich); false = vorhandene Version bearbeiten. */
+  isNew: boolean;
   saving: boolean;
   error: string | null;
-  onSave: (text: string) => void;
-  onReset: () => void;
+  onSave: (text: string, name: string) => void;
+  /** Diese Version löschen (nur beim Bearbeiten einer vorhandenen Version). */
+  onDelete?: () => void;
   onClose: () => void;
 }
 
-/** Vollbild-Editor für den ChordPro-Text mit Live-Vorschau. */
+/** Vollbild-Editor für eine ChordPro-Version mit Live-Vorschau und Versionsname. */
 export function ChordEditor({
   songTitle,
   initialText,
-  hasEdited,
+  initialName,
+  isNew,
   saving,
   error,
   onSave,
-  onReset,
+  onDelete,
   onClose,
 }: ChordEditorProps) {
   const [text, setText] = useState(initialText);
+  const [name, setName] = useState(initialName);
   const sections = parseChordPro(text);
+  const canSave = name.trim().length > 0 && text.trim().length > 0;
 
   return (
     <div className={styles.overlay}>
@@ -37,17 +43,38 @@ export function ChordEditor({
           Abbrechen
         </button>
         <span className={styles.title}>{songTitle}</span>
-        <button className={`${styles.barBtn} ${styles.save}`} onClick={() => onSave(text)} disabled={saving}>
+        <button
+          className={`${styles.barBtn} ${styles.save}`}
+          onClick={() => onSave(text, name.trim())}
+          disabled={saving || !canSave}
+        >
           {saving ? <Spinner /> : 'Speichern'}
         </button>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
 
+      <div className={styles.nameRow}>
+        <label className={styles.nameLbl} htmlFor="versionName">
+          Versionsname
+        </label>
+        <input
+          id="versionName"
+          className={styles.nameInput}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="z. B. Akustik, Jugend, Weihnachten"
+          maxLength={60}
+          spellCheck={false}
+        />
+      </div>
+
       <div className={styles.hint}>
-        Bearbeite den Text. Akkorde stehen in eckigen Klammern direkt vor der Silbe, z.B.
-        <code> [G]Halleluja</code>. Abschnitte mit <code>{'{comment: Vers}'}</code>. Wird als bearbeitete
-        Version in ChurchTools gespeichert – das Original bleibt erhalten.
+        {isNew
+          ? 'Wird als eigene Version in ChurchTools gespeichert – das Original und andere Versionen bleiben erhalten.'
+          : 'Änderungen an dieser Version werden in ChurchTools gespeichert. Das Original bleibt unangetastet.'}{' '}
+        Akkorde in eckigen Klammern vor der Silbe, z.B. <code>[G]Halleluja</code>; Abschnitte mit{' '}
+        <code>{'{comment: Vers}'}</code>.
       </div>
 
       <div className={styles.split}>
@@ -72,10 +99,10 @@ export function ChordEditor({
         </div>
       </div>
 
-      {hasEdited && (
+      {!isNew && onDelete && (
         <div style={{ padding: '10px 14px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}>
-          <button className={styles.reset} onClick={onReset} disabled={saving}>
-            Auf Original zurücksetzen
+          <button className={styles.reset} onClick={onDelete} disabled={saving}>
+            Diese Version löschen
           </button>
         </div>
       )}

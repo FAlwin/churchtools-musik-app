@@ -80,11 +80,11 @@ export function StreamView({
 
   const keyFor = (page: number): string | null => {
     const o = owners[page];
-    return o ? `worship_docdraw_song${o.songId}_${o.localPage}` : null;
+    return o ? `worship_docdraw_song${o.songId}_v${o.versionKey}_${o.localPage}` : null;
   };
   const zoomKeyFor = (page: number): string => {
     const o = owners[page];
-    return o ? `worship_doczoom_song${o.songId}_${o.localPage}` : `worship_doczoom_p${page}`;
+    return o ? `worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}` : `worship_doczoom_p${page}`;
   };
   function loadZoom(page: number): { x: number; y: number; scale: number } | null {
     try {

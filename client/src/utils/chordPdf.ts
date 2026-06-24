@@ -272,6 +272,8 @@ export function generateSetlistPdf(
 export interface SetlistPageOwner {
   songIdx: number;
   songId: number;
+  /** Schlüssel der angezeigten Version ('original' oder Slug) – für versionsbezogene Anmerkungen. */
+  versionKey: string;
   localPage: number;
 }
 
@@ -280,7 +282,7 @@ export interface SetlistPageOwner {
  * Grundlage für den durchgehenden Seitenstrom über den ganzen Ablauf (2-up im Querformat).
  */
 export function generateSetlistPdfWithOwners(
-  songs: SetlistSong[],
+  songs: (SetlistSong & { versionKey?: string })[],
   optsFor: (song: SetlistSong) => ChordPdfOptions,
 ): { doc: jsPDF; owners: SetlistPageOwner[] } {
   const d = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
@@ -290,8 +292,9 @@ export function generateSetlistPdfWithOwners(
     const before = d.getNumberOfPages();
     generateChordPdf(song, optsFor(song), d);
     const after = d.getNumberOfPages();
+    const versionKey = song.versionKey ?? 'original';
     for (let p = 0; p <= after - before; p++) {
-      owners.push({ songIdx: si, songId: song.id, localPage: p });
+      owners.push({ songIdx: si, songId: song.id, versionKey, localPage: p });
     }
   });
   return { doc: d, owners };

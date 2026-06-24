@@ -10,9 +10,10 @@ import { ChordEditor } from '../components/ChordEditor';
 import { DocumentView } from '../components/DocumentView';
 import { StreamView } from '../components/StreamView';
 import { Icon } from '../components/icons';
-import { saveChordpro, deleteChordpro } from '../services/churchtoolsApi';
+import { createVersion, updateVersion, deleteVersion } from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
+import { availableVersions, selectedVersionKey, versionText, lsVersion, setLsVersion } from '../utils/songVersions';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
@@ -27,13 +28,14 @@ interface SongSettings {
   fontSize: number;
   lyricsOnly: boolean;
   secShift: Record<number, number>;
-  showOriginal: boolean; // Original statt bearbeiteter Version (nur Sitzung)
+  /** Schlüssel der gewählten Version ('original' oder Slug) – Einstellungen gelten je Version. */
+  versionKey: string;
   viewSource: 'chords' | number; // 'chords' oder fileId eines hochgeladenen Dokuments
 }
 
-function loadSecShift(songId: number): Record<number, number> {
+function loadSecShift(songId: number, versionKey: string): Record<number, number> {
   try {
-    const raw = localStorage.getItem(`worship_secshift_${songId}`);
+    const raw = lsVersion('secshift', songId, versionKey);
     if (!raw) return {};
     const obj = JSON.parse(raw) as Record<string, number>;
     const out: Record<number, number> = {};
@@ -47,19 +49,20 @@ function loadSecShift(songId: number): Record<number, number> {
   }
 }
 
-function loadSettings(song: SetlistSong): SongSettings {
+function loadSettings(song: SetlistSong, versionKey: string = selectedVersionKey(song)): SongSettings {
+  // viewSource (Dokument vs. Akkorde) gilt pro Lied, nicht pro Version.
   const savedView = localStorage.getItem(`worship_view_${song.id}`);
   const savedId = savedView ? Number(savedView) : NaN;
   const viewSource =
     savedView && !Number.isNaN(savedId) && song.documents.some((d) => d.fileId === savedId) ? savedId : 'chords';
   return {
-    key: localStorage.getItem(`worship_key_${song.id}`) || null,
-    capo: parseInt(localStorage.getItem(`worship_capo_${song.id}`) || '0', 10),
-    cols: parseInt(localStorage.getItem(`worship_cols_${song.id}`) || '1', 10) === 2 ? 2 : 1,
-    fontSize: parseInt(localStorage.getItem(`worship_fs_${song.id}`) || '20', 10),
-    lyricsOnly: localStorage.getItem(`worship_lyrics_${song.id}`) === '1',
-    secShift: loadSecShift(song.id),
-    showOriginal: false,
+    key: lsVersion('key', song.id, versionKey) || null,
+    capo: parseInt(lsVersion('capo', song.id, versionKey) || '0', 10),
+    cols: parseInt(lsVersion('cols', song.id, versionKey) || '1', 10) === 2 ? 2 : 1,
+    fontSize: parseInt(lsVersion('fs', song.id, versionKey) || '20', 10),
+    lyricsOnly: lsVersion('lyrics', song.id, versionKey) === '1',
+    secShift: loadSecShift(song.id, versionKey),
+    versionKey,
     viewSource,
   };
 }
@@ -71,7 +74,7 @@ const DEFAULT_SETTINGS: SongSettings = {
   fontSize: 20,
   lyricsOnly: false,
   secShift: {},
-  showOriginal: false,
+  versionKey: 'original',
   viewSource: 'chords',
 };
 
@@ -105,10 +108,10 @@ export function ChordChart({
     Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])),
   );
   const songIds = songs.map((s) => s.id).join(',');
-  // Signatur über den INHALT (auch bearbeitete Version) → der Strom wird neu erzeugt, sobald sich
-  // ein Lied-Text ändert (z. B. nach dem Bearbeiten), nicht nur wenn sich die Lied-Liste ändert.
+  // Signatur über den INHALT aller Versionen → der Strom wird neu erzeugt, sobald sich ein Lied-Text
+  // ändert (z. B. nach dem Bearbeiten/Anlegen einer Version), nicht nur bei geänderter Lied-Liste.
   const songsSig = songs
-    .map((s) => `${s.id}:${s.chordpro?.length ?? 0}:${s.chordproEdited?.length ?? 0}`)
+    .map((s) => `${s.id}:${s.chordpro?.length ?? 0}:${s.versions.map((v) => v.key + v.text.length).join('|')}`)
     .join(',');
   useEffect(() => {
     setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
@@ -119,22 +122,27 @@ export function ChordChart({
     setSettings((prev) => {
       const cur = prev[songId] ?? DEFAULT_SETTINGS;
       const next = { ...cur, ...patch };
-      if ('key' in patch) {
-        if (next.key) localStorage.setItem(`worship_key_${songId}`, next.key);
-        else localStorage.removeItem(`worship_key_${songId}`);
-      }
-      if ('capo' in patch) localStorage.setItem(`worship_capo_${songId}`, String(next.capo));
-      if ('cols' in patch) localStorage.setItem(`worship_cols_${songId}`, String(next.cols));
-      if ('fontSize' in patch) localStorage.setItem(`worship_fs_${songId}`, String(next.fontSize));
-      if ('lyricsOnly' in patch) localStorage.setItem(`worship_lyrics_${songId}`, next.lyricsOnly ? '1' : '0');
+      const vk = next.versionKey;
+      if ('key' in patch) setLsVersion('key', songId, vk, next.key);
+      if ('capo' in patch) setLsVersion('capo', songId, vk, String(next.capo));
+      if ('cols' in patch) setLsVersion('cols', songId, vk, String(next.cols));
+      if ('fontSize' in patch) setLsVersion('fs', songId, vk, String(next.fontSize));
+      if ('lyricsOnly' in patch) setLsVersion('lyrics', songId, vk, next.lyricsOnly ? '1' : '0');
+      // viewSource gilt pro Lied (Dokumentauswahl betrifft das Arrangement, nicht die Version).
       if ('viewSource' in patch) localStorage.setItem(`worship_view_${songId}`, String(next.viewSource));
       if ('secShift' in patch) {
-        const k = `worship_secshift_${songId}`;
-        if (Object.keys(next.secShift).length) localStorage.setItem(k, JSON.stringify(next.secShift));
-        else localStorage.removeItem(k);
+        const has = Object.keys(next.secShift).length > 0;
+        setLsVersion('secshift', songId, vk, has ? JSON.stringify(next.secShift) : null);
       }
       return { ...prev, [songId]: next };
     });
+  }
+
+  /** Wechselt die gewählte Version eines Lieds und lädt deren Einstellungen. */
+  function selectVersion(songId: number, versionKey: string) {
+    localStorage.setItem(`worship_ver_${songId}`, versionKey);
+    const s = songs.find((x) => x.id === songId);
+    setSettings((prev) => ({ ...prev, [songId]: s ? loadSettings(s, versionKey) : prev[songId] }));
   }
 
   // Seiten-Position im Strom: linke (erste) sichtbare Seite + aktive Seite (angetippte Hälfte).
@@ -152,6 +160,12 @@ export function ChordChart({
   const [showEditor, setShowEditor] = useState(false);
   const [editorSaving, setEditorSaving] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
+  // Editor-Modus: neue Version anlegen oder vorhandene bearbeiten (mit Start-Text/-Name).
+  const [editor, setEditor] = useState<{ mode: 'new' | 'edit'; text: string; name: string }>({
+    mode: 'new',
+    text: '',
+    name: '',
+  });
 
   const [drawMode, setDrawMode] = useState(false);
   // Anmerkungs-Farben fest Schwarz/Rot/Gelb (wir arbeiten nur noch auf weißen PDF-Seiten → kein
@@ -176,8 +190,7 @@ export function ChordChart({
     if (songs.length === 0) return null;
     const songsForPdf = songs.map((s) => {
       const st = settings[s.id] ?? loadSettings(s);
-      const chordpro = !st.showOriginal && s.chordproEdited ? s.chordproEdited : s.chordpro;
-      return { ...s, chordpro };
+      return { ...s, chordpro: versionText(s, st.versionKey), versionKey: st.versionKey };
     });
     const { doc, owners } = generateSetlistPdfWithOwners(songsForPdf, (s) => {
       const st = settings[s.id] ?? loadSettings(s);
@@ -235,12 +248,14 @@ export function ChordChart({
   const curKey = set.key || song.targetKey;
   const totalOffset = getSemitoneOffset(song.originalKey, curKey);
   const shapeKey = shiftKey(curKey, -set.capo);
-  const hasEdited = song.chordproEdited !== null;
-  const displayedChordpro = !set.showOriginal && song.chordproEdited ? song.chordproEdited : song.chordpro;
+  // Versionen: Original + benannte; aktuell gewählte ableiten.
+  const versions = availableVersions(song);
+  const currentVersion = versions.find((v) => v.key === set.versionKey) ?? versions[0];
+  const isOriginal = currentVersion.key === 'original';
+  const hasVersions = song.versions.length > 0;
+  const displayedChordpro = currentVersion.text;
   const sections = parseChordPro(displayedChordpro);
-  const editorInitial =
-    displayedChordpro ||
-    `{title: ${song.title}}\n{key: ${song.targetKey || song.originalKey || 'C'}}\n\n{comment: Vers 1}\n[${song.targetKey || 'C'}]Hier Text mit Akkorden eingeben\n\n{comment: Chorus}\n`;
+  const editorTemplate = `{title: ${song.title}}\n{key: ${song.targetKey || song.originalKey || 'C'}}\n\n{comment: Vers 1}\n[${song.targetKey || 'C'}]Hier Text mit Akkorden eingeben\n\n{comment: Chorus}\n`;
 
   const activeDoc = set.viewSource === 'chords' ? null : song.documents.find((d) => d.fileId === set.viewSource) ?? null;
 
@@ -295,13 +310,33 @@ export function ChordChart({
     setConfirmClear(false);
   }
 
-  async function handleSaveChordpro(text: string) {
+  /** Öffnet den Editor für die aktuelle Version (Original → neue Version anlegen). */
+  function openEditCurrent() {
+    setEditorError(null);
+    if (isOriginal) {
+      setEditor({ mode: 'new', text: displayedChordpro || editorTemplate, name: '' });
+    } else {
+      setEditor({ mode: 'edit', text: displayedChordpro, name: currentVersion.name });
+    }
+    setShowEditor(true);
+  }
+  /** Öffnet den Editor zum Anlegen einer NEUEN Version (Start-Text = aktuelle Anzeige). */
+  function openNewVersion() {
+    setEditorError(null);
+    setEditor({ mode: 'new', text: displayedChordpro || editorTemplate, name: '' });
+    setShowEditor(true);
+  }
+
+  async function handleEditorSave(text: string, name: string) {
     setEditorSaving(true);
     setEditorError(null);
     try {
-      await saveChordpro(song.id, song.arrangementId, text);
+      const v =
+        editor.mode === 'edit' && !isOriginal
+          ? await updateVersion(song.id, song.arrangementId, set.versionKey, { text, name })
+          : await createVersion(song.id, song.arrangementId, name, text);
       setShowEditor(false);
-      updateSetting(song.id, { showOriginal: false });
+      selectVersion(song.id, v.key);
       onReload?.();
     } catch (e) {
       setEditorError(e instanceof ApiError ? e.message : 'Speichern fehlgeschlagen.');
@@ -309,16 +344,18 @@ export function ChordChart({
       setEditorSaving(false);
     }
   }
-  async function handleResetChordpro() {
+
+  async function handleDeleteVersion() {
     setEditorSaving(true);
     setEditorError(null);
     try {
-      await deleteChordpro(song.id, song.arrangementId);
+      await deleteVersion(song.id, song.arrangementId, set.versionKey);
       setShowEditor(false);
-      updateSetting(song.id, { showOriginal: false });
+      setConfirmDelEdited(false);
+      selectVersion(song.id, 'original');
       onReload?.();
     } catch (e) {
-      setEditorError(e instanceof ApiError ? e.message : 'Zurücksetzen fehlgeschlagen.');
+      setEditorError(e instanceof ApiError ? e.message : 'Löschen fehlgeschlagen.');
     } finally {
       setEditorSaving(false);
     }
@@ -347,7 +384,7 @@ export function ChordChart({
                   {!set.lyricsOnly && <span className={styles.keyChip}>{curKey}</span>}
                   {!set.lyricsOnly && set.capo > 0 && <span className={styles.capoBadge}>Capo {set.capo}</span>}
                   {set.lyricsOnly && <span className={styles.modeHint}>Nur Text</span>}
-                  {hasEdited && <span className={styles.editedChip}>{set.showOriginal ? 'Original' : 'Bearbeitet'}</span>}
+                  {hasVersions && <span className={styles.editedChip}>{currentVersion.name}</span>}
                   {song.bpm !== null && <span className={styles.bpmChip}>♩ {song.bpm}</span>}
                 </>
               )}
@@ -507,16 +544,15 @@ export function ChordChart({
                   <span className={styles.mmValue}>⤴</span>
                 </button>
               )}
-              {canEditSong && (
+              {canEditSong && set.viewSource === 'chords' && (
                 <button
                   className={styles.mmItem}
                   onClick={() => {
-                    setShowEditor(true);
-                    setEditorError(null);
+                    openEditCurrent();
                     setShowSongMenu(false);
                   }}
                 >
-                  <span>Text bearbeiten</span>
+                  <span>{isOriginal ? 'Bearbeiten (neue Version)' : `„${currentVersion.name}" bearbeiten`}</span>
                   <span className={styles.mmValue}>🖉</span>
                 </button>
               )}
@@ -560,32 +596,37 @@ export function ChordChart({
                 </button>
               ))}
 
-              {set.viewSource === 'chords' && hasEdited && (
+              {set.viewSource === 'chords' && (hasVersions || canEditSong) && (
                 <>
                   <div className={styles.menuLbl} style={{ marginTop: 6 }}>
                     Version
                   </div>
-                  <div className={styles.segGroup}>
+                  {versions.map((v) => (
                     <button
-                      className={`${styles.segBtn}${!set.showOriginal ? ' ' + styles.on : ''}`}
+                      key={v.key}
+                      className={`${styles.mmItem}${set.versionKey === v.key ? ' ' + styles.on : ''}`}
                       onClick={() => {
-                        updateSetting(song.id, { showOriginal: false });
+                        selectVersion(song.id, v.key);
                         setShowSongMenu(false);
                       }}
                     >
-                      Bearbeitet
+                      <span>{v.name}</span>
+                      {set.versionKey === v.key && <span className={styles.mmCheck}>✓</span>}
                     </button>
-                    <button
-                      className={`${styles.segBtn}${set.showOriginal ? ' ' + styles.on : ''}`}
-                      onClick={() => {
-                        updateSetting(song.id, { showOriginal: true });
-                        setShowSongMenu(false);
-                      }}
-                    >
-                      Original
-                    </button>
-                  </div>
+                  ))}
                   {canEditSong && (
+                    <button
+                      className={styles.mmItem}
+                      onClick={() => {
+                        openNewVersion();
+                        setShowSongMenu(false);
+                      }}
+                    >
+                      <span>Neue Version…</span>
+                      <span className={styles.mmValue}>＋</span>
+                    </button>
+                  )}
+                  {canEditSong && !isOriginal && (
                     <button
                       className={styles.mmItem}
                       onClick={() => {
@@ -593,7 +634,7 @@ export function ChordChart({
                         setConfirmDelEdited(true);
                       }}
                     >
-                      <span className={styles.mmDanger}>Bearbeitete Version löschen</span>
+                      <span className={styles.mmDanger}>„{currentVersion.name}" löschen</span>
                       <span className={styles.mmValue}>🗑</span>
                     </button>
                   )}
@@ -688,13 +729,7 @@ export function ChordChart({
               <div className={styles.emptyIcon}>🎵</div>
               <div>Für dieses Lied ist keine Akkord-Datei in ChurchTools hinterlegt.</div>
               {canEditSong && (
-                <button
-                  className={styles.createBtn}
-                  onClick={() => {
-                    setEditorError(null);
-                    setShowEditor(true);
-                  }}
-                >
+                <button className={styles.createBtn} onClick={openNewVersion}>
                   Akkord-Datei erstellen
                 </button>
               )}
@@ -728,25 +763,23 @@ export function ChordChart({
         {showEditor && (
           <ChordEditor
             songTitle={song.title}
-            initialText={editorInitial}
-            hasEdited={hasEdited}
+            initialText={editor.text}
+            initialName={editor.name}
+            isNew={editor.mode === 'new'}
             saving={editorSaving}
             error={editorError}
-            onSave={handleSaveChordpro}
-            onReset={handleResetChordpro}
+            onSave={handleEditorSave}
+            onDelete={editor.mode === 'edit' ? () => setConfirmDelEdited(true) : undefined}
             onClose={() => setShowEditor(false)}
           />
         )}
 
         {confirmDelEdited && (
           <ConfirmDialog
-            title="Bearbeitete Version löschen?"
-            message={`Die bearbeitete Version von „${song.title}" wird aus ChurchTools entfernt. Das Original bleibt erhalten.`}
+            title="Version löschen?"
+            message={`Die Version „${currentVersion.name}" von „${song.title}" wird aus ChurchTools entfernt. Das Original bleibt erhalten.`}
             confirmLabel={editorSaving ? 'Löschen…' : 'Löschen'}
-            onConfirm={() => {
-              setConfirmDelEdited(false);
-              void handleResetChordpro();
-            }}
+            onConfirm={() => void handleDeleteVersion()}
             onCancel={() => setConfirmDelEdited(false)}
           />
         )}

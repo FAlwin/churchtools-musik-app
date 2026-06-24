@@ -10,6 +10,7 @@ import type {
   SongArrangementOption,
   SongLibraryEntry,
   SongSearchResult,
+  SongVersion,
   UserCapabilities,
 } from '@shared/types/index';
 import { apiFetch } from './api';
@@ -151,17 +152,39 @@ export function deleteAgendaItem(eventId: number, itemId: number): Promise<{ ok:
   return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, { method: 'DELETE' });
 }
 
-/** Speichert die bearbeitete Version eines Songs in ChurchTools. */
-export function saveChordpro(songId: number, arrangementId: number, text: string): Promise<{ ok: boolean }> {
-  return apiFetch(`/api/songs/${songId}/chordpro`, {
-    method: 'PUT',
-    body: JSON.stringify({ arrangementId, text }),
+/** Legt eine neue benannte Version eines Songs in ChurchTools an. */
+export function createVersion(
+  songId: number,
+  arrangementId: number,
+  name: string,
+  text: string,
+): Promise<SongVersion> {
+  return apiFetch(`/api/songs/${songId}/versions`, {
+    method: 'POST',
+    body: JSON.stringify({ arrangementId, name, text }),
   });
 }
 
-/** Löscht die bearbeitete Version (zurück zum Original). */
-export function deleteChordpro(songId: number, arrangementId: number): Promise<{ ok: boolean }> {
-  return apiFetch(`/api/songs/${songId}/chordpro`, {
+/** Aktualisiert Text und/oder Namen einer Version. */
+export function updateVersion(
+  songId: number,
+  arrangementId: number,
+  versionKey: string,
+  changes: { text?: string; name?: string },
+): Promise<SongVersion> {
+  return apiFetch(`/api/songs/${songId}/versions/${encodeURIComponent(versionKey)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ arrangementId, ...changes }),
+  });
+}
+
+/** Löscht eine benannte Version (das Original bleibt erhalten). */
+export function deleteVersion(
+  songId: number,
+  arrangementId: number,
+  versionKey: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/songs/${songId}/versions/${encodeURIComponent(versionKey)}`, {
     method: 'DELETE',
     body: JSON.stringify({ arrangementId }),
   });

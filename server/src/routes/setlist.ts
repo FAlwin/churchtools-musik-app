@@ -4,8 +4,9 @@ import { requireSession } from '../middleware/session.js';
 import {
   getServices,
   getSetlist,
-  putChordpro,
-  deleteChordpro,
+  postVersion,
+  putVersion,
+  deleteVersionCtrl,
   getFile,
   putAgendaOrder,
   deleteAgendaItemCtrl,
@@ -37,8 +38,9 @@ router.patch('/services/:eventId/agenda/order', asyncHandler(putAgendaOrder));
 router.post('/services/:eventId/agenda/items', asyncHandler(postAgendaItem));
 router.put('/services/:eventId/agenda/items/:itemId', asyncHandler(putAgendaItem));
 router.delete('/services/:eventId/agenda/items/:itemId', asyncHandler(deleteAgendaItemCtrl));
-router.put('/songs/:songId/chordpro', asyncHandler(putChordpro));
-router.delete('/songs/:songId/chordpro', asyncHandler(deleteChordpro));
+router.post('/songs/:songId/versions', asyncHandler(postVersion));
+router.put('/songs/:songId/versions/:versionKey', asyncHandler(putVersion));
+router.delete('/songs/:songId/versions/:versionKey', asyncHandler(deleteVersionCtrl));
 router.get('/songs/:songId/files/:fileId', asyncHandler(getFile));
 
 export default router;
