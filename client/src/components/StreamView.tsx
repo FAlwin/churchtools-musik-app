@@ -5,6 +5,7 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { SetlistPageOwner } from '../utils/chordPdf';
 import type { DrawTool } from '../types/index';
 import { usePageDraw } from '../hooks/usePageDraw';
+import { pushField } from '../services/annotations';
 import { DrawToolbar } from './DrawToolbar';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Icon } from './icons';
@@ -26,6 +27,8 @@ interface StreamViewProps {
   drawTool: DrawTool;
   setDrawTool: (t: DrawTool) => void;
   drawColors: string[];
+  /** Erhöht sich nach einem Server-Sync der Anmerkungen → Striche/Texte/Zoom neu aus localStorage laden. */
+  syncTick?: number;
 }
 
 function isLandscape(): boolean {
@@ -50,6 +53,7 @@ export function StreamView({
   drawTool,
   setDrawTool,
   drawColors,
+  syncTick = 0,
 }: StreamViewProps) {
   const pagesRef = useRef<HTMLCanvasElement[]>([]);
   const contentRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
@@ -100,8 +104,8 @@ export function StreamView({
   }
 
   // Ein Anmerkungs-Zustand je sichtbarer Seite (fixe Anzahl Hooks – Regeln der Hooks).
-  const drawA = usePageDraw(keyFor(pageIndex), annoRefs[0], layerRefs[0]);
-  const drawB = usePageDraw(keyFor(pageIndex + 1), annoRefs[1], layerRefs[1]);
+  const drawA = usePageDraw(keyFor(pageIndex), annoRefs[0], layerRefs[0], syncTick);
+  const drawB = usePageDraw(keyFor(pageIndex + 1), annoRefs[1], layerRefs[1], syncTick);
   const draws = [drawA, drawB];
   const activeSlot = Math.max(0, Math.min(perView - 1, activePage - pageIndex));
   const activeDraw = draws[activeSlot];
@@ -189,7 +193,7 @@ export function StreamView({
     }
     setAspects(nextAspects);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, renderVersion, pageIndex, perView]);
+  }, [loading, renderVersion, pageIndex, perView, syncTick]);
 
   // Aktive Seite im sichtbaren Fenster halten
   useEffect(() => {
@@ -221,7 +225,7 @@ export function StreamView({
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, perView, loading]);
+  }, [pageIndex, perView, loading, syncTick]);
 
   // ── Striche zeichnen (auf der Anno-Canvas der jeweiligen Seite) ──
   function ptOf(e: React.PointerEvent, canvas: HTMLCanvasElement) {
@@ -363,14 +367,14 @@ export function StreamView({
     if (adjustSlot !== null) {
       const t = transformRefs[adjustSlot].current?.instance?.transformState;
       if (t) {
+        const zoom = { x: t.positionX, y: t.positionY, scale: t.scale };
+        const zk = zoomKeyFor(pageIndex + adjustSlot);
         try {
-          localStorage.setItem(
-            zoomKeyFor(pageIndex + adjustSlot),
-            JSON.stringify({ x: t.positionX, y: t.positionY, scale: t.scale }),
-          );
+          localStorage.setItem(zk, JSON.stringify(zoom));
         } catch {
           /* Speicher voll */
         }
+        pushField(zk, 'zoom', zoom);
       }
     }
     setAdjustSlot(null);
@@ -378,7 +382,9 @@ export function StreamView({
   function cancelAdjust() {
     if (adjustSlot !== null) {
       transformRefs[adjustSlot].current?.resetTransform(150);
-      localStorage.removeItem(zoomKeyFor(pageIndex + adjustSlot));
+      const zk = zoomKeyFor(pageIndex + adjustSlot);
+      localStorage.removeItem(zk);
+      pushField(zk, 'zoom', null);
     }
     setAdjustSlot(null);
   }

@@ -11,6 +11,7 @@ import { DocumentView } from '../components/DocumentView';
 import { StreamView } from '../components/StreamView';
 import { Icon } from '../components/icons';
 import { createVersion, updateVersion, deleteVersion } from '../services/churchtoolsApi';
+import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
 import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
 import { availableVersions, selectedVersionKey, versionText, lsVersion, setLsVersion } from '../utils/songVersions';
@@ -115,6 +116,22 @@ export function ChordChart({
     .join(',');
   useEffect(() => {
     setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [songIds]);
+
+  // Anmerkungen pro Konto: bestehende Geräte-Anmerkungen einmalig hochladen, dann die
+  // Server-Anmerkungen dieser Lieder in den lokalen Cache holen und Anzeige neu laden.
+  const [syncTick, setSyncTick] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await migrateLocalAnnotations();
+      await pullAnnotations(songs.map((s) => s.id));
+      if (!cancelled) setSyncTick((t) => t + 1);
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songIds]);
 
@@ -723,6 +740,7 @@ export function ChordChart({
               drawTool={drawTool}
               setDrawTool={setDrawTool}
               drawColors={drawColors}
+              syncTick={syncTick}
             />
           ) : (
             <div className={styles.empty}>

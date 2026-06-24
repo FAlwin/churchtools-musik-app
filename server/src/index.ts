@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import setlistRoutes from './routes/setlist.js';
 import siteConfigRoutes from './routes/siteConfig.js';
+import annotationsRoutes from './routes/annotations.js';
 
 const app = express();
 
@@ -23,8 +24,8 @@ if (config.isProduction) app.set('trust proxy', 1);
 // CSP aus: die App lädt externe Schriftarten + nutzt blob/worker (pdf.js).
 // Interne Gemeinde-App; die übrigen Helmet-Header bleiben aktiv.
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-// Limit etwas höher, damit ein hochgeladenes Logo (base64-Data-URL) hineinpasst.
-app.use(express.json({ limit: '2mb' }));
+// Limit höher: Logo (base64) + Anmerkungs-Striche einer Seite (PNG-DataURL) müssen hineinpassen.
+app.use(express.json({ limit: '8mb' }));
 app.use(cookieParser(config.sessionSecret));
 
 // Allgemeines Rate-Limit (Login bekommt in Schritt 7 ein strengeres)
@@ -45,6 +46,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api', siteConfigRoutes);
 app.use('/api', setlistRoutes);
+app.use('/api', annotationsRoutes);
 
 // ── Im Produktionsbetrieb: die gebaute Web-App ausliefern ───
 if (config.isProduction) {

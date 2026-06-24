@@ -84,6 +84,18 @@ export async function whoami(cookie: string): Promise<ChurchToolsUser> {
   return { id: me.id, firstName: me.firstName, lastName: me.lastName };
 }
 
+// Cookie → ChurchTools-Person-ID, gecacht (Session läuft 12 h) – spart whoami-Abrufe je Anmerkung.
+const userIdCache = new Map<string, { id: number; at: number }>();
+
+/** Liefert die ChurchTools-Person-ID zum Session-Cookie (gecacht). */
+export async function getUserId(cookie: string): Promise<number> {
+  const c = userIdCache.get(cookie);
+  if (c && Date.now() - c.at < 12 * 3_600_000) return c.id;
+  const me = await whoami(cookie);
+  userIdCache.set(cookie, { id: me.id, at: Date.now() });
+  return me.id;
+}
+
 export interface UserCapabilities {
   canViewSongs: boolean;
   canViewAgendas: boolean;

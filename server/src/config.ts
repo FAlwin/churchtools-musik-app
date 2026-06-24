@@ -21,6 +21,8 @@ export const config = {
   sessionSecret: required('SESSION_SECRET', 'dev-only-insecure-secret'),
   /** Ablageort der Laufzeit-Branding-Datei (persistentes Docker-Volume). */
   siteConfigPath: process.env.SITE_CONFIG_PATH ?? './data/site.json',
+  /** Ablageordner der kontobezogenen Anmerkungen (eine JSON-Datei je ChurchTools-Konto). */
+  annotationsPath: process.env.ANNOTATIONS_PATH ?? './data/annotations',
   /**
    * ChurchTools-Recht, das als „Administrator" gilt (steuert Zugriff auf die
    * Branding-Einstellungen). Form `modul:recht`. Default deckt Voll-Admins ab;

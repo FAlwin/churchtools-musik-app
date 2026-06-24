@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { pushField } from '../services/annotations';
 
 /** Eine Text-Anmerkung auf einer PDF-Seite. Position als Bruchteil der Seite (0..1), Größe in
  *  cqh (% der Seitenhöhe) → skaliert/zoomt verlustfrei mit der Seite mit. */
@@ -25,7 +26,7 @@ type LayerRef = React.MutableRefObject<HTMLDivElement | null>;
  * pro Seite in localStorage. Die Striche selbst zeichnet der Viewer auf die Canvas; dieser Hook
  * verwaltet Verlauf, Text und Persistenz.
  */
-export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, layerRef: LayerRef) {
+export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, layerRef: LayerRef, reloadTick = 0) {
   const [texts, setTexts] = useState<PageTextObj[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [pending, setPending] = useState<{
@@ -47,32 +48,43 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
 
   const drawKey = storageKey;
   const textKey = storageKey ? `${storageKey}_text` : null;
+  // Zuletzt geladener Text-Stand (JSON) – verhindert das Zurück-Pushen gerade geladener Daten.
+  const loadedJson = useRef('[]');
 
-  // Texte laden, wenn die Seite (Schlüssel) wechselt. (Striche lädt der Viewer beim Malen.)
+  // Texte laden, wenn die Seite (Schlüssel) wechselt ODER nach einem Server-Pull (reloadTick).
   useEffect(() => {
     if (!textKey) {
       setTexts([]);
+      loadedJson.current = '[]';
       return;
     }
+    let loaded: PageTextObj[] = [];
     try {
       const s = localStorage.getItem(textKey);
-      setTexts(s ? (JSON.parse(s) as PageTextObj[]) : []);
+      loaded = s ? (JSON.parse(s) as PageTextObj[]) : [];
     } catch {
-      setTexts([]);
+      loaded = [];
     }
+    setTexts(loaded);
+    loadedJson.current = JSON.stringify(loaded);
     setSelectedId(null);
     history.current = [];
     redoStack.current = [];
     setCanUndo(false);
     setCanRedo(false);
-  }, [textKey]);
+  }, [textKey, reloadTick]);
 
-  // Texte speichern
+  // Texte speichern (localStorage-Cache immer; Server-Push nur bei echter Änderung)
   useEffect(() => {
-    if (!textKey) return;
+    if (!textKey || !drawKey) return;
     if (texts.length) localStorage.setItem(textKey, JSON.stringify(texts));
     else localStorage.removeItem(textKey);
-  }, [texts, textKey]);
+    const norm = JSON.stringify(texts);
+    if (norm !== loadedJson.current) {
+      pushField(drawKey, 'texts', texts);
+      loadedJson.current = norm;
+    }
+  }, [texts, textKey, drawKey]);
 
   function snapshot(): Snapshot {
     const c = strokesRef.current;
@@ -83,11 +95,13 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     if (!drawKey) return;
     const c = strokesRef.current;
     if (!c || !c.width) return;
+    const data = c.toDataURL('image/png', 0.7);
     try {
-      localStorage.setItem(drawKey, c.toDataURL('image/png', 0.7));
+      localStorage.setItem(drawKey, data);
     } catch {
       /* Speicher voll */
     }
+    pushField(drawKey, 'strokes', data);
   }
   function applySnapshot(s: Snapshot) {
     setSelectedId(null);
@@ -215,7 +229,10 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     pushHistory();
     const c = strokesRef.current;
     c?.getContext('2d')?.clearRect(0, 0, c.width, c.height);
-    if (drawKey) localStorage.removeItem(drawKey);
+    if (drawKey) {
+      localStorage.removeItem(drawKey);
+      pushField(drawKey, 'strokes', null);
+    }
     setTexts([]);
     setSelectedId(null);
   }
