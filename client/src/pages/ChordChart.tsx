@@ -100,6 +100,14 @@ export function ChordChart({
   const [docClearSignal, setDocClearSignal] = useState(0); // löst Löschen im Viewer aus
   const [docAdjust, setDocAdjust] = useState(false); // Anpassen-Modus (Zoom/Verschieben)
 
+  // App-Logo für die PDF-Kopfzeile (oben rechts, SongSelect-Stil) einmalig vorladen.
+  const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setLogoImg(img);
+    img.src = '/logo.png';
+  }, []);
+
   // ── abgeleitete Werte ──
   const curKey = selectedKey || song.targetKey;
   const totalOffset = getSemitoneOffset(song.originalKey, curKey);
@@ -129,11 +137,13 @@ export function ChordChart({
         fontPt,
         lyricsOnly,
         sectionSemitones: secShift,
+        displayKey: curKey,
+        logo: logoImg,
       },
     );
     return docPdf.output('arraybuffer');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewSource, sections.length, song.id, displayedChordpro, gripOffset, cols, fontSize, lyricsOnly, secShift]);
+  }, [viewSource, sections.length, song.id, displayedChordpro, gripOffset, cols, fontSize, lyricsOnly, secShift, curKey, logoImg]);
 
   // ── Persistenz pro Song: beim Liedwechsel die gespeicherten Werte laden ──
   useEffect(() => {
@@ -434,6 +444,9 @@ export function ChordChart({
                       cols: (cols === 2 ? 2 : 1) as 1 | 2,
                       fontPt,
                       lyricsOnly,
+                      sectionSemitones: secShift,
+                      displayKey: curKey,
+                      logo: logoImg,
                     });
                     void sharePdf(doc, song.title);
                   }}

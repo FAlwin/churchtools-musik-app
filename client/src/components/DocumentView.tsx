@@ -172,6 +172,21 @@ export function DocumentView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearSignal]);
 
+  // Beim Drehen/Größenänderung die Seite neu einpassen (Fit), sonst bleibt im Querformat ein
+  // veralteter Zoom/Ausschnitt stehen und die Seite ist abgeschnitten.
+  useEffect(() => {
+    function refit() {
+      transformRef.current?.resetTransform(0);
+      requestAnimationFrame(() => transformRef.current?.centerView(1, 0));
+    }
+    window.addEventListener('resize', refit);
+    window.addEventListener('orientationchange', refit);
+    return () => {
+      window.removeEventListener('resize', refit);
+      window.removeEventListener('orientationchange', refit);
+    };
+  }, []);
+
   // ── Zeichnen ──
   function pt(e: React.PointerEvent) {
     const c = annoRef.current!;
@@ -273,7 +288,7 @@ export function DocumentView({
       <TransformWrapper
         key={`${keyBase}-${pageIndex}`}
         ref={transformRef}
-        minScale={1}
+        minScale={0.5}
         maxScale={8}
         centerOnInit
         centerZoomedOut

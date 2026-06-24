@@ -52,12 +52,19 @@ export function DemoPdf() {
   const [semitones, setSemitones] = useState(0);
   const [lyricsOnly, setLyricsOnly] = useState(false);
   const [pages, setPages] = useState(0);
+  const [logo, setLogo] = useState<HTMLImageElement | null>(null);
   const host = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setLogo(img);
+    img.src = '/logo.png';
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const doc = generateChordPdf(SONG, { cols, fontPt, semitones, lyricsOnly });
+      const doc = generateChordPdf(SONG, { cols, fontPt, semitones, lyricsOnly, logo });
       const data = doc.output('arraybuffer');
       const pdf = await pdfjsLib.getDocument({ data }).promise;
       if (cancelled || !host.current) return;
@@ -77,7 +84,7 @@ export function DemoPdf() {
     return () => {
       cancelled = true;
     };
-  }, [cols, fontPt, semitones, lyricsOnly]);
+  }, [cols, fontPt, semitones, lyricsOnly, logo]);
 
   const btn = { padding: '6px 10px', marginRight: 6, cursor: 'pointer' };
   return (

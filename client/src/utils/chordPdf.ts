@@ -17,6 +17,10 @@ export interface ChordPdfOptions {
   flat?: boolean;
   /** Zusätzlicher Halbton-Versatz je Abschnitts-Index (Issue #16). */
   sectionSemitones?: Record<number, number>;
+  /** Anzuzeigende Tonart im Kopf (z. B. transponiert). Fällt auf targetKey/originalKey zurück. */
+  displayKey?: string;
+  /** App-Logo oben rechts (HTMLImageElement oder PNG-DataURL). Optional. */
+  logo?: HTMLImageElement | string | null;
 }
 
 const PT_TO_MM = 0.352777;
@@ -25,9 +29,11 @@ const PAGE_W = 210;
 const PAGE_H = 297;
 const MARGIN = 12;
 const COL_GAP = 8;
-const CHORD_COLOR: [number, number, number] = [0, 97, 161]; // ChurchTools-Blau
-const LABEL_COLOR: [number, number, number] = [0, 97, 161];
+// Alles schwarz halten (SongSelect-Look) – damit Akkorde auch auf S/W-Druckern klar sichtbar sind.
 const TEXT_COLOR: [number, number, number] = [20, 17, 15];
+const CHORD_COLOR: [number, number, number] = TEXT_COLOR;
+const LABEL_COLOR: [number, number, number] = TEXT_COLOR;
+const MUTED_COLOR: [number, number, number] = [90, 90, 90];
 
 /**
  * Erzeugt aus dem ChordPro eines Lieds eine SongSelect-artige PDF (Akkorde über Text,
@@ -35,7 +41,7 @@ const TEXT_COLOR: [number, number, number] = [20, 17, 15];
  * die erzeugte Ansicht/das Export-Format. Liefert das fertige jsPDF-Dokument zurück.
  */
 export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, doc?: jsPDF): jsPDF {
-  const { semitones = 0, cols = 1, fontPt = 11, lyricsOnly = false, flat = false, sectionSemitones } = opts;
+  const { semitones = 0, cols = 1, fontPt = 11, lyricsOnly = false, flat = false, sectionSemitones, displayKey, logo } = opts;
   const d = doc ?? new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
   const lyricH = fontPt * PT_TO_MM * 1.18; // Höhe einer Textzeile
@@ -44,8 +50,9 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
   const rowH = (lyricsOnly ? 0 : chordH) + lyricH; // eine „musikalische" Zeile
   const emptyGap = lyricH * 0.5;
   const sectionGap = lyricH * 0.8;
-  const labelPt = Math.max(9, Math.round(fontPt * 0.85));
-  const labelH = labelPt * PT_TO_MM * 1.3 + 1.5;
+  // Labels deutlicher: fett, etwas größer als der Text, mit klarem Abstand darüber.
+  const labelPt = Math.max(10, Math.round(fontPt * 1.0));
+  const labelH = labelPt * PT_TO_MM * 1.3 + 2.5;
 
   const colW = (PAGE_W - 2 * MARGIN - (cols - 1) * COL_GAP) / cols;
   const bottom = PAGE_H - MARGIN;
@@ -72,15 +79,51 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
     if (y + space > bottom) nextColumn();
   }
 
-  // Titelkopf (klein, oben auf Seite 1)
+  // Kopf im SongSelect-Stil: Logo oben rechts, dann Titel / Autor / „Tonart - X | Taktart - Y".
+  let logoBottom = MARGIN;
+  if (logo) {
+    try {
+      const lw = 24; // mm
+      let lh = lw;
+      if (typeof logo !== 'string' && logo.naturalWidth > 0) lh = lw * (logo.naturalHeight / logo.naturalWidth);
+      d.addImage(logo, 'PNG', PAGE_W - MARGIN - lw, MARGIN, lw, lh);
+      logoBottom = MARGIN + lh;
+    } catch {
+      /* Logo ist optional */
+    }
+  }
+
+  const titlePt = fontPt + 6;
   d.setFont('helvetica', 'bold');
-  d.setFontSize(fontPt + 3);
+  d.setFontSize(titlePt);
   d.setTextColor(...TEXT_COLOR);
-  d.text(song.title, MARGIN, y + (fontPt + 3) * PT_TO_MM);
-  y += (fontPt + 3) * PT_TO_MM + 3;
-  const headerBottom = y;
-  // Spalten beginnen unter dem Titel (nur Seite 1, Spalte 0)
-  const startY = headerBottom;
+  d.text(song.title, MARGIN, y + titlePt * PT_TO_MM);
+  y += titlePt * PT_TO_MM + 1.5;
+
+  const subPt = Math.max(8, fontPt - 2);
+  if (song.author) {
+    d.setFont('helvetica', 'normal');
+    d.setFontSize(subPt);
+    d.setTextColor(...MUTED_COLOR);
+    d.text(song.author, MARGIN, y + subPt * PT_TO_MM);
+    y += subPt * PT_TO_MM + 1;
+  }
+
+  const headKey = displayKey || song.targetKey || song.originalKey || '';
+  const infoParts: string[] = [];
+  if (headKey) infoParts.push(`Tonart - ${headKey}`);
+  if (song.timeSig) infoParts.push(`Taktart - ${song.timeSig}`);
+  if (song.bpm) infoParts.push(`${song.bpm} BPM`);
+  if (infoParts.length) {
+    d.setFont('helvetica', 'bold');
+    d.setFontSize(subPt);
+    d.setTextColor(...TEXT_COLOR);
+    d.text(infoParts.join('   |   '), MARGIN, y + subPt * PT_TO_MM);
+    y += subPt * PT_TO_MM + 1;
+  }
+
+  // Spalten beginnen unter dem Titelkopf UND unter dem Logo (nur Seite 1).
+  const startY = Math.max(y, logoBottom) + 4;
   y = startY;
   x = colX(0);
 
@@ -176,6 +219,14 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
     }
     y += sectionGap;
   });
+
+  // CCLI-Fußzeile (zentriert unten auf der letzten Seite), wenn vorhanden.
+  if (song.ccli) {
+    d.setFont('helvetica', 'italic');
+    d.setFontSize(8);
+    d.setTextColor(...MUTED_COLOR);
+    d.text(`CCLI-Liednummer ${song.ccli}`, PAGE_W / 2, PAGE_H - 8, { align: 'center' });
+  }
 
   return d;
 }
