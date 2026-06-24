@@ -299,9 +299,18 @@ export function StreamView({
     else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) tapAt(startX, e.currentTarget as HTMLElement);
   }
   function tapAt(clientX: number, root: HTMLElement) {
-    if (perView < 2) return;
     const r = root.getBoundingClientRect();
-    const slot = clientX - r.left < r.width / 2 ? 0 : 1;
+    const fx = (clientX - r.left) / r.width;
+    if (fx < 0.18) {
+      go(-1); // linker Rand → zurück
+      return;
+    }
+    if (fx > 0.82) {
+      go(1); // rechter Rand → weiter
+      return;
+    }
+    if (perView < 2) return;
+    const slot = fx < 0.5 ? 0 : 1; // Mitte: angetippte Hälfte wird aktiv
     const target = pageIndex + slot;
     if (target < pageCount) onActivePage(target);
   }
@@ -377,7 +386,10 @@ export function StreamView({
                   wrapperStyle={{ width: '100%', height: '100%' }}
                   contentStyle={{ width: '100%', height: '100%' }}
                 >
-                  <div className={styles.pageBox} style={{ aspectRatio: aspects[j] }}>
+                  <div
+                    className={styles.pageBox}
+                    style={{ justifyItems: perView < 2 ? 'center' : j === 0 ? 'end' : 'start' }}
+                  >
                     <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
                     <canvas
                       ref={annoRefs[j]}
@@ -394,7 +406,10 @@ export function StreamView({
                     <div
                       ref={layerRefs[j]}
                       className={styles.textLayer}
-                      style={{ pointerEvents: drawMode && drawTool === 'text' ? 'all' : 'none' }}
+                      style={{
+                        aspectRatio: aspects[j],
+                        pointerEvents: drawMode && drawTool === 'text' ? 'all' : 'none',
+                      }}
                       onPointerDown={(e) => layerDown(e, j)}
                     >
                       {d.texts.map((o) => (

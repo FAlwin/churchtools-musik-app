@@ -16,7 +16,6 @@ import { parseChordPro } from '../utils/chordpro';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
-import { DRAW_COLORS } from '../utils/constants';
 import type { DrawTool, Theme } from '../types/index';
 import styles from './ChordChart.module.scss';
 
@@ -100,7 +99,6 @@ export function ChordChart({
   onReload,
   reloading,
   canEditSong = false,
-  theme,
 }: ChordChartProps) {
   // Einstellungen aller Lieder (für den durchgehenden Strom). Aus localStorage initialisiert.
   const [settings, setSettings] = useState<Record<number, SongSettings>>(() =>
@@ -150,7 +148,9 @@ export function ChordChart({
   const [editorError, setEditorError] = useState<string | null>(null);
 
   const [drawMode, setDrawMode] = useState(false);
-  const [drawColor, setDrawColor] = useState(() => (theme === 'dark' ? '#FFFCF2' : '#14110F'));
+  // Anmerkungs-Farben fest Schwarz/Rot/Gelb (wir arbeiten nur noch auf weißen PDF-Seiten → kein
+  // Weiß, kein Dunkelmodus-Wechsel). Plus der freie Farbwähler in der Leiste.
+  const [drawColor, setDrawColor] = useState('#14110F');
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
   const [docClearSignal, setDocClearSignal] = useState(0);
   const [docAdjust, setDocAdjust] = useState(false); // nur für Einzel-Dokument-Ansicht
@@ -163,7 +163,7 @@ export function ChordChart({
     img.src = '/logo.png';
   }, []);
 
-  const drawColors = DRAW_COLORS.map((c) => (c === '#14110F' ? (theme === 'dark' ? '#FFFCF2' : '#14110F') : c));
+  const drawColors = ['#14110F', '#DD0000', '#FFCE00'];
 
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
   const stream = useMemo(() => {

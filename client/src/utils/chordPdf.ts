@@ -129,9 +129,99 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
 
   const sections = parseChordPro(song.chordpro);
 
+  type Pair = { chord: string | null; text: string };
+  // Eine Liedzeile in Token zerlegen (Akkord bleibt am ersten Wort) und an Wortgrenzen so
+  // umbrechen, dass sie in die Spaltenbreite passt (kein Abschneiden, kein Überlauf).
+  function wrapLine(pairs: Pair[]): Pair[][] {
+    d.setFont('helvetica', 'normal');
+    d.setFontSize(fontPt);
+    const toks: Pair[] = [];
+    for (const p of pairs) {
+      const words = (p.text || '').match(/\S+\s*|\s+/g);
+      if (!words) {
+        toks.push({ chord: p.chord, text: p.text || '' });
+        continue;
+      }
+      words.forEach((w, wi) => toks.push({ chord: wi === 0 ? p.chord : null, text: w }));
+    }
+    const rows: Pair[][] = [[]];
+    let lineW = 0;
+    for (const t of toks) {
+      let adv = d.getTextWidth(t.text);
+      if (t.chord) {
+        d.setFont('helvetica', 'bold');
+        d.setFontSize(chordPt);
+        adv = Math.max(adv, d.getTextWidth(t.chord) + 1.5);
+        d.setFont('helvetica', 'normal');
+        d.setFontSize(fontPt);
+      }
+      if (lineW + adv > colW && rows[rows.length - 1].length > 0) {
+        rows.push([]);
+        lineW = 0;
+      }
+      rows[rows.length - 1].push(t);
+      lineW += adv;
+    }
+    return rows;
+  }
+
+  function drawRow(row: Pair[]) {
+    let cx = x;
+    const yChord = y + chordPt * PT_TO_MM;
+    const yLyric = y + (lyricsOnly ? 0 : chordH) + fontPt * PT_TO_MM;
+    for (const p of row) {
+      d.setFont('helvetica', 'normal');
+      d.setFontSize(fontPt);
+      const tw = d.getTextWidth(p.text || '');
+      if (p.chord) {
+        d.setFont('helvetica', 'bold');
+        d.setFontSize(chordPt);
+        d.setTextColor(...CHORD_COLOR);
+        d.text(p.chord, cx, yChord);
+      }
+      if (p.text) {
+        d.setFont('helvetica', 'normal');
+        d.setFontSize(fontPt);
+        d.setTextColor(...TEXT_COLOR);
+        d.text(p.text, cx, yLyric);
+      }
+      let adv = tw;
+      if (p.chord) {
+        d.setFont('helvetica', 'bold');
+        d.setFontSize(chordPt);
+        adv = Math.max(adv, d.getTextWidth(p.chord) + 1.5);
+      }
+      cx += adv;
+    }
+    y += rowH;
+  }
+
   sections.forEach((sec, si) => {
     const secSemi = semitones + (sectionSemitones?.[si] ?? 0);
-    // Label
+
+    // Sektion vorab umbrechen + Gesamthöhe berechnen (Label + Zeilen/Leerzeilen).
+    const blocks: ({ gap: true } | { rows: Pair[][] })[] = [];
+    let secH = sec.label ? labelH : 0;
+    for (const rawLine of sec.lines) {
+      if (rawLine === '') {
+        blocks.push({ gap: true });
+        secH += emptyGap;
+        continue;
+      }
+      const pairs = parseLine(rawLine).map((p) => ({
+        chord: p.chord && !lyricsOnly ? transposeChord(p.chord, secSemi, flat) : null,
+        text: p.text,
+      }));
+      const rows = wrapLine(pairs);
+      blocks.push({ rows });
+      secH += rows.length * rowH;
+    }
+
+    // Ganze Sektion zusammenhalten: passt sie nicht mehr in die Spalte, aber komplett in eine
+    // leere Spalte → vorher umbrechen (springt geschlossen auf die nächste Spalte/Seite).
+    const colTop = pageNo === 0 ? startY : MARGIN;
+    if (y + secH > bottom && secH <= bottom - colTop) nextColumn();
+
     if (sec.label) {
       ensure(labelH + rowH);
       d.setFont('helvetica', 'bold');
@@ -140,81 +230,14 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
       d.text(sec.label.toUpperCase(), x, y + labelPt * PT_TO_MM);
       y += labelH;
     }
-
-    for (const rawLine of sec.lines) {
-      if (rawLine === '') {
+    for (const b of blocks) {
+      if ('gap' in b) {
         y += emptyGap;
         continue;
       }
-      const pairs = parseLine(rawLine).map((p) => ({
-        chord: p.chord && !lyricsOnly ? transposeChord(p.chord, secSemi, flat) : null,
-        text: p.text,
-      }));
-
-      // In Wort-Token zerlegen (der Akkord bleibt am ersten Wort seines Paars) und an Wort-
-      // grenzen umbrechen, damit auch lange Zeilen (z. B. ganze Sätze ohne Akkordwechsel oder
-      // 2 Spalten) sauber in die Spaltenbreite passen statt rechts abgeschnitten zu werden.
-      d.setFont('helvetica', 'normal');
-      d.setFontSize(fontPt);
-      const toks: { chord: string | null; text: string }[] = [];
-      for (const p of pairs) {
-        const words = (p.text || '').match(/\S+\s*|\s+/g);
-        if (!words) {
-          toks.push({ chord: p.chord, text: p.text || '' });
-          continue;
-        }
-        words.forEach((w, wi) => toks.push({ chord: wi === 0 ? p.chord : null, text: w }));
-      }
-      const rows: { chord: string | null; text: string }[][] = [[]];
-      let lineW = 0;
-      for (const t of toks) {
-        let adv = d.getTextWidth(t.text);
-        if (t.chord) {
-          d.setFont('helvetica', 'bold');
-          d.setFontSize(chordPt);
-          adv = Math.max(adv, d.getTextWidth(t.chord) + 1.5);
-          d.setFont('helvetica', 'normal');
-          d.setFontSize(fontPt);
-        }
-        if (lineW + adv > colW && rows[rows.length - 1].length > 0) {
-          rows.push([]);
-          lineW = 0;
-        }
-        rows[rows.length - 1].push(t);
-        lineW += adv;
-      }
-
-      for (const row of rows) {
+      for (const row of b.rows) {
         ensure(rowH);
-        let cx = x;
-        const yChord = y + chordPt * PT_TO_MM;
-        const yLyric = y + (lyricsOnly ? 0 : chordH) + fontPt * PT_TO_MM;
-        for (const p of row) {
-          d.setFont('helvetica', 'normal');
-          d.setFontSize(fontPt);
-          const tw = d.getTextWidth(p.text || '');
-          if (p.chord) {
-            d.setFont('helvetica', 'bold');
-            d.setFontSize(chordPt);
-            d.setTextColor(...CHORD_COLOR);
-            d.text(p.chord, cx, yChord);
-          }
-          if (p.text) {
-            d.setFont('helvetica', 'normal');
-            d.setFontSize(fontPt);
-            d.setTextColor(...TEXT_COLOR);
-            d.text(p.text, cx, yLyric);
-          }
-          // Vorschub: Textbreite, mind. aber Akkordbreite (+kleiner Abstand), wenn Text kürzer.
-          let adv = tw;
-          if (p.chord) {
-            d.setFont('helvetica', 'bold');
-            d.setFontSize(chordPt);
-            adv = Math.max(adv, d.getTextWidth(p.chord) + 1.5);
-          }
-          cx += adv;
-        }
-        y += rowH;
+        drawRow(row);
       }
     }
     y += sectionGap;
