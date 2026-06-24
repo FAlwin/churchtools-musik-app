@@ -57,6 +57,7 @@ export function StreamView({
   const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
   const transformRefs = [useRef<ReactZoomPanPinchRef | null>(null), useRef<ReactZoomPanPinchRef | null>(null)];
   const stroke = useRef(false);
+  const strokePointer = useRef(-1);
   const strokeCanvas = useRef<HTMLCanvasElement | null>(null);
   const strokeSlot = useRef(0);
   const lastPt = useRef<{ x: number; y: number } | null>(null);
@@ -197,6 +198,15 @@ export function StreamView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [perView, pageIndex, activePage]);
 
+  // Sicherheit gegen hängengebliebene Striche: beim Verlassen des Zeichenmodus/Seitenwechsel
+  // den Zeichen-Zustand zurücksetzen.
+  useEffect(() => {
+    stroke.current = false;
+    strokePointer.current = -1;
+    strokeCanvas.current = null;
+    lastPt.current = null;
+  }, [drawMode, pageIndex, perView]);
+
   // Beim Blättern/Drehen Zoom-Modus verlassen + gespeicherten Zoom je Seite wiederherstellen
   useEffect(() => {
     setAdjustSlot(null);
@@ -223,18 +233,28 @@ export function StreamView({
   }
   function strokeDown(e: React.PointerEvent, slot: number) {
     if (!drawMode || drawTool === 'text') return;
+    // Nur der primäre Finger zeichnet (zweiter Finger beim Multitouch wird ignoriert).
+    if (e.pointerType === 'touch' && !e.isPrimary) return;
     const canvas = annoRefs[slot].current;
     if (!canvas) return;
     e.stopPropagation();
+    // Pointer einfangen → Move/Up kommen GARANTIERT an, auch wenn der Finger die Fläche verlässt
+    // (verhindert hängengebliebene, nicht beendete Striche).
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* ignorieren */
+    }
     draws[slot].setSelectedId(null);
     draws[slot].pushHistory();
     stroke.current = true;
+    strokePointer.current = e.pointerId;
     strokeCanvas.current = canvas;
     strokeSlot.current = slot;
     lastPt.current = ptOf(e, canvas);
   }
   function strokeMove(e: React.PointerEvent) {
-    if (!stroke.current || !strokeCanvas.current) return;
+    if (!stroke.current || strokePointer.current !== e.pointerId || !strokeCanvas.current) return;
     const ctx = strokeCanvas.current.getContext('2d')!;
     const p = ptOf(e, strokeCanvas.current);
     ctx.lineCap = 'round';
@@ -262,9 +282,11 @@ export function StreamView({
     ctx.globalAlpha = 1;
     lastPt.current = p;
   }
-  function strokeUp() {
+  function strokeUp(e?: React.PointerEvent) {
     if (!stroke.current) return;
+    if (e && strokePointer.current !== e.pointerId) return;
     stroke.current = false;
+    strokePointer.current = -1;
     lastPt.current = null;
     draws[strokeSlot.current].saveStrokes();
     strokeCanvas.current = null;
@@ -420,7 +442,7 @@ export function StreamView({
                       onPointerDown={(e) => strokeDown(e, j)}
                       onPointerMove={strokeMove}
                       onPointerUp={strokeUp}
-                      onPointerLeave={strokeUp}
+                      onPointerCancel={strokeUp}
                     />
                     <div
                       ref={layerRefs[j]}
@@ -440,12 +462,15 @@ export function StreamView({
                             top: `${o.fy * 100}%`,
                             fontSize: `${o.sizeCqh}cqh`,
                             color: o.color,
-                            pointerEvents: drawMode ? 'all' : 'none',
-                            cursor: drawMode ? 'grab' : 'default',
+                            // Text nur im Text-Werkzeug interaktiv → mit Stift/Marker kann man
+                            // ungehindert DARÜBER zeichnen (sonst „fängt" der Text die Eingabe ab).
+                            pointerEvents: drawMode && drawTool === 'text' ? 'all' : 'none',
+                            cursor: 'grab',
                           }}
                           onPointerDown={(e) => d.startDrag(e, o)}
                           onPointerMove={(e) => d.moveDrag(e, o.id)}
                           onPointerUp={d.endDrag}
+                          onPointerCancel={d.endDrag}
                         >
                           {o.text}
                         </div>
