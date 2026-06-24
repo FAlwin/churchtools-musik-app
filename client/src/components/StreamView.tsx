@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { SetlistPageOwner } from '../utils/chordPdf';
 import type { DrawTool } from '../types/index';
+import { Icon } from './icons';
 import { Spinner } from './Spinner';
 import styles from './StreamView.module.scss';
 
@@ -33,8 +34,10 @@ function isLandscape(): boolean {
 
 /**
  * Durchgehender Seitenstrom über den ganzen Ablauf. Hochformat zeigt 1 Seite, Querformat IMMER 2
- * Seiten nebeneinander (auch über Liedgrenzen). Wischen blättert um genau 1 Seite (die rechte
- * Seite rückt nach links). Antippen einer Hälfte macht sie „aktiv". Pinch-Zoom ist live begrenzt.
+ * Seiten nebeneinander (auch über Liedgrenzen) – jede Seite ein eigener Bereich mit EIGENEM Zoom.
+ * Wischen blättert um 1 Seite (rechte rückt nach links), Antippen einer Hälfte macht sie aktiv.
+ * Eine Zoom-Geste schaltet pro Seite einen Anpassen-Modus (✓/✗) frei; solange der an ist, ist
+ * Wischen/Tippen aus – danach wieder normal.
  */
 export function StreamView({
   pdfData,
@@ -51,21 +54,23 @@ export function StreamView({
   const pagesRef = useRef<HTMLCanvasElement[]>([]); // alle Seiten offscreen gerendert
   const contentRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
   const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
+  const transformRefs = [useRef<ReactZoomPanPinchRef | null>(null), useRef<ReactZoomPanPinchRef | null>(null)];
   const drawing = useRef(false);
   const drawCanvas = useRef<HTMLCanvasElement | null>(null);
   const drawPage = useRef(0);
   const lastPt = useRef<{ x: number; y: number } | null>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const zoomed = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState(0);
-  const [renderVersion, setRenderVersion] = useState(0); // erzwingt Neu-Malen nach Re-Render
+  const [renderVersion, setRenderVersion] = useState(0);
   const [landscape, setLandscape] = useState(isLandscape());
+  const [adjustSlot, setAdjustSlot] = useState<number | null>(null); // Seite im Zoom-Anpassen-Modus
   const firstDone = useRef(false);
 
   const perView = landscape ? 2 : 1;
+  const adjusting = adjustSlot !== null;
 
   const keyFor = (page: number): string => {
     const o = owners[page];
@@ -155,6 +160,14 @@ export function StreamView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [perView, pageIndex, activePage]);
 
+  // Beim Blättern/Drehen Zoom-Modus verlassen UND jede Seite wieder auf Fit zurücksetzen
+  // (sonst bliebe die neu eingeblendete Seite gezoomt).
+  useEffect(() => {
+    setAdjustSlot(null);
+    transformRefs.forEach((r) => r.current?.resetTransform(0));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, perView]);
+
   // Anmerkungen der aktiven Seite löschen
   useEffect(() => {
     if (clearSignal === 0) return;
@@ -225,41 +238,52 @@ export function StreamView({
 
   // ── Blättern (Wischen) / aktive Hälfte (Tippen) ──
   function go(delta: number) {
-    const next = Math.min(Math.max(0, pageIndex + delta), Math.max(0, pageCount - 1));
-    if (next !== pageIndex) {
-      onPageIndex(next);
-      onActivePage(next); // beim Blättern ist die linke Seite aktiv
+    const nextP = Math.min(Math.max(0, pageIndex + delta), Math.max(0, pageCount - 1));
+    if (nextP !== pageIndex) {
+      onPageIndex(nextP);
+      onActivePage(nextP);
     }
   }
   function onTouchStart(e: React.TouchEvent) {
-    if (drawMode || zoomed.current) return;
+    if (drawMode || adjusting || e.touches.length > 1) {
+      touchStart.current = null;
+      return;
+    }
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }
   function onTouchEnd(e: React.TouchEvent) {
-    if (drawMode || zoomed.current || !touchStart.current) return;
+    if (drawMode || adjusting || !touchStart.current) return;
     const dx = touchStart.current.x - e.changedTouches[0].clientX;
     const dy = touchStart.current.y - e.changedTouches[0].clientY;
     const startX = touchStart.current.x;
     touchStart.current = null;
     if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-      go(dx > 0 ? 1 : -1); // wischt nach links → vorwärts
+      go(dx > 0 ? 1 : -1);
     } else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
       tapAt(startX, e.currentTarget as HTMLElement);
     }
   }
   function tapAt(clientX: number, root: HTMLElement) {
-    if (perView < 2) return; // Hochformat: einzige Seite ist immer aktiv
+    if (perView < 2) return;
     const r = root.getBoundingClientRect();
     const slot = clientX - r.left < r.width / 2 ? 0 : 1;
     const target = pageIndex + slot;
     if (target < pageCount) onActivePage(target);
   }
   function onClick(e: React.MouseEvent) {
-    if (drawMode) return;
+    if (drawMode || adjusting) return;
     tapAt(e.clientX, e.currentTarget as HTMLElement);
   }
 
-  const slots = [];
+  function confirmAdjust() {
+    setAdjustSlot(null); // aktuelle (gezoomte) Ansicht behalten
+  }
+  function cancelAdjust() {
+    if (adjustSlot !== null) transformRefs[adjustSlot].current?.resetTransform(150);
+    setAdjustSlot(null);
+  }
+
+  const slots: number[] = [];
   for (let j = 0; j < perView; j++) {
     if (pageIndex + j >= pageCount) break;
     slots.push(j);
@@ -275,30 +299,30 @@ export function StreamView({
       )}
       {error && <div className={styles.center}>⚠️ {error}</div>}
 
-      <TransformWrapper
-        key={`${perView}-${pageIndex}`}
-        minScale={1}
-        maxScale={6}
-        centerOnInit
-        centerZoomedOut
-        initialScale={1}
-        limitToBounds
-        doubleClick={{ disabled: true }}
-        panning={{ velocityDisabled: true }}
-        wheel={{ step: 0.08 }}
-        onTransformed={(_r, s) => {
-          zoomed.current = s.scale > 1.01;
-        }}
-      >
-        <TransformComponent
-          wrapperStyle={{ width: '100%', height: '100%' }}
-          contentStyle={{ width: '100%', height: '100%' }}
-        >
-          <div className={styles.row} style={{ visibility: loading ? 'hidden' : 'visible' }}>
-            {slots.map((j) => {
-              const active = perView > 1 && pageIndex + j === activePage;
-              return (
-                <div key={j} className={`${styles.slot}${active ? ' ' + styles.active : ''}`}>
+      <div className={styles.row} style={{ visibility: loading ? 'hidden' : 'visible' }}>
+        {slots.map((j) => (
+          <div key={j} className={styles.slot}>
+            <TransformWrapper
+              ref={transformRefs[j]}
+              minScale={1}
+              maxScale={6}
+              centerOnInit
+              centerZoomedOut
+              initialScale={1}
+              limitToBounds
+              doubleClick={{ disabled: true }}
+              panning={{ disabled: drawMode || adjustSlot !== j, velocityDisabled: true }}
+              pinch={{ disabled: drawMode }}
+              wheel={{ disabled: drawMode, step: 0.08 }}
+              onZoomStart={() => {
+                if (!drawMode) setAdjustSlot(j);
+              }}
+            >
+              <TransformComponent
+                wrapperStyle={{ width: '100%', height: '100%' }}
+                contentStyle={{ width: '100%', height: '100%' }}
+              >
+                <div className={styles.pageBox}>
                   <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
                   <canvas
                     ref={annoRefs[j]}
@@ -310,11 +334,23 @@ export function StreamView({
                     onPointerLeave={dUp}
                   />
                 </div>
-              );
-            })}
+              </TransformComponent>
+            </TransformWrapper>
           </div>
-        </TransformComponent>
-      </TransformWrapper>
+        ))}
+      </div>
+
+      {/* Zoom-Anpassen-Knöpfe (erscheinen nach einer Zoom-Geste) */}
+      {adjusting && (
+        <div className={styles.zoomBar}>
+          <button className={styles.zoomCancel} onClick={cancelAdjust} aria-label="Zoom verwerfen">
+            <Icon name="chev-left" size={16} stroke={2.4} /> Zurück
+          </button>
+          <button className={styles.zoomOk} onClick={confirmAdjust} aria-label="Ansicht behalten">
+            <Icon name="check" size={16} stroke={2.6} /> Fertig
+          </button>
+        </div>
+      )}
 
       {!loading && !error && pageCount > 0 && (
         <div className={styles.pageBadge}>
