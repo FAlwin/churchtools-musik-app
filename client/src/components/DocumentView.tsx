@@ -273,11 +273,12 @@ export function DocumentView({
       <TransformWrapper
         key={`${keyBase}-${pageIndex}`}
         ref={transformRef}
-        minScale={0.4}
+        minScale={1}
         maxScale={8}
         centerOnInit
+        centerZoomedOut
         initialScale={1}
-        limitToBounds={false}
+        limitToBounds
         doubleClick={{ disabled: true }}
         panning={{ disabled: !adjust, velocityDisabled: true }}
         wheel={{ disabled: !adjust, step: 0.08 }}
