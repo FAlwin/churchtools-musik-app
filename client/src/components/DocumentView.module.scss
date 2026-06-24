@@ -49,6 +49,10 @@
 .contentCanvas {
   grid-area: 1 / 1;
   display: block;
+  // min-*: 0 hebt die Grid-Item-Mindestgröße auf → max-height greift, die Seite wird an der HÖHE
+  // eingepasst (höhenfüllend) statt an der Breite. Element-Box = sichtbare Seite (Anmerkungen passen).
+  min-width: 0;
+  min-height: 0;
   max-width: 100%;
   max-height: 100%;
   background: #fff;
@@ -56,6 +60,8 @@
 
 .annoCanvas {
   grid-area: 1 / 1;
+  min-width: 0;
+  min-height: 0;
   max-width: 100%;
   max-height: 100%;
   touch-action: none;

@@ -243,3 +243,32 @@ export function generateSetlistPdf(
   });
   return d;
 }
+
+/** Welches Lied (und welche Seite darin) gehört zu einer Seite der zusammengefassten PDF. */
+export interface SetlistPageOwner {
+  songIdx: number;
+  songId: number;
+  localPage: number;
+}
+
+/**
+ * Wie generateSetlistPdf, liefert aber zusätzlich pro PDF-Seite den Besitzer (Lied + Seite darin).
+ * Grundlage für den durchgehenden Seitenstrom über den ganzen Ablauf (2-up im Querformat).
+ */
+export function generateSetlistPdfWithOwners(
+  songs: SetlistSong[],
+  optsFor: (song: SetlistSong) => ChordPdfOptions,
+): { doc: jsPDF; owners: SetlistPageOwner[] } {
+  const d = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const owners: SetlistPageOwner[] = [];
+  songs.forEach((song, si) => {
+    if (si > 0) d.addPage();
+    const before = d.getNumberOfPages();
+    generateChordPdf(song, optsFor(song), d);
+    const after = d.getNumberOfPages();
+    for (let p = 0; p <= after - before; p++) {
+      owners.push({ songIdx: si, songId: song.id, localPage: p });
+    }
+  });
+  return { doc: d, owners };
+}
