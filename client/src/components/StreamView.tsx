@@ -79,6 +79,8 @@ export function StreamView({
   const [renderVersion, setRenderVersion] = useState(0);
   const [landscape, setLandscape] = useState(isLandscape());
   const [adjustSlot, setAdjustSlot] = useState<number | null>(null);
+  // Welche sichtbaren Seiten gerade reingezoomt sind (auch geladener Zoom) → Notausgang-Knopf.
+  const [zoomedSlots, setZoomedSlots] = useState<[boolean, boolean]>([false, false]);
   const [aspects, setAspects] = useState<string[]>(['210 / 297', '210 / 297']);
   const [textSize, setTextSize] = useState(4); // cqh = % der Seitenhöhe
   const [confirmClear, setConfirmClear] = useState(false);
@@ -461,6 +463,31 @@ export function StreamView({
     setAdjustSlot(null);
   }
 
+  // Gespeicherten Zoom einer Seite dauerhaft löschen (klassen-spezifischer + alter Fallback-Schlüssel).
+  function clearStoredZoom(page: number) {
+    const o = owners[page];
+    const keys = [zoomKeyFor(page)];
+    if (o) keys.push(`worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}`);
+    for (const k of keys) {
+      try {
+        localStorage.removeItem(k);
+      } catch {
+        /* ignorieren */
+      }
+    }
+    pushField(zoomKeyFor(page), 'zoom', null);
+  }
+
+  // Notausgang: sichtbare reingezoomte Seiten auf Normalgröße zurücksetzen UND ihren Speicher löschen.
+  function resetVisibleZoom() {
+    for (let j = 0; j < perView; j++) {
+      if (!zoomedSlots[j]) continue;
+      transformRefs[j].current?.resetTransform(150);
+      clearStoredZoom(pageIndex + j);
+    }
+    setAdjustSlot(null);
+  }
+
   const slots: number[] = [];
   for (let j = 0; j < perView; j++) {
     if (pageIndex + j >= pageCount) break;
@@ -499,6 +526,15 @@ export function StreamView({
                 wheel={{ disabled: drawMode, step: 0.08 }}
                 onZoomStart={() => {
                   if (!drawMode) setAdjustSlot(j);
+                }}
+                onTransformed={(_ref, state) => {
+                  const z = state.scale > 1.01;
+                  setZoomedSlots((prev) => {
+                    if (prev[j] === z) return prev;
+                    const next: [boolean, boolean] = [prev[0], prev[1]];
+                    next[j] = z;
+                    return next;
+                  });
                 }}
               >
                 <TransformComponent
@@ -667,6 +703,15 @@ export function StreamView({
           </button>
           <button className={styles.zoomOk} onClick={confirmAdjust} aria-label="Ansicht behalten">
             <Icon name="check" size={16} stroke={2.6} /> Fertig
+          </button>
+        </div>
+      )}
+
+      {/* Notausgang: sichtbar, sobald (auch ein geladener) Zoom aktiv ist und man nicht gerade anpasst */}
+      {!adjusting && !drawMode && zoomedSlots.slice(0, perView).some(Boolean) && (
+        <div className={styles.zoomBar}>
+          <button className={styles.zoomCancel} onClick={resetVisibleZoom} aria-label="Zoom zurücksetzen">
+            <Icon name="search" size={16} stroke={2.4} /> Zoom zurücksetzen
           </button>
         </div>
       )}
