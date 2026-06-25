@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.1.2] – 2026-06-26
+
 ### Behoben
 
 - **Lücken in der „Akkorde & Text"-Ansicht:** Akkorde, die im Quelltext mit Leerzeichen vor dem
