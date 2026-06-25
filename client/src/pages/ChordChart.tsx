@@ -197,7 +197,7 @@ export function ChordChart({
   useEffect(() => {
     const img = new Image();
     img.onload = () => setLogoImg(img);
-    img.src = '/logo.png';
+    img.src = '/logo-tight.png';
   }, []);
 
   const drawColors = ['#14110F', '#DD0000', '#FFCE00'];

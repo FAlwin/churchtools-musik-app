@@ -83,8 +83,8 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
   let logoBottom = MARGIN;
   if (logo) {
     try {
-      const lw = 24; // mm
-      const logoMargin = 6; // näher in die Ecke, oben = rechts gleich
+      const lw = 17; // mm (eng zugeschnittenes Logo → ohne Eigenrand kleiner ansetzen)
+      const logoMargin = 6; // sauber in die Ecke, oben = rechts gleich
       let lh = lw;
       if (typeof logo !== 'string' && logo.naturalWidth > 0) lh = lw * (logo.naturalHeight / logo.naturalWidth);
       d.addImage(logo, 'PNG', PAGE_W - logoMargin - lw, logoMargin, lw, lh);

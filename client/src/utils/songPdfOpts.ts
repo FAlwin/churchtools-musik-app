@@ -58,6 +58,6 @@ export function loadAppLogo(): Promise<HTMLImageElement | null> {
     const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
-    img.src = '/logo.png';
+    img.src = '/logo-tight.png';
   });
 }

@@ -58,7 +58,7 @@ export function DemoPdf() {
   useEffect(() => {
     const img = new Image();
     img.onload = () => setLogo(img);
-    img.src = '/logo.png';
+    img.src = '/logo-tight.png';
   }, []);
 
   useEffect(() => {
