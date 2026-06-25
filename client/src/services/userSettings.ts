@@ -16,6 +16,8 @@ export async function pullSettings(songIds: number[]): Promise<void> {
   try {
     const data = await apiFetch<Record<string, string>>(`/api/settings?songs=${songIds.join(',')}`);
     for (const [k, v] of Object.entries(data)) {
+      // Gerade geänderte (noch nicht hochgeladene) Einstellungen nicht überschreiben.
+      if (pending.has(k)) continue;
       if (SETTINGS_KEY_RE.test(k)) localStorage.setItem(k, v);
     }
   } catch (e) {

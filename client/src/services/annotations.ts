@@ -59,6 +59,9 @@ export async function pullAnnotations(songIds: number[]): Promise<void> {
   try {
     const data = await apiFetch<Record<string, PageAnnotation>>(`/api/annotations?songs=${songIds.join(',')}`);
     for (const [key, a] of Object.entries(data)) {
+      // Seiten mit noch nicht hochgeladener lokaler Änderung NICHT überschreiben (sonst gehen
+      // gerade gemachte/gelöschte Anmerkungen verloren, bis der Upload durch ist).
+      if (pendingFields.has(key)) continue;
       if (a.strokes) localStorage.setItem(DRAW + key, a.strokes);
       else localStorage.removeItem(DRAW + key);
       if (a.texts && a.texts.length) localStorage.setItem(DRAW + key + '_text', JSON.stringify(a.texts));

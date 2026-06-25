@@ -301,7 +301,9 @@ export function ChordChart({
     didInit.current = true;
     const p = owners.findIndex((o) => o.songIdx === startIndex);
     if (p > 0) {
-      setStreamPage(p);
+      // linke Seite auf maxLeft begrenzen (im 2-up nie eine Seite allein); aktive = das Ziel-Lied
+      // (steht dann ggf. in der rechten Hälfte, vorheriges Lied links).
+      setStreamPage(Math.min(p, maxLeft));
       setActivePage(p);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
