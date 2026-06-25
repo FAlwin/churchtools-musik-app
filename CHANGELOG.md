@@ -7,6 +7,14 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **Zoom-Notausgang dezenter:** Der Knopf „Zoom zurücksetzen" ist jetzt ein kleiner runder
+  Symbol-Knopf oben rechts (statt breit mittig unten) – verdeckt deutlich weniger vom Liedtext.
+- **Seitenzahl nur bei mehrseitigen Liedern:** Die Anzeige unten rechts erscheint in der
+  Strom-/Mehrseiten-Ansicht nur noch, wenn das aktuelle Lied mehr als eine Seite hat, und zählt
+  lied-bezogen (z. B. „Seite 1 / 2"). Bei einseitigen Liedern entfällt sie – die Pfeile genügen.
+
 ## [2.1.1] – 2026-06-25
 
 ### Behoben

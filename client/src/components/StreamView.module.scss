@@ -219,6 +219,27 @@
   color: #fff;
 }
 
+// Notausgang-Knopf: klein & rund oben rechts, holt aus jedem (auch geladenen) Zoom heraus.
+.zoomReset {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  opacity: 0.92;
+}
+
 // Seiten-Anzeige unten rechts
 .pageBadge {
   position: absolute;

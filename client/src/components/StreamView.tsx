@@ -707,21 +707,29 @@ export function StreamView({
         </div>
       )}
 
-      {/* Notausgang: sichtbar, sobald (auch ein geladener) Zoom aktiv ist und man nicht gerade anpasst */}
+      {/* Notausgang: kleiner runder Knopf oben rechts, sobald (auch ein geladener) Zoom aktiv ist */}
       {!adjusting && !drawMode && zoomedSlots.slice(0, perView).some(Boolean) && (
-        <div className={styles.zoomBar}>
-          <button className={styles.zoomCancel} onClick={resetVisibleZoom} aria-label="Zoom zurücksetzen">
-            <Icon name="search" size={16} stroke={2.4} /> Zoom zurücksetzen
-          </button>
-        </div>
+        <button className={styles.zoomReset} onClick={resetVisibleZoom} aria-label="Zoom zurücksetzen">
+          <Icon name="search" size={18} stroke={2.4} />
+        </button>
       )}
 
-      {!loading && !error && pageCount > 0 && !drawMode && (
-        <div className={styles.pageBadge}>
-          Seite {pageIndex + 1}
-          {perView > 1 && pageIndex + 1 < pageCount ? `–${Math.min(pageIndex + perView, pageCount)}` : ''} / {pageCount}
-        </div>
-      )}
+      {/* Seitenzahl nur bei MEHRSEITIGEN Liedern – zeigt „Lied noch nicht zu Ende". Einseitig: Pfeile reichen. */}
+      {!loading &&
+        !error &&
+        pageCount > 0 &&
+        !drawMode &&
+        (() => {
+          const cur = owners[activePage] ?? owners[pageIndex];
+          if (!cur) return null;
+          const songPages = owners.filter((o) => o.songIdx === cur.songIdx).length;
+          if (songPages <= 1) return null; // einseitiges Lied → kein Indikator
+          return (
+            <div className={styles.pageBadge}>
+              Seite {cur.localPage + 1} / {songPages}
+            </div>
+          );
+        })()}
     </div>
   );
 }
