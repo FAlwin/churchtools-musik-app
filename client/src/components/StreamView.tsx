@@ -61,6 +61,10 @@ export function StreamView({
   const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
   const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
   const transformRefs = [useRef<ReactZoomPanPinchRef | null>(null), useRef<ReactZoomPanPinchRef | null>(null)];
+  // Marker glatt: aktiver Strich wird als EINE Linie aus allen Punkten neu gezeichnet (auf einem
+  // Schnappschuss der Seite vor dem Strich) → keine pro-Segment-Überlagerung mehr (kein „Gepunktel").
+  const markerBase = useRef<HTMLCanvasElement | null>(null);
+  const markerPts = useRef<{ x: number; y: number }[]>([]);
   const stroke = useRef(false);
   const strokePointer = useRef(-1);
   const strokeCanvas = useRef<HTMLCanvasElement | null>(null);
@@ -205,6 +209,29 @@ export function StreamView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, renderVersion, pageIndex, perView, syncTick]);
 
+  // Text-Ebene exakt auf die dargestellte Seiten-Canvas legen (ein leeres div mit nur aspect-ratio
+  // kollabiert im Grid auf 0×0 → Text ließe sich nicht platzieren). Per ResizeObserver mitführen.
+  useEffect(() => {
+    function sync() {
+      for (let j = 0; j < perView; j++) {
+        const a = annoRefs[j].current;
+        const l = layerRefs[j].current;
+        if (a && l) {
+          l.style.width = `${a.clientWidth}px`;
+          l.style.height = `${a.clientHeight}px`;
+        }
+      }
+    }
+    sync();
+    const ro = new ResizeObserver(sync);
+    for (let j = 0; j < perView; j++) {
+      const a = annoRefs[j].current;
+      if (a) ro.observe(a);
+    }
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perView, loading, renderVersion, pageIndex]);
+
   // Aktive Seite im sichtbaren Fenster halten
   useEffect(() => {
     const maxVisible = pageIndex + perView - 1;
@@ -266,23 +293,48 @@ export function StreamView({
     strokeCanvas.current = canvas;
     strokeSlot.current = slot;
     lastPt.current = ptOf(e, canvas);
+    if (drawTool === 'marker') {
+      // Seite vor dem Strich sichern, damit der Marker-Strich live als eine Linie neu gemalt wird.
+      const base = document.createElement('canvas');
+      base.width = canvas.width;
+      base.height = canvas.height;
+      base.getContext('2d')!.drawImage(canvas, 0, 0);
+      markerBase.current = base;
+      markerPts.current = [lastPt.current];
+    }
   }
   function strokeMove(e: React.PointerEvent) {
     if (!stroke.current || strokePointer.current !== e.pointerId || !strokeCanvas.current) return;
-    const ctx = strokeCanvas.current.getContext('2d')!;
-    const p = ptOf(e, strokeCanvas.current);
+    const canvas = strokeCanvas.current;
+    const ctx = canvas.getContext('2d')!;
+    const p = ptOf(e, canvas);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    if (drawTool === 'marker' && markerBase.current) {
+      // Den ganzen bisherigen Marker-Strich als EINE halbtransparente Linie neu zeichnen
+      // (auf dem Schnappschuss) → gleichmäßiger Leuchtmarker statt Punktreihe.
+      markerPts.current.push(p);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(markerBase.current, 0, 0);
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 18;
+      ctx.strokeStyle = drawColor;
+      const pts = markerPts.current;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      lastPt.current = p;
+      return;
+    }
     if (drawTool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.globalAlpha = 1;
       ctx.lineWidth = 26;
       ctx.strokeStyle = 'rgba(0,0,0,1)';
-    } else if (drawTool === 'marker') {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 0.3;
-      ctx.lineWidth = 18;
-      ctx.strokeStyle = drawColor;
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1;
@@ -302,6 +354,8 @@ export function StreamView({
     stroke.current = false;
     strokePointer.current = -1;
     lastPt.current = null;
+    markerBase.current = null;
+    markerPts.current = [];
     draws[strokeSlot.current].saveStrokes();
     strokeCanvas.current = null;
   }
