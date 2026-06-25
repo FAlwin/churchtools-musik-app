@@ -1,0 +1,43 @@
+# Produktiv-Instanz (ECG) – fertiges :latest-Image aus GHCR, KEIN lokaler Build.
+# Watchtower zieht neue Releases (Tag vX.Y.Z → :latest) automatisch.
+#
+# Einmalige Umstellung im Synology Container-Manager:
+#   1. Aktuelles Projekt `worship-charts` (baut aus Quellcode) stoppen + löschen
+#      – **Volume `worship-data` UNBEDINGT BEHALTEN** (enthält Gemeindename + Links).
+#   2. Neues Projekt aus DIESER Datei + der vorhandenen Prod-.env (CHURCHTOOLS_BASE_URL +
+#      SESSION_SECRET) erstellen. Möglichst denselben Projektnamen verwenden, damit das
+#      vorhandene Volume wiederverwendet wird.
+#   3. Reverse Proxy bleibt: musik.ecg-donrath.de → localhost:3001 (unverändert).
+#   4. Fertig: künftige Releases (neuer Tag) sind ~1 Min nach dem CI-Build automatisch live.
+services:
+  app:
+    image: ghcr.io/falwin/churchtools-musik-app:latest
+    container_name: worship-charts
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      CHURCHTOOLS_BASE_URL: ${CHURCHTOOLS_BASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
+    ports:
+      - '3001:3001'
+    volumes:
+      - worship-data:/app/data
+    labels:
+      - com.centurylinklabs.watchtower.scope=worship-prod
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: worship-watchtower-prod
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Alle 5 Min prüfen, nur Container mit Scope 'worship-prod', alte Images aufräumen.
+    command: --interval 300 --cleanup --scope worship-prod
+    labels:
+      - com.centurylinklabs.watchtower.scope=worship-prod
+
+volumes:
+  # WICHTIG: vorhandenes Prod-Volume wiederverwenden (Gemeindename/Links). Beim Neu-Erstellen
+  # unter demselben Projektnamen bleibt es erhalten.
+  worship-data:
