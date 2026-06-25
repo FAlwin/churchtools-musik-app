@@ -172,11 +172,13 @@ Abschnitte/Version) überall gleich. Versions-Helfer: `utils/songVersions.ts`.
   DNS via DDNS (`<euer-ddns>.synology.me`) + CNAME, Zertifikat Let's Encrypt,
   Portweiterleitung 443/80 im Router (DSM-Admin-Ports bleiben zu). **Kein Cloudflare.**
 - **Anleitung:** `DEPLOYMENT.md` (Schritt-für-Schritt, Container Manager + externer Zugang).
-- **Auto-Deploy Test-Instanz:** `.github/workflows/staging.yml` baut bei jedem Push (main/feature/**)
-  ein `:staging`-Image (amd64) nach GHCR; `deploy/docker-compose.staging.yml` betreibt die
-  Test-Instanz (`worship-charts-test`, Port 3002) image-basiert **+ Watchtower** (Auto-Pull alle 60 s,
-  Scope `worship-test`) → kein manueller Rebuild mehr. Prod (`worship-charts`) läuft weiter über das
-  Release-Image (`release.yml`, Tag `vX.Y.Z`); Prod-Auto-Deploy ist später analog (eigener Watchtower-Scope) möglich.
+- **Auto-Deploy (Test + Prod):** `.github/workflows/staging.yml` baut bei jedem Push (main/feature/**)
+  ein `:staging`-Image (amd64) nach GHCR; `release.yml` baut bei Tag `vX.Y.Z` Multi-Arch + `:latest`.
+  Beide NAS-Instanzen laufen image-basiert mit **Watchtower** (Auto-Pull): Test
+  `deploy/docker-compose.staging.yml` (`worship-charts-test`, Port 3002, `:staging`, Scope
+  `worship-test`, 60 s); Prod `deploy/docker-compose.prod.yml` (`worship-charts`, Port 3001,
+  `:latest`, Scope `worship-prod`, 300 s). **Kein manueller Container-Rebuild mehr.** Volume
+  (`worship-data` / `worship-data-test`) beim Neu-Erstellen behalten.
 - **Env (Volume `/app/data`):** `SITE_CONFIG_PATH=/app/data/site.json`,
   `ANNOTATIONS_PATH=/app/data/annotations` (kontobezogene Anmerkungen/Einstellungen) – beim Re-Deploy
   Volume behalten.
@@ -221,7 +223,8 @@ Abschnitte/Version) überall gleich. Versions-Helfer: `utils/songVersions.ts`.
 | 19.06.2026 | main   | Tests/A11y zum Redesign: `hasOpaquePixel` aus der Bearbeiten-Sperre extrahiert + getestet, Render-Tests für `<Segment>`/`<Section>` (44 Tests grün), Fokusring + `prefers-reduced-motion` + aria-labels. **Redesign nach `main` gemerged (PR #14) und produktiv deployt** (`worship-charts`, musik.ecg-donrath.de) – extern verifiziert |
 | 19.06.2026 | main   | Chart-Lesbarkeit (`ChordLine.module.scss`): Abstand Akkord↔Text (`margin-bottom`), Zeilenpaar-Abstand `1px`→`0.4em`, Mindestabstand zwischen Akkorden (`padding-right: 0.7ch`, kein „Dm7Am" mehr); **Akkorde in Akzentfarbe Blau** (`--blue`) statt schwarz – produktiv deployt + verifiziert |
 | 19.06.2026 | main   | **iOS-PWA-Layout-Fix** (auf echtem iPhone verifiziert): App-Höhe robust via `--app-h` = `window.innerHeight` + untere Safe-Area statt `100dvh` (Querformat-Bug + dunkler Streifen behoben); `#root` als Bezugsrahmen für `.screen`-Detailansichten (kein leerer Balken/Streifen); Scroll-Padding unten; Chart-Footer mit fester Mindesthöhe (springt nicht mehr) + einheitlicher Abstand über dem Home-Strich. |
-| 25.06.2026 | feature/versions-account-annotations | **Großer Funktions-Block (vor v2.1.0):** Akkord-Ansicht = erzeugtes PDF (SongSelect-Look) + 2-Seiten-Querformat-Strom; **mehrere benannte Lied-Versionen** (in ChurchTools, Team-weit) statt nur „bearbeitet"; **Anmerkungen+Zoom+Einstellungen pro Konto** serverseitig (geräteübergreifend, display-abhängige Werte pro Gerätetyp); volle Anmerkungen pro Seite (Stift/Marker/Text/Undo); Ablauf-PDF-Export; **Auto-Deploy** der Test-Instanz (Staging-Image + Watchtower). Diverse Fixes (Marker glatt, Text platzieren/auswählen, letztes Lied im 2-up, „Link hinzufügen" auf HTTP, Auto-Sync-Race). Build/Lint/44 Tests grün. **Noch nicht in `main` – wartet auf iPad-Abnahme → Merge + Release v2.1.0.** |
+| 25.06.2026 | feature/versions-account-annotations | **Großer Funktions-Block (vor v2.1.0):** Akkord-Ansicht = erzeugtes PDF (SongSelect-Look) + 2-Seiten-Querformat-Strom; **mehrere benannte Lied-Versionen** (in ChurchTools, Team-weit) statt nur „bearbeitet"; **Anmerkungen+Zoom+Einstellungen pro Konto** serverseitig (geräteübergreifend, display-abhängige Werte pro Gerätetyp); volle Anmerkungen pro Seite (Stift/Marker/Text/Undo); Ablauf-PDF-Export; **Auto-Deploy** der Test-Instanz (Staging-Image + Watchtower). Diverse Fixes (Marker glatt, Text-Eingabe-Leiste oben/auswählen, letztes Lied im 2-up, „Link hinzufügen" auf HTTP, Auto-Sync-Race). Build/Lint/44 Tests grün. |
+| 25.06.2026 | main   | **Release v2.1.0 produktiv live.** Branch nach `main` gemergt, Tag `v2.1.0` → Multi-Arch-Image (`2.1.0`/`2.1`/`latest`) in GHCR. **Test + Prod auf image-basiert + Watchtower umgestellt** (`deploy/docker-compose.staging.yml` Scope `worship-test`, `deploy/docker-compose.prod.yml` Scope `worship-prod`) → **Auto-Deploy**, kein manueller Rebuild mehr. `https://musik.ecg-donrath.de` verifiziert (v2.1.0, Volume/Branding erhalten). |
 
 ## So startest du die App lokal
 ```
