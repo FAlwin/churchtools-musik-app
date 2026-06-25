@@ -366,10 +366,18 @@ export function StreamView({
     const layer = layerRefs[slot].current;
     if (!layer) return;
     e.stopPropagation();
+    const d = draws[slot];
+    // Ist ein Eingabefeld offen? → nur schließen (onBlur bestätigt), KEIN neues Feld anlegen.
+    if (d.pending) return;
+    // Ist ein Text ausgewählt? → Tipp ins Leere hebt die Auswahl auf (Rahmen weg), kein neues Feld.
+    if (d.selectedId !== null) {
+      d.setSelectedId(null);
+      return;
+    }
     const rect = layer.getBoundingClientRect();
     const fx = (e.clientX - rect.left) / rect.width;
     const fy = (e.clientY - rect.top) / rect.height;
-    draws[slot].placeText(fx, fy, e.clientX, e.clientY);
+    d.placeText(fx, fy, e.clientX, e.clientY);
   }
 
   // ── Blättern / aktive Hälfte ──

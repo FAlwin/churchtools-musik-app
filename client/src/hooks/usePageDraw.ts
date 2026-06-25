@@ -163,9 +163,14 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
       setTexts((prev) =>
         t ? prev.map((o) => (o.id === pending.editId ? { ...o, text: t } : o)) : prev.filter((o) => o.id !== pending.editId),
       );
+      // Bearbeiteten Text ausgewählt lassen (Rahmen); bei leerem Text nichts auswählen.
+      setSelectedId(t ? pending.editId : null);
     } else if (t) {
       pushHistory();
-      setTexts((prev) => [...prev, { id: Date.now(), fx: pending.fx, fy: pending.fy, text: t, color, sizeCqh }]);
+      const id = Date.now();
+      setTexts((prev) => [...prev, { id, fx: pending.fx, fy: pending.fy, text: t, color, sizeCqh }]);
+      // Neuen Text gleich auswählen → Bearbeiten-/Verschieben-Rahmen erscheint.
+      setSelectedId(id);
     }
     setPending(null);
   }
