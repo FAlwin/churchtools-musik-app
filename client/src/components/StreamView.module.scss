@@ -109,22 +109,78 @@
   outline-offset: 0.5cqh;
 }
 
-// Text-Eingabefeld (über der Seite, in Bildschirm-Koordinaten)
-.textInputWrap {
+// Text-Eingabe-Leiste: feste Position oben mittig (immer über der Tastatur sichtbar).
+.textBar {
   position: fixed;
-  z-index: 40;
-  transform: translate(-2px, -4px);
+  top: max(64px, calc(env(safe-area-inset-top) + 56px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 24px);
+  padding: 7px 9px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
 }
 
-.textInput {
+.textBarInput {
   font-family: var(--ui);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 8px;
-  background: #fff;
+  padding: 7px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface2);
   outline: none;
-  min-width: 120px;
+  min-width: 150px;
+  flex: 1;
+
+  &:focus {
+    border-color: var(--blue);
+  }
+}
+
+.textBarSize {
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text2);
+  min-width: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.textBarSizeBtn,
+.textBarOk,
+.textBarCancel {
+  flex-shrink: 0;
+  height: 36px;
+  border: none;
+  border-radius: 9px;
+  font-family: var(--ui);
+  font-weight: 800;
+  cursor: pointer;
+}
+.textBarSizeBtn {
+  width: 36px;
+  font-size: 12px;
+  background: var(--surface3);
+  color: var(--text);
+}
+.textBarOk {
+  padding: 0 16px;
+  font-size: 14px;
+  background: var(--blue);
+  color: #fff;
+}
+.textBarCancel {
+  width: 36px;
+  font-size: 16px;
+  background: var(--surface3);
+  color: var(--text2);
 }
 
 // Zoom-Anpassen-Leiste (erscheint nach einer Zoom-Geste), mittig unten.

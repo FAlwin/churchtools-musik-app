@@ -562,25 +562,56 @@ export function StreamView({
         })}
       </div>
 
-      {/* Text-Eingabe-Overlay (Bildschirm-Koordinaten, außerhalb der Zoom-Ebene) */}
+      {/* Text-Eingabe-Leiste: feste Position oben (immer über der Tastatur, kein „Schweben"). */}
       {slots.map((j) => {
         const d = draws[j];
         if (!d.pending) return null;
+        // Beim Tippen der Werkzeug-Knöpfe NICHT den Fokus/Tastatur verlieren.
+        const keepFocus = (e: React.PointerEvent) => e.preventDefault();
         return (
-          <div key={`in${j}`} className={styles.textInputWrap} style={{ left: d.pending.cx, top: d.pending.cy }}>
+          <div key={`in${j}`} className={styles.textBar}>
+            <button
+              className={styles.textBarSizeBtn}
+              onPointerDown={keepFocus}
+              onClick={() => setTextSize((s) => Math.max(2, s - 1))}
+              title="Kleiner"
+            >
+              A−
+            </button>
+            <span className={styles.textBarSize}>{textSize}</span>
+            <button
+              className={styles.textBarSizeBtn}
+              onPointerDown={keepFocus}
+              onClick={() => setTextSize((s) => Math.min(14, s + 1))}
+              title="Größer"
+            >
+              A+
+            </button>
             <input
               type="text"
               autoFocus
               defaultValue={d.pending.initial ?? ''}
-              placeholder="Text…"
-              className={styles.textInput}
-              style={{ color: drawColor, border: `2px solid ${drawColor}` }}
+              placeholder="Text eingeben…"
+              className={styles.textBarInput}
+              style={{ color: drawColor }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') d.confirmText((e.target as HTMLInputElement).value, drawColor, textSize);
                 if (e.key === 'Escape') d.cancelText();
               }}
-              onBlur={(e) => d.confirmText(e.target.value, drawColor, textSize)}
             />
+            <button
+              className={styles.textBarOk}
+              onPointerDown={keepFocus}
+              onClick={(e) => {
+                const inp = (e.currentTarget.parentElement as HTMLElement).querySelector('input');
+                d.confirmText(inp ? inp.value : '', drawColor, textSize);
+              }}
+            >
+              OK
+            </button>
+            <button className={styles.textBarCancel} onPointerDown={keepFocus} onClick={() => d.cancelText()} title="Abbrechen">
+              ✕
+            </button>
           </div>
         );
       })}
