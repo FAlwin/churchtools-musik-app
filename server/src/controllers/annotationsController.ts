@@ -19,11 +19,11 @@ const annoSchema = z.object({
   zoom: z.object({ x: z.number(), y: z.number(), scale: z.number() }).nullable().optional(),
 });
 
-// Schlüsselform: song<id>_v<versionKey>_<seite>
+// Schlüsselform: song<id>_v<versionKey>_<seite> (+ optional _d<geräteklasse> beim Zoom)
 const keySchema = z
   .string()
   .max(120)
-  .regex(/^song\d+_v[a-z0-9-]+_\d+$/i, 'Ungültiger Anmerkungs-Schlüssel.');
+  .regex(/^song\d+_v[a-z0-9-]+_\d+(?:_d(?:phone|large))?$/i, 'Ungültiger Anmerkungs-Schlüssel.');
 
 /** GET /api/annotations?songs=1,2,3 – alle Anmerkungen des Kontos zu diesen Liedern. */
 export async function getAnnotations(req: Request, res: Response): Promise<void> {

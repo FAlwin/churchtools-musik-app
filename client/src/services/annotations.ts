@@ -10,8 +10,9 @@ import { apiFetch, ApiError } from './api';
 const DRAW = 'worship_docdraw_';
 const ZOOM = 'worship_doczoom_';
 const MIGRATED_FLAG = 'worship_anno_migrated_v1';
-// Gültige Server-Schlüssel: song<id>_v<version>_<seite>. Andere (z. B. Dokument-fileId-Keys) lokal lassen.
-const KEY_RE = /^song\d+_v[a-z0-9-]+_\d+$/i;
+// Gültige Server-Schlüssel: song<id>_v<version>_<seite> (+ optional _d<geräteklasse> beim Zoom).
+// Andere (z. B. Dokument-fileId-Keys) bleiben lokal.
+const KEY_RE = /^song\d+_v[a-z0-9-]+_\d+(?:_d(?:phone|large))?$/i;
 
 interface AnnotationText {
   id: number;
@@ -37,7 +38,7 @@ function serverKeyOf(lsKey: string): string {
 
 /** Alte (versionslose) Schlüssel auf das neue Schema heben: song12_3 → song12_voriginal_3. */
 function normalizeKey(key: string): string {
-  if (/^song\d+_v[a-z0-9-]+_\d+$/i.test(key)) return key;
+  if (KEY_RE.test(key)) return key;
   const m = key.match(/^song(\d+)_(\d+)$/);
   return m ? `song${m[1]}_voriginal_${m[2]}` : key;
 }

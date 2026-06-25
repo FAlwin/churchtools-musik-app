@@ -6,6 +6,7 @@ import type { SetlistPageOwner } from '../utils/chordPdf';
 import type { DrawTool } from '../types/index';
 import { usePageDraw } from '../hooks/usePageDraw';
 import { pushField } from '../services/annotations';
+import { deviceClass } from '../utils/deviceClass';
 import { DrawToolbar } from './DrawToolbar';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Icon } from './icons';
@@ -86,19 +87,28 @@ export function StreamView({
     const o = owners[page];
     return o ? `worship_docdraw_song${o.songId}_v${o.versionKey}_${o.localPage}` : null;
   };
+  // Zoom ist display-abhängig → Geräteklasse im Schlüssel (Handy vs. Tablet+Computer).
   const zoomKeyFor = (page: number): string => {
     const o = owners[page];
-    return o ? `worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}` : `worship_doczoom_p${page}`;
+    return o
+      ? `worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}_d${deviceClass()}`
+      : `worship_doczoom_p${page}`;
   };
   function loadZoom(page: number): { x: number; y: number; scale: number } | null {
-    try {
-      const s = localStorage.getItem(zoomKeyFor(page));
-      if (s) {
-        const o = JSON.parse(s);
-        if (o && typeof o.scale === 'number') return o;
+    const o = owners[page];
+    // Primär klassen-spezifischer Schlüssel; Fallback auf früher gespeicherten Zoom ohne Klassen-Suffix.
+    const keys = [zoomKeyFor(page)];
+    if (o) keys.push(`worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}`);
+    for (const k of keys) {
+      try {
+        const s = localStorage.getItem(k);
+        if (s) {
+          const parsed = JSON.parse(s);
+          if (parsed && typeof parsed.scale === 'number') return parsed;
+        }
+      } catch {
+        /* ignorieren */
       }
-    } catch {
-      /* ignorieren */
     }
     return null;
   }

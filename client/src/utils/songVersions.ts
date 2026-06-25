@@ -1,5 +1,13 @@
 import type { SetlistSong } from '@shared/types/index';
 import { pushSetting } from '../services/userSettings';
+import { deviceClass } from './deviceClass';
+
+// Display-abhängige Einstellungen: pro Geräteklasse (Handy vs. Tablet+Computer) getrennt.
+const DISPLAY_BASES = new Set(['cols', 'fs']);
+function fullKey(base: string, songId: number, versionKey: string): string {
+  const k = `worship_${base}_${songId}_${versionKey}`;
+  return DISPLAY_BASES.has(base) ? `${k}_d${deviceClass()}` : k;
+}
 
 /** Eine auswählbare Version inkl. Original (immer erste Auswahl). */
 export interface ResolvedVersion {
@@ -34,15 +42,22 @@ export function versionText(song: SetlistSong, key: string): string {
  * song-only-Schlüssel zurückgegriffen (Migration bestehender Einstellungen).
  */
 export function lsVersion(base: string, songId: number, versionKey: string): string | null {
-  const v = localStorage.getItem(`worship_${base}_${songId}_${versionKey}`);
+  // Primär: (ggf. geräteklassen-spezifischer) Schlüssel.
+  const v = localStorage.getItem(fullKey(base, songId, versionKey));
   if (v !== null) return v;
+  // Fallback: display-abhängige Werte ohne Klassen-Suffix (früher synchronisiert) übernehmen.
+  if (DISPLAY_BASES.has(base)) {
+    const legacy = localStorage.getItem(`worship_${base}_${songId}_${versionKey}`);
+    if (legacy !== null) return legacy;
+  }
+  // Fallback: alte song-only-Schlüssel (Migration) für 'original'.
   if (versionKey === 'original') return localStorage.getItem(`worship_${base}_${songId}`);
   return null;
 }
 
 /** Schreibt/entfernt einen pro-Version gespeicherten Einstellungswert (lokal + Konto-Sync). */
 export function setLsVersion(base: string, songId: number, versionKey: string, value: string | null): void {
-  const k = `worship_${base}_${songId}_${versionKey}`;
+  const k = fullKey(base, songId, versionKey);
   if (value === null) localStorage.removeItem(k);
   else localStorage.setItem(k, value);
   pushSetting(k, value);

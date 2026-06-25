@@ -14,11 +14,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   und löschen. Versionen liegen im ChurchTools-Arrangement und sind für das ganze Team sichtbar.
   Tonart, Kapo, Spalten, Schrift, Abschnitts-Transponierung **und Anmerkungen gelten je Version**.
 - **Persönliches Setup pro Konto (geräteübergreifend):** Anmerkungen (Stift/Text), Zoom sowie die
-  Lied-Einstellungen (Tonart, Kapo, Spalten, Schrift, Nur-Text, Abschnitts-Transponierung,
-  gewählte Version, Anzeige) werden jetzt am ChurchTools-Konto auf dem Server gespeichert und auf
-  allen Geräten synchronisiert (vorher nur lokal pro Gerät). Aktualisiert sich automatisch (alle
-  30 s bzw. beim Zurückkehren zur App). Vorhandene Geräte-Daten werden beim ersten Start einmalig
-  übernommen.
+  Lied-Einstellungen werden jetzt am ChurchTools-Konto auf dem Server gespeichert und synchronisiert
+  (vorher nur lokal pro Gerät). **Musikalische Einstellungen** (Tonart, Kapo, Abschnitte, gewählte
+  Version, Nur-Text, Anzeige) gelten auf allen Geräten gleich. **Display-abhängige Einstellungen**
+  (Spalten, Schrift, Zoom) werden **pro Gerätetyp** geteilt – Handy und „Tablet/Computer" getrennt,
+  damit z. B. 2 Spalten vom iPad nicht auf dem Handy landen. Aktualisiert sich automatisch (alle
+  30 s bzw. beim Zurückkehren zur App); vorhandene Geräte-Daten werden beim ersten Start übernommen.
 - **Akkord-Ansicht als PDF (SongSelect-Look):** Jedes Lied wird aus dem ChordPro-Text als
   sauberes PDF erzeugt und angezeigt. Komplett **schwarz** (saubere S/W-Ausdrucke), deutliche
   Abschnitts-Labels (Vers/Refrain), Kopfzeile mit Tonart/Taktart/BPM und dem
