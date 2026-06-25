@@ -29,7 +29,13 @@ const DEMO_CHORDPRO = `{title: Welch ein Freund ist unser Jesus}
 
 {comment: Refrain}
 [C]Halleluja, [G]singt dem Herrn,
-[D]preist ihn, alle [Em]Welt.`;
+[D]preist ihn, alle [Em]Welt.
+
+{comment: Nur-Text-Test (Silbentrenner / Lücken / Einrückung)}
+[E]Ich glaube an den Va -[F#m] ter den Schöpfer al -[B] ler Welt
+   [E]Gott all -[A] mächtig
+[E]Du stiegst ins Reich der To -[A] ten   standst auf in Herr -[B] lichkeit
+[E]Und herrschst in E -[A] wigkeit`;
 
 const SONG: SetlistSong = {
   id: 999001,

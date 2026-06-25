@@ -166,6 +166,22 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
     return rows;
   }
 
+  // „Nur Text": eine Rohzeile zu sauberem, linksbündigem Fließtext aufbereiten und auf
+  // Spaltenbreite umbrechen. Akkorde raus, Silbentrenner „Va - ter" → „Vater" zusammenführen,
+  // Mehrfach-Leerzeichen (von Akkordpositionen) auf eines reduzieren, Einrückung trimmen.
+  function lyricRows(rawLine: string): Pair[][] {
+    const plain = rawLine
+      .replace(/\[[^\]]*\]/g, '') // Akkorde entfernen
+      .replace(/\s+-\s+/g, '') // Silbentrenner zusammenführen
+      .replace(/\s{2,}/g, ' ') // Mehrfach-Leerzeichen → eines
+      .trim();
+    if (!plain) return [[{ chord: null, text: '' }]];
+    d.setFont('helvetica', 'normal');
+    d.setFontSize(fontPt);
+    const lines = d.splitTextToSize(plain, colW) as string[];
+    return lines.map((s) => [{ chord: null, text: s }]);
+  }
+
   function drawRow(row: Pair[]) {
     let cx = x;
     const yChord = y + chordPt * PT_TO_MM;
@@ -209,11 +225,16 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
         secH += emptyGap;
         continue;
       }
-      const pairs = parseLine(rawLine).map((p) => ({
-        chord: p.chord && !lyricsOnly ? transposeChord(p.chord, secSemi, flat) : null,
-        text: p.text,
-      }));
-      const rows = wrapLine(pairs);
+      let rows: Pair[][];
+      if (lyricsOnly) {
+        rows = lyricRows(rawLine);
+      } else {
+        const pairs = parseLine(rawLine).map((p) => ({
+          chord: p.chord ? transposeChord(p.chord, secSemi, flat) : null,
+          text: p.text,
+        }));
+        rows = wrapLine(pairs);
+      }
       blocks.push({ rows });
       secH += rows.length * rowH;
     }
