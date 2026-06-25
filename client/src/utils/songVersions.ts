@@ -1,4 +1,5 @@
 import type { SetlistSong } from '@shared/types/index';
+import { pushSetting } from '../services/userSettings';
 
 /** Eine auswählbare Version inkl. Original (immer erste Auswahl). */
 export interface ResolvedVersion {
@@ -39,9 +40,10 @@ export function lsVersion(base: string, songId: number, versionKey: string): str
   return null;
 }
 
-/** Schreibt/entfernt einen pro-Version gespeicherten Einstellungswert. */
+/** Schreibt/entfernt einen pro-Version gespeicherten Einstellungswert (lokal + Konto-Sync). */
 export function setLsVersion(base: string, songId: number, versionKey: string, value: string | null): void {
   const k = `worship_${base}_${songId}_${versionKey}`;
   if (value === null) localStorage.removeItem(k);
   else localStorage.setItem(k, value);
+  pushSetting(k, value);
 }

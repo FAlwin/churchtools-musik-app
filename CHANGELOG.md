@@ -13,10 +13,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   beliebig viele benannte Versionen anlegen (z. B. „Akustik", „Jugend"), umschalten, umbenennen
   und löschen. Versionen liegen im ChurchTools-Arrangement und sind für das ganze Team sichtbar.
   Tonart, Kapo, Spalten, Schrift, Abschnitts-Transponierung **und Anmerkungen gelten je Version**.
-- **Anmerkungen & Zoom pro Konto (geräteübergreifend):** Anmerkungen (Stift/Text) und der
-  gespeicherte Zoom werden jetzt am ChurchTools-Konto auf dem Server gespeichert und auf allen
-  Geräten synchronisiert (vorher nur lokal pro Gerät). Vorhandene Geräte-Anmerkungen werden beim
-  ersten Start einmalig übernommen.
+- **Persönliches Setup pro Konto (geräteübergreifend):** Anmerkungen (Stift/Text), Zoom sowie die
+  Lied-Einstellungen (Tonart, Kapo, Spalten, Schrift, Nur-Text, Abschnitts-Transponierung,
+  gewählte Version, Anzeige) werden jetzt am ChurchTools-Konto auf dem Server gespeichert und auf
+  allen Geräten synchronisiert (vorher nur lokal pro Gerät). Aktualisiert sich automatisch (alle
+  30 s bzw. beim Zurückkehren zur App). Vorhandene Geräte-Daten werden beim ersten Start einmalig
+  übernommen.
 - **Akkord-Ansicht als PDF (SongSelect-Look):** Jedes Lied wird aus dem ChordPro-Text als
   sauberes PDF erzeugt und angezeigt. Komplett **schwarz** (saubere S/W-Ausdrucke), deutliche
   Abschnitts-Labels (Vers/Refrain), Kopfzeile mit Tonart/Taktart/BPM und dem

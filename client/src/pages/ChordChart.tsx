@@ -12,6 +12,7 @@ import { StreamView } from '../components/StreamView';
 import { Icon } from '../components/icons';
 import { createVersion, updateVersion, deleteVersion } from '../services/churchtoolsApi';
 import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
+import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
 import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
 import { availableVersions, selectedVersionKey, versionText, lsVersion, setLsVersion } from '../utils/songVersions';
@@ -125,9 +126,14 @@ export function ChordChart({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      await migrateLocalAnnotations();
-      await pullAnnotations(songs.map((s) => s.id));
-      if (!cancelled) setSyncTick((t) => t + 1);
+      const ids = songs.map((s) => s.id);
+      // Erst bestehende lokale Daten einmalig hochladen, dann Server-Stand holen.
+      await Promise.all([migrateLocalAnnotations(), migrateLocalSettings()]);
+      await Promise.all([pullAnnotations(ids), pullSettings(ids)]);
+      if (cancelled) return;
+      // Einstellungen aus dem (jetzt gespiegelten) localStorage neu übernehmen.
+      setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
+      setSyncTick((t) => t + 1);
     })();
     return () => {
       cancelled = true;
@@ -146,7 +152,10 @@ export function ChordChart({
       if ('fontSize' in patch) setLsVersion('fs', songId, vk, String(next.fontSize));
       if ('lyricsOnly' in patch) setLsVersion('lyrics', songId, vk, next.lyricsOnly ? '1' : '0');
       // viewSource gilt pro Lied (Dokumentauswahl betrifft das Arrangement, nicht die Version).
-      if ('viewSource' in patch) localStorage.setItem(`worship_view_${songId}`, String(next.viewSource));
+      if ('viewSource' in patch) {
+        localStorage.setItem(`worship_view_${songId}`, String(next.viewSource));
+        pushSetting(`worship_view_${songId}`, String(next.viewSource));
+      }
       if ('secShift' in patch) {
         const has = Object.keys(next.secShift).length > 0;
         setLsVersion('secshift', songId, vk, has ? JSON.stringify(next.secShift) : null);
@@ -158,6 +167,7 @@ export function ChordChart({
   /** Wechselt die gewählte Version eines Lieds und lädt deren Einstellungen. */
   function selectVersion(songId: number, versionKey: string) {
     localStorage.setItem(`worship_ver_${songId}`, versionKey);
+    pushSetting(`worship_ver_${songId}`, versionKey);
     const s = songs.find((x) => x.id === songId);
     setSettings((prev) => ({ ...prev, [songId]: s ? loadSettings(s, versionKey) : prev[songId] }));
   }
@@ -203,24 +213,29 @@ export function ChordChart({
   const drawColors = ['#14110F', '#DD0000', '#FFCE00'];
 
   // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
-  const liveRef = useRef({ ids: [] as number[], drawMode, onReload, lastReturn: 0 });
-  liveRef.current.ids = songs.map((s) => s.id);
+  const liveRef = useRef({ songs, drawMode, onReload, lastReturn: 0 });
+  liveRef.current.songs = songs;
   liveRef.current.drawMode = drawMode;
   liveRef.current.onReload = onReload;
   useEffect(() => {
     // Anmerkungen (pro Konto) regelmäßig vom Server holen – pausiert im Zeichenmodus/Hintergrund.
     async function refreshAnno() {
       if (document.hidden || liveRef.current.drawMode) return;
-      await pullAnnotations(liveRef.current.ids);
+      await pullAnnotations(liveRef.current.songs.map((s) => s.id));
       setSyncTick((t) => t + 1);
     }
-    // Beim Zurückkehren zur App: Anmerkungen UND Versionen (Setlist neu laden) auffrischen.
-    function onReturn() {
+    // Beim Zurückkehren zur App: Anmerkungen, Einstellungen UND Versionen (Setlist) auffrischen.
+    async function onReturn() {
       if (document.hidden) return;
       const now = Date.now();
       if (now - liveRef.current.lastReturn < 2000) return; // focus+visibility entprellen
       liveRef.current.lastReturn = now;
-      void refreshAnno();
+      const list = liveRef.current.songs;
+      if (!liveRef.current.drawMode) {
+        await Promise.all([pullAnnotations(list.map((s) => s.id)), pullSettings(list.map((s) => s.id))]);
+        setSettings(Object.fromEntries(list.map((s) => [s.id, loadSettings(s)])));
+        setSyncTick((t) => t + 1);
+      }
       liveRef.current.onReload?.();
     }
     const id = setInterval(() => void refreshAnno(), 30000);
