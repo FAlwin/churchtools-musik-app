@@ -143,7 +143,13 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
         toks.push({ chord: p.chord, text: p.text || '' });
         continue;
       }
-      words.forEach((w, wi) => toks.push({ chord: wi === 0 ? p.chord : null, text: w }));
+      // Akkord auf das erste Wort mit echtem Text legen – nicht auf ein führendes Leerzeichen
+      // (Quelltext „[C] wort"). Sonst würde das Leerzeichen-Token auf Akkordbreite aufgeblasen
+      // und erzeugte eine Lücke. Hat das Segment nur Leerraum (z. B. Instrumental-Akkorde ohne
+      // Text), bleibt der Akkord am ersten Token (Abstand dort gewollt).
+      const firstWordIdx = words.findIndex((w) => /\S/.test(w));
+      const chordIdx = firstWordIdx === -1 ? 0 : firstWordIdx;
+      words.forEach((w, wi) => toks.push({ chord: wi === chordIdx ? p.chord : null, text: w }));
     }
     const rows: Pair[][] = [[]];
     let lineW = 0;
