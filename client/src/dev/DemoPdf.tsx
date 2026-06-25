@@ -35,7 +35,12 @@ const DEMO_CHORDPRO = `{title: Welch ein Freund ist unser Jesus}
 [E]Ich glaube an den Va -[F#m] ter den Schöpfer al -[B] ler Welt
    [E]Gott all -[A] mächtig
 [E]Du stiegst ins Reich der To -[A] ten   standst auf in Herr -[B] lichkeit
-[E]Und herrschst in E -[A] wigkeit`;
+[E]Und herrschst in E -[A] wigkeit
+
+{comment: Lücken-Test (breite Akkorde über kurzen Silben)}
+[A]   Ich glaube an den [C#m]Va - [B]ter den Schöpfer al - [E/G#]ler Welt
+[C#m] An den Heiligen Geist der Wahrheit
+[C#m]   Ich glaube an deinen [A]Namen [B]Jesus`;
 
 const SONG: SetlistSong = {
   id: 999001,

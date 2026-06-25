@@ -192,7 +192,12 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
     let cx = x;
     const yChord = y + chordPt * PT_TO_MM;
     const yLyric = y + (lyricsOnly ? 0 : chordH) + fontPt * PT_TO_MM;
-    for (const p of row) {
+    // Ein Akkord, der breiter ist als seine Silbe, darf über die folgenden akkordlosen Wörter
+    // ragen (wie in Lead-Sheets üblich). Extra-Platz wird nur erzwungen, wenn direkt danach
+    // wieder ein Akkord käme – sonst entstünde eine unnötige Lücke. `chordDebt` = Restbreite,
+    // die der zuletzt gesetzte Akkord bis zum nächsten Akkord noch beansprucht.
+    let chordDebt = 0;
+    row.forEach((p, i) => {
       d.setFont('helvetica', 'normal');
       d.setFontSize(fontPt);
       const tw = d.getTextWidth(p.text || '');
@@ -201,6 +206,7 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
         d.setFontSize(chordPt);
         d.setTextColor(...CHORD_COLOR);
         d.text(p.chord, cx, yChord);
+        chordDebt = d.getTextWidth(p.chord) + 1.5;
       }
       if (p.text) {
         d.setFont('helvetica', 'normal');
@@ -209,13 +215,15 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
         d.text(p.text, cx, yLyric);
       }
       let adv = tw;
-      if (p.chord) {
-        d.setFont('helvetica', 'bold');
-        d.setFontSize(chordPt);
-        adv = Math.max(adv, d.getTextWidth(p.chord) + 1.5);
+      chordDebt -= tw;
+      const next = row[i + 1];
+      if (chordDebt > 0 && next && next.chord) {
+        adv += chordDebt; // gerade so viel Platz, dass der nächste Akkord nicht überlappt
+        chordDebt = 0;
       }
+      if (chordDebt < 0) chordDebt = 0;
       cx += adv;
-    }
+    });
     y += rowH;
   }
 
