@@ -1,7 +1,8 @@
 .root {
   position: absolute;
   inset: 0;
-  background: #fff;
+  // Leicht graue Fläche um die (weiße) Seite – macht die Seitenränder beim Zeichnen sichtbar.
+  background: #e6e8ec;
   overflow: hidden;
   // Keine Browser-Scroll-/Zoom-Gesten im Chart-Bereich (wir steuern Wischen/Zoom selbst).
   touch-action: none;
@@ -78,6 +79,8 @@
 
 .contentCanvas {
   background: #fff;
+  // Dezenter Schatten → die weiße Seite hebt sich klar vom grauen Hintergrund ab.
+  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.16);
 }
 
 .annoCanvas {
