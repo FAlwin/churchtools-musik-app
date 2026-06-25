@@ -30,6 +30,10 @@ interface StreamViewProps {
   drawColors: string[];
   /** Erhöht sich nach einem Server-Sync der Anmerkungen → Striche/Texte/Zoom neu aus localStorage laden. */
   syncTick?: number;
+  /** Meldet nach oben, ob gerade eine sichtbare Seite reingezoomt ist (für den Reset-Knopf in der Kopfleiste). */
+  onZoomedChange?: (zoomed: boolean) => void;
+  /** Erhöht sich, wenn der Reset-Knopf der Kopfleiste gedrückt wird → sichtbaren Zoom zurücksetzen. */
+  resetZoomSignal?: number;
 }
 
 function isLandscape(): boolean {
@@ -55,6 +59,8 @@ export function StreamView({
   setDrawTool,
   drawColors,
   syncTick = 0,
+  onZoomedChange,
+  resetZoomSignal = 0,
 }: StreamViewProps) {
   const pagesRef = useRef<HTMLCanvasElement[]>([]);
   const contentRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
@@ -488,6 +494,21 @@ export function StreamView({
     setAdjustSlot(null);
   }
 
+  // „Ist reingezoomt?" nach oben melden – steuert den Reset-Knopf in der Kopfleiste (ChordChart).
+  const anyZoomed = zoomedSlots.slice(0, perView).some(Boolean);
+  useEffect(() => {
+    onZoomedChange?.(anyZoomed);
+  }, [anyZoomed, onZoomedChange]);
+
+  // Reset-Knopf der Kopfleiste gedrückt (Signal erhöht) → sichtbaren Zoom zurücksetzen.
+  const lastResetSignal = useRef(resetZoomSignal);
+  useEffect(() => {
+    if (resetZoomSignal === lastResetSignal.current) return;
+    lastResetSignal.current = resetZoomSignal;
+    resetVisibleZoom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetZoomSignal]);
+
   const slots: number[] = [];
   for (let j = 0; j < perView; j++) {
     if (pageIndex + j >= pageCount) break;
@@ -705,13 +726,6 @@ export function StreamView({
             <Icon name="check" size={16} stroke={2.6} /> Fertig
           </button>
         </div>
-      )}
-
-      {/* Notausgang: kleiner runder Knopf oben rechts, sobald (auch ein geladener) Zoom aktiv ist */}
-      {!adjusting && !drawMode && zoomedSlots.slice(0, perView).some(Boolean) && (
-        <button className={styles.zoomReset} onClick={resetVisibleZoom} aria-label="Zoom zurücksetzen">
-          <Icon name="search" size={18} stroke={2.4} />
-        </button>
       )}
 
       {/* Seitenzahl nur bei MEHRSEITIGEN Liedern – zeigt „Lied noch nicht zu Ende". Einseitig: Pfeile reichen. */}

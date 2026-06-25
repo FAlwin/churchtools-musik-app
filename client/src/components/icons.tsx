@@ -33,7 +33,8 @@ export type IconName =
   | 'heading'
   | 'plus'
   | 'marker'
-  | 'eraser';
+  | 'eraser'
+  | 'zoom-reset';
 
 interface IconProps {
   name: IconName;
@@ -125,6 +126,17 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <circle cx="11" cy="11" r="7" />
           <path d="M21 21l-4.3-4.3" />
+        </svg>
+      );
+    case 'zoom-reset':
+      return (
+        <svg {...p}>
+          <circle cx="10" cy="10" r="7" />
+          <path d="M20 20l-4.3-4.3" />
+          <path d="M7.6 9.2V7.6H9.2" />
+          <path d="M10.8 7.6H12.4V9.2" />
+          <path d="M7.6 10.8V12.4H9.2" />
+          <path d="M12.4 10.8V12.4H10.8" />
         </svg>
       );
     case 'sun':

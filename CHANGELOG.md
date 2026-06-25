@@ -9,8 +9,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Geändert
 
-- **Zoom-Notausgang dezenter:** Der Knopf „Zoom zurücksetzen" ist jetzt ein kleiner runder
-  Symbol-Knopf oben rechts (statt breit mittig unten) – verdeckt deutlich weniger vom Liedtext.
+- **Zoom-Notausgang in die Kopfleiste:** Der Knopf „Zoom zurücksetzen" sitzt jetzt oben in der
+  Menüleiste neben „Aa" (statt schwebend über dem Liedtext) und erscheint nur, wenn eine Seite
+  reingezoomt ist. Neues Symbol (Lupe mit Rahmen-Ecken) passt zum übrigen Icon-Stil.
 - **Seitenzahl nur bei mehrseitigen Liedern:** Die Anzeige unten rechts erscheint in der
   Strom-/Mehrseiten-Ansicht nur noch, wenn das aktuelle Lied mehr als eine Seite hat, und zählt
   lied-bezogen (z. B. „Seite 1 / 2"). Bei einseitigen Liedern entfällt sie – die Pfeile genügen.

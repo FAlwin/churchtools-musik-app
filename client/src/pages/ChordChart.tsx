@@ -201,6 +201,8 @@ export function ChordChart({
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
   const [docClearSignal, setDocClearSignal] = useState(0);
   const [docAdjust, setDocAdjust] = useState(false); // nur für Einzel-Dokument-Ansicht
+  const [streamZoomed, setStreamZoomed] = useState(false); // eine Seite des Akkord-Stroms ist reingezoomt
+  const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → StreamView setzt sichtbaren Zoom zurück
 
   // App-Logo für die PDF-Kopfzeile (oben rechts) einmalig vorladen.
   const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
@@ -463,6 +465,16 @@ export function ChordChart({
                 title="Aussehen"
               >
                 Aa
+              </button>
+            )}
+            {!activeDoc && streamZoomed && (
+              <button
+                className={styles.toolBtn}
+                onClick={() => setResetZoomSignal((n) => n + 1)}
+                title="Zoom zurücksetzen"
+                aria-label="Zoom zurücksetzen"
+              >
+                <Icon name="zoom-reset" size={18} stroke={2} />
               </button>
             )}
             {activeDoc && (
@@ -789,6 +801,8 @@ export function ChordChart({
               setDrawTool={setDrawTool}
               drawColors={drawColors}
               syncTick={syncTick}
+              onZoomedChange={setStreamZoomed}
+              resetZoomSignal={resetZoomSignal}
             />
           ) : (
             <div className={styles.empty}>
