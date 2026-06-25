@@ -1,0 +1,42 @@
+name: Staging-Image
+
+# Bei jedem Push (main oder feature/**) ein Test-Image bauen und als :staging nach GHCR pushen.
+# Der NAS (x86_64) zieht es automatisch (Watchtower) → kein manueller Rebuild der Test-Instanz mehr.
+# Nur amd64 (Test-NAS ist x86_64) → schnell, ein einziger nativer Build.
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+
+env:
+  IMAGE: ghcr.io/falwin/churchtools-musik-app
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push :staging
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE }}:staging
+          cache-from: type=gha,scope=staging
+          cache-to: type=gha,mode=max,scope=staging

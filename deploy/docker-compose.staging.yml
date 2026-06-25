@@ -1,0 +1,44 @@
+# Test-Instanz (Staging) – fertiges :staging-Image aus GHCR, KEIN lokaler Build.
+# Watchtower zieht neue :staging-Images automatisch (Auto-Deploy) → kein Rebuild im Container-Manager.
+#
+# Einmalige Einrichtung im Synology Container-Manager:
+#   1. Aktuelles Test-Projekt (worship-charts-test, baut aus Quellcode) stoppen + löschen
+#      – Volume worship-data-test BEHALTEN (Anmerkungen/Einstellungen).
+#   2. Neues Projekt aus DIESER Datei + der vorhandenen Test-.env erstellen.
+#   3. Fertig: ab jetzt zieht Watchtower nach jedem Push (sobald die CI das Image gebaut hat)
+#      automatisch die neue Version (Prüfintervall 60 s).
+services:
+  app:
+    image: ghcr.io/falwin/churchtools-musik-app:staging
+    container_name: worship-charts-test
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      CHURCHTOOLS_BASE_URL: ${CHURCHTOOLS_BASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
+    ports:
+      - '3002:3001'
+    volumes:
+      - worship-data-test:/app/data
+    labels:
+      # Nur von der Test-Watchtower verwaltet (Prod bleibt unangetastet).
+      - com.centurylinklabs.watchtower.scope=worship-test
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: worship-watchtower-test
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Alle 60 s prüfen, nur Container mit Scope 'worship-test', alte Images aufräumen.
+    command: --interval 60 --cleanup --scope worship-test
+    labels:
+      - com.centurylinklabs.watchtower.scope=worship-test
+
+volumes:
+  # Persistente Test-Daten (Anmerkungen/Einstellungen/site.json). Hinweis: Wird beim Neu-Erstellen
+  # des Projekts ggf. neu angelegt → orgName ggf. einmal neu setzen; Geräte-Anmerkungen werden beim
+  # ersten Öffnen erneut hochgeladen.
+  worship-data-test:
+
