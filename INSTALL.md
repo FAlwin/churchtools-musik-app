@@ -33,6 +33,10 @@ cp .env.example .env
 | `SESSION_SECRET` | ✅ | Langer Zufallsstring zum Signieren des Login-Cookies. Erzeugen mit: `openssl rand -hex 32` |
 | `ADMIN_PERMISSION` | optional | ChurchTools-Recht (Form `modul:recht`), das als „Administrator" gilt (schaltet Gemeindename + Links frei). Standard: `churchcore:administer persons` |
 
+> Anmerkungen, Zoom und Lied-Einstellungen werden **pro ChurchTools-Konto** als JSON unter
+> `ANNOTATIONS_PATH` (Standard `/app/data/annotations`, im Daten-Volume) gespeichert – beim Update
+> das Volume behalten. `SITE_CONFIG_PATH` (Gemeindename/Links) liegt ebenfalls im Volume.
+
 > **Wichtig:** Ohne `CHURCHTOOLS_BASE_URL` startet die App bewusst **nicht** – das verhindert,
 > dass eine fehlkonfigurierte Instanz versehentlich mit einem fremden ChurchTools redet.
 
