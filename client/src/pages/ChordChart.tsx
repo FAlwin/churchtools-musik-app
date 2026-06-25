@@ -202,6 +202,37 @@ export function ChordChart({
 
   const drawColors = ['#14110F', '#DD0000', '#FFCE00'];
 
+  // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
+  const liveRef = useRef({ ids: [] as number[], drawMode, onReload, lastReturn: 0 });
+  liveRef.current.ids = songs.map((s) => s.id);
+  liveRef.current.drawMode = drawMode;
+  liveRef.current.onReload = onReload;
+  useEffect(() => {
+    // Anmerkungen (pro Konto) regelmäßig vom Server holen – pausiert im Zeichenmodus/Hintergrund.
+    async function refreshAnno() {
+      if (document.hidden || liveRef.current.drawMode) return;
+      await pullAnnotations(liveRef.current.ids);
+      setSyncTick((t) => t + 1);
+    }
+    // Beim Zurückkehren zur App: Anmerkungen UND Versionen (Setlist neu laden) auffrischen.
+    function onReturn() {
+      if (document.hidden) return;
+      const now = Date.now();
+      if (now - liveRef.current.lastReturn < 2000) return; // focus+visibility entprellen
+      liveRef.current.lastReturn = now;
+      void refreshAnno();
+      liveRef.current.onReload?.();
+    }
+    const id = setInterval(() => void refreshAnno(), 30000);
+    window.addEventListener('focus', onReturn);
+    document.addEventListener('visibilitychange', onReturn);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('focus', onReturn);
+      document.removeEventListener('visibilitychange', onReturn);
+    };
+  }, []);
+
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
   const stream = useMemo(() => {
     if (songs.length === 0) return null;
