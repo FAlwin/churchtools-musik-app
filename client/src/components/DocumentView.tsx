@@ -11,7 +11,13 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 interface DocumentViewProps {
   songId: number;
-  doc: SongDocument;
+  /** Hochgeladenes Dokument (PDF/Bild) aus ChurchTools. Alternativ: `pdfData`. */
+  doc?: SongDocument | null;
+  /** In-App erzeugte PDF (aus ChordPro). Hat Vorrang vor `doc`. */
+  pdfData?: ArrayBuffer | null;
+  /** Schlüssel-Basis für Anmerkungen/Zoom bei erzeugter PDF (z. B. `song123`),
+   *  damit Anmerkungen pro Lied erhalten bleiben, auch wenn neu erzeugt wird. */
+  storeId?: string;
   drawMode: boolean;
   drawColor: string;
   drawTool: DrawTool;
@@ -32,6 +38,8 @@ interface DocumentViewProps {
 export function DocumentView({
   songId,
   doc,
+  pdfData,
+  storeId,
   drawMode,
   drawColor,
   drawTool,
@@ -55,9 +63,10 @@ export function DocumentView({
   const [pageCount, setPageCount] = useState(1);
   const [pageIndex, setPageIndex] = useState(0);
 
-  const url = `/api/songs/${songId}/files/${doc.fileId}`;
-  const storeKey = (p: number) => `worship_docdraw_${doc.fileId}_${p}`;
-  const tfKey = (p: number) => `worship_doctf_${doc.fileId}_${p}`;
+  const url = doc ? `/api/songs/${songId}/files/${doc.fileId}` : '';
+  // Schlüssel-Basis: erzeugte PDF → pro Lied (storeId), sonst pro Datei.
+  const keyBase = pdfData ? (storeId ?? `song${songId}`) : `${doc?.fileId ?? 'none'}`;
+  const storeKey = (p: number) => `worship_docdraw_${keyBase}_${p}`;
 
   // Dokument laden → jede Seite in eine eigene (offscreen) Leinwand rendern
   useEffect(() => {
@@ -68,7 +77,24 @@ export function DocumentView({
     setPageIndex(0);
 
     async function load() {
-      if (doc.type === 'image') {
+      if (pdfData) {
+        // In-App erzeugte PDF (aus ChordPro). slice(0) → eigene Kopie, da pdf.js den Puffer
+        // ggf. übernimmt (StrictMode-Doppelaufruf würde sonst auf einen detachten Puffer treffen).
+        const pdf = await pdfjsLib.getDocument({ data: pdfData.slice(0) }).promise;
+        const canvases: HTMLCanvasElement[] = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const vp = page.getViewport({ scale: 2 });
+          const c = document.createElement('canvas');
+          c.width = Math.ceil(vp.width);
+          c.height = Math.ceil(vp.height);
+          await page.render({ canvasContext: c.getContext('2d')!, viewport: vp }).promise;
+          if (cancelled) return;
+          canvases.push(c);
+        }
+        pagesRef.current = canvases;
+        setPageCount(canvases.length);
+      } else if (doc?.type === 'image') {
         const img = new Image();
         img.crossOrigin = 'use-credentials';
         await new Promise<void>((res, rej) => {
@@ -111,7 +137,7 @@ export function DocumentView({
     return () => {
       cancelled = true;
     };
-  }, [url, doc.type]);
+  }, [url, doc?.type, pdfData]);
 
   // Aktuelle Seite anzeigen + Anmerkungs-Leinwand vorbereiten
   useEffect(() => {
@@ -145,6 +171,21 @@ export function DocumentView({
     localStorage.removeItem(storeKey(pageIndex));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearSignal]);
+
+  // Beim Drehen/Größenänderung die Seite neu einpassen (Fit), sonst bleibt im Querformat ein
+  // veralteter Zoom/Ausschnitt stehen und die Seite ist abgeschnitten.
+  useEffect(() => {
+    function refit() {
+      transformRef.current?.resetTransform(0);
+      requestAnimationFrame(() => transformRef.current?.centerView(1, 0));
+    }
+    window.addEventListener('resize', refit);
+    window.addEventListener('orientationchange', refit);
+    return () => {
+      window.removeEventListener('resize', refit);
+      window.removeEventListener('orientationchange', refit);
+    };
+  }, []);
 
   // ── Zeichnen ──
   function pt(e: React.PointerEvent) {
@@ -233,15 +274,6 @@ export function DocumentView({
     }
   }
 
-  // gespeicherten Zoom/Ausschnitt der aktuellen Seite (für initiale Transform-Werte)
-  let savedTf: { scale: number; positionX: number; positionY: number } | null = null;
-  try {
-    const s = localStorage.getItem(tfKey(pageIndex));
-    if (s) savedTf = JSON.parse(s);
-  } catch {
-    /* ignorieren */
-  }
-
   return (
     <div className={styles.root} onClick={rootClick} onTouchStart={rootTouchStart} onTouchEnd={rootTouchEnd}>
       {loading && (
@@ -254,26 +286,21 @@ export function DocumentView({
 
       {/* Pro Seite eine eigene Zoom-Ebene (key) – startet mit dem gespeicherten Zoom */}
       <TransformWrapper
-        key={`${doc.fileId}-${pageIndex}`}
+        key={`${keyBase}-${pageIndex}`}
         ref={transformRef}
-        minScale={0.4}
+        minScale={0.5}
         maxScale={8}
-        centerOnInit={!savedTf}
-        initialScale={savedTf?.scale ?? 1}
-        initialPositionX={savedTf?.positionX}
-        initialPositionY={savedTf?.positionY}
-        limitToBounds={false}
+        centerOnInit
+        centerZoomedOut
+        initialScale={1}
+        limitToBounds
         doubleClick={{ disabled: true }}
         panning={{ disabled: !adjust, velocityDisabled: true }}
         wheel={{ disabled: !adjust, step: 0.08 }}
         pinch={{ disabled: !adjust }}
         onTransformed={(_ref, state) => {
+          // Zoom NICHT mehr persistent speichern – die Seite startet immer höhenfüllend (Fit).
           lastTf.current = { scale: state.scale, positionX: state.positionX, positionY: state.positionY };
-          try {
-            localStorage.setItem(tfKey(pageIndex), JSON.stringify(lastTf.current));
-          } catch {
-            /* Speicher voll */
-          }
         }}
       >
         <TransformComponent

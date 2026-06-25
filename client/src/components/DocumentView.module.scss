@@ -29,26 +29,41 @@
   padding: 8px;
 }
 
+// Inhalt + Anmerkungen exakt übereinander. Der Trick: pageBox hat eine DEFINITE Größe
+// (100 % des Viewports), beide Canvas liegen in derselben Grid-Zelle (1/1) und werden über
+// `max-width/height: 100%` + `place-items: center` höhenfüllend eingepasst. Da beide Canvas
+// dieselben Pixelmaße (Seitenauflösung) und dieselben Constraints haben, ergeben sie EXAKT
+// dieselbe Anzeigegröße und -position → die Anmerkungs-Ebene deckt die Seite deckungsgleich ab.
+// Definite pageBox-Größe ist nötig, damit die Prozent-Constraints überhaupt greifen (sonst
+// rendern die Canvas in voller Pixelgröße → „komische" Auflösung).
 .pageBox {
   position: relative;
-  max-width: 100%;
-  max-height: 100%;
+  display: grid;
+  grid-template: 1fr / 1fr;
+  place-items: center;
+  width: 100%;
+  height: 100%;
   line-height: 0;
 }
 
 .contentCanvas {
+  grid-area: 1 / 1;
   display: block;
+  // min-*: 0 hebt die Grid-Item-Mindestgröße auf → max-height greift, die Seite wird an der HÖHE
+  // eingepasst (höhenfüllend) statt an der Breite. Element-Box = sichtbare Seite (Anmerkungen passen).
+  min-width: 0;
+  min-height: 0;
   max-width: 100%;
   max-height: 100%;
   background: #fff;
 }
 
 .annoCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  grid-area: 1 / 1;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
   touch-action: none;
 }
 

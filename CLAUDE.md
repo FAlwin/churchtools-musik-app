@@ -24,7 +24,7 @@
 | Datenfetching  | TanStack Query                     |
 | Formulare      | React Hook Form + Zod              |
 | Backend        | Node.js + Express + TypeScript     |
-| Datenbank      | keine (ChurchTools ist Datenquelle; Notizen/Annotationen lokal im Browser) |
+| Datenbank      | keine – ChurchTools ist Datenquelle; Anmerkungen/Einstellungen pro Konto als JSON auf dem Volume (`ANNOTATIONS_PATH`), localStorage als Cache |
 | Validierung    | Zod (serverseitig)                 |
 | Deployment     | Docker auf Synology NAS (Container Manager) |
 | Externer Zugang| Synology Reverse Proxy + DDNS + Let's Encrypt (KEIN Cloudflare) |
@@ -109,15 +109,29 @@ im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site
 (SCSS-Mixins `styles/_mixins.scss`, `<Segment>`, `Icon`/Line-Icons statt Emojis).
 *Entfernt (durch feste Version): `deploy/`, `.github/workflows/release.yml`, `LIZENZ.md`.*
 
-## Anmerkungen (Zeichnen/Text)
-`useDrawing.ts` kapselt Canvas-Striche (Stift/Marker/Radierer) + Text-Anmerkungen (localStorage
-pro Song). Bedienung: Text **antippen** = auswählen (Rahmen), **nochmal antippen** = Inhalt
-bearbeiten, **ziehen** = verschieben. Werkzeugleiste zeigt bei Auswahl Farbe/Größe (live) + 🗑.
-Farb-Voreinstellungen: Schwarz/Weiß-adaptiv + Rot + Gelb (`DRAW_COLORS`, `#14110F` → Creme im Dunkelmodus)
-+ freier `<input type=color>`-Picker. **Undo/Redo** (↺/↻) über einen Verlauf aus Canvas-Bild +
-Text-Liste pro Schritt; „Alles löschen" ist ebenfalls rückgängig machbar. **Wichtig:** Solange
-Anmerkungen existieren (`hasAnnotations`), sind Schriftgröße/Spalten gesperrt (halbtransparente
-Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen beim Umbruch verrutschen.
+## Akkord-Ansicht: PDF-Strom + Anmerkungen
+Die Akkord-Ansicht ist **kein** Live-HTML-Chart mehr, sondern ein **erzeugtes PDF**: `utils/chordPdf.ts`
+baut aus ChordPro ein A4-PDF (SongSelect-Look, alles schwarz, Logo oben rechts). Der ganze Ablauf
+wird zu **einer** PDF zusammengefasst (`generateSetlistPdfWithOwners` → `owners[]` = welche Seite zu
+welchem Lied/Seite/Version gehört). `components/StreamView.tsx` rendert den Strom (pdf.js → Canvas):
+Hochformat 1 Seite, **Querformat 2 Seiten nebeneinander** über Liedgrenzen, je Seite eigener Zoom.
+*(Live-Chart-Reste `useDrawing.ts`/`usePagedColumns.ts`/`constants.ts` wurden entfernt.)*
+
+**Anmerkungen** kapselt `hooks/usePageDraw.ts` **pro Seite**: Striche (Stift/Marker/Radierer) auf einer
+Anno-Canvas + Textfelder (platzieren/auswählen/verschieben/bearbeiten) + **Rückgängig/Wiederholen**.
+Bedienung: Text-Werkzeug → ins Leere tippen = Feld; nach Bestätigen ist der Text ausgewählt (Rahmen);
+tippen = auswählen, nochmal = bearbeiten, ziehen = verschieben; Tipp ins Leere hebt Auswahl auf.
+Marker wird als **eine** halbtransparente Linie gemalt (Schnappschuss-Technik, kein „Gepunktel").
+Farben fest **Schwarz/Rot/Gelb** + freier Picker. Hochgeladene Dokumente (PDF/Bild) nutzen weiter
+`components/DocumentView.tsx` (eigene, lokale Anmerkungen).
+
+**Speicherung pro Konto (Server, geräteübergreifend):** Anmerkungen + Zoom laufen über
+`services/annotations.ts` (localStorage = Cache, debounced Push, Pull beim Laden/Rückkehr/30 s; Pull
+überspringt Seiten mit noch nicht hochgeladener Änderung). Pro-Lied-Einstellungen über
+`services/userSettings.ts`. **Schlüssel** je Eintrag: `song<id>_v<versionKey>_<seite>` (Zoom zusätzlich
+`_d<geräteklasse>`). Geräteklasse `phone` vs `large` (Tablet+Computer) via `utils/deviceClass.ts` –
+display-abhängige Werte (Spalten/Schrift/Zoom) gelten pro Gerätetyp, musikalische (Tonart/Kapo/
+Abschnitte/Version) überall gleich. Versions-Helfer: `utils/songVersions.ts`.
 
 ## Domänen-Besonderheiten
 - **ChordPro:** zwei Dialekte unterstützen – Standard (`{start_of_verse}`) UND
@@ -158,6 +172,14 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
   DNS via DDNS (`<euer-ddns>.synology.me`) + CNAME, Zertifikat Let's Encrypt,
   Portweiterleitung 443/80 im Router (DSM-Admin-Ports bleiben zu). **Kein Cloudflare.**
 - **Anleitung:** `DEPLOYMENT.md` (Schritt-für-Schritt, Container Manager + externer Zugang).
+- **Auto-Deploy Test-Instanz:** `.github/workflows/staging.yml` baut bei jedem Push (main/feature/**)
+  ein `:staging`-Image (amd64) nach GHCR; `deploy/docker-compose.staging.yml` betreibt die
+  Test-Instanz (`worship-charts-test`, Port 3002) image-basiert **+ Watchtower** (Auto-Pull alle 60 s,
+  Scope `worship-test`) → kein manueller Rebuild mehr. Prod (`worship-charts`) läuft weiter über das
+  Release-Image (`release.yml`, Tag `vX.Y.Z`); Prod-Auto-Deploy ist später analog (eigener Watchtower-Scope) möglich.
+- **Env (Volume `/app/data`):** `SITE_CONFIG_PATH=/app/data/site.json`,
+  `ANNOTATIONS_PATH=/app/data/annotations` (kontobezogene Anmerkungen/Einstellungen) – beim Re-Deploy
+  Volume behalten.
 
 ## Changelog
 | Datum      | Branch | Was                                         |
@@ -198,7 +220,8 @@ Schicht über der Steuerung) – sonst würden die pixelbasierten Anmerkungen be
 | 18.06.2026 | redesign/churchtools-look | **Komplettes Redesign im ChurchTools-Look** (Plan-Änderung: feste CT-Version statt White-Label): neue Token-Palette (blau `#0061A1`, System-Font, Light/Dark); untere Tab-Bar Termine/Lieder/Mehr + `tab`/`view`-Routing; ct-nav-Header; alle Seiten neu gestaltet (Termine-Karten/Monatsgruppen, Lieder mit NoteTile/key-pill, Setlist mit Akzentbalken, Chart-Sektionsfarben, Mehr-Tab mit Segment/Toggle); neues Schallwellen-Logo; White-Label zurückgebaut (nur `orgName` admin-anpassbar, feste Palette/Logo, statisches Manifest); Funktionalität unverändert |
 | 19.06.2026 | main   | Tests/A11y zum Redesign: `hasOpaquePixel` aus der Bearbeiten-Sperre extrahiert + getestet, Render-Tests für `<Segment>`/`<Section>` (44 Tests grün), Fokusring + `prefers-reduced-motion` + aria-labels. **Redesign nach `main` gemerged (PR #14) und produktiv deployt** (`worship-charts`, musik.ecg-donrath.de) – extern verifiziert |
 | 19.06.2026 | main   | Chart-Lesbarkeit (`ChordLine.module.scss`): Abstand Akkord↔Text (`margin-bottom`), Zeilenpaar-Abstand `1px`→`0.4em`, Mindestabstand zwischen Akkorden (`padding-right: 0.7ch`, kein „Dm7Am" mehr); **Akkorde in Akzentfarbe Blau** (`--blue`) statt schwarz – produktiv deployt + verifiziert |
-| 19.06.2026 | main   | **iOS-PWA-Layout-Fix** (auf echtem iPhone verifiziert): App-Höhe robust via `--app-h` = `window.innerHeight` + untere Safe-Area statt `100dvh` (Querformat-Bug + dunkler Streifen behoben); `#root` als Bezugsrahmen für `.screen`-Detailansichten (kein leerer Balken/Streifen); Scroll-Padding unten; Chart-Footer mit fester Mindesthöhe (springt nicht mehr) + einheitlicher Abstand über dem Home-Strich. **Noch nicht deployt.** |
+| 19.06.2026 | main   | **iOS-PWA-Layout-Fix** (auf echtem iPhone verifiziert): App-Höhe robust via `--app-h` = `window.innerHeight` + untere Safe-Area statt `100dvh` (Querformat-Bug + dunkler Streifen behoben); `#root` als Bezugsrahmen für `.screen`-Detailansichten (kein leerer Balken/Streifen); Scroll-Padding unten; Chart-Footer mit fester Mindesthöhe (springt nicht mehr) + einheitlicher Abstand über dem Home-Strich. |
+| 25.06.2026 | feature/versions-account-annotations | **Großer Funktions-Block (vor v2.1.0):** Akkord-Ansicht = erzeugtes PDF (SongSelect-Look) + 2-Seiten-Querformat-Strom; **mehrere benannte Lied-Versionen** (in ChurchTools, Team-weit) statt nur „bearbeitet"; **Anmerkungen+Zoom+Einstellungen pro Konto** serverseitig (geräteübergreifend, display-abhängige Werte pro Gerätetyp); volle Anmerkungen pro Seite (Stift/Marker/Text/Undo); Ablauf-PDF-Export; **Auto-Deploy** der Test-Instanz (Staging-Image + Watchtower). Diverse Fixes (Marker glatt, Text platzieren/auswählen, letztes Lied im 2-up, „Link hinzufügen" auf HTTP, Auto-Sync-Race). Build/Lint/44 Tests grün. **Noch nicht in `main` – wartet auf iPad-Abnahme → Merge + Release v2.1.0.** |
 
 ## So startest du die App lokal
 ```
@@ -214,8 +237,9 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   Statistik, rechtebewusste UI). Auf dem NAS deployt (Container Manager, `worship-charts`),
   **intern** `http://<NAS-IP>:3001` und **extern** `https://musik.ecg-donrath.de` live.
 - **Redesign live (19.06.2026):** ChurchTools-Look ist auf `main`, getestet (44 Tests) und
-  **produktiv** unter `https://musik.ecg-donrath.de` (extern verifiziert, neues Bundle). Test-
-  Instanz (`worship-charts-test`, `:3002`) war nur temporär und wurde nach Abnahme gelöscht.
+  **produktiv** unter `https://musik.ecg-donrath.de`.
+- **Test-Instanz dauerhaft (seit 25.06.2026):** `worship-charts-test` (`:3002`) läuft image-basiert
+  mit **Auto-Deploy** (Staging-Image + Watchtower) – Abnahme neuer Features vor dem Prod-Release.
 - **Offen / optional:** Login-Token aus lokaler Dev-`.env` neu erzeugen/entfernen;
   Test-Service-Konto/Token #1012 in ChurchTools widerrufen; Musik-Abwesenheitsplaner nachbauen
   (separates Projekt); **Verteilung an andere Gemeinden (Selbst-Hosting)** – Fahrplan steht in
@@ -249,16 +273,19 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - `GET  /api/auth/me` → `{authenticated, user?}`
 - `GET  /api/capabilities` → Rechte des Nutzers (view/edit agenda, view/edit songcategory) → steuert UI
 - `GET  /api/services?from=&to=` → `Service[]` (nur mit Setlist; Default-Fenster -7d…+42d)
-- `GET  /api/services/:eventId/setlist` → kompletter Ablauf (`AgendaItem[]`, Lieder mit ChordPro + ECG, documents[])
+- `GET  /api/services/:eventId/setlist` → kompletter Ablauf (`AgendaItem[]`, Lieder mit `chordpro` (Original) + `versions[]` + documents[])
 - `PATCH /api/services/:eventId/agenda/order` → Reihenfolge zurückschreiben (ganze Liste)
 - `POST/PUT/DELETE /api/services/:eventId/agenda/items[/:itemId]` → Ablaufpunkt anlegen/ändern/löschen
 - `GET  /api/songs?query=` → Songsuche (Lied zum Ablauf hinzufügen)
 - `GET  /api/song-library` → alle Lieder (Ansicht „Alle Lieder")
 - `GET  /api/song-usage` → Nutzungsstatistik letzte 12 Monate (1h-Cache)
 - `GET  /api/songs/:songId/chart` → Chart eines einzelnen Lieds (aus „Alle Lieder")
-- `PUT  /api/songs/:songId/chordpro` {arrangementId, text} → bearbeitete ECG-.chordpro speichern
-- `DELETE /api/songs/:songId/chordpro` {arrangementId} → ECG-Version löschen (zurück zum Original)
+- `POST /api/songs/:songId/versions` {arrangementId, name, text} → neue benannte Version anlegen → `SongVersion`
+- `PUT  /api/songs/:songId/versions/:versionKey` {arrangementId, text?, name?} → Version aktualisieren/umbenennen
+- `DELETE /api/songs/:songId/versions/:versionKey` {arrangementId} → Version löschen (Original bleibt)
 - `GET  /api/songs/:songId/files/:fileId` → PDF/Bild aus ChurchTools durchreichen (Viewer)
+- `GET  /api/annotations?songs=` / `PUT /api/annotations/:key` / `DELETE …/:key` → Anmerkungen+Zoom pro Konto (Feld-Merge strokes/texts/zoom; key `song<id>_v<ver>_<seite>[_d<class>]`)
+- `GET  /api/settings?songs=` / `PUT /api/settings` → Lied-Einstellungen pro Konto (Schlüssel-Wert, Merge)
 
 ## ChurchTools-Schreibzugriff Ablauf – Eigenheiten (verifiziert 12.06.2026, Event 1500)
 - **Umsortieren:** `PUT /api/events/{id}/agenda` mit `{items:[…]}` (ganze Liste, position = Index).
@@ -281,7 +308,9 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - Schreibende Calls brauchen ein CSRF-Token (`GET /api/csrftoken`) + Session-Cookie.
 - Upload: `POST /api/files/song_arrangement/{arrId}` multipart, Feld `files[]`.
 - Löschen: `DELETE /api/files/{fileId}` (fileId aus der fileUrl `?…id=` extrahiert).
-- Bearbeitung wird als separate `"<Titel> — ECG.chordpro"` gespeichert, Original bleibt.
+- Versionen werden als separate `"<Titel> — <Name> (ECG).chordpro"` gespeichert (Original bleibt
+  unangetastet); abwärtskompatibel zu alt `"— Bearbeitet.chordpro"`/`"— ECG.chordpro"` (Name „Bearbeitet").
+  Erkennung/Slug in `server/src/services/setlistBuilder.ts` (`versionNameOf`, `versionSlug`).
 - Rechte regelt ChurchTools (403 → Hinweis im Editor). Verifiziert an Test-Lied „Treu" (songId 21).
 - Datei-Download braucht die volle fileUrl (nur `id` reicht nicht); Browser lädt nur über den Proxy.
 

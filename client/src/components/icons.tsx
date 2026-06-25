@@ -28,6 +28,7 @@ export type IconName =
   | 'pin'
   | 'link'
   | 'external'
+  | 'share'
   | 'trash'
   | 'heading'
   | 'plus'
@@ -212,6 +213,14 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <path d="M14 5h5v5M19 5l-8 8" />
           <path d="M18 13.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4.5" />
+        </svg>
+      );
+    case 'share':
+      return (
+        <svg {...p}>
+          <path d="M12 3v13" />
+          <path d="M8 7l4-4 4 4" />
+          <path d="M6 12H5a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1h-1" />
         </svg>
       );
     case 'trash':

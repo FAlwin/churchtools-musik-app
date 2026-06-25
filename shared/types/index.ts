@@ -40,10 +40,23 @@ export interface SetlistSong {
   ccli: string | null;
   /** Roher ChordPro-Inhalt der Originaldatei (SongSelect-Dialekt oder Standard) */
   chordpro: string;
-  /** Bearbeitete Version, falls vorhanden (separate .chordpro-Datei) */
-  chordproEdited: string | null;
+  /**
+   * Zusätzliche benannte Versionen (eigene .chordpro-Dateien im Arrangement, vom Team gepflegt).
+   * Das Original ist NICHT enthalten – es wird im Client als feste erste Auswahl „Original" geführt.
+   */
+  versions: SongVersion[];
   /** Anzeigbare Dokumente des Arrangements (PDF / Bild) */
   documents: SongDocument[];
+}
+
+/** Eine benannte ChordPro-Version eines Lieds (zusätzlich zum Original). */
+export interface SongVersion {
+  /** Stabiler Schlüssel (Slug des Namens) – für Speicherung von Einstellungen/Anmerkungen. */
+  key: string;
+  /** Anzeigename, z. B. „Akustik". */
+  name: string;
+  /** Roher ChordPro-Inhalt dieser Version. */
+  text: string;
 }
 
 /** Ein Arrangement zur Auswahl bei der Songsuche. */

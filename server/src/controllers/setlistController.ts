@@ -3,8 +3,9 @@ import { z } from 'zod';
 import {
   getServicesWithSetlists,
   getAgendaItems,
-  saveEditedChordpro,
-  deleteEditedChordpro,
+  createVersion,
+  updateVersion,
+  deleteVersion,
   resolveFileUrl,
   getSongLibrary,
   getSongChart,
@@ -206,17 +207,36 @@ export async function getSetlist(req: Request, res: Response): Promise<void> {
   res.json(items);
 }
 
-const editSchema = z.object({
+const createVersionSchema = z.object({
   arrangementId: z.coerce.number().int().positive(),
+  name: z.string().trim().min(1, 'Name fehlt').max(60),
   text: z.string().min(1, 'Text fehlt'),
 });
 
-/** PUT /api/songs/:songId/chordpro – bearbeitete Version speichern. */
-export async function putChordpro(req: Request, res: Response): Promise<void> {
+/** POST /api/songs/:songId/versions – neue benannte Version anlegen. */
+export async function postVersion(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
-  const { arrangementId, text } = editSchema.parse(req.body);
-  await saveEditedChordpro(req.ctCookie as string, songId, arrangementId, text);
-  res.json({ ok: true });
+  const { arrangementId, name, text } = createVersionSchema.parse(req.body);
+  const version = await createVersion(req.ctCookie as string, songId, arrangementId, name, text);
+  res.json(version);
+}
+
+const updateVersionSchema = z.object({
+  arrangementId: z.coerce.number().int().positive(),
+  text: z.string().min(1).optional(),
+  name: z.string().trim().min(1).max(60).optional(),
+});
+
+/** PUT /api/songs/:songId/versions/:versionKey – Version aktualisieren (Text und/oder Name). */
+export async function putVersion(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const versionKey = z.string().min(1).parse(req.params.versionKey);
+  const { arrangementId, text, name } = updateVersionSchema.parse(req.body);
+  const version = await updateVersion(req.ctCookie as string, songId, arrangementId, versionKey, {
+    text,
+    name,
+  });
+  res.json(version);
 }
 
 /** GET /api/songs/:songId/files/:fileId – Datei (PDF/Bild) aus ChurchTools durchreichen. */
@@ -233,10 +253,11 @@ export async function getFile(req: Request, res: Response): Promise<void> {
 
 const deleteSchema = z.object({ arrangementId: z.coerce.number().int().positive() });
 
-/** DELETE /api/songs/:songId/chordpro – bearbeitete Version löschen (auf Original zurücksetzen). */
-export async function deleteChordpro(req: Request, res: Response): Promise<void> {
+/** DELETE /api/songs/:songId/versions/:versionKey – benannte Version löschen (Original bleibt). */
+export async function deleteVersionCtrl(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
+  const versionKey = z.string().min(1).parse(req.params.versionKey);
   const { arrangementId } = deleteSchema.parse(req.body);
-  await deleteEditedChordpro(req.ctCookie as string, songId, arrangementId);
+  await deleteVersion(req.ctCookie as string, songId, arrangementId, versionKey);
   res.json({ ok: true });
 }

@@ -22,8 +22,14 @@ import { Icon } from './icons';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
 import styles from './LinksManager.module.scss';
 
+/** Eindeutige ID – mit Fallback, da crypto.randomUUID nur im sicheren Kontext (HTTPS) existiert. */
+function genId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `l${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function newLink(): SiteLink {
-  return { id: crypto.randomUUID(), label: '', url: '', showOnLogin: false };
+  return { id: genId(), label: '', url: '', showOnLogin: false };
 }
 
 /** Eine sortierbare Link-Karte (Text, Adresse, Login-Schalter, Löschen). */

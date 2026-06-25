@@ -10,6 +10,7 @@ import type {
   SetlistSong,
   SongDocument,
   SongLibraryEntry,
+  SongVersion,
 } from '@shared/types/index';
 import {
   getAgenda,
@@ -27,19 +28,47 @@ import type { CtArrangementFile, CtSong } from './churchtools.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
 
-/** Datei-Suffix-Marker für die bearbeitete Version (Original bleibt unangetastet). */
-const EDITED_SUFFIX = 'Bearbeitet';
+/**
+ * Marker für von uns verwaltete, benannte Versionen: „<Titel> — <Name> (ECG).chordpro".
+ * Das `(ECG)`-Kürzel erkennt unsere Dateien zuverlässig (kein Verwechseln mit Originaldateien,
+ * die zufällig einen Bindestrich enthalten).
+ */
+const VERSION_TAG = '(ECG)';
+
+/** Macht aus einem Versionsnamen einen stabilen Schlüssel (Slug). */
+export function versionSlug(name: string): string {
+  const s = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // Akzente entfernen
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return s || 'version';
+}
 
 /**
- * Erkennt am Namen, ob eine Datei die bearbeitete Version ist.
- * Matcht den neuen Marker „— Bearbeitet.chordpro" UND – aus Abwärtskompatibilität –
- * den alten „— ECG.chordpro" (Bestandsdateien älterer Instanzen funktionieren weiter).
+ * Erkennt am Namen, ob eine Datei eine von uns verwaltete Version ist, und liefert deren Namen.
+ * Neuer Marker „— <Name> (ECG).chordpro"; abwärtskompatibel „— Bearbeitet.chordpro" /
+ * „— ECG.chordpro" (Bestandsdateien älterer Instanzen → Name „Bearbeitet").
  */
-function isEditedFile(f: CtArrangementFile): boolean {
-  return /[—-]\s*(?:bearbeitet|ecg)\.chordpro$/i.test(f.name);
+function versionNameOf(f: CtArrangementFile): string | null {
+  const tagged = f.name.match(/[—-]\s*(.+?)\s*\(ECG\)\.chordpro$/i);
+  if (tagged) return tagged[1].trim();
+  if (/[—-]\s*(?:bearbeitet|ecg)\.chordpro$/i.test(f.name)) return 'Bearbeitet';
+  return null;
+}
+function isVersionFile(f: CtArrangementFile): boolean {
+  return versionNameOf(f) !== null;
 }
 function isOriginalChordpro(f: CtArrangementFile): boolean {
-  return /\.chordpro$/i.test(f.name) && !isEditedFile(f);
+  return /\.chordpro$/i.test(f.name) && !isVersionFile(f);
+}
+
+/** Dateiname einer verwalteten Version aus Lied-Titel + Versionsname. */
+function versionFileName(songName: string, versionName: string): string {
+  const safeTitle = songName.replace(/[\\/:*?"<>|]/g, '').trim();
+  const safeName = versionName.replace(/[\\/:*?"<>|()]/g, '').trim();
+  return `${safeTitle} — ${safeName} ${VERSION_TAG}.chordpro`;
 }
 
 /** PDF/Bild-Dokumente eines Arrangements (für die Dokumentenanzeige). */
@@ -105,7 +134,7 @@ async function buildSong(
     song.arrangements.find((a) => a.id === agendaSong.arrangementId) ?? song.arrangements[0];
 
   const originalFile = arr?.files.find(isOriginalChordpro);
-  const editedFile = arr?.files.find(isEditedFile);
+  const versionFiles = (arr?.files ?? []).filter(isVersionFile);
 
   const download = async (f?: CtArrangementFile): Promise<string> => {
     if (!f) return '';
@@ -115,14 +144,18 @@ async function buildSong(
       return '';
     }
   };
-  // Original- und bearbeitete ChordPro parallel laden
-  const [chordpro, chordproEdited] = await Promise.all([
+  // Original + alle benannten Versionen parallel laden
+  const [chordpro, ...versionTexts] = await Promise.all([
     download(originalFile),
-    editedFile ? download(editedFile) : Promise.resolve(null),
+    ...versionFiles.map((f) => download(f)),
   ]);
+  const versions: SongVersion[] = versionFiles.map((f, i) => {
+    const name = versionNameOf(f) ?? 'Version';
+    return { key: versionSlug(name), name, text: versionTexts[i] ?? '' };
+  });
 
-  // Tonart/Takt aus der angezeigten Version ableiten (bearbeitet bevorzugt, sonst Original)
-  const source = chordproEdited || chordpro;
+  // Tonart/Takt aus dem Original ableiten (sonst erste Version, falls kein Original existiert)
+  const source = chordpro || versions[0]?.text || '';
   const originalKey = metaValue(source, 'key') ?? arr?.keyOfArrangement ?? arr?.key ?? agendaSong.key ?? 'C';
   const targetKey = agendaSong.key ?? arr?.key ?? originalKey;
   const timeSig = metaValue(source, 'time') ?? arr?.beat ?? null;
@@ -138,7 +171,7 @@ async function buildSong(
     timeSig,
     ccli: song.ccli ?? null,
     chordpro,
-    chordproEdited,
+    versions,
     documents: arr ? documentsOf(arr.files) : [],
   };
 }
@@ -157,38 +190,84 @@ export async function resolveFileUrl(
   throw new HttpError(404, 'Datei nicht gefunden.');
 }
 
-/** Erzeugt/aktualisiert die bearbeitete Version eines Arrangements. */
-export async function saveEditedChordpro(
+/** Lädt das Arrangement + listet die vorhandenen Versionen (mit Datei + Slug). */
+async function loadArrangementVersions(
   cookie: string,
   songId: number,
   arrangementId: number,
-  text: string,
-): Promise<void> {
+): Promise<{ songName: string; files: { file: CtArrangementFile; name: string; key: string }[] }> {
   const song = await getSong(cookie, songId);
   const arr = song.arrangements.find((a) => a.id === arrangementId);
   if (!arr) throw new HttpError(404, 'Arrangement nicht gefunden.');
-  // vorhandene bearbeitete Datei zuerst entfernen (ersetzen) – matcht auch alte „— ECG"-Dateien
-  const existing = arr.files.find(isEditedFile);
-  if (existing) {
-    const id = fileIdFromUrl(existing.fileUrl);
-    if (id) await deleteFile(cookie, id);
-  }
-  const safeTitle = song.name.replace(/[\\/:*?"<>|]/g, '').trim();
-  await uploadChordpro(cookie, arrangementId, `${safeTitle} — ${EDITED_SUFFIX}.chordpro`, text);
+  const files = arr.files
+    .map((file) => {
+      const name = versionNameOf(file);
+      return name ? { file, name, key: versionSlug(name) } : null;
+    })
+    .filter((v): v is { file: CtArrangementFile; name: string; key: string } => v !== null);
+  return { songName: song.name, files };
 }
 
-/** Löscht die bearbeitete Version (Zurücksetzen auf Original). */
-export async function deleteEditedChordpro(
+/** Legt eine neue benannte Version an (eigene .chordpro-Datei im Arrangement). */
+export async function createVersion(
   cookie: string,
   songId: number,
   arrangementId: number,
+  name: string,
+  text: string,
+): Promise<SongVersion> {
+  const trimmed = name.trim();
+  if (!trimmed) throw new HttpError(400, 'Bitte einen Versionsnamen angeben.');
+  if (/^original$/i.test(trimmed)) throw new HttpError(400, '„Original" ist reserviert.');
+  const key = versionSlug(trimmed);
+  const { songName, files } = await loadArrangementVersions(cookie, songId, arrangementId);
+  if (files.some((v) => v.key === key)) {
+    throw new HttpError(409, `Es gibt bereits eine Version „${trimmed}".`);
+  }
+  await uploadChordpro(cookie, arrangementId, versionFileName(songName, trimmed), text);
+  return { key, name: trimmed, text };
+}
+
+/** Aktualisiert Text und/oder Namen einer vorhandenen Version. */
+export async function updateVersion(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+  versionKey: string,
+  changes: { text?: string; name?: string },
+): Promise<SongVersion> {
+  const { songName, files } = await loadArrangementVersions(cookie, songId, arrangementId);
+  const current = files.find((v) => v.key === versionKey);
+  if (!current) throw new HttpError(404, 'Version nicht gefunden.');
+
+  const newName = (changes.name ?? current.name).trim();
+  if (!newName) throw new HttpError(400, 'Bitte einen Versionsnamen angeben.');
+  if (/^original$/i.test(newName)) throw new HttpError(400, '„Original" ist reserviert.');
+  const newKey = versionSlug(newName);
+  if (newKey !== versionKey && files.some((v) => v.key === newKey)) {
+    throw new HttpError(409, `Es gibt bereits eine Version „${newName}".`);
+  }
+
+  // Text bestimmen: neuer Text oder der bisherige Inhalt (bei reiner Umbenennung).
+  const text = changes.text ?? (await downloadFileText(cookie, current.file.fileUrl));
+  // Alte Datei entfernen, neue (ggf. umbenannt) hochladen.
+  const id = fileIdFromUrl(current.file.fileUrl);
+  if (id) await deleteFile(cookie, id);
+  await uploadChordpro(cookie, arrangementId, versionFileName(songName, newName), text);
+  return { key: newKey, name: newName, text };
+}
+
+/** Löscht eine benannte Version (das Original bleibt erhalten). */
+export async function deleteVersion(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+  versionKey: string,
 ): Promise<void> {
-  const song = await getSong(cookie, songId);
-  const arr = song.arrangements.find((a) => a.id === arrangementId);
-  if (!arr) throw new HttpError(404, 'Arrangement nicht gefunden.');
-  const existing = arr.files.find(isEditedFile);
-  if (!existing) return;
-  const id = fileIdFromUrl(existing.fileUrl);
+  const { files } = await loadArrangementVersions(cookie, songId, arrangementId);
+  const current = files.find((v) => v.key === versionKey);
+  if (!current) return;
+  const id = fileIdFromUrl(current.file.fileUrl);
   if (id) await deleteFile(cookie, id);
 }
 

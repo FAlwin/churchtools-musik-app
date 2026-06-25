@@ -62,6 +62,39 @@
   text-align: center;
 }
 
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 4px;
+  flex-shrink: 0;
+}
+.nameLbl {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 15px;
+  outline: none;
+
+  &:focus {
+    border-color: var(--blue);
+  }
+}
+
 .split {
   flex: 1;
   min-height: 0;

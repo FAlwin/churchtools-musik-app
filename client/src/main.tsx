@@ -27,10 +27,26 @@ const queryClient = new QueryClient({
   },
 });
 
+// NUR Entwicklung: Demos zum Prüfen (?demo=pdf für den ChordPro→PDF-Export). Im Produktiv-Build
+// (import.meta.env.DEV === false) nie geladen.
+const demo = import.meta.env.DEV && new URLSearchParams(window.location.search).get('demo');
+const DemoComp =
+  demo === 'pdf'
+    ? React.lazy(() => import('./dev/DemoPdf').then((m) => ({ default: m.DemoPdf })))
+    : demo === 'chart'
+      ? React.lazy(() => import('./dev/DemoChart').then((m) => ({ default: m.DemoChart })))
+      : null;
+
+const rootNode = DemoComp ? (
+  <React.Suspense fallback={null}>
+    <DemoComp />
+  </React.Suspense>
+) : (
+  <App />
+);
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{rootNode}</QueryClientProvider>
   </React.StrictMode>,
 );

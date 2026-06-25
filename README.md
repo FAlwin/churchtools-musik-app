@@ -11,9 +11,13 @@ Datenquelle – die App hat keine eigene Datenbank.
 ## Was die App kann
 
 - **Ablaufpläne & Setlists** aus ChurchTools anzeigen (kompletter Ablauf, nicht nur Lieder)
-- **Chord Charts** mit automatischer Transponierung, Kapo, Spalten- und Schrift-Optionen
+- **Chord Charts als PDF** (SongSelect-Look) mit automatischer Transponierung, Kapo, Spalten- und
+  Schrift-Optionen; im Querformat zwei Seiten nebeneinander, als PDF teil-/druckbar
 - **Alle Lieder** durchsuchbar inkl. Nutzungs-Statistik
-- **ChordPro-Editor**: eine bearbeitete Version eines Lieds speichern (Original bleibt erhalten)
+- **Mehrere benannte Lied-Versionen** (z. B. „Akustik", „Jugend") – team-weit in ChurchTools,
+  Original bleibt erhalten
+- **Anmerkungen, Zoom & Einstellungen pro ChurchTools-Konto** – geräteübergreifend synchronisiert
+  (Stift/Marker/Text auf den Seiten, Rückgängig/Wiederholen)
 - **Dokumenten-Viewer** (PDF/Bild) mit Anmerkungen
 - **Rechtebewusste Oberfläche** – jede Person sieht nur, wozu ihre ChurchTools-Rechte passen
 - **Frei konfigurierbare Links** (z. B. zu weiteren Gemeinde-Angeboten) im „Mehr"-Tab und optional

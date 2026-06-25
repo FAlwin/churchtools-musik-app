@@ -16,8 +16,9 @@ RUN npm run build --workspace=client
 
 ENV NODE_ENV=production
 ENV PORT=3001
-# Laufzeit-Branding (White-Label) liegt im Volume /app/data – übersteht Updates.
+# Laufzeit-Branding (White-Label) + kontobezogene Anmerkungen liegen im Volume /app/data – überstehen Updates.
 ENV SITE_CONFIG_PATH=/app/data/site.json
+ENV ANNOTATIONS_PATH=/app/data/annotations
 EXPOSE 3001
 VOLUME ["/app/data"]
 

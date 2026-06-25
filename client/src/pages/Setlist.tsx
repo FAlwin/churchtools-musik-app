@@ -25,6 +25,10 @@ import { AddItemSheet } from '../components/AddItemSheet';
 import { ItemActionSheet } from '../components/ItemActionSheet';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
+import { generateSetlistPdf } from '../utils/chordPdf';
+import { sharePdf } from '../utils/sharePdf';
+import { loadSongPdfOpts, loadAppLogo } from '../utils/songPdfOpts';
+import { selectedVersionKey, versionText } from '../utils/songVersions';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
@@ -213,6 +217,29 @@ export function Setlist({
     });
   }
 
+  // Alle Lieder des Ablaufs als eine PDF teilen – jedes Lied EXAKT wie in der App angezeigt
+  // (gespeicherte Tonart/Kapo/Schrift/Spalten + die jeweils gewählte Version + Logo im Kopf).
+  const exportableSongs = items
+    .map((i) => i.song)
+    .filter((s): s is NonNullable<typeof s> => !!s)
+    .map((s) => {
+      const vk = selectedVersionKey(s);
+      return { song: { ...s, chordpro: versionText(s, vk) }, versionKey: vk };
+    })
+    .filter((e) => e.song.chordpro.length > 0);
+  async function handleExportPdf() {
+    if (exportableSongs.length === 0) return;
+    const logo = await loadAppLogo();
+    const doc = generateSetlistPdf(
+      exportableSongs.map((e) => e.song),
+      (s) => {
+        const e = exportableSongs.find((x) => x.song.id === s.id);
+        return loadSongPdfOpts(s, logo, e?.versionKey);
+      },
+    );
+    void sharePdf(doc, service.name || 'Ablauf');
+  }
+
   // Laufender Zähler über die Lieder – für die Charts-Navigation (Index ins Songs-Array).
   let songIndex = -1;
 
@@ -224,16 +251,25 @@ export function Setlist({
         back={onBack}
         backLabel="Termine"
         right={
-          canEdit && items.length > 0 && !isLoading && !isError ? (
-            <IconButton
-              onClick={() => {
-                setErr(null);
-                setEditMode((v) => !v);
-              }}
-              title={editMode ? 'Fertig' : 'Ablauf bearbeiten'}
-            >
-              <Icon name={editMode ? 'check' : 'pencil'} size={20} stroke={2.2} />
-            </IconButton>
+          !isLoading && !isError && items.length > 0 ? (
+            <>
+              {exportableSongs.length > 0 && !editMode && (
+                <IconButton onClick={() => void handleExportPdf()} title="Alle Lieder als PDF teilen">
+                  <Icon name="share" size={20} stroke={2.2} />
+                </IconButton>
+              )}
+              {canEdit && (
+                <IconButton
+                  onClick={() => {
+                    setErr(null);
+                    setEditMode((v) => !v);
+                  }}
+                  title={editMode ? 'Fertig' : 'Ablauf bearbeiten'}
+                >
+                  <Icon name={editMode ? 'check' : 'pencil'} size={20} stroke={2.2} />
+                </IconButton>
+              )}
+            </>
           ) : undefined
         }
       />
