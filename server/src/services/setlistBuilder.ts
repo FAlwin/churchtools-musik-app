@@ -276,6 +276,18 @@ function isHeaderType(type?: string): boolean {
   return !!type && /header|überschrift|heading|section/i.test(type);
 }
 
+/** Formatiert eine CT-Startzeit (ISO/UTC) als deutsche Ortszeit „HH:MM"; null bei fehlender/ungültiger Zeit. */
+function formatBerlinTime(iso?: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Berlin',
+  }).format(d);
+}
+
 /**
  * Säubert ein CT-Dienst-Token zum reinen Namen: entfernt alle eckigen Klammern und ein
  * etwaiges nachgestelltes „?" (CT-Offen-Marker). „[Kamera Studio]?" → „Kamera Studio".
@@ -426,6 +438,7 @@ export async function getAgendaItems(cookie: string, eventId: number): Promise<A
   return Promise.all(
     items.map(async (item): Promise<AgendaItem> => {
       const song = item.song ? await buildSong(cookie, item.song) : null;
+      const durationSec = item.duration ?? 0;
       return {
         id: item.id,
         title: item.title,
@@ -434,6 +447,9 @@ export async function getAgendaItems(cookie: string, eventId: number): Promise<A
         responsible: responsibleEntries(item),
         responsibleText: item.responsible?.text ?? '',
         song,
+        time: formatBerlinTime(item.start),
+        durationMin: durationSec > 0 ? Math.round(durationSec / 60) : null,
+        note: item.note ?? '',
       };
     }),
   );

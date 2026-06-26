@@ -19,6 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar, IconButton } from '../components/NavBar';
+import { Segment } from '../components/Segment';
 import { CenterMessage } from '../components/CenterMessage';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddItemSheet } from '../components/AddItemSheet';
@@ -108,6 +109,39 @@ function ResponsibleLine({ entries }: { entries: AgendaItem['responsible'] }) {
   );
 }
 
+/** Read-only „voller Ablauf": alle Punkte mit Uhrzeit, Dauer, Notiz und Zuständigen (wie in ChurchTools). */
+function AgendaFullView({ items }: { items: AgendaItem[] }) {
+  return (
+    <div className={styles.flowList}>
+      {items.map((item) => {
+        if (item.isHeader) {
+          return (
+            <div key={item.id} className={styles.sectionBand}>
+              {item.time && <span className={styles.bandTime}>{item.time}</span>}
+              {item.title}
+            </div>
+          );
+        }
+        const title = item.song ? item.song.title : item.title;
+        return (
+          <div key={item.id} className={styles.flowRow}>
+            <div className={styles.flowTime}>{item.time ?? ''}</div>
+            <div className={styles.flowBody}>
+              <div className={styles.flowHead}>
+                <span className={styles.flowTitle}>{title}</span>
+                {item.song && <span className={styles.flowSongTag}>🎵</span>}
+                {item.durationMin && <span className={styles.flowDur}>{item.durationMin} Min</span>}
+              </div>
+              {item.note && <div className={styles.flowNote}>{item.note}</div>}
+              <ResponsibleLine entries={item.responsible} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Eine sortierbare Zeile im Bearbeiten-Modus. Tippen auf den Titel öffnet das Aktionsmenü. */
 function SortableRow({
   item,
@@ -164,6 +198,7 @@ export function Setlist({
   canEdit = false,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
+  const [view, setView] = useState<'songs' | 'agenda'>('songs');
   const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
   const [err, setErr] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
@@ -254,7 +289,10 @@ export function Setlist({
           !isLoading && !isError && items.length > 0 ? (
             <>
               {exportableSongs.length > 0 && !editMode && (
-                <IconButton onClick={() => void handleExportPdf()} title="Alle Lieder als PDF teilen">
+                <IconButton
+                  onClick={() => void handleExportPdf()}
+                  title="Alle Lieder als PDF teilen"
+                >
                   <Icon name="share" size={20} stroke={2.2} />
                 </IconButton>
               )}
@@ -283,11 +321,20 @@ export function Setlist({
         ) : editMode ? (
           <>
             <div className={styles.editHint}>
-              {isReordering ? 'Speichere…' : 'Ziehen (⠿) zum Sortieren · Punkt antippen für Umbenennen / Lied verknüpfen / Löschen.'}
+              {isReordering
+                ? 'Speichere…'
+                : 'Ziehen (⠿) zum Sortieren · Punkt antippen für Umbenennen / Lied verknüpfen / Löschen.'}
             </div>
             {err && <div className={styles.editError}>{err}</div>}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={localItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={localItems.map((i) => i.id)}
+                strategy={verticalListSortingStrategy}
+              >
                 <div className={styles.list}>
                   {localItems.map((item) => (
                     <SortableRow key={item.id} item={item} onOpenActions={setActionItem} />
@@ -300,51 +347,72 @@ export function Setlist({
             </button>
           </>
         ) : (
-          <div className={styles.list}>
-            {items.map((item) => {
-              if (item.isHeader) {
-                return (
-                  <div key={item.id} className={styles.sectionBand}>
-                    {item.title}
-                  </div>
-                );
-              }
-              if (item.song) {
-                songIndex += 1;
-                const idx = songIndex;
-                const song = item.song;
-                const savedKey = localStorage.getItem(`worship_key_${song.id}`);
-                const dispKey = savedKey || song.targetKey;
-                const transposed = song.originalKey !== dispKey;
-                return (
-                  <button key={item.id} className={styles.songRow} onClick={() => onSelect(idx)}>
-                    <div className={styles.num}>{idx + 1}</div>
-                    <NoteTile size={38} />
-                    <div className={styles.info}>
-                      <div className={styles.name}>{song.title}</div>
-                      <div className={styles.sub}>
-                        {song.bpm !== null && <span>♩ {song.bpm}</span>}
-                        {song.bpm !== null && song.timeSig && <span className={styles.dotSep}>·</span>}
-                        {song.timeSig && <span>{song.timeSig}</span>}
+          <>
+            <Segment
+              className={styles.viewSeg}
+              value={view}
+              options={[
+                { value: 'songs', label: 'Lieder' },
+                { value: 'agenda', label: 'Ablauf' },
+              ]}
+              onChange={setView}
+            />
+            {view === 'agenda' ? (
+              <AgendaFullView items={items} />
+            ) : (
+              <div className={styles.list}>
+                {items.map((item) => {
+                  if (item.isHeader) {
+                    return (
+                      <div key={item.id} className={styles.sectionBand}>
+                        {item.title}
                       </div>
+                    );
+                  }
+                  if (item.song) {
+                    songIndex += 1;
+                    const idx = songIndex;
+                    const song = item.song;
+                    const savedKey = localStorage.getItem(`worship_key_${song.id}`);
+                    const dispKey = savedKey || song.targetKey;
+                    const transposed = song.originalKey !== dispKey;
+                    return (
+                      <button
+                        key={item.id}
+                        className={styles.songRow}
+                        onClick={() => onSelect(idx)}
+                      >
+                        <div className={styles.num}>{idx + 1}</div>
+                        <NoteTile size={38} />
+                        <div className={styles.info}>
+                          <div className={styles.name}>{song.title}</div>
+                          <div className={styles.sub}>
+                            {song.bpm !== null && <span>♩ {song.bpm}</span>}
+                            {song.bpm !== null && song.timeSig && (
+                              <span className={styles.dotSep}>·</span>
+                            )}
+                            {song.timeSig && <span>{song.timeSig}</span>}
+                          </div>
+                          <ResponsibleLine entries={item.responsible} />
+                        </div>
+                        <span className={styles.keyPill}>
+                          {transposed && <span className={styles.keyOrig}>{song.originalKey}</span>}
+                          {dispKey}
+                        </span>
+                        <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
+                      </button>
+                    );
+                  }
+                  return (
+                    <div key={item.id} className={styles.textTile}>
+                      <div className={styles.textTitle}>{item.title}</div>
                       <ResponsibleLine entries={item.responsible} />
                     </div>
-                    <span className={styles.keyPill}>
-                      {transposed && <span className={styles.keyOrig}>{song.originalKey}</span>}
-                      {dispKey}
-                    </span>
-                    <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-                  </button>
-                );
-              }
-              return (
-                <div key={item.id} className={styles.textTile}>
-                  <div className={styles.textTitle}>{item.title}</div>
-                  <ResponsibleLine entries={item.responsible} />
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
         <div style={{ height: 20 }} />
       </Scroll>
@@ -359,7 +427,9 @@ export function Setlist({
         />
       )}
 
-      {showAdd && <AddItemSheet onClose={() => setShowAdd(false)} onAdd={onAdd} services={services} />}
+      {showAdd && (
+        <AddItemSheet onClose={() => setShowAdd(false)} onAdd={onAdd} services={services} />
+      )}
 
       {actionItem && (
         <ItemActionSheet
@@ -368,7 +438,9 @@ export function Setlist({
           onClose={() => setActionItem(null)}
           onRename={(title) => handleRename(actionItem.id, title)}
           onLinkSong={(arrangementId) => onLinkSong(actionItem.id, arrangementId)}
-          onUnlinkSong={() => onUnlinkSong(actionItem.id, actionItem.song?.title ?? actionItem.title)}
+          onUnlinkSong={() =>
+            onUnlinkSong(actionItem.id, actionItem.song?.title ?? actionItem.title)
+          }
           onSetResponsible={(responsible) => onSetResponsible(actionItem.id, responsible)}
           onRequestDelete={() => setPendingDelete(actionItem)}
         />

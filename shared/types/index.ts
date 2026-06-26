@@ -112,6 +112,12 @@ export interface AgendaItem {
   responsibleText: string;
   /** Song-Daten, falls dieser Punkt ein Lied ist – sonst null */
   song: SetlistSong | null;
+  /** Von ChurchTools berechnete Startuhrzeit in deutscher Ortszeit (z.B. „11:05"); null wenn keine. */
+  time: string | null;
+  /** Dauer des Punkts in Minuten (aus CT-Sekunden gerundet); null/0 wenn nicht gepflegt. */
+  durationMin: number | null;
+  /** Notiz/Beschreibung des Punkts (frei, kann leer sein). */
+  note: string;
 }
 
 /** Ein Eintrag der Zuständigen-Anzeige: Personenname (besetzt) oder offener Dienst-Platz. */

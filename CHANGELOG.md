@@ -7,6 +7,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Neu
+
+- **Vollständige Ablauf-Ansicht** in der Setlist: Umschalter „Lieder / Ablauf" oben. „Ablauf" zeigt read-only den kompletten Gottesdienst-Ablauf mit den aus ChurchTools importierten Uhrzeiten, Dauer je Punkt, Notizen und Zuständigen – auch Nicht-Lied-Positionen. „Lieder" bleibt die gewohnte, antippbare Lied-Liste.
+
 ### Behoben
 
 - **Versionsanzeige im Mehr-Tab** zeigte fest „v2.0" statt der echten Version. Sie wird jetzt zur Build-Zeit aus dem Git-Tag gesetzt (`VITE_APP_VERSION`, vom CI als Build-Arg) und veraltet damit nicht mehr.

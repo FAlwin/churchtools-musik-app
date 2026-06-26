@@ -142,6 +142,75 @@
   font-weight: 700;
 }
 
+// ── Umschalter Lieder / Ablauf ──
+.viewSeg {
+  margin: 14px 16px 0;
+}
+
+// ── Voller Ablauf (read-only): Zeitspalte + Inhalt ──
+.flowList {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.flowRow {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+}
+.flowTime {
+  flex-shrink: 0;
+  width: 42px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue-ink);
+  font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+}
+.flowBody {
+  flex: 1;
+  min-width: 0;
+}
+.flowHead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.flowTitle {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.flowSongTag {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.flowDur {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text3);
+  font-variant-numeric: tabular-nums;
+}
+.flowNote {
+  font-size: 12.5px;
+  color: var(--text2);
+  margin-top: 3px;
+  white-space: pre-wrap;
+}
+// Zeit-Präfix im Abschnitts-Band
+.bandTime {
+  color: var(--blue-ink);
+  font-weight: 700;
+  margin-right: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
 // ── Bearbeiten-Modus ──
 .editHint {
   font-size: 12.5px;

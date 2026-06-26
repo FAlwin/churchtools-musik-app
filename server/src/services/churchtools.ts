@@ -146,7 +146,10 @@ export interface CtAgendaItem {
   title: string;
   type?: string;
   note?: string;
+  /** Dauer des Punkts in Sekunden (CT-Rohwert). */
   duration?: number;
+  /** Von ChurchTools berechnete absolute Startzeit (ISO-8601, UTC) – null wenn keine. */
+  start?: string | null;
   isBeforeEvent?: boolean;
   /** Beim Lesen ein Objekt; beim Schreiben wird nur `text` als String gesendet. */
   responsible?: { text?: string; persons?: { service?: string; person?: { title?: string } }[] };
