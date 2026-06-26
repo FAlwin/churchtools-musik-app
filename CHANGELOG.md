@@ -15,6 +15,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   „Ich␣␣␣glaube"). Jetzt darf ein breiter Akkord über die folgenden akkordlosen Wörter ragen (wie
   in Lead-Sheets üblich); Extra-Platz wird nur erzwungen, wenn direkt danach wieder ein Akkord
   käme – Akkorde überlappen also nie.
+- **Einheitlich linksbündige Zeilen:** Zeilen, die im Quelltext nach dem ersten Akkord mit
+  Leerzeichen beginnen (`[A]   Ich…`), starteten eingerückt, während andere bündig am Rand
+  standen. Jetzt beginnt jede Zeile bündig am linken Rand. Mehrfach-Leerzeichen innerhalb der
+  Zeile bleiben unberührt.
 
 ## [2.1.2] – 2026-06-26
 

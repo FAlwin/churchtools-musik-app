@@ -189,6 +189,12 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
   }
 
   function drawRow(row: Pair[]) {
+    // Führende reine Leerzeichen am Zeilenanfang weglassen (z. B. Einrückung aus „[A]   Ich")
+    // → jede Zeile beginnt bündig am linken Spaltenrand. Mehrfach-Leerzeichen INNERHALB der
+    // Zeile bleiben unberührt.
+    let s = 0;
+    while (s < row.length && !row[s].chord && !/\S/.test(row[s].text || '')) s++;
+    const cells = row.slice(s);
     let cx = x;
     const yChord = y + chordPt * PT_TO_MM;
     const yLyric = y + (lyricsOnly ? 0 : chordH) + fontPt * PT_TO_MM;
@@ -197,7 +203,7 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
     // wieder ein Akkord käme – sonst entstünde eine unnötige Lücke. `chordDebt` = Restbreite,
     // die der zuletzt gesetzte Akkord bis zum nächsten Akkord noch beansprucht.
     let chordDebt = 0;
-    row.forEach((p, i) => {
+    cells.forEach((p, i) => {
       d.setFont('helvetica', 'normal');
       d.setFontSize(fontPt);
       const tw = d.getTextWidth(p.text || '');
@@ -216,7 +222,7 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
       }
       let adv = tw;
       chordDebt -= tw;
-      const next = row[i + 1];
+      const next = cells[i + 1];
       if (chordDebt > 0 && next && next.chord) {
         adv += chordDebt; // gerade so viel Platz, dass der nächste Akkord nicht überlappt
         chordDebt = 0;
