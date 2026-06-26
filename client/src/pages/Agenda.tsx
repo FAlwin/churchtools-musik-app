@@ -14,6 +14,8 @@ interface AgendaProps {
   isError?: boolean;
   onRetry?: () => void;
   onSelect: (service: Service) => void;
+  /** Öffnet direkt das „Liederheft" (Lieder-Charts) des Gottesdienstes. */
+  onOpenSongs: (service: Service) => void;
 }
 
 const MONTHS = [
@@ -48,7 +50,14 @@ function groupByMonth(list: Service[]): { key: string; items: Service[] }[] {
 }
 
 /** Übersicht der Gottesdienste (kommend + vergangen), nach Monat gruppiert. */
-export function Agenda({ services, isLoading, isError, onRetry, onSelect }: AgendaProps) {
+export function Agenda({
+  services,
+  isLoading,
+  isError,
+  onRetry,
+  onSelect,
+  onOpenSongs,
+}: AgendaProps) {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [monthsBack, setMonthsBack] = useState(1);
 
@@ -63,26 +72,38 @@ export function Agenda({ services, isLoading, isError, onRetry, onSelect }: Agen
 
   function row(s: Service) {
     return (
-      <button key={s.id} className={styles.card} onClick={() => onSelect(s)}>
-        <div className={styles.dateBadge}>
-          <span className={styles.day}>{s.day}</span>
-          <span className={styles.month}>{s.month}</span>
-        </div>
-        <div className={styles.info}>
-          <div className={styles.svcName}>
-            {s.name}
-            {s.subtitle && <span className={styles.subtitlePart}> · {s.subtitle}</span>}
+      <div key={s.id} className={styles.card}>
+        <button className={styles.cardMain} onClick={() => onSelect(s)}>
+          <div className={styles.dateBadge}>
+            <span className={styles.day}>{s.day}</span>
+            <span className={styles.month}>{s.month}</span>
           </div>
-          <div className={styles.meta}>
-            <span>{s.weekday}</span>
-            <span className={styles.dotSep}>·</span>
-            <span>{s.time}</span>
-            <span className={styles.dotSep}>·</span>
-            <span>{s.songCount} Lieder</span>
+          <div className={styles.info}>
+            <div className={styles.svcName}>
+              {s.name}
+              {s.subtitle && <span className={styles.subtitlePart}> · {s.subtitle}</span>}
+            </div>
+            <div className={styles.meta}>
+              <span>{s.weekday}</span>
+              <span className={styles.dotSep}>·</span>
+              <span>{s.time}</span>
+              <span className={styles.dotSep}>·</span>
+              <span>{s.songCount} Lieder</span>
+            </div>
           </div>
-        </div>
-        <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-      </button>
+          <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
+        </button>
+        {s.songCount > 0 && (
+          <button
+            className={styles.songBook}
+            onClick={() => onOpenSongs(s)}
+            aria-label="Liederheft öffnen"
+            title="Liederheft öffnen"
+          >
+            <Icon name="music" size={21} stroke={2.2} />
+          </button>
+        )}
+      </div>
     );
   }
 
@@ -114,7 +135,11 @@ export function Agenda({ services, isLoading, isError, onRetry, onSelect }: Agen
           isLoading ? (
             <CenterMessage loading text="Gottesdienste werden geladen…" />
           ) : isError ? (
-            <CenterMessage icon="⚠️" text="Gottesdienste konnten nicht geladen werden." onRetry={onRetry} />
+            <CenterMessage
+              icon="⚠️"
+              text="Gottesdienste konnten nicht geladen werden."
+              onRetry={onRetry}
+            />
           ) : upcoming.length === 0 ? (
             <CenterMessage icon="📅" text="Keine kommenden Gottesdienste." />
           ) : (

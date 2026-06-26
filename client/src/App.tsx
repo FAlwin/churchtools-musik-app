@@ -230,7 +230,15 @@ export default function App() {
       (view.type === 'chart' &&
         view.source === 'setlist' &&
         (!service || (songs.length === 0 && agendaQuery.isLoading))));
-  if (restoringView) {
+  // Direktes „Liederheft" aus der Terminliste: Charts geöffnet, aber der Ablauf (und damit die
+  // Lieder) lädt noch → kurzer Lade-Screen statt Durchfall zur Tab-Ebene.
+  const loadingSongbook =
+    view?.type === 'chart' &&
+    view.source === 'setlist' &&
+    !!service &&
+    songs.length === 0 &&
+    agendaQuery.isLoading;
+  if (restoringView || loadingSongbook) {
     return (
       <Screen>
         <CenterMessage loading text="Einen Moment…" />
@@ -341,6 +349,11 @@ export default function App() {
             onSelect={(s) => {
               setService(s);
               setView({ type: 'setlist' });
+            }}
+            onOpenSongs={(s) => {
+              setService(s);
+              setSongIndex(0);
+              setView({ type: 'chart', source: 'setlist' });
             }}
           />
         )}
