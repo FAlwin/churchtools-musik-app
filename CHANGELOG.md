@@ -7,6 +7,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.1.7] – 2026-06-26
+
+### Geändert
+
+- **Bearbeiten-Hinweis** im Ablauf-Bearbeiten-Modus präzisiert: „Ziehen zum Sortieren · Eintrag antippen zum Bearbeiten" (vorher „Punkt …").
+
 ## [2.1.6] – 2026-06-26
 
 ### Neu
