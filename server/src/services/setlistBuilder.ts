@@ -447,7 +447,10 @@ export async function getAgendaItems(cookie: string, eventId: number): Promise<A
         responsible: responsibleEntries(item),
         responsibleText: item.responsible?.text ?? '',
         song,
-        time: formatBerlinTime(item.start),
+        // „Vor dem Event"-Punkte (z.B. Soundcheck/Einsingen) zeigt ChurchTools bewusst OHNE
+        // Uhrzeit (durchgestrichenes Auge); das übernehmen wir – Punkt + Dauer bleiben, nur die
+        // berechnete Startzeit entfällt.
+        time: item.isBeforeEvent ? null : formatBerlinTime(item.start),
         durationMin: durationSec > 0 ? Math.round(durationSec / 60) : null,
         note: item.note ?? '',
       };
