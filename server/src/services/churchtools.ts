@@ -153,6 +153,12 @@ export interface CtAgendaItem {
   duration?: number;
   /** Von ChurchTools berechnete absolute Startzeit (ISO-8601, UTC) – null wenn keine. */
   start?: string | null;
+  /**
+   * Startzeit je Event-ID. MASSGEBLICH für „Uhrzeit ausgeblendet": ist `startTimes[eventId]`
+   * `null`, hat der Nutzer die Uhrzeit dieses Punkts in ChurchTools ausgeblendet (durchgestrichenes
+   * Auge) – das Feld `start` bleibt davon unberührt und ist daher NICHT verlässlich.
+   */
+  startTimes?: Record<string, string | null>;
   isBeforeEvent?: boolean;
   /** Beim Lesen ein Objekt; beim Schreiben wird nur `text` als String gesendet. */
   responsible?: { text?: string; persons?: { service?: string; person?: { title?: string } }[] };
@@ -488,6 +494,31 @@ export async function deleteAgendaItem(
   }
   if (!res.ok && res.status !== 404) {
     throw new HttpError(502, `Ablaufpunkt löschen fehlgeschlagen (${res.status}).`);
+  }
+}
+
+/**
+ * Blendet die Uhrzeit eines Ablaufpunkts aus (`hidden=true`) oder wieder ein (`false`) – das
+ * durchgestrichene Auge in ChurchTools. Verifiziert: schaltet `startTimes[eventId]` zwischen
+ * der Zeit und `null` um (HTTP 204). Pro Event gespeichert, leerer Body.
+ */
+export async function setAgendaItemHidden(
+  cookie: string,
+  eventId: number,
+  itemId: number,
+  hidden: boolean,
+): Promise<void> {
+  const csrf = await getCsrfToken(cookie);
+  const action = hidden ? 'hide' : 'unhide';
+  const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items/${itemId}/${action}`, {
+    method: 'POST',
+    headers: { Cookie: cookie, 'CSRF-Token': csrf },
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+  }
+  if (!res.ok) {
+    throw new HttpError(502, `Uhrzeit aus-/einblenden fehlgeschlagen (${res.status}).`);
   }
 }
 

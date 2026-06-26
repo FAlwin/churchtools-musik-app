@@ -18,10 +18,10 @@ interface ItemActionSheetProps {
   onSetResponsible: (responsible: string) => Promise<void>;
   /** Setzt die Dauer des Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
   onSetDuration: (durationMin: number) => Promise<void>;
-  /** Ist die Uhrzeit dieses Punkts in der App ausgeblendet? */
+  /** Ist die Uhrzeit dieses Punkts in ChurchTools ausgeblendet? */
   timeHidden: boolean;
-  /** Blendet die Uhrzeit dieses Punkts in der App aus/ein (lokal, kein ChurchTools-Schreibzugriff). */
-  onToggleTimeHidden: () => void;
+  /** Blendet die Uhrzeit dieses Punkts in ChurchTools aus (true) oder ein (false). Wirft bei Fehler. */
+  onToggleHidden: (hidden: boolean) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
   services: AgendaServiceOption[];
   /** Löschen anstoßen (Bestätigung erfolgt im Eltern-Screen). */
@@ -43,7 +43,7 @@ export function ItemActionSheet({
   onSetResponsible,
   onSetDuration,
   timeHidden,
-  onToggleTimeHidden,
+  onToggleHidden,
   services,
   onRequestDelete,
 }: ItemActionSheetProps) {
@@ -54,8 +54,20 @@ export function ItemActionSheet({
   const [duration, setDuration] = useState(
     item.durationMin != null ? String(item.durationMin) : '',
   );
+  // Uhrzeit-ausgeblendet: optimistisch lokal umschalten, bei Fehler zurückrollen.
+  const [hidden, setHidden] = useState(timeHidden);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  function toggleHidden() {
+    const next = !hidden;
+    setHidden(next);
+    setErr(null);
+    void onToggleHidden(next).catch((e: unknown) => {
+      setHidden(!next);
+      setErr(e instanceof Error ? e.message : 'Uhrzeit ändern fehlgeschlagen.');
+    });
+  }
 
   const durationNum = duration.trim() === '' ? null : Number(duration);
   const durationValid = durationNum === null || (Number.isInteger(durationNum) && durationNum >= 0);
@@ -177,13 +189,9 @@ export function ItemActionSheet({
             <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
           </div>
 
-          <button
-            className={styles.toggleRow}
-            onClick={onToggleTimeHidden}
-            aria-pressed={timeHidden}
-          >
+          <button className={styles.toggleRow} onClick={toggleHidden} aria-pressed={hidden}>
             <span className={styles.label}>Uhrzeit ausblenden</span>
-            <span className={`${styles.tog}${timeHidden ? ' ' + styles.togOn : ''}`}>
+            <span className={`${styles.tog}${hidden ? ' ' + styles.togOn : ''}`}>
               <span className={styles.togThumb} />
             </span>
           </button>

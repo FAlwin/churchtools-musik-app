@@ -101,6 +101,18 @@ export function setAgendaItemDuration(
   });
 }
 
+/** Blendet die Uhrzeit eines Punkts in ChurchTools aus/ein (durchgestrichenes Auge). */
+export function setAgendaItemHidden(
+  eventId: number,
+  itemId: number,
+  hidden: boolean,
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}/hidden`, {
+    method: 'PUT',
+    body: JSON.stringify({ hidden }),
+  });
+}
+
 /** Sucht Songs in ChurchTools (für „Lied hinzufügen"). */
 export function searchSongs(query: string): Promise<SongSearchResult[]> {
   return apiFetch<SongSearchResult[]>(`/api/songs?query=${encodeURIComponent(query)}`);

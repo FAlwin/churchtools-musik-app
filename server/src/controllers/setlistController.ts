@@ -17,6 +17,7 @@ import {
   reorderAgenda,
   deleteAgendaItem,
   updateAgendaItem,
+  setAgendaItemHidden,
   createAgendaItem,
   searchSongs,
   getSong,
@@ -159,6 +160,17 @@ export async function putAgendaItem(req: Request, res: Response): Promise<void> 
     durationMin,
   });
   invalidateSongUsageCache(); // Verknüpfen/Lösen ändert die Liederzahl/„zuletzt"
+  res.json({ ok: true });
+}
+
+const hiddenSchema = z.object({ hidden: z.boolean() });
+
+/** PUT /api/services/:eventId/agenda/items/:itemId/hidden – Uhrzeit aus-/einblenden (CT-Auge). */
+export async function putAgendaItemHidden(req: Request, res: Response): Promise<void> {
+  const eventId = idSchema.parse(req.params.eventId);
+  const itemId = idSchema.parse(req.params.itemId);
+  const { hidden } = hiddenSchema.parse(req.body);
+  await setAgendaItemHidden(req.ctCookie as string, eventId, itemId, hidden);
   res.json({ ok: true });
 }
 

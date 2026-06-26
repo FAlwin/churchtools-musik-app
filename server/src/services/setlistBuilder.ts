@@ -445,6 +445,11 @@ export async function getAgendaItems(cookie: string, eventId: number): Promise<A
     items.map(async (item): Promise<AgendaItem> => {
       const song = item.song ? await buildSong(cookie, item.song) : null;
       const durationSec = item.duration ?? 0;
+      // Uhrzeit MASSGEBLICH aus startTimes[eventId]: ist der Eintrag null, hat der Nutzer die
+      // Uhrzeit in ChurchTools ausgeblendet (Auge) → keine Zeit anzeigen. Das Feld `start` bleibt
+      // auch dann gefüllt und ist daher unbrauchbar. Fallback auf `start`, falls startTimes fehlt.
+      const stEntry = item.startTimes ? item.startTimes[String(eventId)] : undefined;
+      const timeSource = stEntry === undefined ? item.start : stEntry;
       return {
         id: item.id,
         title: item.title,
@@ -453,10 +458,7 @@ export async function getAgendaItems(cookie: string, eventId: number): Promise<A
         responsible: responsibleEntries(item),
         responsibleText: item.responsible?.text ?? '',
         song,
-        // Startuhrzeit aus ChurchTools (Europe/Berlin). Ist der Punkt in CT „ausgeblendet"
-        // (durchgestrichenes Auge → hide-Endpunkt), liefert CT keine Startzeit (start=null) →
-        // time bleibt null und die App zeigt keine Uhrzeit.
-        time: formatBerlinTime(item.start),
+        time: formatBerlinTime(timeSource),
         durationMin: durationSec > 0 ? Math.round(durationSec / 60) : null,
         note: item.note ?? '',
       };

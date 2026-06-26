@@ -54,6 +54,8 @@ interface SetlistProps {
   onSetResponsible: (itemId: number, responsible: string) => Promise<void>;
   /** Setzt die Dauer eines Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
   onSetDuration: (itemId: number, durationMin: number) => Promise<void>;
+  /** Blendet die Uhrzeit eines Punkts in ChurchTools aus (true) oder ein (false). Wirft bei Fehler. */
+  onToggleHidden: (itemId: number, hidden: boolean) => Promise<void>;
   /** Legt einen neuen Punkt an. Wirft bei Fehler. */
   onAdd: (data: {
     type: 'header' | 'text' | 'song';
@@ -111,24 +113,21 @@ function ResponsibleLine({ entries }: { entries: AgendaItem['responsible'] }) {
 
 /**
  * „Voller Ablauf": alle Punkte mit Uhrzeit, Dauer, Notiz und Zuständigen (wie in ChurchTools,
- * aber aufgeräumt). Lieder sind antippbar (→ Charts). `hiddenTimeIds` = Punkte, deren Uhrzeit
- * der Nutzer in der App ausgeblendet hat (über das Bearbeiten-Menü) – die Zeit wird dann nicht
- * angezeigt. Liefert ChurchTools selbst keine Zeit (start=null), bleibt sie ohnehin leer.
+ * aber aufgeräumt). Lieder sind antippbar (→ Charts). Die Uhrzeit (`item.time`) ist bereits
+ * serverseitig korrekt: in ChurchTools ausgeblendete Punkte (Auge) liefern keine Zeit.
  */
 function AgendaFullView({
   items,
-  hiddenTimeIds,
   onSelect,
 }: {
   items: AgendaItem[];
-  hiddenTimeIds: Set<number>;
   onSelect: (songIndex: number) => void;
 }) {
   let songIndex = -1;
   return (
     <div className={styles.flowList}>
       {items.map((item) => {
-        const showTime = !!item.time && !hiddenTimeIds.has(item.id);
+        const showTime = !!item.time;
         if (item.isHeader) {
           return (
             <div key={item.id} className={styles.sectionBand}>
@@ -223,35 +222,13 @@ export function Setlist({
   onUnlinkSong,
   onSetResponsible,
   onSetDuration,
+  onToggleHidden,
   onAdd,
   services,
   canEdit = false,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
   const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
-  // Punkte, deren Uhrzeit der Nutzer in der App ausgeblendet hat (pro Gottesdienst, lokal gemerkt).
-  const hideKey = `worship_hidetime_${service.id}`;
-  const [hiddenTimeIds, setHiddenTimeIds] = useState<Set<number>>(() => {
-    try {
-      const raw = localStorage.getItem(hideKey);
-      return new Set<number>(raw ? (JSON.parse(raw) as number[]) : []);
-    } catch {
-      return new Set<number>();
-    }
-  });
-  function toggleTimeHidden(itemId: number) {
-    setHiddenTimeIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      try {
-        localStorage.setItem(hideKey, JSON.stringify([...next]));
-      } catch {
-        /* Speicher nicht verfügbar – dann eben nur für diese Sitzung */
-      }
-      return next;
-    });
-  }
   const [err, setErr] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -396,7 +373,7 @@ export function Setlist({
             </button>
           </>
         ) : (
-          <AgendaFullView items={items} hiddenTimeIds={hiddenTimeIds} onSelect={onSelect} />
+          <AgendaFullView items={items} onSelect={onSelect} />
         )}
         <div style={{ height: 20 }} />
       </Scroll>
@@ -427,8 +404,8 @@ export function Setlist({
           }
           onSetResponsible={(responsible) => onSetResponsible(actionItem.id, responsible)}
           onSetDuration={(durationMin) => onSetDuration(actionItem.id, durationMin)}
-          timeHidden={hiddenTimeIds.has(actionItem.id)}
-          onToggleTimeHidden={() => toggleTimeHidden(actionItem.id)}
+          timeHidden={actionItem.time === null}
+          onToggleHidden={(hidden) => onToggleHidden(actionItem.id, hidden)}
           onRequestDelete={() => setPendingDelete(actionItem)}
         />
       )}
