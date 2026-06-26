@@ -21,25 +21,20 @@
   }
 }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.chip {
-  padding: 7px 12px;
+.select {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 13px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 10px;
   background: var(--surface2);
   color: var(--text);
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
   cursor: pointer;
 
-  &:hover {
-    background: var(--surface3);
+  &:focus {
+    outline: none;
     border-color: var(--blue);
   }
 }

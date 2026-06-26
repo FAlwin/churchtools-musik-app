@@ -29,7 +29,7 @@ interface ItemActionSheetProps {
 }
 
 /**
- * „Punkt bearbeiten"-Dialog: ein zentriertes Modal mit allen Einstellungen auf einen Blick
+ * „Eintrag bearbeiten"-Dialog: ein zentriertes Modal mit allen Einstellungen auf einen Blick
  * (Titel, Lied, Dauer, Zuständig, Uhrzeit ausblenden, Löschen) – angelehnt an den
  * „Position bearbeiten"-Dialog in ChurchTools. „Speichern" schreibt die geänderten Felder
  * gesammelt nach ChurchTools.
@@ -125,7 +125,7 @@ export function ItemActionSheet({
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.card} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.title}>Punkt bearbeiten</div>
+        <div className={styles.title}>Eintrag bearbeiten</div>
         {err && <div className={styles.err}>{err}</div>}
 
         <div className={styles.fields}>
@@ -214,7 +214,7 @@ export function ItemActionSheet({
           }}
         >
           <Icon name="trash" size={16} />
-          Punkt löschen
+          Eintrag löschen
         </button>
       </div>
     </div>

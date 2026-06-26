@@ -380,7 +380,7 @@ export function Setlist({
 
       {pendingDelete && (
         <ConfirmDialog
-          title="Punkt löschen?"
+          title="Eintrag löschen?"
           message={`„${pendingDelete.song ? pendingDelete.song.title : pendingDelete.title}" wird aus dem Ablauf in ChurchTools entfernt.`}
           confirmLabel="Löschen"
           onConfirm={confirmDelete}

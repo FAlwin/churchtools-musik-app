@@ -28,15 +28,25 @@ export function ResponsibleField({ value, onChange, services, autoFocus }: Respo
         onChange={(e) => onChange(e.target.value)}
       />
       {services.length > 0 && (
-        <div className={styles.chips}>
+        <select
+          className={styles.select}
+          value=""
+          onChange={(e) => {
+            if (e.target.value) addToken(e.target.value);
+          }}
+        >
+          <option value="">Dienst hinzufügen…</option>
           {services.map((s) => (
-            <button key={s.id} type="button" className={styles.chip} onClick={() => addToken(s.name)}>
+            <option key={s.id} value={s.name}>
               {s.name}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       )}
-      <p className={styles.hint}>Dienst antippen fügt z.B. „[Musik]" ein – ChurchTools füllt die zugesagten Personen automatisch.</p>
+      <p className={styles.hint}>
+        Dienst auswählen fügt z.B. „[Musik]" ein – ChurchTools füllt die zugesagten Personen
+        automatisch.
+      </p>
     </div>
   );
 }
