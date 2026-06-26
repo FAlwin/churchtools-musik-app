@@ -7,6 +7,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.2.0] – 2026-06-26
+
+### Neu
+
+- **Team-Übersicht im Ablaufplan:** Direkt über dem Ablauf eines Gottesdienstes erscheint ein
+  aufklappbares „Team"-Panel. Es listet alle Personen aus dem ChurchTools-Dienstplan (Musik 1,
+  Predigt, Ton …) mit ihrer Rolle. Unbestätigte Einsätze werden kursiv + mit „?" markiert.
+  Das Panel zeigt sich nur, wenn ChurchTools tatsächlich Personen zurückliefert – kein leeres
+  Kästchen bei Events ohne Dienstplan-Einträge.
+
 ## [2.1.3] – 2026-06-26
 
 ### Behoben

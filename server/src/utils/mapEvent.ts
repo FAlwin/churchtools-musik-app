@@ -1,4 +1,4 @@
-import type { Service } from '@shared/types/index';
+import type { EventTeamMember, Service } from '@shared/types/index';
 import type { CtEvent } from '../services/churchtools.js';
 
 const TZ = 'Europe/Berlin';
@@ -16,6 +16,13 @@ function parts(iso: string): { day: string; month: string; weekday: string; time
 /** Wandelt ein ChurchTools-Event in unser Service-Format um. */
 export function mapEventToService(ev: CtEvent, songCount: number, subtitle: string | null = null): Service {
   const p = parts(ev.startDate);
+  const team: EventTeamMember[] = (ev.services ?? [])
+    .filter((s) => s.person?.title)
+    .map((s) => ({
+      role: s.name ?? '',
+      name: s.person!.title!.trim(),
+      agreed: s.agreed ?? true,
+    }));
   return {
     id: ev.id,
     day: p.day,
@@ -27,5 +34,6 @@ export function mapEventToService(ev: CtEvent, songCount: number, subtitle: stri
     time: p.time,
     location: ev.calendar?.title ?? '',
     songCount,
+    team,
   };
 }

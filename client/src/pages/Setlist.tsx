@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { AgendaItem, AgendaServiceOption, Service } from '@shared/types/index';
 import {
   DndContext,
@@ -143,6 +143,33 @@ function SortableRow({
   );
 }
 
+/** Aufklappbare Teamübersicht aus dem ChurchTools-Dienstplan. */
+function TeamPanel({ team }: { team: Service['team'] }) {
+  const [open, setOpen] = useState(false);
+  const toggle = useCallback(() => setOpen((v) => !v), []);
+  if (team.length === 0) return null;
+  return (
+    <div className={styles.teamPanel}>
+      <button className={styles.teamHeader} onClick={toggle} aria-expanded={open}>
+        <span className={styles.teamTitle}>Team · {team.length} Personen</span>
+        <span className={`${styles.teamChevron}${open ? ' ' + styles.open : ''}`}>▾</span>
+      </button>
+      {open && (
+        <div className={styles.teamGrid}>
+          {team.map((m, i) => (
+            <div key={i} className={styles.teamCell}>
+              <div className={styles.teamRole}>{m.role}</div>
+              <div className={`${styles.teamName}${m.agreed ? '' : ' ' + styles.unconfirmed}`}>
+                {m.name}{!m.agreed && ' ?'}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Kompletter Ablauf eines Gottesdienstes: anzeigen + (mit Rechten) per Drag & Drop umsortieren. */
 export function Setlist({
   service,
@@ -274,6 +301,7 @@ export function Setlist({
         }
       />
       <Scroll onRefresh={editMode ? undefined : onRetry}>
+        {!isLoading && !isError && !editMode && <TeamPanel team={service.team} />}
         {isLoading ? (
           <CenterMessage loading text="Ablauf wird geladen…" />
         ) : isError ? (

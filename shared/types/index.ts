@@ -4,6 +4,14 @@
  * nicht zwingend 1:1 die ChurchTools-Rohdaten (die werden im Server gemappt).
  */
 
+/** Eine Person im Event-Dienstplan (Musik 1, Predigt, Ton …). */
+export interface EventTeamMember {
+  role: string;
+  name: string;
+  /** false = Anfrage noch offen / nicht bestätigt */
+  agreed: boolean;
+}
+
 /** Ein Gottesdienst / Event in der Agenda. */
 export interface Service {
   id: number;
@@ -21,6 +29,8 @@ export interface Service {
   location: string;
   /** Anzahl Songs in der Setlist */
   songCount: number;
+  /** Zugeteilte Personen aus dem ChurchTools-Dienstplan */
+  team: EventTeamMember[];
 }
 
 /** Ein Song innerhalb einer Setlist (aufgelöstes Arrangement). */
