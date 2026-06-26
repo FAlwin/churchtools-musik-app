@@ -13,6 +13,7 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 - **Liederheft direkt aus der Terminübersicht:** Jede Termin-Karte hat (wenn Lieder vorhanden) rechts einen Noten-Button, der sofort die Lieder-Charts des Gottesdienstes öffnet – ohne Umweg über den Ablauf.
 - **Uhrzeit pro Punkt ausblenden** (mit Bearbeiten-Recht): über das Bearbeiten-Fenster eines Punkts lässt sich die Uhrzeit aus-/einblenden (z. B. bei Soundcheck oder wenn mehrere Dinge gleichzeitig laufen) – **echt mit ChurchTools synchronisiert** (das „Auge"), in beide Richtungen. Der Punkt selbst bleibt mit Titel und Dauer erhalten.
 - **Dauer pro Punkt bearbeiten** (mit Bearbeiten-Recht): über das Aktionsmenü eines Punkts die Dauer in Minuten setzen – schreibt nach ChurchTools, die Uhrzeiten verschieben sich automatisch.
+- **Bemerkung bearbeiten** (mit Bearbeiten-Recht): Notiz/Beschreibung eines Eintrags im Bearbeiten- und Hinzufügen-Fenster setzen (wie „Bemerkung" in ChurchTools); wird im Ablauf angezeigt.
 
 ### Geändert
 

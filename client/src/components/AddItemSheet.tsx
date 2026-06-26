@@ -14,6 +14,7 @@ interface AddItemSheetProps {
     title?: string;
     arrangementId?: number;
     responsible?: string;
+    note?: string;
   }) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Feld). */
   services: AgendaServiceOption[];
@@ -26,6 +27,7 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
   const [mode, setMode] = useState<Mode>('choose');
   const [title, setTitle] = useState('');
   const [responsible, setResponsible] = useState('');
+  const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -85,17 +87,32 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
                   type: mode,
                   title: title.trim(),
                   responsible: responsible.trim() || undefined,
+                  note: note.trim() || undefined,
                 });
             }}
           />
           {mode === 'text' && (
-            <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
+            <>
+              <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
+              <textarea
+                className={styles.textarea}
+                value={note}
+                rows={2}
+                placeholder="Bemerkung (optional)"
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </>
           )}
           <button
             className={styles.primary}
             disabled={!title.trim() || busy}
             onClick={() =>
-              add({ type: mode, title: title.trim(), responsible: responsible.trim() || undefined })
+              add({
+                type: mode,
+                title: title.trim(),
+                responsible: responsible.trim() || undefined,
+                note: note.trim() || undefined,
+              })
             }
           >
             {busy ? 'Füge hinzu…' : 'Hinzufügen'}

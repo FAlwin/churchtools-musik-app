@@ -133,6 +133,16 @@ export function useSetAgendaItemHidden(eventId: number | null) {
   });
 }
 
+/** Setzt die Bemerkung/Notiz eines Punkts und lädt den Ablauf neu. */
+export function useSetAgendaItemNote(eventId: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { itemId: number; note: string }) =>
+      api.setAgendaItemNote(eventId as number, v.itemId, v.note),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
+  });
+}
+
 /** Lädt die ChurchTools-Dienste (für die Verantwortlich-Chips). */
 export function useAgendaServices(enabled: boolean) {
   return useQuery({
@@ -223,6 +233,7 @@ export function useCreateAgendaItem(eventId: number | null) {
       title?: string;
       arrangementId?: number;
       responsible?: string;
+      note?: string;
     }) => api.createAgendaItem(eventId as number, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });

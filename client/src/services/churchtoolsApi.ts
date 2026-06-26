@@ -64,6 +64,7 @@ export function createAgendaItem(
     title?: string;
     arrangementId?: number;
     responsible?: string;
+    note?: string;
   },
 ): Promise<{ ok: boolean }> {
   return apiFetch(`/api/services/${eventId}/agenda/items`, {
@@ -98,6 +99,18 @@ export function setAgendaItemDuration(
   return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
     method: 'PUT',
     body: JSON.stringify({ durationMin }),
+  });
+}
+
+/** Setzt die Bemerkung/Notiz eines Punkts (leerer String löscht sie). */
+export function setAgendaItemNote(
+  eventId: number,
+  itemId: number,
+  note: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ note }),
   });
 }
 

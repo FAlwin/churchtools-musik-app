@@ -21,6 +21,7 @@ import {
   useSetAgendaItemResponsible,
   useSetAgendaItemDuration,
   useSetAgendaItemHidden,
+  useSetAgendaItemNote,
   useAgendaServices,
   useCreateAgendaItem,
   useSongLibrary,
@@ -116,6 +117,7 @@ export default function App() {
   const setAgendaItemResponsible = useSetAgendaItemResponsible(service?.id ?? null);
   const setAgendaItemDuration = useSetAgendaItemDuration(service?.id ?? null);
   const setAgendaItemHidden = useSetAgendaItemHidden(service?.id ?? null);
+  const setAgendaItemNote = useSetAgendaItemNote(service?.id ?? null);
   const agendaServices = useAgendaServices(
     auth.isAuthenticated && canEditAgendas && view?.type === 'setlist',
   );
@@ -280,6 +282,9 @@ export default function App() {
         }
         onToggleHidden={(itemId, hidden) =>
           setAgendaItemHidden.mutateAsync({ itemId, hidden }).then(() => undefined)
+        }
+        onSetNote={(itemId, note) =>
+          setAgendaItemNote.mutateAsync({ itemId, note }).then(() => undefined)
         }
         onAdd={(data) => createAgendaItem.mutateAsync(data).then(() => undefined)}
         services={agendaServices.data ?? []}

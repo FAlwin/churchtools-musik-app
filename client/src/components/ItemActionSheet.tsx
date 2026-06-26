@@ -22,6 +22,8 @@ interface ItemActionSheetProps {
   timeHidden: boolean;
   /** Blendet die Uhrzeit dieses Punkts in ChurchTools aus (true) oder ein (false). Wirft bei Fehler. */
   onToggleHidden: (hidden: boolean) => Promise<void>;
+  /** Setzt die Bemerkung/Notiz des Punkts. Wirft bei Fehler. */
+  onSetNote: (note: string) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
   services: AgendaServiceOption[];
   /** Löschen anstoßen (Bestätigung erfolgt im Eltern-Screen). */
@@ -44,6 +46,7 @@ export function ItemActionSheet({
   onSetDuration,
   timeHidden,
   onToggleHidden,
+  onSetNote,
   services,
   onRequestDelete,
 }: ItemActionSheetProps) {
@@ -51,6 +54,7 @@ export function ItemActionSheet({
   const [songMode, setSongMode] = useState(false);
   const [title, setTitle] = useState(item.title);
   const [responsible, setResponsible] = useState(item.responsibleText);
+  const [note, setNote] = useState(item.note);
   const [duration, setDuration] = useState(
     item.durationMin != null ? String(item.durationMin) : '',
   );
@@ -85,6 +89,9 @@ export function ItemActionSheet({
       }
       if (responsible !== item.responsibleText) {
         await onSetResponsible(responsible.trim());
+      }
+      if (note !== item.note) {
+        await onSetNote(note.trim());
       }
       onClose();
     } catch (e) {
@@ -187,6 +194,17 @@ export function ItemActionSheet({
           <div className={styles.field}>
             <span className={styles.label}>Zuständig</span>
             <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
+          </div>
+
+          <div className={styles.field}>
+            <span className={styles.label}>Bemerkung</span>
+            <textarea
+              className={styles.textarea}
+              value={note}
+              rows={2}
+              placeholder="Optionale Notiz…"
+              onChange={(e) => setNote(e.target.value)}
+            />
           </div>
 
           <button className={styles.toggleRow} onClick={toggleHidden} aria-pressed={hidden}>

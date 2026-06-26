@@ -77,6 +77,8 @@ const updateItemSchema = z
     responsible: z.string().trim().max(1000).optional(),
     // durationMin: Dauer des Punkts in Minuten (0–600); Server rechnet in CT-Sekunden um.
     durationMin: z.coerce.number().int().min(0).max(600).optional(),
+    // note: Bemerkung/Beschreibung des Punkts (frei, kann leeren String haben = löschen).
+    note: z.string().max(2000).optional(),
   })
   .refine(
     (d) =>
@@ -84,8 +86,9 @@ const updateItemSchema = z
       d.arrangementId !== undefined ||
       d.unlink === true ||
       d.responsible !== undefined ||
-      d.durationMin !== undefined,
-    { message: 'Titel, arrangementId, unlink, responsible oder durationMin erforderlich.' },
+      d.durationMin !== undefined ||
+      d.note !== undefined,
+    { message: 'Titel, arrangementId, unlink, responsible, durationMin oder note erforderlich.' },
   );
 
 const createItemSchema = z
@@ -94,6 +97,7 @@ const createItemSchema = z
     title: z.string().trim().max(255).optional(),
     arrangementId: z.coerce.number().int().positive().optional(),
     responsible: z.string().trim().max(1000).optional(),
+    note: z.string().max(2000).optional(),
   })
   .refine((d) => d.type !== 'song' || d.arrangementId !== undefined, {
     message: 'Für ein Lied ist arrangementId erforderlich.',
@@ -103,12 +107,13 @@ const createItemSchema = z
 /** POST /api/services/:eventId/agenda/items – neuen Ablaufpunkt anlegen. */
 export async function postAgendaItem(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
-  const { type, title, arrangementId, responsible } = createItemSchema.parse(req.body);
+  const { type, title, arrangementId, responsible, note } = createItemSchema.parse(req.body);
   await createAgendaItem(req.ctCookie as string, eventId, {
     type,
     title: title ?? (type === 'header' ? 'Überschrift' : type === 'song' ? 'Lied' : 'Neuer Punkt'),
     arrangementId,
     responsible,
+    note,
   });
   invalidateSongUsageCache(); // Liederzahl/„zuletzt" können sich geändert haben
   res.json({ ok: true });
@@ -149,7 +154,7 @@ export async function getSongArrangementsCtrl(req: Request, res: Response): Prom
 export async function putAgendaItem(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
   const itemId = idSchema.parse(req.params.itemId);
-  const { title, arrangementId, unlink, responsible, durationMin } = updateItemSchema.parse(
+  const { title, arrangementId, unlink, responsible, durationMin, note } = updateItemSchema.parse(
     req.body,
   );
   await updateAgendaItem(req.ctCookie as string, eventId, itemId, {
@@ -158,6 +163,7 @@ export async function putAgendaItem(req: Request, res: Response): Promise<void> 
     unlink,
     responsible,
     durationMin,
+    note,
   });
   invalidateSongUsageCache(); // Verknüpfen/Lösen ändert die Liederzahl/„zuletzt"
   res.json({ ok: true });

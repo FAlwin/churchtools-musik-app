@@ -382,6 +382,7 @@ export async function createAgendaItem(
     title: string;
     arrangementId?: number;
     responsible?: string;
+    note?: string;
   },
 ): Promise<void> {
   const csrf = await getCsrfToken(cookie);
@@ -389,6 +390,7 @@ export async function createAgendaItem(
   // Lied-Verknüpfung MUSS als top-level arrangementId gesendet werden (siehe reorderAgenda).
   if (data.type === 'song' && data.arrangementId) body.arrangementId = data.arrangementId;
   if (data.responsible) body.responsible = data.responsible;
+  if (data.note) body.note = data.note;
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items`, {
     method: 'POST',
     headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },

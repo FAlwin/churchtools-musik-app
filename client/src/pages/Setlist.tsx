@@ -56,12 +56,15 @@ interface SetlistProps {
   onSetDuration: (itemId: number, durationMin: number) => Promise<void>;
   /** Blendet die Uhrzeit eines Punkts in ChurchTools aus (true) oder ein (false). Wirft bei Fehler. */
   onToggleHidden: (itemId: number, hidden: boolean) => Promise<void>;
+  /** Setzt die Bemerkung/Notiz eines Punkts. Wirft bei Fehler. */
+  onSetNote: (itemId: number, note: string) => Promise<void>;
   /** Legt einen neuen Punkt an. Wirft bei Fehler. */
   onAdd: (data: {
     type: 'header' | 'text' | 'song';
     title?: string;
     arrangementId?: number;
     responsible?: string;
+    note?: string;
   }) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
   services: AgendaServiceOption[];
@@ -223,6 +226,7 @@ export function Setlist({
   onSetResponsible,
   onSetDuration,
   onToggleHidden,
+  onSetNote,
   onAdd,
   services,
   canEdit = false,
@@ -406,6 +410,7 @@ export function Setlist({
           onSetDuration={(durationMin) => onSetDuration(actionItem.id, durationMin)}
           timeHidden={actionItem.time === null}
           onToggleHidden={(hidden) => onToggleHidden(actionItem.id, hidden)}
+          onSetNote={(note) => onSetNote(actionItem.id, note)}
           onRequestDelete={() => setPendingDelete(actionItem)}
         />
       )}
