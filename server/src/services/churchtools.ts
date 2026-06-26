@@ -491,6 +491,31 @@ export async function deleteAgendaItem(
   }
 }
 
+/**
+ * Blendet die Uhrzeit eines Ablaufpunkts aus (`hidden=true`) oder wieder ein (`false`).
+ * Entspricht dem durchgestrichenen Auge in ChurchTools: der Punkt bleibt im Ablauf, bekommt
+ * aber keine berechnete Startzeit mehr. Pro Event gespeichert; Body ist leer.
+ */
+export async function setAgendaItemHidden(
+  cookie: string,
+  eventId: number,
+  itemId: number,
+  hidden: boolean,
+): Promise<void> {
+  const csrf = await getCsrfToken(cookie);
+  const action = hidden ? 'hide' : 'unhide';
+  const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items/${itemId}/${action}`, {
+    method: 'POST',
+    headers: { Cookie: cookie, 'CSRF-Token': csrf },
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+  }
+  if (!res.ok) {
+    throw new HttpError(502, `Uhrzeit aus-/einblenden fehlgeschlagen (${res.status}).`);
+  }
+}
+
 /** Löscht eine Datei in ChurchTools (per Datei-ID). */
 export async function deleteFile(cookie: string, fileId: number): Promise<void> {
   const csrf = await getCsrfToken(cookie);

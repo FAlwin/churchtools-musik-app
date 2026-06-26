@@ -34,6 +34,8 @@ export type IconName =
   | 'plus'
   | 'marker'
   | 'eraser'
+  | 'eye'
+  | 'eye-off'
   | 'zoom-reset';
 
 interface IconProps {
@@ -203,6 +205,21 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <circle cx="12" cy="12" r="8.5" />
           <path d="M12 7.5V12l3 2" />
+        </svg>
+      );
+    case 'eye':
+      return (
+        <svg {...p}>
+          <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+          <circle cx="12" cy="12" r="2.8" />
+        </svg>
+      );
+    case 'eye-off':
+      return (
+        <svg {...p}>
+          <path d="M4 12s3.5-6.5 8-6.5c1.3 0 2.5.3 3.5.8M20 12s-1.2 2.2-3.3 3.9" />
+          <path d="M9.8 9.9a2.8 2.8 0 0 0 3.9 3.9" />
+          <path d="M4.5 4.5l15 15" />
         </svg>
       );
     case 'pin':

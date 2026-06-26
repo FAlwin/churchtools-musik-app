@@ -123,6 +123,16 @@ export function useSetAgendaItemDuration(eventId: number | null) {
   });
 }
 
+/** Blendet die Uhrzeit eines Punkts aus/ein (CT-Auge) und lädt den Ablauf neu. */
+export function useSetAgendaItemHidden(eventId: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { itemId: number; hidden: boolean }) =>
+      api.setAgendaItemHidden(eventId as number, v.itemId, v.hidden),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
+  });
+}
+
 /** Lädt die ChurchTools-Dienste (für die Verantwortlich-Chips). */
 export function useAgendaServices(enabled: boolean) {
   return useQuery({

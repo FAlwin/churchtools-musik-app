@@ -56,6 +56,8 @@ interface SetlistProps {
   onSetResponsible: (itemId: number, responsible: string) => Promise<void>;
   /** Setzt die Dauer eines Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
   onSetDuration: (itemId: number, durationMin: number) => Promise<void>;
+  /** Blendet die Uhrzeit eines Punkts in ChurchTools aus (true) oder ein (false). Wirft bei Fehler. */
+  onToggleHidden: (itemId: number, hidden: boolean) => Promise<void>;
   /** Legt einen neuen Punkt an. Wirft bei Fehler. */
   onAdd: (data: {
     type: 'header' | 'text' | 'song';
@@ -111,53 +113,66 @@ function ResponsibleLine({ entries }: { entries: AgendaItem['responsible'] }) {
   );
 }
 
-/** Read-only „voller Ablauf": alle Punkte mit Uhrzeit, Dauer, Notiz und Zuständigen (wie in ChurchTools). */
+/**
+ * Read-only „voller Ablauf": alle Punkte mit Uhrzeit, Dauer, Notiz und Zuständigen (wie in
+ * ChurchTools). Mit Bearbeiten-Recht lässt sich pro Punkt die Uhrzeit aus-/einblenden (Auge),
+ * was direkt in ChurchTools geschrieben wird.
+ */
 function AgendaFullView({
   items,
-  showTimes,
-  onToggleTimes,
+  canEdit,
+  onToggleHidden,
 }: {
   items: AgendaItem[];
-  showTimes: boolean;
-  onToggleTimes: () => void;
+  canEdit: boolean;
+  onToggleHidden: (itemId: number, hidden: boolean) => Promise<void>;
 }) {
+  const [busyId, setBusyId] = useState<number | null>(null);
+  function toggle(item: AgendaItem) {
+    setBusyId(item.id);
+    // Hat der Punkt eine Uhrzeit, blenden wir sie aus (hidden=true); sonst wieder ein.
+    void onToggleHidden(item.id, item.time !== null).finally(() => setBusyId(null));
+  }
   return (
-    <>
-      <div className={styles.flowToolbar}>
-        <button className={styles.flowToggle} onClick={onToggleTimes}>
-          {showTimes ? 'Zeiten ausblenden' : 'Zeiten anzeigen'}
-        </button>
-      </div>
-      <div className={styles.flowList}>
-        {items.map((item) => {
-          if (item.isHeader) {
-            return (
-              <div key={item.id} className={styles.sectionBand}>
-                {showTimes && item.time && <span className={styles.bandTime}>{item.time}</span>}
-                {item.title}
-              </div>
-            );
-          }
-          const title = item.song ? item.song.title : item.title;
+    <div className={styles.flowList}>
+      {items.map((item) => {
+        if (item.isHeader) {
           return (
-            <div key={item.id} className={styles.flowRow}>
-              {showTimes && <div className={styles.flowTime}>{item.time ?? ''}</div>}
-              <div className={styles.flowBody}>
-                <div className={styles.flowHead}>
-                  <span className={styles.flowTitle}>{title}</span>
-                  {item.song && <span className={styles.flowSongTag}>🎵</span>}
-                  {showTimes && item.durationMin && (
-                    <span className={styles.flowDur}>{item.durationMin} Min</span>
-                  )}
-                </div>
-                {item.note && <div className={styles.flowNote}>{item.note}</div>}
-                <ResponsibleLine entries={item.responsible} />
-              </div>
+            <div key={item.id} className={styles.sectionBand}>
+              {item.time && <span className={styles.bandTime}>{item.time}</span>}
+              {item.title}
             </div>
           );
-        })}
-      </div>
-    </>
+        }
+        const title = item.song ? item.song.title : item.title;
+        const hidden = item.time === null;
+        return (
+          <div key={item.id} className={styles.flowRow}>
+            <div className={styles.flowTime}>{item.time ?? ''}</div>
+            <div className={styles.flowBody}>
+              <div className={styles.flowHead}>
+                <span className={styles.flowTitle}>{title}</span>
+                {item.song && <span className={styles.flowSongTag}>🎵</span>}
+                {item.durationMin && <span className={styles.flowDur}>{item.durationMin} Min</span>}
+              </div>
+              {item.note && <div className={styles.flowNote}>{item.note}</div>}
+              <ResponsibleLine entries={item.responsible} />
+            </div>
+            {canEdit && (
+              <button
+                className={styles.eyeBtn}
+                disabled={busyId === item.id}
+                onClick={() => toggle(item)}
+                title={hidden ? 'Uhrzeit einblenden' : 'Uhrzeit ausblenden'}
+                aria-label={hidden ? 'Uhrzeit einblenden' : 'Uhrzeit ausblenden'}
+              >
+                <Icon name={hidden ? 'eye-off' : 'eye'} size={17} />
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -213,16 +228,13 @@ export function Setlist({
   onUnlinkSong,
   onSetResponsible,
   onSetDuration,
+  onToggleHidden,
   onAdd,
   services,
   canEdit = false,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
   const [view, setView] = useState<'songs' | 'agenda'>('songs');
-  // Zeit/Dauer-Spalte im Ablauf ein-/ausblenden (Präferenz lokal gemerkt).
-  const [showTimes, setShowTimes] = useState(
-    () => localStorage.getItem('worship_agenda_times') !== '0',
-  );
   const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
   const [err, setErr] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
@@ -382,17 +394,7 @@ export function Setlist({
               onChange={setView}
             />
             {view === 'agenda' ? (
-              <AgendaFullView
-                items={items}
-                showTimes={showTimes}
-                onToggleTimes={() =>
-                  setShowTimes((v) => {
-                    const next = !v;
-                    localStorage.setItem('worship_agenda_times', next ? '1' : '0');
-                    return next;
-                  })
-                }
-              />
+              <AgendaFullView items={items} canEdit={canEdit} onToggleHidden={onToggleHidden} />
             ) : (
               <div className={styles.list}>
                 {items.map((item) => {

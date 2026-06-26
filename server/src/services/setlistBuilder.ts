@@ -78,7 +78,8 @@ function documentsOf(files: CtArrangementFile[]): SongDocument[] {
     const fileId = fileIdFromUrl(f.fileUrl);
     if (fileId === null) continue;
     if (/\.pdf$/i.test(f.name)) out.push({ fileId, name: f.name, type: 'pdf' });
-    else if (/\.(jpe?g|png|gif|webp)$/i.test(f.name)) out.push({ fileId, name: f.name, type: 'image' });
+    else if (/\.(jpe?g|png|gif|webp)$/i.test(f.name))
+      out.push({ fileId, name: f.name, type: 'image' });
   }
   return out;
 }
@@ -156,7 +157,8 @@ async function buildSong(
 
   // Tonart/Takt aus dem Original ableiten (sonst erste Version, falls kein Original existiert)
   const source = chordpro || versions[0]?.text || '';
-  const originalKey = metaValue(source, 'key') ?? arr?.keyOfArrangement ?? arr?.key ?? agendaSong.key ?? 'C';
+  const originalKey =
+    metaValue(source, 'key') ?? arr?.keyOfArrangement ?? arr?.key ?? agendaSong.key ?? 'C';
   const targetKey = agendaSong.key ?? arr?.key ?? originalKey;
   const timeSig = metaValue(source, 'time') ?? arr?.beat ?? null;
 
@@ -303,9 +305,9 @@ function cleanServiceName(service?: string): string {
  * Zuständige als Einträge, ohne Duplikate: für besetzte Plätze der Personenname (open=false),
  * für offene Dienst-Plätze (z.B. „[Musik]") der Dienstname (open=true).
  */
-function responsibleEntries(
-  item: { responsible?: { persons?: { service?: string; person?: { title?: string } }[] } },
-): ResponsibleEntry[] {
+function responsibleEntries(item: {
+  responsible?: { persons?: { service?: string; person?: { title?: string } }[] };
+}): ResponsibleEntry[] {
   const entries: ResponsibleEntry[] = [];
   const seen = new Set<string>();
   for (const p of item.responsible?.persons ?? []) {
@@ -335,7 +337,11 @@ export function invalidateSongUsageCache(): void {
 }
 
 /** Führt `fn` über alle Items aus, aber maximal `limit` gleichzeitig (schont die CT-API). */
-async function mapLimit<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
+async function mapLimit<T>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
   let i = 0;
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
     while (i < items.length) {
@@ -447,10 +453,10 @@ export async function getAgendaItems(cookie: string, eventId: number): Promise<A
         responsible: responsibleEntries(item),
         responsibleText: item.responsible?.text ?? '',
         song,
-        // „Vor dem Event"-Punkte (z.B. Soundcheck/Einsingen) zeigt ChurchTools bewusst OHNE
-        // Uhrzeit (durchgestrichenes Auge); das übernehmen wir – Punkt + Dauer bleiben, nur die
-        // berechnete Startzeit entfällt.
-        time: item.isBeforeEvent ? null : formatBerlinTime(item.start),
+        // Startuhrzeit aus ChurchTools (Europe/Berlin). Ist der Punkt in CT „ausgeblendet"
+        // (durchgestrichenes Auge → hide-Endpunkt), liefert CT keine Startzeit (start=null) →
+        // time bleibt null und die App zeigt keine Uhrzeit.
+        time: formatBerlinTime(item.start),
         durationMin: durationSec > 0 ? Math.round(durationSec / 60) : null,
         note: item.note ?? '',
       };
