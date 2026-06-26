@@ -82,16 +82,6 @@ button {
   }
 }
 
-// Bottom-Sheet (von unten einfahren)
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: none;
-  }
-}
-
 // Dropdown-Menü (Chart-Titelmenü)
 @keyframes menuPop {
   from {
