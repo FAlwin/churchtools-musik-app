@@ -9,7 +9,7 @@ interface SheetProps {
   cancelLabel?: string;
 }
 
-/** Von unten einfahrendes Auswahl-Sheet mit Titel und Abbrechen-Button. */
+/** Zentriertes Dialog-Fenster (Modal) mit Titel und Abbrechen-Button. */
 export function Sheet({ title, onClose, children, cancelLabel = 'Abbrechen' }: SheetProps) {
   return (
     <div className={styles.overlay} onClick={onClose}>

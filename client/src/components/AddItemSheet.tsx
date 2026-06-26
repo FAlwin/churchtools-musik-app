@@ -42,7 +42,13 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
   }
 
   const titleText =
-    mode === 'header' ? 'Überschrift hinzufügen' : mode === 'text' ? 'Punkt hinzufügen' : mode === 'song' ? 'Lied hinzufügen' : 'Hinzufügen';
+    mode === 'header'
+      ? 'Überschrift hinzufügen'
+      : mode === 'text'
+        ? 'Eintrag hinzufügen'
+        : mode === 'song'
+          ? 'Lied hinzufügen'
+          : 'Hinzufügen';
 
   return (
     <Sheet title={titleText} onClose={onClose}>
@@ -60,7 +66,7 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
           </button>
           <button className={styles.choice} onClick={() => setMode('text')}>
             <Icon name="type" size={20} className={styles.choiceIcon} />
-            <span>Punkt / Text</span>
+            <span>Text</span>
           </button>
         </div>
       )}
@@ -69,13 +75,17 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
         <div className={styles.form}>
           <input
             className={styles.input}
-            placeholder={mode === 'header' ? 'Titel der Überschrift' : 'Titel des Punkts'}
+            placeholder={mode === 'header' ? 'Titel der Überschrift' : 'Titel des Eintrags'}
             value={title}
             autoFocus
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && title.trim())
-                add({ type: mode, title: title.trim(), responsible: responsible.trim() || undefined });
+                add({
+                  type: mode,
+                  title: title.trim(),
+                  responsible: responsible.trim() || undefined,
+                });
             }}
           />
           {mode === 'text' && (
@@ -84,7 +94,9 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
           <button
             className={styles.primary}
             disabled={!title.trim() || busy}
-            onClick={() => add({ type: mode, title: title.trim(), responsible: responsible.trim() || undefined })}
+            onClick={() =>
+              add({ type: mode, title: title.trim(), responsible: responsible.trim() || undefined })
+            }
           >
             {busy ? 'Füge hinzu…' : 'Hinzufügen'}
           </button>
@@ -95,7 +107,9 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
         <SongSearch
           autoFocus
           busy={busy}
-          onPick={(arrangementId, songName) => add({ type: 'song', title: songName, arrangementId })}
+          onPick={(arrangementId, songName) =>
+            add({ type: 'song', title: songName, arrangementId })
+          }
         />
       )}
     </Sheet>

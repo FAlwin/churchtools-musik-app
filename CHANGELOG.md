@@ -14,6 +14,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 - **Uhrzeit pro Punkt ausblenden** (mit Bearbeiten-Recht): über das Bearbeiten-Fenster eines Punkts lässt sich die Uhrzeit aus-/einblenden (z. B. bei Soundcheck oder wenn mehrere Dinge gleichzeitig laufen) – **echt mit ChurchTools synchronisiert** (das „Auge"), in beide Richtungen. Der Punkt selbst bleibt mit Titel und Dauer erhalten.
 - **Dauer pro Punkt bearbeiten** (mit Bearbeiten-Recht): über das Aktionsmenü eines Punkts die Dauer in Minuten setzen – schreibt nach ChurchTools, die Uhrzeiten verschieben sich automatisch.
 
+### Geändert
+
+- **Einheitliche Dialoge:** Eintrag bearbeiten/hinzufügen sowie die Einstellungs-Dialoge (Organisation, Links verwalten) erscheinen jetzt als zentrierte Fenster mit allen Feldern auf einen Blick – statt der von unten einfahrenden Schublade. Konsistent und näher an ChurchTools.
+
 ### Behoben
 
 - **Versionsanzeige im Mehr-Tab** zeigte fest „v2.0" statt der echten Version. Sie wird jetzt zur Build-Zeit aus dem Git-Tag gesetzt (`VITE_APP_VERSION`, vom CI als Build-Arg) und veraltet damit nicht mehr.
