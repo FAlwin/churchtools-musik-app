@@ -122,13 +122,6 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
 }
 
 // ── Rohdaten-Typen (Ausschnitt der ChurchTools-Antworten) ──
-export interface CtEventService {
-  serviceId: number;
-  name?: string;
-  agreed?: boolean;
-  person?: { title?: string; domainType?: string } | null;
-}
-
 export interface CtEvent {
   id: number;
   name: string;
@@ -137,8 +130,6 @@ export interface CtEvent {
   /** ID des zugehörigen Kalender-Termins (für den Untertitel) */
   appointmentId?: number;
   calendar?: { title?: string; domainIdentifier?: string };
-  /** Dienstplan-Zuweisungen (Personen + Rollen) aus ChurchTools */
-  services?: CtEventService[];
 }
 
 export interface CtAgendaSong {
