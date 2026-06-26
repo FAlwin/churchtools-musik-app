@@ -1,5 +1,3 @@
-@use '../styles/mixins' as m;
-
 .list {
   padding: 14px 16px;
   display: flex;
@@ -15,104 +13,6 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 14px 4px 2px;
-}
-
-// Lied-Zeile (Karte mit blauem Akzentbalken)
-.songRow {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 11px 14px 11px 16px;
-  background: var(--surface2);
-  border: none;
-  border-radius: 9px;
-  box-shadow: var(--shadow);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.12s;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 8px;
-    bottom: 8px;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--blue);
-  }
-  &:active {
-    background: var(--surface3);
-  }
-}
-
-.num {
-  width: 18px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text3);
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
-}
-
-.info {
-  flex: 1;
-  min-width: 0;
-}
-.name {
-  font-size: 15.5px;
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: -0.1px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.sub {
-  font-size: 12.5px;
-  color: var(--text2);
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 500;
-}
-.dotSep {
-  color: var(--text3);
-  font-weight: 400;
-}
-
-.keyPill {
-  @include m.key-pill;
-  gap: 5px;
-}
-.keyOrig {
-  color: var(--text3);
-  font-weight: 600;
-  text-decoration: line-through;
-  font-size: 11.5px;
-}
-.chev {
-  color: var(--text3);
-  display: flex;
-  flex-shrink: 0;
-  margin-left: -2px;
-}
-
-// Text-Punkt (ohne Lied)
-.textTile {
-  padding: 12px 14px;
-  background: var(--surface2);
-  border-radius: 9px;
-  box-shadow: var(--shadow);
-}
-.textTitle {
-  font-size: 14.5px;
-  font-weight: 500;
-  color: var(--text2);
 }
 
 // Zuständige
@@ -142,45 +42,7 @@
   font-weight: 700;
 }
 
-// ── Umschalter Lieder / Ablauf ──
-.viewSeg {
-  margin: 14px 16px 0;
-}
-
-// ── Voller Ablauf: Zeitspalte + Inhalt (+ Auge zum Uhrzeit-Ausblenden) ──
-.flowErr {
-  font-size: 13px;
-  color: var(--red);
-  font-weight: 600;
-  padding: 0 2px 8px;
-}
-// Uhrzeit-Spalte als Auge-Schalter (nur mit Bearbeiten-Recht): Zeit + Auge zusammen,
-// damit klar ist, dass sich das Ausblenden NUR auf die Uhrzeit bezieht.
-.timeEye {
-  flex-shrink: 0;
-  align-self: flex-start;
-  width: 58px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 1px 0;
-  color: var(--blue-ink);
-  font-size: 13px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-
-  &:disabled {
-    opacity: 0.45;
-  }
-}
-// Ausgeblendete Uhrzeit: nur das durchgestrichene Auge, dezent.
-.timeEyeHidden {
-  color: var(--text3);
-  font-weight: 500;
-}
+// ── Voller Ablauf: Zeitspalte + Inhalt ──
 .flowList {
   padding: 12px 16px;
   display: flex;
@@ -194,6 +56,29 @@
   background: var(--surface2);
   border-radius: 9px;
   box-shadow: var(--shadow);
+}
+// Anklickbare Lied-Zeile (führt zu den Charts) – wie flowRow, aber als Button.
+.flowRowBtn {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: none;
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+
+  &:active {
+    background: var(--surface3);
+  }
+}
+.flowChev {
+  color: var(--text3);
+  flex-shrink: 0;
+  align-self: center;
 }
 .flowTime {
   flex-shrink: 0;

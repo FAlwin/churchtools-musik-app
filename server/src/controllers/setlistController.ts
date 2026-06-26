@@ -17,7 +17,6 @@ import {
   reorderAgenda,
   deleteAgendaItem,
   updateAgendaItem,
-  setAgendaItemHidden,
   createAgendaItem,
   searchSongs,
   getSong,
@@ -169,17 +168,6 @@ export async function deleteAgendaItemCtrl(req: Request, res: Response): Promise
   const itemId = idSchema.parse(req.params.itemId);
   await deleteAgendaItem(req.ctCookie as string, eventId, itemId);
   invalidateSongUsageCache(); // entferntes Lied soll aus der Statistik verschwinden
-  res.json({ ok: true });
-}
-
-const hiddenSchema = z.object({ hidden: z.boolean() });
-
-/** Blendet die Uhrzeit eines Punkts in ChurchTools aus/ein (durchgestrichenes Auge). */
-export async function putAgendaItemHidden(req: Request, res: Response): Promise<void> {
-  const eventId = idSchema.parse(req.params.eventId);
-  const itemId = idSchema.parse(req.params.itemId);
-  const { hidden } = hiddenSchema.parse(req.body);
-  await setAgendaItemHidden(req.ctCookie as string, eventId, itemId, hidden);
   res.json({ ok: true });
 }
 

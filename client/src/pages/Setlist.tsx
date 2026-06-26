@@ -19,13 +19,11 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar, IconButton } from '../components/NavBar';
-import { Segment } from '../components/Segment';
 import { CenterMessage } from '../components/CenterMessage';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddItemSheet } from '../components/AddItemSheet';
 import { ItemActionSheet } from '../components/ItemActionSheet';
 import { Icon } from '../components/icons';
-import { NoteTile } from '../components/NoteTile';
 import { generateSetlistPdf } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
 import { loadSongPdfOpts, loadAppLogo } from '../utils/songPdfOpts';
@@ -56,8 +54,6 @@ interface SetlistProps {
   onSetResponsible: (itemId: number, responsible: string) => Promise<void>;
   /** Setzt die Dauer eines Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
   onSetDuration: (itemId: number, durationMin: number) => Promise<void>;
-  /** Blendet die Uhrzeit eines Punkts in ChurchTools aus (true) oder ein (false). Wirft bei Fehler. */
-  onToggleHidden: (itemId: number, hidden: boolean) => Promise<void>;
   /** Legt einen neuen Punkt an. Wirft bei Fehler. */
   onAdd: (data: {
     type: 'header' | 'text' | 'song';
@@ -114,71 +110,60 @@ function ResponsibleLine({ entries }: { entries: AgendaItem['responsible'] }) {
 }
 
 /**
- * Read-only „voller Ablauf": alle Punkte mit Uhrzeit, Dauer, Notiz und Zuständigen (wie in
- * ChurchTools). Mit Bearbeiten-Recht lässt sich pro Punkt die Uhrzeit aus-/einblenden (Auge),
- * was direkt in ChurchTools geschrieben wird.
+ * „Voller Ablauf": alle Punkte mit Uhrzeit, Dauer, Notiz und Zuständigen (wie in ChurchTools,
+ * aber aufgeräumt). Lieder sind antippbar (→ Charts). `hiddenTimeIds` = Punkte, deren Uhrzeit
+ * der Nutzer in der App ausgeblendet hat (über das Bearbeiten-Menü) – die Zeit wird dann nicht
+ * angezeigt. Liefert ChurchTools selbst keine Zeit (start=null), bleibt sie ohnehin leer.
  */
 function AgendaFullView({
   items,
-  canEdit,
-  onToggleHidden,
+  hiddenTimeIds,
+  onSelect,
 }: {
   items: AgendaItem[];
-  canEdit: boolean;
-  onToggleHidden: (itemId: number, hidden: boolean) => Promise<void>;
+  hiddenTimeIds: Set<number>;
+  onSelect: (songIndex: number) => void;
 }) {
-  const [busyId, setBusyId] = useState<number | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  function toggle(item: AgendaItem) {
-    setBusyId(item.id);
-    setErr(null);
-    // Hat der Punkt eine Uhrzeit, blenden wir sie aus (hidden=true); sonst wieder ein.
-    void onToggleHidden(item.id, item.time !== null)
-      .catch((e: unknown) =>
-        setErr(e instanceof Error ? e.message : 'Uhrzeit ändern fehlgeschlagen.'),
-      )
-      .finally(() => setBusyId(null));
-  }
+  let songIndex = -1;
   return (
     <div className={styles.flowList}>
-      {err && <div className={styles.flowErr}>{err}</div>}
       {items.map((item) => {
+        const showTime = !!item.time && !hiddenTimeIds.has(item.id);
         if (item.isHeader) {
           return (
             <div key={item.id} className={styles.sectionBand}>
-              {item.time && <span className={styles.bandTime}>{item.time}</span>}
+              {showTime && <span className={styles.bandTime}>{item.time}</span>}
               {item.title}
             </div>
           );
         }
-        const title = item.song ? item.song.title : item.title;
-        const hidden = item.time === null;
+        const timeCol = <div className={styles.flowTime}>{showTime ? item.time : ''}</div>;
+        const body = (
+          <div className={styles.flowBody}>
+            <div className={styles.flowHead}>
+              <span className={styles.flowTitle}>{item.song ? item.song.title : item.title}</span>
+              {item.song && <span className={styles.flowSongTag}>🎵</span>}
+              {item.durationMin && <span className={styles.flowDur}>{item.durationMin} Min</span>}
+            </div>
+            {item.note && <div className={styles.flowNote}>{item.note}</div>}
+            <ResponsibleLine entries={item.responsible} />
+          </div>
+        );
+        if (item.song) {
+          songIndex += 1;
+          const idx = songIndex;
+          return (
+            <button key={item.id} className={styles.flowRowBtn} onClick={() => onSelect(idx)}>
+              {timeCol}
+              {body}
+              <Icon name="chev-right" size={18} stroke={2.2} className={styles.flowChev} />
+            </button>
+          );
+        }
         return (
           <div key={item.id} className={styles.flowRow}>
-            {/* Uhrzeit-Spalte: mit Bearbeiten-Recht ein Auge zum Aus-/Einblenden der Uhrzeit. */}
-            {canEdit ? (
-              <button
-                className={`${styles.timeEye}${hidden ? ' ' + styles.timeEyeHidden : ''}`}
-                disabled={busyId === item.id}
-                onClick={() => toggle(item)}
-                title={hidden ? 'Uhrzeit einblenden' : 'Uhrzeit ausblenden'}
-                aria-label={hidden ? 'Uhrzeit einblenden' : 'Uhrzeit ausblenden'}
-              >
-                {item.time && <span>{item.time}</span>}
-                <Icon name={hidden ? 'eye-off' : 'eye'} size={14} />
-              </button>
-            ) : (
-              <div className={styles.flowTime}>{item.time ?? ''}</div>
-            )}
-            <div className={styles.flowBody}>
-              <div className={styles.flowHead}>
-                <span className={styles.flowTitle}>{title}</span>
-                {item.song && <span className={styles.flowSongTag}>🎵</span>}
-                {item.durationMin && <span className={styles.flowDur}>{item.durationMin} Min</span>}
-              </div>
-              {item.note && <div className={styles.flowNote}>{item.note}</div>}
-              <ResponsibleLine entries={item.responsible} />
-            </div>
+            {timeCol}
+            {body}
           </div>
         );
       })}
@@ -238,14 +223,35 @@ export function Setlist({
   onUnlinkSong,
   onSetResponsible,
   onSetDuration,
-  onToggleHidden,
   onAdd,
   services,
   canEdit = false,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
-  const [view, setView] = useState<'songs' | 'agenda'>('songs');
   const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
+  // Punkte, deren Uhrzeit der Nutzer in der App ausgeblendet hat (pro Gottesdienst, lokal gemerkt).
+  const hideKey = `worship_hidetime_${service.id}`;
+  const [hiddenTimeIds, setHiddenTimeIds] = useState<Set<number>>(() => {
+    try {
+      const raw = localStorage.getItem(hideKey);
+      return new Set<number>(raw ? (JSON.parse(raw) as number[]) : []);
+    } catch {
+      return new Set<number>();
+    }
+  });
+  function toggleTimeHidden(itemId: number) {
+    setHiddenTimeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      try {
+        localStorage.setItem(hideKey, JSON.stringify([...next]));
+      } catch {
+        /* Speicher nicht verfügbar – dann eben nur für diese Sitzung */
+      }
+      return next;
+    });
+  }
   const [err, setErr] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -321,9 +327,6 @@ export function Setlist({
     void sharePdf(doc, service.name || 'Ablauf');
   }
 
-  // Laufender Zähler über die Lieder – für die Charts-Navigation (Index ins Songs-Array).
-  let songIndex = -1;
-
   return (
     <Screen>
       <NavBar
@@ -393,72 +396,7 @@ export function Setlist({
             </button>
           </>
         ) : (
-          <>
-            <Segment
-              className={styles.viewSeg}
-              value={view}
-              options={[
-                { value: 'songs', label: 'Lieder' },
-                { value: 'agenda', label: 'Ablauf' },
-              ]}
-              onChange={setView}
-            />
-            {view === 'agenda' ? (
-              <AgendaFullView items={items} canEdit={canEdit} onToggleHidden={onToggleHidden} />
-            ) : (
-              <div className={styles.list}>
-                {items.map((item) => {
-                  if (item.isHeader) {
-                    return (
-                      <div key={item.id} className={styles.sectionBand}>
-                        {item.title}
-                      </div>
-                    );
-                  }
-                  if (item.song) {
-                    songIndex += 1;
-                    const idx = songIndex;
-                    const song = item.song;
-                    const savedKey = localStorage.getItem(`worship_key_${song.id}`);
-                    const dispKey = savedKey || song.targetKey;
-                    const transposed = song.originalKey !== dispKey;
-                    return (
-                      <button
-                        key={item.id}
-                        className={styles.songRow}
-                        onClick={() => onSelect(idx)}
-                      >
-                        <div className={styles.num}>{idx + 1}</div>
-                        <NoteTile size={38} />
-                        <div className={styles.info}>
-                          <div className={styles.name}>{song.title}</div>
-                          <div className={styles.sub}>
-                            {song.bpm !== null && <span>♩ {song.bpm}</span>}
-                            {song.bpm !== null && song.timeSig && (
-                              <span className={styles.dotSep}>·</span>
-                            )}
-                            {song.timeSig && <span>{song.timeSig}</span>}
-                          </div>
-                          <ResponsibleLine entries={item.responsible} />
-                        </div>
-                        <span className={styles.keyPill}>
-                          {transposed && <span className={styles.keyOrig}>{song.originalKey}</span>}
-                          {dispKey}
-                        </span>
-                        <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-                      </button>
-                    );
-                  }
-                  return (
-                    <div key={item.id} className={styles.textTile}>
-                      <div className={styles.textTitle}>{item.title}</div>
-                      <ResponsibleLine entries={item.responsible} />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
+          <AgendaFullView items={items} hiddenTimeIds={hiddenTimeIds} onSelect={onSelect} />
         )}
         <div style={{ height: 20 }} />
       </Scroll>
@@ -489,6 +427,8 @@ export function Setlist({
           }
           onSetResponsible={(responsible) => onSetResponsible(actionItem.id, responsible)}
           onSetDuration={(durationMin) => onSetDuration(actionItem.id, durationMin)}
+          timeHidden={hiddenTimeIds.has(actionItem.id)}
+          onToggleTimeHidden={() => toggleTimeHidden(actionItem.id)}
           onRequestDelete={() => setPendingDelete(actionItem)}
         />
       )}

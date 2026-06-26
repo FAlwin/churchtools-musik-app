@@ -19,6 +19,10 @@ interface ItemActionSheetProps {
   onSetResponsible: (responsible: string) => Promise<void>;
   /** Setzt die Dauer des Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
   onSetDuration: (durationMin: number) => Promise<void>;
+  /** Ist die Uhrzeit dieses Punkts in der App ausgeblendet? */
+  timeHidden: boolean;
+  /** Blendet die Uhrzeit dieses Punkts in der App aus/ein (lokal, kein ChurchTools-Schreibzugriff). */
+  onToggleTimeHidden: () => void;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
   services: AgendaServiceOption[];
   /** Löschen anstoßen (Bestätigung erfolgt im Eltern-Screen). */
@@ -36,6 +40,8 @@ export function ItemActionSheet({
   onUnlinkSong,
   onSetResponsible,
   onSetDuration,
+  timeHidden,
+  onToggleTimeHidden,
   services,
   onRequestDelete,
 }: ItemActionSheetProps) {
@@ -112,6 +118,16 @@ export function ItemActionSheet({
           <button className={styles.choice} onClick={() => setMode('duration')}>
             <Icon name="clock" size={20} className={styles.choiceIcon} />
             <span>Dauer</span>
+          </button>
+          <button
+            className={styles.choice}
+            onClick={() => {
+              onToggleTimeHidden();
+              onClose();
+            }}
+          >
+            <Icon name={timeHidden ? 'eye' : 'eye-off'} size={20} className={styles.choiceIcon} />
+            <span>{timeHidden ? 'Uhrzeit einblenden' : 'Uhrzeit ausblenden'}</span>
           </button>
           <button
             className={`${styles.choice} ${styles.danger}`}
