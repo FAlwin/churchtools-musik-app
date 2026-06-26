@@ -30,6 +30,11 @@ const THEME_OPTIONS: { value: ThemePref; label: string; icon: 'sun' | 'moon' | '
   { value: 'system', label: 'Auto', icon: 'cog' },
 ];
 
+/** Freiwillige Unterstützung für den (ehrenamtlichen) Entwickler – fest, dezent im Mehr-Tab. */
+const SUPPORT_URL = 'https://paypal.me/AlwinFriesen';
+/** Vorgewählte Beträge (PayPal.me hängt Betrag + Währung an die URL an: …/3EUR). */
+const SUPPORT_AMOUNTS = [1, 3, 5];
+
 /** „Mehr"-Tab: Profil, Darstellung, Display-Sperre, Organisation (Admin), Abmelden. */
 export function Settings({
   site,
@@ -163,6 +168,33 @@ export function Settings({
               <Icon name="logout" size={18} className={styles.dangerIcon} />
             </button>
           </div>
+        </div>
+
+        {/* Freiwillige Unterstützung – dezent, ganz unten */}
+        <div className={styles.support}>
+          <div className={styles.supportTitle}>☕ Kaffee spendieren</div>
+          <div className={styles.supportAmounts}>
+            {SUPPORT_AMOUNTS.map((amount) => (
+              <a
+                key={amount}
+                className={styles.supportBtn}
+                href={`${SUPPORT_URL}/${amount}EUR`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {amount} €
+              </a>
+            ))}
+          </div>
+          <a
+            className={styles.supportOther}
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            anderer Betrag
+          </a>
+          <div className={styles.supportNote}>Diese App wird ehrenamtlich entwickelt.</div>
         </div>
 
         <div className={styles.version}>Churchtools Musik App · v2.0</div>
