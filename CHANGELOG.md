@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.1.4] – 2026-06-26
+
 ### Geändert
 
 - **Button „Punkt hinzufügen" → „Eintrag hinzufügen"** im Ablauf-Bearbeiten-Modus (passt besser, da auch Überschriften und Texte hinzugefügt werden).
