@@ -128,13 +128,20 @@ function AgendaFullView({
   onToggleHidden: (itemId: number, hidden: boolean) => Promise<void>;
 }) {
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [err, setErr] = useState<string | null>(null);
   function toggle(item: AgendaItem) {
     setBusyId(item.id);
+    setErr(null);
     // Hat der Punkt eine Uhrzeit, blenden wir sie aus (hidden=true); sonst wieder ein.
-    void onToggleHidden(item.id, item.time !== null).finally(() => setBusyId(null));
+    void onToggleHidden(item.id, item.time !== null)
+      .catch((e: unknown) =>
+        setErr(e instanceof Error ? e.message : 'Uhrzeit ändern fehlgeschlagen.'),
+      )
+      .finally(() => setBusyId(null));
   }
   return (
     <div className={styles.flowList}>
+      {err && <div className={styles.flowErr}>{err}</div>}
       {items.map((item) => {
         if (item.isHeader) {
           return (
@@ -148,7 +155,21 @@ function AgendaFullView({
         const hidden = item.time === null;
         return (
           <div key={item.id} className={styles.flowRow}>
-            <div className={styles.flowTime}>{item.time ?? ''}</div>
+            {/* Uhrzeit-Spalte: mit Bearbeiten-Recht ein Auge zum Aus-/Einblenden der Uhrzeit. */}
+            {canEdit ? (
+              <button
+                className={`${styles.timeEye}${hidden ? ' ' + styles.timeEyeHidden : ''}`}
+                disabled={busyId === item.id}
+                onClick={() => toggle(item)}
+                title={hidden ? 'Uhrzeit einblenden' : 'Uhrzeit ausblenden'}
+                aria-label={hidden ? 'Uhrzeit einblenden' : 'Uhrzeit ausblenden'}
+              >
+                {item.time && <span>{item.time}</span>}
+                <Icon name={hidden ? 'eye-off' : 'eye'} size={14} />
+              </button>
+            ) : (
+              <div className={styles.flowTime}>{item.time ?? ''}</div>
+            )}
             <div className={styles.flowBody}>
               <div className={styles.flowHead}>
                 <span className={styles.flowTitle}>{title}</span>
@@ -158,17 +179,6 @@ function AgendaFullView({
               {item.note && <div className={styles.flowNote}>{item.note}</div>}
               <ResponsibleLine entries={item.responsible} />
             </div>
-            {canEdit && (
-              <button
-                className={styles.eyeBtn}
-                disabled={busyId === item.id}
-                onClick={() => toggle(item)}
-                title={hidden ? 'Uhrzeit einblenden' : 'Uhrzeit ausblenden'}
-                aria-label={hidden ? 'Uhrzeit einblenden' : 'Uhrzeit ausblenden'}
-              >
-                <Icon name={hidden ? 'eye-off' : 'eye'} size={17} />
-              </button>
-            )}
           </div>
         );
       })}

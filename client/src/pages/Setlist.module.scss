@@ -148,22 +148,38 @@
 }
 
 // ── Voller Ablauf: Zeitspalte + Inhalt (+ Auge zum Uhrzeit-Ausblenden) ──
-.eyeBtn {
+.flowErr {
+  font-size: 13px;
+  color: var(--red);
+  font-weight: 600;
+  padding: 0 2px 8px;
+}
+// Uhrzeit-Spalte als Auge-Schalter (nur mit Bearbeiten-Recht): Zeit + Auge zusammen,
+// damit klar ist, dass sich das Ausblenden NUR auf die Uhrzeit bezieht.
+.timeEye {
   flex-shrink: 0;
   align-self: flex-start;
+  width: 58px;
   display: flex;
+  align-items: center;
+  gap: 4px;
   background: none;
   border: none;
-  color: var(--text3);
   cursor: pointer;
-  padding: 2px 2px;
+  padding: 1px 0;
+  color: var(--blue-ink);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 
-  &:active {
-    color: var(--blue-ink);
-  }
   &:disabled {
     opacity: 0.45;
   }
+}
+// Ausgeblendete Uhrzeit: nur das durchgestrichene Auge, dezent.
+.timeEyeHidden {
+  color: var(--text3);
+  font-weight: 500;
 }
 .flowList {
   padding: 12px 16px;
