@@ -19,6 +19,7 @@ import {
   useLinkSongToAgendaItem,
   useUnlinkSongFromAgendaItem,
   useSetAgendaItemResponsible,
+  useSetAgendaItemDuration,
   useAgendaServices,
   useCreateAgendaItem,
   useSongLibrary,
@@ -112,6 +113,7 @@ export default function App() {
   const linkSongToAgendaItem = useLinkSongToAgendaItem(service?.id ?? null);
   const unlinkSongFromAgendaItem = useUnlinkSongFromAgendaItem(service?.id ?? null);
   const setAgendaItemResponsible = useSetAgendaItemResponsible(service?.id ?? null);
+  const setAgendaItemDuration = useSetAgendaItemDuration(service?.id ?? null);
   const agendaServices = useAgendaServices(
     auth.isAuthenticated && canEditAgendas && view?.type === 'setlist',
   );
@@ -121,7 +123,9 @@ export default function App() {
   );
   // Statistik nur für Ablauf-Berechtigte (sie wird aus Abläufen berechnet).
   const songUsage = useSongUsage(auth.isAuthenticated && tab === 'lieder' && canViewAgendas);
-  const songChart = useSongChart(view?.type === 'chart' && view.source === 'lieder' ? libSel : null);
+  const songChart = useSongChart(
+    view?.type === 'chart' && view.source === 'lieder' ? libSel : null,
+  );
   const items = agendaQuery.data ?? [];
   const songs = items.flatMap((i) => (i.song ? [i.song] : []));
 
@@ -249,7 +253,9 @@ export default function App() {
         onReorder={(order) => reorderAgenda.mutateAsync(order).then(() => undefined)}
         isReordering={reorderAgenda.isPending}
         onDelete={(itemId) => deleteAgendaItem.mutateAsync(itemId).then(() => undefined)}
-        onRename={(itemId, title) => renameAgendaItem.mutateAsync({ itemId, title }).then(() => undefined)}
+        onRename={(itemId, title) =>
+          renameAgendaItem.mutateAsync({ itemId, title }).then(() => undefined)
+        }
         onLinkSong={(itemId, arrangementId) =>
           linkSongToAgendaItem.mutateAsync({ itemId, arrangementId }).then(() => undefined)
         }
@@ -258,6 +264,9 @@ export default function App() {
         }
         onSetResponsible={(itemId, responsible) =>
           setAgendaItemResponsible.mutateAsync({ itemId, responsible }).then(() => undefined)
+        }
+        onSetDuration={(itemId, durationMin) =>
+          setAgendaItemDuration.mutateAsync({ itemId, durationMin }).then(() => undefined)
         }
         onAdd={(data) => createAgendaItem.mutateAsync(data).then(() => undefined)}
         services={agendaServices.data ?? []}
@@ -296,7 +305,11 @@ export default function App() {
       ) : (
         <Screen>
           {songChart.isError ? (
-            <CenterMessage icon="⚠️" text="Lied konnte nicht geladen werden." onRetry={() => songChart.refetch()} />
+            <CenterMessage
+              icon="⚠️"
+              text="Lied konnte nicht geladen werden."
+              onRetry={() => songChart.refetch()}
+            />
           ) : (
             <CenterMessage loading text="Lied wird geladen…" />
           )}

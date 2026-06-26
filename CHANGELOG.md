@@ -10,6 +10,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 ### Neu
 
 - **Vollständige Ablauf-Ansicht** in der Setlist: Umschalter „Lieder / Ablauf" oben. „Ablauf" zeigt read-only den kompletten Gottesdienst-Ablauf mit den aus ChurchTools importierten Uhrzeiten, Dauer je Punkt, Notizen und Zuständigen – auch Nicht-Lied-Positionen. „Lieder" bleibt die gewohnte, antippbare Lied-Liste.
+- **Zeiten/Dauer ein- und ausblendbar** im Ablauf-Tab (kleiner Schalter; Präferenz wird pro Gerät gemerkt).
+- **Dauer pro Punkt bearbeiten** (mit Bearbeiten-Recht): über das Aktionsmenü eines Punkts die Dauer in Minuten setzen – schreibt nach ChurchTools, die Uhrzeiten verschieben sich automatisch.
 
 ### Behoben
 

@@ -74,14 +74,17 @@ const updateItemSchema = z
     unlink: z.boolean().optional(),
     // responsible: Textfeld der Zuständigen (z.B. „[Musik]"); CT löst Dienst-Tokens selbst auf.
     responsible: z.string().trim().max(1000).optional(),
+    // durationMin: Dauer des Punkts in Minuten (0–600); Server rechnet in CT-Sekunden um.
+    durationMin: z.coerce.number().int().min(0).max(600).optional(),
   })
   .refine(
     (d) =>
       d.title !== undefined ||
       d.arrangementId !== undefined ||
       d.unlink === true ||
-      d.responsible !== undefined,
-    { message: 'Titel, arrangementId, unlink oder responsible erforderlich.' },
+      d.responsible !== undefined ||
+      d.durationMin !== undefined,
+    { message: 'Titel, arrangementId, unlink, responsible oder durationMin erforderlich.' },
   );
 
 const createItemSchema = z
@@ -145,12 +148,15 @@ export async function getSongArrangementsCtrl(req: Request, res: Response): Prom
 export async function putAgendaItem(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
   const itemId = idSchema.parse(req.params.itemId);
-  const { title, arrangementId, unlink, responsible } = updateItemSchema.parse(req.body);
+  const { title, arrangementId, unlink, responsible, durationMin } = updateItemSchema.parse(
+    req.body,
+  );
   await updateAgendaItem(req.ctCookie as string, eventId, itemId, {
     title,
     arrangementId,
     unlink,
     responsible,
+    durationMin,
   });
   invalidateSongUsageCache(); // Verknüpfen/Lösen ändert die Liederzahl/„zuletzt"
   res.json({ ok: true });

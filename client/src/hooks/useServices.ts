@@ -22,7 +22,11 @@ function monthsAgoIso(monthsBack: number): string {
 export function usePastServices(monthsBack: number, enabled: boolean) {
   return useQuery({
     queryKey: ['services', 'past', monthsBack],
-    queryFn: () => api.getServices({ from: monthsAgoIso(monthsBack), to: new Date().toISOString().slice(0, 10) }),
+    queryFn: () =>
+      api.getServices({
+        from: monthsAgoIso(monthsBack),
+        to: new Date().toISOString().slice(0, 10),
+      }),
     enabled,
     staleTime: 1000 * 60 * 5,
     placeholderData: (prev) => prev, // beim „Mehr laden" alte Liste behalten (kein Flackern)
@@ -109,6 +113,16 @@ export function useSetAgendaItemResponsible(eventId: number | null) {
   });
 }
 
+/** Setzt die Dauer eines Punkts (Minuten) und lädt den Ablauf neu (Uhrzeiten ändern sich). */
+export function useSetAgendaItemDuration(eventId: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { itemId: number; durationMin: number }) =>
+      api.setAgendaItemDuration(eventId as number, v.itemId, v.durationMin),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
+  });
+}
+
 /** Lädt die ChurchTools-Dienste (für die Verantwortlich-Chips). */
 export function useAgendaServices(enabled: boolean) {
   return useQuery({
@@ -177,7 +191,11 @@ export function useAddSongToService() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (v: { eventId: number; arrangementId: number; title: string }) =>
-      api.createAgendaItem(v.eventId, { type: 'song', title: v.title, arrangementId: v.arrangementId }),
+      api.createAgendaItem(v.eventId, {
+        type: 'song',
+        title: v.title,
+        arrangementId: v.arrangementId,
+      }),
     onSuccess: (_data, v) => {
       qc.invalidateQueries({ queryKey: ['agenda', v.eventId] });
       qc.invalidateQueries({ queryKey: ['services'] });

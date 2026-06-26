@@ -17,13 +17,15 @@ interface ItemActionSheetProps {
   onUnlinkSong: () => Promise<void>;
   /** Setzt das Verantwortlich-Textfeld (z.B. „[Musik]"). Wirft bei Fehler. */
   onSetResponsible: (responsible: string) => Promise<void>;
+  /** Setzt die Dauer des Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
+  onSetDuration: (durationMin: number) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
   services: AgendaServiceOption[];
   /** Löschen anstoßen (Bestätigung erfolgt im Eltern-Screen). */
   onRequestDelete: () => void;
 }
 
-type Mode = 'choose' | 'rename' | 'song' | 'responsible';
+type Mode = 'choose' | 'rename' | 'song' | 'responsible' | 'duration';
 
 /** Aktionsmenü für einen Ablaufpunkt: Umbenennen, Lied verknüpfen oder Löschen. */
 export function ItemActionSheet({
@@ -33,12 +35,16 @@ export function ItemActionSheet({
   onLinkSong,
   onUnlinkSong,
   onSetResponsible,
+  onSetDuration,
   services,
   onRequestDelete,
 }: ItemActionSheetProps) {
   const [mode, setMode] = useState<Mode>('choose');
   const [title, setTitle] = useState(item.title);
   const [responsible, setResponsible] = useState(item.responsibleText);
+  const [duration, setDuration] = useState(
+    item.durationMin != null ? String(item.durationMin) : '',
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const isSong = !!item.song;
@@ -62,9 +68,14 @@ export function ItemActionSheet({
         ? 'Lied verknüpfen'
         : mode === 'responsible'
           ? 'Verantwortlich'
-          : item.song
-            ? item.song.title
-            : item.title;
+          : mode === 'duration'
+            ? 'Dauer'
+            : item.song
+              ? item.song.title
+              : item.title;
+
+  const durationNum = duration.trim() === '' ? null : Number(duration);
+  const durationValid = durationNum !== null && Number.isInteger(durationNum) && durationNum >= 0;
 
   return (
     <Sheet title={heading} onClose={onClose}>
@@ -97,6 +108,10 @@ export function ItemActionSheet({
           <button className={styles.choice} onClick={() => setMode('responsible')}>
             <Icon name="people" size={20} className={styles.choiceIcon} />
             <span>Verantwortlich</span>
+          </button>
+          <button className={styles.choice} onClick={() => setMode('duration')}>
+            <Icon name="clock" size={20} className={styles.choiceIcon} />
+            <span>Dauer</span>
           </button>
           <button
             className={`${styles.choice} ${styles.danger}`}
@@ -138,17 +153,55 @@ export function ItemActionSheet({
         <SongSearch
           autoFocus
           busy={busy}
-          onPick={(arrangementId) => run(() => onLinkSong(arrangementId), 'Verknüpfen fehlgeschlagen.')}
+          onPick={(arrangementId) =>
+            run(() => onLinkSong(arrangementId), 'Verknüpfen fehlgeschlagen.')
+          }
         />
       )}
 
       {mode === 'responsible' && (
         <div className={styles.form}>
-          <ResponsibleField autoFocus value={responsible} onChange={setResponsible} services={services} />
+          <ResponsibleField
+            autoFocus
+            value={responsible}
+            onChange={setResponsible}
+            services={services}
+          />
           <button
             className={styles.primary}
             disabled={busy || responsible === item.responsibleText}
-            onClick={() => run(() => onSetResponsible(responsible.trim()), 'Speichern fehlgeschlagen.')}
+            onClick={() =>
+              run(() => onSetResponsible(responsible.trim()), 'Speichern fehlgeschlagen.')
+            }
+          >
+            {busy ? 'Speichere…' : 'Speichern'}
+          </button>
+        </div>
+      )}
+
+      {mode === 'duration' && (
+        <div className={styles.form}>
+          <input
+            className={styles.input}
+            type="number"
+            inputMode="numeric"
+            min={0}
+            value={duration}
+            autoFocus
+            placeholder="Minuten"
+            onChange={(e) => setDuration(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && durationValid && durationNum !== item.durationMin) {
+                run(() => onSetDuration(durationNum as number), 'Speichern fehlgeschlagen.');
+              }
+            }}
+          />
+          <button
+            className={styles.primary}
+            disabled={busy || !durationValid || durationNum === item.durationMin}
+            onClick={() =>
+              run(() => onSetDuration(durationNum as number), 'Speichern fehlgeschlagen.')
+            }
           >
             {busy ? 'Speichere…' : 'Speichern'}
           </button>

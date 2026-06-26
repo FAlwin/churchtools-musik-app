@@ -106,7 +106,10 @@ export interface UserCapabilities {
 
 /** Ermittelt aus den ChurchTools-Rechten (Modul churchservice), was der Nutzer darf. */
 export async function getCapabilities(cookie: string): Promise<UserCapabilities> {
-  const data = await ctGet<Record<string, Record<string, unknown>>>(cookie, '/api/permissions/global');
+  const data = await ctGet<Record<string, Record<string, unknown>>>(
+    cookie,
+    '/api/permissions/global',
+  );
   const cs = data?.churchservice ?? {};
   const has = (v: unknown): boolean => (Array.isArray(v) ? v.length > 0 : Boolean(v));
   // Admin-Recht aus der Konfiguration (Form `modul:recht`).
@@ -220,7 +223,9 @@ export interface CtService {
 /** Lädt die ChurchTools-Dienste (z.B. „Musik", „Predigt") für die Verantwortlich-Chips. */
 export async function getCtServices(cookie: string): Promise<CtService[]> {
   const data = await ctGet<CtService[]>(cookie, `/api/services`);
-  return [...data].sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0) || a.name.localeCompare(b.name, 'de'));
+  return [...data].sort(
+    (a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0) || a.name.localeCompare(b.name, 'de'),
+  );
 }
 
 /** Lädt eine Arrangement-Datei (z.B. .chordpro) als Text – mit Session-Cookie. */
@@ -298,19 +303,23 @@ function agendaItemWritePayload(
     arrangementId?: number;
     unlink?: boolean;
     responsible?: string;
+    /** Neue Dauer in Sekunden (CT-Einheit); überschreibt die bestehende. */
+    durationSec?: number;
   } = {},
 ): Record<string, unknown> {
   // Lied-Verknüpfung: ein übergebenes arrangementId hebt den Punkt auf type 'song' an
   // (verifiziert: PUT mit type 'song' + top-level arrangementId wandelt einen text-Punkt
   // sauber um, ohne Herabstufung); sonst bleibt eine vorhandene Verknüpfung erhalten.
   // unlink=true löst die Verknüpfung wieder (verifiziert: type 'text' ohne arrangementId).
-  const arrangementId = overrides.unlink ? undefined : (overrides.arrangementId ?? it.song?.arrangementId);
+  const arrangementId = overrides.unlink
+    ? undefined
+    : (overrides.arrangementId ?? it.song?.arrangementId);
   const isSong = !overrides.unlink && (overrides.arrangementId !== undefined || !!it.song);
   return {
     title: overrides.title ?? it.title,
     type: isSong ? 'song' : overrides.unlink ? 'text' : it.type,
     note: overrides.note ?? it.note ?? '',
-    duration: it.duration ?? 0,
+    duration: overrides.durationSec ?? it.duration ?? 0,
     isBeforeEvent: it.isBeforeEvent ?? false,
     // responsible ist ein Textfeld; ChurchTools löst Dienst-Tokens wie „[Musik]" selbst
     // zu den im Dienstplan zugewiesenen Personen auf.
@@ -335,8 +344,7 @@ export async function reorderAgenda(
   const byId = new Map(items.map((i) => [i.id, i]));
 
   // Schutz: nur erlauben, wenn die übergebene Reihenfolge exakt dieselben Punkte enthält.
-  const same =
-    orderedItemIds.length === items.length && orderedItemIds.every((id) => byId.has(id));
+  const same = orderedItemIds.length === items.length && orderedItemIds.every((id) => byId.has(id));
   if (!same) {
     throw new HttpError(409, 'Der Ablauf hat sich geändert. Bitte neu laden und erneut versuchen.');
   }
@@ -363,7 +371,12 @@ export async function reorderAgenda(
 export async function createAgendaItem(
   cookie: string,
   eventId: number,
-  data: { type: 'header' | 'text' | 'song'; title: string; arrangementId?: number; responsible?: string },
+  data: {
+    type: 'header' | 'text' | 'song';
+    title: string;
+    arrangementId?: number;
+    responsible?: string;
+  },
 ): Promise<void> {
   const csrf = await getCsrfToken(cookie);
   const body: Record<string, unknown> = { type: data.type, title: data.title };
@@ -423,7 +436,15 @@ export async function updateAgendaItem(
   cookie: string,
   eventId: number,
   itemId: number,
-  fields: { title?: string; note?: string; arrangementId?: number; unlink?: boolean; responsible?: string },
+  fields: {
+    title?: string;
+    note?: string;
+    arrangementId?: number;
+    unlink?: boolean;
+    responsible?: string;
+    /** Neue Dauer in Minuten (UI-Einheit) – wird in CT-Sekunden umgerechnet. */
+    durationMin?: number;
+  },
 ): Promise<void> {
   const csrf = await getCsrfToken(cookie);
   const { items } = await getAgenda(cookie, eventId);
@@ -436,6 +457,7 @@ export async function updateAgendaItem(
     arrangementId: fields.arrangementId,
     unlink: fields.unlink,
     responsible: fields.responsible,
+    durationSec: fields.durationMin !== undefined ? fields.durationMin * 60 : undefined,
   });
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items/${itemId}`, {
     method: 'PUT',

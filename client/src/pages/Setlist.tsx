@@ -54,6 +54,8 @@ interface SetlistProps {
   onUnlinkSong: (itemId: number, title: string) => Promise<void>;
   /** Setzt das Verantwortlich-Textfeld eines Punkts. Wirft bei Fehler. */
   onSetResponsible: (itemId: number, responsible: string) => Promise<void>;
+  /** Setzt die Dauer eines Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
+  onSetDuration: (itemId: number, durationMin: number) => Promise<void>;
   /** Legt einen neuen Punkt an. Wirft bei Fehler. */
   onAdd: (data: {
     type: 'header' | 'text' | 'song';
@@ -110,35 +112,52 @@ function ResponsibleLine({ entries }: { entries: AgendaItem['responsible'] }) {
 }
 
 /** Read-only „voller Ablauf": alle Punkte mit Uhrzeit, Dauer, Notiz und Zuständigen (wie in ChurchTools). */
-function AgendaFullView({ items }: { items: AgendaItem[] }) {
+function AgendaFullView({
+  items,
+  showTimes,
+  onToggleTimes,
+}: {
+  items: AgendaItem[];
+  showTimes: boolean;
+  onToggleTimes: () => void;
+}) {
   return (
-    <div className={styles.flowList}>
-      {items.map((item) => {
-        if (item.isHeader) {
+    <>
+      <div className={styles.flowToolbar}>
+        <button className={styles.flowToggle} onClick={onToggleTimes}>
+          {showTimes ? 'Zeiten ausblenden' : 'Zeiten anzeigen'}
+        </button>
+      </div>
+      <div className={styles.flowList}>
+        {items.map((item) => {
+          if (item.isHeader) {
+            return (
+              <div key={item.id} className={styles.sectionBand}>
+                {showTimes && item.time && <span className={styles.bandTime}>{item.time}</span>}
+                {item.title}
+              </div>
+            );
+          }
+          const title = item.song ? item.song.title : item.title;
           return (
-            <div key={item.id} className={styles.sectionBand}>
-              {item.time && <span className={styles.bandTime}>{item.time}</span>}
-              {item.title}
+            <div key={item.id} className={styles.flowRow}>
+              {showTimes && <div className={styles.flowTime}>{item.time ?? ''}</div>}
+              <div className={styles.flowBody}>
+                <div className={styles.flowHead}>
+                  <span className={styles.flowTitle}>{title}</span>
+                  {item.song && <span className={styles.flowSongTag}>🎵</span>}
+                  {showTimes && item.durationMin && (
+                    <span className={styles.flowDur}>{item.durationMin} Min</span>
+                  )}
+                </div>
+                {item.note && <div className={styles.flowNote}>{item.note}</div>}
+                <ResponsibleLine entries={item.responsible} />
+              </div>
             </div>
           );
-        }
-        const title = item.song ? item.song.title : item.title;
-        return (
-          <div key={item.id} className={styles.flowRow}>
-            <div className={styles.flowTime}>{item.time ?? ''}</div>
-            <div className={styles.flowBody}>
-              <div className={styles.flowHead}>
-                <span className={styles.flowTitle}>{title}</span>
-                {item.song && <span className={styles.flowSongTag}>🎵</span>}
-                {item.durationMin && <span className={styles.flowDur}>{item.durationMin} Min</span>}
-              </div>
-              {item.note && <div className={styles.flowNote}>{item.note}</div>}
-              <ResponsibleLine entries={item.responsible} />
-            </div>
-          </div>
-        );
-      })}
-    </div>
+        })}
+      </div>
+    </>
   );
 }
 
@@ -193,12 +212,17 @@ export function Setlist({
   onLinkSong,
   onUnlinkSong,
   onSetResponsible,
+  onSetDuration,
   onAdd,
   services,
   canEdit = false,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
   const [view, setView] = useState<'songs' | 'agenda'>('songs');
+  // Zeit/Dauer-Spalte im Ablauf ein-/ausblenden (Präferenz lokal gemerkt).
+  const [showTimes, setShowTimes] = useState(
+    () => localStorage.getItem('worship_agenda_times') !== '0',
+  );
   const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
   const [err, setErr] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
@@ -358,7 +382,17 @@ export function Setlist({
               onChange={setView}
             />
             {view === 'agenda' ? (
-              <AgendaFullView items={items} />
+              <AgendaFullView
+                items={items}
+                showTimes={showTimes}
+                onToggleTimes={() =>
+                  setShowTimes((v) => {
+                    const next = !v;
+                    localStorage.setItem('worship_agenda_times', next ? '1' : '0');
+                    return next;
+                  })
+                }
+              />
             ) : (
               <div className={styles.list}>
                 {items.map((item) => {
@@ -442,6 +476,7 @@ export function Setlist({
             onUnlinkSong(actionItem.id, actionItem.song?.title ?? actionItem.title)
           }
           onSetResponsible={(responsible) => onSetResponsible(actionItem.id, responsible)}
+          onSetDuration={(durationMin) => onSetDuration(actionItem.id, durationMin)}
           onRequestDelete={() => setPendingDelete(actionItem)}
         />
       )}

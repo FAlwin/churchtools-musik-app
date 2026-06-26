@@ -59,7 +59,12 @@ export function reorderAgenda(eventId: number, order: number[]): Promise<{ ok: b
 /** Legt einen neuen Ablaufpunkt an (Text/Überschrift/Lied). */
 export function createAgendaItem(
   eventId: number,
-  data: { type: 'header' | 'text' | 'song'; title?: string; arrangementId?: number; responsible?: string },
+  data: {
+    type: 'header' | 'text' | 'song';
+    title?: string;
+    arrangementId?: number;
+    responsible?: string;
+  },
 ): Promise<{ ok: boolean }> {
   return apiFetch(`/api/services/${eventId}/agenda/items`, {
     method: 'POST',
@@ -81,6 +86,18 @@ export function setAgendaItemResponsible(
   return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
     method: 'PUT',
     body: JSON.stringify({ responsible }),
+  });
+}
+
+/** Setzt die Dauer eines Punkts (in Minuten); CT berechnet die Uhrzeiten daraus neu. */
+export function setAgendaItemDuration(
+  eventId: number,
+  itemId: number,
+  durationMin: number,
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ durationMin }),
   });
 }
 
