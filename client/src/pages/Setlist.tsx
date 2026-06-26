@@ -353,7 +353,7 @@ export function Setlist({
             <div className={styles.editHint}>
               {isReordering
                 ? 'Speichere…'
-                : 'Ziehen (⠿) zum Sortieren · Punkt antippen für Umbenennen / Lied verknüpfen / Löschen.'}
+                : 'Ziehen (⠿) zum Sortieren · Eintrag antippen zum Bearbeiten.'}
             </div>
             {err && <div className={styles.editError}>{err}</div>}
             <DndContext
