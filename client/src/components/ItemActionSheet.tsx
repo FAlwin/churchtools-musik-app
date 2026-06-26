@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { AgendaItem, AgendaServiceOption } from '@shared/types/index';
-import { Sheet } from './Sheet';
 import { SongSearch } from './SongSearch';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
@@ -29,9 +28,12 @@ interface ItemActionSheetProps {
   onRequestDelete: () => void;
 }
 
-type Mode = 'choose' | 'rename' | 'song' | 'responsible' | 'duration';
-
-/** Aktionsmenü für einen Ablaufpunkt: Umbenennen, Lied verknüpfen oder Löschen. */
+/**
+ * „Punkt bearbeiten"-Dialog: ein zentriertes Modal mit allen Einstellungen auf einen Blick
+ * (Titel, Lied, Dauer, Zuständig, Uhrzeit ausblenden, Löschen) – angelehnt an den
+ * „Position bearbeiten"-Dialog in ChurchTools. „Speichern" schreibt die geänderten Felder
+ * gesammelt nach ChurchTools.
+ */
 export function ItemActionSheet({
   item,
   onClose,
@@ -45,7 +47,8 @@ export function ItemActionSheet({
   services,
   onRequestDelete,
 }: ItemActionSheetProps) {
-  const [mode, setMode] = useState<Mode>('choose');
+  const isSong = !!item.song;
+  const [songMode, setSongMode] = useState(false);
   const [title, setTitle] = useState(item.title);
   const [responsible, setResponsible] = useState(item.responsibleText);
   const [duration, setDuration] = useState(
@@ -53,176 +56,159 @@ export function ItemActionSheet({
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const isSong = !!item.song;
 
-  async function run(action: () => Promise<void>, fallbackMsg: string) {
+  const durationNum = duration.trim() === '' ? null : Number(duration);
+  const durationValid = durationNum === null || (Number.isInteger(durationNum) && durationNum >= 0);
+
+  async function saveAll() {
     setBusy(true);
     setErr(null);
     try {
-      await action();
+      // Nur tatsächlich geänderte Felder schreiben.
+      if (!isSong && title.trim() && title.trim() !== item.title) {
+        await onRename(title.trim());
+      }
+      if (durationNum !== null && durationNum !== item.durationMin) {
+        await onSetDuration(durationNum);
+      }
+      if (responsible !== item.responsibleText) {
+        await onSetResponsible(responsible.trim());
+      }
       onClose();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : fallbackMsg);
+      setErr(e instanceof Error ? e.message : 'Speichern fehlgeschlagen.');
       setBusy(false);
     }
   }
 
-  const heading =
-    mode === 'rename'
-      ? 'Umbenennen'
-      : mode === 'song'
-        ? 'Lied verknüpfen'
-        : mode === 'responsible'
-          ? 'Verantwortlich'
-          : mode === 'duration'
-            ? 'Dauer'
-            : item.song
-              ? item.song.title
-              : item.title;
-
-  const durationNum = duration.trim() === '' ? null : Number(duration);
-  const durationValid = durationNum !== null && Number.isInteger(durationNum) && durationNum >= 0;
+  // Unterdialog: Lied suchen + verknüpfen.
+  if (songMode) {
+    return (
+      <div className={styles.overlay} onClick={onClose}>
+        <div className={styles.card} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.title}>Lied verknüpfen</div>
+          {err && <div className={styles.err}>{err}</div>}
+          <SongSearch
+            autoFocus
+            busy={busy}
+            onPick={(arrangementId) => {
+              setBusy(true);
+              setErr(null);
+              onLinkSong(arrangementId)
+                .then(onClose)
+                .catch((e: unknown) => {
+                  setErr(e instanceof Error ? e.message : 'Verknüpfen fehlgeschlagen.');
+                  setBusy(false);
+                });
+            }}
+          />
+          <button className={styles.linkRow} onClick={() => setSongMode(false)} disabled={busy}>
+            Zurück
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Sheet title={heading} onClose={onClose}>
-      {err && <div className={styles.err}>{err}</div>}
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.card} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.title}>Punkt bearbeiten</div>
+        {err && <div className={styles.err}>{err}</div>}
 
-      {mode === 'choose' && (
-        <div className={styles.choices}>
-          {!isSong && (
-            <>
-              <button className={styles.choice} onClick={() => setMode('rename')}>
-                <Icon name="pencil" size={20} className={styles.choiceIcon} />
-                <span>Umbenennen</span>
+        <div className={styles.fields}>
+          <div className={styles.field}>
+            <span className={styles.label}>Titel</span>
+            {isSong ? (
+              <div className={styles.readonly}>{item.song?.title}</div>
+            ) : (
+              <input
+                className={styles.input}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Titel"
+              />
+            )}
+          </div>
+
+          <div className={styles.field}>
+            <span className={styles.label}>Lied</span>
+            {isSong ? (
+              <button
+                className={styles.linkRow}
+                disabled={busy}
+                onClick={() => {
+                  setBusy(true);
+                  setErr(null);
+                  onUnlinkSong()
+                    .then(onClose)
+                    .catch((e: unknown) => {
+                      setErr(e instanceof Error ? e.message : 'Aufheben fehlgeschlagen.');
+                      setBusy(false);
+                    });
+                }}
+              >
+                <Icon name="link" size={17} className={styles.linkIcon} />
+                Verknüpfung aufheben
               </button>
-              <button className={styles.choice} onClick={() => setMode('song')}>
-                <Icon name="music" size={20} className={styles.choiceIcon} />
-                <span>Lied verknüpfen</span>
+            ) : (
+              <button className={styles.linkRow} onClick={() => setSongMode(true)}>
+                <Icon name="music" size={17} className={styles.linkIcon} />
+                Lied verknüpfen
               </button>
-            </>
-          )}
-          {isSong && (
-            <button
-              className={styles.choice}
-              disabled={busy}
-              onClick={() => run(onUnlinkSong, 'Verknüpfung aufheben fehlgeschlagen.')}
-            >
-              <Icon name="link" size={20} className={styles.choiceIcon} />
-              <span>Verknüpfung aufheben</span>
-            </button>
-          )}
-          <button className={styles.choice} onClick={() => setMode('responsible')}>
-            <Icon name="people" size={20} className={styles.choiceIcon} />
-            <span>Verantwortlich</span>
-          </button>
-          <button className={styles.choice} onClick={() => setMode('duration')}>
-            <Icon name="clock" size={20} className={styles.choiceIcon} />
-            <span>Dauer</span>
-          </button>
+            )}
+          </div>
+
+          <div className={styles.field}>
+            <span className={styles.label}>Dauer (Minuten)</span>
+            <input
+              className={styles.input}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              placeholder="z. B. 5"
+            />
+          </div>
+
+          <div className={styles.field}>
+            <span className={styles.label}>Zuständig</span>
+            <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
+          </div>
+
           <button
-            className={styles.choice}
-            onClick={() => {
-              onToggleTimeHidden();
-              onClose();
-            }}
+            className={styles.toggleRow}
+            onClick={onToggleTimeHidden}
+            aria-pressed={timeHidden}
           >
-            <Icon name={timeHidden ? 'eye' : 'eye-off'} size={20} className={styles.choiceIcon} />
-            <span>{timeHidden ? 'Uhrzeit einblenden' : 'Uhrzeit ausblenden'}</span>
-          </button>
-          <button
-            className={`${styles.choice} ${styles.danger}`}
-            onClick={() => {
-              onClose();
-              onRequestDelete();
-            }}
-          >
-            <Icon name="trash" size={20} className={styles.choiceIcon} />
-            <span>Löschen</span>
+            <span className={styles.label}>Uhrzeit ausblenden</span>
+            <span className={`${styles.tog}${timeHidden ? ' ' + styles.togOn : ''}`}>
+              <span className={styles.togThumb} />
+            </span>
           </button>
         </div>
-      )}
 
-      {mode === 'rename' && (
-        <div className={styles.form}>
-          <input
-            className={styles.input}
-            value={title}
-            autoFocus
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && title.trim() && title.trim() !== item.title) {
-                run(() => onRename(title.trim()), 'Umbenennen fehlgeschlagen.');
-              }
-            }}
-          />
-          <button
-            className={styles.primary}
-            disabled={!title.trim() || title.trim() === item.title || busy}
-            onClick={() => run(() => onRename(title.trim()), 'Umbenennen fehlgeschlagen.')}
-          >
+        <div className={styles.actions}>
+          <button className={styles.cancelBtn} onClick={onClose} disabled={busy}>
+            Abbrechen
+          </button>
+          <button className={styles.saveBtn} onClick={saveAll} disabled={busy || !durationValid}>
             {busy ? 'Speichere…' : 'Speichern'}
           </button>
         </div>
-      )}
 
-      {mode === 'song' && (
-        <SongSearch
-          autoFocus
-          busy={busy}
-          onPick={(arrangementId) =>
-            run(() => onLinkSong(arrangementId), 'Verknüpfen fehlgeschlagen.')
-          }
-        />
-      )}
-
-      {mode === 'responsible' && (
-        <div className={styles.form}>
-          <ResponsibleField
-            autoFocus
-            value={responsible}
-            onChange={setResponsible}
-            services={services}
-          />
-          <button
-            className={styles.primary}
-            disabled={busy || responsible === item.responsibleText}
-            onClick={() =>
-              run(() => onSetResponsible(responsible.trim()), 'Speichern fehlgeschlagen.')
-            }
-          >
-            {busy ? 'Speichere…' : 'Speichern'}
-          </button>
-        </div>
-      )}
-
-      {mode === 'duration' && (
-        <div className={styles.form}>
-          <input
-            className={styles.input}
-            type="number"
-            inputMode="numeric"
-            min={0}
-            value={duration}
-            autoFocus
-            placeholder="Minuten"
-            onChange={(e) => setDuration(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && durationValid && durationNum !== item.durationMin) {
-                run(() => onSetDuration(durationNum as number), 'Speichern fehlgeschlagen.');
-              }
-            }}
-          />
-          <button
-            className={styles.primary}
-            disabled={busy || !durationValid || durationNum === item.durationMin}
-            onClick={() =>
-              run(() => onSetDuration(durationNum as number), 'Speichern fehlgeschlagen.')
-            }
-          >
-            {busy ? 'Speichere…' : 'Speichern'}
-          </button>
-        </div>
-      )}
-    </Sheet>
+        <button
+          className={styles.deleteBtn}
+          onClick={() => {
+            onClose();
+            onRequestDelete();
+          }}
+        >
+          <Icon name="trash" size={16} />
+          Punkt löschen
+        </button>
+      </div>
+    </div>
   );
 }

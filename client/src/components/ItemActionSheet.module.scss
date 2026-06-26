@@ -1,5 +1,37 @@
+// Zentriertes „Punkt bearbeiten"-Modal (wie der ChurchTools-Dialog), kein Drawer.
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 110;
+  background: var(--scrim);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.12s ease both;
+}
+
+.card {
+  background: var(--surface2);
+  border-radius: 16px;
+  padding: 20px;
+  width: min(380px, 100%);
+  max-height: 88%;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+  font-family: var(--ui);
+}
+
 .err {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   padding: 8px 10px;
   border-radius: 8px;
   background: rgba(178, 34, 71, 0.1);
@@ -9,67 +41,28 @@
   font-weight: 600;
 }
 
-.choices {
+.fields {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
 }
 
-.choice {
+.field {
   display: flex;
-  align-items: center;
-  gap: 13px;
-  width: 100%;
-  text-align: left;
-  padding: 13px 15px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface2);
-  color: var(--text);
-  font-family: var(--ui);
-  font-size: 15.5px;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font-size: 12.5px;
   font-weight: 600;
-  cursor: pointer;
-  transition: background 0.12s;
-
-  @media (hover: hover) {
-    &:hover {
-      background: var(--surface3);
-    }
-  }
-  &:active {
-    background: var(--surface3);
-  }
-  &:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-}
-
-.choiceIcon {
   color: var(--text2);
-  flex-shrink: 0;
-}
-
-.danger {
-  color: var(--red);
-  border-color: rgba(178, 34, 71, 0.3);
-
-  .choiceIcon {
-    color: var(--red);
-  }
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .input {
   width: 100%;
   min-width: 0;
-  padding: 12px 14px;
+  padding: 11px 13px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface2);
@@ -83,14 +76,104 @@
   }
 }
 
-.primary {
-  padding: 12px 18px;
-  border: none;
+.readonly {
+  padding: 11px 13px;
   border-radius: 10px;
-  background: var(--blue);
-  color: #fff;
-  font-family: inherit;
+  background: var(--surface3);
+  color: var(--text);
   font-size: 15px;
+  font-weight: 600;
+}
+
+// „Lied verknüpfen / aufheben" + „Zurück" als dezente Zeile.
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--blue-ink);
+  font-family: var(--ui);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:active {
+    background: var(--surface3);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+.linkIcon {
+  color: var(--blue-ink);
+  flex-shrink: 0;
+}
+
+// Uhrzeit-ausblenden als Schalter-Zeile.
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  .label {
+    color: var(--text);
+    font-size: 15px;
+  }
+}
+.tog {
+  flex-shrink: 0;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  position: relative;
+  transition: background 0.15s;
+}
+.togOn {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+.togThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+
+  .togOn & {
+    transform: translateX(18px);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.cancelBtn {
+  flex: 1;
+  height: 46px;
+  border-radius: 11px;
+  border: none;
+  background: var(--surface3);
+  color: var(--text2);
+  font-family: var(--ui);
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 
@@ -98,4 +181,39 @@
     opacity: 0.5;
     cursor: default;
   }
+}
+.saveBtn {
+  flex: 1;
+  height: 46px;
+  border-radius: 11px;
+  border: none;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+// Löschen dezent unten, klar abgesetzt.
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border: none;
+  background: none;
+  color: var(--red);
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
