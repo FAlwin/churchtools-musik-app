@@ -150,69 +150,78 @@ export function ItemActionSheet({
             )}
           </div>
 
-          <div className={styles.field}>
-            <span className={styles.label}>Lied</span>
-            {isSong ? (
-              <button
-                className={styles.linkRow}
-                disabled={busy}
-                onClick={() => {
-                  setBusy(true);
-                  setErr(null);
-                  onUnlinkSong()
-                    .then(onClose)
-                    .catch((e: unknown) => {
-                      setErr(e instanceof Error ? e.message : 'Aufheben fehlgeschlagen.');
-                      setBusy(false);
-                    });
-                }}
-              >
-                <Icon name="link" size={17} className={styles.linkIcon} />
-                Verknüpfung aufheben
+          {/* Überschriften haben nur einen Titel – keine weiteren Felder. */}
+          {!item.isHeader && (
+            <>
+              <div className={styles.field}>
+                <span className={styles.label}>Lied</span>
+                {isSong ? (
+                  <button
+                    className={styles.linkRow}
+                    disabled={busy}
+                    onClick={() => {
+                      setBusy(true);
+                      setErr(null);
+                      onUnlinkSong()
+                        .then(onClose)
+                        .catch((e: unknown) => {
+                          setErr(e instanceof Error ? e.message : 'Aufheben fehlgeschlagen.');
+                          setBusy(false);
+                        });
+                    }}
+                  >
+                    <Icon name="link" size={17} className={styles.linkIcon} />
+                    Verknüpfung aufheben
+                  </button>
+                ) : (
+                  <button className={styles.linkRow} onClick={() => setSongMode(true)}>
+                    <Icon name="music" size={17} className={styles.linkIcon} />
+                    Lied verknüpfen
+                  </button>
+                )}
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>Dauer (Minuten)</span>
+                <input
+                  className={styles.input}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  placeholder="z. B. 5"
+                />
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>Zuständig</span>
+                <ResponsibleField
+                  value={responsible}
+                  onChange={setResponsible}
+                  services={services}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>Bemerkung</span>
+                <textarea
+                  className={styles.textarea}
+                  value={note}
+                  rows={2}
+                  placeholder="Optionale Notiz…"
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </div>
+
+              <button className={styles.toggleRow} onClick={toggleHidden} aria-pressed={hidden}>
+                <span className={styles.label}>Uhrzeit ausblenden</span>
+                <span className={`${styles.tog}${hidden ? ' ' + styles.togOn : ''}`}>
+                  <span className={styles.togThumb} />
+                </span>
               </button>
-            ) : (
-              <button className={styles.linkRow} onClick={() => setSongMode(true)}>
-                <Icon name="music" size={17} className={styles.linkIcon} />
-                Lied verknüpfen
-              </button>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>Dauer (Minuten)</span>
-            <input
-              className={styles.input}
-              type="number"
-              inputMode="numeric"
-              min={0}
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              placeholder="z. B. 5"
-            />
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>Zuständig</span>
-            <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>Bemerkung</span>
-            <textarea
-              className={styles.textarea}
-              value={note}
-              rows={2}
-              placeholder="Optionale Notiz…"
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-
-          <button className={styles.toggleRow} onClick={toggleHidden} aria-pressed={hidden}>
-            <span className={styles.label}>Uhrzeit ausblenden</span>
-            <span className={`${styles.tog}${hidden ? ' ' + styles.togOn : ''}`}>
-              <span className={styles.togThumb} />
-            </span>
-          </button>
+            </>
+          )}
         </div>
 
         <div className={styles.actions}>
