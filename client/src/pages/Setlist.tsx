@@ -324,7 +324,7 @@ export function Setlist({
               </SortableContext>
             </DndContext>
             <button className={styles.addBtn} onClick={() => setShowAdd(true)}>
-              ＋ Punkt hinzufügen
+              ＋ Eintrag hinzufügen
             </button>
           </>
         ) : (
