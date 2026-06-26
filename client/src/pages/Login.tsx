@@ -4,6 +4,7 @@ import type { Theme } from '../types/index';
 import { Screen } from '../components/Screen';
 import { Spinner } from '../components/Spinner';
 import { Icon } from '../components/icons';
+import { SupportBox } from '../components/SupportBox';
 import styles from './Login.module.scss';
 
 interface LoginProps {
@@ -90,6 +91,8 @@ export function Login({ onLogin, site, theme }: LoginProps) {
             ))}
           </div>
         )}
+
+        <SupportBox />
       </div>
     </Screen>
   );

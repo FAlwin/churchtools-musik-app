@@ -9,7 +9,7 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
-- **„Kaffee spendieren"-Bereich** im Mehr-Tab: dezente, freiwillige Unterstützung für den ehrenamtlichen Entwickler über PayPal mit vorgewählten Beträgen (1/3/5 €) und freier Eingabe. Bewusst zurückhaltend ganz unten platziert.
+- **„Kaffee spendieren"-Bereich** im Mehr-Tab **und auf der Login-Seite**: dezente, freiwillige Unterstützung für den ehrenamtlichen Entwickler über PayPal mit vorgewählten Beträgen (1/3/5 €) und freier Eingabe. Bewusst zurückhaltend ganz unten platziert.
 
 ## [2.1.4] – 2026-06-26
 
