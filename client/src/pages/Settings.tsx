@@ -169,7 +169,9 @@ export function Settings({
         {/* Freiwillige Unterstützung – dezent, ganz unten */}
         <SupportBox />
 
-        <div className={styles.version}>Churchtools Musik App · v2.0</div>
+        <div className={styles.version}>
+          Churchtools Musik App · {import.meta.env.VITE_APP_VERSION || 'dev'}
+        </div>
       </Scroll>
 
       {showOrg && (

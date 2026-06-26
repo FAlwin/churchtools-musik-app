@@ -12,7 +12,10 @@ RUN npm ci
 
 # Restlichen Quellcode kopieren und die Web-App bauen
 COPY . .
-RUN npm run build --workspace=client
+# App-Version: vom CI aus dem Git-Tag als Build-Arg übergeben (z. B. v2.1.5); lokal „dev".
+# Vite stellt VITE_*-Variablen zur Build-Zeit als import.meta.env bereit → Anzeige im Mehr-Tab.
+ARG APP_VERSION=dev
+RUN VITE_APP_VERSION="$APP_VERSION" npm run build --workspace=client
 
 ENV NODE_ENV=production
 ENV PORT=3001
