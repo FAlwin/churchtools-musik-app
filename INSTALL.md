@@ -1,86 +1,191 @@
-# Installation (für andere Gemeinden)
+# Installation
 
-Diese Anleitung richtet sich an Gemeinden, die die App **selbst betreiben** möchten. Sie nutzt
-das fertige Docker-Image – ein eigener Build ist nicht nötig.
+Diese Anleitung richtet sich an Gemeinden, die die App **selbst betreiben** möchten.
+Sie nutzt das fertige Docker-Image – ein eigener Build ist nicht nötig.
+
+---
 
 ## Voraussetzungen
 
-- Ein Server, der **Docker** + **Docker Compose** ausführt (z. B. ein NAS mit Container-Funktion).
-- Eine erreichbare **ChurchTools-Instanz** (eure eigene).
-- Idealerweise eine **eigene (Sub-)Domain** + HTTPS für den externen Zugang (über einen Reverse
-  Proxy). Im lokalen Netz geht es zur Not auch ohne.
+- Eine erreichbare **ChurchTools-Instanz** (eure eigene URL)
+- **Docker** auf dem Server oder Computer (Details je nach Option unten)
+- Für externen Zugriff: eine eigene (Sub-)Domain
 
-## 1. Verteilpaket holen
+---
 
-Aus diesem Repository den Ordner **`deploy/`** verwenden. Er enthält:
+## Option A: Lokal auf dem Computer (Mac / Windows / Linux)
 
-- `docker-compose.yml` – verweist auf das fertige Image
-- `.env.example` – Vorlage für eure Konfiguration
+Zum Ausprobieren oder für den Zugriff nur im Heimnetz.
 
-Beide Dateien in einen leeren Ordner auf eurem Server legen.
+### 1. Docker Desktop installieren
 
-## 2. Konfiguration anlegen (`.env`)
+→ [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/)  
+Installieren und starten.
 
-`.env.example` nach `.env` kopieren und ausfüllen:
+### 2. Dateien herunterladen
 
-```bash
-cp .env.example .env
+Aus dem GitHub-Repo den Ordner [`deploy/`](https://github.com/FAlwin/churchtools-musik-app/tree/main/deploy) öffnen und diese zwei Dateien herunterladen:
+- `docker-compose.yml`
+- `.env.example`
+
+Beide in einen leeren Ordner legen (z. B. `musik-app/`).
+
+### 3. Konfiguration anlegen
+
+`.env.example` in `.env` umbenennen und öffnen. Zwei Werte eintragen:
+
+```
+CHURCHTOOLS_BASE_URL=https://eure-gemeinde.church.tools
+SESSION_SECRET=<zufälliger langer String>
 ```
 
-| Variable | Pflicht | Bedeutung |
-|---|---|---|
-| `CHURCHTOOLS_BASE_URL` | ✅ | URL eurer ChurchTools-Instanz, **ohne** abschließenden Slash, z. B. `https://eure-gemeinde.church.tools` |
-| `SESSION_SECRET` | ✅ | Langer Zufallsstring zum Signieren des Login-Cookies. Erzeugen mit: `openssl rand -hex 32` |
-| `ADMIN_PERMISSION` | optional | ChurchTools-Recht (Form `modul:recht`), das als „Administrator" gilt (schaltet Gemeindename + Links frei). Standard: `churchcore:administer persons` |
+Den SESSION_SECRET einmalig erzeugen – Terminal öffnen und eingeben:
 
-> Anmerkungen, Zoom und Lied-Einstellungen werden **pro ChurchTools-Konto** als JSON unter
-> `ANNOTATIONS_PATH` (Standard `/app/data/annotations`, im Daten-Volume) gespeichert – beim Update
-> das Volume behalten. `SITE_CONFIG_PATH` (Gemeindename/Links) liegt ebenfalls im Volume.
+```bash
+openssl rand -hex 32
+```
 
-> **Wichtig:** Ohne `CHURCHTOOLS_BASE_URL` startet die App bewusst **nicht** – das verhindert,
-> dass eine fehlkonfigurierte Instanz versehentlich mit einem fremden ChurchTools redet.
+Das Ergebnis kopieren und eintragen.
 
-## 3. Image laden & starten
+### 4. App starten
+
+Terminal öffnen, in den Ordner navigieren:
 
 ```bash
 docker compose pull
 docker compose up -d
 ```
 
-Die App lauscht im Container auf Port **3001** (im `docker-compose.yml` auf den Host gemappt).
-Erreichbarkeit prüfen: `http://<server-ip>:3001`
+### 5. App öffnen
 
-> Falls beim `pull` ein Zugriffsfehler erscheint: Das Image liegt in der GitHub Container Registry
-> (`ghcr.io/falwin/churchtools-musik-app`). Ist es öffentlich, braucht ihr keinen Login; andernfalls
-> meldet euch einmal mit einem GitHub-Token (`read:packages`) an: `docker login ghcr.io`.
+Browser: **http://localhost:3001**  
+Mit ChurchTools-Zugangsdaten anmelden → im „Mehr"-Tab den Gemeindenamen setzen.
 
-## 4. Externer Zugang (Reverse Proxy + HTTPS)
+---
 
-Für den Zugriff von außen bindet ihr die App hinter einen **Reverse Proxy** mit HTTPS
-(z. B. Synology Reverse Proxy, Nginx, Traefik):
+## Option B: Synology NAS
 
-- Eure (Sub-)Domain → `localhost:3001` weiterleiten
-- Ein gültiges TLS-Zertifikat (z. B. Let's Encrypt) zuweisen
-- Der Proxy sollte die üblichen `X-Forwarded-*`-Header setzen (die App vertraut dem Proxy in Produktion)
+Für einen dauerhaft laufenden Server im Heimnetz (auch für externen Zugriff geeignet).
 
-HTTPS wird empfohlen – einige Funktionen (z. B. „Display aktiv halten") brauchen einen sicheren Kontext.
+### Voraussetzung: Container Manager installieren
 
-## 5. Erster Start in der App
+Im Synology **Package Center** → „Container Manager" installieren (kostenlos).
 
-1. Mit euren **ChurchTools-Zugangsdaten** anmelden (eine Person mit dem oben gesetzten Admin-Recht).
-2. In den **„Mehr"-Tab** wechseln → **Gemeindename** setzen.
-3. Optional unter **„Links verwalten"** eigene Links anlegen (Text + Adresse, je Link wählbar, ob er
-   auch auf der Login-Seite erscheint).
+### 1. Dateien auf das NAS übertragen
 
-Mitglieder sehen nur das, wozu ihre ChurchTools-Rechte passen – die App erzwingt keine eigenen Rollen.
+Im Synology **File Station** einen neuen Ordner anlegen, z. B. `docker/musik-app/`.  
+Die zwei Dateien (`docker-compose.yml` + `.env.example`) dort hinein kopieren.
 
-## Typische Stolpersteine
+### 2. Konfiguration anlegen
 
-- **„Nicht angemeldet" trotz Login:** Cookie-Problem. Über HTTPS (Reverse Proxy) lösen; im reinen
-  HTTP-LAN kann der Browser das Cookie ablehnen.
-- **Keine Lieder/Abläufe sichtbar:** Es fehlen ChurchTools-Rechte. Wer Inhalte sehen soll, braucht in
-  ChurchTools die passenden Lese-Rechte (Veranstaltungen/Song-Kategorien).
-- **Admin-Funktionen fehlen:** Das in `ADMIN_PERMISSION` gesetzte Recht passt nicht zu eurer Instanz –
-  Wert anpassen.
-- **Einstellungen nach Update weg:** Das Daten-Volume wurde gelöscht. Beim Update das Volume behalten
-  (siehe [UPDATE.md](UPDATE.md)).
+`.env.example` in `.env` umbenennen und bearbeiten (File Station → Rechtsklick → Öffnen mit Texteditor).  
+Werte eintragen (wie in Option A, Schritt 3).
+
+### 3. App starten – zwei Möglichkeiten
+
+**a) Über SSH (empfohlen):**
+
+SSH im Synology DSM aktivieren (Systemsteuerung → Terminal & SNMP → SSH aktivieren).  
+Dann im Terminal verbinden:
+
+```bash
+ssh dein-nas-benutzer@192.168.x.x
+cd /volume1/docker/musik-app
+sudo docker compose pull
+sudo docker compose up -d
+```
+
+**b) Über die Container Manager GUI:**
+
+Container Manager → Projekt → „Erstellen" → Ordner `musik-app/` auswählen → Starten.
+
+### 4. App öffnen
+
+Browser: **http://nas-ip-adresse:3001** (nur im lokalen Netz).
+
+---
+
+## Externer Zugriff (eigene Domain)
+
+Damit die App sicher aus dem Internet erreichbar ist, braucht ihr eine eigene (Sub-)Domain
+und HTTPS. Zwei Wege:
+
+---
+
+### Weg 1: Cloudflare Tunnel (empfohlen)
+
+Kein Port muss im Router geöffnet werden. Funktioniert auch hinter einer Fritzbox.
+
+**Voraussetzung:** Domain bei Cloudflare verwaltet (kostenloser Account genügt).
+
+#### Schritte
+
+1. **Cloudflare-Dashboard** öffnen → Zero Trust → Netzwerk → Tunnel → „Tunnel erstellen"
+2. Tunneltyp: **Cloudflared** wählen → Namen vergeben (z. B. `musik-app`)
+3. Den angezeigten Installationsbefehl auf dem NAS ausführen (einmalig, installiert `cloudflared`)
+4. Im Tunnel eine **Public Hostname** eintragen:
+   - Subdomain: z. B. `musik`
+   - Domain: eure Domain
+   - Service: `http://localhost:3001`
+5. Speichern – die App ist jetzt unter `https://musik.eure-domain.de` erreichbar
+
+HTTPS und Zertifikat übernimmt Cloudflare automatisch.
+
+---
+
+### Weg 2: Synology Reverse Proxy + Portfreigabe
+
+Klassischer Weg ohne Cloudflare. Erfordert eine öffentliche IP-Adresse und Zugriff auf den Router.
+
+#### Schritt 1: Port im Router freigeben
+
+Im Router (z. B. Fritzbox) eine Portweiterleitung einrichten:
+- Externer Port: **443** (HTTPS)
+- Internes Ziel: NAS-IP-Adresse, Port **443**
+
+#### Schritt 2: HTTPS-Zertifikat auf dem NAS
+
+DSM → Systemsteuerung → Sicherheit → Zertifikat → „Hinzufügen"  
+→ „Neues Zertifikat von Let's Encrypt" → eure Domain eintragen.
+
+#### Schritt 3: Reverse Proxy einrichten
+
+DSM → Systemsteuerung → Anmeldeportal → Erweitert → Reverse Proxy → „Erstellen":
+
+| Feld | Wert |
+|---|---|
+| Quellprotokoll | HTTPS |
+| Quell-Hostname | `musik.eure-domain.de` |
+| Quellport | 443 |
+| Zielprotokoll | HTTP |
+| Ziel-Hostname | localhost |
+| Zielport | 3001 |
+
+Zertifikat dem Reverse Proxy zuweisen → Speichern.
+
+Die App ist nun unter `https://musik.eure-domain.de` erreichbar.
+
+---
+
+## Erster Start in der App
+
+1. Mit euren **ChurchTools-Zugangsdaten** anmelden (Person mit Admin-Recht in ChurchTools)
+2. „Mehr"-Tab → **Gemeindename** eintragen
+3. Optional: unter „Links verwalten" eigene Links anlegen
+
+---
+
+## Typische Probleme
+
+| Problem | Ursache & Lösung |
+|---|---|
+| „Nicht angemeldet" trotz Login | Cookie-Problem – nur über HTTPS (Reverse Proxy/Cloudflare) lösen |
+| Keine Lieder/Abläufe sichtbar | Fehlende ChurchTools-Rechte für diese Person |
+| Admin-Funktionen fehlen | `ADMIN_PERMISSION` in `.env` passt nicht – Wert anpassen |
+| Einstellungen nach Update weg | Daten-Volume wurde gelöscht – beim Update Volume behalten (→ [UPDATE.md](UPDATE.md)) |
+
+---
+
+## Updates
+
+Neues Image laden und Container neu starten – Details in [UPDATE.md](UPDATE.md).
