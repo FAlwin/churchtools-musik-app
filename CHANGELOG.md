@@ -14,6 +14,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 - **Neues Flag `COOKIE_SECURE`** (Standard aus): Wer ausschließlich über HTTPS läuft (Reverse
   Proxy/Cloudflare), setzt es auf `true` und liefert das Login-Cookie dann nur noch über HTTPS aus.
   Im reinen LAN-HTTP-Betrieb bleibt es aus (unverändertes Verhalten).
+- **App läuft im Container jetzt als unprivilegierter Benutzer** (statt als root): zusätzliche
+  Schutzschicht. Ein Entrypoint übereignet das Daten-Volume beim Start automatisch – auch
+  bestehende Instanzen funktionieren ohne manuellen Eingriff weiter.
 
 ### Geändert
 
