@@ -19,6 +19,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 - **Container-Healthcheck** im Docker-Image: Docker/Container-Manager erkennt jetzt, ob die App
   wirklich antwortet (prüft `/api/health`).
+- **Automatische Tests für die ChurchTools-Anbindung** ergänzt (39 zusätzliche Server-Tests):
+  Versions-Erkennung, Uhrzeit-Ausblenden, Zuständige, Zeitzonen-Umrechnung u. a. – fängt Fehler
+  bei künftigen Änderungen früh ab, statt erst im Gottesdienst.
 
 ## [2.2.0] – 2026-06-30
 

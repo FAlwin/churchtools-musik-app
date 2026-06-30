@@ -51,7 +51,7 @@ export function versionSlug(name: string): string {
  * Neuer Marker „— <Name> (ECG).chordpro"; abwärtskompatibel „— Bearbeitet.chordpro" /
  * „— ECG.chordpro" (Bestandsdateien älterer Instanzen → Name „Bearbeitet").
  */
-function versionNameOf(f: CtArrangementFile): string | null {
+export function versionNameOf(f: CtArrangementFile): string | null {
   const tagged = f.name.match(/[—-]\s*(.+?)\s*\(ECG\)\.chordpro$/i);
   if (tagged) return tagged[1].trim();
   if (/[—-]\s*(?:bearbeitet|ecg)\.chordpro$/i.test(f.name)) return 'Bearbeitet';
@@ -65,14 +65,14 @@ function isOriginalChordpro(f: CtArrangementFile): boolean {
 }
 
 /** Dateiname einer verwalteten Version aus Lied-Titel + Versionsname. */
-function versionFileName(songName: string, versionName: string): string {
+export function versionFileName(songName: string, versionName: string): string {
   const safeTitle = songName.replace(/[\\/:*?"<>|]/g, '').trim();
   const safeName = versionName.replace(/[\\/:*?"<>|()]/g, '').trim();
   return `${safeTitle} — ${safeName} ${VERSION_TAG}.chordpro`;
 }
 
 /** PDF/Bild-Dokumente eines Arrangements (für die Dokumentenanzeige). */
-function documentsOf(files: CtArrangementFile[]): SongDocument[] {
+export function documentsOf(files: CtArrangementFile[]): SongDocument[] {
   const out: SongDocument[] = [];
   for (const f of files) {
     const fileId = fileIdFromUrl(f.fileUrl);
@@ -85,7 +85,7 @@ function documentsOf(files: CtArrangementFile[]): SongDocument[] {
 }
 
 /** Liest einen Metadaten-Wert aus ChordPro-Text ({key: E} → "E"). */
-function metaValue(chordpro: string, key: string): string | null {
+export function metaValue(chordpro: string, key: string): string | null {
   const m = chordpro.match(new RegExp(`\\{${key}\\s*:\\s*([^}]+)\\}`, 'i'));
   return m ? m[1].trim() : null;
 }
@@ -274,12 +274,12 @@ export async function deleteVersion(
 }
 
 /** Erkennt am ChurchTools-Typ, ob ein Agenda-Punkt eine Überschrift / ein Abschnitt ist. */
-function isHeaderType(type?: string): boolean {
+export function isHeaderType(type?: string): boolean {
   return !!type && /header|überschrift|heading|section/i.test(type);
 }
 
 /** Formatiert eine CT-Startzeit (ISO/UTC) als deutsche Ortszeit „HH:MM"; null bei fehlender/ungültiger Zeit. */
-function formatBerlinTime(iso?: string | null): string | null {
+export function formatBerlinTime(iso?: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
@@ -294,7 +294,7 @@ function formatBerlinTime(iso?: string | null): string | null {
  * Säubert ein CT-Dienst-Token zum reinen Namen: entfernt alle eckigen Klammern und ein
  * etwaiges nachgestelltes „?" (CT-Offen-Marker). „[Kamera Studio]?" → „Kamera Studio".
  */
-function cleanServiceName(service?: string): string {
+export function cleanServiceName(service?: string): string {
   return (service ?? '')
     .replace(/[[\]]/g, '')
     .replace(/\?+\s*$/, '')
@@ -305,7 +305,7 @@ function cleanServiceName(service?: string): string {
  * Zuständige als Einträge, ohne Duplikate: für besetzte Plätze der Personenname (open=false),
  * für offene Dienst-Plätze (z.B. „[Musik]") der Dienstname (open=true).
  */
-function responsibleEntries(item: {
+export function responsibleEntries(item: {
   responsible?: { persons?: { service?: string; person?: { title?: string } }[] };
 }): ResponsibleEntry[] {
   const entries: ResponsibleEntry[] = [];

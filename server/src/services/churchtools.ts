@@ -18,7 +18,7 @@ export interface ChurchToolsUser {
 }
 
 /** Liest aus den Set-Cookie-Headern das ChurchTools-Session-Cookie (name=value). */
-function extractSessionCookie(res: Response): string | null {
+export function extractSessionCookie(res: Response): string | null {
   // Node 18+/undici: getSetCookie() liefert alle Set-Cookie-Header einzeln
   const cookies =
     typeof (res.headers as { getSetCookie?: () => string[] }).getSetCookie === 'function'
