@@ -7,26 +7,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
-### Sicherheit
-
-- **`SESSION_SECRET` ist in Produktion jetzt Pflicht** – kein unsicherer Fallback mehr (sonst wären
-  die signierten Login-Cookies fälschbar). In der Entwicklung bleibt ein Komfort-Default.
-- **Neues Flag `COOKIE_SECURE`** (Standard aus): Wer ausschließlich über HTTPS läuft (Reverse
-  Proxy/Cloudflare), setzt es auf `true` und liefert das Login-Cookie dann nur noch über HTTPS aus.
-  Im reinen LAN-HTTP-Betrieb bleibt es aus (unverändertes Verhalten).
-- **App läuft im Container jetzt als unprivilegierter Benutzer** (statt als root): zusätzliche
-  Schutzschicht. Ein Entrypoint übereignet das Daten-Volume beim Start automatisch – auch
-  bestehende Instanzen funktionieren ohne manuellen Eingriff weiter.
-
-### Geändert
-
-- **Container-Healthcheck** im Docker-Image: Docker/Container-Manager erkennt jetzt, ob die App
-  wirklich antwortet (prüft `/api/health`).
-- **Automatische Tests für die ChurchTools-Anbindung** ergänzt (39 zusätzliche Server-Tests):
-  Versions-Erkennung, Uhrzeit-Ausblenden, Zuständige, Zeitzonen-Umrechnung u. a. – fängt Fehler
-  bei künftigen Änderungen früh ab, statt erst im Gottesdienst.
-
 ## [2.2.0] – 2026-06-30
+
+Großes Aufräum-, Verteilungs- und Härtungs-Release.
 
 ### Neu
 
@@ -56,6 +39,22 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Prod-Instanz sind auf `:2` gepinnt (sichere Updates, kein ungewollter v3-Sprung). Das veraltete
   `containrrr/watchtower` wurde abgelöst – die Test-Instanz nutzt den gepflegten Fork
   `nickfedor/watchtower`, die Prod-Instanz aktualisiert bewusst (Hinweis künftig über das In-App-Banner).
+- **Container-Healthcheck** im Docker-Image: Docker/Container-Manager erkennt jetzt, ob die App
+  wirklich antwortet (prüft `/api/health`).
+- **Automatische Tests für die ChurchTools-Anbindung** ergänzt (39 zusätzliche Server-Tests):
+  Versions-Erkennung, Uhrzeit-Ausblenden, Zuständige, Zeitzonen-Umrechnung u. a. – fängt Fehler
+  bei künftigen Änderungen früh ab, statt erst im Gottesdienst.
+
+### Sicherheit
+
+- **App läuft im Container jetzt als unprivilegierter Benutzer** (statt als root): zusätzliche
+  Schutzschicht. Ein Entrypoint übereignet das Daten-Volume beim Start automatisch – auch
+  bestehende Instanzen funktionieren ohne manuellen Eingriff weiter.
+- **`SESSION_SECRET` ist in Produktion jetzt Pflicht** – kein unsicherer Fallback mehr (sonst wären
+  die signierten Login-Cookies fälschbar). In der Entwicklung bleibt ein Komfort-Default.
+- **Neues Flag `COOKIE_SECURE`** (Standard aus): Wer ausschließlich über HTTPS läuft (Reverse
+  Proxy/Cloudflare), setzt es auf `true` und liefert das Login-Cookie dann nur noch über HTTPS aus.
+  Im reinen LAN-HTTP-Betrieb bleibt es aus (unverändertes Verhalten).
 
 ## [2.1.7] – 2026-06-26
 
