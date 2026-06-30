@@ -10,6 +10,7 @@ import { Icon } from '../components/icons';
 import { LinksManager } from '../components/LinksManager';
 import { SupportBox } from '../components/SupportBox';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
+import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import styles from './Settings.module.scss';
 
 interface SettingsProps {
@@ -47,6 +48,7 @@ export function Settings({
   const [showLinks, setShowLinks] = useState(false);
   const [orgDraft, setOrgDraft] = useState(site.orgName);
   const update = useUpdateSiteConfig();
+  const updateCheck = useUpdateCheck();
   const logo = theme === 'dark' ? '/logo-rund-dunkel.png' : '/logo-rund-hell.png';
 
   function saveOrg() {
@@ -171,6 +173,16 @@ export function Settings({
 
         <div className={styles.version}>
           Churchtools Musik App · {import.meta.env.VITE_APP_VERSION || 'dev'}
+          {updateCheck.available && updateCheck.latest && (
+            <a
+              className={styles.updateNote}
+              href={updateCheck.url ?? undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Neue Version {updateCheck.latest} verfügbar – Was ist neu
+            </a>
+          )}
         </div>
       </Scroll>
 

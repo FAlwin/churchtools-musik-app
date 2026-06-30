@@ -16,6 +16,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   (Daten bleiben erhalten).
 - **Hilfeseite** `docs/betrieb/troubleshooting.md` mit Schritt-für-Schritt-Lösungen für die
   häufigsten Stolpersteine.
+- **Update-Hinweis in der App:** Im „Mehr"-Tab erscheint dezent ein Hinweis, sobald eine neuere
+  Version verfügbar ist – mit Link zu „Was ist neu". Quelle ist die neueste GitHub-Release-Note
+  (serverseitig gecacht); jeder Release-Tag erzeugt nun automatisch ein GitHub Release.
 
 ### Geändert
 
