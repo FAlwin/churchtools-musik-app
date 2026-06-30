@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.2.0] – 2026-06-30
+
 ### Neu
 
 - **Setup per Doppelklick** für andere Gemeinden: `deploy/setup.command` (macOS/Linux) und
