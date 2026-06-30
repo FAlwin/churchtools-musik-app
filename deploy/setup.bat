@@ -44,6 +44,7 @@ if errorlevel 1 (
 echo  Bitte gib die ChurchTools-Adresse eurer Gemeinde ein.
 echo  Beispiel: https://eure-gemeinde.church.tools
 echo.
+set "CT_URL="
 set /p CT_URL=" ChurchTools-URL: "
 if "%CT_URL%"=="" (
     echo  [FEHLER] Keine URL eingegeben. Einrichtung abgebrochen.

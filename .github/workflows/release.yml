@@ -120,3 +120,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          # Tags mit Suffix (z. B. v2.2.0-rc1) als Vorabversion markieren, damit
+          # /releases/latest sie NICHT als stabiles Update an die Gemeinden ausspielt.
+          prerelease: ${{ contains(github.ref_name, '-') }}

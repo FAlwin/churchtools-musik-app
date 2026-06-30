@@ -21,8 +21,9 @@ echo "║           Musik App – Einrichtung                ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
 
-# Quarantäne-Markierung von mitgelieferten Dateien lösen (Browser-Downloads)
-xattr -dr com.apple.quarantine "$DIR" 2>/dev/null || true
+# Quarantäne-Markierung der mitgelieferten Skripte lösen (Browser-Download), damit z. B.
+# update.command später per Doppelklick startet – gezielt auf die .command-Dateien, nicht rekursiv.
+xattr -d com.apple.quarantine "$DIR"/*.command 2>/dev/null || true
 
 # 1. Ist Docker installiert?
 if ! command -v docker > /dev/null 2>&1; then
