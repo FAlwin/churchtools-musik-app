@@ -1,5 +1,9 @@
 # Umsetzungsplan – Churchtools Musik App (Worship Charts)
 
+> ⚠️ **ARCHIV / HISTORISCH (Stand 13.06.2026).** Dieser detaillierte Erst-Umsetzungsplan ist
+> abgeschlossen und wird **nicht mehr gepflegt**. Aktueller Fahrplan: `docs/entwicklung/PROJEKTPLAN.md`;
+> aktuelle Architektur/Stand: `CLAUDE.md`. Nur als Entstehungs-Dokumentation aufbewahrt.
+
 *ECG Donrath · Technische Leitung: Alwin · Stand: 13. Juni 2026 · **fertig & produktiv***
 
 ## Kontext
@@ -9,8 +13,7 @@ Gottesdienst – das bedeutet doppelte Datenpflege neben ChurchTools. Ziel: eine
 Setlisten und Chord Charts direkt aus ChurchTools zieht, automatisch auf die hinterlegte Tonart
 transponiert und einfach zu bedienen ist – auch für wenig technikaffine Musiker.
 
-Grundlage ist ein nahezu vollständiger Design-Prototyp (Claude-Design-Handoff). Dieser Plan folgt
-verbindlich der ECG-Projektvorlage (`vorlage_neues-projekt.md`).
+Grundlage war ein nahezu vollständiger Design-Prototyp (Claude-Design-Handoff).
 
 Festgelegte Entscheidungen:
 - **Hosting:** Synology-NAS via Docker; externer Zugang über Synology Reverse Proxy + DDNS

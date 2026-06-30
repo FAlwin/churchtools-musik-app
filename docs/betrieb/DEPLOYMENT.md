@@ -2,7 +2,7 @@
 
 > Diese Anleitung beschreibt das Bauen **aus dem Quellcode** auf einem Synology-NAS
 > (mit Container Manager) als **Beispiel-Setup**. Wer lieber das fertige Image nutzt,
-> nimmt **[INSTALL.md](INSTALL.md)** – das ist der empfohlene, einfachere Weg.
+> nimmt **[INSTALL.md](../../INSTALL.md)** – das ist der empfohlene, einfachere Weg.
 >
 > Alle konkreten Werte unten (`deine-gemeinde.de`, `<NAS-IP>`, DNS-/Router-Anbieter)
 > sind **Platzhalter** – durch eure eigenen ersetzen.

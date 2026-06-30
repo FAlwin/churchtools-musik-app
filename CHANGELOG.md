@@ -7,6 +7,21 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Neu
+
+- **Setup-Skripte für die einfache Selbst-Installation** durch andere Gemeinden: `deploy/setup.command`
+  (macOS/Linux) und `deploy/setup.bat` (Windows) – prüfen Docker, fragen die ChurchTools-URL ab,
+  erzeugen das Session-Secret und starten die App.
+
+### Geändert
+
+- **Dokumentation & Repo-Struktur aufgeräumt:** Der Projekt-Root enthält nur noch das Nötigste
+  (`README`, `INSTALL`, `UPDATE`, `CHANGELOG`, `LICENSE`, `CLAUDE.md`); die übrige Doku ist jetzt
+  nach `docs/betrieb/`, `docs/entwicklung/` und `docs/archiv/` einsortiert.
+- **Veraltete Doku-Inhalte korrigiert:** öffentliches Repo + MIT-Lizenz (statt „privat/proprietär"),
+  White-Label als verworfen markiert, Doppelungen entfernt (Changelog und Backend-API jeweils nur noch
+  an einer Stelle) und tote Verweise (gelöschte `WHITE-LABEL.md`) bereinigt.
+
 ## [2.1.7] – 2026-06-26
 
 ### Geändert

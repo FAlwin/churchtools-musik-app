@@ -2,10 +2,12 @@
 
 > Dieses Dokument ist die verbindliche Referenz für alle
 > Entwicklungssessions in diesem Projekt. Immer zuerst lesen!
-> **Grober Fahrplan: `PROJEKTPLAN.md`** · Architektur-Entscheidungen:
-> `docs/entscheidungen.md` · Testkonzept: `docs/testkonzept.md` ·
-> Konfig/Umgebungen: `docs/konfigurationsmanagement.md`.
-> Granulare Aufgaben/Bugs: GitHub Issues + Projects-Board.
+> **Grober Fahrplan: `docs/entwicklung/PROJEKTPLAN.md`** · Architektur-Entscheidungen:
+> `docs/entwicklung/entscheidungen.md` · Testkonzept: `docs/entwicklung/testkonzept.md` ·
+> Konfig/Umgebungen: `docs/entwicklung/konfigurationsmanagement.md` ·
+> API des Backends: `docs/entwicklung/api-referenz.md`.
+> Release-Notes: `CHANGELOG.md`. Granulare Aufgaben/Bugs: GitHub Issues + Projects-Board.
+> **Vor jedem Release: Release-Routine unten beachten.**
 
 ## Projektübersicht
 - **Was:** Progressive Web App (PWA), die Chord Charts der aktuellen Setlist aus ChurchTools
@@ -14,7 +16,7 @@
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
   extern unter `https://musik.ecg-donrath.de` live (Stand 13.06.2026).
-- **Repository:** privates GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main).
+- **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
 | Bereich        | Technologie                        |
@@ -62,7 +64,8 @@ churchtools-musik-app/
 ### Allgemein
 - TypeScript überall – kein `any` ohne Kommentar und Begründung
 - Zentrale/geteilte Typen in `shared/types/` – niemals lokal duplizieren
-- Commits auf Englisch, klein und präzise; pro abgeschlossenem Teilschritt ein Commit
+- Commits auf Deutsch mit Conventional-Commit-Präfix (`feat:`/`fix:`/`docs:`/`ui:`/`chore:`),
+  klein und präzise; pro abgeschlossenem Teilschritt ein Commit
 
 ### Frontend
 - Komponenten: PascalCase (`ChordChart.tsx`)
@@ -104,10 +107,9 @@ im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site
 **Navigation:** untere Tab-Bar `Termine`/`Lieder`/`Mehr` (`components/TabBar.tsx`), Detailseiten
 (Setlist, Chart) als Vollbild-Push. Routing in `App.tsx` über `tab` + `view` (rechteabhängig).
 
-**Design-Regeln (verbindlich):** `docs/design-system.md` – Farben nur über Tokens (es gibt **kein**
+**Design-Regeln (verbindlich):** `docs/entwicklung/design-system.md` – Farben nur über Tokens (es gibt **kein**
 `--orange`/`--teal`/`--chord`; Akzent = Blau, Destruktiv = Rot), System-Font, gemeinsame Bausteine
 (SCSS-Mixins `styles/_mixins.scss`, `<Segment>`, `Icon`/Line-Icons statt Emojis).
-*Entfernt (durch feste Version): `deploy/`, `.github/workflows/release.yml`, `LIZENZ.md`.*
 
 ## Akkord-Ansicht: PDF-Strom + Anmerkungen
 Die Akkord-Ansicht ist **kein** Live-HTML-Chart mehr, sondern ein **erzeugtes PDF**: `utils/chordPdf.ts`
@@ -140,14 +142,14 @@ Abschnitte/Version) überall gleich. Versions-Helfer: `utils/songVersions.ts`.
   ChurchTools-Arrangement-Feld; manuelles Transponieren nur lokal, kein Zurückschreiben
 - **CCLI:** Lizenznummer 2395145, SongSelect Premium; CCLI-Infos pro Song anzeigen
 - **Farben:** Primär Blau `#0061A1`, Destruktiv Rot `#B22247`; Akkorde im Chart schwarz/fett
-  (SongSelect-Stil). Details: `docs/design-system.md`
+  (SongSelect-Stil). Details: `docs/entwicklung/design-system.md`
 
 ## Tests & CI
 - **Befehle:** `npm test` (alle), `npm run test:cov` (Coverage), im Client
   `npm run test:watch`.
 - **Umfang (bewusst schlank):** Vitest-Unit-Tests nur für die kniffligste reine Logik –
   `client/src/utils/transpose.ts` (Transponieren) und `chordpro.ts` (zwei Dialekte).
-  Kein API/E2E: UI + Proxy werden manuell geprüft (Begründung: `docs/testkonzept.md`).
+  Kein API/E2E: UI + Proxy werden manuell geprüft (Begründung: `docs/entwicklung/testkonzept.md`).
 - **CI:** `.github/workflows/ci.yml` läuft `lint` + `build` + `test` bei jedem PR
   und Push auf `main`. Kein DB-Service nötig.
 - **Regel:** Jeder Bug → Issue (Vorlage „Fehlerbericht"); betrifft er reine Logik,
@@ -171,7 +173,8 @@ Abschnitte/Version) überall gleich. Versions-Helfer: `utils/songVersions.ts`.
 - **Extern (HTTPS):** `https://musik.ecg-donrath.de` über **Synology Reverse Proxy** → `localhost:3001`,
   DNS via DDNS (`<euer-ddns>.synology.me`) + CNAME, Zertifikat Let's Encrypt,
   Portweiterleitung 443/80 im Router (DSM-Admin-Ports bleiben zu). **Kein Cloudflare.**
-- **Anleitung:** `DEPLOYMENT.md` (Schritt-für-Schritt, Container Manager + externer Zugang).
+- **Anleitung (hostende Gemeinden):** `INSTALL.md` (image-basiert, empfohlen) + `UPDATE.md`.
+  Build-aus-Quellcode-Variante: `docs/betrieb/DEPLOYMENT.md`.
 - **Auto-Deploy (Test + Prod):** `.github/workflows/staging.yml` baut bei jedem Push (main/feature/**)
   ein `:staging`-Image (amd64) nach GHCR; `release.yml` baut bei Tag `vX.Y.Z` Multi-Arch + `:latest`.
   Beide NAS-Instanzen laufen image-basiert mit **Watchtower** (Auto-Pull): Test
@@ -183,51 +186,25 @@ Abschnitte/Version) überall gleich. Versions-Helfer: `utils/songVersions.ts`.
   `ANNOTATIONS_PATH=/app/data/annotations` (kontobezogene Anmerkungen/Einstellungen) – beim Re-Deploy
   Volume behalten.
 
+## Release-Routine (JEDES Mal vor einem Tag durchgehen)
+Diese Checkliste wird **bei jedem Release** abgearbeitet – nichts überspringen. Am bequemsten über
+den Skill `/festhalten`, der genau das automatisiert.
+
+1. **Code grün:** `npm run lint` + `npm run build` + `npm test` laufen sauber durch.
+2. **Doku & Struktur aktuell:** Root enthält nur das Nötigste (`README.md`, `INSTALL.md`,
+   `UPDATE.md`, `CHANGELOG.md`, `LICENSE`, `CLAUDE.md`); alles andere liegt geordnet in
+   `docs/{betrieb,entwicklung,archiv}/`. Keine veralteten Aussagen, keine toten Verweise
+   (z. B. auf gelöschte Dateien), keine Doppelungen (Changelog/API nur an einer Stelle).
+3. **Installations-Anleitung gegen die Realität prüfen:** `INSTALL.md` + `UPDATE.md` +
+   die Setup-/Update-Skripte in `deploy/` müssen zum tatsächlichen Vorgehen passen.
+4. **CHANGELOG pflegen:** Abschnitt `[Unreleased]` mit den Änderungen seit dem letzten Tag füllen
+   und auf die neue Version (`## [X.Y.Z] – Datum`) hochziehen. Versionierung nach SemVer.
+5. **Taggen:** `git tag vX.Y.Z && git push origin vX.Y.Z` → CI baut `:latest` + `:X.Y` + `:X`
+   (Major-Tag, damit Gemeinden sicher auf `:2` bleiben können). Prod-Deploy bewusst, nicht nebenbei.
+6. **Memory aktualisieren:** Projekt-Memory + `MEMORY.md`-Index auf den neuen Stand bringen.
+
 ## Changelog
-| Datum      | Branch | Was                                         |
-|------------|--------|---------------------------------------------|
-| 11.06.2026 | main   | Initial Setup (Git, Tooling, Struktur)      |
-| 11.06.2026 | main   | Server-Grundgerüst + Health-Endpoint        |
-| 11.06.2026 | main   | Frontend-MVP: alle 4 Screens + Chart-Logik (Mock-Daten), im Browser verifiziert |
-| 11.06.2026 | main   | ChurchTools-API erkundet, Datenmodell bestätigt |
-| 11.06.2026 | main   | Schritt 7: Backend-Proxy + Login + Setlist-Pipeline, gegen echte Daten getestet |
-| 11.06.2026 | main   | Schritt 8: Frontend an Backend angebunden (TanStack Query, Mock-Daten ersetzt) |
-| 11.06.2026 | main   | Chart-UX-Feinschliff (Blättern, Schriftarten, pro-Lied-Einstellungen, Steuerung) |
-| 11.06.2026 | main   | ChordPro-Editor mit Rückspeicherung als ECG-Version (gegen Test-Lied verifiziert) |
-| 11.06.2026 | main   | Dokumenten-Viewer (PDF/Bild) integriert: Anzeige-Auswahl, Blättern, Zoom/Anpassen pro Seite, Anmerkungen |
-| 11.06.2026 | main   | Schritt 9: Deployment-Setup (Docker) |
-| 11.06.2026 | main   | **Auf NAS deployt** (Container Manager), lokal im WLAN live; Cookie-über-HTTP-Fix |
-| 12.06.2026 | main   | Privates GitHub-Remote angelegt; Termin-Untertitel in Übersicht |
-| 12.06.2026 | main   | Kompletten Ablauf anzeigen (nicht nur Lieder); Zuständig-Personen |
-| 12.06.2026 | main   | Ablauf VOLL bearbeiten (Drag&Drop/Löschen/Umbenennen/Hinzufügen) → ChurchTools |
-| 12.06.2026 | main   | UX-Feinschliff; „Alle Lieder"-Ansicht mit Suche + Nutzungsstatistik |
-| 12.06.2026 | main   | Rechtebewusste UI (`/api/capabilities`): Mitglied = nur Liederbuch |
-| 13.06.2026 | main   | Review/Cleanup; Gottesdienst-Sortierung nach Uhrzeit |
-| 13.06.2026 | main   | **Externer Zugang live:** `https://musik.ecg-donrath.de` (Reverse Proxy + DDNS) |
-| 13.06.2026 | main   | Spalten-Pagination robust (End-Marker statt scrollWidth); Akkord-Abstand-Regler entfernt |
-| 14.06.2026 | main   | Neues Logo (Schallwellen-Icon); PWA-Name „Churchtools Musik App" (short_name + apple-title) |
-| 14.06.2026 | main   | White-Label vorbereitet: Name/Logo/Org/Farben zentral in src/config/branding.ts |
-| 14.06.2026 | main   | Erscheinungsbild Hell/Dunkel/**System**; „Display anlassen" app-weit + Re-Acquire |
-| 14.06.2026 | main   | Anmerkungen: Farb-Palette (Orange/Petrol/SW + freier Picker), Text auswählen→Farbe/Größe/Inhalt live, Undo/Redo, sicheres Löschen (Leiste), „Alles löschen" rückgängig machbar |
-| 14.06.2026 | main   | Schrift/Spalten gesperrt, solange Anmerkungen vorhanden (verhindert verrutschte Anmerkungen beim Zoomen); halbtransparente Sperr-Schicht im Aussehen-Menü |
-| 14.06.2026 | main   | Ablauf-Bearbeiten: Punkt antippen → Aktionsmenü (Umbenennen / 🎵 Lied verknüpfen / 🔗 Verknüpfung aufheben / Löschen); bestehender Text-Punkt wird in-place zum Lied und zurück |
-| 14.06.2026 | main   | Verantwortliche setzbar über CT-Dienst-Tokens (`[Musik]` etc.) per Chips+Freitext (Hinzufügen + nachträglich); CT füllt Personen aus dem Dienstplan; offene Dienste als oranger „Dienst ?"-Chip hervorgehoben |
-| 14.06.2026 | main   | Lied-Statistik bezieht kommende 3 Monate ein (eingeplante Lieder zählen mit, „zuletzt" zeigt auch zukünftige Termine); Cache wird bei Ablauf-Änderungen sofort invalidiert (Server + Client) |
-| 14.06.2026 | main   | Fix: Dienst-Chips säubern jetzt alle Klammern + nachgestelltes „?" (z.B. „[Kamera Studio]?" → „Kamera Studio ?") |
-| 18.06.2026 | chore/blueprint-angleichen | An Blueprint angeglichen: PROJEKTPLAN.md + docs/ (entscheidungen, testkonzept, konfigurationsmanagement); Vitest-Unit-Tests für transpose.ts + chordpro.ts (30 Tests); CI (GitHub Actions: lint+build+test); Issue-Vorlagen + Projects-Board |
-| 18.06.2026 | feature/white-label-runtime | White-Label Phase A+B: Laufzeit-Branding (site.json auf Volume, `GET /api/site-config` + `/api/site-logo`, Client wendet Farben/Name/Logo an); Admin-Einstellungsseite (`PUT /api/site-config`, CT-Admin-Recht, Logo-Upload/Farben/CCLI per Klick); Farb-Utils + 7 Tests |
-| 18.06.2026 | feature/white-label-manifest | White-Label Phase C: PWA-Manifest dynamisch (`GET /api/manifest.webmanifest` aus dem Branding, `manifest:false` im vite-plugin-pwa, fester Link in index.html); `config/branding.ts` entfernt (Defaults nun in `DEFAULT_SITE_CONFIG`) |
-| 18.06.2026 | feature/white-label-deploy | White-Label Phase D: Release-Workflow (Tag `v*` → privates GHCR-Image, PR = nur Build-Check); `deploy/`-Paket (image-basiertes compose + .env.example + ANLEITUNG.md); Volume `worship-data`/`musik-data` für Branding-Persistenz; Lizenz `LIZENZ.md` (proprietär, auf Anfrage) |
-| 18.06.2026 | redesign/churchtools-look | Design-Hausputz: Token-Hygiene (tote `--orange`/`--teal`/`--chord` entfernt, Roh-Hex→Tokens, neue `--seg-on`/`--track-off`/`--scrim`, Fonts→`var(--ui)`, Google-Fonts raus), gemeinsame Bausteine (`_mixins.scss`, `<Segment>`), Altlasten (`deploy/`, `release.yml`, `LIZENZ.md`) entfernt, `docs/design-system.md`; Fix: Spinner folgt currentColor |
-| 18.06.2026 | redesign/churchtools-look | **Komplettes Redesign im ChurchTools-Look** (Plan-Änderung: feste CT-Version statt White-Label): neue Token-Palette (blau `#0061A1`, System-Font, Light/Dark); untere Tab-Bar Termine/Lieder/Mehr + `tab`/`view`-Routing; ct-nav-Header; alle Seiten neu gestaltet (Termine-Karten/Monatsgruppen, Lieder mit NoteTile/key-pill, Setlist mit Akzentbalken, Chart-Sektionsfarben, Mehr-Tab mit Segment/Toggle); neues Schallwellen-Logo; White-Label zurückgebaut (nur `orgName` admin-anpassbar, feste Palette/Logo, statisches Manifest); Funktionalität unverändert |
-| 19.06.2026 | main   | Tests/A11y zum Redesign: `hasOpaquePixel` aus der Bearbeiten-Sperre extrahiert + getestet, Render-Tests für `<Segment>`/`<Section>` (44 Tests grün), Fokusring + `prefers-reduced-motion` + aria-labels. **Redesign nach `main` gemerged (PR #14) und produktiv deployt** (`worship-charts`, musik.ecg-donrath.de) – extern verifiziert |
-| 19.06.2026 | main   | Chart-Lesbarkeit (`ChordLine.module.scss`): Abstand Akkord↔Text (`margin-bottom`), Zeilenpaar-Abstand `1px`→`0.4em`, Mindestabstand zwischen Akkorden (`padding-right: 0.7ch`, kein „Dm7Am" mehr); **Akkorde in Akzentfarbe Blau** (`--blue`) statt schwarz – produktiv deployt + verifiziert |
-| 19.06.2026 | main   | **iOS-PWA-Layout-Fix** (auf echtem iPhone verifiziert): App-Höhe robust via `--app-h` = `window.innerHeight` + untere Safe-Area statt `100dvh` (Querformat-Bug + dunkler Streifen behoben); `#root` als Bezugsrahmen für `.screen`-Detailansichten (kein leerer Balken/Streifen); Scroll-Padding unten; Chart-Footer mit fester Mindesthöhe (springt nicht mehr) + einheitlicher Abstand über dem Home-Strich. |
-| 25.06.2026 | feature/versions-account-annotations | **Großer Funktions-Block (vor v2.1.0):** Akkord-Ansicht = erzeugtes PDF (SongSelect-Look) + 2-Seiten-Querformat-Strom; **mehrere benannte Lied-Versionen** (in ChurchTools, Team-weit) statt nur „bearbeitet"; **Anmerkungen+Zoom+Einstellungen pro Konto** serverseitig (geräteübergreifend, display-abhängige Werte pro Gerätetyp); volle Anmerkungen pro Seite (Stift/Marker/Text/Undo); Ablauf-PDF-Export; **Auto-Deploy** der Test-Instanz (Staging-Image + Watchtower). Diverse Fixes (Marker glatt, Text-Eingabe-Leiste oben/auswählen, letztes Lied im 2-up, „Link hinzufügen" auf HTTP, Auto-Sync-Race). Build/Lint/44 Tests grün. |
-| 25.06.2026 | main   | **Release v2.1.0 produktiv live.** Branch nach `main` gemergt, Tag `v2.1.0` → Multi-Arch-Image (`2.1.0`/`2.1`/`latest`) in GHCR. **Test + Prod auf image-basiert + Watchtower umgestellt** (`deploy/docker-compose.staging.yml` Scope `worship-test`, `deploy/docker-compose.prod.yml` Scope `worship-prod`) → **Auto-Deploy**, kein manueller Rebuild mehr. `https://musik.ecg-donrath.de` verifiziert (v2.1.0, Volume/Branding erhalten). |
-| 25.06.2026 | main   | **Zoom-Notausgang (Bugfix, iPad):** In `StreamView.tsx` konnte eine reingezoomte Seite „festhängen" – v. a. bei einem aus dem Speicher wiederhergestellten Zoom gab es keinen sichtbaren Ausweg (Pinch ist im Lesemodus aktiv, Wischen/Tippen währenddessen blockiert). Neu: Knopf **„Zoom zurücksetzen"** erscheint, sobald eine sichtbare Seite vergrößert ist (`onTransformed` → `zoomedSlots`); Tipp setzt Seite auf Fit zurück **und** löscht ihren gespeicherten Zoom dauerhaft (`clearStoredZoom`, beide Keys + Server-`zoom:null`). Pinch + bewusstes Speichern unverändert. Build/Lint/44 Tests grün. |
-| 26.06.2026 | main → **v2.1.2 LIVE** | **StreamView/PDF-Politur (4 Punkte):** (1) **Zoom-Notausgang in die Kopfleiste** neben „Aa" verschoben (statt schwebend; `StreamView` meldet `onZoomedChange` hoch + wird per `resetZoomSignal` zurückgesetzt; neues Line-Icon `zoom-reset` = Lupe+Rahmen-Ecken). (2) **Seitenzahl nur bei mehrseitigen Liedern**, lied-bezogen (`owners.filter(songIdx===)`, `Seite localPage+1 / N`); einseitig keine Anzeige. (3) **„Nur Text" sauber** (`lyricRows` in `chordPdf.ts`): Akkorde raus, Silbentrenner `\s+-\s+`→`''`, Mehrfach-Leerzeichen→eins, getrimmt, linksbündiger Fließtext. (4) **Akkord-Lücken-Fix** (`wrapLine`): Akkord aufs erste Wort mit echtem Text statt aufs führende Leerzeichen (`[C] wort` erzeugte sonst eine auf Akkordbreite aufgeblasene Lücke). **Entscheidung:** echte Mehrfach-Leerzeichen im Quelltext (Phrasen-Pausen, z. B. Lied „Treu") bleiben in der Akkord-Ansicht bewusst erhalten (nur „Nur Text" reduziert sie). `DemoPdf` (`?demo=pdf`) um Testblock erweitert, lokal verifiziert. Build/Lint/44 Tests grün. **Als `v2.1.2` produktiv getaggt → musik.ecg-donrath.de (Auto-Deploy via GHCR + Watchtower).** |
-| 26.06.2026 | main → **v2.1.3 LIVE** | **Akkord-Layout-Politur (2 Punkte, am Lied „Das glaube ich" aufgefallen):** (1) **Breite Akkorde dürfen über akkordlose Folgewörter ragen** (`drawRow`, `chordDebt`-Buchhaltung): ein Akkord, der breiter ist als seine kurze Silbe (z. B. `E/G#` über „ler", `C#m` über „An"), erzwingt nur dann Extra-Platz, wenn direkt danach wieder ein Akkord käme → keine „An␣␣␣den"-Lücken mehr, nie Überlappung; `wrapLine` bewusst konservativ (kein Überlauf). (2) **Zeilen einheitlich linksbündig**: `drawRow` überspringt führende reine-Leerzeichen-Token (`[A]␣␣␣Ich…` startete sonst eingerückt) → jede Zeile bündig am Rand. **Mehrfach-Leerzeichen INNERHALB der Zeile bleiben bewusst** (Phrasen-Pausen; Alwin hat Reduktion ausdrücklich verworfen). DemoPdf um Lücken-Test (breite Akkorde) erweitert. Erst auf Test verifiziert (Preview + Test-Instanz), dann von Alwin abgenommen → Tag `v2.1.3` live. Build/Lint/44 Tests grün. |
+Release-Notes & Versionshistorie: siehe `CHANGELOG.md` (Single Source – hier nicht doppelt pflegen).
 
 ## So startest du die App lokal
 ```
@@ -245,54 +222,25 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - **Redesign live (19.06.2026):** ChurchTools-Look ist auf `main`, getestet (44 Tests) und
   **produktiv** unter `https://musik.ecg-donrath.de`.
 - **Test-Instanz dauerhaft (seit 25.06.2026):** `worship-charts-test` (`:3002`) läuft image-basiert
-  mit **Auto-Deploy** (Staging-Image + Watchtower) – Abnahme neuer Features vor dem Prod-Release.
-- **Offen / optional:** Login-Token aus lokaler Dev-`.env` neu erzeugen/entfernen;
-  Test-Service-Konto/Token #1012 in ChurchTools widerrufen; Musik-Abwesenheitsplaner nachbauen
-  (separates Projekt); **Verteilung an andere Gemeinden (Selbst-Hosting)** – Fahrplan steht in
-  `WHITE-LABEL.md`.
+  mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
+- **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
+  mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
+- **Offen / optional:** Musik-Abwesenheitsplaner nachbauen (separates Projekt); Offline-Reserve
+  (Issue #32, Plan `docs/entwicklung/plan-offline-reserve.md`).
 
-## Deployment-Stand (NAS)
-- Liegt auf dem NAS unter der `docker`-Freigabe: `docker/churchtools-musik-app`
-  (vom Mac über die gemountete Freigabe kopiert, ohne node_modules/.git/Dev-.env).
-- Container Manager → Projekt `worship-charts` (aus `docker-compose.yml`), Port 3001.
-- Prod-`.env` auf dem NAS: `CHURCHTOOLS_BASE_URL` + `SESSION_SECRET` (kein Login-Token!).
-- **Wichtige Lernpunkte fürs Re-Deploy:**
-  - Updates: Code in den NAS-Ordner kopieren, dann Projekt **neu erstellen** –
-    bei Zweifel an Cache: **Projekt löschen + Image löschen + neu erstellen** (sonst
-    nutzt Docker alten Stand; passiert bei Kopie über SMB).
-  - Cookie: bewusst **ohne `secure`**-Flag (LAN läuft über HTTP; sonst speichert der
-    Browser das Session-Cookie nicht → „nicht angemeldet" nach Login).
-  - `trust proxy` ist in Produktion gesetzt (für späteren HTTPS-Tunnel).
-  - **Branding-Volume (seit Phase D):** `docker-compose.yml` mountet `worship-data:/app/data`
-    (Laufzeit-Branding `site.json`). Beim Re-Deploy das Volume behalten – sonst sind die per
-    Einstellungsseite gesetzten Werte nach dem Neubau weg (fallen zurück auf ECG-Defaults).
-- **So lokal starten:** `npm run dev:server` UND `npm run dev:client` (beide!). Der Vite-
-  Dev-Proxy leitet `/api` an `localhost:3001` weiter.
+## Deployment-Stand (NAS) – wichtige Lernpunkte
+- Prod läuft image-basiert (GHCR) im Container Manager (Projekt `worship-charts`, Port 3001).
+  **Updates kommen automatisch** (kein manuelles Code-Kopieren / Rebuild mehr) – siehe „Auto-Deploy" oben.
+- Prod-`.env` auf dem NAS: `CHURCHTOOLS_BASE_URL` + `SESSION_SECRET` (**kein** Login-Token!).
+- **Cookie bewusst ohne `secure`-Flag:** LAN läuft über HTTP; mit `secure` speichert der Browser
+  das Session-Cookie nicht → „nicht angemeldet" nach Login. `trust proxy` ist in Prod gesetzt.
+- **Daten-Volume behalten:** `worship-data:/app/data` hält `site.json` (Gemeindename) + Anmerkungen.
+  Beim Neu-Erstellen des Projekts das Volume behalten – sonst fallen die Werte auf Defaults zurück.
 - **Bekannte Datenlücke:** Nicht alle Arrangements haben eine `.chordpro`-Datei (manche nur
   `.sng`/`.txt`) → Frontend zeigt dann „keine Akkord-Datei hinterlegt".
 
 ## API des eigenen Backends
-- `GET  /api/site-config` → `{ appName, description, orgName }` (öffentlich, für Login/Mehr)
-- `PUT  /api/site-config` → Gemeinde-Name speichern (nur Admin, Zod-validiert)
-- `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt Session-Cookie
-- `POST /api/auth/logout` → Session löschen
-- `GET  /api/auth/me` → `{authenticated, user?}`
-- `GET  /api/capabilities` → Rechte des Nutzers (view/edit agenda, view/edit songcategory) → steuert UI
-- `GET  /api/services?from=&to=` → `Service[]` (nur mit Setlist; Default-Fenster -7d…+42d)
-- `GET  /api/services/:eventId/setlist` → kompletter Ablauf (`AgendaItem[]`, Lieder mit `chordpro` (Original) + `versions[]` + documents[])
-- `PATCH /api/services/:eventId/agenda/order` → Reihenfolge zurückschreiben (ganze Liste)
-- `POST/PUT/DELETE /api/services/:eventId/agenda/items[/:itemId]` → Ablaufpunkt anlegen/ändern/löschen (PUT-Felder u.a. `title`, `responsible`, `arrangementId`, `unlink`, `durationMin` → CT-Sekunden)
-- `PUT  /api/services/:eventId/agenda/items/:itemId/hidden` {hidden} → Uhrzeit aus-/einblenden (CT-„Auge", hide/unhide)
-- `GET  /api/songs?query=` → Songsuche (Lied zum Ablauf hinzufügen)
-- `GET  /api/song-library` → alle Lieder (Ansicht „Alle Lieder")
-- `GET  /api/song-usage` → Nutzungsstatistik letzte 12 Monate (1h-Cache)
-- `GET  /api/songs/:songId/chart` → Chart eines einzelnen Lieds (aus „Alle Lieder")
-- `POST /api/songs/:songId/versions` {arrangementId, name, text} → neue benannte Version anlegen → `SongVersion`
-- `PUT  /api/songs/:songId/versions/:versionKey` {arrangementId, text?, name?} → Version aktualisieren/umbenennen
-- `DELETE /api/songs/:songId/versions/:versionKey` {arrangementId} → Version löschen (Original bleibt)
-- `GET  /api/songs/:songId/files/:fileId` → PDF/Bild aus ChurchTools durchreichen (Viewer)
-- `GET  /api/annotations?songs=` / `PUT /api/annotations/:key` / `DELETE …/:key` → Anmerkungen+Zoom pro Konto (Feld-Merge strokes/texts/zoom; key `song<id>_v<ver>_<seite>[_d<class>]`)
-- `GET  /api/settings?songs=` / `PUT /api/settings` → Lied-Einstellungen pro Konto (Schlüssel-Wert, Merge)
+Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
 
 ## ChurchTools-Schreibzugriff Ablauf – Eigenheiten (verifiziert 12.06.2026, Event 1500)
 - **Umsortieren:** `PUT /api/events/{id}/agenda` mit `{items:[…]}` (ganze Liste, position = Index).
@@ -350,5 +298,6 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
 - [x] Login-Token aus lokaler Dev-`.env` entfernt (14.06.2026) – in ChurchTools noch widerrufen
 - [x] Test-Service-Konto/Token #1012 in ChurchTools gelöscht (14.06.2026)
 - [x] White-Label (Farb-Anpassung) verworfen → feste CT-Version (Redesign live, 19.06.2026)
-- [ ] Verteilung an andere Gemeinden (Selbst-Hosting) – Fahrplan in `WHITE-LABEL.md`
+- [x] Verteilung an andere Gemeinden (Selbst-Hosting) – abgeschlossen (öffentlich, MIT, `INSTALL.md`)
+- [ ] Offline-Reserve (Issue #32, Plan `docs/entwicklung/plan-offline-reserve.md`)
 - [ ] Musik-Abwesenheitsplaner (separate Flask-App) in diese App nachbauen

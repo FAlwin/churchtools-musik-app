@@ -1,6 +1,6 @@
 # Interne Begleit-Checkliste (Onboarding einer Gemeinde)
 
-Nur für die interne Begleitung gedacht – die öffentliche Anleitung ist [INSTALL.md](../INSTALL.md).
+Nur für die interne Begleitung gedacht – die öffentliche Anleitung ist [INSTALL.md](../../INSTALL.md).
 Ziel: eine fremde Gemeinde betreibt ihre eigene, eigenständige Instanz. Wir liefern Code + Anleitung,
 betreiben aber **nichts** für sie (kein zentraler Server, kein geteilter Zugang, kein Support-Versprechen).
 

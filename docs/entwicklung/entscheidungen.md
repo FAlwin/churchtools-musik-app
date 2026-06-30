@@ -34,31 +34,29 @@ nicht nötig. DSM-Ports (5000/5001) bleiben geschlossen.
 **Begründung:** Kein Risiko, von SongSelect bezogene Originale zu überschreiben;
 jederzeit auf das Original zurückführbar.
 
-## White-Label: Laufzeit-Branding in einer JSON-Datei (statt DB)
-**Entscheidung:** Name/Logo/Farben/CCLI werden zur Laufzeit aus `site.json` auf einem
-persistenten Docker-Volume gelesen/geschrieben (`SITE_CONFIG_PATH`), nicht in einer Datenbank.
-Das Logo liegt als base64-Data-URL in derselben Datei und wird über `GET /api/site-logo`
-als Bild ausgeliefert.
-**Begründung:** Bleibt der „keine DB"-Linie treu (siehe oben). Eine einzelne kleine Datei
-genügt für die wenigen Branding-Werte einer Instanz, übersteht Updates und ist leicht zu sichern.
-**Folge:** Ein gemeinsames Docker-Image für alle Gemeinden – Branding kommt zur Laufzeit,
-kein Neubau pro Gemeinde.
+## Branding: erst White-Label, dann feste ChurchTools-Version *(geändert 19.06.2026)*
+**Ursprünglich (verworfen):** Pro-Gemeinde-Branding (Name/Logo/Farben/CCLI) zur Laufzeit aus
+`site.json` auf einem Docker-Volume – ein gemeinsames Image für alle, Branding kommt zur Laufzeit.
+**Geändert zu:** eine **feste ChurchTools-Version** mit einheitlicher Optik und eigenem Logo für alle
+Instanzen. **Begründung:** ein gepflegtes, einheitliches Erscheinungsbild statt Wildwuchs; deutlich
+weniger Konfigurationsfläche und Fehlerquellen. **Geblieben ist nur** der anpassbare **Gemeindename**
+(`orgName`) in `site.json` (Volume, `SITE_CONFIG_PATH`) – treu zur „keine DB"-Linie. Details:
+`CLAUDE.md` (Abschnitt „Design & Branding") + `design-system.md`.
 
-## White-Label: Admin-Schutz über ChurchTools-Recht
-**Entscheidung:** Nur ChurchTools-Administratoren dürfen das Branding ändern. Das maßgebliche
+## Admin-Schutz über ChurchTools-Recht
+**Entscheidung:** Nur ChurchTools-Administratoren dürfen den Gemeindenamen ändern. Das maßgebliche
 Recht ist konfigurierbar (`ADMIN_PERMISSION`, Default `churchcore:administer persons`).
 **Begründung:** Keine zweite Passwortverwaltung; konsistent zur restlichen rechtebewussten UI.
-**Offen:** Das exakte Admin-Recht variiert je CT-Instanz und sollte vor dem Ausrollen an eine
+**Hinweis:** Das exakte Admin-Recht variiert je CT-Instanz und sollte vor dem Ausrollen an eine
 fremde Gemeinde an deren Instanz verifiziert werden.
 
-## White-Label: Verteilung über privates GHCR-Image, Lizenz proprietär
-**Entscheidung:** Das fertige Docker-Image liegt **privat** in der GitHub Container Registry und
-wird per Versions-Tag (`v*`) durch einen Release-Workflow gepusht. Die Software steht **nicht** unter
-einer offenen Lizenz – Nutzung durch andere Gemeinden nur **auf Anfrage** (`LIZENZ.md`).
-**Begründung:** Verteilung bewusst kontrolliert (wer es nutzt, wird freigegeben). Privates Image +
-Zugangstoken pro Gemeinde geben diese Kontrolle. Es liegen keine Secrets im Image (Env nur zur Laufzeit).
-**Folge:** Empfangende Gemeinden brauchen einen GitHub-Token (`read:packages`) für `docker login ghcr.io`
-(in `deploy/ANLEITUNG.md` beschrieben).
+## Verteilung: öffentliches GHCR-Image, MIT-Lizenz *(geändert 22.06.2026)*
+**Ursprünglich geplant (verworfen):** privates GHCR-Image, Nutzung nur auf Anfrage, proprietäre Lizenz.
+**Aktuelle Entscheidung:** Das Repo ist **öffentlich**, die Software steht unter der **MIT-Lizenz**
+(`LICENSE`), die Docker-Images sind **anonym aus GHCR ziehbar**. Jede Gemeinde hostet ihre eigene
+Instanz selbst (Anleitung `INSTALL.md` + `UPDATE.md`).
+**Begründung:** niedrigschwellige Weitergabe an andere Gemeinden ohne Token-/Freigabe-Aufwand; es liegen
+keine Secrets im Image (Env nur zur Laufzeit). Jede Gemeinde ist für DSGVO + eigenen Zugang verantwortlich.
 
 ## Schrift/Spalten gesperrt bei vorhandenen Anmerkungen
 **Entscheidung:** Solange Anmerkungen existieren, sind Schriftgröße/Spaltenzahl gesperrt.
