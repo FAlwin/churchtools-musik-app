@@ -7,6 +7,19 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **Lied-Menü leichter auffindbar:** In der Akkord-Ansicht öffnet jetzt der gesamte Kopf-Bereich
+  (Titel samt Tonart/Capo/Version/Tempo) das Lied-Menü – mit deutlich sichtbarem Auslöser, nicht
+  mehr nur über den Titel. (#42)
+
+### Intern
+
+- Anzeige- und Zustandslogik von `App` und `ChordChart` in eigene Hooks ausgelagert
+  (`useAppNav`/`navStorage`, `useChartNavigation`, `useChartEditor`), tote Kopf-Styles entfernt –
+  reine Wartbarkeit, ohne Funktionsänderung.
+- GitHub-Actions auf Node-24-fähige Versionen gehoben (beseitigt die Node-20-Abkündigungswarnung).
+
 ## [2.2.0] – 2026-06-30
 
 Großes Aufräum-, Verteilungs- und Härtungs-Release.
