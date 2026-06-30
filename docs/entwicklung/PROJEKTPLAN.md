@@ -1,8 +1,8 @@
 # PROJEKTPLAN – ChurchTools Musik App
 
 > Grober Fahrplan. Detailstatus lebt in den GitHub-Issues + Projects-Board
-> (nicht doppelt pflegen). Zu Session-Beginn lesen, am Ende Checkboxen +
-> Changelog in `CLAUDE.md` aktualisieren.
+> (nicht doppelt pflegen). Zu Session-Beginn lesen, am Ende Checkboxen hier +
+> Release-Notes in `CHANGELOG.md` aktualisieren.
 
 ## Worum es geht
 Progressive Web App, die Chord Charts der aktuellen Setlist aus ChurchTools holt,
@@ -20,8 +20,8 @@ Datenquelle. Details: `CLAUDE.md`.
 Begründungen: `docs/entscheidungen.md`.
 
 ## Doku-Pflicht je Session
-Checkbox hier aktualisieren **und** Changelog-Zeile in `CLAUDE.md`. Architektur-
-Entscheidungen → `docs/entscheidungen.md`.
+Checkbox hier aktualisieren **und** Release-Notes in `CHANGELOG.md`. Architektur-
+Entscheidungen → `docs/entwicklung/entscheidungen.md`.
 
 ---
 
@@ -57,6 +57,6 @@ Entscheidungen → `docs/entscheidungen.md`.
       npm-audit von 7 (high/critical) auf 1 low (Windows-only Dev-Server). Kein App-Verhalten geändert.
 - [x] 6.4 **Verteilung an andere Gemeinden (Selbst-Hosting)** ✅ **abgeschlossen** (22.06.2026):
       Code entkoppelt, GHCR-Release-Pipeline, Doku, MIT-Lizenz, konfigurierbare Links.
-      Repo **öffentlich**, GHCR-Image **anonym ziehbar**, `v2.0.0` released. Fahrplan in `WHITE-LABEL.md`.
+      Repo **öffentlich**, GHCR-Image **anonym ziehbar**, `v2.0.0` released. Anleitung: `INSTALL.md` + `UPDATE.md`.
 
 **Definition of Done:** je Teilprojekt eigener Plan; hier nur als Merker.

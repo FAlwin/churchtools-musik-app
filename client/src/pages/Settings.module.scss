@@ -97,6 +97,18 @@
   margin: 22px 0 max(22px, env(safe-area-inset-bottom));
 }
 
+.updateNote {
+  display: block;
+  margin-top: 6px;
+  color: var(--blue);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:active {
+    opacity: 0.6;
+  }
+}
+
 // Theme-Segment sitzt rechts in der Zeile
 .themeSeg {
   flex-shrink: 0;

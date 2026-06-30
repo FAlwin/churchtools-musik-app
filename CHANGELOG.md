@@ -7,6 +7,55 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.2.0] – 2026-06-30
+
+Großes Aufräum-, Verteilungs- und Härtungs-Release.
+
+### Neu
+
+- **Setup per Doppelklick** für andere Gemeinden: `deploy/setup.command` (macOS/Linux) und
+  `deploy/setup.bat` (Windows) – prüfen Docker, fragen die ChurchTools-URL ab, erzeugen das
+  Session-Secret und starten die App.
+- **Update per Doppelklick:** neue Skripte `deploy/update.command` / `deploy/update.bat`
+  (Daten bleiben erhalten).
+- **Hilfeseite** `docs/betrieb/troubleshooting.md` mit Schritt-für-Schritt-Lösungen für die
+  häufigsten Stolpersteine.
+- **Update-Hinweis in der App:** Im „Mehr"-Tab erscheint dezent ein Hinweis, sobald eine neuere
+  Version verfügbar ist – mit Link zu „Was ist neu". Quelle ist die neueste GitHub-Release-Note
+  (serverseitig gecacht); jeder Release-Tag erzeugt nun automatisch ein GitHub Release.
+
+### Geändert
+
+- **Dokumentation & Repo-Struktur aufgeräumt:** Der Projekt-Root enthält nur noch das Nötigste
+  (`README`, `INSTALL`, `UPDATE`, `CHANGELOG`, `LICENSE`, `CLAUDE.md`); die übrige Doku ist jetzt
+  nach `docs/betrieb/`, `docs/entwicklung/` und `docs/archiv/` einsortiert.
+- **Veraltete Doku-Inhalte korrigiert:** öffentliches Repo + MIT-Lizenz (statt „privat/proprietär"),
+  White-Label als verworfen markiert, Doppelungen entfernt (Changelog und Backend-API jeweils nur noch
+  an einer Stelle) und tote Verweise (gelöschte `WHITE-LABEL.md`) bereinigt.
+- **Installation robuster:** Setup-Skripte unterscheiden „Docker nicht installiert" vs. „nicht
+  gestartet", prüfen Compose v2 und halten das Fenster bei Fehlern offen; `INSTALL.md` erklärt den
+  Doppelklick-Weg inkl. macOS-Gatekeeper- und Windows-SmartScreen-Hinweis.
+- **Update-Strategie überarbeitet:** Releases tragen jetzt auch einen Major-Tag (`:2`); Gemeinde- und
+  Prod-Instanz sind auf `:2` gepinnt (sichere Updates, kein ungewollter v3-Sprung). Das veraltete
+  `containrrr/watchtower` wurde abgelöst – die Test-Instanz nutzt den gepflegten Fork
+  `nickfedor/watchtower`, die Prod-Instanz aktualisiert bewusst (Hinweis künftig über das In-App-Banner).
+- **Container-Healthcheck** im Docker-Image: Docker/Container-Manager erkennt jetzt, ob die App
+  wirklich antwortet (prüft `/api/health`).
+- **Automatische Tests für die ChurchTools-Anbindung** ergänzt (39 zusätzliche Server-Tests):
+  Versions-Erkennung, Uhrzeit-Ausblenden, Zuständige, Zeitzonen-Umrechnung u. a. – fängt Fehler
+  bei künftigen Änderungen früh ab, statt erst im Gottesdienst.
+
+### Sicherheit
+
+- **App läuft im Container jetzt als unprivilegierter Benutzer** (statt als root): zusätzliche
+  Schutzschicht. Ein Entrypoint übereignet das Daten-Volume beim Start automatisch – auch
+  bestehende Instanzen funktionieren ohne manuellen Eingriff weiter.
+- **`SESSION_SECRET` ist in Produktion jetzt Pflicht** – kein unsicherer Fallback mehr (sonst wären
+  die signierten Login-Cookies fälschbar). In der Entwicklung bleibt ein Komfort-Default.
+- **Neues Flag `COOKIE_SECURE`** (Standard aus): Wer ausschließlich über HTTPS läuft (Reverse
+  Proxy/Cloudflare), setzt es auf `true` und liefert das Login-Cookie dann nur noch über HTTPS aus.
+  Im reinen LAN-HTTP-Betrieb bleibt es aus (unverändertes Verhalten).
+
 ## [2.1.7] – 2026-06-26
 
 ### Geändert

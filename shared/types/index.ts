@@ -189,6 +189,16 @@ export interface SiteConfig {
   links: SiteLink[];
 }
 
+/** Info zur neuesten veröffentlichten Version – für den dezenten Update-Hinweis in der App. */
+export interface UpdateInfo {
+  /** Neueste Version als reine Nummer ohne „v" (z. B. „2.3.0"); null wenn unbekannt. */
+  latest: string | null;
+  /** Original-Tag-Name des Releases (z. B. „v2.3.0"); null wenn unbekannt. */
+  tag: string | null;
+  /** Link zur Release-Note auf GitHub; null wenn unbekannt. */
+  url: string | null;
+}
+
 /** Standardwerte. `appName`/`description` sind fest; `orgName`/`links` sind anpassbar. */
 export const DEFAULT_SITE_CONFIG: SiteConfig = {
   appName: 'Churchtools Musik App',

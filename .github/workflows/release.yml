@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - name: Digests einsammeln
@@ -102,6 +102,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
 
       - name: Manifest erstellen & pushen
         working-directory: ${{ runner.temp }}/digests
@@ -112,3 +113,13 @@ jobs:
 
       - name: Ergebnis prüfen
         run: docker buildx imagetools inspect ${{ env.IMAGE }}:${{ steps.meta.outputs.version }}
+
+      # GitHub Release zum Tag anlegen/aktualisieren – Datenquelle für den In-App-Update-Hinweis
+      # (Endpoint /api/update-check liest das neueste Release). Notes werden automatisch erzeugt.
+      - name: GitHub Release veröffentlichen
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          # Tags mit Suffix (z. B. v2.2.0-rc1) als Vorabversion markieren, damit
+          # /releases/latest sie NICHT als stabiles Update an die Gemeinden ausspielt.
+          prerelease: ${{ contains(github.ref_name, '-') }}
