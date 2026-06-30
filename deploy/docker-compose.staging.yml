@@ -1,5 +1,9 @@
 # Test-Instanz (Staging) – fertiges :staging-Image aus GHCR, KEIN lokaler Build.
 # Watchtower zieht neue :staging-Images automatisch (Auto-Deploy) → kein Rebuild im Container-Manager.
+# Hinweis: Hier läuft bewusst der GEPFLEGTE Watchtower-Fork (nickfedor/watchtower), da das
+# Original containrrr/watchtower unmaintained und mit Docker 28/29+ inkompatibel ist. Drop-in:
+# gleiche Labels (com.centurylinklabs.watchtower.*) und Flags (--interval/--cleanup/--scope).
+# Nur die Test-Instanz zieht automatisch; Prod (docker-compose.prod.yml) aktualisiert bewusst.
 #
 # Einmalige Einrichtung im Synology Container-Manager:
 #   1. Aktuelles Test-Projekt (worship-charts-test, baut aus Quellcode) stoppen + löschen
@@ -26,7 +30,7 @@ services:
       - com.centurylinklabs.watchtower.scope=worship-test
 
   watchtower:
-    image: containrrr/watchtower
+    image: nickfedor/watchtower
     container_name: worship-watchtower-test
     restart: unless-stopped
     volumes:

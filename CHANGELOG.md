@@ -9,9 +9,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
-- **Setup-Skripte für die einfache Selbst-Installation** durch andere Gemeinden: `deploy/setup.command`
-  (macOS/Linux) und `deploy/setup.bat` (Windows) – prüfen Docker, fragen die ChurchTools-URL ab,
-  erzeugen das Session-Secret und starten die App.
+- **Setup per Doppelklick** für andere Gemeinden: `deploy/setup.command` (macOS/Linux) und
+  `deploy/setup.bat` (Windows) – prüfen Docker, fragen die ChurchTools-URL ab, erzeugen das
+  Session-Secret und starten die App.
+- **Update per Doppelklick:** neue Skripte `deploy/update.command` / `deploy/update.bat`
+  (Daten bleiben erhalten).
+- **Hilfeseite** `docs/betrieb/troubleshooting.md` mit Schritt-für-Schritt-Lösungen für die
+  häufigsten Stolpersteine.
 
 ### Geändert
 
@@ -21,6 +25,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 - **Veraltete Doku-Inhalte korrigiert:** öffentliches Repo + MIT-Lizenz (statt „privat/proprietär"),
   White-Label als verworfen markiert, Doppelungen entfernt (Changelog und Backend-API jeweils nur noch
   an einer Stelle) und tote Verweise (gelöschte `WHITE-LABEL.md`) bereinigt.
+- **Installation robuster:** Setup-Skripte unterscheiden „Docker nicht installiert" vs. „nicht
+  gestartet", prüfen Compose v2 und halten das Fenster bei Fehlern offen; `INSTALL.md` erklärt den
+  Doppelklick-Weg inkl. macOS-Gatekeeper- und Windows-SmartScreen-Hinweis.
+- **Update-Strategie überarbeitet:** Releases tragen jetzt auch einen Major-Tag (`:2`); Gemeinde- und
+  Prod-Instanz sind auf `:2` gepinnt (sichere Updates, kein ungewollter v3-Sprung). Das veraltete
+  `containrrr/watchtower` wurde abgelöst – die Test-Instanz nutzt den gepflegten Fork
+  `nickfedor/watchtower`, die Prod-Instanz aktualisiert bewusst (Hinweis künftig über das In-App-Banner).
 
 ## [2.1.7] – 2026-06-26
 

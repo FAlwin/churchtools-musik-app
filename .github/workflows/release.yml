@@ -102,6 +102,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
 
       - name: Manifest erstellen & pushen
         working-directory: ${{ runner.temp }}/digests

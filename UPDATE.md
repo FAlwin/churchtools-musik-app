@@ -26,17 +26,22 @@ docker image prune -f     # optional: altes Image aufräumen
 > **Das Daten-Volume `musik-data` NICHT löschen.** Dort liegen eure Einstellungen
 > (Gemeindename, Links). Nur `docker compose pull` + `up -d` anwenden – dann bleiben sie erhalten.
 
-## Auf eine bestimmte Version festlegen (empfohlen für Reproduzierbarkeit)
+## Welche Version zieht ihr? (Image-Tag)
 
-Standardmäßig zieht das Compose `:latest`. Wer kontrolliert aktualisieren will, trägt eine feste
-Version ein:
+In der `docker-compose.yml` steht hinter `image:` ein Tag. Empfohlen ist **`:2`**:
 
 ```yaml
-# in docker-compose.yml
-image: ghcr.io/falwin/churchtools-musik-app:2.0.0
+image: ghcr.io/falwin/churchtools-musik-app:2
 ```
 
-Zum Aktualisieren dann die Versionsnummer hochsetzen und `docker compose pull && up -d` ausführen.
+| Tag | Bedeutung |
+|---|---|
+| **`:2`** (empfohlen) | Alle Updates der Version 2 (Funktionen + Bugfixes), **kein** ungewollter Sprung auf v3 |
+| `:2.1.7` | Eine ganz feste Version – ändert sich nie von selbst (volle Kontrolle) |
+| `:latest` | Immer das Allerneueste, **inklusive** großer Umstellungen (v3 …) |
+
+Ein Sprung auf eine größere Version (z. B. von `:2` auf `:3`) ist damit immer eine **bewusste**
+Entscheidung – Tag ändern, vorher kurz ins [CHANGELOG.md](CHANGELOG.md) schauen, dann aktualisieren.
 
 ## Was ist neu?
 

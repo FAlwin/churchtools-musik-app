@@ -5,9 +5,11 @@
 # Updates: siehe UPDATE.md.
 services:
   app:
-    image: ghcr.io/falwin/churchtools-musik-app:latest
-    # Für reproduzierbare Updates eine feste Version pinnen statt :latest, z. B.
-    #   image: ghcr.io/falwin/churchtools-musik-app:2.0.0
+    # :2 = automatisch alle Updates der Version 2 (neue Funktionen + Bugfixes), aber KEIN
+    # ungewollter Sprung auf eine größere Umstellung (v3). Empfohlen für Gemeinden.
+    #   - Ganz feste Version (volle Kontrolle):   ...churchtools-musik-app:2.1.7
+    #   - Immer das Allerneueste (inkl. v3 usw.):  ...churchtools-musik-app:latest
+    image: ghcr.io/falwin/churchtools-musik-app:2
     container_name: churchtools-musik-app
     restart: unless-stopped
     environment:

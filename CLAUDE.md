@@ -175,13 +175,17 @@ Abschnitte/Version) überall gleich. Versions-Helfer: `utils/songVersions.ts`.
   Portweiterleitung 443/80 im Router (DSM-Admin-Ports bleiben zu). **Kein Cloudflare.**
 - **Anleitung (hostende Gemeinden):** `INSTALL.md` (image-basiert, empfohlen) + `UPDATE.md`.
   Build-aus-Quellcode-Variante: `docs/betrieb/DEPLOYMENT.md`.
-- **Auto-Deploy (Test + Prod):** `.github/workflows/staging.yml` baut bei jedem Push (main/feature/**)
-  ein `:staging`-Image (amd64) nach GHCR; `release.yml` baut bei Tag `vX.Y.Z` Multi-Arch + `:latest`.
-  Beide NAS-Instanzen laufen image-basiert mit **Watchtower** (Auto-Pull): Test
-  `deploy/docker-compose.staging.yml` (`worship-charts-test`, Port 3002, `:staging`, Scope
-  `worship-test`, 60 s); Prod `deploy/docker-compose.prod.yml` (`worship-charts`, Port 3001,
-  `:latest`, Scope `worship-prod`, 300 s). **Kein manueller Container-Rebuild mehr.** Volume
-  (`worship-data` / `worship-data-test`) beim Neu-Erstellen behalten.
+- **Images:** `.github/workflows/staging.yml` baut bei jedem Push (main/feature/**) ein `:staging`-Image
+  (amd64) nach GHCR; `release.yml` baut bei Tag `vX.Y.Z` Multi-Arch mit den Tags `vX.Y.Z`, `X.Y`,
+  **`X` (Major, z. B. `2`)** und `latest`.
+- **Test-Instanz (Auto-Deploy):** `deploy/docker-compose.staging.yml` (`worship-charts-test`, Port 3002,
+  `:staging`, Scope `worship-test`, 60 s) zieht automatisch – über den **gepflegten Watchtower-Fork
+  `nickfedor/watchtower`** (Original `containrrr` ist unmaintained / Docker-29-inkompatibel).
+- **Prod-Instanz (bewusstes Update, seit v2.2.0):** `deploy/docker-compose.prod.yml` (`worship-charts`,
+  Port 3001) ist auf **`:2` gepinnt** und hat **keinen Auto-Pull mehr**. Auf neue Versionen weist das
+  In-App-Update-Banner hin; aktualisiert wird bewusst per `docker compose pull && up -d` (SSH) bzw.
+  im Container Manager. Volume (`worship-data`) beim Neu-Erstellen behalten.
+- **Gemeinden:** `deploy/docker-compose.yml` ist auf `:2` gepinnt; Update per `update.command`/`update.bat`.
 - **Env (Volume `/app/data`):** `SITE_CONFIG_PATH=/app/data/site.json`,
   `ANNOTATIONS_PATH=/app/data/annotations` (kontobezogene Anmerkungen/Einstellungen) – beim Re-Deploy
   Volume behalten.
