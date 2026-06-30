@@ -25,5 +25,10 @@ ENV ANNOTATIONS_PATH=/app/data/annotations
 EXPOSE 3001
 VOLUME ["/app/data"]
 
+# Lebenszeichen-Check: Docker/Container-Manager erkennt, ob die App wirklich antwortet
+# (busybox-wget ist in node:alpine vorhanden). Greift auf den öffentlichen Health-Endpunkt zu.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -q --spider http://127.0.0.1:3001/api/health || exit 1
+
 # Server starten (liefert /api + die gebaute App unter client/dist aus)
 CMD ["npm", "run", "start", "--workspace=server"]

@@ -7,6 +7,19 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Sicherheit
+
+- **`SESSION_SECRET` ist in Produktion jetzt Pflicht** – kein unsicherer Fallback mehr (sonst wären
+  die signierten Login-Cookies fälschbar). In der Entwicklung bleibt ein Komfort-Default.
+- **Neues Flag `COOKIE_SECURE`** (Standard aus): Wer ausschließlich über HTTPS läuft (Reverse
+  Proxy/Cloudflare), setzt es auf `true` und liefert das Login-Cookie dann nur noch über HTTPS aus.
+  Im reinen LAN-HTTP-Betrieb bleibt es aus (unverändertes Verhalten).
+
+### Geändert
+
+- **Container-Healthcheck** im Docker-Image: Docker/Container-Manager erkennt jetzt, ob die App
+  wirklich antwortet (prüft `/api/health`).
+
 ## [2.2.0] – 2026-06-30
 
 ### Neu
