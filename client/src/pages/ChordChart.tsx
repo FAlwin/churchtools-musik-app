@@ -10,16 +10,16 @@ import { ChordEditor } from '../components/ChordEditor';
 import { DocumentView } from '../components/DocumentView';
 import { StreamView } from '../components/StreamView';
 import { Icon } from '../components/icons';
-import { createVersion, updateVersion, deleteVersion } from '../services/churchtoolsApi';
 import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
 import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
-import { ApiError } from '../services/api';
 import { parseChordPro } from '../utils/chordpro';
 import { availableVersions, versionText, setLsVersion } from '../utils/songVersions';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
 import { type SongSettings, DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
+import { useChartNavigation } from '../hooks/useChartNavigation';
+import { useChartEditor } from '../hooks/useChartEditor';
 import type { DrawTool, Theme } from '../types/index';
 import styles from './ChordChart.module.scss';
 
@@ -115,27 +115,12 @@ export function ChordChart({
     setSettings((prev) => ({ ...prev, [songId]: s ? loadSettings(s, versionKey) : prev[songId] }));
   }
 
-  // Seiten-Position im Strom: linke (erste) sichtbare Seite + aktive Seite (angetippte Hälfte).
-  const [streamPage, setStreamPage] = useState(0);
-  const [activePage, setActivePage] = useState(0);
-
   const [showKeyPicker, setShowKeyPicker] = useState(false);
   const [showCapoPicker, setShowCapoPicker] = useState(false);
   const [showSecTranspose, setShowSecTranspose] = useState(false);
   const [showAppearance, setShowAppearance] = useState(false);
   const [showSongMenu, setShowSongMenu] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
-  const [confirmDelEdited, setConfirmDelEdited] = useState(false);
-
-  const [showEditor, setShowEditor] = useState(false);
-  const [editorSaving, setEditorSaving] = useState(false);
-  const [editorError, setEditorError] = useState<string | null>(null);
-  // Editor-Modus: neue Version anlegen oder vorhandene bearbeiten (mit Start-Text/-Name).
-  const [editor, setEditor] = useState<{ mode: 'new' | 'edit'; text: string; name: string }>({
-    mode: 'new',
-    text: '',
-    name: '',
-  });
 
   const [drawMode, setDrawMode] = useState(false);
   // Anmerkungs-Farben fest Schwarz/Rot/Gelb (wir arbeiten nur noch auf weißen PDF-Seiten → kein
@@ -217,42 +202,17 @@ export function ChordChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songsSig, settings, logoImg]);
 
-  // Ausrichtung (für die Navigations-Grenze: im Querformat nie eine Seite allein lassen).
-  const [landscape, setLandscape] = useState(() => window.innerWidth > window.innerHeight);
-  useEffect(() => {
-    const f = () => setLandscape(window.innerWidth > window.innerHeight);
-    window.addEventListener('resize', f);
-    window.addEventListener('orientationchange', f);
-    return () => {
-      window.removeEventListener('resize', f);
-      window.removeEventListener('orientationchange', f);
-    };
-  }, []);
-
   const owners = stream?.owners ?? [];
-  const lastPage = Math.max(0, owners.length - 1);
-  // Max. linke Seite: im 2-up stoppt die Navigation eine Seite früher (Paar bleibt voll).
-  const maxLeft = landscape && owners.length > 1 ? owners.length - 2 : lastPage;
-  const pageIdx = Math.min(streamPage, lastPage);
-  const activeIdx = Math.min(activePage, lastPage);
+
+  // Blättern/Ausrichtung/Tastatur. Tastatur-Navigation pausiert, solange Editor oder Zeichenmodus
+  // offen sind (per Ref übergeben, weil `showEditor` erst unten aus dem Editor-Hook kommt).
+  const navBlockedRef = useRef(false);
+  const { pageIdx, activeIdx, atStart, atEnd, next, prev, goToSong, setPage, setActivePage } =
+    useChartNavigation({ owners, startIndex, blockedRef: navBlockedRef });
+
   const activeSongIdx = owners[activeIdx]?.songIdx ?? 0;
   const song = songs[activeSongIdx] ?? songs[songs.length - 1];
   const set = settings[song.id] ?? DEFAULT_SETTINGS;
-
-  // Beim Start auf das gewünschte Lied springen (sobald der Strom bereit ist).
-  const didInit = useRef(false);
-  useEffect(() => {
-    if (didInit.current || owners.length === 0) return;
-    didInit.current = true;
-    const p = owners.findIndex((o) => o.songIdx === startIndex);
-    if (p > 0) {
-      // linke Seite auf maxLeft begrenzen (im 2-up nie eine Seite allein); aktive = das Ziel-Lied
-      // (steht dann ggf. in der rechten Hälfte, vorheriges Lied links).
-      setStreamPage(Math.min(p, maxLeft));
-      setActivePage(p);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [owners.length]);
 
   // ── abgeleitete Werte des AKTIVEN Lieds ──
   const curKey = set.key || song.targetKey;
@@ -273,103 +233,36 @@ export function ChordChart({
     setDocAdjust(false);
   }, [set.viewSource, song.id]);
 
-  // ── Navigation im Strom (Wischen/Footer): immer um 1 Seite; aktive = neue linke Seite ──
-  function go(delta: number) {
-    const next = Math.min(Math.max(0, pageIdx + delta), maxLeft);
-    setStreamPage(next);
-    setActivePage(next);
-  }
-  function next() {
-    go(1);
-  }
-  function prev() {
-    go(-1);
-  }
-  function goToSong(target: number) {
-    const p = owners.findIndex((o) => o.songIdx === target);
-    if (p >= 0) {
-      setStreamPage(Math.min(p, maxLeft));
-      setActivePage(p);
-    }
-  }
-  const atStart = pageIdx <= 0;
-  const atEnd = pageIdx >= maxLeft;
-
-  // Tastatur ←/→
-  const navRef = useRef({ next, prev, blocked: false });
-  navRef.current = { next, prev, blocked: showEditor || drawMode };
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-      if (navRef.current.blocked) return;
-      if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        navRef.current.next();
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        navRef.current.prev();
-      }
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
   function clearDrawing() {
     setDocClearSignal((n) => n + 1);
     setConfirmClear(false);
   }
 
-  /** Öffnet den Editor für die aktuelle Version (Original → neue Version anlegen). */
-  function openEditCurrent() {
-    setEditorError(null);
-    if (isOriginal) {
-      setEditor({ mode: 'new', text: displayedChordpro || editorTemplate, name: '' });
-    } else {
-      setEditor({ mode: 'edit', text: displayedChordpro, name: currentVersion.name });
-    }
-    setShowEditor(true);
-  }
-  /** Öffnet den Editor zum Anlegen einer NEUEN Version (Start-Text = aktuelle Anzeige). */
-  function openNewVersion() {
-    setEditorError(null);
-    setEditor({ mode: 'new', text: displayedChordpro || editorTemplate, name: '' });
-    setShowEditor(true);
-  }
-
-  async function handleEditorSave(text: string, name: string) {
-    setEditorSaving(true);
-    setEditorError(null);
-    try {
-      const v =
-        editor.mode === 'edit' && !isOriginal
-          ? await updateVersion(song.id, song.arrangementId, set.versionKey, { text, name })
-          : await createVersion(song.id, song.arrangementId, name, text);
-      setShowEditor(false);
-      selectVersion(song.id, v.key);
-      onReload?.();
-    } catch (e) {
-      setEditorError(e instanceof ApiError ? e.message : 'Speichern fehlgeschlagen.');
-    } finally {
-      setEditorSaving(false);
-    }
-  }
-
-  async function handleDeleteVersion() {
-    setEditorSaving(true);
-    setEditorError(null);
-    try {
-      await deleteVersion(song.id, song.arrangementId, set.versionKey);
-      setShowEditor(false);
-      setConfirmDelEdited(false);
-      selectVersion(song.id, 'original');
-      onReload?.();
-    } catch (e) {
-      setEditorError(e instanceof ApiError ? e.message : 'Löschen fehlgeschlagen.');
-    } finally {
-      setEditorSaving(false);
-    }
-  }
+  // ChordPro-Versionen anlegen/bearbeiten/löschen (Zustand + ChurchTools-Aufrufe im Hook gebündelt).
+  const {
+    showEditor,
+    setShowEditor,
+    editorSaving,
+    editorError,
+    editor,
+    confirmDelEdited,
+    setConfirmDelEdited,
+    openEditCurrent,
+    openNewVersion,
+    handleEditorSave,
+    handleDeleteVersion,
+  } = useChartEditor({
+    song,
+    versionKey: set.versionKey,
+    isOriginal,
+    currentVersionName: currentVersion.name,
+    displayedChordpro,
+    editorTemplate,
+    onReload,
+    selectVersion,
+  });
+  // Tastatur-Navigation aussetzen, solange Editor oder Zeichenmodus offen sind.
+  navBlockedRef.current = showEditor || drawMode;
 
   const nextSong = activeSongIdx < songs.length - 1 ? songs[activeSongIdx + 1] : null;
 
@@ -731,10 +624,7 @@ export function ChordChart({
               pdfData={stream.data}
               owners={owners}
               pageIndex={pageIdx}
-              onPageIndex={(i) => {
-                setStreamPage(i);
-                setActivePage(i);
-              }}
+              onPageIndex={setPage}
               activePage={activeIdx}
               onActivePage={setActivePage}
               drawMode={drawMode}
