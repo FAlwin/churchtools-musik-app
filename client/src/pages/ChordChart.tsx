@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { SetlistSong } from '@shared/types/index';
 import { Screen } from '../components/Screen';
 import { KeyPicker } from '../components/KeyPicker';
@@ -266,6 +266,18 @@ export function ChordChart({
 
   const nextSong = activeSongIdx < songs.length - 1 ? songs[activeSongIdx + 1] : null;
 
+  // Info-Zeile im Kopf-Button: Tonart/Capo/Version/Tempo bzw. Dokument-Hinweis – je nach Anzeige.
+  const headInfo: ReactNode[] = [];
+  if (activeDoc) {
+    headInfo.push(activeDoc.type === 'pdf' ? 'PDF' : 'Bild');
+  } else {
+    if (!set.lyricsOnly) headInfo.push(<span className={styles.infoKey}>{curKey}</span>);
+    if (set.lyricsOnly) headInfo.push('Nur Text');
+    if (!set.lyricsOnly && set.capo > 0) headInfo.push(<span className={styles.infoCapo}>Capo {set.capo}</span>);
+    if (hasVersions) headInfo.push(currentVersion.name);
+    if (song.bpm !== null) headInfo.push(`♩ ${song.bpm}`);
+  }
+
   return (
     <Screen className={styles.chartScreen}>
       <>
@@ -275,23 +287,29 @@ export function ChordChart({
             <Icon name="chev-left" size={22} stroke={2.4} />
           </button>
           <div className={styles.center}>
-            <button className={styles.titleBtn} onClick={() => setShowSongMenu((v) => !v)}>
-              <span className={styles.songTitle}>{song.title}</span>
-              <span className={styles.titleChevron}>▾</span>
-            </button>
-            <div className={styles.keyRow}>
-              {activeDoc ? (
-                <span className={styles.modeHint}>{activeDoc.type === 'pdf' ? 'PDF' : 'Bild'}</span>
-              ) : (
-                <>
-                  {!set.lyricsOnly && <span className={styles.keyChip}>{curKey}</span>}
-                  {!set.lyricsOnly && set.capo > 0 && <span className={styles.capoBadge}>Capo {set.capo}</span>}
-                  {set.lyricsOnly && <span className={styles.modeHint}>Nur Text</span>}
-                  {hasVersions && <span className={styles.editedChip}>{currentVersion.name}</span>}
-                  {song.bpm !== null && <span className={styles.bpmChip}>♩ {song.bpm}</span>}
-                </>
+            <button
+              className={styles.menuBtn}
+              onClick={() => setShowSongMenu((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={showSongMenu}
+            >
+              <span className={styles.menuTitleRow}>
+                <span className={styles.songTitle}>{song.title}</span>
+                <span className={styles.menuChevron} aria-hidden="true">
+                  ▾
+                </span>
+              </span>
+              {headInfo.length > 0 && (
+                <span className={styles.menuInfo}>
+                  {headInfo.map((node, i) => (
+                    <span key={i} className={styles.menuInfoPart}>
+                      {i > 0 && <span className={styles.menuInfoDot}>·</span>}
+                      {node}
+                    </span>
+                  ))}
+                </span>
               )}
-            </div>
+            </button>
           </div>
           <div className={styles.right}>
             {!activeDoc && (
