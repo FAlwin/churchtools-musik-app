@@ -1,44 +1,64 @@
 @echo off
 chcp 65001 > nul
 title Musik App – Einrichtung
+cd /d "%~dp0"
 
 echo.
 echo  ╔══════════════════════════════════════════════════╗
-echo  ║         Musik App – Einrichtung                  ║
+echo  ║           Musik App – Einrichtung                ║
 echo  ╚══════════════════════════════════════════════════╝
 echo.
-echo  Dieses Skript richtet die App automatisch ein.
-echo  Stelle sicher, dass Docker Desktop gestartet ist.
-echo.
-pause
 
-:: Docker prüfen
-docker info > nul 2>&1
+:: 1. Ist Docker installiert?
+where docker > nul 2>&1
 if errorlevel 1 (
-    echo.
-    echo  [FEHLER] Docker Desktop ist nicht gestartet!
-    echo  Bitte starte Docker Desktop und fuhre das Skript erneut aus.
+    echo  [FEHLER] Docker wurde nicht gefunden.
+    echo  Bitte zuerst Docker Desktop installieren und starten:
+    echo    https://www.docker.com/products/docker-desktop/
     echo.
     pause
     exit /b 1
 )
 
-:: ChurchTools-URL abfragen
-echo.
+:: 2. Laeuft der Docker-Dienst?
+docker info > nul 2>&1
+if errorlevel 1 (
+    echo  [FEHLER] Docker ist installiert, aber nicht gestartet.
+    echo  Starte Docker Desktop, warte bis es bereit ist, und starte das Skript erneut.
+    echo.
+    pause
+    exit /b 1
+)
+
+:: 3. Ist "docker compose" (v2) verfuegbar?
+docker compose version > nul 2>&1
+if errorlevel 1 (
+    echo  [FEHLER] Die Docker-Version ist zu alt - der Befehl "docker compose" fehlt.
+    echo  Bitte Docker Desktop aktualisieren ^(benoetigt Compose v2^).
+    echo.
+    pause
+    exit /b 1
+)
+
+:: 4. ChurchTools-URL abfragen
 echo  Bitte gib die ChurchTools-Adresse eurer Gemeinde ein.
 echo  Beispiel: https://eure-gemeinde.church.tools
 echo.
 set /p CT_URL=" ChurchTools-URL: "
-
 if "%CT_URL%"=="" (
-    echo.
     echo  [FEHLER] Keine URL eingegeben. Einrichtung abgebrochen.
     pause
     exit /b 1
 )
 
-:: SESSION_SECRET generieren
-for /f "tokens=*" %%a in ('powershell -Command "[System.BitConverter]::ToString([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)).Replace(\"-\",\"\").ToLower()"') do set SESSION_SECRET=%%a
+:: 5. Bestehendes Session-Secret beibehalten, sonst neu erzeugen
+set SESSION_SECRET=
+if exist "%~dp0.env" (
+    for /f "tokens=2 delims==" %%a in ('findstr /b "SESSION_SECRET=" "%~dp0.env"') do set SESSION_SECRET=%%a
+)
+if "%SESSION_SECRET%"=="" (
+    for /f "tokens=*" %%a in ('powershell -NoProfile -Command "[System.BitConverter]::ToString([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)).Replace('-','').ToLower()"') do set SESSION_SECRET=%%a
+)
 
 :: .env schreiben
 (
@@ -47,28 +67,29 @@ for /f "tokens=*" %%a in ('powershell -Command "[System.BitConverter]::ToString(
 ) > "%~dp0.env"
 
 echo.
-echo  Konfiguration gespeichert.
+echo  Konfiguration gespeichert (.env).
 echo.
-echo  Die App wird jetzt heruntergeladen und gestartet.
-echo  Das kann beim ersten Mal einige Minuten dauern...
+echo  Die App wird heruntergeladen und gestartet.
+echo  Beim ersten Mal kann das einige Minuten dauern ...
 echo.
 
-cd /d "%~dp0"
 docker compose pull
-docker compose up -d
-
 if errorlevel 1 (
-    echo.
-    echo  [FEHLER] Beim Starten der App ist ein Fehler aufgetreten.
-    echo  Prüfe ob Docker Desktop läuft und versuche es erneut.
+    echo  [FEHLER] Konnte das App-Image nicht herunterladen. Internetverbindung? Docker?
+    pause
+    exit /b 1
+)
+docker compose up -d
+if errorlevel 1 (
+    echo  [FEHLER] Konnte die App nicht starten. Mehr Infos: docker compose logs
     pause
     exit /b 1
 )
 
 echo.
-echo  ✓ Die App läuft! Im Browser öffnen unter:
-echo    http://localhost:3001
+echo  ✓ Die App laeuft! Im Browser oeffnen:
+echo      http://localhost:3001
 echo.
-echo  Melde dich mit deinen ChurchTools-Zugangsdaten an.
+echo  Mit den ChurchTools-Zugangsdaten anmelden, dann im "Mehr"-Tab den Gemeindenamen setzen.
 echo.
 pause

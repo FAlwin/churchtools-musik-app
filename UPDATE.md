@@ -4,7 +4,16 @@ Jede Gemeinde aktualisiert **selbst und wann sie möchte** (am besten nicht wäh
 Gottesdienstzeit). Neue Versionen erscheinen als fertiges Image automatisch mit jedem Release –
 ihr müsst nicht einzeln beliefert werden.
 
-## Standard-Update
+## Einfachste Variante: Doppelklick (Mac / Windows)
+
+Im `deploy/`-Ordner liegt ein Update-Skript – einfach doppelklicken:
+
+- **macOS:** `update.command`
+- **Windows:** `update.bat`
+
+Es holt die neue Version, startet die App neu und räumt alte Images auf – die Daten bleiben erhalten.
+
+## Standard-Update (manuell / NAS)
 
 Im Ordner mit eurer `docker-compose.yml` und `.env`:
 
