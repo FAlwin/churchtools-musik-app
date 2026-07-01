@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import '../pdfSetup';
 import type { SongDocument } from '@shared/types/index';
 import type { DrawTool } from '../types/index';
 import { Spinner } from './Spinner';
 import styles from './DocumentView.module.scss';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 interface DocumentViewProps {
   songId: number;
