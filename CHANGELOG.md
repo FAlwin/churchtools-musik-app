@@ -7,6 +7,27 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.3.1] – 2026-07-02
+
+### Neu
+
+- **Mehr Einstellungen beim Hinzufügen:** Das Fenster „Eintrag hinzufügen" hat für Text-Punkte
+  jetzt ein Feld **Dauer (Minuten)** – vorher fehlte es hier.
+- **Direkt weiterbearbeiten nach Lied-Hinzufügen:** Sobald ein Lied zum Ablauf hinzugefügt wurde,
+  öffnet sich automatisch dessen Bearbeiten-Dialog, sodass Dauer, Zuständige, Bemerkung und die
+  Uhrzeit-Anzeige gleich gesetzt werden können.
+
+### Behoben
+
+- **Überschriften im Bearbeiten-Modus wieder bearbeitbar:** Eine Überschrift lässt sich jetzt per
+  Antippen (bzw. über den Stift) umbenennen; bisher war sie nur verschiebbar.
+
+### Geändert
+
+- **Optik im Bearbeiten-Modus:** Das unsauber dargestellte Zeichen „⠿" ist durch ein sauberes
+  6-Punkte-Griff-Icon ersetzt; die Ziehgriffe sind kräftiger und der Bearbeiten-Stift in
+  Akzent-Blau hervorgehoben.
+
 ## [2.3.0] – 2026-07-01
 
 ### Neu
