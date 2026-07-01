@@ -681,7 +681,12 @@ export function StreamView({
           setDrawColor={setDrawColor}
           drawTool={drawTool}
           setDrawTool={(t) => {
-            activeDraw.setSelectedId(null);
+            // Werkzeugwechsel (z. B. auf den Stift) beendet eine offene Textbearbeitung und
+            // hebt die Auswahl auf – auf allen Seiten, damit keine UI hängen bleibt (#39).
+            for (const d of draws) {
+              d.cancelText();
+              d.setSelectedId(null);
+            }
             setDrawTool(t);
           }}
           textSize={textSize}
