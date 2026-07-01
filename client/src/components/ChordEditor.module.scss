@@ -95,6 +95,35 @@
   }
 }
 
+// Umschalter Text/Vorschau – nur am Handy sichtbar
+.mobileTabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px 0;
+  flex-shrink: 0;
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+}
+.mtab {
+  flex: 1;
+  height: 34px;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface2);
+  color: var(--text2);
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mtabOn {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
 .split {
   flex: 1;
   min-height: 0;
@@ -106,25 +135,113 @@
   }
 }
 
-.editPane,
-.previewPane {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
+// Am Handy den nicht aktiven Bereich ausblenden; am großen Bildschirm immer beide zeigen
+.hideMobile {
+  @media (max-width: 767px) {
+    display: none;
+  }
 }
 
 .editPane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-bottom: 2px solid var(--border);
+
   @media (min-width: 768px) {
     border-bottom: none;
     border-right: 2px solid var(--border);
   }
 }
+.previewPane {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+// Eingabe-Toolbar
+.toolbar {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface3);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tbRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tbLbl {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.chip {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:active {
+    background: var(--blue-soft);
+  }
+}
+.chipRecent {
+  border-color: var(--blue);
+  color: var(--blue-ink);
+}
+.chipSection {
+  font-size: 13px;
+  font-weight: 600;
+}
+.chipHelp {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+}
+.help {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 2px 2px;
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+
+  code {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0 5px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 11.5px;
+  }
+}
 
 .textarea {
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  height: 100%;
-  min-height: 200px;
   border: none;
   outline: none;
   resize: none;
@@ -136,6 +253,13 @@
   color: var(--text);
 }
 
+.previewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 12px;
+  flex-shrink: 0;
+}
 .paneLbl {
   font-size: 10px;
   font-weight: 800;
@@ -144,18 +268,51 @@
   color: var(--text3);
   padding: 8px 14px 0;
 }
+.transpose {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 6px;
+}
+.tBtn {
+  width: 30px;
+  height: 28px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--blue-ink);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.tVal {
+  min-width: 36px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: var(--text2);
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
 
 .preview {
   padding: 8px 16px 24px;
 }
-
-.hint {
-  font-size: 12px;
-  color: var(--text2);
-  padding: 6px 14px 10px;
-  line-height: 1.4;
+.empty {
+  color: var(--text3);
+  font-size: 13px;
+  padding: 12px 2px;
 }
 
+.deleteRow {
+  padding: 10px 14px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
 .reset {
   background: transparent;
   border: 1.5px solid var(--border);
