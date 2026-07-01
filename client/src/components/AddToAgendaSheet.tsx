@@ -26,10 +26,10 @@ export function AddToAgendaSheet({ song, services, onClose }: AddToAgendaSheetPr
   const todayIso = new Date().toISOString().slice(0, 10);
   const upcoming = services
     .filter((s) => s.date >= todayIso)
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => a.start.localeCompare(b.start));
   const past = services
     .filter((s) => s.date < todayIso)
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => b.start.localeCompare(a.start));
 
   async function pick(a: SongArrangementOption) {
     if (!service || add.isPending) return;

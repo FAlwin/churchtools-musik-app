@@ -304,21 +304,32 @@ export function cleanServiceName(service?: string): string {
 /**
  * Zuständige als Einträge, ohne Duplikate: für besetzte Plätze der Personenname (open=false),
  * für offene Dienst-Plätze (z.B. „[Musik]") der Dienstname (open=true).
+ *
+ * Manuell als Freitext eingetragene Zuständige (nicht über einen Dienst zugewiesen) stehen in
+ * ChurchTools nur im `text`-Feld, nicht in `persons[]` – die ergänzen wir zusätzlich. Dienst-Tokens
+ * in eckigen Klammern (z.B. „[Moderation]") sind dort bereits über `persons[]` aufgelöst und werden
+ * hier übersprungen.
  */
 export function responsibleEntries(item: {
-  responsible?: { persons?: { service?: string; person?: { title?: string } }[] };
+  responsible?: { text?: string; persons?: { service?: string; person?: { title?: string } }[] };
 }): ResponsibleEntry[] {
   const entries: ResponsibleEntry[] = [];
   const seen = new Set<string>();
-  for (const p of item.responsible?.persons ?? []) {
-    const name = p.person?.title?.trim();
-    const label = name || cleanServiceName(p.service);
-    if (!label) continue;
-    const open = !name;
+  const push = (label: string, open: boolean): void => {
+    if (!label) return;
     const key = `${label}|${open}`;
-    if (seen.has(key)) continue;
+    if (seen.has(key)) return;
     seen.add(key);
     entries.push({ label, open });
+  };
+  for (const p of item.responsible?.persons ?? []) {
+    const name = p.person?.title?.trim();
+    push(name || cleanServiceName(p.service), !name);
+  }
+  for (const part of (item.responsible?.text ?? '').split(',')) {
+    const label = part.trim();
+    if (!label || label.includes('[')) continue; // Dienst-Tokens kommen über persons[]
+    push(label, false);
   }
   return entries;
 }

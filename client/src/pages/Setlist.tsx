@@ -155,10 +155,13 @@ function AgendaFullView({
           songIndex += 1;
           const idx = songIndex;
           return (
-            <button key={item.id} className={styles.flowRowBtn} onClick={() => onSelect(idx)}>
+            <button
+              key={item.id}
+              className={`${styles.flowRowBtn} ${styles.songRow}`}
+              onClick={() => onSelect(idx)}
+            >
               {timeCol}
               {body}
-              <Icon name="chev-right" size={18} stroke={2.2} className={styles.flowChev} />
             </button>
           );
         }
@@ -190,19 +193,42 @@ function SortableRow({
     opacity: isDragging ? 0.6 : 1,
     zIndex: isDragging ? 1 : undefined,
   };
+  // Überschriften bleiben schmale Bänder wie in der Ansicht – nur mit Ziehen-Griff davor,
+  // damit sich beim Umschalten in den Bearbeiten-Modus Position und Höhe nicht ändern.
+  if (item.isHeader) {
+    return (
+      <div ref={setNodeRef} style={style} className={`${styles.sectionBand} ${styles.editBand}`}>
+        <button className={styles.bandHandle} {...attributes} {...listeners} aria-label="Verschieben">
+          ⠿
+        </button>
+        {item.title}
+      </div>
+    );
+  }
+
+  // Normale Zeile: gleiche Optik wie die Ansicht (Zeit-Spalte → Ziehen-Griff), Antippen öffnet
+  // das Aktionsmenü statt zu den Charts zu führen. Dauer + Zuständige bleiben sichtbar, damit die
+  // Zeilenhöhe exakt der Ansicht entspricht.
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`${styles.editRow}${item.isHeader ? ' ' + styles.editHeaderRow : ''}`}
+      className={`${styles.flowRow}${item.song ? ' ' + styles.songRow : ''}`}
     >
-      <button className={styles.handle} {...attributes} {...listeners} aria-label="Verschieben">
+      <button className={styles.dragCol} {...attributes} {...listeners} aria-label="Verschieben">
         ⠿
       </button>
-      <button className={styles.editTitleBtn} onClick={() => onOpenActions(item)}>
-        <span className={styles.editTitleText}>{item.song ? item.song.title : item.title}</span>
-        {item.song && <span className={styles.editSongTag}>🎵</span>}
-        <span className={styles.editChevron}>›</span>
+      <button className={styles.editBody} onClick={() => onOpenActions(item)}>
+        <div className={styles.flowHead}>
+          <span className={styles.flowTitle}>{item.song ? item.song.title : item.title}</span>
+          {item.song && <span className={styles.flowSongTag}>🎵</span>}
+          {item.durationMin && <span className={styles.flowDur}>{item.durationMin} Min</span>}
+        </div>
+        {item.note && <div className={styles.flowNote}>{item.note}</div>}
+        <ResponsibleLine entries={item.responsible} />
+      </button>
+      <button className={styles.rowEdit} onClick={() => onOpenActions(item)} aria-label="Bearbeiten">
+        <Icon name="pencil" size={15} stroke={2} />
       </button>
     </div>
   );

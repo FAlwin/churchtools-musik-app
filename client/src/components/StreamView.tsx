@@ -67,6 +67,8 @@ export function StreamView({
   const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
   const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
   const transformRefs = [useRef<ReactZoomPanPinchRef | null>(null), useRef<ReactZoomPanPinchRef | null>(null)];
+  // Letzter Zoom-Faktor je Slot – um „aktives Herauszoomen" von programmatischem Reset zu unterscheiden.
+  const lastScale = useRef<[number, number]>([1, 1]);
   // Marker glatt: aktiver Strich wird als EINE Linie aus allen Punkten neu gezeichnet (auf einem
   // Schnappschuss der Seite vor dem Strich) → keine pro-Segment-Überlagerung mehr (kein „Gepunktel").
   const markerBase = useRef<HTMLCanvasElement | null>(null);
@@ -99,28 +101,25 @@ export function StreamView({
     const o = owners[page];
     return o ? `worship_docdraw_song${o.songId}_v${o.versionKey}_${o.localPage}` : null;
   };
-  // Zoom ist display-abhängig → Geräteklasse im Schlüssel (Handy vs. Tablet+Computer).
+  // Zoom hängt an der Bildschirm-Geometrie → Geräteklasse UND Layout (1-spaltig Hochformat /
+  // 2-spaltig Querformat) im Schlüssel. Sonst würde ein im Hochformat gespeicherter Pixel-
+  // Ausschnitt im Querformat (halbe Breite, 2 Seiten) angewendet und die Seite „einfrieren" (#33).
   const zoomKeyFor = (page: number): string => {
     const o = owners[page];
+    const layout = `${deviceClass()}${perView}`;
     return o
-      ? `worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}_d${deviceClass()}`
-      : `worship_doczoom_p${page}`;
+      ? `worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}_d${layout}`
+      : `worship_doczoom_p${page}_d${layout}`;
   };
   function loadZoom(page: number): { x: number; y: number; scale: number } | null {
-    const o = owners[page];
-    // Primär klassen-spezifischer Schlüssel; Fallback auf früher gespeicherten Zoom ohne Klassen-Suffix.
-    const keys = [zoomKeyFor(page)];
-    if (o) keys.push(`worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}`);
-    for (const k of keys) {
-      try {
-        const s = localStorage.getItem(k);
-        if (s) {
-          const parsed = JSON.parse(s);
-          if (parsed && typeof parsed.scale === 'number') return parsed;
-        }
-      } catch {
-        /* ignorieren */
+    try {
+      const s = localStorage.getItem(zoomKeyFor(page));
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (parsed && typeof parsed.scale === 'number') return parsed;
       }
+    } catch {
+      /* ignorieren */
     }
     return null;
   }
@@ -256,7 +255,9 @@ export function StreamView({
     lastPt.current = null;
   }, [drawMode, pageIndex, perView]);
 
-  // Beim Blättern/Drehen Zoom-Modus verlassen + gespeicherten Zoom je Seite wiederherstellen
+  // Beim Blättern/Drehen Zoom-Modus verlassen + gespeicherten Zoom je Seite wiederherstellen.
+  // Bewusst NICHT an syncTick gekoppelt: der 30-Sekunden-Anmerkungs-Sync darf einen gerade
+  // eingestellten Zoom nicht zurücksetzen (#33). Striche/Texte laden separat über usePageDraw.
   useEffect(() => {
     setAdjustSlot(null);
     if (loading) return;
@@ -270,7 +271,24 @@ export function StreamView({
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, perView, loading, syncTick]);
+  }, [pageIndex, perView, loading]);
+
+  // Nach App-Rückkehr / Anmerkungs-Sync (syncTick) den gespeicherten Zoom erneut anwenden – das
+  // Neu-Rendern der Seite kann den Ausschnitt verschieben. Setzt NIE auf Fit zurück und lässt einen
+  // gerade aktiven Zoom (adjustSlot) unangetastet, damit kein laufender Pinch abbricht (#33).
+  const syncSeen = useRef(syncTick);
+  useEffect(() => {
+    if (syncTick === syncSeen.current) return;
+    syncSeen.current = syncTick;
+    requestAnimationFrame(() => {
+      for (let j = 0; j < perView; j++) {
+        if (adjustSlot === j) continue;
+        const saved = loadZoom(pageIndex + j);
+        if (saved) transformRefs[j].current?.setTransform(saved.x, saved.y, saved.scale, 0);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncTick]);
 
   // ── Striche zeichnen (auf der Anno-Canvas der jeweiligen Seite) ──
   function ptOf(e: React.PointerEvent, canvas: HTMLCanvasElement) {
@@ -469,6 +487,34 @@ export function StreamView({
     setAdjustSlot(null);
   }
 
+  // Zoom/Ausschnitt einer sichtbaren Seite automatisch sichern, sobald eine Geste endet (#33).
+  // So bleibt ein freier Pinch-Zoom auch ohne „Fertig" erhalten – über die Sitzung und nach
+  // Neuöffnen. Bei Rückkehr auf Fit (scale ≈ 1) wird der gespeicherte Zoom wieder entfernt.
+  function persistZoom(slot: number) {
+    // Nur echte Nutzer-Gesten sichern (beim Pinch/Pan ist dieser Slot adjustSlot) – NICHT das
+    // programmatische Wiederherstellen, sonst wird der gerade geladene Wert quer über Lieder
+    // zurückgeschrieben („bei allen Liedern gleich").
+    if (adjustSlot !== slot) return;
+    const t = transformRefs[slot].current?.instance?.transformState;
+    if (!t) return;
+    const page = pageIndex + slot;
+    if (t.scale > 1.01) {
+      const zoom = { x: t.positionX, y: t.positionY, scale: t.scale };
+      const zk = zoomKeyFor(page);
+      try {
+        localStorage.setItem(zk, JSON.stringify(zoom));
+      } catch {
+        /* Speicher voll */
+      }
+      pushField(zk, 'zoom', zoom);
+    } else if (lastScale.current[slot] > 1.01) {
+      // Nur löschen, wenn der Nutzer AKTIV wieder auf Fit herausgezoomt hat – nicht beim
+      // programmatischen Zurücksetzen/Mounten (das würde einen gespeicherten Zoom fälschlich wipen).
+      clearStoredZoom(page);
+    }
+    lastScale.current[slot] = t.scale;
+  }
+
   // Gespeicherten Zoom einer Seite dauerhaft löschen (klassen-spezifischer + alter Fallback-Schlüssel).
   function clearStoredZoom(page: number) {
     const o = owners[page];
@@ -549,6 +595,7 @@ export function StreamView({
                   if (!drawMode) setAdjustSlot(j);
                 }}
                 onTransformed={(_ref, state) => {
+                  persistZoom(j);
                   const z = state.scale > 1.01;
                   setZoomedSlots((prev) => {
                     if (prev[j] === z) return prev;
@@ -681,7 +728,12 @@ export function StreamView({
           setDrawColor={setDrawColor}
           drawTool={drawTool}
           setDrawTool={(t) => {
-            activeDraw.setSelectedId(null);
+            // Werkzeugwechsel (z. B. auf den Stift) beendet eine offene Textbearbeitung und
+            // hebt die Auswahl auf – auf allen Seiten, damit keine UI hängen bleibt (#39).
+            for (const d of draws) {
+              d.cancelText();
+              d.setSelectedId(null);
+            }
             setDrawTool(t);
           }}
           textSize={textSize}
