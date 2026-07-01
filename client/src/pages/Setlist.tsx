@@ -155,10 +155,13 @@ function AgendaFullView({
           songIndex += 1;
           const idx = songIndex;
           return (
-            <button key={item.id} className={styles.flowRowBtn} onClick={() => onSelect(idx)}>
+            <button
+              key={item.id}
+              className={`${styles.flowRowBtn} ${styles.songRow}`}
+              onClick={() => onSelect(idx)}
+            >
               {timeCol}
               {body}
-              <Icon name="chev-right" size={18} stroke={2.2} className={styles.flowChev} />
             </button>
           );
         }
@@ -198,7 +201,6 @@ function SortableRow({
         <button className={styles.bandHandle} {...attributes} {...listeners} aria-label="Verschieben">
           ⠿
         </button>
-        {item.time && <span className={styles.bandTime}>{item.time}</span>}
         {item.title}
       </div>
     );
@@ -208,7 +210,11 @@ function SortableRow({
   // das Aktionsmenü statt zu den Charts zu führen. Dauer + Zuständige bleiben sichtbar, damit die
   // Zeilenhöhe exakt der Ansicht entspricht.
   return (
-    <div ref={setNodeRef} style={style} className={styles.flowRow}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`${styles.flowRow}${item.song ? ' ' + styles.songRow : ''}`}
+    >
       <button className={styles.dragCol} {...attributes} {...listeners} aria-label="Verschieben">
         ⠿
       </button>
@@ -221,9 +227,9 @@ function SortableRow({
         {item.note && <div className={styles.flowNote}>{item.note}</div>}
         <ResponsibleLine entries={item.responsible} />
       </button>
-      <span className={styles.rowActions} aria-hidden="true">
-        ⋮
-      </span>
+      <button className={styles.rowEdit} onClick={() => onOpenActions(item)} aria-label="Bearbeiten">
+        <Icon name="pencil" size={15} stroke={2} />
+      </button>
     </div>
   );
 }

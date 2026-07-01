@@ -75,10 +75,12 @@
     background: var(--surface3);
   }
 }
-.flowChev {
-  color: var(--text3);
-  flex-shrink: 0;
-  align-self: center;
+// Lied-Zeilen deutlich hervorheben (blaue Fläche + Akzentbalken) – schnell auffindbar.
+.songRow {
+  background: var(--blue-soft);
+  box-shadow:
+    inset 3px 0 0 var(--blue),
+    var(--shadow);
 }
 .flowTime {
   flex-shrink: 0;
@@ -175,14 +177,18 @@
   font: inherit;
   color: inherit;
 }
-// Dezenter „öffnet Menü"-Hinweis am rechten Rand.
-.rowActions {
+// „Bearbeiten"-Stift am rechten Rand – verdeutlicht, dass die Zeile antippbar ist.
+.rowEdit {
   flex-shrink: 0;
   align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
   color: var(--text3);
-  font-size: 18px;
-  line-height: 1;
-  padding: 0 2px;
+  cursor: pointer;
+  padding: 4px 6px;
 }
 // Überschrift-Band im Bearbeiten-Modus: Griff + Zeit + Titel, sonst wie .sectionBand.
 .editBand {
