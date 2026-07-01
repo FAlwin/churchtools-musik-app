@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { SiteConfig } from '@shared/types/index';
 import type { Theme, ThemePref } from '../types/index';
 import { Screen, Scroll } from '../components/Screen';
@@ -11,8 +11,6 @@ import { LinksManager } from '../components/LinksManager';
 import { SupportBox } from '../components/SupportBox';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
-import { getOfflineStatus } from '../queryClient';
-import { isOfflineAutoEnabled, setOfflineAutoEnabled } from '../services/offlineAuto';
 import styles from './Settings.module.scss';
 
 interface SettingsProps {
@@ -51,16 +49,6 @@ export function Settings({
   const [orgDraft, setOrgDraft] = useState(site.orgName);
   const update = useUpdateSiteConfig();
   const updateCheck = useUpdateCheck();
-  const [offline, setOffline] = useState<{ files: number; records: number; savedAt: number | null } | null>(null);
-  const [autoOffline, setAutoOffline] = useState(isOfflineAutoEnabled());
-  useEffect(() => {
-    void getOfflineStatus().then(setOffline);
-  }, []);
-  function toggleAutoOffline() {
-    const v = !autoOffline;
-    setAutoOffline(v);
-    setOfflineAutoEnabled(v);
-  }
   const logo = theme === 'dark' ? '/logo-rund-dunkel.png' : '/logo-rund-hell.png';
 
   function saveOrg() {
@@ -112,26 +100,6 @@ export function Settings({
                   onToggleWake();
                 }}
                 aria-label="Display aktiv halten"
-              >
-                <span className={styles.togThumb} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Offline-Reserve */}
-        <div className={styles.group}>
-          <div className={styles.groupHdr}>Offline</div>
-          <div className={styles.cardList}>
-            <div className={`${styles.setRow} ${styles.tappable}`} onClick={toggleAutoOffline}>
-              <span className={styles.setLabel}>Kommende Gottesdienste offline halten</span>
-              <button
-                className={`${styles.tog}${autoOffline ? ' ' + styles.togOn : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleAutoOffline();
-                }}
-                aria-label="Kommende Gottesdienste offline halten"
               >
                 <span className={styles.togThumb} />
               </button>
@@ -214,11 +182,6 @@ export function Settings({
             >
               Neue Version {updateCheck.latest} verfügbar – Was ist neu
             </a>
-          )}
-          {offline && (offline.records > 0 || offline.files > 0) && (
-            <div className={styles.offlineStat}>
-              Offline verfügbar: {offline.records} Datensätze · {offline.files} Dateien
-            </div>
           )}
         </div>
       </Scroll>

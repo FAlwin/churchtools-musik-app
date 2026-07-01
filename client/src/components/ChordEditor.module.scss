@@ -17,6 +17,7 @@
   background: var(--blue);
   flex-shrink: 0;
 }
+
 .title {
   flex: 1;
   min-width: 0;
@@ -28,6 +29,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .barBtn {
   height: 38px;
   padding: 0 14px;
@@ -87,192 +89,10 @@
   font-family: var(--ui);
   font-size: 15px;
   outline: none;
+
   &:focus {
     border-color: var(--blue);
   }
-}
-
-// ── Eingabe-Toolbar ──
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px 4px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-.tbSpacer {
-  flex: 1;
-}
-.dd {
-  position: relative;
-}
-.ddBtn {
-  height: 34px;
-  padding: 0 12px;
-  border: 1.5px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface2);
-  color: var(--text);
-  font-family: var(--ui);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.ddPanel {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 20;
-  min-width: 220px;
-  max-height: 60vh;
-  overflow-y: auto;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
-  padding: 6px;
-}
-.ddPanelWide {
-  min-width: 300px;
-}
-.ddRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 4px 8px;
-  border-radius: 8px;
-  &:hover {
-    background: var(--surface3);
-  }
-}
-.ddRoot {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-.ddQual {
-  display: flex;
-  gap: 4px;
-  button {
-    height: 28px;
-    padding: 0 9px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    background: var(--surface3);
-    color: var(--text2);
-    font-family: var(--ui);
-    font-size: 12.5px;
-    font-weight: 700;
-    cursor: pointer;
-    &:active {
-      background: var(--blue-soft);
-    }
-  }
-}
-// Format-Eintrag: deutsche Erklärung zuerst, dann der Fach-Tag.
-.ddFormat {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 9px 10px;
-  border: none;
-  border-radius: 8px;
-  background: none;
-  cursor: pointer;
-  text-align: left;
-  &:hover {
-    background: var(--surface3);
-  }
-}
-.ddFormatLabel {
-  font-family: var(--ui);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-}
-.ddFormatTag {
-  flex-shrink: 0;
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
-  font-size: 11.5px;
-  color: var(--cp-dir);
-  background: var(--surface3);
-  border-radius: 5px;
-  padding: 1px 6px;
-}
-
-// Zuletzt genutzte Akkorde – direkt in der Toolbar (sichtbar nach der ersten Nutzung).
-.tbRecent {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-wrap: wrap;
-}
-.tbRecentLbl {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text3);
-}
-.recentChip {
-  height: 30px;
-  padding: 0 10px;
-  border: 1.5px solid var(--blue);
-  border-radius: 8px;
-  background: var(--surface2);
-  color: var(--blue-ink);
-  font-family: var(--ui);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.iconBtn {
-  width: 36px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface2);
-  color: var(--text2);
-  cursor: pointer;
-  &:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-}
-
-// ── Ansicht-Umschalter (Editor / Beide / Vorschau) ──
-.viewSeg {
-  display: flex;
-  gap: 6px;
-  padding: 4px 12px 8px;
-  flex-shrink: 0;
-}
-.vseg {
-  flex: 1;
-  max-width: 160px;
-  height: 32px;
-  border: 1.5px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface2);
-  color: var(--text2);
-  font-family: var(--ui);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.vsegOn {
-  background: var(--blue);
-  color: #fff;
-  border-color: var(--blue);
 }
 
 .split {
@@ -280,83 +100,62 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+
   @media (min-width: 768px) {
     flex-direction: row;
   }
 }
-// Ausgeblendeter (aber gemounteter) Bereich – !important, damit es die Pane-Anzeige sicher schlägt.
-.paneHidden {
-  display: none !important;
-}
 
-.editPane {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  border-top: 1px solid var(--border);
-  @media (min-width: 768px) {
-    border-right: 2px solid var(--border);
-  }
-}
+.editPane,
 .previewPane {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  border-top: 1px solid var(--border);
+  overflow: auto;
 }
 
-.previewHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-right: 12px;
-  flex-shrink: 0;
+.editPane {
+  border-bottom: 2px solid var(--border);
+  @media (min-width: 768px) {
+    border-bottom: none;
+    border-right: 2px solid var(--border);
+  }
 }
+
+.textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 16px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--surface2);
+  color: var(--text);
+}
+
 .paneLbl {
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text3);
-  padding: 8px 14px 6px;
-}
-.transpose {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.tBtn {
-  width: 30px;
-  height: 28px;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface2);
-  color: var(--blue-ink);
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-}
-.tVal {
-  min-width: 36px;
-  height: 28px;
-  border: none;
-  background: none;
-  color: var(--text2);
-  font-family: var(--ui);
-  font-size: 13px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
+  padding: 8px 14px 0;
 }
 
-.deleteRow {
-  padding: 10px 14px;
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
-  flex-shrink: 0;
+.preview {
+  padding: 8px 16px 24px;
 }
+
+.hint {
+  font-size: 12px;
+  color: var(--text2);
+  padding: 6px 14px 10px;
+  line-height: 1.4;
+}
+
 .reset {
   background: transparent;
   border: 1.5px solid var(--border);
