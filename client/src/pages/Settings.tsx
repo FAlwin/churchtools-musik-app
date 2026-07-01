@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { SiteConfig } from '@shared/types/index';
 import type { Theme, ThemePref } from '../types/index';
 import { Screen, Scroll } from '../components/Screen';
@@ -11,6 +11,7 @@ import { LinksManager } from '../components/LinksManager';
 import { SupportBox } from '../components/SupportBox';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
+import { getOfflineStatus } from '../queryClient';
 import styles from './Settings.module.scss';
 
 interface SettingsProps {
@@ -49,6 +50,10 @@ export function Settings({
   const [orgDraft, setOrgDraft] = useState(site.orgName);
   const update = useUpdateSiteConfig();
   const updateCheck = useUpdateCheck();
+  const [offline, setOffline] = useState<{ files: number; records: number; savedAt: number | null } | null>(null);
+  useEffect(() => {
+    void getOfflineStatus().then(setOffline);
+  }, []);
   const logo = theme === 'dark' ? '/logo-rund-dunkel.png' : '/logo-rund-hell.png';
 
   function saveOrg() {
@@ -182,6 +187,11 @@ export function Settings({
             >
               Neue Version {updateCheck.latest} verfügbar – Was ist neu
             </a>
+          )}
+          {offline && (offline.records > 0 || offline.files > 0) && (
+            <div className={styles.offlineStat}>
+              Offline verfügbar: {offline.records} Datensätze · {offline.files} Dateien
+            </div>
           )}
         </div>
       </Scroll>

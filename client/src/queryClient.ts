@@ -48,3 +48,31 @@ export const persistOptions = { persister, maxAge: WEEK, buster: BUSTER };
 export async function saveOfflineNow(): Promise<void> {
   await set(CACHE_KEY, JSON.stringify({ buster: BUSTER, timestamp: Date.now(), clientState: dehydrate(queryClient) }));
 }
+
+/**
+ * Diagnose für den Mehr-Tab: was liegt tatsächlich offline bereit? Zeigt, ob Persistenz +
+ * Datei-Cache greifen (macht die bisher unsichtbare Offline-Reserve überprüfbar).
+ */
+export async function getOfflineStatus(): Promise<{ files: number; records: number; savedAt: number | null }> {
+  let files = 0;
+  try {
+    if (typeof caches !== 'undefined') {
+      files = (await (await caches.open('worship-files')).keys()).length;
+    }
+  } catch {
+    /* Cache nicht verfügbar */
+  }
+  let records = 0;
+  let savedAt: number | null = null;
+  try {
+    const raw = await get<string>(CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { timestamp?: number; clientState?: { queries?: unknown[] } };
+      records = parsed.clientState?.queries?.length ?? 0;
+      savedAt = parsed.timestamp ?? null;
+    }
+  } catch {
+    /* kein persistierter Cache */
+  }
+  return { files, records, savedAt };
+}
