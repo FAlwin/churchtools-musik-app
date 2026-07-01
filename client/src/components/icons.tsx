@@ -37,7 +37,9 @@ export type IconName =
   | 'eye'
   | 'eye-off'
   | 'zoom-reset'
-  | 'download';
+  | 'download'
+  | 'undo'
+  | 'redo';
 
 interface IconProps {
   name: IconName;
@@ -291,6 +293,20 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <path d="M12 3v12M8 11l4 4 4-4" />
           <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+        </svg>
+      );
+    case 'undo':
+      return (
+        <svg {...p}>
+          <path d="M9 7l-5 5 5 5" />
+          <path d="M4 12h11a5 5 0 0 1 0 10h-3" />
+        </svg>
+      );
+    case 'redo':
+      return (
+        <svg {...p}>
+          <path d="M15 7l5 5-5 5" />
+          <path d="M20 12H9a5 5 0 0 0 0 10h3" />
         </svg>
       );
     default:

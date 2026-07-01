@@ -30,7 +30,9 @@ const DemoComp =
     ? React.lazy(() => import('./dev/DemoPdf').then((m) => ({ default: m.DemoPdf })))
     : demo === 'chart'
       ? React.lazy(() => import('./dev/DemoChart').then((m) => ({ default: m.DemoChart })))
-      : null;
+      : demo === 'editor'
+        ? React.lazy(() => import('./dev/DemoEditor').then((m) => ({ default: m.DemoEditor })))
+        : null;
 
 const rootNode = DemoComp ? (
   <React.Suspense fallback={null}>

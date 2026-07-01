@@ -19,6 +19,7 @@
   --blue-ink: #0061a1;
   --blue-soft: rgba(0, 97, 161, 0.1); // Blau-Flächen (Datums-Badge, Verse-Label)
   --red: #b22247; // Destruktiv (Abmelden, Löschen, offene Dienste)
+  --cp-dir: #0d7a6f; // ChordPro-Direktiven {…} im Editor (ChurchTools-passendes Teal)
 
   --seg-on: #ffffff; // aktives Segment / Toggle-Hintergrund
   --track-off: #c9cfd6; // Toggle-Schiene (aus)
@@ -44,6 +45,7 @@ html[data-theme='dark'] {
   --blue: #54a6e8;
   --blue-ink: #54a6e8;
   --blue-soft: rgba(84, 166, 232, 0.14);
+  --cp-dir: #5fd0c3; // Direktiven-Teal (heller für Dark Mode)
 
   --seg-on: #3a4d5e;
   --track-off: #3a4856;
