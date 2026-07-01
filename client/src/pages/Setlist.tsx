@@ -345,6 +345,7 @@ export function Setlist({
         right={
           !isLoading && !isError && items.length > 0 ? (
             <>
+              {!editMode && <OfflineSaveButton items={items} />}
               {exportableSongs.length > 0 && !editMode && (
                 <IconButton
                   onClick={() => void handleExportPdf()}
@@ -404,10 +405,7 @@ export function Setlist({
             </button>
           </>
         ) : (
-          <>
-            <AgendaFullView items={items} onSelect={onSelect} />
-            <OfflineSaveButton items={items} />
-          </>
+          <AgendaFullView items={items} onSelect={onSelect} />
         )}
         <div style={{ height: 20 }} />
       </Scroll>

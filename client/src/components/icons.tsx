@@ -36,7 +36,8 @@ export type IconName =
   | 'eraser'
   | 'eye'
   | 'eye-off'
-  | 'zoom-reset';
+  | 'zoom-reset'
+  | 'download';
 
 interface IconProps {
   name: IconName;
@@ -283,6 +284,13 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <path d="M4 20h16" />
           <path d="M14.5 6.4l3.1 3.1a2 2 0 0 1 0 2.8L13 17H8.5l-3.6-3.6a2 2 0 0 1 0-2.8l6.8-4.2a2 2 0 0 1 2.8 0Z" />
+        </svg>
+      );
+    case 'download':
+      return (
+        <svg {...p}>
+          <path d="M12 3v12M8 11l4 4 4-4" />
+          <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
         </svg>
       );
     default:
