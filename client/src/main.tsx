@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import App from './App';
+import { queryClient, persistOptions } from './queryClient';
 import './styles/main.scss';
 
 // iOS-PWA: zuverlässige App-Höhe. `window.innerHeight` trackt im Standalone-Modus beide
@@ -21,12 +22,6 @@ window.addEventListener('pageshow', syncAppHeight);
 requestAnimationFrame(syncAppHeight);
 setTimeout(syncAppHeight, 250);
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 1000 * 60 * 5, retry: 1 },
-  },
-});
-
 // NUR Entwicklung: Demos zum Prüfen (?demo=pdf für den ChordPro→PDF-Export). Im Produktiv-Build
 // (import.meta.env.DEV === false) nie geladen.
 const demo = import.meta.env.DEV && new URLSearchParams(window.location.search).get('demo');
@@ -35,7 +30,9 @@ const DemoComp =
     ? React.lazy(() => import('./dev/DemoPdf').then((m) => ({ default: m.DemoPdf })))
     : demo === 'chart'
       ? React.lazy(() => import('./dev/DemoChart').then((m) => ({ default: m.DemoChart })))
-      : null;
+      : demo === 'editor'
+        ? React.lazy(() => import('./dev/DemoEditor').then((m) => ({ default: m.DemoEditor })))
+        : null;
 
 const rootNode = DemoComp ? (
   <React.Suspense fallback={null}>
@@ -47,6 +44,8 @@ const rootNode = DemoComp ? (
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>{rootNode}</QueryClientProvider>
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+      {rootNode}
+    </PersistQueryClientProvider>
   </React.StrictMode>,
 );

@@ -1,0 +1,9 @@
+.host {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+
+  :global(.cm-editor) {
+    height: 100%;
+  }
+}

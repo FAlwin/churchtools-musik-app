@@ -23,6 +23,7 @@ import { CenterMessage } from '../components/CenterMessage';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddItemSheet } from '../components/AddItemSheet';
 import { ItemActionSheet } from '../components/ItemActionSheet';
+import { OfflineSaveButton } from '../components/OfflineSaveButton';
 import { Icon } from '../components/icons';
 import { generateSetlistPdf } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
@@ -344,6 +345,7 @@ export function Setlist({
         right={
           !isLoading && !isError && items.length > 0 ? (
             <>
+              {!editMode && <OfflineSaveButton items={items} />}
               {exportableSongs.length > 0 && !editMode && (
                 <IconButton
                   onClick={() => void handleExportPdf()}

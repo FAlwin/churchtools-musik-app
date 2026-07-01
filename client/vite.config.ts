@@ -14,15 +14,38 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // 'prompt' statt 'autoUpdate': ein neuer Service Worker lädt die laufende App NICHT
-      // automatisch mitten im Betrieb neu (störend im Gottesdienst). Das Update wird beim
-      // nächsten Kaltstart aktiv, wenn keine Instanz der App mehr offen ist.
-      registerType: 'prompt',
+      // 'autoUpdate': der neue Service Worker übernimmt zuverlässig beim nächsten Öffnen (skipWaiting),
+      // ohne den früher nötigen „App komplett schließen"-Tanz auf iOS-PWAs. Auf iPads verhinderte
+      // 'prompt' sonst, dass Updates (z. B. die Offline-Reserve #32) überhaupt aktiv wurden. Neue
+      // Versionen werden ohnehin nur bewusst deployt (Prod ohne Auto-Pull), daher unkritisch.
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'logo.png'],
       // Manifest wird zur Laufzeit vom Server geliefert (/api/manifest.webmanifest,
       // gebrandet pro Gemeinde). Das Plugin generiert daher KEIN statisches Manifest;
       // der <link rel="manifest"> steht fest in index.html.
       manifest: false,
+      workbox: {
+        // Precache MUSS `.mjs` (+ Fonts/wasm) einschließen – sonst fehlt offline der pdf.js-Worker
+        // (pdf.worker.min.mjs) und das Rendern der Charts scheitert mit „fake worker failed" (#32).
+        globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,woff,woff2,wasm}'],
+        // pdf.js-Chunks sind groß → Precache-Grenze anheben (Default 2 MiB).
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        // Offline-Reserve (#32): hochgeladene Dokumente (PDF/Bild) laufzeit-cachen. Ihr Inhalt ist
+        // pro fileId unveränderlich (Bearbeiten erzeugt neue Dateien) → CacheFirst. Die Daten-APIs
+        // (Termine/Ablauf/ChordPro) werden NICHT hier, sondern über die React-Query-Persistenz
+        // (IndexedDB) offline gehalten.
+        runtimeCaching: [
+          {
+            urlPattern: /\/api\/songs\/\d+\/files\/\d+/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'worship-files',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
+      },
     }),
   ],
   // Moderne Sass-API verwenden (vermeidet die „legacy-js-api"-Deprecation-Warnung)

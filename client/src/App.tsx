@@ -10,6 +10,7 @@ import { useWakeLock } from './hooks/useWakeLock';
 import { useAuth } from './hooks/useAuth';
 import { useSiteConfig } from './hooks/useSiteConfig';
 import { useAppNav } from './hooks/useAppNav';
+import { useOfflineAutoSync } from './hooks/useOfflineAutoSync';
 import {
   useServices,
   useAgenda,
@@ -51,6 +52,8 @@ export default function App() {
   // servicesQuery hängt nicht vom Navigations-Zustand ab → vor useAppNav, das die Terminliste
   // braucht, um den gespeicherten Gottesdienst nach einem Kaltstart wiederzufinden.
   const servicesQuery = useServices(auth.isAuthenticated && canViewAgendas);
+  // Hält den nächsten Gottesdienst automatisch offline bereit (falls in den Einstellungen aktiv).
+  useOfflineAutoSync(servicesQuery.data);
 
   const { restored, tab, setTab, view, setView, service, setService, songIndex, setSongIndex, libSel, setLibSel } =
     useAppNav({
