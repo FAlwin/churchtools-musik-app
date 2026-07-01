@@ -24,6 +24,11 @@ export default defineConfig({
       // der <link rel="manifest"> steht fest in index.html.
       manifest: false,
       workbox: {
+        // Precache MUSS `.mjs` (+ Fonts/wasm) einschließen – sonst fehlt offline der pdf.js-Worker
+        // (pdf.worker.min.mjs) und das Rendern der Charts scheitert mit „fake worker failed" (#32).
+        globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,woff,woff2,wasm}'],
+        // pdf.js-Chunks sind groß → Precache-Grenze anheben (Default 2 MiB).
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         // Offline-Reserve (#32): hochgeladene Dokumente (PDF/Bild) laufzeit-cachen. Ihr Inhalt ist
         // pro fileId unveränderlich (Bearbeiten erzeugt neue Dateien) → CacheFirst. Die Daten-APIs
         // (Termine/Ablauf/ChordPro) werden NICHT hier, sondern über die React-Query-Persistenz
