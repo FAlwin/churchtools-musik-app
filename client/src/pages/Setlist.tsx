@@ -200,7 +200,7 @@ function SortableRow({
     return (
       <div ref={setNodeRef} style={style} className={`${styles.sectionBand} ${styles.editBand}`}>
         <button className={styles.bandHandle} {...attributes} {...listeners} aria-label="Verschieben">
-          ⠿
+          <Icon name="grip" size={16} />
         </button>
         <button className={styles.bandEdit} onClick={() => onOpenActions(item)}>
           {item.title}
@@ -226,7 +226,7 @@ function SortableRow({
       className={`${styles.flowRow}${item.song ? ' ' + styles.songRow : ''}`}
     >
       <button className={styles.dragCol} {...attributes} {...listeners} aria-label="Verschieben">
-        ⠿
+        <Icon name="grip" size={18} />
       </button>
       <button className={styles.editBody} onClick={() => onOpenActions(item)}>
         <div className={styles.flowHead}>
@@ -387,9 +387,14 @@ export function Setlist({
         ) : editMode ? (
           <>
             <div className={styles.editHint}>
-              {isReordering
-                ? 'Speichere…'
-                : 'Ziehen (⠿) zum Sortieren · Eintrag antippen zum Bearbeiten.'}
+              {isReordering ? (
+                'Speichere…'
+              ) : (
+                <>
+                  Ziehen <Icon name="grip" size={14} className={styles.hintIcon} /> zum Sortieren ·
+                  Eintrag antippen zum Bearbeiten.
+                </>
+              )}
             </div>
             {err && <div className={styles.editError}>{err}</div>}
             <DndContext

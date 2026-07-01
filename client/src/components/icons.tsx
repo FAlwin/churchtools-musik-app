@@ -39,7 +39,8 @@ export type IconName =
   | 'zoom-reset'
   | 'download'
   | 'undo'
-  | 'redo';
+  | 'redo'
+  | 'grip';
 
 interface IconProps {
   name: IconName;
@@ -307,6 +308,17 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <path d="M15 7l5 5-5 5" />
           <path d="M20 12H9a5 5 0 0 0 0 10h3" />
+        </svg>
+      );
+    case 'grip':
+      return (
+        <svg {...f}>
+          <circle cx="9" cy="6" r="1.6" />
+          <circle cx="15" cy="6" r="1.6" />
+          <circle cx="9" cy="12" r="1.6" />
+          <circle cx="15" cy="12" r="1.6" />
+          <circle cx="9" cy="18" r="1.6" />
+          <circle cx="15" cy="18" r="1.6" />
         </svg>
       );
     default:

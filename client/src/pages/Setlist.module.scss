@@ -138,6 +138,11 @@
   padding: 12px 16px 4px;
   line-height: 1.4;
 }
+// Griff-Icon inmitten des Hinweistextes – sitzt auf der Textlinie.
+.hintIcon {
+  vertical-align: -2px;
+  margin: 0 1px;
+}
 .editError {
   font-size: 13px;
   color: var(--red);
@@ -156,8 +161,7 @@
   justify-content: center;
   border: none;
   background: none;
-  color: var(--text3);
-  font-size: 18px;
+  color: var(--text2);
   cursor: grab;
   touch-action: none;
 
@@ -177,7 +181,7 @@
   font: inherit;
   color: inherit;
 }
-// „Bearbeiten"-Stift am rechten Rand – verdeutlicht, dass die Zeile antippbar ist.
+// „Bearbeiten"-Stift am rechten Rand – Akzentfarbe verdeutlicht, dass die Zeile antippbar ist.
 .rowEdit {
   flex-shrink: 0;
   align-self: center;
@@ -186,7 +190,7 @@
   justify-content: center;
   border: none;
   background: none;
-  color: var(--text3);
+  color: var(--blue);
   cursor: pointer;
   padding: 4px 6px;
 }
@@ -211,10 +215,11 @@
   letter-spacing: inherit;
 }
 .bandHandle {
+  display: flex;
+  align-items: center;
   border: none;
   background: none;
-  color: var(--text3);
-  font-size: 15px;
+  color: var(--text2);
   cursor: grab;
   touch-action: none;
   padding: 0 6px 0 0;
