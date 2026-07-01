@@ -1,15 +1,6 @@
 # Plan: Offline-Reserve (Charts ohne Netz im Saal)
 
-**Status:** Phase 1 umgesetzt (01.07.2026), auf Staging/Gerät im Flugmodus zu verifizieren. Phase 2
-(expliziter „Für offline speichern"-Button) weiterhin optional/offen. Rein clientseitig – keine
-Server-Änderung nötig.
-
-**Umgesetzt (Phase 1):** React-Query-Cache wird in IndexedDB persistiert
-(`client/src/queryClient.ts` + `PersistQueryClientProvider` in `main.tsx`; `gcTime`/`maxAge` 7 Tage;
-`buster` = App-Version). Persistiert werden alle erfolgreichen Queries inkl. `['me']` → man bleibt
-offline angemeldet, solange die Session gültig war. Datei-Downloads (`/api/songs/:id/files/:id`)
-laufzeit-gecacht via Workbox `CacheFirst` (`worship-files`, 60 Einträge / 30 Tage) in
-`client/vite.config.ts`.
+**Status:** geplant, noch nicht umgesetzt (26.06.2026). Rein clientseitig – keine Server-Änderung nötig.
 
 ## Problem / Ist-Zustand
 

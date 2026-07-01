@@ -37,7 +37,7 @@ jobs:
           context: .
           platforms: linux/amd64
           build-args: |
-            APP_VERSION=staging-${{ github.run_number }}
+            APP_VERSION=staging
           push: true
           tags: ${{ env.IMAGE }}:staging
           cache-from: type=gha,scope=staging

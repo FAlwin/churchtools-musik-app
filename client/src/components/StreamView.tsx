@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import * as pdfjsLib from 'pdfjs-dist';
-import '../pdfSetup';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { SetlistPageOwner } from '../utils/chordPdf';
 import type { DrawTool } from '../types/index';
 import { usePageDraw } from '../hooks/usePageDraw';
@@ -12,6 +12,8 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { Icon } from './icons';
 import { Spinner } from './Spinner';
 import styles from './StreamView.module.scss';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 interface StreamViewProps {
   pdfData: ArrayBuffer;

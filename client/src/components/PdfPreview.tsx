@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import '../pdfSetup';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { SetlistSong } from '@shared/types/index';
 import { generateChordPdf } from '../utils/chordPdf';
 import { parseMetadata } from '../utils/chordpro';
 import styles from './PdfPreview.module.scss';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 interface PdfPreviewProps {
   title: string;

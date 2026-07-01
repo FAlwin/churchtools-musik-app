@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import '../pdfSetup';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { SetlistSong } from '@shared/types/index';
 import { generateChordPdf } from '../utils/chordPdf';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 /**
  * NUR Entwicklung (?demo=pdf): erzeugt aus einem Mock-Lied eine PDF und rendert sie via pdfjs
