@@ -7,6 +7,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.3.2] – 2026-07-02
+
+### Geändert
+
+- **Länger angemeldet bleiben:** Die Anmeldung gilt jetzt **30 Tage** statt nur 12 Stunden und
+  verlängert sich bei jeder Nutzung automatisch (gleitendes Ablaufdatum) – das ständige
+  Neu-Anmelden entfällt bei regelmäßiger Nutzung. Hinweis: ChurchTools kann seine eigene Sitzung
+  unabhängig davon früher beenden; auf dem iPhone/iPad (Web-App vom Home-Bildschirm) löscht iOS
+  Cookies nach etwa 7 Tagen ohne Nutzung – beides liegt außerhalb der App.
+
 ## [2.3.1] – 2026-07-02
 
 ### Neu
