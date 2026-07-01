@@ -97,7 +97,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 12px 4px;
   flex-shrink: 0;
   flex-wrap: wrap;
 }
@@ -133,36 +133,8 @@
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
   padding: 6px;
 }
-.ddRecent {
-  padding: 4px 6px 8px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
-}
-.ddSectionLbl {
-  display: block;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 4px;
-}
-.ddChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-.ddChip {
-  height: 30px;
-  padding: 0 10px;
-  border: 1.5px solid var(--blue);
-  border-radius: 8px;
-  background: var(--surface2);
-  color: var(--blue-ink);
-  font-family: var(--ui);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
+.ddPanelWide {
+  min-width: 300px;
 }
 .ddRow {
   display: flex;
@@ -200,21 +172,64 @@
     }
   }
 }
-.ddItem {
-  display: block;
+// Format-Eintrag: deutsche Erklärung zuerst, dann der Fach-Tag.
+.ddFormat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
-  text-align: left;
   padding: 9px 10px;
   border: none;
   border-radius: 8px;
   background: none;
-  color: var(--text);
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
-  font-size: 14px;
   cursor: pointer;
+  text-align: left;
   &:hover {
     background: var(--surface3);
   }
+}
+.ddFormatLabel {
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ddFormatTag {
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11.5px;
+  color: var(--cp-dir);
+  background: var(--surface3);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+
+// Zuletzt genutzte Akkorde – direkt in der Toolbar (sichtbar nach der ersten Nutzung).
+.tbRecent {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.tbRecentLbl {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.recentChip {
+  height: 30px;
+  padding: 0 10px;
+  border: 1.5px solid var(--blue);
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--blue-ink);
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .iconBtn {
@@ -233,31 +248,18 @@
     cursor: default;
   }
 }
-.previewToggle {
-  // nur am großen Bildschirm sinnvoll (am Handy übernehmen die Tabs)
-  @media (max-width: 767px) {
-    display: none;
-  }
-}
-.previewToggleOn {
-  border-color: var(--blue);
-  color: var(--blue-ink);
-  background: var(--blue-soft);
-}
 
-// Umschalter Text/Vorschau – nur am Handy
-.mobileTabs {
+// ── Ansicht-Umschalter (Editor / Beide / Vorschau) ──
+.viewSeg {
   display: flex;
   gap: 6px;
-  padding: 0 14px 6px;
+  padding: 4px 12px 8px;
   flex-shrink: 0;
-  @media (min-width: 768px) {
-    display: none;
-  }
 }
-.mtab {
+.vseg {
   flex: 1;
-  height: 34px;
+  max-width: 160px;
+  height: 32px;
   border: 1.5px solid var(--border);
   border-radius: 9px;
   background: var(--surface2);
@@ -267,7 +269,7 @@
   font-weight: 700;
   cursor: pointer;
 }
-.mtabOn {
+.vsegOn {
   background: var(--blue);
   color: #fff;
   border-color: var(--blue);
@@ -282,15 +284,9 @@
     flex-direction: row;
   }
 }
-.hideMobile {
-  @media (max-width: 767px) {
-    display: none;
-  }
-}
-.hideDesktop {
-  @media (min-width: 768px) {
-    display: none;
-  }
+// Ausgeblendeter (aber gemounteter) Bereich – !important, damit es die Pane-Anzeige sicher schlägt.
+.paneHidden {
+  display: none !important;
 }
 
 .editPane {
@@ -299,9 +295,7 @@
   display: flex;
   flex-direction: column;
   border-top: 1px solid var(--border);
-  border-bottom: 2px solid var(--border);
   @media (min-width: 768px) {
-    border-bottom: none;
     border-right: 2px solid var(--border);
   }
 }

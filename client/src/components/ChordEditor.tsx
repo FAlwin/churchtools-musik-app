@@ -19,22 +19,25 @@ interface ChordEditorProps {
 
 // Grundtöne wie im ChurchTools-SongSelect-Editor (mit #/b).
 const CHORD_ROOTS = ['Ab', 'A', 'Bb', 'B', 'C', 'C#', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'Gb', 'G'];
-// Direktiven (Tags) – Wert-Tags bekommen {tag: }, die anderen {tag}.
-const TAGS: { tag: string; value: boolean }[] = [
-  { tag: 'title', value: true },
-  { tag: 'author', value: true },
-  { tag: 'key', value: true },
-  { tag: 'capo', value: true },
-  { tag: 'tempo', value: true },
-  { tag: 'time', value: true },
-  { tag: 'comment', value: true },
-  { tag: 'direction', value: true },
-  { tag: 'column_break', value: false },
-  { tag: 'line_wrap', value: false },
+// Format-Bausteine (ChordPro-Direktiven) mit deutscher Erklärung. `value` = mit Doppelpunkt-Wert.
+const FORMATS: { tag: string; label: string; value: boolean }[] = [
+  { tag: 'comment', label: 'Abschnitt / Überschrift', value: true },
+  { tag: 'title', label: 'Titel des Lieds', value: true },
+  { tag: 'author', label: 'Autor / Interpret', value: true },
+  { tag: 'key', label: 'Tonart', value: true },
+  { tag: 'capo', label: 'Kapo (Bund)', value: true },
+  { tag: 'tempo', label: 'Tempo (BPM)', value: true },
+  { tag: 'time', label: 'Taktart', value: true },
+  { tag: 'direction', label: 'Spielanweisung', value: true },
+  { tag: 'column_break', label: 'Neue Spalte beginnen', value: false },
+  { tag: 'line_wrap', label: 'Zeilenumbruch erzwingen', value: false },
 ];
 
+type View = 'both' | 'editor' | 'preview';
+
 /** Vollbild-Editor für eine ChordPro-Version: CodeMirror mit Syntax-Farben, Eingabe-Dropdowns
- *  (Akkorde/Tags), Rückgängig/Wiederholen und einer „wie gedruckt"-PDF-Vorschau mit Transponieren. */
+ *  (Akkorde/Format), zuletzt genutzte Akkorde, Rückgängig/Wiederholen und eine „wie gedruckt"-
+ *  PDF-Vorschau mit Transponieren. Ansicht umschaltbar (Editor / Beide / Vorschau). */
 export function ChordEditor({
   songTitle,
   initialText,
@@ -49,17 +52,30 @@ export function ChordEditor({
   const [text, setText] = useState(initialText);
   const [name, setName] = useState(initialName);
   const [semitones, setSemitones] = useState(0);
-  const [mobileTab, setMobileTab] = useState<'text' | 'preview'>('text');
-  const [showPreview, setShowPreview] = useState(true); // Desktop: Vorschau ein/aus
   const [recent, setRecent] = useState<string[]>([]); // nur in dieser Sitzung
-  const [openMenu, setOpenMenu] = useState<'chord' | 'tag' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'chord' | 'format' | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [view, setView] = useState<View>('both');
+  const [wide, setWide] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : true,
+  );
   const editorRef = useRef<ChordProHandle>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   const canSave = name.trim().length > 0 && text.trim().length > 0;
   const transposeLabel = semitones === 0 ? '±0' : semitones > 0 ? `+${semitones}` : `${semitones}`;
+  // „Beide" gibt es nur auf breiten Fenstern; sonst als „Editor" behandeln.
+  const effView: View = !wide && view === 'both' ? 'editor' : view;
+  const showEditor = effView !== 'preview';
+  const showPreview = effView !== 'editor';
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = () => setWide(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   // Menüs bei Klick außerhalb schließen
   useEffect(() => {
@@ -76,9 +92,9 @@ export function ChordEditor({
     setRecent((prev) => [chord, ...prev.filter((c) => c !== chord)].slice(0, 10));
     setOpenMenu(null);
   }
-  function pickTag(t: { tag: string; value: boolean }) {
-    if (t.value) editorRef.current?.insert(`{${t.tag}: }`, { block: true, caretBack: 1 });
-    else editorRef.current?.insert(`{${t.tag}}`, { block: true });
+  function pickFormat(f: { tag: string; value: boolean }) {
+    if (f.value) editorRef.current?.insert(`{${f.tag}: }`, { block: true, caretBack: 1 });
+    else editorRef.current?.insert(`{${f.tag}}`, { block: true });
     setOpenMenu(null);
   }
 
@@ -127,18 +143,6 @@ export function ChordEditor({
           </button>
           {openMenu === 'chord' && (
             <div className={styles.ddPanel}>
-              {recent.length > 0 && (
-                <div className={styles.ddRecent}>
-                  <span className={styles.ddSectionLbl}>Zuletzt</span>
-                  <div className={styles.ddChips}>
-                    {recent.map((c) => (
-                      <button key={c} className={styles.ddChip} onClick={() => pickChord(c)}>
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
               {CHORD_ROOTS.map((root) => (
                 <div key={root} className={styles.ddRow}>
                   <span className={styles.ddRoot}>{root}</span>
@@ -156,21 +160,33 @@ export function ChordEditor({
         <div className={styles.dd}>
           <button
             className={styles.ddBtn}
-            onClick={() => setOpenMenu((m) => (m === 'tag' ? null : 'tag'))}
-            aria-expanded={openMenu === 'tag'}
+            onClick={() => setOpenMenu((m) => (m === 'format' ? null : 'format'))}
+            aria-expanded={openMenu === 'format'}
           >
-            Tag ▾
+            Format ▾
           </button>
-          {openMenu === 'tag' && (
-            <div className={styles.ddPanel}>
-              {TAGS.map((t) => (
-                <button key={t.tag} className={styles.ddItem} onClick={() => pickTag(t)}>
-                  {t.tag}
+          {openMenu === 'format' && (
+            <div className={`${styles.ddPanel} ${styles.ddPanelWide}`}>
+              {FORMATS.map((f) => (
+                <button key={f.tag} className={styles.ddFormat} onClick={() => pickFormat(f)}>
+                  <span className={styles.ddFormatLabel}>{f.label}</span>
+                  <code className={styles.ddFormatTag}>{f.tag}</code>
                 </button>
               ))}
             </div>
           )}
         </div>
+
+        {recent.length > 0 && (
+          <div className={styles.tbRecent}>
+            <span className={styles.tbRecentLbl}>Zuletzt</span>
+            {recent.map((c) => (
+              <button key={c} className={styles.recentChip} onClick={() => pickChord(c)}>
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className={styles.tbSpacer} />
 
@@ -192,34 +208,35 @@ export function ChordEditor({
         >
           <Icon name="redo" size={18} stroke={2} />
         </button>
-        <button
-          className={`${styles.iconBtn} ${styles.previewToggle}${showPreview ? ' ' + styles.previewToggleOn : ''}`}
-          onClick={() => setShowPreview((v) => !v)}
-          title={showPreview ? 'Vorschau ausblenden' : 'Vorschau einblenden'}
-          aria-label="Vorschau ein-/ausblenden"
-        >
-          <Icon name="columns" size={18} stroke={2} />
-        </button>
       </div>
 
-      {/* Umschalter Text/Vorschau – nur am Handy */}
-      <div className={styles.mobileTabs}>
+      {/* Ansicht umschalten */}
+      <div className={styles.viewSeg}>
         <button
-          className={`${styles.mtab}${mobileTab === 'text' ? ' ' + styles.mtabOn : ''}`}
-          onClick={() => setMobileTab('text')}
+          className={`${styles.vseg}${effView === 'editor' ? ' ' + styles.vsegOn : ''}`}
+          onClick={() => setView('editor')}
         >
-          Text
+          Editor
         </button>
+        {wide && (
+          <button
+            className={`${styles.vseg}${effView === 'both' ? ' ' + styles.vsegOn : ''}`}
+            onClick={() => setView('both')}
+          >
+            Beide
+          </button>
+        )}
         <button
-          className={`${styles.mtab}${mobileTab === 'preview' ? ' ' + styles.mtabOn : ''}`}
-          onClick={() => setMobileTab('preview')}
+          className={`${styles.vseg}${effView === 'preview' ? ' ' + styles.vsegOn : ''}`}
+          onClick={() => setView('preview')}
         >
           Vorschau
         </button>
       </div>
 
       <div className={styles.split}>
-        <div className={`${styles.editPane}${mobileTab !== 'text' ? ' ' + styles.hideMobile : ''}`}>
+        {/* Editor bleibt immer gemountet (Verlauf/Cursor erhalten), nur ausgeblendet. */}
+        <div className={`${styles.editPane}${showEditor ? '' : ' ' + styles.paneHidden}`}>
           <ChordProInput
             ref={editorRef}
             initialText={initialText}
@@ -231,37 +248,33 @@ export function ChordEditor({
           />
         </div>
 
-        <div
-          className={
-            `${styles.previewPane}` +
-            (mobileTab !== 'preview' ? ' ' + styles.hideMobile : '') +
-            (!showPreview ? ' ' + styles.hideDesktop : '')
-          }
-        >
-          <div className={styles.previewHead}>
-            <span className={styles.paneLbl}>Vorschau</span>
-            <div className={styles.transpose}>
-              <button
-                className={styles.tBtn}
-                onClick={() => setSemitones((s) => Math.max(-11, s - 1))}
-                aria-label="Tiefer transponieren"
-              >
-                −
-              </button>
-              <button className={styles.tVal} onClick={() => setSemitones(0)} title="Zurücksetzen">
-                {transposeLabel}
-              </button>
-              <button
-                className={styles.tBtn}
-                onClick={() => setSemitones((s) => Math.min(11, s + 1))}
-                aria-label="Höher transponieren"
-              >
-                +
-              </button>
+        {showPreview && (
+          <div className={styles.previewPane}>
+            <div className={styles.previewHead}>
+              <span className={styles.paneLbl}>Vorschau</span>
+              <div className={styles.transpose}>
+                <button
+                  className={styles.tBtn}
+                  onClick={() => setSemitones((s) => Math.max(-11, s - 1))}
+                  aria-label="Tiefer transponieren"
+                >
+                  −
+                </button>
+                <button className={styles.tVal} onClick={() => setSemitones(0)} title="Zurücksetzen">
+                  {transposeLabel}
+                </button>
+                <button
+                  className={styles.tBtn}
+                  onClick={() => setSemitones((s) => Math.min(11, s + 1))}
+                  aria-label="Höher transponieren"
+                >
+                  +
+                </button>
+              </div>
             </div>
+            <PdfPreview title={songTitle} text={text} semitones={semitones} />
           </div>
-          <PdfPreview title={songTitle} text={text} semitones={semitones} />
-        </div>
+        )}
       </div>
 
       {!isNew && onDelete && (
