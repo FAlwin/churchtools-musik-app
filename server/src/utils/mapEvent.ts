@@ -24,6 +24,7 @@ export function mapEventToService(ev: CtEvent, songCount: number, subtitle: stri
     name: ev.name,
     subtitle,
     date: ev.startDate.slice(0, 10),
+    start: ev.startDate,
     time: p.time,
     location: ev.calendar?.title ?? '',
     songCount,

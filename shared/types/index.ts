@@ -15,8 +15,10 @@ export interface Service {
   name: string;
   /** Untertitel des Termins (z.B. „Kennenlernabend"), falls gepflegt */
   subtitle: string | null;
-  /** ISO-Datum (für Sortierung/Logik) */
+  /** ISO-Datum (für Gruppierung/Logik), z.B. "2026-06-28" */
   date: string;
+  /** Volles ISO-Startdatum inkl. Uhrzeit – Sortierschlüssel (Tie-Break bei gleichem Tag) */
+  start: string;
   time: string;
   location: string;
   /** Anzahl Songs in der Setlist */

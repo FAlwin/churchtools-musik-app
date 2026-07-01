@@ -65,10 +65,10 @@ export function Agenda({
   const pastQuery = usePastServices(monthsBack, tab === 'past');
   const upcoming = services
     .filter((s) => s.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => a.start.localeCompare(b.start));
   const past = [...(pastQuery.data ?? [])]
     .filter((s) => s.date < today)
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => b.start.localeCompare(a.start));
 
   function row(s: Service) {
     return (
