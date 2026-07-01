@@ -7,11 +7,31 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Offline-Reserve (Phase 1):** Einmal online geöffnete Gottesdienste – Termine, Ablauf, Charts
+  (ChordPro) und hochgeladene PDFs/Bilder – bleiben im Saal auch ohne Netz verfügbar. Umgesetzt über
+  persistente Zwischenspeicherung (React-Query in IndexedDB) und Laufzeit-Caching der Dokumente im
+  Service Worker. Grenze: Ohne Netz kein neues Anmelden und kein Laden bisher ungeöffneter
+  Gottesdienste. (#32)
+
 ### Geändert
 
 - **Lied-Menü leichter auffindbar:** In der Akkord-Ansicht öffnet jetzt der gesamte Kopf-Bereich
   (Titel samt Tonart/Capo/Version/Tempo) das Lied-Menü – mit deutlich sichtbarem Auslöser, nicht
   mehr nur über den Titel. (#42)
+- **Ablauf-Bearbeiten an die Ansicht angeglichen:** Beim Umschalten in den Bearbeiten-Modus bleiben
+  Zeilenhöhe und Position gleich (die Uhrzeit-Spalte wird zum Ziehen-Griff, Dauer und Zuständige
+  bleiben sichtbar). Lieder sind deutlich hervorgehoben, die Minutenangaben stehen auf einer Linie,
+  ein Stift zeigt die Bearbeitbarkeit; Überschriften ohne Uhrzeit.
+
+### Behoben
+
+- Termine am gleichen Tag werden nach Uhrzeit sortiert. (#36)
+- Manuell (als Freitext) zugeordnete Zuständige werden im Ablauf angezeigt. (#38)
+- Beim Wechsel des Zeichenwerkzeugs schließt eine offene Textbearbeitung. (#39)
+- Pinch-Zoom in der Akkord-Ansicht bleibt erhalten und friert beim Drehen (Hoch-/Querformat)
+  nicht mehr ein. (#33)
 
 ### Intern
 

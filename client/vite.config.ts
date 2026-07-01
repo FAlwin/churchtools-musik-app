@@ -23,6 +23,23 @@ export default defineConfig({
       // gebrandet pro Gemeinde). Das Plugin generiert daher KEIN statisches Manifest;
       // der <link rel="manifest"> steht fest in index.html.
       manifest: false,
+      workbox: {
+        // Offline-Reserve (#32): hochgeladene Dokumente (PDF/Bild) laufzeit-cachen. Ihr Inhalt ist
+        // pro fileId unveränderlich (Bearbeiten erzeugt neue Dateien) → CacheFirst. Die Daten-APIs
+        // (Termine/Ablauf/ChordPro) werden NICHT hier, sondern über die React-Query-Persistenz
+        // (IndexedDB) offline gehalten.
+        runtimeCaching: [
+          {
+            urlPattern: /\/api\/songs\/\d+\/files\/\d+/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'worship-files',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
+      },
     }),
   ],
   // Moderne Sass-API verwenden (vermeidet die „legacy-js-api"-Deprecation-Warnung)
