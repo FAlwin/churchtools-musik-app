@@ -23,6 +23,7 @@ import { CenterMessage } from '../components/CenterMessage';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddItemSheet } from '../components/AddItemSheet';
 import { ItemActionSheet } from '../components/ItemActionSheet';
+import { OfflineSaveButton } from '../components/OfflineSaveButton';
 import { Icon } from '../components/icons';
 import { generateSetlistPdf } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
@@ -403,7 +404,10 @@ export function Setlist({
             </button>
           </>
         ) : (
-          <AgendaFullView items={items} onSelect={onSelect} />
+          <>
+            <AgendaFullView items={items} onSelect={onSelect} />
+            <OfflineSaveButton items={items} />
+          </>
         )}
         <div style={{ height: 20 }} />
       </Scroll>
