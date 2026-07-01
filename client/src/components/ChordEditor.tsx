@@ -19,18 +19,22 @@ interface ChordEditorProps {
 
 // Grundtöne wie im ChurchTools-SongSelect-Editor (mit #/b).
 const CHORD_ROOTS = ['Ab', 'A', 'Bb', 'B', 'C', 'C#', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'Gb', 'G'];
-// Format-Bausteine (ChordPro-Direktiven) mit deutscher Erklärung. `value` = mit Doppelpunkt-Wert.
+// Format-Bausteine (echte ChordPro-Direktiven, chordpro.org) mit deutscher Erklärung.
+// `value` = mit Doppelpunkt-Wert. Hinweis: nur comment + title/artist/key/tempo/time wirken in der
+// App-Vorschau; die übrigen sind gültiges ChordPro und werden gespeichert (SongSelect/andere Tools).
 const FORMATS: { tag: string; label: string; value: boolean }[] = [
   { tag: 'comment', label: 'Abschnitt / Überschrift', value: true },
   { tag: 'title', label: 'Titel des Lieds', value: true },
-  { tag: 'author', label: 'Autor / Interpret', value: true },
+  { tag: 'subtitle', label: 'Untertitel', value: true },
+  { tag: 'artist', label: 'Interpret / Künstler', value: true },
   { tag: 'key', label: 'Tonart', value: true },
   { tag: 'capo', label: 'Kapo (Bund)', value: true },
   { tag: 'tempo', label: 'Tempo (BPM)', value: true },
   { tag: 'time', label: 'Taktart', value: true },
-  { tag: 'direction', label: 'Spielanweisung', value: true },
+  { tag: 'ccli', label: 'CCLI-Nummer', value: true },
+  { tag: 'copyright', label: 'Copyright', value: true },
   { tag: 'column_break', label: 'Neue Spalte beginnen', value: false },
-  { tag: 'line_wrap', label: 'Zeilenumbruch erzwingen', value: false },
+  { tag: 'new_page', label: 'Neuer Seitenumbruch', value: false },
 ];
 
 type View = 'both' | 'editor' | 'preview';
