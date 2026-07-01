@@ -67,6 +67,8 @@ export function StreamView({
   const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
   const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
   const transformRefs = [useRef<ReactZoomPanPinchRef | null>(null), useRef<ReactZoomPanPinchRef | null>(null)];
+  // Letzter Zoom-Faktor je Slot – um „aktives Herauszoomen" von programmatischem Reset zu unterscheiden.
+  const lastScale = useRef<[number, number]>([1, 1]);
   // Marker glatt: aktiver Strich wird als EINE Linie aus allen Punkten neu gezeichnet (auf einem
   // Schnappschuss der Seite vor dem Strich) → keine pro-Segment-Überlagerung mehr (kein „Gepunktel").
   const markerBase = useRef<HTMLCanvasElement | null>(null);
@@ -273,6 +275,23 @@ export function StreamView({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, perView, loading]);
+
+  // Nach App-Rückkehr / Anmerkungs-Sync (syncTick) den gespeicherten Zoom erneut anwenden – das
+  // Neu-Rendern der Seite kann den Ausschnitt verschieben. Setzt NIE auf Fit zurück und lässt einen
+  // gerade aktiven Zoom (adjustSlot) unangetastet, damit kein laufender Pinch abbricht (#33).
+  const syncSeen = useRef(syncTick);
+  useEffect(() => {
+    if (syncTick === syncSeen.current) return;
+    syncSeen.current = syncTick;
+    requestAnimationFrame(() => {
+      for (let j = 0; j < perView; j++) {
+        if (adjustSlot === j) continue;
+        const saved = loadZoom(pageIndex + j);
+        if (saved) transformRefs[j].current?.setTransform(saved.x, saved.y, saved.scale, 0);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncTick]);
 
   // ── Striche zeichnen (auf der Anno-Canvas der jeweiligen Seite) ──
   function ptOf(e: React.PointerEvent, canvas: HTMLCanvasElement) {
@@ -487,9 +506,12 @@ export function StreamView({
         /* Speicher voll */
       }
       pushField(zk, 'zoom', zoom);
-    } else {
+    } else if (lastScale.current[slot] > 1.01) {
+      // Nur löschen, wenn der Nutzer AKTIV wieder auf Fit herausgezoomt hat – nicht beim
+      // programmatischen Zurücksetzen/Mounten (das würde einen gespeicherten Zoom fälschlich wipen).
       clearStoredZoom(page);
     }
+    lastScale.current[slot] = t.scale;
   }
 
   // Gespeicherten Zoom einer Seite dauerhaft löschen (klassen-spezifischer + alter Fallback-Schlüssel).
@@ -571,10 +593,8 @@ export function StreamView({
                 onZoomStart={() => {
                   if (!drawMode) setAdjustSlot(j);
                 }}
-                onZoomStop={() => persistZoom(j)}
-                onPinchingStop={() => persistZoom(j)}
-                onPanningStop={() => persistZoom(j)}
                 onTransformed={(_ref, state) => {
+                  persistZoom(j);
                   const z = state.scale > 1.01;
                   setZoomedSlots((prev) => {
                     if (prev[j] === z) return prev;
