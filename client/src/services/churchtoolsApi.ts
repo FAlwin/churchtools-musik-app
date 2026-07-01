@@ -65,6 +65,7 @@ export function createAgendaItem(
     arrangementId?: number;
     responsible?: string;
     note?: string;
+    durationMin?: number;
   },
 ): Promise<{ ok: boolean }> {
   return apiFetch(`/api/services/${eventId}/agenda/items`, {

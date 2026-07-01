@@ -65,6 +65,7 @@ interface SetlistProps {
     arrangementId?: number;
     responsible?: string;
     note?: string;
+    durationMin?: number;
   }) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
   services: AgendaServiceOption[];
@@ -201,7 +202,16 @@ function SortableRow({
         <button className={styles.bandHandle} {...attributes} {...listeners} aria-label="Verschieben">
           ⠿
         </button>
-        {item.title}
+        <button className={styles.bandEdit} onClick={() => onOpenActions(item)}>
+          {item.title}
+        </button>
+        <button
+          className={styles.rowEdit}
+          onClick={() => onOpenActions(item)}
+          aria-label="Bearbeiten"
+        >
+          <Icon name="pencil" size={15} stroke={2} />
+        </button>
       </div>
     );
   }

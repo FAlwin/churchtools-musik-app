@@ -383,6 +383,8 @@ export async function createAgendaItem(
     arrangementId?: number;
     responsible?: string;
     note?: string;
+    /** Dauer in Minuten (UI-Einheit) – wird in CT-Sekunden umgerechnet. */
+    durationMin?: number;
   },
 ): Promise<void> {
   const csrf = await getCsrfToken(cookie);
@@ -391,6 +393,8 @@ export async function createAgendaItem(
   if (data.type === 'song' && data.arrangementId) body.arrangementId = data.arrangementId;
   if (data.responsible) body.responsible = data.responsible;
   if (data.note) body.note = data.note;
+  // CT erwartet die Dauer in Sekunden (Feld `duration`), die UI arbeitet in Minuten.
+  if (data.durationMin !== undefined) body.duration = data.durationMin * 60;
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items`, {
     method: 'POST',
     headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },

@@ -196,6 +196,20 @@
   align-items: center;
   gap: 2px;
 }
+// Antippbarer Titel der Überschrift (öffnet das Aktionsmenü zum Umbenennen) – erbt die Band-Typografie.
+.bandEdit {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
 .bandHandle {
   border: none;
   background: none;
