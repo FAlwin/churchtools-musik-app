@@ -23,17 +23,33 @@ export interface ChordProHandle {
 
 const chordMark = Decoration.mark({ class: 'cm-cp-chord' });
 const dirMark = Decoration.mark({ class: 'cm-cp-dir' });
+const dirValMark = Decoration.mark({ class: 'cm-cp-dir-val' });
 
-/** Färbt Akkorde [X] und Direktiven {…} ein (regex-basiert über die sichtbaren Bereiche). */
+/** Färbt Akkorde [X] und Direktiven {…} ein (regex-basiert über die sichtbaren Bereiche).
+ *  Direktiven mit Wert (z. B. `{title: Treu}`) werden aufgeteilt: das Label `{title:` bleibt
+ *  dezent teal, der eigentliche Wert (Titel/Artist/…) wird kräftig und gut lesbar dargestellt. */
 function buildDeco(view: EditorView): DecorationSet {
   const marks: { from: number; to: number; deco: Decoration }[] = [];
   for (const { from, to } of view.visibleRanges) {
     const text = view.state.doc.sliceString(from, to);
     let m: RegExpExecArray | null;
     const chordRe = /\[[^\]\n]*\]/g;
-    while ((m = chordRe.exec(text))) marks.push({ from: from + m.index, to: from + m.index + m[0].length, deco: chordMark });
+    while ((m = chordRe.exec(text)))
+      marks.push({ from: from + m.index, to: from + m.index + m[0].length, deco: chordMark });
     const dirRe = /\{[^}\n]*\}/g;
-    while ((m = dirRe.exec(text))) marks.push({ from: from + m.index, to: from + m.index + m[0].length, deco: dirMark });
+    while ((m = dirRe.exec(text))) {
+      const start = from + m.index;
+      const end = start + m[0].length;
+      const colon = m[0].indexOf(':');
+      // Direktive mit Wert → Label + Wert getrennt einfärben; sonst ganze Direktive teal.
+      if (colon !== -1 && start + colon + 1 < end - 1) {
+        marks.push({ from: start, to: start + colon + 1, deco: dirMark }); // `{title:`
+        marks.push({ from: start + colon + 1, to: end - 1, deco: dirValMark }); // ` Treu`
+        marks.push({ from: end - 1, to: end, deco: dirMark }); // `}`
+      } else {
+        marks.push({ from: start, to: end, deco: dirMark });
+      }
+    }
   }
   marks.sort((a, b) => a.from - b.from);
   const builder = new RangeSetBuilder<Decoration>();
@@ -58,9 +74,10 @@ const theme = EditorView.theme({
   '&': { height: '100%', backgroundColor: 'var(--surface2)', color: 'var(--text)' },
   '&.cm-focused': { outline: 'none' },
   '.cm-scroller': { overflow: 'auto', fontFamily: "'JetBrains Mono', 'Courier New', monospace" },
-  '.cm-content': { padding: '14px', fontSize: '14px', lineHeight: '1.6' },
-  '.cm-cp-chord': { color: 'var(--blue)', fontWeight: '600' },
-  '.cm-cp-dir': { color: 'var(--cp-dir)' },
+  '.cm-content': { padding: '16px', fontSize: '15px', lineHeight: '1.75' },
+  '.cm-cp-chord': { color: 'var(--blue)', fontWeight: '700' },
+  '.cm-cp-dir': { color: 'var(--cp-dir)', fontWeight: '600' },
+  '.cm-cp-dir-val': { color: 'var(--text)', fontWeight: '700' },
   '.cm-cursor': { borderLeftColor: 'var(--blue)' },
   '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': { backgroundColor: 'var(--blue-soft)' },
 });
