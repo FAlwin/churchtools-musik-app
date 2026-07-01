@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { AgendaItem, AgendaServiceOption, Service } from '@shared/types/index';
 import {
   DndContext,
@@ -65,6 +65,7 @@ interface SetlistProps {
     arrangementId?: number;
     responsible?: string;
     note?: string;
+    durationMin?: number;
   }) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
   services: AgendaServiceOption[];
@@ -199,9 +200,18 @@ function SortableRow({
     return (
       <div ref={setNodeRef} style={style} className={`${styles.sectionBand} ${styles.editBand}`}>
         <button className={styles.bandHandle} {...attributes} {...listeners} aria-label="Verschieben">
-          ⠿
+          <Icon name="grip" size={16} />
         </button>
-        {item.title}
+        <button className={styles.bandEdit} onClick={() => onOpenActions(item)}>
+          {item.title}
+        </button>
+        <button
+          className={styles.rowEdit}
+          onClick={() => onOpenActions(item)}
+          aria-label="Bearbeiten"
+        >
+          <Icon name="pencil" size={15} stroke={2} />
+        </button>
       </div>
     );
   }
@@ -216,7 +226,7 @@ function SortableRow({
       className={`${styles.flowRow}${item.song ? ' ' + styles.songRow : ''}`}
     >
       <button className={styles.dragCol} {...attributes} {...listeners} aria-label="Verschieben">
-        ⠿
+        <Icon name="grip" size={18} />
       </button>
       <button className={styles.editBody} onClick={() => onOpenActions(item)}>
         <div className={styles.flowHead}>
@@ -263,11 +273,34 @@ export function Setlist({
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [actionItem, setActionItem] = useState<AgendaItem | null>(null);
+  // Nach dem Hinzufügen eines Lieds automatisch dessen Bearbeiten-Modal öffnen (Dauer usw. sofort
+  // einstellbar). Wir merken uns die IDs vor dem Anlegen und öffnen den erst danach neu
+  // auftauchenden Punkt, sobald der aktualisierte Ablauf eintrifft.
+  const [awaitNewSong, setAwaitNewSong] = useState(false);
+  const idsBeforeAddRef = useRef<Set<number>>(new Set());
 
   // Server-Stand (auch nach dem Speichern) übernehmen.
   useEffect(() => {
     setLocalItems(items);
   }, [items]);
+
+  // Neu angelegtes Lied im aktualisierten Ablauf finden und sein Bearbeiten-Modal öffnen.
+  useEffect(() => {
+    if (!awaitNewSong) return;
+    const created = items.find((i) => !idsBeforeAddRef.current.has(i.id));
+    if (created) {
+      setActionItem(created);
+      setAwaitNewSong(false);
+    }
+  }, [items, awaitNewSong]);
+
+  /** Legt einen Punkt an; bei Liedern anschließend das Bearbeiten-Modal öffnen. */
+  async function handleAdd(data: Parameters<typeof onAdd>[0]): Promise<void> {
+    const isSong = data.type === 'song';
+    if (isSong) idsBeforeAddRef.current = new Set(items.map((i) => i.id));
+    await onAdd(data); // wirft bei Fehler → AddItemSheet zeigt die Meldung, schließt nicht
+    if (isSong) setAwaitNewSong(true);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -377,9 +410,14 @@ export function Setlist({
         ) : editMode ? (
           <>
             <div className={styles.editHint}>
-              {isReordering
-                ? 'Speichere…'
-                : 'Ziehen (⠿) zum Sortieren · Eintrag antippen zum Bearbeiten.'}
+              {isReordering ? (
+                'Speichere…'
+              ) : (
+                <>
+                  Ziehen <Icon name="grip" size={14} className={styles.hintIcon} /> zum Sortieren ·
+                  Eintrag antippen zum Bearbeiten.
+                </>
+              )}
             </div>
             {err && <div className={styles.editError}>{err}</div>}
             <DndContext
@@ -419,7 +457,7 @@ export function Setlist({
       )}
 
       {showAdd && (
-        <AddItemSheet onClose={() => setShowAdd(false)} onAdd={onAdd} services={services} />
+        <AddItemSheet onClose={() => setShowAdd(false)} onAdd={handleAdd} services={services} />
       )}
 
       {actionItem && (

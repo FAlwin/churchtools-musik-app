@@ -15,6 +15,7 @@ interface AddItemSheetProps {
     arrangementId?: number;
     responsible?: string;
     note?: string;
+    durationMin?: number;
   }) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Feld). */
   services: AgendaServiceOption[];
@@ -28,8 +29,23 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
   const [title, setTitle] = useState('');
   const [responsible, setResponsible] = useState('');
   const [note, setNote] = useState('');
+  const [duration, setDuration] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const durationNum = duration.trim() === '' ? null : Number(duration);
+  const durationValid = durationNum === null || (Number.isInteger(durationNum) && durationNum >= 0);
+
+  /** Baut die Payload für einen Text-/Überschrift-Punkt (Dauer nur bei gültiger Eingabe). */
+  function textPayload(): Parameters<typeof onAdd>[0] {
+    return {
+      type: mode as 'header' | 'text',
+      title: title.trim(),
+      responsible: responsible.trim() || undefined,
+      note: note.trim() || undefined,
+      durationMin: durationNum !== null ? durationNum : undefined,
+    };
+  }
 
   async function add(data: Parameters<typeof onAdd>[0]) {
     setBusy(true);
@@ -82,18 +98,21 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
             autoFocus
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && title.trim())
-                add({
-                  type: mode,
-                  title: title.trim(),
-                  responsible: responsible.trim() || undefined,
-                  note: note.trim() || undefined,
-                });
+              if (e.key === 'Enter' && title.trim() && durationValid) add(textPayload());
             }}
           />
           {mode === 'text' && (
             <>
               <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
+              <input
+                className={styles.input}
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={duration}
+                placeholder="Dauer in Minuten (optional)"
+                onChange={(e) => setDuration(e.target.value)}
+              />
               <textarea
                 className={styles.textarea}
                 value={note}
@@ -105,15 +124,8 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
           )}
           <button
             className={styles.primary}
-            disabled={!title.trim() || busy}
-            onClick={() =>
-              add({
-                type: mode,
-                title: title.trim(),
-                responsible: responsible.trim() || undefined,
-                note: note.trim() || undefined,
-              })
-            }
+            disabled={!title.trim() || busy || !durationValid}
+            onClick={() => add(textPayload())}
           >
             {busy ? 'Füge hinzu…' : 'Hinzufügen'}
           </button>

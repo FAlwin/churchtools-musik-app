@@ -234,6 +234,7 @@ export function useCreateAgendaItem(eventId: number | null) {
       arrangementId?: number;
       responsible?: string;
       note?: string;
+      durationMin?: number;
     }) => api.createAgendaItem(eventId as number, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });
