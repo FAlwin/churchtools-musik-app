@@ -190,20 +190,40 @@ function SortableRow({
     opacity: isDragging ? 0.6 : 1,
     zIndex: isDragging ? 1 : undefined,
   };
+  // Überschriften bleiben schmale Bänder wie in der Ansicht – nur mit Ziehen-Griff davor,
+  // damit sich beim Umschalten in den Bearbeiten-Modus Position und Höhe nicht ändern.
+  if (item.isHeader) {
+    return (
+      <div ref={setNodeRef} style={style} className={`${styles.sectionBand} ${styles.editBand}`}>
+        <button className={styles.bandHandle} {...attributes} {...listeners} aria-label="Verschieben">
+          ⠿
+        </button>
+        {item.time && <span className={styles.bandTime}>{item.time}</span>}
+        {item.title}
+      </div>
+    );
+  }
+
+  // Normale Zeile: gleiche Optik wie die Ansicht (Zeit-Spalte → Ziehen-Griff), Antippen öffnet
+  // das Aktionsmenü statt zu den Charts zu führen. Dauer + Zuständige bleiben sichtbar, damit die
+  // Zeilenhöhe exakt der Ansicht entspricht.
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`${styles.editRow}${item.isHeader ? ' ' + styles.editHeaderRow : ''}`}
-    >
-      <button className={styles.handle} {...attributes} {...listeners} aria-label="Verschieben">
+    <div ref={setNodeRef} style={style} className={styles.flowRow}>
+      <button className={styles.dragCol} {...attributes} {...listeners} aria-label="Verschieben">
         ⠿
       </button>
-      <button className={styles.editTitleBtn} onClick={() => onOpenActions(item)}>
-        <span className={styles.editTitleText}>{item.song ? item.song.title : item.title}</span>
-        {item.song && <span className={styles.editSongTag}>🎵</span>}
-        <span className={styles.editChevron}>›</span>
+      <button className={styles.editBody} onClick={() => onOpenActions(item)}>
+        <div className={styles.flowHead}>
+          <span className={styles.flowTitle}>{item.song ? item.song.title : item.title}</span>
+          {item.song && <span className={styles.flowSongTag}>🎵</span>}
+          {item.durationMin && <span className={styles.flowDur}>{item.durationMin} Min</span>}
+        </div>
+        {item.note && <div className={styles.flowNote}>{item.note}</div>}
+        <ResponsibleLine entries={item.responsible} />
       </button>
+      <span className={styles.rowActions} aria-hidden="true">
+        ⋮
+      </span>
     </div>
   );
 }
