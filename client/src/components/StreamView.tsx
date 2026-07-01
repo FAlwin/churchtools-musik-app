@@ -256,7 +256,9 @@ export function StreamView({
     lastPt.current = null;
   }, [drawMode, pageIndex, perView]);
 
-  // Beim Blättern/Drehen Zoom-Modus verlassen + gespeicherten Zoom je Seite wiederherstellen
+  // Beim Blättern/Drehen Zoom-Modus verlassen + gespeicherten Zoom je Seite wiederherstellen.
+  // Bewusst NICHT an syncTick gekoppelt: der 30-Sekunden-Anmerkungs-Sync darf einen gerade
+  // eingestellten Zoom nicht zurücksetzen (#33). Striche/Texte laden separat über usePageDraw.
   useEffect(() => {
     setAdjustSlot(null);
     if (loading) return;
@@ -270,7 +272,7 @@ export function StreamView({
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, perView, loading, syncTick]);
+  }, [pageIndex, perView, loading]);
 
   // ── Striche zeichnen (auf der Anno-Canvas der jeweiligen Seite) ──
   function ptOf(e: React.PointerEvent, canvas: HTMLCanvasElement) {
@@ -469,6 +471,27 @@ export function StreamView({
     setAdjustSlot(null);
   }
 
+  // Zoom/Ausschnitt einer sichtbaren Seite automatisch sichern, sobald eine Geste endet (#33).
+  // So bleibt ein freier Pinch-Zoom auch ohne „Fertig" erhalten – über die Sitzung und nach
+  // Neuöffnen. Bei Rückkehr auf Fit (scale ≈ 1) wird der gespeicherte Zoom wieder entfernt.
+  function persistZoom(slot: number) {
+    const t = transformRefs[slot].current?.instance?.transformState;
+    if (!t) return;
+    const page = pageIndex + slot;
+    if (t.scale > 1.01) {
+      const zoom = { x: t.positionX, y: t.positionY, scale: t.scale };
+      const zk = zoomKeyFor(page);
+      try {
+        localStorage.setItem(zk, JSON.stringify(zoom));
+      } catch {
+        /* Speicher voll */
+      }
+      pushField(zk, 'zoom', zoom);
+    } else {
+      clearStoredZoom(page);
+    }
+  }
+
   // Gespeicherten Zoom einer Seite dauerhaft löschen (klassen-spezifischer + alter Fallback-Schlüssel).
   function clearStoredZoom(page: number) {
     const o = owners[page];
@@ -548,6 +571,9 @@ export function StreamView({
                 onZoomStart={() => {
                   if (!drawMode) setAdjustSlot(j);
                 }}
+                onZoomStop={() => persistZoom(j)}
+                onPinchingStop={() => persistZoom(j)}
+                onPanningStop={() => persistZoom(j)}
                 onTransformed={(_ref, state) => {
                   const z = state.scale > 1.01;
                   setZoomedSlots((prev) => {
