@@ -109,6 +109,40 @@ describe('responsibleEntries (Zuständige, dedupliziert)', () => {
     ).toEqual([{ label: 'Anna', open: false }]);
   });
   it('leere Zuständigkeit → leeres Array', () => expect(responsibleEntries({})).toEqual([]));
+  it('manuelle Freitext-Namen (nur text, persons leer) → als besetzte Personen', () => {
+    expect(
+      responsibleEntries({
+        responsible: { text: 'Willi Heidebrecht, Jakob Friesen', persons: [] },
+      }),
+    ).toEqual([
+      { label: 'Willi Heidebrecht', open: false },
+      { label: 'Jakob Friesen', open: false },
+    ]);
+  });
+  it('Dienst-Token im text wird übersprungen (kommt über persons[])', () => {
+    expect(
+      responsibleEntries({
+        responsible: { text: '[Moderation]', persons: [{ service: '[Moderation]', person: { title: 'Willi' } }] },
+      }),
+    ).toEqual([{ label: 'Willi', open: false }]);
+  });
+  it('Mischung aus Dienst und Freitext', () => {
+    expect(
+      responsibleEntries({
+        responsible: { text: '[Musik], Anna Beispiel', persons: [{ service: '[Musik]' }] },
+      }),
+    ).toEqual([
+      { label: 'Musik', open: true },
+      { label: 'Anna Beispiel', open: false },
+    ]);
+  });
+  it('Freitext-Name doppelt zur aufgelösten Person → dedupliziert', () => {
+    expect(
+      responsibleEntries({
+        responsible: { text: 'Willi', persons: [{ person: { title: 'Willi' } }] },
+      }),
+    ).toEqual([{ label: 'Willi', open: false }]);
+  });
 });
 
 describe('documentsOf (PDF/Bild-Dokumente)', () => {
