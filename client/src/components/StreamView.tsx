@@ -101,28 +101,25 @@ export function StreamView({
     const o = owners[page];
     return o ? `worship_docdraw_song${o.songId}_v${o.versionKey}_${o.localPage}` : null;
   };
-  // Zoom ist display-abhängig → Geräteklasse im Schlüssel (Handy vs. Tablet+Computer).
+  // Zoom hängt an der Bildschirm-Geometrie → Geräteklasse UND Layout (1-spaltig Hochformat /
+  // 2-spaltig Querformat) im Schlüssel. Sonst würde ein im Hochformat gespeicherter Pixel-
+  // Ausschnitt im Querformat (halbe Breite, 2 Seiten) angewendet und die Seite „einfrieren" (#33).
   const zoomKeyFor = (page: number): string => {
     const o = owners[page];
+    const layout = `${deviceClass()}${perView}`;
     return o
-      ? `worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}_d${deviceClass()}`
-      : `worship_doczoom_p${page}`;
+      ? `worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}_d${layout}`
+      : `worship_doczoom_p${page}_d${layout}`;
   };
   function loadZoom(page: number): { x: number; y: number; scale: number } | null {
-    const o = owners[page];
-    // Primär klassen-spezifischer Schlüssel; Fallback auf früher gespeicherten Zoom ohne Klassen-Suffix.
-    const keys = [zoomKeyFor(page)];
-    if (o) keys.push(`worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}`);
-    for (const k of keys) {
-      try {
-        const s = localStorage.getItem(k);
-        if (s) {
-          const parsed = JSON.parse(s);
-          if (parsed && typeof parsed.scale === 'number') return parsed;
-        }
-      } catch {
-        /* ignorieren */
+    try {
+      const s = localStorage.getItem(zoomKeyFor(page));
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (parsed && typeof parsed.scale === 'number') return parsed;
       }
+    } catch {
+      /* ignorieren */
     }
     return null;
   }
@@ -494,6 +491,10 @@ export function StreamView({
   // So bleibt ein freier Pinch-Zoom auch ohne „Fertig" erhalten – über die Sitzung und nach
   // Neuöffnen. Bei Rückkehr auf Fit (scale ≈ 1) wird der gespeicherte Zoom wieder entfernt.
   function persistZoom(slot: number) {
+    // Nur echte Nutzer-Gesten sichern (beim Pinch/Pan ist dieser Slot adjustSlot) – NICHT das
+    // programmatische Wiederherstellen, sonst wird der gerade geladene Wert quer über Lieder
+    // zurückgeschrieben („bei allen Liedern gleich").
+    if (adjustSlot !== slot) return;
     const t = transformRefs[slot].current?.instance?.transformState;
     if (!t) return;
     const page = pageIndex + slot;
