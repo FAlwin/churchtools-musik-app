@@ -70,15 +70,32 @@ const highlighter = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 );
 
+// Moderner, „un-typewriter"-Look: proportionale App-Schrift (ChordPro-Akkorde stehen inline in
+// [..], daher ist kein Monospace zum Ausrichten nötig), großzügige Zeilenhöhe, und Akkorde als
+// dezente farbige Chips – dadurch wirkt der Text ruhig UND die Struktur springt sofort ins Auge.
 const theme = EditorView.theme({
   '&': { height: '100%', backgroundColor: 'var(--surface2)', color: 'var(--text)' },
   '&.cm-focused': { outline: 'none' },
-  '.cm-scroller': { overflow: 'auto', fontFamily: "'JetBrains Mono', 'Courier New', monospace" },
-  '.cm-content': { padding: '16px', fontSize: '15px', lineHeight: '1.75' },
-  '.cm-cp-chord': { color: 'var(--blue)', fontWeight: '700' },
-  '.cm-cp-dir': { color: 'var(--cp-dir)', fontWeight: '600' },
-  '.cm-cp-dir-val': { color: 'var(--text)', fontWeight: '700' },
-  '.cm-cursor': { borderLeftColor: 'var(--blue)' },
+  '.cm-scroller': {
+    overflow: 'auto',
+    fontFamily: 'var(--ui)',
+    // Ziffern/Buchstaben in Akkorden gleich breit halten → Chips wirken ruhig.
+    fontVariantNumeric: 'tabular-nums',
+  },
+  '.cm-content': { padding: '18px 18px 32px', fontSize: '16px', lineHeight: '1.95', caretColor: 'var(--blue)' },
+  // Akkorde [C] als kompakter Chip mit zartem Hintergrund.
+  '.cm-cp-chord': {
+    color: 'var(--blue-ink)',
+    fontWeight: '800',
+    backgroundColor: 'var(--blue-soft)',
+    borderRadius: '5px',
+    padding: '1px 4px',
+    margin: '0 1px',
+  },
+  // Direktiven-Label {title: dezent, Wert kräftig lesbar.
+  '.cm-cp-dir': { color: 'var(--cp-dir)', fontWeight: '700' },
+  '.cm-cp-dir-val': { color: 'var(--text)', fontWeight: '800' },
+  '.cm-cursor': { borderLeftColor: 'var(--blue)', borderLeftWidth: '2px' },
   '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': { backgroundColor: 'var(--blue-soft)' },
 });
 

@@ -316,6 +316,16 @@ export function ChordChart({
   // Tastatur-Navigation aussetzen, solange Editor oder Zeichenmodus offen sind.
   navBlockedRef.current = showEditor || drawMode;
 
+  // Beim SCHLIESSEN des Editors die Chart-Ansicht neu ausrichten (syncTick): Der Editor-Overlay
+  // (fixed, Tastatur/visualViewport) kann den Zoom der dahinterliegenden Seiten verschieben →
+  // beim Zurückkommen sonst „steckende" Seite. syncTick stellt gespeicherten Zoom wieder her bzw.
+  // setzt auf Fit.
+  const prevShowEditor = useRef(showEditor);
+  useEffect(() => {
+    if (prevShowEditor.current && !showEditor) setSyncTick((t) => t + 1);
+    prevShowEditor.current = showEditor;
+  }, [showEditor]);
+
   const nextSong = activeSongIdx < songs.length - 1 ? songs[activeSongIdx + 1] : null;
 
   // Info-Zeile im Kopf-Button: Tonart/Capo/Version/Tempo bzw. Dokument-Hinweis – je nach Anzeige.

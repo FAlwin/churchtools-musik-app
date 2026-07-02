@@ -450,9 +450,10 @@ export function PageDeck({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pages]);
 
-  // Nach App-Rückkehr / Anmerkungs-Sync (syncTick) den gespeicherten Zoom erneut anwenden – das
-  // Neu-Rendern der Seite kann den Ausschnitt verschieben. Setzt NIE auf Fit zurück und lässt einen
-  // gerade aktiv gezoomten Slot unangetastet, damit kein laufender Pinch abbricht (#33).
+  // Nach App-Rückkehr / Anmerkungs-Sync / Editor-Schließen (syncTick) die sichtbaren Seiten neu
+  // AUSRICHTEN: gespeicherter Zoom → anwenden; kein gespeicherter, aber hängengebliebener Zoom →
+  // auf Fit. So löst sich auch eine „steckende" Seite nach Editor-Rückkehr. Ein gerade aktiv
+  // gezoomter Slot bleibt unberührt (kein laufender Pinch abbrechen, #33).
   const syncSeen = useRef(syncTick);
   useEffect(() => {
     if (syncTick === syncSeen.current) return;
@@ -460,8 +461,15 @@ export function PageDeck({
     requestAnimationFrame(() => {
       for (let j = 0; j < perView; j++) {
         if (gestureSlot.current === j) continue;
+        const ref = transformRefs[j].current;
+        if (!ref) continue;
         const saved = loadZoom(pageIndex + j);
-        if (saved) transformRefs[j].current?.setTransform(saved.x, saved.y, saved.scale, 0);
+        if (saved) {
+          ref.setTransform(saved.x, saved.y, saved.scale, 0);
+        } else {
+          const st = ref.instance?.transformState;
+          if (st && st.scale > 1.01) ref.resetTransform(0);
+        }
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
