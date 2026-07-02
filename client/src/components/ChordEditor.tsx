@@ -72,10 +72,9 @@ export function ChordEditor({
   const [semitones, setSemitones] = useState(0);
   const [recent, setRecent] = useState<string[]>([]); // nur in dieser Sitzung
   const [openMenu, setOpenMenu] = useState<'chord' | 'format' | null>(null);
-  // Akkord-Baukasten: Grundton → Art → optional Basston (Slash-Akkorde wie A/C#).
-  const [selRoot, setSelRoot] = useState<string | null>(null);
-  const [selQual, setSelQual] = useState('');
-  const [selBass, setSelBass] = useState<string | null>(null);
+  // Zuletzt gesetzter Akkord (für Zusatz-/Bass-Chips, die live anhängen) – nur zum Mitführen im
+  // „Zuletzt"-Verlauf; das eigentliche Anhängen liest der Editor direkt aus dem Dokument.
+  const buildingRef = useRef('');
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [view, setView] = useState<View>('both');
@@ -135,10 +134,30 @@ export function ChordEditor({
     return () => document.removeEventListener('pointerdown', onDown);
   }, [openMenu]);
 
+  // „Zuletzt genutzt" (Chips in der Werkzeugleiste): 1-Tipp-Wiederverwendung ganzer Akkorde.
+  function rememberRecent(chord: string, replaces?: string) {
+    setRecent((prev) => [chord, ...prev.filter((c) => c !== chord && c !== replaces)].slice(0, 8));
+  }
+  // Ganzer Akkord aus einem „Zuletzt"-Chip → direkt einfügen und Menü schließen.
   function pickChord(chord: string) {
     editorRef.current?.insert(`[${chord}]`);
-    setRecent((prev) => [chord, ...prev.filter((c) => c !== chord)].slice(0, 10));
+    buildingRef.current = chord;
+    rememberRecent(chord);
     setOpenMenu(null);
+  }
+  // Grundton antippen → sofort `[Root]` einfügen (Dur = 1 Tipp). Menü bleibt offen zum Verfeinern.
+  function insertRoot(root: string) {
+    editorRef.current?.insert(`[${root}]`);
+    buildingRef.current = root;
+    rememberRecent(root);
+  }
+  // Zusatz (m, 7, sus4 …) oder Bass (/X) an den zuletzt gesetzten Akkord anhängen.
+  function appendPart(suffix: string) {
+    editorRef.current?.appendChord(suffix);
+    const prev = buildingRef.current;
+    if (!prev) return;
+    buildingRef.current = prev + suffix;
+    rememberRecent(buildingRef.current, prev);
   }
   function pickFormat(f: { tag: string; value: boolean }) {
     if (f.value) editorRef.current?.insert(`{${f.tag}: }`, { block: true, caretBack: 1 });
@@ -235,69 +254,36 @@ export function ChordEditor({
         <div className={styles.dd}>
           <button
             className={styles.ddBtn}
-            onClick={() =>
-              setOpenMenu((m) => {
-                if (m === 'chord') return null;
-                // Baukasten frisch starten (Dur, kein Bass) – schnellster Weg: Grundton → Einfügen.
-                setSelRoot(null);
-                setSelQual('');
-                setSelBass(null);
-                return 'chord';
-              })
-            }
+            onClick={() => setOpenMenu((m) => (m === 'chord' ? null : 'chord'))}
             aria-expanded={openMenu === 'chord'}
           >
             Akkord ▾
           </button>
           {openMenu === 'chord' && (
             <div className={`${styles.ddPanel} ${styles.cbPanel}`}>
-              <div className={styles.cbLbl}>Grundton</div>
+              <div className={styles.cbLbl}>Grundton – tippen fügt sofort ein</div>
               <div className={styles.cbGrid}>
                 {CHORD_ROOTS.map((r) => (
-                  <button
-                    key={r}
-                    className={`${styles.cbChip}${selRoot === r ? ' ' + styles.cbOn : ''}`}
-                    onClick={() => setSelRoot(r)}
-                  >
+                  <button key={r} className={`${styles.cbChip} ${styles.cbRoot}`} onClick={() => insertRoot(r)}>
                     {r}
                   </button>
                 ))}
               </div>
-              <div className={styles.cbLbl}>Art</div>
+              <div className={styles.cbLbl}>Zusatz – hängt an den letzten Akkord an</div>
               <div className={styles.cbGrid}>
-                {CHORD_QUALITIES.map((q) => (
-                  <button
-                    key={q.tag || 'dur'}
-                    className={`${styles.cbChip}${selQual === q.tag ? ' ' + styles.cbOn : ''}`}
-                    onClick={() => setSelQual(q.tag)}
-                  >
+                {CHORD_QUALITIES.filter((q) => q.tag).map((q) => (
+                  <button key={q.tag} className={styles.cbChip} onClick={() => appendPart(q.tag)}>
                     {q.label}
                   </button>
                 ))}
               </div>
-              <div className={styles.cbLbl}>Basston (optional, für A/C# &amp; Co. – erneut tippen entfernt)</div>
+              <div className={styles.cbLbl}>Bass (Slash-Akkord, z. B. A/C#)</div>
               <div className={styles.cbGrid}>
                 {CHORD_ROOTS.map((r) => (
-                  <button
-                    key={r}
-                    className={`${styles.cbChip}${selBass === r ? ' ' + styles.cbOn : ''}`}
-                    onClick={() => setSelBass((b) => (b === r ? null : r))}
-                  >
-                    {r}
+                  <button key={r} className={styles.cbChip} onClick={() => appendPart(`/${r}`)}>
+                    /{r}
                   </button>
                 ))}
-              </div>
-              <div className={styles.cbFooter}>
-                <code className={styles.cbPreview}>
-                  {selRoot ? `[${selRoot}${selQual}${selBass ? `/${selBass}` : ''}]` : 'Grundton wählen…'}
-                </code>
-                <button
-                  className={styles.cbInsert}
-                  disabled={!selRoot}
-                  onClick={() => selRoot && pickChord(`${selRoot}${selQual}${selBass ? `/${selBass}` : ''}`)}
-                >
-                  Einfügen
-                </button>
               </div>
             </div>
           )}
