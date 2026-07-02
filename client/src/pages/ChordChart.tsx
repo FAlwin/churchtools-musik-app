@@ -222,6 +222,34 @@ export function ChordChart({
   const song = songs[activeSongIdx] ?? songs[songs.length - 1];
   const set = settings[song.id] ?? DEFAULT_SETTINGS;
 
+  // Aktuell SICHTBARE Lieder (fürs Fußzeilen-Punkte-Highlight): im Querformat 2 Seiten → bis zu
+  // 2 Lieder nebeneinander, beide markieren. matchMedia('orientation') ist beim Wechsel stabil.
+  const [landscape, setLandscape] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(orientation: landscape)').matches
+      : typeof window !== 'undefined'
+        ? window.innerWidth > window.innerHeight
+        : false,
+  );
+  useEffect(() => {
+    const f = () =>
+      setLandscape(
+        typeof window.matchMedia === 'function'
+          ? window.matchMedia('(orientation: landscape)').matches
+          : window.innerWidth > window.innerHeight,
+      );
+    window.addEventListener('resize', f);
+    window.addEventListener('orientationchange', f);
+    return () => {
+      window.removeEventListener('resize', f);
+      window.removeEventListener('orientationchange', f);
+    };
+  }, []);
+  const visibleSongIdx = new Set<number>();
+  if (owners[pageIdx]) visibleSongIdx.add(owners[pageIdx].songIdx);
+  if (landscape && owners[pageIdx + 1]) visibleSongIdx.add(owners[pageIdx + 1].songIdx);
+  if (visibleSongIdx.size === 0) visibleSongIdx.add(activeSongIdx);
+
   // ── abgeleitete Werte des AKTIVEN Lieds ──
   const curKey = set.key || song.targetKey;
   const totalOffset = getSemitoneOffset(song.originalKey, curKey);
@@ -700,7 +728,7 @@ export function ChordChart({
                 {songs.map((_, i) => (
                   <div
                     key={i}
-                    className={`${styles.dot}${i === activeSongIdx ? ' ' + styles.on : ''}`}
+                    className={`${styles.dot}${visibleSongIdx.has(i) ? ' ' + styles.on : ''}`}
                     onClick={() => goToSong(i)}
                   />
                 ))}
