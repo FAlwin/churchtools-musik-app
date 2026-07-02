@@ -108,6 +108,10 @@ export function PageDeck({
   const lastPt = useRef<{ x: number; y: number } | null>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressClick = useRef(false); // verhindert doppelte Navigation (Touch löst auch click aus)
+  // Slot, den der Nutzer GERADE per Geste anpasst. Synchron (Ref, nicht State) → das erste
+  // onTransformed einer Geste sieht den korrekten Slot, und programmatisches Wiederherstellen
+  // (setTransform/resetTransform) schreibt NICHT fälschlich zurück.
+  const gestureSlot = useRef<number | null>(null);
 
   const [landscape, setLandscape] = useState(isLandscape());
   const [adjustSlot, setAdjustSlot] = useState<number | null>(null);
@@ -236,6 +240,7 @@ export function PageDeck({
   // eingestellten Zoom nicht zurücksetzen (#33). Striche/Texte laden separat über usePageDraw.
   useEffect(() => {
     setAdjustSlot(null);
+    gestureSlot.current = null;
     if (loading) return;
     requestAnimationFrame(() => {
       for (let j = 0; j < perView; j++) {
@@ -248,6 +253,25 @@ export function PageDeck({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, perView, loading]);
+
+  // Nach einem HINTERGRUND-Neuaufbau der Seiten (neues pages-Array, z. B. Transponieren/Spalten/
+  // Version oder 30-Sekunden-Sync) den gespeicherten Zoom je sichtbarer Seite ERNEUT anwenden.
+  // Sonst geht ein per Pinch gesetzter Zoom beim Neu-Zeichnen der Canvas verloren, obwohl er im
+  // Speicher steht. Setzt NIE auf Fit zurück und lässt einen gerade aktiven Slot unangetastet (#33).
+  const pagesSeen = useRef(pages);
+  useEffect(() => {
+    if (pages === pagesSeen.current) return;
+    pagesSeen.current = pages;
+    if (loading) return;
+    requestAnimationFrame(() => {
+      for (let j = 0; j < perView; j++) {
+        if (adjustSlot === j) continue;
+        const saved = loadZoom(pageIndex + j);
+        if (saved) transformRefs[j].current?.setTransform(saved.x, saved.y, saved.scale, 0);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pages]);
 
   // Nach App-Rückkehr / Anmerkungs-Sync (syncTick) den gespeicherten Zoom erneut anwenden – das
   // Neu-Rendern der Seite kann den Ausschnitt verschieben. Setzt NIE auf Fit zurück und lässt einen
@@ -471,6 +495,7 @@ export function PageDeck({
         pushField(zk, 'zoom', zoom);
       }
     }
+    gestureSlot.current = null;
     setAdjustSlot(null);
   }
   function cancelAdjust() {
@@ -480,6 +505,7 @@ export function PageDeck({
       localStorage.removeItem(zk);
       pushField(zk, 'zoom', null);
     }
+    gestureSlot.current = null;
     setAdjustSlot(null);
   }
 
@@ -487,10 +513,11 @@ export function PageDeck({
   // So bleibt ein freier Pinch-Zoom auch ohne „Fertig" erhalten – über die Sitzung und nach
   // Neuöffnen. Bei Rückkehr auf Fit (scale ≈ 1) wird der gespeicherte Zoom wieder entfernt.
   function persistZoom(slot: number) {
-    // Nur echte Nutzer-Gesten sichern (beim Pinch/Pan ist dieser Slot adjustSlot) – NICHT das
+    // Nur echte Nutzer-Gesten sichern (beim Pinch/Pan hält gestureSlot diesen Slot) – NICHT das
     // programmatische Wiederherstellen, sonst wird der gerade geladene Wert quer über Lieder
-    // zurückgeschrieben („bei allen Liedern gleich").
-    if (adjustSlot !== slot) return;
+    // zurückgeschrieben („bei allen Liedern gleich"). gestureSlot ist eine Ref → schon das ERSTE
+    // onTransformed der Geste sieht den korrekten Slot (kein State-Timing-Loch).
+    if (gestureSlot.current !== slot) return;
     const t = transformRefs[slot].current?.instance?.transformState;
     if (!t) return;
     const page = pageIndex + slot;
@@ -530,6 +557,7 @@ export function PageDeck({
       transformRefs[j].current?.resetTransform(150);
       clearStoredZoom(pageIndex + j);
     }
+    gestureSlot.current = null;
     setAdjustSlot(null);
   }
 
@@ -595,7 +623,10 @@ export function PageDeck({
                 pinch={{ disabled: drawMode }}
                 wheel={{ disabled: drawMode, step: 0.08 }}
                 onZoomStart={() => {
-                  if (!drawMode) setAdjustSlot(j);
+                  if (!drawMode) {
+                    gestureSlot.current = j; // synchron: erstes onTransformed sichert bereits korrekt
+                    setAdjustSlot(j);
+                  }
                 }}
                 onTransformed={(_ref, state) => {
                   persistZoom(j);
