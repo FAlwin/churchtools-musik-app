@@ -10,9 +10,11 @@ import { apiFetch, ApiError } from './api';
 const DRAW = 'worship_docdraw_';
 const ZOOM = 'worship_doczoom_';
 const MIGRATED_FLAG = 'worship_anno_migrated_v1';
-// Gültige Server-Schlüssel: song<id>_v<version>_<seite> (+ optional _d<geräteklasse> beim Zoom).
-// Andere (z. B. Dokument-fileId-Keys) bleiben lokal.
-const KEY_RE = /^song\d+_v[a-z0-9-]+_\d+(?:_d(?:phone|large))?$/i;
+// Gültige Server-Schlüssel: song<id>_v<version>_<seite> (+ optional _d<geräteklasse><spalten> beim
+// Zoom, z. B. _dlarge2 im iPad-Querformat). Andere (z. B. Dokument-fileId-Keys) bleiben lokal.
+// Die abschließende Layout-Ziffer (1 = Hochformat, 2 = Querformat/2-up) MUSS erlaubt sein, sonst
+// wird der Querformat-Zoom nie zum Server gepusht und überlebt keinen App-Neustart/Gerätewechsel.
+export const KEY_RE = /^song\d+_v[a-z0-9-]+_\d+(?:_d(?:phone|large)\d?)?$/i;
 
 interface AnnotationText {
   id: number;
