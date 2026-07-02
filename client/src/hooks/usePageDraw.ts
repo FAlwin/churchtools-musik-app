@@ -133,6 +133,12 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     setCanUndo(true);
     setCanRedo(false);
   }
+  /** Letzten Verlaufseintrag verwerfen – z. B. wenn ein begonnener Strich abgebrochen wird
+   *  (zweiter Finger = Zoom), damit kein leerer Rückgängig-Schritt zurückbleibt. */
+  function dropHistory() {
+    history.current.pop();
+    setCanUndo(history.current.length > 0);
+  }
   function undo() {
     const p = history.current.pop();
     if (!p) return;
@@ -253,6 +259,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     canRedo,
     hasAnnotations,
     pushHistory,
+    dropHistory,
     saveStrokes,
     undo,
     redo,
