@@ -61,9 +61,9 @@ export async function pullAnnotations(songIds: number[]): Promise<void> {
   try {
     const data = await apiFetch<Record<string, PageAnnotation>>(`/api/annotations?songs=${songIds.join(',')}`);
     for (const [key, a] of Object.entries(data)) {
-      // Seiten mit noch nicht hochgeladener lokaler Änderung NICHT überschreiben (sonst gehen
-      // gerade gemachte/gelöschte Anmerkungen verloren, bis der Upload durch ist).
-      if (pendingFields.has(key)) continue;
+      // Seiten mit noch nicht hochgeladener ODER gerade hochladender lokaler Änderung NICHT
+      // überschreiben (sonst gehen frische Anmerkungen/Zooms an den alten Server-Stand verloren).
+      if (pendingFields.has(key) || inflight.has(key)) continue;
       if (a.strokes) localStorage.setItem(DRAW + key, a.strokes);
       else localStorage.removeItem(DRAW + key);
       if (a.texts && a.texts.length) localStorage.setItem(DRAW + key + '_text', JSON.stringify(a.texts));
@@ -79,17 +79,44 @@ export async function pullAnnotations(songIds: number[]): Promise<void> {
 // ── Push: localStorage-Änderung → Server (gebündelt) ─────────
 const pendingFields = new Map<string, PageAnnotation>();
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
+// Schlüssel, deren Upload gerade LÄUFT – solange darf ein paralleler Pull den lokalen Stand
+// nicht mit dem (noch alten) Server-Stand überschreiben.
+const inflight = new Set<string>();
 
-async function flush(key: string): Promise<void> {
+async function flush(key: string, keepalive = false): Promise<void> {
   const body = pendingFields.get(key);
   pendingFields.delete(key);
   timers.delete(key);
   if (!body || disabled) return;
+  inflight.add(key);
   try {
-    await apiFetch(`/api/annotations/${encodeURIComponent(key)}`, { method: 'PUT', body: JSON.stringify(body) });
+    await apiFetch(`/api/annotations/${encodeURIComponent(key)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+      // keepalive: Request überlebt das Backgrounding der Seite (App-Wechsel/Schließen).
+      ...(keepalive ? { keepalive: true } : {}),
+    });
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) disabled = true;
+  } finally {
+    inflight.delete(key);
   }
+}
+
+/** Alle noch ausstehenden Uploads SOFORT abschicken – beim Verlassen/Backgrounding der App.
+ *  Ohne das friert iOS die 600-ms-Debounce-Timer ein und ein gerade gesetzter Zoom erreicht
+ *  den Server nie („Zoom bleibt nicht gespeichert" nach App-Neustart). */
+export function flushPendingAnnotations(): void {
+  for (const t of timers.values()) clearTimeout(t);
+  timers.clear();
+  for (const key of [...pendingFields.keys()]) void flush(key, true);
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPendingAnnotations();
+  });
+  window.addEventListener('pagehide', flushPendingAnnotations);
 }
 
 /** Eine Feld-Änderung (strokes/texts/zoom) einer Seite zum Server schreiben (debounced, Feld-Merge). */
