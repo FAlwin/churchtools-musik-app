@@ -47,6 +47,20 @@
   background: rgba(0, 0, 0, 0.22);
   color: #fff;
 }
+// Icon-Knopf in der blauen Leiste (z. B. Version löschen).
+.barIconBtn {
+  width: 42px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
 .save {
   background: #fff;
   color: var(--blue);
@@ -65,24 +79,18 @@
   text-align: center;
 }
 
-.nameRow {
+// Meta-Zeile: Versionsname + Rückgängig/Wiederholen + Ansicht-Umschalter in EINER Zeile.
+.metaRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px 4px;
+  gap: 8px;
+  padding: 8px 12px 2px;
   flex-shrink: 0;
-}
-.nameLbl {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text3);
-  flex-shrink: 0;
+  flex-wrap: wrap; // auf schmalen Fenstern sauber umbrechen
 }
 .nameInput {
   flex: 1;
-  min-width: 0;
+  min-width: 140px;
   height: 38px;
   padding: 0 12px;
   border: 1.5px solid var(--border);
@@ -102,12 +110,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px 4px;
+  padding: 6px 12px 6px;
   flex-shrink: 0;
-  flex-wrap: wrap;
-}
-.tbSpacer {
-  flex: 1;
+  // Eine feste Zeile: „Zuletzt"-Chips laufen rechts einfach aus statt umzubrechen →
+  // die Leiste springt beim Hinzukommen neuer Chips nicht mehr.
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 .dd {
   position: relative;
@@ -141,40 +149,76 @@
 .ddPanelWide {
   min-width: 300px;
 }
-.ddRow {
+// ── Akkord-Baukasten: Grundton → Art → optionaler Basston → Einfügen ──
+.cbPanel {
+  min-width: 330px;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 10px;
+}
+.cbLbl {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 8px 2px 5px;
+  &:first-child {
+    padding-top: 2px;
+  }
+}
+.cbGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 5px;
+}
+.cbChip {
+  height: 34px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface3);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  &:active {
+    background: var(--blue-soft);
+  }
+}
+.cbOn {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.cbFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 4px 8px;
-  border-radius: 8px;
-  &:hover {
-    background: var(--surface3);
-  }
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
 }
-.ddRoot {
-  font-size: 16px;
+.cbPreview {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
+  color: var(--blue-ink);
 }
-.ddQual {
-  display: flex;
-  gap: 4px;
-  button {
-    height: 28px;
-    padding: 0 9px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    background: var(--surface3);
-    color: var(--text2);
-    font-family: var(--ui);
-    font-size: 12.5px;
-    font-weight: 700;
-    cursor: pointer;
-    &:active {
-      background: var(--blue-soft);
-    }
+.cbInsert {
+  height: 38px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
   }
 }
 // Format-Eintrag: deutsche Erklärung zuerst, dann der Fach-Tag.
@@ -215,7 +259,9 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; // eine Zeile, kein Layout-Springen
+  overflow: hidden;
+  min-width: 0;
 }
 .tbRecentLbl {
   font-size: 10px;
@@ -254,17 +300,16 @@
   }
 }
 
-// ── Ansicht-Umschalter (Editor / Beide / Vorschau) ──
+// ── Ansicht-Umschalter (Editor / Beide / Vorschau) – kompakt in der Meta-Zeile ──
 .viewSeg {
   display: flex;
-  gap: 6px;
-  padding: 4px 12px 8px;
+  gap: 4px;
   flex-shrink: 0;
+  margin-left: auto; // rechtsbündig in der Meta-Zeile
 }
 .vseg {
-  flex: 1;
-  max-width: 160px;
-  height: 32px;
+  height: 34px;
+  padding: 0 12px;
   border: 1.5px solid var(--border);
   border-radius: 9px;
   background: var(--surface2);
@@ -332,6 +377,13 @@
   align-items: center;
   gap: 4px;
 }
+// Beschriftung vor dem Transponier-Regler (sonst wirkt − / + wie ein Zoom).
+.tLbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  margin-right: 4px;
+}
 .tBtn {
   width: 30px;
   height: 28px;
@@ -357,20 +409,3 @@
   cursor: pointer;
 }
 
-.deleteRow {
-  padding: 10px 14px;
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
-  flex-shrink: 0;
-}
-.reset {
-  background: transparent;
-  border: 1.5px solid var(--border);
-  color: var(--blue-ink);
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--ui);
-}
