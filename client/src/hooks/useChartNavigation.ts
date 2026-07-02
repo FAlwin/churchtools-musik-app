@@ -21,9 +21,14 @@ export function useChartNavigation({ owners, startIndex, blockedRef }: UseChartN
   const [activePage, setActivePage] = useState(0);
 
   // Ausrichtung (für die Navigations-Grenze: im Querformat nie eine Seite allein lassen).
-  const [landscape, setLandscape] = useState(() => window.innerWidth > window.innerHeight);
+  // matchMedia('orientation') ist beim Screen-/App-Wechsel stabiler als innerWidth/Height.
+  const isLandscape = () =>
+    typeof window.matchMedia === 'function'
+      ? window.matchMedia('(orientation: landscape)').matches
+      : window.innerWidth > window.innerHeight;
+  const [landscape, setLandscape] = useState(isLandscape);
   useEffect(() => {
-    const f = () => setLandscape(window.innerWidth > window.innerHeight);
+    const f = () => setLandscape(isLandscape());
     window.addEventListener('resize', f);
     window.addEventListener('orientationchange', f);
     return () => {
