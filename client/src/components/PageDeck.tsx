@@ -249,16 +249,25 @@ export function PageDeck({
   useEffect(() => {
     if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
     gestureSlot.current = null;
+    lastScale.current = [1, 1]; // Merker der Vorseite verwerfen (sonst löscht ein Mini-Pinch fälschlich)
     if (loading) return;
-    requestAnimationFrame(() => {
+    const apply = () => {
       for (let j = 0; j < perView; j++) {
+        if (gestureSlot.current === j) continue; // laufende Geste nie überschreiben
         const ref = transformRefs[j].current;
         if (!ref) continue;
         const saved = loadZoom(pageIndex + j);
         if (saved) ref.setTransform(saved.x, saved.y, saved.scale, 0);
         else ref.resetTransform(0);
       }
-    });
+    };
+    requestAnimationFrame(apply);
+    // Zweiter Durchgang NACH der internen Neuvermessung der Zoom-Bibliothek (ResizeObserver nach
+    // dem Neuzeichnen der Leinwand). Ohne ihn hängt es vom Timing ab, ob der gespeicherte Zoom
+    // oder die Neuausrichtung „gewinnt" – dieselbe Seite sah dann links und rechts unterschiedlich
+    // aus (mal Zoom, mal Fit).
+    const second = window.setTimeout(apply, 180);
+    return () => window.clearTimeout(second);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, perView, loading]);
 
@@ -598,7 +607,13 @@ export function PageDeck({
           const d = draws[j];
           return (
             <div key={j} className={slotClass(j)}>
+              {/* key = SEITE: beim Blättern wird die Zoom-Ebene frisch aufgebaut statt den
+                  Transform-Zustand der vorherigen Seite dieser Hälfte zu erben. Der gespeicherte
+                  Zoom der neuen Seite wird direkt danach vom Wiederherstell-Effekt angewandt →
+                  eine Seite sieht links und rechts identisch aus. Beim Hintergrund-Neuaufbau
+                  (pages-Tausch) bleibt der key gleich → kein Remount, laufende Gesten unberührt. */}
               <TransformWrapper
+                key={`p${pageIndex + j}`}
                 ref={transformRefs[j]}
                 minScale={MIN_SCALE}
                 maxScale={MAX_SCALE}
