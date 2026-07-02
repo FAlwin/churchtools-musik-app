@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import type { DrawTool } from '../types/index';
-import { usePageDraw } from '../hooks/usePageDraw';
+import { usePageDraw, type PageTextObj } from '../hooks/usePageDraw';
 import { pushField } from '../services/annotations';
 import { deviceClass } from '../utils/deviceClass';
 import { DrawToolbar } from './DrawToolbar';
@@ -11,6 +11,14 @@ import styles from './PageDeck.module.scss';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 6;
+
+/** Eine fertig zusammengesetzte Seite (Inhalt + Striche) für den Slide-Übergangs-Streifen. */
+interface SlideSlot {
+  canvas: HTMLCanvasElement;
+  texts: PageTextObj[];
+  zoom: { x: number; y: number; scale: number } | null;
+  aspect: string;
+}
 
 export interface PageDeckProps {
   /** Fertig gerenderte Seiten (offscreen-Canvas). Der aufrufende Loader liefert sie. */
@@ -126,6 +134,18 @@ export function PageDeck({
   // Wisch-Navigation und den Zoom-Reset-Knopf. Kein „Anpassen-Modus"/„Fertig" mehr nötig – ein
   // Pinch zoomt und speichert automatisch; Verschieben ist möglich, sobald reingezoomt.
   const [zoomedSlots, setZoomedSlots] = useState<[boolean, boolean]>([false, false]);
+  // ── Slide-Übergang beim Blättern (horizontales Schieben wie im Foto-Viewer) ──
+  // Der Übergangs-Streifen wird aus den offscreen-Seiten + gespeicherten Anmerkungen/Zooms
+  // zusammengesetzt (kein DOM-Abgriff nötig) → funktioniert für ALLE Blätter-Wege (Wischen,
+  // Tippen, Fußzeile, Tastatur) und kaschiert das harte Umschalten beim Seitenwechsel.
+  const [slide, setSlide] = useState<{ dir: 1 | -1; tick: number } | null>(null);
+  const slidePanes = useRef<{ old: SlideSlot[]; neu: SlideSlot[] } | null>(null);
+  const slideStripRef = useRef<HTMLDivElement | null>(null);
+  const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevPageIndex = useRef<number | null>(null);
+  const slideGuard = useRef<{ perView: number; pages: HTMLCanvasElement[] } | null>(null);
+  // Vorab dekodierte Strich-Bilder der Nachbarseiten (localStorage-PNGs) für den Streifen.
+  const strokeImgCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const [aspects, setAspects] = useState<string[]>(['210 / 297', '210 / 297']);
   const [textSize, setTextSize] = useState(4); // cqh = % der Seitenhöhe
   const [confirmClear, setConfirmClear] = useState(false);
@@ -209,8 +229,18 @@ export function PageDeck({
     const applySaved = () => {
       for (let j = 0; j < perView; j++) {
         if (gestureSlot.current === j) continue; // laufende Geste nie überschreiben
+        const ref = transformRefs[j].current;
+        if (!ref) continue;
         const saved = loadZoom(pageIndex + j);
-        if (saved) transformRefs[j].current?.setTransform(saved.x, saved.y, saved.scale, 0);
+        if (saved) {
+          ref.setTransform(saved.x, saved.y, saved.scale, 0);
+        } else {
+          // Kein gespeicherter Zoom für DIESES Layout (z. B. nach Hochformat→Querformat-Wechsel:
+          // anderer Layout-Schlüssel) → hängengebliebenen Transform auf Fit zurücksetzen, sonst
+          // bleibt der Hochformat-Zoom in der Hälfte „stecken".
+          const st = ref.instance?.transformState;
+          if (st && st.scale > 1.01) ref.resetTransform(0);
+        }
       }
     };
     requestAnimationFrame(() => requestAnimationFrame(applySaved));
@@ -218,6 +248,113 @@ export function PageDeck({
     return () => window.clearTimeout(net);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, pages, pageIndex, perView, syncTick]);
+
+  // Strich-Bilder der Nachbarseiten vorab dekodieren → der Slide-Streifen kann sie beim
+  // Blättern SOFORT (synchron) mitzeichnen, ohne auf Image-Decode zu warten.
+  useEffect(() => {
+    if (loading) return;
+    for (let p = Math.max(0, pageIndex - 2); p <= Math.min(pageCount - 1, pageIndex + 3); p++) {
+      const key = drawKeyFor(p);
+      if (!key) continue;
+      const data = localStorage.getItem(key);
+      if (!data) {
+        strokeImgCache.current.delete(key);
+        continue;
+      }
+      const cached = strokeImgCache.current.get(key);
+      if (cached && cached.src === data) continue;
+      const img = new Image();
+      img.src = data;
+      strokeImgCache.current.set(key, img);
+    }
+    // Cache klein halten (älteste Einträge zuerst raus – Map behält die Einfüge-Reihenfolge).
+    while (strokeImgCache.current.size > 20) {
+      const oldest = strokeImgCache.current.keys().next().value;
+      if (oldest === undefined) break;
+      strokeImgCache.current.delete(oldest);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, pageCount, syncTick, loading]);
+
+  // Eine Streifen-Hälfte (1–2 Seiten ab `start`) aus offscreen-Seite + Strichen zusammensetzen.
+  function composePane(start: number): SlideSlot[] {
+    const out: SlideSlot[] = [];
+    for (let j = 0; j < perView; j++) {
+      const p = start + j;
+      const src = pages[p];
+      if (!src) break;
+      const c = document.createElement('canvas');
+      c.width = src.width;
+      c.height = src.height;
+      const ctx = c.getContext('2d')!;
+      ctx.drawImage(src, 0, 0);
+      const key = drawKeyFor(p);
+      const strokes = key ? strokeImgCache.current.get(key) : undefined;
+      if (strokes && strokes.complete && strokes.naturalWidth > 0) ctx.drawImage(strokes, 0, 0);
+      let texts: PageTextObj[] = [];
+      try {
+        const t = key ? localStorage.getItem(`${key}_text`) : null;
+        texts = t ? (JSON.parse(t) as PageTextObj[]) : [];
+      } catch {
+        /* ignorieren */
+      }
+      out.push({ canvas: c, texts, zoom: loadZoom(p), aspect: `${src.width} / ${src.height}` });
+    }
+    return out;
+  }
+
+  // Slide auslösen, wenn sich NUR die Seite um ±1 ändert (Blättern). Layout-/Strom-Wechsel
+  // (Drehen, Neuaufbau, Sprung übers Lied-Menü) schalten weiterhin hart um.
+  useEffect(() => {
+    const prev = prevPageIndex.current;
+    prevPageIndex.current = pageIndex;
+    const guard = slideGuard.current;
+    slideGuard.current = { perView, pages };
+    if (prev === null || loading) return;
+    if (!guard || guard.perView !== perView || guard.pages !== pages) return;
+    const delta = pageIndex - prev;
+    if (Math.abs(delta) !== 1) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const old = composePane(prev);
+    const neu = composePane(pageIndex);
+    if (!old.length || !neu.length) return;
+    slidePanes.current = { old, neu };
+    setSlide({ dir: delta > 0 ? 1 : -1, tick: Date.now() });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, perView, pages, loading]);
+
+  // Slide abspielen: Streifen (200 % breit, [links|rechts]-Hälften) horizontal schieben.
+  useEffect(() => {
+    if (!slide) return;
+    const el = slideStripRef.current;
+    if (!el) {
+      setSlide(null);
+      return;
+    }
+    // Text-Ebenen exakt auf die (unskalierte) Layout-Größe ihrer Seiten-Canvas bringen –
+    // container-type:size macht die cqh-Schriftgrößen dann seitenrelativ wie in der Live-Ansicht.
+    el.querySelectorAll<HTMLElement>('[data-slide-textlayer]').forEach((tl) => {
+      const cv = tl.previousElementSibling as HTMLElement | null;
+      if (cv) {
+        tl.style.width = `${cv.offsetWidth}px`;
+        tl.style.height = `${cv.offsetHeight}px`;
+      }
+    });
+    const from = slide.dir === 1 ? '0%' : '-50%';
+    const to = slide.dir === 1 ? '-50%' : '0%';
+    el.style.transition = 'none';
+    el.style.transform = `translateX(${from})`;
+    void el.offsetWidth; // Reflow → Startposition steht, bevor die Transition beginnt
+    el.style.transition = 'transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)';
+    el.style.transform = `translateX(${to})`;
+    slideTimer.current = setTimeout(() => {
+      slidePanes.current = null;
+      setSlide(null);
+    }, 300);
+    return () => {
+      if (slideTimer.current) clearTimeout(slideTimer.current);
+    };
+  }, [slide]);
 
   // Text-Ebene exakt auf die dargestellte Seiten-Canvas legen (ein leeres div mit nur aspect-ratio
   // kollabiert im Grid auf 0×0 → Text ließe sich nicht platzieren). Per ResizeObserver mitführen.
@@ -273,7 +410,14 @@ export function PageDeck({
         const ref = transformRefs[j].current;
         if (!ref) continue;
         const saved = loadZoom(pageIndex + j);
-        if (saved) ref.setTransform(saved.x, saved.y, saved.scale, 0);
+        if (saved) {
+          ref.setTransform(saved.x, saved.y, saved.scale, 0);
+        } else {
+          // Kein Zoom für dieses Layout gespeichert (z. B. nach Formatwechsel) → Fit statt
+          // hängengebliebenem Transform des vorherigen Layouts.
+          const st = ref.instance?.transformState;
+          if (st && st.scale > 1.01) ref.resetTransform(0);
+        }
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -736,6 +880,68 @@ export function PageDeck({
           );
         })}
       </div>
+
+      {/* Slide-Übergang: deckt die Live-Ansicht während des Blätterns ab und schiebt alte und
+          neue Seiten horizontal (wie im Foto-Viewer). Nicht interaktiv (pointer-events: none). */}
+      {slide && slidePanes.current && (
+        <div className={styles.slideOverlay} aria-hidden="true">
+          <div ref={slideStripRef} className={styles.slideStrip}>
+            {[
+              slide.dir === 1 ? slidePanes.current.old : slidePanes.current.neu,
+              slide.dir === 1 ? slidePanes.current.neu : slidePanes.current.old,
+            ].map((pane, pi) => (
+              <div key={pi} className={styles.slidePane}>
+                {pane.length === 2 && <div className={styles.divider} />}
+                <div className={styles.row}>
+                  {pane.map((s, j) => (
+                    <div key={j} className={styles.slot}>
+                      <div
+                        className={styles.slideContent}
+                        style={
+                          s.zoom
+                            ? {
+                                transform: `translate3d(${s.zoom.x}px, ${s.zoom.y}px, 0) scale(${s.zoom.scale})`,
+                                transformOrigin: '0 0',
+                              }
+                            : undefined
+                        }
+                      >
+                        <div
+                          className={styles.pageBox}
+                          style={{ justifyItems: perView === 2 && pane.length === 1 ? 'start' : 'center' }}
+                          ref={(n) => {
+                            if (n && s.canvas.parentElement !== n) {
+                              s.canvas.className = styles.contentCanvas;
+                              n.insertBefore(s.canvas, n.firstChild);
+                            }
+                          }}
+                        >
+                          <div data-slide-textlayer className={styles.textLayer} style={{ aspectRatio: s.aspect }}>
+                            {s.texts.map((o) => (
+                              <div
+                                key={o.id}
+                                className={styles.textObj}
+                                style={{
+                                  left: `${o.fx * 100}%`,
+                                  top: `${o.fy * 100}%`,
+                                  fontSize: `${o.sizeCqh}cqh`,
+                                  color: o.color,
+                                }}
+                              >
+                                {o.text}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Text-Eingabe-Leiste: feste Position oben (immer über der Tastatur, kein „Schweben"). */}
       {slots.map((j) => {
