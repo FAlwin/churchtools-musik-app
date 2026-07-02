@@ -243,31 +243,24 @@ export function PageDeck({
     lastPt.current = null;
   }, [drawMode, pageIndex, perView]);
 
-  // Beim Blättern/Drehen Zoom-Modus verlassen + gespeicherten Zoom je Seite wiederherstellen.
-  // Bewusst NICHT an syncTick gekoppelt: der 30-Sekunden-Anmerkungs-Sync darf einen gerade
-  // eingestellten Zoom nicht zurücksetzen (#33). Striche/Texte laden separat über usePageDraw.
+  // Beim Blättern/Drehen den Gesten-Zustand zurücksetzen. Das eigentliche Wiederherstellen des
+  // gespeicherten Zooms passiert VERZÖGERUNGSFREI in onInit jeder Zoom-Ebene (die per Seiten-key
+  // beim Blättern neu aufgebaut wird) – onInit feuert genau dann, wenn die Ebene vermessen ist.
+  // Dieser Effekt ist nur noch Absicherung (falls kein Remount stattfand).
   useEffect(() => {
     if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
     gestureSlot.current = null;
     lastScale.current = [1, 1]; // Merker der Vorseite verwerfen (sonst löscht ein Mini-Pinch fälschlich)
     if (loading) return;
-    const apply = () => {
+    requestAnimationFrame(() => {
       for (let j = 0; j < perView; j++) {
         if (gestureSlot.current === j) continue; // laufende Geste nie überschreiben
         const ref = transformRefs[j].current;
         if (!ref) continue;
         const saved = loadZoom(pageIndex + j);
         if (saved) ref.setTransform(saved.x, saved.y, saved.scale, 0);
-        else ref.resetTransform(0);
       }
-    };
-    requestAnimationFrame(apply);
-    // Zweiter Durchgang NACH der internen Neuvermessung der Zoom-Bibliothek (ResizeObserver nach
-    // dem Neuzeichnen der Leinwand). Ohne ihn hängt es vom Timing ab, ob der gespeicherte Zoom
-    // oder die Neuausrichtung „gewinnt" – dieselbe Seite sah dann links und rechts unterschiedlich
-    // aus (mal Zoom, mal Fit).
-    const second = window.setTimeout(apply, 180);
-    return () => window.clearTimeout(second);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, perView, loading]);
 
@@ -622,6 +615,13 @@ export function PageDeck({
                 initialScale={1}
                 limitToBounds
                 doubleClick={{ disabled: true }}
+                // Gespeicherten Zoom SOFORT anwenden, sobald die Ebene vermessen ist (kein Warten
+                // auf einen späteren Effekt → keine sichtbare Verzögerung nach dem Blättern).
+                onInit={(ref) => {
+                  if (gestureSlot.current === j) return;
+                  const saved = loadZoom(pageIndex + j);
+                  if (saved) ref.setTransform(saved.x, saved.y, saved.scale, 0);
+                }}
                 // Ein-Finger-Panning IMMER aus: ein Finger blättert (unser Touch-Handler). Zwei
                 // Finger gehören der Zoom-Geste – die zoomt UND verschiebt (Mittelpunkt-Bewegung).
                 panning={{ disabled: true }}
@@ -663,9 +663,11 @@ export function PageDeck({
                 >
                   <div
                     className={styles.pageBox}
-                    // Im 2-up sitzt jede Seite mittig in ihrer Hälfte; eine EINZELNE sichtbare Seite
-                    // (z. B. einseitige PDF) wird über die ganze Breite zentriert – nicht linksbündig.
-                    style={{ justifyItems: 'center' }}
+                    // Im 2-up (2 Seiten sichtbar) sitzt jede Seite mittig in IHRER Hälfte. Eine
+                    // allein stehende Seite im Querformat (z. B. letzte Seite oder 2-Spalten-Lied
+                    // auf einer Seite) gehört in die LINKE Hälfte wie ein normales linkes Blatt –
+                    // NICHT über den ganzen Bildschirm zentriert. Nur im Hochformat (1 Spalte) mittig.
+                    style={{ justifyItems: perView === 2 && slots.length === 1 ? 'start' : 'center' }}
                   >
                     <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
                     <canvas
