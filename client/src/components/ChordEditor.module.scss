@@ -185,41 +185,11 @@
     background: var(--blue-soft);
   }
 }
-.cbOn {
-  background: var(--blue);
+// Grundton-Chips sind die primäre Aktion (fügen sofort ein) → kräftiger hervorheben.
+.cbRoot {
   border-color: var(--blue);
-  color: #fff;
-}
-.cbFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-.cbPreview {
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
-  font-size: 15px;
-  font-weight: 700;
   color: var(--blue-ink);
-}
-.cbInsert {
-  height: 38px;
-  padding: 0 18px;
-  border: none;
-  border-radius: 10px;
-  background: var(--blue);
-  color: #fff;
-  font-family: var(--ui);
-  font-size: 14px;
   font-weight: 800;
-  cursor: pointer;
-  &:disabled {
-    opacity: 0.45;
-    cursor: default;
-  }
 }
 // Format-Eintrag: deutsche Erklärung zuerst, dann der Fach-Tag.
 .ddFormat {
