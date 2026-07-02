@@ -52,12 +52,23 @@
   min-width: 0;
   height: 100%;
   overflow: hidden;
+  // Sanfter Übergang beim Aktiv-/Inaktiv-Wechsel im Zeichenmodus (#53).
+  transition: opacity 0.15s ease;
+}
+
+// Zeichenmodus, 2 Seiten: die inaktive Seite wird zurückgestellt (ausgegraut) und ist für
+// Anmerkungen gesperrt (das Sperren erledigt PageDeck in strokeDown/layerDown). Die aktive Seite
+// bleibt in voller Deckkraft und ist damit hervorgehoben (#53).
+.slotInactive {
+  opacity: 0.45;
+  filter: grayscale(0.35);
 }
 
 // pageBox füllt die (halbe) Spalte; die Ebenen darin werden per „contain" eingepasst (Breite UND
 // Höhe). justifyItems wird je Seite gesetzt (im 2-up Seite 1 rechtsbündig, Seite 2 linksbündig →
 // beide Seiten rücken mittig zusammen statt an die Außenränder).
 .pageBox {
+  position: relative;
   display: grid;
   grid-template: 1fr / 1fr;
   align-items: center;
@@ -236,5 +247,11 @@
   padding: 9px 14px;
   border: none;
   border-radius: 12px;
+  cursor: pointer;
   box-shadow: 0 4px 16px rgba(0, 97, 161, 0.4);
+}
+
+.pageBadgeArrow {
+  font-size: 18px;
+  line-height: 1;
 }

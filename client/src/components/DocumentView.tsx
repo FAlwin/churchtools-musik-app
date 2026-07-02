@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
+import { useEffect, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { SongDocument } from '@shared/types/index';
 import type { DrawTool } from '../types/index';
-import { Spinner } from './Spinner';
-import styles from './DocumentView.module.scss';
+import { PageDeck } from './PageDeck';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -20,20 +18,23 @@ interface DocumentViewProps {
   storeId?: string;
   drawMode: boolean;
   drawColor: string;
+  setDrawColor: (c: string) => void;
   drawTool: DrawTool;
-  clearSignal: number;
-  /** Anpassen-Modus (Zoom/Verschieben) – gesteuert von der Kopfleiste. */
-  adjust: boolean;
-  onAdjustChange: (v: boolean) => void;
+  setDrawTool: (t: DrawTool) => void;
+  drawColors: string[];
+  syncTick?: number;
+  onZoomedChange?: (zoomed: boolean) => void;
+  resetZoomSignal?: number;
+  /** Über die erste Seite hinaus blättern → voriges Lied. */
   onPrev: () => void;
+  /** Über die letzte Seite hinaus blättern → nächstes Lied. */
   onNext: () => void;
 }
 
 /**
- * Dokument-Anzeige (PDF/Bild) als Ersatz für den Chord-Text.
- * - Mehrseitige PDFs: pro Seite eine Ansicht, Wischen/Tippen blättert (am Rand → Lied).
- * - „Anpassen"-Modus: zum Zoomen/Verschieben; mit „Fertig" wieder fixieren.
- * - Anmerkungen pro Seite über die gemeinsame Werkzeugleiste der Chart-Ansicht.
+ * Anzeige eines hochgeladenen Dokuments (PDF/Bild) bzw. einer erzeugten PDF. Reines Laden der
+ * Seiten – Darstellung/Interaktion (2-up im Querformat wie die ChordPro-Charts, Zoom, Anmerkungen,
+ * aktive Seite) übernimmt {@link PageDeck}. Bilder haben genau eine Seite → immer einspaltig.
  */
 export function DocumentView({
   songId,
@@ -42,39 +43,35 @@ export function DocumentView({
   storeId,
   drawMode,
   drawColor,
+  setDrawColor,
   drawTool,
-  clearSignal,
-  adjust,
-  onAdjustChange,
+  setDrawTool,
+  drawColors,
+  syncTick = 0,
+  onZoomedChange,
+  resetZoomSignal = 0,
   onPrev,
   onNext,
 }: DocumentViewProps) {
-  const pagesRef = useRef<HTMLCanvasElement[]>([]); // gerenderte Seiten (offscreen)
-  const contentRef = useRef<HTMLCanvasElement | null>(null);
-  const annoRef = useRef<HTMLCanvasElement | null>(null);
-  const drawing = useRef(false);
-  const lastPt = useRef<{ x: number; y: number } | null>(null);
-  const swipeStart = useRef<{ x: number; y: number } | null>(null);
-  const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
-  const lastTf = useRef({ scale: 1, positionX: 0, positionY: 0 }); // letzter Zoom/Ausschnitt
-
+  const [pages, setPages] = useState<HTMLCanvasElement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pageCount, setPageCount] = useState(1);
   const [pageIndex, setPageIndex] = useState(0);
+  const [activePage, setActivePage] = useState(0);
 
   const url = doc ? `/api/songs/${songId}/files/${doc.fileId}` : '';
-  // Schlüssel-Basis: erzeugte PDF → pro Lied (storeId), sonst pro Datei.
+  // Schlüssel-Basis: erzeugte PDF → pro Lied (storeId), sonst pro Datei. Identisch zum früheren
+  // DocumentView-Schema → bestehende Anmerkungen (als PNG in localStorage) laden weiterhin.
   const keyBase = pdfData ? (storeId ?? `song${songId}`) : `${doc?.fileId ?? 'none'}`;
-  const storeKey = (p: number) => `worship_docdraw_${keyBase}_${p}`;
 
   // Dokument laden → jede Seite in eine eigene (offscreen) Leinwand rendern
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    pagesRef.current = [];
+    setPages([]);
     setPageIndex(0);
+    setActivePage(0);
 
     async function load() {
       if (pdfData) {
@@ -92,8 +89,7 @@ export function DocumentView({
           if (cancelled) return;
           canvases.push(c);
         }
-        pagesRef.current = canvases;
-        setPageCount(canvases.length);
+        if (!cancelled) setPages(canvases);
       } else if (doc?.type === 'image') {
         const img = new Image();
         img.crossOrigin = 'use-credentials';
@@ -106,8 +102,7 @@ export function DocumentView({
         c.width = img.naturalWidth;
         c.height = img.naturalHeight;
         c.getContext('2d')!.drawImage(img, 0, 0);
-        pagesRef.current = [c];
-        setPageCount(1);
+        if (!cancelled) setPages([c]);
       } else {
         const pdf = await pdfjsLib.getDocument({ url, withCredentials: true }).promise;
         const canvases: HTMLCanvasElement[] = [];
@@ -121,8 +116,7 @@ export function DocumentView({
           if (cancelled) return;
           canvases.push(c);
         }
-        pagesRef.current = canvases;
-        setPageCount(canvases.length);
+        if (!cancelled) setPages(canvases);
       }
     }
 
@@ -139,202 +133,36 @@ export function DocumentView({
     };
   }, [url, doc?.type, pdfData]);
 
-  // Aktuelle Seite anzeigen + Anmerkungs-Leinwand vorbereiten
-  useEffect(() => {
-    if (loading) return;
-    const src = pagesRef.current[pageIndex];
-    const content = contentRef.current;
-    const anno = annoRef.current;
-    if (!src || !content || !anno) return;
-    content.width = src.width;
-    content.height = src.height;
-    content.getContext('2d')!.drawImage(src, 0, 0);
-    anno.width = src.width;
-    anno.height = src.height;
-    anno.getContext('2d')!.clearRect(0, 0, anno.width, anno.height);
-    const saved = localStorage.getItem(storeKey(pageIndex));
-    if (saved) {
-      const img = new Image();
-      img.onload = () => annoRef.current?.getContext('2d')?.drawImage(img, 0, 0);
-      img.src = saved;
-    }
-    // Zoom-Wiederherstellung passiert über key + initiale Transform-Props (siehe unten)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, pageIndex]);
-
-  // Löschen (aktuelle Seite) über gemeinsame Werkzeugleiste
-  useEffect(() => {
-    if (clearSignal === 0) return;
-    const anno = annoRef.current;
-    if (!anno) return;
-    anno.getContext('2d')!.clearRect(0, 0, anno.width, anno.height);
-    localStorage.removeItem(storeKey(pageIndex));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clearSignal]);
-
-  // Beim Drehen/Größenänderung die Seite neu einpassen (Fit), sonst bleibt im Querformat ein
-  // veralteter Zoom/Ausschnitt stehen und die Seite ist abgeschnitten.
-  useEffect(() => {
-    function refit() {
-      transformRef.current?.resetTransform(0);
-      requestAnimationFrame(() => transformRef.current?.centerView(1, 0));
-    }
-    window.addEventListener('resize', refit);
-    window.addEventListener('orientationchange', refit);
-    return () => {
-      window.removeEventListener('resize', refit);
-      window.removeEventListener('orientationchange', refit);
-    };
-  }, []);
-
-  // ── Zeichnen ──
-  function pt(e: React.PointerEvent) {
-    const c = annoRef.current!;
-    const rect = c.getBoundingClientRect();
-    return { x: ((e.clientX - rect.left) / rect.width) * c.width, y: ((e.clientY - rect.top) / rect.height) * c.height };
-  }
-  function dDown(e: React.PointerEvent) {
-    if (!drawMode || drawTool === 'text') return;
-    drawing.current = true;
-    lastPt.current = pt(e);
-  }
-  function dMove(e: React.PointerEvent) {
-    if (!drawMode || !drawing.current) return;
-    const ctx = annoRef.current!.getContext('2d')!;
-    const p = pt(e);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    if (drawTool === 'eraser') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.globalAlpha = 1;
-      ctx.lineWidth = 26;
-      ctx.strokeStyle = 'rgba(0,0,0,1)';
-    } else if (drawTool === 'marker') {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 0.3;
-      ctx.lineWidth = 16;
-      ctx.strokeStyle = drawColor;
-    } else {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1;
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = drawColor;
-    }
-    ctx.beginPath();
-    ctx.moveTo(lastPt.current!.x, lastPt.current!.y);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    lastPt.current = p;
-  }
-  function dUp() {
-    if (!drawing.current) return;
-    drawing.current = false;
-    lastPt.current = null;
-    try {
-      localStorage.setItem(storeKey(pageIndex), annoRef.current!.toDataURL('image/png', 0.7));
-    } catch {
-      /* Speicher voll */
-    }
-  }
-
-  // ── Blättern / Liednavigation (nur fixiert, ohne Zeichnen) ──
-  function pageForward() {
-    if (pageIndex < pageCount - 1) setPageIndex(pageIndex + 1);
-    else onNext();
-  }
-  function pageBackward() {
-    if (pageIndex > 0) setPageIndex(pageIndex - 1);
-    else onPrev();
-  }
-  function rootClick(e: React.MouseEvent) {
-    if (drawMode || adjust) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    if (x < r.width * 0.24) pageBackward();
-    else if (x > r.width * 0.76) pageForward();
-  }
-  function rootTouchStart(e: React.TouchEvent) {
-    if (drawMode || adjust) return;
-    if (e.touches.length >= 2) {
-      onAdjustChange(true); // zwei Finger = Anpassen-Modus
-      swipeStart.current = null;
-      return;
-    }
-    swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  }
-  function rootTouchEnd(e: React.TouchEvent) {
-    if (drawMode || adjust || !swipeStart.current) return;
-    const dx = swipeStart.current.x - e.changedTouches[0].clientX;
-    const dy = swipeStart.current.y - e.changedTouches[0].clientY;
-    swipeStart.current = null;
-    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) {
-      if (dx > 0) pageForward();
-      else pageBackward();
-    }
-  }
+  const drawKeyFor = (page: number): string => `worship_docdraw_${keyBase}_${page}`;
+  const zoomKeyBaseFor = (page: number): string => `worship_doczoom_${keyBase}_${page}`;
+  const pageLabel = (active: number, _pageIdx: number, count: number): string | null =>
+    count > 1 ? `Seite ${active + 1} / ${count}` : null;
 
   return (
-    <div className={styles.root} onClick={rootClick} onTouchStart={rootTouchStart} onTouchEnd={rootTouchEnd}>
-      {loading && (
-        <div className={styles.center}>
-          <Spinner />
-          <span>Dokument wird geladen…</span>
-        </div>
-      )}
-      {error && <div className={styles.center}>⚠️ {error}</div>}
-
-      {/* Pro Seite eine eigene Zoom-Ebene (key) – startet mit dem gespeicherten Zoom */}
-      <TransformWrapper
-        key={`${keyBase}-${pageIndex}`}
-        ref={transformRef}
-        minScale={0.5}
-        maxScale={8}
-        centerOnInit
-        centerZoomedOut
-        initialScale={1}
-        limitToBounds
-        doubleClick={{ disabled: true }}
-        panning={{ disabled: !adjust, velocityDisabled: true }}
-        wheel={{ disabled: !adjust, step: 0.08 }}
-        pinch={{ disabled: !adjust }}
-        onTransformed={(_ref, state) => {
-          // Zoom NICHT mehr persistent speichern – die Seite startet immer höhenfüllend (Fit).
-          lastTf.current = { scale: state.scale, positionX: state.positionX, positionY: state.positionY };
-        }}
-      >
-        <TransformComponent
-          wrapperStyle={{ width: '100%', height: '100%' }}
-          contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          <div className={styles.pageBox} style={{ visibility: loading ? 'hidden' : 'visible' }}>
-            <canvas ref={contentRef} className={styles.contentCanvas} />
-            <canvas
-              ref={annoRef}
-              className={styles.annoCanvas}
-              style={{ pointerEvents: drawMode ? 'all' : 'none', cursor: drawMode ? 'crosshair' : 'default' }}
-              onPointerDown={dDown}
-              onPointerMove={dMove}
-              onPointerUp={dUp}
-              onPointerLeave={dUp}
-            />
-          </div>
-        </TransformComponent>
-      </TransformWrapper>
-
-      {/* Seiten-Anzeige unten rechts (wie bei ChordPro-Seiten) */}
-      {!loading && !error && pageCount > 1 && (
-        <button
-          className={styles.pageBadge}
-          onClick={(e) => {
-            e.stopPropagation();
-            pageForward();
-          }}
-        >
-          Seite {pageIndex + 1} / {pageCount}
-          <span className={styles.pageBadgeArrow}>›</span>
-        </button>
-      )}
-    </div>
+    <PageDeck
+      pages={pages}
+      loading={loading}
+      error={error}
+      loadingLabel="Dokument wird geladen…"
+      drawKeyFor={drawKeyFor}
+      zoomKeyBaseFor={zoomKeyBaseFor}
+      pageLabel={pageLabel}
+      onBadgeClick={() => (pageIndex < pages.length - 1 ? setPageIndex(pageIndex + 1) : onNext())}
+      onBeforeFirst={onPrev}
+      onAfterLast={onNext}
+      pageIndex={pageIndex}
+      onPageIndex={setPageIndex}
+      activePage={activePage}
+      onActivePage={setActivePage}
+      drawMode={drawMode}
+      drawColor={drawColor}
+      setDrawColor={setDrawColor}
+      drawTool={drawTool}
+      setDrawTool={setDrawTool}
+      drawColors={drawColors}
+      syncTick={syncTick}
+      onZoomedChange={onZoomedChange}
+      resetZoomSignal={resetZoomSignal}
+    />
   );
 }
