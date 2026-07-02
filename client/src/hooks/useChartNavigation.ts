@@ -40,7 +40,10 @@ export function useChartNavigation({ owners, startIndex, blockedRef }: UseChartN
   const lastPage = Math.max(0, owners.length - 1);
   // Max. linke Seite: im 2-up stoppt die Navigation eine Seite früher (Paar bleibt voll).
   const maxLeft = landscape && owners.length > 1 ? owners.length - 2 : lastPage;
-  const pageIdx = Math.min(streamPage, lastPage);
+  // Linke Seite auf maxLeft klemmen (nicht nur lastPage): schrumpft der Strom (z. B. Lied per
+  // 2-Spalten-Einstellung von 2 auf 1 Seite), rutscht das Fenster aufs letzte volle Paar →
+  // die letzte Seite steht im Querformat RECHTS neben ihrem Vorgänger, nie allein links.
+  const pageIdx = Math.min(streamPage, maxLeft);
   const activeIdx = Math.min(activePage, lastPage);
   const atStart = pageIdx <= 0;
   const atEnd = pageIdx >= maxLeft;
