@@ -1,10 +1,16 @@
 .overlay {
-  position: absolute;
-  inset: 0;
+  // fixed + explizite Höhe (per JS aus visualViewport) → bei offener Tastatur bleibt der Editor
+  // auf den sichtbaren Bereich begrenzt, statt dass iOS die ganze Seite hochschiebt.
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100dvh; // Fallback ohne visualViewport-JS (dynamische Viewport-Höhe)
   z-index: 120;
   background: var(--bg);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   animation: fadeIn 0.15s ease both;
 }
 

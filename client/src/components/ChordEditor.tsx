@@ -66,6 +66,7 @@ export function ChordEditor({
   );
   const editorRef = useRef<ChordProHandle>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const canSave = name.trim().length > 0 && text.trim().length > 0;
   const transposeLabel = semitones === 0 ? '±0' : semitones > 0 ? `+${semitones}` : `${semitones}`;
@@ -79,6 +80,27 @@ export function ChordEditor({
     const onChange = () => setWide(mq.matches);
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  // Editor an das SICHTBARE Viewport koppeln: Wenn auf iOS die Tastatur aufgeht, schrumpft das
+  // visualViewport – wir setzen Höhe/Position des Overlays darauf. So bleibt die Kopf-/Werkzeug-
+  // leiste stehen und NUR der (intern scrollende) CodeMirror-Bereich rutscht, statt dass iOS die
+  // ganze Seite nach oben schiebt.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const el = overlayRef.current;
+    if (!vv || !el) return;
+    const apply = () => {
+      el.style.height = `${vv.height}px`;
+      el.style.top = `${vv.offsetTop}px`;
+    };
+    apply();
+    vv.addEventListener('resize', apply);
+    vv.addEventListener('scroll', apply);
+    return () => {
+      vv.removeEventListener('resize', apply);
+      vv.removeEventListener('scroll', apply);
+    };
   }, []);
 
   // Menüs bei Klick außerhalb schließen
@@ -103,7 +125,7 @@ export function ChordEditor({
   }
 
   return (
-    <div className={styles.overlay}>
+    <div ref={overlayRef} className={styles.overlay}>
       <div className={styles.bar}>
         <button className={`${styles.barBtn} ${styles.cancel}`} onClick={onClose} disabled={saving}>
           Abbrechen
