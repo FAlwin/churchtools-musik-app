@@ -142,45 +142,56 @@
 
 .textObj {
   position: absolute;
+  // fx/fy markieren die MITTE des Textes → er erscheint dort, wo man tippt (nicht darunter/rechts).
+  transform: translate(-50%, -50%);
   font-family: var(--ui);
   font-weight: 700;
   white-space: nowrap;
   user-select: none;
   touch-action: none;
+  // Zarter heller Hintergrund + Halo → auch über Akkorden/Text gut lesbar.
+  padding: 0.2cqh 0.8cqh;
+  border-radius: 1cqh;
+  background: rgba(255, 255, 255, 0.72);
+  text-shadow:
+    0 0 2px #fff,
+    0 0 2px #fff;
 }
 
 .textSel {
   outline: 0.4cqh dashed var(--blue);
   outline-offset: 0.5cqh;
+  background: rgba(255, 255, 255, 0.9);
 }
 
-// Text-Eingabe-Leiste: feste Position oben mittig (immer über der Tastatur sichtbar).
+// Text-Eingabe-Leiste: direkt ÜBER der Tastatur (dort, wo man schreibt), mittig.
 .textBar {
   position: fixed;
-  top: max(64px, calc(env(safe-area-inset-top) + 56px));
+  bottom: calc(var(--kb, 0px) + 10px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 60;
   display: flex;
   align-items: center;
-  gap: 6px;
-  max-width: calc(100vw - 24px);
-  padding: 7px 9px;
+  gap: 7px;
+  width: min(560px, calc(100vw - 24px));
+  padding: 9px 11px;
   background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
 }
 
 .textBarInput {
   font-family: var(--ui);
   font-size: 17px;
   font-weight: 700;
-  padding: 7px 10px;
+  height: 40px;
+  padding: 0 12px;
   border: 1.5px solid var(--border);
-  border-radius: 9px;
+  border-radius: 10px;
   background: var(--surface2);
   outline: none;
-  min-width: 150px;
+  min-width: 120px;
   flex: 1;
 
   &:focus {
@@ -202,16 +213,16 @@
 .textBarOk,
 .textBarCancel {
   flex-shrink: 0;
-  height: 36px;
+  height: 40px;
   border: none;
-  border-radius: 9px;
+  border-radius: 10px;
   font-family: var(--ui);
   font-weight: 800;
   cursor: pointer;
 }
 .textBarSizeBtn {
-  width: 36px;
-  font-size: 12px;
+  width: 40px;
+  font-size: 13px;
   background: var(--surface3);
   color: var(--text);
 }

@@ -102,6 +102,7 @@ export function PageDeck({
   onZoomedChange,
   resetZoomSignal = 0,
 }: PageDeckProps) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const contentRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
   const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
   const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
@@ -114,8 +115,12 @@ export function PageDeck({
   const markerPts = useRef<{ x: number; y: number }[]>([]);
   const stroke = useRef(false);
   const strokePointer = useRef(-1);
+  const strokePointerType = useRef<string>('');
   const strokeCanvas = useRef<HTMLCanvasElement | null>(null);
   const strokeSlot = useRef(0);
+  // Schnappschuss der Anno-Canvas VOR dem Strich → um einen begonnenen Strich zu verwerfen, wenn
+  // ein zweiter Finger dazukommt (dann war es eine Zoom-/Verschiebe-Geste, kein Zeichnen).
+  const strokeSnapshot = useRef<HTMLCanvasElement | null>(null);
   const lastPt = useRef<{ x: number; y: number } | null>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressClick = useRef(false); // verhindert doppelte Navigation (Touch löst auch click aus)
@@ -147,7 +152,7 @@ export function PageDeck({
   // Vorab dekodierte Strich-Bilder der Nachbarseiten (localStorage-PNGs) für den Streifen.
   const strokeImgCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const [aspects, setAspects] = useState<string[]>(['210 / 297', '210 / 297']);
-  const [textSize, setTextSize] = useState(4); // cqh = % der Seitenhöhe
+  const [textSize, setTextSize] = useState(5); // cqh = % der Seitenhöhe (gut lesbare Standardgröße)
   const [confirmClear, setConfirmClear] = useState(false);
 
   const pageCount = pages.length;
@@ -191,6 +196,25 @@ export function PageDeck({
       window.removeEventListener('pageshow', onResize);
       window.removeEventListener('focus', onResize);
       document.removeEventListener('visibilitychange', onResize);
+    };
+  }, []);
+
+  // Tastatur-Höhe als CSS-Variable --kb → die Text-Eingabeleiste sitzt direkt ÜBER der Tastatur
+  // (dort, wo man gerade schreibt), statt weit oben am Rand.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const el = rootRef.current;
+    if (!vv || !el) return;
+    const apply = () => {
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      el.style.setProperty('--kb', `${kb}px`);
+    };
+    apply();
+    vv.addEventListener('resize', apply);
+    vv.addEventListener('scroll', apply);
+    return () => {
+      vv.removeEventListener('resize', apply);
+      vv.removeEventListener('scroll', apply);
     };
   }, []);
 
@@ -483,9 +507,46 @@ export function PageDeck({
       y: ((e.clientY - rect.top) / rect.height) * canvas.height,
     };
   }
+  // Laufenden Strich verwerfen (zweiter Finger = Zoom/Verschieben, kein Zeichnen): Canvas auf den
+  // Schnappschshot vor dem Strich zurücksetzen und den Verlaufseintrag entfernen.
+  function cancelStroke() {
+    if (!stroke.current) return;
+    const canvas = strokeCanvas.current;
+    const snap = strokeSnapshot.current;
+    if (canvas && snap) {
+      const ctx = canvas.getContext('2d')!;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(snap, 0, 0);
+    }
+    try {
+      canvas?.releasePointerCapture(strokePointer.current);
+    } catch {
+      /* ignorieren */
+    }
+    draws[strokeSlot.current].dropHistory();
+    stroke.current = false;
+    strokePointer.current = -1;
+    strokePointerType.current = '';
+    lastPt.current = null;
+    markerBase.current = null;
+    markerPts.current = [];
+    strokeCanvas.current = null;
+    strokeSnapshot.current = null;
+  }
   function strokeDown(e: React.PointerEvent, slot: number) {
     if (!drawMode || drawTool === 'text') return;
-    // Nur der primäre Finger zeichnet (zweiter Finger beim Multitouch wird ignoriert).
+    // Zweiter Zeiger während eines laufenden Strichs:
+    if (stroke.current && e.pointerId !== strokePointer.current) {
+      // Stift zeichnet + Finger dazu → Handballen ignorieren (Strich läuft weiter).
+      if (strokePointerType.current === 'pen' && e.pointerType === 'touch') return;
+      // Finger zeichnete + zweiter Zeiger dazu → das war eine Zoom-/Verschiebe-Geste: verwerfen.
+      cancelStroke();
+      return;
+    }
+    // Nur der primäre Finger startet einen Strich (zweiter Finger beim Multitouch ignorieren) →
+    // so bleibt die Zwei-Finger-Geste dem Zoom/Verschieben vorbehalten, auch im Zeichenmodus.
     if (e.pointerType === 'touch' && !e.isPrimary) return;
     // #53: Auf der inaktiven Seite wird NICHT gezeichnet – der Tipp aktiviert sie nur.
     if (perView === 2 && slot !== activeSlot) {
@@ -503,20 +564,22 @@ export function PageDeck({
     } catch {
       /* ignorieren */
     }
+    // Schnappschuss vor dem Strich (für Marker-Glättung UND zum Verwerfen bei Zwei-Finger-Geste).
+    const snap = document.createElement('canvas');
+    snap.width = canvas.width;
+    snap.height = canvas.height;
+    snap.getContext('2d')!.drawImage(canvas, 0, 0);
+    strokeSnapshot.current = snap;
     draws[slot].setSelectedId(null);
     draws[slot].pushHistory();
     stroke.current = true;
     strokePointer.current = e.pointerId;
+    strokePointerType.current = e.pointerType;
     strokeCanvas.current = canvas;
     strokeSlot.current = slot;
     lastPt.current = ptOf(e, canvas);
     if (drawTool === 'marker') {
-      // Seite vor dem Strich sichern, damit der Marker-Strich live als eine Linie neu gemalt wird.
-      const base = document.createElement('canvas');
-      base.width = canvas.width;
-      base.height = canvas.height;
-      base.getContext('2d')!.drawImage(canvas, 0, 0);
-      markerBase.current = base;
+      markerBase.current = snap; // gleicher Schnappschuss = Basis für den Leuchtmarker-Strich
       markerPts.current = [lastPt.current];
     }
   }
@@ -570,9 +633,11 @@ export function PageDeck({
     if (e && strokePointer.current !== e.pointerId) return;
     stroke.current = false;
     strokePointer.current = -1;
+    strokePointerType.current = '';
     lastPt.current = null;
     markerBase.current = null;
     markerPts.current = [];
+    strokeSnapshot.current = null;
     draws[strokeSlot.current].saveStrokes();
     strokeCanvas.current = null;
   }
@@ -752,7 +817,7 @@ export function PageDeck({
     : null;
 
   return (
-    <div className={styles.root} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={onClick}>
+    <div ref={rootRef} className={styles.root} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={onClick}>
       {loading && (
         <div className={styles.center}>
           <Spinner />
@@ -789,19 +854,19 @@ export function PageDeck({
                   const saved = loadZoom(pageIndex + j);
                   if (saved) ref.setTransform(saved.x, saved.y, saved.scale, 0);
                 }}
-                // Ein-Finger-Panning IMMER aus: ein Finger blättert (unser Touch-Handler). Zwei
-                // Finger gehören der Zoom-Geste – die zoomt UND verschiebt (Mittelpunkt-Bewegung).
+                // Ein-Finger-Panning IMMER aus: ein Finger blättert (bzw. zeichnet im Zeichenmodus).
+                // Zwei Finger gehören der Zoom-Geste – die zoomt UND verschiebt (Mittelpunkt-Bewegung),
+                // AUCH im Zeichenmodus: so kann man beim Anmerken kurz zoomen/verschieben, ohne den
+                // Modus zu verlassen (ein begonnener Strich wird bei Zweitfinger verworfen).
                 panning={{ disabled: true }}
-                pinch={{ disabled: drawMode }}
-                wheel={{ disabled: drawMode, step: 0.08 }}
+                pinch={{ disabled: false }}
+                wheel={{ disabled: false, step: 0.08 }}
                 // gestureSlot synchron am Gesten-Start setzen (Pinch löst onZoomStart aus, auch beim
                 // reinen Zwei-Finger-Verschieben) → schon das erste onTransformed sichert korrekt und
                 // programmatisches Wiederherstellen schreibt nicht zurück.
                 onZoomStart={() => {
-                  if (!drawMode) {
-                    if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
-                    gestureSlot.current = j;
-                  }
+                  if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
+                  gestureSlot.current = j;
                 }}
                 // Gesten-Ende: gestureSlot leicht verzögert freigeben – die Ausricht-Animation der
                 // Bibliothek läuft nach dem Loslassen noch ~200 ms und soll den ENDWERT speichern.
