@@ -4,7 +4,6 @@ import { Screen } from '../components/Screen';
 import { KeyPicker } from '../components/KeyPicker';
 import { CapoPicker } from '../components/CapoPicker';
 import { SectionTransposeSheet } from '../components/SectionTransposeSheet';
-import { DrawToolbar } from '../components/DrawToolbar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
 import { DocumentView } from '../components/DocumentView';
@@ -120,17 +119,14 @@ export function ChordChart({
   const [showSecTranspose, setShowSecTranspose] = useState(false);
   const [showAppearance, setShowAppearance] = useState(false);
   const [showSongMenu, setShowSongMenu] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
 
   const [drawMode, setDrawMode] = useState(false);
   // Anmerkungs-Farben fest Schwarz/Rot/Gelb (wir arbeiten nur noch auf weißen PDF-Seiten → kein
   // Weiß, kein Dunkelmodus-Wechsel). Plus der freie Farbwähler in der Leiste.
   const [drawColor, setDrawColor] = useState('#14110F');
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
-  const [docClearSignal, setDocClearSignal] = useState(0);
-  const [docAdjust, setDocAdjust] = useState(false); // nur für Einzel-Dokument-Ansicht
-  const [streamZoomed, setStreamZoomed] = useState(false); // eine Seite des Akkord-Stroms ist reingezoomt
-  const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → StreamView setzt sichtbaren Zoom zurück
+  const [streamZoomed, setStreamZoomed] = useState(false); // eine sichtbare Seite (Strom oder Dokument) ist reingezoomt
+  const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → PageDeck setzt sichtbaren Zoom zurück
 
   // App-Logo für die PDF-Kopfzeile (oben rechts) einmalig vorladen.
   const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
@@ -229,15 +225,6 @@ export function ChordChart({
 
   const activeDoc = set.viewSource === 'chords' ? null : song.documents.find((d) => d.fileId === set.viewSource) ?? null;
 
-  useEffect(() => {
-    setDocAdjust(false);
-  }, [set.viewSource, song.id]);
-
-  function clearDrawing() {
-    setDocClearSignal((n) => n + 1);
-    setConfirmClear(false);
-  }
-
   // ChordPro-Versionen anlegen/bearbeiten/löschen (Zustand + ChurchTools-Aufrufe im Hook gebündelt).
   const {
     showEditor,
@@ -321,7 +308,7 @@ export function ChordChart({
                 Aa
               </button>
             )}
-            {!activeDoc && streamZoomed && (
+            {streamZoomed && (
               <button
                 className={styles.toolBtn}
                 onClick={() => setResetZoomSignal((n) => n + 1)}
@@ -331,20 +318,6 @@ export function ChordChart({
                 <Icon name="zoom-reset" size={18} stroke={2} />
               </button>
             )}
-            {activeDoc && (
-              <button
-                className={`${styles.toolBtn}${docAdjust ? ' ' + styles.on : ''}`}
-                onClick={() =>
-                  setDocAdjust((a) => {
-                    if (!a) setDrawMode(false);
-                    return !a;
-                  })
-                }
-                title={docAdjust ? 'Fertig' : 'Anpassen (Zoom)'}
-              >
-                {docAdjust ? <Icon name="check" size={18} stroke={2.4} /> : <Icon name="search" size={18} stroke={2} />}
-              </button>
-            )}
             {onReload && (
               <button className={styles.toolBtn} onClick={onReload} disabled={reloading} title="Aktualisieren">
                 <span className={reloading ? styles.spin : undefined}>↻</span>
@@ -352,12 +325,7 @@ export function ChordChart({
             )}
             <button
               className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
-              onClick={() =>
-                setDrawMode((d) => {
-                  if (!d) setDocAdjust(false);
-                  return !d;
-                })
-              }
+              onClick={() => setDrawMode((d) => !d)}
               title="Anmerkungen"
             >
               <Icon name="pencil" size={18} stroke={2.2} />
@@ -630,10 +598,13 @@ export function ChordChart({
               doc={activeDoc}
               drawMode={drawMode}
               drawColor={drawColor}
+              setDrawColor={setDrawColor}
               drawTool={drawTool}
-              clearSignal={docClearSignal}
-              adjust={docAdjust}
-              onAdjustChange={setDocAdjust}
+              setDrawTool={setDrawTool}
+              drawColors={drawColors}
+              syncTick={syncTick}
+              onZoomedChange={setStreamZoomed}
+              resetZoomSignal={resetZoomSignal}
               onPrev={prev}
               onNext={next}
             />
@@ -667,29 +638,6 @@ export function ChordChart({
             </div>
           )}
         </div>
-
-        {/* Zeichen-Werkzeugleiste (nur für hochgeladene Einzeldokumente; der Strom bringt seine eigene mit) */}
-        {drawMode && activeDoc && (
-          <DrawToolbar
-            colors={drawColors}
-            drawColor={drawColor}
-            setDrawColor={setDrawColor}
-            drawTool={drawTool}
-            setDrawTool={setDrawTool}
-            onClear={() => setConfirmClear(true)}
-            allowText={false}
-          />
-        )}
-
-        {confirmClear && activeDoc && (
-          <ConfirmDialog
-            title="Markierungen löschen?"
-            message={`Alle Zeichnungen auf der aktiven Seite werden entfernt. Das kann nicht rückgängig gemacht werden.`}
-            confirmLabel="Löschen"
-            onConfirm={clearDrawing}
-            onCancel={() => setConfirmClear(false)}
-          />
-        )}
 
         {showEditor && (
           <ChordEditor
