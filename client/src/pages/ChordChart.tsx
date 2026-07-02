@@ -6,8 +6,7 @@ import { CapoPicker } from '../components/CapoPicker';
 import { SectionTransposeSheet } from '../components/SectionTransposeSheet';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
-import { DocumentView } from '../components/DocumentView';
-import { StreamView } from '../components/StreamView';
+import { PageDeck } from '../components/PageDeck';
 import { Icon } from '../components/icons';
 import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
 import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
@@ -19,6 +18,7 @@ import { sharePdf } from '../utils/sharePdf';
 import { type SongSettings, DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
+import { useSetlistPages } from '../hooks/useSetlistPages';
 import type { DrawTool, Theme } from '../types/index';
 import styles from './ChordChart.module.scss';
 
@@ -198,7 +198,19 @@ export function ChordChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songsSig, settings, logoImg]);
 
-  const owners = stream?.owners ?? [];
+  // Durchgehender Strom: Akkord- UND Dokument-Seiten in Setlist-Reihenfolge zu EINER Seiten-Liste
+  // (jedes Lied steuert je nach viewSource seine Akkorde ODER sein hochgeladenes Dokument bei).
+  const {
+    pages,
+    owners,
+    loading: pagesLoading,
+    error: pagesError,
+  } = useSetlistPages({
+    chordPdfData: stream?.data ?? null,
+    chordOwners: stream?.owners ?? [],
+    songs,
+    settings,
+  });
 
   // Blättern/Ausrichtung/Tastatur. Tastatur-Navigation pausiert, solange Editor oder Zeichenmodus
   // offen sind (per Ref übergeben, weil `showEditor` erst unten aus dem Editor-Hook kommt).
@@ -224,6 +236,31 @@ export function ChordChart({
   const editorTemplate = `{title: ${song.title}}\n{key: ${song.targetKey || song.originalKey || 'C'}}\n\n{comment: Vers 1}\n[${song.targetKey || 'C'}]Hier Text mit Akkorden eingeben\n\n{comment: Chorus}\n`;
 
   const activeDoc = set.viewSource === 'chords' ? null : song.documents.find((d) => d.fileId === set.viewSource) ?? null;
+
+  // Anmerkungs-/Zoom-Schlüssel je Strom-Seite – Schema identisch zu vorher (Akkorde an Lied+Version,
+  // Dokumente an Datei-ID), damit bestehende Anmerkungen erhalten bleiben.
+  const drawKeyFor = (page: number): string | null => {
+    const o = owners[page];
+    if (!o) return null;
+    return o.kind === 'doc'
+      ? `worship_docdraw_${o.fileId}_${o.localPage}`
+      : `worship_docdraw_song${o.songId}_v${o.versionKey}_${o.localPage}`;
+  };
+  const zoomKeyBaseFor = (page: number): string => {
+    const o = owners[page];
+    if (!o) return `worship_doczoom_p${page}`;
+    return o.kind === 'doc'
+      ? `worship_doczoom_${o.fileId}_${o.localPage}`
+      : `worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}`;
+  };
+  // Seiten-Hinweis nur bei mehrseitigen Einheiten (Lied/Dokument): „Seite x / y".
+  const pageLabel = (activePg: number, pageIdx: number): string | null => {
+    const cur = owners[activePg] ?? owners[pageIdx];
+    if (!cur) return null;
+    const unitPages = owners.filter((o) => o.songIdx === cur.songIdx).length;
+    if (unitPages <= 1) return null;
+    return `Seite ${cur.localPage + 1} / ${unitPages}`;
+  };
 
   // ChordPro-Versionen anlegen/bearbeiten/löschen (Zustand + ChurchTools-Aufrufe im Hook gebündelt).
   const {
@@ -590,28 +627,17 @@ export function ChordChart({
           />
         )}
 
-        {/* Anzeige-Bereich */}
+        {/* Anzeige-Bereich: EIN durchgehender Strom (Akkorde + Dokumente gemischt) */}
         <div className={styles.chartArea}>
-          {activeDoc ? (
-            <DocumentView
-              songId={song.id}
-              doc={activeDoc}
-              drawMode={drawMode}
-              drawColor={drawColor}
-              setDrawColor={setDrawColor}
-              drawTool={drawTool}
-              setDrawTool={setDrawTool}
-              drawColors={drawColors}
-              syncTick={syncTick}
-              onZoomedChange={setStreamZoomed}
-              resetZoomSignal={resetZoomSignal}
-              onPrev={prev}
-              onNext={next}
-            />
-          ) : stream && owners.length > 0 ? (
-            <StreamView
-              pdfData={stream.data}
-              owners={owners}
+          {songs.length > 0 ? (
+            <PageDeck
+              pages={pages}
+              loading={pagesLoading}
+              error={pagesError}
+              loadingLabel="Lieder werden vorbereitet…"
+              drawKeyFor={drawKeyFor}
+              zoomKeyBaseFor={zoomKeyBaseFor}
+              pageLabel={pageLabel}
               pageIndex={pageIdx}
               onPageIndex={setPage}
               activePage={activeIdx}
