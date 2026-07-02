@@ -6,7 +6,6 @@ import { pushField } from '../services/annotations';
 import { deviceClass } from '../utils/deviceClass';
 import { DrawToolbar } from './DrawToolbar';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Icon } from './icons';
 import { Spinner } from './Spinner';
 import styles from './PageDeck.module.scss';
 
@@ -53,6 +52,10 @@ export interface PageDeckProps {
 }
 
 function isLandscape(): boolean {
+  // matchMedia('orientation') ist beim Screen-Wechsel/SPA-Navigation stabiler als innerWidth/Height
+  // (die kurzzeitig falsch gemeldet werden) → verhindert, dass der Zoom-Schlüssel (perView) kippt
+  // und der gespeicherte Zoom beim Wieder-Betreten erst „falsch" erscheint und dann springt.
+  if (typeof window.matchMedia === 'function') return window.matchMedia('(orientation: landscape)').matches;
   return window.innerWidth > window.innerHeight;
 }
 
@@ -114,8 +117,9 @@ export function PageDeck({
   const gestureSlot = useRef<number | null>(null);
 
   const [landscape, setLandscape] = useState(isLandscape());
-  const [adjustSlot, setAdjustSlot] = useState<number | null>(null);
-  // Welche sichtbaren Seiten gerade reingezoomt sind (auch geladener Zoom) → Notausgang-Knopf.
+  // Welche sichtbaren Seiten gerade reingezoomt sind (auch geladener Zoom) → steuert Panning,
+  // Wisch-Navigation und den Zoom-Reset-Knopf. Kein „Anpassen-Modus"/„Fertig" mehr nötig – ein
+  // Pinch zoomt und speichert automatisch; Verschieben ist möglich, sobald reingezoomt.
   const [zoomedSlots, setZoomedSlots] = useState<[boolean, boolean]>([false, false]);
   const [aspects, setAspects] = useState<string[]>(['210 / 297', '210 / 297']);
   const [textSize, setTextSize] = useState(4); // cqh = % der Seitenhöhe
@@ -123,7 +127,6 @@ export function PageDeck({
 
   const pageCount = pages.length;
   const perView = landscape ? 2 : 1;
-  const adjusting = adjustSlot !== null;
 
   // Zoom hängt an der Bildschirm-Geometrie → Geräteklasse UND Layout (1-spaltig Hochformat /
   // 2-spaltig Querformat) im Schlüssel. Sonst würde ein im Hochformat gespeicherter Pixel-
@@ -148,6 +151,9 @@ export function PageDeck({
   const draws = [drawA, drawB];
   const activeSlot = Math.max(0, Math.min(perView - 1, activePage - pageIndex));
   const activeDraw = draws[activeSlot];
+  // Ist die AKTIVE Seite reingezoomt? Dann fängt das Verschieben (Pan) die Geste ab → Wischen darf
+  // NICHT zusätzlich blättern; bei Fit-Größe blättert Wischen normal.
+  const activeZoomed = zoomedSlots[activeSlot] ?? false;
 
   useEffect(() => {
     const onResize = () => setLandscape(isLandscape());
@@ -239,7 +245,6 @@ export function PageDeck({
   // Bewusst NICHT an syncTick gekoppelt: der 30-Sekunden-Anmerkungs-Sync darf einen gerade
   // eingestellten Zoom nicht zurücksetzen (#33). Striche/Texte laden separat über usePageDraw.
   useEffect(() => {
-    setAdjustSlot(null);
     gestureSlot.current = null;
     if (loading) return;
     requestAnimationFrame(() => {
@@ -265,7 +270,7 @@ export function PageDeck({
     if (loading) return;
     requestAnimationFrame(() => {
       for (let j = 0; j < perView; j++) {
-        if (adjustSlot === j) continue;
+        if (gestureSlot.current === j) continue;
         const saved = loadZoom(pageIndex + j);
         if (saved) transformRefs[j].current?.setTransform(saved.x, saved.y, saved.scale, 0);
       }
@@ -275,14 +280,14 @@ export function PageDeck({
 
   // Nach App-Rückkehr / Anmerkungs-Sync (syncTick) den gespeicherten Zoom erneut anwenden – das
   // Neu-Rendern der Seite kann den Ausschnitt verschieben. Setzt NIE auf Fit zurück und lässt einen
-  // gerade aktiven Zoom (adjustSlot) unangetastet, damit kein laufender Pinch abbricht (#33).
+  // gerade aktiv gezoomten Slot unangetastet, damit kein laufender Pinch abbricht (#33).
   const syncSeen = useRef(syncTick);
   useEffect(() => {
     if (syncTick === syncSeen.current) return;
     syncSeen.current = syncTick;
     requestAnimationFrame(() => {
       for (let j = 0; j < perView; j++) {
-        if (adjustSlot === j) continue;
+        if (gestureSlot.current === j) continue;
         const saved = loadZoom(pageIndex + j);
         if (saved) transformRefs[j].current?.setTransform(saved.x, saved.y, saved.scale, 0);
       }
@@ -438,14 +443,14 @@ export function PageDeck({
     }
   }
   function onTouchStart(e: React.TouchEvent) {
-    if (drawMode || adjusting || e.touches.length > 1) {
+    if (drawMode || activeZoomed || e.touches.length > 1) {
       touchStart.current = null;
       return;
     }
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }
   function onTouchEnd(e: React.TouchEvent) {
-    if (drawMode || adjusting || !touchStart.current) return;
+    if (drawMode || activeZoomed || !touchStart.current) return;
     const dx = touchStart.current.x - e.changedTouches[0].clientX;
     const dy = touchStart.current.y - e.changedTouches[0].clientY;
     const startX = touchStart.current.x;
@@ -473,40 +478,12 @@ export function PageDeck({
     if (target < pageCount) onActivePage(target);
   }
   function onClick(e: React.MouseEvent) {
-    if (drawMode || adjusting) return;
+    if (drawMode || activeZoomed) return;
     if (suppressClick.current) {
       suppressClick.current = false; // war ein Touch-Tap (schon behandelt) → Klick ignorieren
       return;
     }
     tapAt(e.clientX, e.currentTarget as HTMLElement);
-  }
-
-  function confirmAdjust() {
-    if (adjustSlot !== null) {
-      const t = transformRefs[adjustSlot].current?.instance?.transformState;
-      if (t) {
-        const zoom = { x: t.positionX, y: t.positionY, scale: t.scale };
-        const zk = zoomKeyFor(pageIndex + adjustSlot);
-        try {
-          localStorage.setItem(zk, JSON.stringify(zoom));
-        } catch {
-          /* Speicher voll */
-        }
-        pushField(zk, 'zoom', zoom);
-      }
-    }
-    gestureSlot.current = null;
-    setAdjustSlot(null);
-  }
-  function cancelAdjust() {
-    if (adjustSlot !== null) {
-      transformRefs[adjustSlot].current?.resetTransform(150);
-      const zk = zoomKeyFor(pageIndex + adjustSlot);
-      localStorage.removeItem(zk);
-      pushField(zk, 'zoom', null);
-    }
-    gestureSlot.current = null;
-    setAdjustSlot(null);
   }
 
   // Zoom/Ausschnitt einer sichtbaren Seite automatisch sichern, sobald eine Geste endet (#33).
@@ -558,7 +535,6 @@ export function PageDeck({
       clearStoredZoom(pageIndex + j);
     }
     gestureSlot.current = null;
-    setAdjustSlot(null);
   }
 
   // „Ist reingezoomt?" nach oben melden – steuert den Reset-Knopf in der Kopfleiste (ChordChart).
@@ -619,14 +595,18 @@ export function PageDeck({
                 initialScale={1}
                 limitToBounds
                 doubleClick={{ disabled: true }}
-                panning={{ disabled: drawMode || adjustSlot !== j, velocityDisabled: true }}
+                // Verschieben nur, wenn diese Seite reingezoomt ist – sonst bleibt die Geste fürs
+                // Blättern frei (kein „Anpassen-Modus" mehr nötig).
+                panning={{ disabled: drawMode || !zoomedSlots[j], velocityDisabled: true }}
                 pinch={{ disabled: drawMode }}
                 wheel={{ disabled: drawMode, step: 0.08 }}
+                // gestureSlot synchron setzen → schon das erste onTransformed sichert korrekt (und
+                // programmatisches Wiederherstellen schreibt nicht zurück).
                 onZoomStart={() => {
-                  if (!drawMode) {
-                    gestureSlot.current = j; // synchron: erstes onTransformed sichert bereits korrekt
-                    setAdjustSlot(j);
-                  }
+                  if (!drawMode) gestureSlot.current = j;
+                }}
+                onPanningStart={() => {
+                  if (!drawMode) gestureSlot.current = j;
                 }}
                 onTransformed={(_ref, state) => {
                   persistZoom(j);
@@ -803,17 +783,6 @@ export function PageDeck({
           }}
           onCancel={() => setConfirmClear(false)}
         />
-      )}
-
-      {adjusting && (
-        <div className={styles.zoomBar}>
-          <button className={styles.zoomCancel} onClick={cancelAdjust} aria-label="Zoom verwerfen">
-            <Icon name="chev-left" size={16} stroke={2.4} /> Zurück
-          </button>
-          <button className={styles.zoomOk} onClick={confirmAdjust} aria-label="Ansicht behalten">
-            <Icon name="check" size={16} stroke={2.6} /> Fertig
-          </button>
-        </div>
       )}
 
       {label &&
