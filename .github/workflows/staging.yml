@@ -31,13 +31,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Kurzer Commit-Hash für die Versionsanzeige im „Mehr"-Tab → man erkennt sofort, ob die
+      # Test-Instanz den neuesten Stand zieht (z. B. „staging-f06db3c").
+      - name: Kurzer Commit-Hash
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
       - name: Build & Push :staging
         uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64
           build-args: |
-            APP_VERSION=staging
+            APP_VERSION=staging-${{ env.SHORT_SHA }}
           push: true
           tags: ${{ env.IMAGE }}:staging
           cache-from: type=gha,scope=staging
