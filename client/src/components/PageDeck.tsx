@@ -614,7 +614,9 @@ export function PageDeck({
                 >
                   <div
                     className={styles.pageBox}
-                    style={{ justifyItems: perView === 2 && slots.length === 1 ? 'start' : 'center' }}
+                    // Im 2-up sitzt jede Seite mittig in ihrer Hälfte; eine EINZELNE sichtbare Seite
+                    // (z. B. einseitige PDF) wird über die ganze Breite zentriert – nicht linksbündig.
+                    style={{ justifyItems: 'center' }}
                   >
                     <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
                     <canvas
