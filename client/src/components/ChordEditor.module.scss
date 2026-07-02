@@ -112,10 +112,10 @@
   gap: 8px;
   padding: 6px 12px 6px;
   flex-shrink: 0;
-  // Eine feste Zeile: „Zuletzt"-Chips laufen rechts einfach aus statt umzubrechen →
-  // die Leiste springt beim Hinzukommen neuer Chips nicht mehr.
+  // Eine feste Zeile (kein Umbruch), damit die Leiste beim Hinzukommen neuer „Zuletzt"-Chips
+  // nicht springt. WICHTIG: KEIN overflow:hidden hier – das würde die nach unten aufklappenden
+  // Akkord-/Format-Menüs abschneiden. Das Chip-Clipping macht .tbRecent selbst.
   flex-wrap: nowrap;
-  overflow: hidden;
 }
 .dd {
   position: relative;
@@ -255,13 +255,19 @@
 }
 
 // Zuletzt genutzte Akkorde – direkt in der Toolbar (sichtbar nach der ersten Nutzung).
+// Nimmt den Restplatz und schneidet NUR die eigenen überzähligen Chips ab (nicht die Menüs).
 .tbRecent {
   display: flex;
   align-items: center;
   gap: 5px;
   flex-wrap: nowrap; // eine Zeile, kein Layout-Springen
+  flex: 1 1 auto;
   overflow: hidden;
   min-width: 0;
+}
+.tbRecentLbl,
+.recentChip {
+  flex-shrink: 0;
 }
 .tbRecentLbl {
   font-size: 10px;
