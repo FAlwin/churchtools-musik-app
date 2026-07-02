@@ -82,17 +82,20 @@ export function ChordEditor({
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  // Editor an das SICHTBARE Viewport koppeln: Wenn auf iOS die Tastatur aufgeht, schrumpft das
-  // visualViewport – wir setzen Höhe/Position des Overlays darauf. So bleibt die Kopf-/Werkzeug-
-  // leiste stehen und NUR der (intern scrollende) CodeMirror-Bereich rutscht, statt dass iOS die
-  // ganze Seite nach oben schiebt.
+  // iOS-Tastatur: Der Overlay bleibt VOLLBILD (fixed, inset 0) – so schimmert hinter der
+  // halbtransparenten Tastatur nichts von der dahinterliegenden Ansicht durch. Statt den Overlay
+  // zu verschieben (das „sprang" sichtbar), bekommt er unten einen Innenabstand in Höhe der
+  // Tastatur (--kb aus dem visualViewport) → Kopf-/Werkzeugleiste bleiben stehen, nur der intern
+  // scrollende Editor-Bereich wird kürzer. Das automatische Hochschieben der SEITE durch iOS wird
+  // mit scrollTo(0,0) neutralisiert.
   useEffect(() => {
     const vv = window.visualViewport;
     const el = overlayRef.current;
     if (!vv || !el) return;
     const apply = () => {
-      el.style.height = `${vv.height}px`;
-      el.style.top = `${vv.offsetTop}px`;
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      el.style.setProperty('--kb', `${kb}px`);
+      if (window.scrollY !== 0 || vv.offsetTop !== 0) window.scrollTo(0, 0);
     };
     apply();
     vv.addEventListener('resize', apply);
@@ -100,6 +103,7 @@ export function ChordEditor({
     return () => {
       vv.removeEventListener('resize', apply);
       vv.removeEventListener('scroll', apply);
+      el.style.removeProperty('--kb');
     };
   }, []);
 

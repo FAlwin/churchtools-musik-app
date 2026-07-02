@@ -201,6 +201,21 @@ export function PageDeck({
       nextAspects[j] = `${src.width} / ${src.height}`;
     }
     setAspects(nextAspects);
+    // Gespeicherten Zoom NACH dem Neuzeichnen erneut anwenden: das Setzen der Canvas-Maße löst in
+    // der Zoom-Bibliothek eine Neuvermessung aus (ResizeObserver → Neuausrichtung Richtung Mitte),
+    // die den in onInit gesetzten Zoom überschreiben kann. Doppel-rAF liegt sicher NACH dieser
+    // Neuausrichtung; das 250-ms-Netz fängt Nachzügler (z. B. Ausricht-Animationen). Ohne das
+    // sprang die Seite nach dem Blättern zurück in die Mitte, bis der nächste Sync sie rettete.
+    const applySaved = () => {
+      for (let j = 0; j < perView; j++) {
+        if (gestureSlot.current === j) continue; // laufende Geste nie überschreiben
+        const saved = loadZoom(pageIndex + j);
+        if (saved) transformRefs[j].current?.setTransform(saved.x, saved.y, saved.scale, 0);
+      }
+    };
+    requestAnimationFrame(() => requestAnimationFrame(applySaved));
+    const net = window.setTimeout(applySaved, 250);
+    return () => window.clearTimeout(net);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, pages, pageIndex, perView, syncTick]);
 
