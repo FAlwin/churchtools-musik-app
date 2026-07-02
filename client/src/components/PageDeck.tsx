@@ -114,7 +114,12 @@ export function PageDeck({
   // Slot, den der Nutzer GERADE per Geste anpasst. Synchron (Ref, nicht State) → das erste
   // onTransformed einer Geste sieht den korrekten Slot, und programmatisches Wiederherstellen
   // (setTransform/resetTransform) schreibt NICHT fälschlich zurück.
+  // WICHTIG: wird am GESTEN-ENDE (onZoomStop, leicht verzögert) wieder freigegeben. Bliebe er
+  // stehen, würden (a) spätere programmatische Neuausrichtungen (z. B. nach dem 30-Sekunden-Sync)
+  // den Speicher-Guard passieren und den gespeicherten Zoom fälschlich LÖSCHEN und (b) die
+  // Wiederherstell-Effekte genau diesen Slot dauerhaft überspringen → „Zoom bleibt nicht".
   const gestureSlot = useRef<number | null>(null);
+  const gestureEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [landscape, setLandscape] = useState(isLandscape());
   // Welche sichtbaren Seiten gerade reingezoomt sind (auch geladener Zoom) → steuert Panning,
@@ -242,6 +247,7 @@ export function PageDeck({
   // Bewusst NICHT an syncTick gekoppelt: der 30-Sekunden-Anmerkungs-Sync darf einen gerade
   // eingestellten Zoom nicht zurücksetzen (#33). Striche/Texte laden separat über usePageDraw.
   useEffect(() => {
+    if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
     gestureSlot.current = null;
     if (loading) return;
     requestAnimationFrame(() => {
@@ -255,6 +261,14 @@ export function PageDeck({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, perView, loading]);
+
+  // Gesten-Ende-Timer beim Unmount aufräumen.
+  useEffect(
+    () => () => {
+      if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
+    },
+    [],
+  );
 
   // Nach einem HINTERGRUND-Neuaufbau der Seiten (neues pages-Array, z. B. Transponieren/Spalten/
   // Version oder 30-Sekunden-Sync) den gespeicherten Zoom je sichtbarer Seite ERNEUT anwenden.
@@ -602,7 +616,20 @@ export function PageDeck({
                 // reinen Zwei-Finger-Verschieben) → schon das erste onTransformed sichert korrekt und
                 // programmatisches Wiederherstellen schreibt nicht zurück.
                 onZoomStart={() => {
-                  if (!drawMode) gestureSlot.current = j;
+                  if (!drawMode) {
+                    if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
+                    gestureSlot.current = j;
+                  }
+                }}
+                // Gesten-Ende: gestureSlot leicht verzögert freigeben – die Ausricht-Animation der
+                // Bibliothek läuft nach dem Loslassen noch ~200 ms und soll den ENDWERT speichern.
+                // Danach können programmatische Transformen weder speichern noch löschen, und die
+                // Wiederherstell-Effekte dürfen diesen Slot wieder bedienen.
+                onZoomStop={() => {
+                  if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
+                  gestureEndTimer.current = setTimeout(() => {
+                    gestureSlot.current = null;
+                  }, 350);
                 }}
                 onTransformed={(_ref, state) => {
                   persistZoom(j);
