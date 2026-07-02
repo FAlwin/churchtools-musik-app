@@ -775,6 +775,18 @@
     border-radius: 3px;
     background: var(--blue);
   }
+
+  // Zwei benachbarte aktive Punkte (Querformat: beide sichtbaren Lieder) zu EINEM durchgehenden
+  // Balken verschmelzen – die 5px-Lücke schließen und die berührenden Ecken begradigen.
+  &.on + &.on {
+    margin-left: -5px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+  &.on:has(+ &.on) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 }
 
 .ftrInfo {
