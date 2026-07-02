@@ -19,6 +19,20 @@ interface ChordEditorProps {
 
 // Grundtöne wie im ChurchTools-SongSelect-Editor (mit #/b).
 const CHORD_ROOTS = ['Ab', 'A', 'Bb', 'B', 'C', 'C#', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'Gb', 'G'];
+// Akkord-Arten für den Baukasten (Dur = kein Zusatz). Deckt die in Worship-Charts üblichen
+// Formen ab – inkl. 7er/4er-Familie (7, m7, maj7, sus4/sus2) und Slash-Bass über die Bass-Reihe.
+const CHORD_QUALITIES: { tag: string; label: string }[] = [
+  { tag: '', label: 'Dur' },
+  { tag: 'm', label: 'm' },
+  { tag: '7', label: '7' },
+  { tag: 'm7', label: 'm7' },
+  { tag: 'maj7', label: 'maj7' },
+  { tag: '6', label: '6' },
+  { tag: 'sus2', label: 'sus2' },
+  { tag: 'sus4', label: 'sus4' },
+  { tag: 'dim', label: 'dim' },
+  { tag: 'aug', label: 'aug' },
+];
 // Format-Bausteine (echte ChordPro-Direktiven, chordpro.org) mit deutscher Erklärung.
 // `value` = mit Doppelpunkt-Wert. Hinweis: nur comment + title/artist/key/tempo/time wirken in der
 // App-Vorschau; die übrigen sind gültiges ChordPro und werden gespeichert (SongSelect/andere Tools).
@@ -58,6 +72,10 @@ export function ChordEditor({
   const [semitones, setSemitones] = useState(0);
   const [recent, setRecent] = useState<string[]>([]); // nur in dieser Sitzung
   const [openMenu, setOpenMenu] = useState<'chord' | 'format' | null>(null);
+  // Akkord-Baukasten: Grundton → Art → optional Basston (Slash-Akkorde wie A/C#).
+  const [selRoot, setSelRoot] = useState<string | null>(null);
+  const [selQual, setSelQual] = useState('');
+  const [selBass, setSelBass] = useState<string | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [view, setView] = useState<View>('both');
@@ -135,6 +153,17 @@ export function ChordEditor({
           Abbrechen
         </button>
         <span className={styles.title}>{songTitle}</span>
+        {!isNew && onDelete && (
+          <button
+            className={`${styles.barBtn} ${styles.barIconBtn}`}
+            onClick={onDelete}
+            disabled={saving}
+            title="Diese Version löschen"
+            aria-label="Diese Version löschen"
+          >
+            <Icon name="trash" size={18} stroke={2} />
+          </button>
+        )}
         <button
           className={`${styles.barBtn} ${styles.save}`}
           onClick={() => onSave(text, name.trim())}
@@ -146,19 +175,59 @@ export function ChordEditor({
 
       {error && <div className={styles.error}>{error}</div>}
 
-      <div className={styles.nameRow}>
-        <label className={styles.nameLbl} htmlFor="versionName">
-          Versionsname
-        </label>
+      {/* Meta-Zeile: Versionsname + Rückgängig/Wiederholen + Ansicht – kompakt in EINER Zeile,
+          damit möglichst viel Höhe für den eigentlichen Editor bleibt (v. a. mit Tastatur). */}
+      <div className={styles.metaRow}>
         <input
           id="versionName"
           className={styles.nameInput}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="z. B. Akustik, Jugend, Weihnachten"
+          placeholder="Versionsname (z. B. Akustik, Jugend)"
+          aria-label="Versionsname"
           maxLength={60}
           spellCheck={false}
         />
+        <button
+          className={styles.iconBtn}
+          onClick={() => editorRef.current?.undo()}
+          disabled={!canUndo}
+          title="Rückgängig"
+          aria-label="Rückgängig"
+        >
+          <Icon name="undo" size={18} stroke={2} />
+        </button>
+        <button
+          className={styles.iconBtn}
+          onClick={() => editorRef.current?.redo()}
+          disabled={!canRedo}
+          title="Wiederholen"
+          aria-label="Wiederholen"
+        >
+          <Icon name="redo" size={18} stroke={2} />
+        </button>
+        <div className={styles.viewSeg}>
+          <button
+            className={`${styles.vseg}${effView === 'editor' ? ' ' + styles.vsegOn : ''}`}
+            onClick={() => setView('editor')}
+          >
+            Editor
+          </button>
+          {wide && (
+            <button
+              className={`${styles.vseg}${effView === 'both' ? ' ' + styles.vsegOn : ''}`}
+              onClick={() => setView('both')}
+            >
+              Beide
+            </button>
+          )}
+          <button
+            className={`${styles.vseg}${effView === 'preview' ? ' ' + styles.vsegOn : ''}`}
+            onClick={() => setView('preview')}
+          >
+            Vorschau
+          </button>
+        </div>
       </div>
 
       {/* Eingabe-Toolbar */}
@@ -166,23 +235,70 @@ export function ChordEditor({
         <div className={styles.dd}>
           <button
             className={styles.ddBtn}
-            onClick={() => setOpenMenu((m) => (m === 'chord' ? null : 'chord'))}
+            onClick={() =>
+              setOpenMenu((m) => {
+                if (m === 'chord') return null;
+                // Baukasten frisch starten (Dur, kein Bass) – schnellster Weg: Grundton → Einfügen.
+                setSelRoot(null);
+                setSelQual('');
+                setSelBass(null);
+                return 'chord';
+              })
+            }
             aria-expanded={openMenu === 'chord'}
           >
             Akkord ▾
           </button>
           {openMenu === 'chord' && (
-            <div className={styles.ddPanel}>
-              {CHORD_ROOTS.map((root) => (
-                <div key={root} className={styles.ddRow}>
-                  <span className={styles.ddRoot}>{root}</span>
-                  <div className={styles.ddQual}>
-                    <button onClick={() => pickChord(root)}>Dur</button>
-                    <button onClick={() => pickChord(`${root}m`)}>m</button>
-                    <button onClick={() => pickChord(`${root}7`)}>7</button>
-                  </div>
-                </div>
-              ))}
+            <div className={`${styles.ddPanel} ${styles.cbPanel}`}>
+              <div className={styles.cbLbl}>Grundton</div>
+              <div className={styles.cbGrid}>
+                {CHORD_ROOTS.map((r) => (
+                  <button
+                    key={r}
+                    className={`${styles.cbChip}${selRoot === r ? ' ' + styles.cbOn : ''}`}
+                    onClick={() => setSelRoot(r)}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.cbLbl}>Art</div>
+              <div className={styles.cbGrid}>
+                {CHORD_QUALITIES.map((q) => (
+                  <button
+                    key={q.tag || 'dur'}
+                    className={`${styles.cbChip}${selQual === q.tag ? ' ' + styles.cbOn : ''}`}
+                    onClick={() => setSelQual(q.tag)}
+                  >
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.cbLbl}>Basston (optional, für A/C# &amp; Co. – erneut tippen entfernt)</div>
+              <div className={styles.cbGrid}>
+                {CHORD_ROOTS.map((r) => (
+                  <button
+                    key={r}
+                    className={`${styles.cbChip}${selBass === r ? ' ' + styles.cbOn : ''}`}
+                    onClick={() => setSelBass((b) => (b === r ? null : r))}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.cbFooter}>
+                <code className={styles.cbPreview}>
+                  {selRoot ? `[${selRoot}${selQual}${selBass ? `/${selBass}` : ''}]` : 'Grundton wählen…'}
+                </code>
+                <button
+                  className={styles.cbInsert}
+                  disabled={!selRoot}
+                  onClick={() => selRoot && pickChord(`${selRoot}${selQual}${selBass ? `/${selBass}` : ''}`)}
+                >
+                  Einfügen
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -210,58 +326,13 @@ export function ChordEditor({
         {recent.length > 0 && (
           <div className={styles.tbRecent}>
             <span className={styles.tbRecentLbl}>Zuletzt</span>
-            {recent.map((c) => (
+            {recent.slice(0, 6).map((c) => (
               <button key={c} className={styles.recentChip} onClick={() => pickChord(c)}>
                 {c}
               </button>
             ))}
           </div>
         )}
-
-        <div className={styles.tbSpacer} />
-
-        <button
-          className={styles.iconBtn}
-          onClick={() => editorRef.current?.undo()}
-          disabled={!canUndo}
-          title="Rückgängig"
-          aria-label="Rückgängig"
-        >
-          <Icon name="undo" size={18} stroke={2} />
-        </button>
-        <button
-          className={styles.iconBtn}
-          onClick={() => editorRef.current?.redo()}
-          disabled={!canRedo}
-          title="Wiederholen"
-          aria-label="Wiederholen"
-        >
-          <Icon name="redo" size={18} stroke={2} />
-        </button>
-      </div>
-
-      {/* Ansicht umschalten */}
-      <div className={styles.viewSeg}>
-        <button
-          className={`${styles.vseg}${effView === 'editor' ? ' ' + styles.vsegOn : ''}`}
-          onClick={() => setView('editor')}
-        >
-          Editor
-        </button>
-        {wide && (
-          <button
-            className={`${styles.vseg}${effView === 'both' ? ' ' + styles.vsegOn : ''}`}
-            onClick={() => setView('both')}
-          >
-            Beide
-          </button>
-        )}
-        <button
-          className={`${styles.vseg}${effView === 'preview' ? ' ' + styles.vsegOn : ''}`}
-          onClick={() => setView('preview')}
-        >
-          Vorschau
-        </button>
       </div>
 
       <div className={styles.split}>
@@ -283,6 +354,7 @@ export function ChordEditor({
             <div className={styles.previewHead}>
               <span className={styles.paneLbl}>Vorschau</span>
               <div className={styles.transpose}>
+                <span className={styles.tLbl}>Transponieren</span>
                 <button
                   className={styles.tBtn}
                   onClick={() => setSemitones((s) => Math.max(-11, s - 1))}
@@ -307,13 +379,6 @@ export function ChordEditor({
         )}
       </div>
 
-      {!isNew && onDelete && (
-        <div className={styles.deleteRow}>
-          <button className={styles.reset} onClick={onDelete} disabled={saving}>
-            Diese Version löschen
-          </button>
-        </div>
-      )}
     </div>
   );
 }
