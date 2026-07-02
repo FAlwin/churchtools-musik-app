@@ -151,9 +151,6 @@ export function PageDeck({
   const draws = [drawA, drawB];
   const activeSlot = Math.max(0, Math.min(perView - 1, activePage - pageIndex));
   const activeDraw = draws[activeSlot];
-  // Ist die AKTIVE Seite reingezoomt? Dann fängt das Verschieben (Pan) die Geste ab → Wischen darf
-  // NICHT zusätzlich blättern; bei Fit-Größe blättert Wischen normal.
-  const activeZoomed = zoomedSlots[activeSlot] ?? false;
 
   useEffect(() => {
     const onResize = () => setLandscape(isLandscape());
@@ -443,14 +440,15 @@ export function PageDeck({
     }
   }
   function onTouchStart(e: React.TouchEvent) {
-    if (drawMode || activeZoomed || e.touches.length > 1) {
+    // Ein Finger = blättern (hier). Zwei+ Finger gehören der Zoom-Bibliothek (Zoom + Verschieben).
+    if (drawMode || e.touches.length > 1) {
       touchStart.current = null;
       return;
     }
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }
   function onTouchEnd(e: React.TouchEvent) {
-    if (drawMode || activeZoomed || !touchStart.current) return;
+    if (drawMode || !touchStart.current) return;
     const dx = touchStart.current.x - e.changedTouches[0].clientX;
     const dy = touchStart.current.y - e.changedTouches[0].clientY;
     const startX = touchStart.current.x;
@@ -478,7 +476,7 @@ export function PageDeck({
     if (target < pageCount) onActivePage(target);
   }
   function onClick(e: React.MouseEvent) {
-    if (drawMode || activeZoomed) return;
+    if (drawMode) return;
     if (suppressClick.current) {
       suppressClick.current = false; // war ein Touch-Tap (schon behandelt) → Klick ignorieren
       return;
@@ -595,17 +593,15 @@ export function PageDeck({
                 initialScale={1}
                 limitToBounds
                 doubleClick={{ disabled: true }}
-                // Verschieben nur, wenn diese Seite reingezoomt ist – sonst bleibt die Geste fürs
-                // Blättern frei (kein „Anpassen-Modus" mehr nötig).
-                panning={{ disabled: drawMode || !zoomedSlots[j], velocityDisabled: true }}
+                // Ein-Finger-Panning IMMER aus: ein Finger blättert (unser Touch-Handler). Zwei
+                // Finger gehören der Zoom-Geste – die zoomt UND verschiebt (Mittelpunkt-Bewegung).
+                panning={{ disabled: true }}
                 pinch={{ disabled: drawMode }}
                 wheel={{ disabled: drawMode, step: 0.08 }}
-                // gestureSlot synchron setzen → schon das erste onTransformed sichert korrekt (und
-                // programmatisches Wiederherstellen schreibt nicht zurück).
+                // gestureSlot synchron am Gesten-Start setzen (Pinch löst onZoomStart aus, auch beim
+                // reinen Zwei-Finger-Verschieben) → schon das erste onTransformed sichert korrekt und
+                // programmatisches Wiederherstellen schreibt nicht zurück.
                 onZoomStart={() => {
-                  if (!drawMode) gestureSlot.current = j;
-                }}
-                onPanningStart={() => {
                   if (!drawMode) gestureSlot.current = j;
                 }}
                 onTransformed={(_ref, state) => {
