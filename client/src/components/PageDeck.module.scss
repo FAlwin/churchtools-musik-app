@@ -149,10 +149,8 @@
   white-space: nowrap;
   user-select: none;
   touch-action: none;
-  // Zarter heller Hintergrund + Halo → auch über Akkorden/Text gut lesbar.
-  padding: 0.2cqh 0.8cqh;
-  border-radius: 1cqh;
-  background: rgba(255, 255, 255, 0.72);
+  // Kein Hintergrund-Balken – nur ein dezenter weißer Halo für Lesbarkeit über Akkorden/Text.
+  padding: 0.2cqh 0.6cqh;
   text-shadow:
     0 0 2px #fff,
     0 0 2px #fff;
