@@ -143,11 +143,23 @@
   justify-content: flex-end;
   max-width: calc(100vw - 84px);
 }
+// Auf schmalen Screens (Handy) als saubere senkrechte Spalte statt zufälligem Umbruch – die
+// Abschnitts-Trenner laufen dann waagerecht über die volle Breite (schöner als kurze senkrechte
+// Striche im Umbruch).
 @media (max-width: 640px) {
   .textPopover {
-    border-radius: 20px; // mehrzeilig sieht ein leicht gerundetes Rechteck besser aus als eine Pille
+    flex-direction: column;
+    flex-wrap: nowrap;
+    max-width: none;
+    border-radius: 20px;
     gap: 5px;
-    padding: 7px 8px;
+    padding: 8px;
+  }
+  .textPopover .vsep {
+    align-self: stretch;
+    width: auto;
+    height: 1px;
+    margin: 3px 4px;
   }
 }
 
