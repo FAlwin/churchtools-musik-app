@@ -103,6 +103,9 @@ export interface UserCapabilities {
   canEditAgendas: boolean;
   canEditSongs: boolean;
   isAdmin: boolean;
+  /** TEMP-Diagnose: nur gesetzt, wenn keine Lieder/Abläufe-Rechte erkannt wurden (Struktur der
+   *  ChurchTools-Antwort, damit ein Screenshot der Schloss-Seite die Ursache zeigt). */
+  diag?: unknown;
 }
 
 /** Ermittelt aus den ChurchTools-Rechten (Modul churchservice), was der Nutzer darf. */
@@ -111,7 +114,26 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
     cookie,
     '/api/permissions/global',
   );
-  return parseCapabilities(data);
+  const caps = parseCapabilities(data);
+  // TEMP-Diagnose (#84-Nachgang): Wenn ChurchTools weder Lieder- noch Ablauf-Rechte meldet, die
+  // STRUKTUR der Antwort loggen (nur Schlüssel/IDs, keine sensiblen Inhalte) – zeigt, ob nur die
+  // Rechte-Arrays leer ankamen (sporadischer CT-Aussetzer) oder der Block wirklich fehlt.
+  if (!caps.canViewSongs && !caps.canViewAgendas) {
+    const cs = (data && typeof data === 'object' ? data.churchservice : undefined) as
+      | Record<string, unknown>
+      | undefined;
+    const diag = {
+      topKeys: data && typeof data === 'object' ? Object.keys(data) : null,
+      hasChurchservice: !!cs,
+      csKeys: cs ? Object.keys(cs) : null,
+      viewSongcategory: cs?.['view songcategory'] ?? null,
+      viewAgenda: cs?.['view agenda'] ?? null,
+      isAdmin: caps.isAdmin,
+    };
+    console.warn('[capabilities] keine Lieder/Abläufe-Rechte:', JSON.stringify(diag));
+    caps.diag = diag;
+  }
+  return caps;
 }
 
 /**

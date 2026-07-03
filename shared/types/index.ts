@@ -151,6 +151,8 @@ export interface UserCapabilities {
   canEditSongs: boolean;
   /** ChurchTools-Administrator? Steuert Zugriff auf die Branding-Einstellungen. */
   isAdmin: boolean;
+  /** TEMP-Diagnose: nur bei fehlenden Lieder/Abläufe-Rechten gesetzt (Struktur der CT-Antwort). */
+  diag?: unknown;
 }
 
 /** Antwort des Login-Endpunkts. */
