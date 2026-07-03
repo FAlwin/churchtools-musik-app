@@ -1,12 +1,11 @@
 import type { SetlistSong } from '@shared/types/index';
 import { pushSetting } from '../services/userSettings';
-import { deviceClass } from './deviceClass';
 
-// Display-abhängige Einstellungen: pro Geräteklasse (Handy vs. Tablet+Computer) getrennt.
-const DISPLAY_BASES = new Set(['cols', 'fs']);
+// Alle Anzeige-Einstellungen (auch Spalten & Textgröße) werden geräteübergreifend über das Konto
+// synchronisiert – ein Schlüssel ohne Geräte-Suffix. NUR der Zoom bleibt pro Geräteklasse getrennt;
+// das steuert PageDeck separat (eigener Schlüssel mit `_d<klasse><spalten>`).
 function fullKey(base: string, songId: number, versionKey: string): string {
-  const k = `worship_${base}_${songId}_${versionKey}`;
-  return DISPLAY_BASES.has(base) ? `${k}_d${deviceClass()}` : k;
+  return `worship_${base}_${songId}_${versionKey}`;
 }
 
 /** Eine auswählbare Version inkl. Original (immer erste Auswahl). */
@@ -42,14 +41,15 @@ export function versionText(song: SetlistSong, key: string): string {
  * song-only-Schlüssel zurückgegriffen (Migration bestehender Einstellungen).
  */
 export function lsVersion(base: string, songId: number, versionKey: string): string | null {
-  // Primär: (ggf. geräteklassen-spezifischer) Schlüssel.
   const v = localStorage.getItem(fullKey(base, songId, versionKey));
   if (v !== null) return v;
-  // Fallback: display-abhängige Werte ohne Klassen-Suffix (früher synchronisiert) übernehmen.
-  if (DISPLAY_BASES.has(base)) {
-    const legacy = localStorage.getItem(`worship_${base}_${songId}_${versionKey}`);
-    if (legacy !== null) return legacy;
-  }
+  // Migration: Spalten/Textgröße waren früher pro Geräteklasse gespeichert (_dlarge/_dphone).
+  // Vorhandenen Wert übernehmen (iPad/PC bevorzugt), damit die Einstellung nicht verloren geht;
+  // beim nächsten Ändern wird sie unter dem geräteübergreifenden Schlüssel gespeichert.
+  const migrated =
+    localStorage.getItem(`worship_${base}_${songId}_${versionKey}_dlarge`) ??
+    localStorage.getItem(`worship_${base}_${songId}_${versionKey}_dphone`);
+  if (migrated !== null) return migrated;
   // Fallback: alte song-only-Schlüssel (Migration) für 'original'.
   if (versionKey === 'original') return localStorage.getItem(`worship_${base}_${songId}`);
   return null;
