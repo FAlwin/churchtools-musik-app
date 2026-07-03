@@ -166,7 +166,7 @@ export function DrawToolbar({
       {/* Farbe: ein Knopf zeigt die aktuelle Farbe, Tippen öffnet die Palette. */}
       <div className={styles.colorWrap} ref={colorWrapRef}>
         <button
-          className={`${styles.colorBtn} ${styles.expandable}`}
+          className={styles.colorBtn}
           style={{ background: activeColor }}
           onClick={() => setPaletteOpen((v) => !v)}
           aria-label="Farbe wählen"
@@ -210,12 +210,13 @@ export function DrawToolbar({
         {(['pen', 'marker', 'eraser'] as const).map((t) => (
           <div key={t} className={styles.toolSlot}>
             <button
-              className={`${styles.toolBtn} ${styles.expandable}${drawTool === t ? ' ' + styles.on : ''}`}
+              className={`${styles.toolBtn}${drawTool === t ? ' ' + styles.on : ''}`}
               onClick={() => chooseTool(t)}
               title={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
               aria-label={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
             >
               <Icon name={t === 'pen' ? 'pencil' : t === 'marker' ? 'marker' : 'eraser'} size={20} stroke={2} />
+              {drawTool === t && <span className={styles.moreHint} />}
             </button>
             {/* Strichstärke-Popover – klappt auf Höhe GENAU dieses Werkzeugs nach links auf. */}
             {expandedTool === t && toolSizes && onToolSize && (
@@ -246,12 +247,13 @@ export function DrawToolbar({
         {allowText && (
           <div className={styles.toolSlot}>
             <button
-              className={`${styles.toolBtn} ${styles.expandable}${drawTool === 'text' ? ' ' + styles.on : ''}`}
+              className={`${styles.toolBtn}${drawTool === 'text' ? ' ' + styles.on : ''}`}
               onClick={() => chooseTool('text')}
               title="Text"
               aria-label="Text"
             >
               <Icon name="type" size={20} stroke={2} />
+              {drawTool === 'text' && <span className={styles.moreHint} />}
             </button>
             {/* Text-Einstellungen als horizontaler Balken links neben dem Text-Werkzeug:
                 Größe · Fett/Kursiv/Unterstrichen · Ausrichtung. */}
