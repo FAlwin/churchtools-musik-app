@@ -203,11 +203,11 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, color } : o)));
   }
   function resize(id: number, delta: number) {
-    setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, sizeCqh: Math.max(2, Math.min(14, o.sizeCqh + delta)) } : o)));
+    setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, sizeCqh: Math.max(1, Math.min(10, o.sizeCqh + delta)) } : o)));
   }
   /** Größe direkt setzen (Zieh-Knopf am Auswahlrahmen). Verlauf sichert der Aufrufer einmal am Zieh-Start. */
   function setSize(id: number, sizeCqh: number) {
-    const s = Math.max(2, Math.min(16, sizeCqh));
+    const s = Math.max(1, Math.min(10, sizeCqh));
     setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, sizeCqh: s } : o)));
   }
 
