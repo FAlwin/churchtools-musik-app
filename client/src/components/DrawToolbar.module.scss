@@ -94,6 +94,52 @@
   margin: 1px 0;
 }
 
+// Gruppe der Zeichenwerkzeuge (Anker für das Strichstärke-Popover).
+.toolsGroup {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+// Strichstärke-Popover: horizontale Reihe von Größen-Punkten, klappt nach LINKS auf.
+.sizePopover {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+}
+.sizeOpt {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  &.sizeOptOn {
+    border-color: var(--blue);
+    background: var(--blue-soft);
+  }
+}
+.sizeDot {
+  display: block;
+  border-radius: 50%;
+  background: var(--text);
+}
+
 // Aktuelle Textgröße zwischen A− und A+ (als „pt"-Zahl).
 .sizeValue {
   font-size: 13px;

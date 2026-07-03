@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import type { DrawTool } from '../types/index';
 import { usePageDraw, type PageTextObj } from '../hooks/usePageDraw';
@@ -157,6 +158,8 @@ export function PageDeck({
   const strokeImgCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const [aspects, setAspects] = useState<string[]>(['210 / 297', '210 / 297']);
   const [textSize, setTextSize] = useState(1.5); // cqh = % der Seitenhöhe (~13 pt, nahe der Liedtext-Größe)
+  // Strichstärke je Werkzeug (Canvas-Pixel bei Renderskala 2) – einstellbar über die Werkzeugleiste.
+  const [toolSizes, setToolSizes] = useState({ pen: 3, marker: 18, eraser: 26 });
   const [confirmClear, setConfirmClear] = useState(false);
 
   const pageCount = pages.length;
@@ -584,7 +587,7 @@ export function PageDeck({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(markerBase.current, 0, 0);
       ctx.globalAlpha = 0.3;
-      ctx.lineWidth = 18;
+      ctx.lineWidth = toolSizes.marker;
       ctx.strokeStyle = drawColor;
       const pts = markerPts.current;
       ctx.beginPath();
@@ -598,12 +601,12 @@ export function PageDeck({
     if (drawTool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.globalAlpha = 1;
-      ctx.lineWidth = 26;
+      ctx.lineWidth = toolSizes.eraser;
       ctx.strokeStyle = 'rgba(0,0,0,1)';
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = toolSizes.pen;
       ctx.strokeStyle = drawColor;
     }
     ctx.beginPath();
@@ -645,6 +648,20 @@ export function PageDeck({
     textCommitLock.current[1] = false;
   }, [drawB.pending]);
 
+  // Inline-Eingabe fokussieren + Cursor ans Ende. MUSS synchron in der Tipp-Geste passieren,
+  // damit iOS die Tastatur öffnet (asynchroner Fokus per setTimeout wird von iOS ignoriert).
+  function focusEditor(slot: number) {
+    const el = editRefs.current[slot];
+    if (!el) return;
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  }
+
   // Text platzieren (Tipp mit Text-Werkzeug auf leere Stelle der Seite) → blinkender Cursor
   // direkt an der Stelle (Inline-Eingabe wie in Word/GoodNotes).
   function layerDown(e: React.PointerEvent, slot: number) {
@@ -672,7 +689,10 @@ export function PageDeck({
     const rect = layer.getBoundingClientRect();
     const fx = (e.clientX - rect.left) / rect.width;
     const fy = (e.clientY - rect.top) / rect.height;
-    d.placeText(fx, fy, e.clientX, e.clientY);
+    // flushSync → die Inline-Eingabe wird SOFORT (synchron) eingehängt, danach fokussieren wir
+    // noch innerhalb der Tipp-Geste → iOS öffnet die Tastatur.
+    flushSync(() => d.placeText(fx, fy, e.clientX, e.clientY));
+    focusEditor(slot);
   }
 
   // Zieh-Knopf am Auswahlrahmen: Größe des ausgewählten Textes per Ziehen ändern.
@@ -972,7 +992,12 @@ export function PageDeck({
                             }}
                             onPointerDown={(e) => d.startDrag(e, o)}
                             onPointerMove={(e) => d.moveDrag(e, o.id)}
-                            onPointerUp={d.endDrag}
+                            onPointerUp={() => {
+                              // endDrag entscheidet: Tipp auf ausgewählten Text → bearbeiten. flushSync
+                              // hängt die Eingabe sofort ein, danach synchron fokussieren → iOS-Tastatur.
+                              flushSync(() => d.endDrag());
+                              focusEditor(j);
+                            }}
                             onPointerCancel={d.endDrag}
                           >
                             {o.text}
@@ -999,19 +1024,11 @@ export function PageDeck({
                               key={`edit-${d.pending.editId ?? 'new'}`}
                               ref={(n) => {
                                 editRefs.current[j] = n;
+                                // Nur den Startinhalt setzen; der Fokus passiert synchron in der
+                                // Tipp-Geste (focusEditor nach flushSync) → nötig für die iOS-Tastatur.
                                 if (n && !n.dataset.init) {
                                   n.dataset.init = '1';
                                   n.textContent = p.initial ?? '';
-                                  // Fokus + Cursor ans Ende (nach dem Mount, sonst schluckt iOS den Fokus).
-                                  setTimeout(() => {
-                                    n.focus();
-                                    const range = document.createRange();
-                                    range.selectNodeContents(n);
-                                    range.collapse(false);
-                                    const sel = window.getSelection();
-                                    sel?.removeAllRanges();
-                                    sel?.addRange(range);
-                                  }, 0);
                                 }
                               }}
                               contentEditable
@@ -1123,6 +1140,8 @@ export function PageDeck({
             }
             setDrawTool(t);
           }}
+          toolSizes={toolSizes}
+          onToolSize={(tool, size) => setToolSizes((s) => ({ ...s, [tool]: size }))}
           textSize={textSize}
           setTextSize={setTextSize}
           sizeStep={0.25}

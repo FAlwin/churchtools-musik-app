@@ -136,8 +136,8 @@ export function ChordChart({
     img.src = '/logo-tight.png';
   }, []);
 
-  // Vier Anmerkungsfarben (ECG-Palette): Blau, Rot, Orange, Türkis.
-  const drawColors = ['#0062ac', '#bb2946', '#fb8f00', '#1bb0a2'];
+  // Vier Anmerkungsfarben (ECG-Palette): Rot, Blau, Grün (Türkis), Orange.
+  const drawColors = ['#bb2946', '#0062ac', '#1bb0a2', '#fb8f00'];
 
   // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
   const liveRef = useRef({ songs, drawMode, onReload, lastReturn: 0 });
