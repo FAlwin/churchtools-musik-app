@@ -139,6 +139,7 @@ export default function App() {
           text="Dein ChurchTools-Konto hat keine Berechtigung für Lieder oder Abläufe."
           actionLabel="Abmelden"
           onAction={() => auth.logout()}
+          detail={caps.diag ? `Diagnose (bitte Screenshot): ${JSON.stringify(caps.diag)}` : undefined}
         />
       </Screen>
     );
