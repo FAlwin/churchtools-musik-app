@@ -102,7 +102,11 @@ export function PageDeck({
   onZoomedChange,
   resetZoomSignal = 0,
 }: PageDeckProps) {
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  // Inline-Texteingabe direkt auf der Seite (blinkender Cursor statt separater Leiste).
+  const editRefs = useRef<(HTMLSpanElement | null)[]>([null, null]);
+  const textCommitLock = useRef<[boolean, boolean]>([false, false]); // gegen Doppel-Commit (Blur + Tipp)
+  // Zieh-Knopf am Auswahlrahmen: Startgröße + Start-Y + Ebenenhöhe für die Größenänderung.
+  const resizeDrag = useRef<{ slot: number; id: number; startY: number; startSize: number; layerH: number } | null>(null);
   const contentRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
   const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
   const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
@@ -196,25 +200,6 @@ export function PageDeck({
       window.removeEventListener('pageshow', onResize);
       window.removeEventListener('focus', onResize);
       document.removeEventListener('visibilitychange', onResize);
-    };
-  }, []);
-
-  // Tastatur-Höhe als CSS-Variable --kb → die Text-Eingabeleiste sitzt direkt ÜBER der Tastatur
-  // (dort, wo man gerade schreibt), statt weit oben am Rand.
-  useEffect(() => {
-    const vv = window.visualViewport;
-    const el = rootRef.current;
-    if (!vv || !el) return;
-    const apply = () => {
-      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      el.style.setProperty('--kb', `${kb}px`);
-    };
-    apply();
-    vv.addEventListener('resize', apply);
-    vv.addEventListener('scroll', apply);
-    return () => {
-      vv.removeEventListener('resize', apply);
-      vv.removeEventListener('scroll', apply);
     };
   }, []);
 
@@ -642,7 +627,26 @@ export function PageDeck({
     strokeCanvas.current = null;
   }
 
-  // Text platzieren (Tipp mit Text-Werkzeug auf leere Stelle der Seite)
+  // Offene Inline-Eingabe eines Slots übernehmen (leerer Text = verwerfen). Lock verhindert
+  // Doppel-Commit, wenn Blur UND Außen-Tipp im selben Moment feuern.
+  function commitInlineText(slot: number) {
+    const d = draws[slot];
+    if (!d.pending || textCommitLock.current[slot]) return;
+    textCommitLock.current[slot] = true;
+    const el = editRefs.current[slot];
+    const value = (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    d.confirmText(value, drawColor, textSize);
+  }
+  // Lock wieder freigeben, sobald die jeweilige Eingabe geschlossen/geöffnet wurde.
+  useEffect(() => {
+    textCommitLock.current[0] = false;
+  }, [drawA.pending]);
+  useEffect(() => {
+    textCommitLock.current[1] = false;
+  }, [drawB.pending]);
+
+  // Text platzieren (Tipp mit Text-Werkzeug auf leere Stelle der Seite) → blinkender Cursor
+  // direkt an der Stelle (Inline-Eingabe wie in Word/GoodNotes).
   function layerDown(e: React.PointerEvent, slot: number) {
     if (!drawMode || drawTool !== 'text') return;
     // #53: Text nur auf der aktiven Seite – Tipp auf die inaktive Seite aktiviert sie nur.
@@ -655,8 +659,11 @@ export function PageDeck({
     if (!layer) return;
     e.stopPropagation();
     const d = draws[slot];
-    // Ist ein Eingabefeld offen? → nur schließen (onBlur bestätigt), KEIN neues Feld anlegen.
-    if (d.pending) return;
+    // Offene Inline-Eingabe? → Tipp daneben übernimmt den Text (steht dann fest), kein neues Feld.
+    if (d.pending) {
+      commitInlineText(slot);
+      return;
+    }
     // Ist ein Text ausgewählt? → Tipp ins Leere hebt die Auswahl auf (Rahmen weg), kein neues Feld.
     if (d.selectedId !== null) {
       d.setSelectedId(null);
@@ -666,6 +673,29 @@ export function PageDeck({
     const fx = (e.clientX - rect.left) / rect.width;
     const fy = (e.clientY - rect.top) / rect.height;
     d.placeText(fx, fy, e.clientX, e.clientY);
+  }
+
+  // Zieh-Knopf am Auswahlrahmen: Größe des ausgewählten Textes per Ziehen ändern.
+  function handleResizeDown(e: React.PointerEvent, slot: number, id: number, size: number) {
+    e.stopPropagation();
+    const layer = layerRefs[slot].current;
+    if (!layer) return;
+    draws[slot].pushHistory();
+    resizeDrag.current = { slot, id, startY: e.clientY, startSize: size, layerH: layer.clientHeight };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function handleResizeMove(e: React.PointerEvent) {
+    const r = resizeDrag.current;
+    if (!r || r.layerH <= 0) return;
+    e.stopPropagation();
+    // Ziehen nach unten = größer: Y-Weg in % der Seitenhöhe direkt auf die cqh-Größe addieren.
+    const next = r.startSize + ((e.clientY - r.startY) / r.layerH) * 100;
+    draws[r.slot].setSize(r.id, next);
+  }
+  function handleResizeUp(e: React.PointerEvent) {
+    if (!resizeDrag.current) return;
+    e.stopPropagation();
+    resizeDrag.current = null;
   }
 
   // ── Blättern / aktive Hälfte ──
@@ -817,7 +847,7 @@ export function PageDeck({
     : null;
 
   return (
-    <div ref={rootRef} className={styles.root} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={onClick}>
+    <div className={styles.root} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={onClick}>
       {loading && (
         <div className={styles.center}>
           <Spinner />
@@ -923,28 +953,89 @@ export function PageDeck({
                       }}
                       onPointerDown={(e) => layerDown(e, j)}
                     >
-                      {d.texts.map((o) => (
-                        <div
-                          key={o.id}
-                          className={`${styles.textObj}${o.id === d.selectedId ? ' ' + styles.textSel : ''}`}
-                          style={{
-                            left: `${o.fx * 100}%`,
-                            top: `${o.fy * 100}%`,
-                            fontSize: `${o.sizeCqh}cqh`,
-                            color: o.color,
-                            // Text nur im Text-Werkzeug interaktiv → mit Stift/Marker kann man
-                            // ungehindert DARÜBER zeichnen (sonst „fängt" der Text die Eingabe ab).
-                            pointerEvents: drawMode && drawTool === 'text' ? 'all' : 'none',
-                            cursor: 'grab',
-                          }}
-                          onPointerDown={(e) => d.startDrag(e, o)}
-                          onPointerMove={(e) => d.moveDrag(e, o.id)}
-                          onPointerUp={d.endDrag}
-                          onPointerCancel={d.endDrag}
-                        >
-                          {o.text}
-                        </div>
-                      ))}
+                      {d.texts
+                        // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
+                        .filter((o) => o.id !== d.pending?.editId)
+                        .map((o) => (
+                          <div
+                            key={o.id}
+                            className={`${styles.textObj}${o.id === d.selectedId ? ' ' + styles.textSel : ''}`}
+                            style={{
+                              left: `${o.fx * 100}%`,
+                              top: `${o.fy * 100}%`,
+                              fontSize: `${o.sizeCqh}cqh`,
+                              color: o.color,
+                              // Text nur im Text-Werkzeug interaktiv → mit Stift/Marker kann man
+                              // ungehindert DARÜBER zeichnen (sonst „fängt" der Text die Eingabe ab).
+                              pointerEvents: drawMode && drawTool === 'text' ? 'all' : 'none',
+                              cursor: 'grab',
+                            }}
+                            onPointerDown={(e) => d.startDrag(e, o)}
+                            onPointerMove={(e) => d.moveDrag(e, o.id)}
+                            onPointerUp={d.endDrag}
+                            onPointerCancel={d.endDrag}
+                          >
+                            {o.text}
+                            {/* Zieh-Knopf (Ecke unten rechts) am ausgewählten Text: Größe ändern. */}
+                            {o.id === d.selectedId && drawMode && drawTool === 'text' && (
+                              <span
+                                className={styles.textHandle}
+                                onPointerDown={(e) => handleResizeDown(e, j, o.id, o.sizeCqh)}
+                                onPointerMove={handleResizeMove}
+                                onPointerUp={handleResizeUp}
+                                onPointerCancel={handleResizeUp}
+                                aria-label="Textgröße ändern"
+                              />
+                            )}
+                          </div>
+                        ))}
+                      {/* Inline-Eingabe: blinkender Cursor direkt an der Tipp-Stelle. */}
+                      {d.pending &&
+                        (() => {
+                          const p = d.pending;
+                          const editing = p.editId != null ? d.texts.find((t) => t.id === p.editId) : null;
+                          return (
+                            <span
+                              key={`edit-${d.pending.editId ?? 'new'}`}
+                              ref={(n) => {
+                                editRefs.current[j] = n;
+                                if (n && !n.dataset.init) {
+                                  n.dataset.init = '1';
+                                  n.textContent = p.initial ?? '';
+                                  // Fokus + Cursor ans Ende (nach dem Mount, sonst schluckt iOS den Fokus).
+                                  setTimeout(() => {
+                                    n.focus();
+                                    const range = document.createRange();
+                                    range.selectNodeContents(n);
+                                    range.collapse(false);
+                                    const sel = window.getSelection();
+                                    sel?.removeAllRanges();
+                                    sel?.addRange(range);
+                                  }, 0);
+                                }
+                              }}
+                              contentEditable
+                              suppressContentEditableWarning
+                              className={`${styles.textObj} ${styles.textEditing}`}
+                              style={{
+                                left: `${(editing?.fx ?? p.fx) * 100}%`,
+                                top: `${(editing?.fy ?? p.fy) * 100}%`,
+                                fontSize: `${editing?.sizeCqh ?? textSize}cqh`,
+                                color: editing?.color ?? drawColor,
+                                pointerEvents: 'all',
+                              }}
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onBlur={() => commitInlineText(j)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  commitInlineText(j);
+                                }
+                                if (e.key === 'Escape') d.cancelText();
+                              }}
+                            />
+                          );
+                        })()}
                     </div>
                   </div>
                 </TransformComponent>
@@ -1015,60 +1106,6 @@ export function PageDeck({
           </div>
         </div>
       )}
-
-      {/* Text-Eingabe-Leiste: feste Position oben (immer über der Tastatur, kein „Schweben"). */}
-      {slots.map((j) => {
-        const d = draws[j];
-        if (!d.pending) return null;
-        // Beim Tippen der Werkzeug-Knöpfe NICHT den Fokus/Tastatur verlieren.
-        const keepFocus = (e: React.PointerEvent) => e.preventDefault();
-        return (
-          <div key={`in${j}`} className={styles.textBar}>
-            <button
-              className={styles.textBarSizeBtn}
-              onPointerDown={keepFocus}
-              onClick={() => setTextSize((s) => Math.max(2, s - 1))}
-              title="Kleiner"
-            >
-              A−
-            </button>
-            <span className={styles.textBarSize}>{textSize}</span>
-            <button
-              className={styles.textBarSizeBtn}
-              onPointerDown={keepFocus}
-              onClick={() => setTextSize((s) => Math.min(14, s + 1))}
-              title="Größer"
-            >
-              A+
-            </button>
-            <input
-              type="text"
-              autoFocus
-              defaultValue={d.pending.initial ?? ''}
-              placeholder="Text eingeben…"
-              className={styles.textBarInput}
-              style={{ color: drawColor }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') d.confirmText((e.target as HTMLInputElement).value, drawColor, textSize);
-                if (e.key === 'Escape') d.cancelText();
-              }}
-            />
-            <button
-              className={styles.textBarOk}
-              onPointerDown={keepFocus}
-              onClick={(e) => {
-                const inp = (e.currentTarget.parentElement as HTMLElement).querySelector('input');
-                d.confirmText(inp ? inp.value : '', drawColor, textSize);
-              }}
-            >
-              OK
-            </button>
-            <button className={styles.textBarCancel} onPointerDown={keepFocus} onClick={() => d.cancelText()} title="Abbrechen">
-              ✕
-            </button>
-          </div>
-        );
-      })}
 
       {/* Werkzeugleiste (volle Anmerkungen für die aktive Seite) */}
       {drawMode && (

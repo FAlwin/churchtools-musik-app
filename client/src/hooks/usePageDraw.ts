@@ -205,6 +205,11 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
   function resize(id: number, delta: number) {
     setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, sizeCqh: Math.max(2, Math.min(14, o.sizeCqh + delta)) } : o)));
   }
+  /** Größe direkt setzen (Zieh-Knopf am Auswahlrahmen). Verlauf sichert der Aufrufer einmal am Zieh-Start. */
+  function setSize(id: number, sizeCqh: number) {
+    const s = Math.max(2, Math.min(16, sizeCqh));
+    setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, sizeCqh: s } : o)));
+  }
 
   function startDrag(e: React.PointerEvent, o: PageTextObj) {
     e.stopPropagation();
@@ -270,6 +275,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     deleteText,
     setColor,
     resize,
+    setSize,
     startDrag,
     moveDrag,
     endDrag,
