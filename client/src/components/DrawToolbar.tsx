@@ -121,7 +121,8 @@ export function DrawToolbar({
               title="Eigene Farbe"
               style={isCustomColor && activeColor ? { background: activeColor } : undefined}
             >
-              {!isCustomColor && <Icon name="plus" size={18} stroke={2.2} />}
+              {/* „+" bleibt IMMER sichtbar → auch bei aktiver eigener Farbe erkennbar als Wähler. */}
+              <Icon name="plus" size={18} stroke={2.4} className={styles.customPlus} />
               <input
                 type="color"
                 aria-label="Eigene Farbe wählen"
