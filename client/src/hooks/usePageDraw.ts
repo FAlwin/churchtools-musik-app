@@ -235,7 +235,9 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
   function endDrag() {
     const d = drag.current;
     drag.current = null;
-    if (d && !d.moved && d.wasSel) {
+    // Tipp (ohne Verschieben) auf einen Text → direkt in den Inline-Editor (Cursor), auch wenn
+    // er vorher noch nicht ausgewählt war. startDrag hat ihn bereits selektiert.
+    if (d && !d.moved) {
       const o = texts.find((x) => x.id === d.id);
       if (o) editText(o);
     }
