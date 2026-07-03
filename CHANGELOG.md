@@ -7,6 +7,47 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.4.0] – 2026-07-03
+
+### Neu
+
+- **PDFs mitten im Ablauf:** Hochgeladene Lied-PDFs/Bilder sind jetzt Teil des **durchgehenden
+  Ablaufs** – man wischt nahtlos über alle Lieder (Akkorde und PDFs gemischt), und im Querformat
+  stehen zwei Seiten nebeneinander (auch über Lied-Grenzen). Vorher war eine PDF eine isolierte
+  Einzelansicht.
+- **Weiche Blätter-Animation:** Beim Blättern schiebt sich die neue Seite horizontal herein (wie
+  im Foto-Viewer) – ruhiger Übergang statt hartem Umschalten.
+- **Anmerkungen im 2-Seiten-Modus:** Nur die **aktive** Seite ist beschreibbar und hervorgehoben,
+  die andere ist ausgegraut und gesperrt; ein Tipp wechselt die aktive Seite (kein versehentliches
+  Kritzeln auf der falschen Seite mehr).
+- **Text-Anmerkungen direkt auf der Seite:** Antippen setzt einen Cursor genau an der Stelle
+  (wie in Word) – lostippen, außerhalb tippen legt den Text fest. Ausgewählten Text verschieben,
+  Größe über einen Ziehknopf ändern (Anzeige in vertrauten „pt").
+- **Akkorde per 1-Tipp:** Im Editor fügt ein Tipp auf den Grundton den Akkord sofort ein; Zusätze
+  (m, 7, maj7, sus4 …) und Bass (Slash-Akkorde wie A/C#) hängen sich direkt an.
+- **Staging-Version sichtbar:** Auf der Test-Instanz zeigt der „Mehr"-Tab den Build-Stand
+  (`staging-<commit>`), damit man den geladenen Stand erkennt.
+
+### Geändert
+
+- **Zoom-/Blätter-Gesten neu:** **ein Finger blättert, zwei Finger zoomen und verschieben** – auch
+  im Zeichenmodus (Zoomen/Verschieben kritzelt nicht mehr ins Dokument; beim Apple Pencil zeichnet
+  der Stift, die Finger zoomen). Die „Zurück/Fertig"-Leiste entfällt – ein Pinch zoomt und speichert
+  automatisch, Zurücksetzen über den Knopf in der Kopfleiste.
+- **Anmerkungs-Werkzeugleiste** aufgeräumt: klare, einheitliche Icons, größere Knöpfe, ein
+  Farbknopf mit aufklappender Farbreihe. Vier Farben (Rot, Blau, Grün, Orange) + eigener Farbwähler.
+- **Editor** aufgeräumt: kompakter Kopf, moderner Text-Look (proportional statt „Schreibmaschine",
+  Akkorde farbig), mehrseitige und scharfe Vorschau.
+- Die Fußzeilen-Punkte markieren im Querformat beide sichtbaren Lieder.
+
+### Behoben
+
+- **Zoom bleibt zuverlässig erhalten** – lokal wie serverseitig, über App-Wechsel/Neustart,
+  Lied-/Seitenwechsel, Hochformat↔Querformat und das Öffnen/Schließen des Editors; kein
+  Zurückspringen zur Mitte mehr, gleiche Seite links wie rechts.
+- **Editor-Tastatur** schiebt nicht mehr die ganze Ansicht hoch – nur der Textbereich scrollt.
+- Einseitige PDF steht im Querformat an der richtigen Stelle (rechts neben dem Vorgänger).
+
 ## [2.3.2] – 2026-07-02
 
 ### Geändert

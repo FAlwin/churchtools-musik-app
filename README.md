@@ -18,7 +18,8 @@ Datenquelle – die App hat keine eigene Datenbank.
   Original bleibt erhalten
 - **Anmerkungen, Zoom & Einstellungen pro ChurchTools-Konto** – geräteübergreifend synchronisiert
   (Stift/Marker/Text auf den Seiten, Rückgängig/Wiederholen)
-- **Dokumenten-Viewer** (PDF/Bild) mit Anmerkungen
+- **Hochgeladene PDFs/Bilder** je Lied – direkt im durchgehenden Ablauf (mitwischen, im Querformat
+  neben dem Nachbarlied) und ebenfalls mit Anmerkungen
 - **Rechtebewusste Oberfläche** – jede Person sieht nur, wozu ihre ChurchTools-Rechte passen
 - **Frei konfigurierbare Links** (z. B. zu weiteren Gemeinde-Angeboten) im „Mehr"-Tab und optional
   auf der Login-Seite

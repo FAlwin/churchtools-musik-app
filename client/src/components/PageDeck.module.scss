@@ -193,42 +193,6 @@
   pointer-events: all;
 }
 
-// Zoom-Anpassen-Leiste (erscheint nach einer Zoom-Geste), mittig unten.
-.zoomBar {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 30;
-  display: flex;
-  gap: 10px;
-}
-
-.zoomCancel,
-.zoomOk {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 15px;
-  font-weight: 800;
-  font-family: var(--ui);
-  padding: 10px 18px;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-}
-
-.zoomCancel {
-  background: #fff;
-  color: #14110f;
-}
-
-.zoomOk {
-  background: var(--blue);
-  color: #fff;
-}
-
 // Seiten-Anzeige unten rechts
 .pageBadge {
   position: absolute;
