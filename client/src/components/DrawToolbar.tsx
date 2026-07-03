@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DrawTool } from '../types/index';
+import type { TextStyle, TextAlign } from '../hooks/usePageDraw';
 import { Icon } from './icons';
 import styles from './DrawToolbar.module.scss';
 
@@ -34,6 +35,12 @@ interface DrawToolbarProps {
   /** Strichstärke je Werkzeug + Setter (erneuter Tipp auf das aktive Werkzeug öffnet die Auswahl). */
   toolSizes?: { pen: number; marker: number; eraser: number };
   onToolSize?: (tool: 'pen' | 'marker' | 'eraser', size: number) => void;
+  /** Aktueller Pinsel-Stil für NEUEN Text + Setter. */
+  textStyle?: TextStyle;
+  setTextStyle?: (fn: (s: TextStyle) => TextStyle) => void;
+  /** Stil des AUSGEWÄHLTEN Textes + Setter (wirkt dann live auf diesen). */
+  selectedStyle?: TextStyle;
+  onSelectedStyle?: (patch: Partial<TextStyle>) => void;
 }
 
 // Voreingestellte Strichstärken je Werkzeug (Canvas-Pixel bei Renderskala 2) – von fein bis
@@ -76,6 +83,10 @@ export function DrawToolbar({
   onDeleteSelected,
   toolSizes,
   onToolSize,
+  textStyle,
+  setTextStyle,
+  selectedStyle,
+  onSelectedStyle,
 }: DrawToolbarProps) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const colorWrapRef = useRef<HTMLDivElement>(null);
@@ -89,6 +100,19 @@ export function DrawToolbar({
   const shownSize = isTextSelected ? (selectedSize ?? textSize) : textSize;
   const showSize = drawTool === 'text' || isTextSelected;
   const showUndo = !!onUndo;
+
+  // Format (Fett/Kursiv/Unterstrichen/Ausrichtung): bei ausgewähltem Text dessen Stil, sonst der
+  // Pinsel-Stil für neu platzierten Text.
+  const activeStyle = (isTextSelected ? selectedStyle : textStyle) ?? textStyle;
+  const showFormat = showSize && !!activeStyle;
+  function toggleFmt(key: 'bold' | 'italic' | 'underline') {
+    if (isTextSelected) onSelectedStyle?.({ [key]: !activeStyle?.[key] });
+    else setTextStyle?.((s) => ({ ...s, [key]: !s[key] }));
+  }
+  function setAlign(align: TextAlign) {
+    if (isTextSelected) onSelectedStyle?.({ align });
+    else setTextStyle?.((s) => ({ ...s, align }));
+  }
 
   // Palette bei Klick außerhalb schließen.
   useEffect(() => {
@@ -231,6 +255,58 @@ export function DrawToolbar({
           <button className={styles.toolBtn} onClick={() => changeSize(sizeStep)} title="Größer" aria-label="Größer">
             <span className={styles.sizeBtnLabel}>A+</span>
           </button>
+        </>
+      )}
+
+      {/* Format: Fett/Kursiv/Unterstrichen + Ausrichtung (gilt je Textblock) */}
+      {showFormat && activeStyle && (
+        <>
+          <div className={styles.sep} />
+          <button
+            className={`${styles.toolBtn}${activeStyle.bold ? ' ' + styles.on : ''}`}
+            onClick={() => toggleFmt('bold')}
+            title="Fett"
+            aria-label="Fett"
+            aria-pressed={activeStyle.bold}
+          >
+            <span className={styles.fmtLabel} style={{ fontWeight: 800 }}>
+              B
+            </span>
+          </button>
+          <button
+            className={`${styles.toolBtn}${activeStyle.italic ? ' ' + styles.on : ''}`}
+            onClick={() => toggleFmt('italic')}
+            title="Kursiv"
+            aria-label="Kursiv"
+            aria-pressed={activeStyle.italic}
+          >
+            <span className={styles.fmtLabel} style={{ fontStyle: 'italic', fontWeight: 600 }}>
+              I
+            </span>
+          </button>
+          <button
+            className={`${styles.toolBtn}${activeStyle.underline ? ' ' + styles.on : ''}`}
+            onClick={() => toggleFmt('underline')}
+            title="Unterstrichen"
+            aria-label="Unterstrichen"
+            aria-pressed={activeStyle.underline}
+          >
+            <span className={styles.fmtLabel} style={{ textDecoration: 'underline', fontWeight: 600 }}>
+              U
+            </span>
+          </button>
+          {(['left', 'center', 'right'] as const).map((a) => (
+            <button
+              key={a}
+              className={`${styles.toolBtn}${activeStyle.align === a ? ' ' + styles.on : ''}`}
+              onClick={() => setAlign(a)}
+              title={a === 'left' ? 'Linksbündig' : a === 'center' ? 'Zentriert' : 'Rechtsbündig'}
+              aria-label={a === 'left' ? 'Linksbündig' : a === 'center' ? 'Zentriert' : 'Rechtsbündig'}
+              aria-pressed={activeStyle.align === a}
+            >
+              <Icon name={`align-${a}` as 'align-left' | 'align-center' | 'align-right'} size={19} stroke={2} />
+            </button>
+          ))}
         </>
       )}
 
