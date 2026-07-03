@@ -111,11 +111,31 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
     cookie,
     '/api/permissions/global',
   );
-  const cs = data?.churchservice ?? {};
+  return parseCapabilities(data);
+}
+
+/**
+ * Wertet die ChurchTools-Rechte-Antwort (`/api/permissions/global`) aus.
+ *
+ * WICHTIG: Eine gültige Antwort enthält für jeden angemeldeten Nutzer IMMER mindestens einen
+ * Modul-Block. Eine komplett leere Antwort ist daher NICHT „der Nutzer hat keine Rechte", sondern
+ * ein vorübergehender Aussetzer (kurz überlastetes/inkonsistentes ChurchTools, wackelige
+ * Verbindung). Wir werfen dann, damit der Client automatisch neu versucht – statt fälschlich das
+ * endgültige „keine Berechtigung"-Schloss zu zeigen. Fehlt hingegen nur der churchservice-Block
+ * (andere Module sind vorhanden), hat der Nutzer wirklich keine Lieder-/Ablauf-Rechte → reguläre
+ * false-Werte ohne Wurf.
+ */
+export function parseCapabilities(
+  data: Record<string, Record<string, unknown>> | null | undefined,
+): UserCapabilities {
+  if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+    throw new HttpError(502, 'Leere Rechte-Antwort von ChurchTools – bitte erneut versuchen.');
+  }
+  const cs = data.churchservice ?? {};
   const has = (v: unknown): boolean => (Array.isArray(v) ? v.length > 0 : Boolean(v));
   // Admin-Recht aus der Konfiguration (Form `modul:recht`).
   const [adminModule, adminPerm] = config.adminPermission.split(':');
-  const isAdmin = has(data?.[adminModule]?.[adminPerm]);
+  const isAdmin = has(data[adminModule]?.[adminPerm]);
   return {
     canViewSongs: has(cs['view songcategory']),
     canViewAgendas: has(cs['view agenda']),
