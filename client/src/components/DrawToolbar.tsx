@@ -119,7 +119,9 @@ export function DrawToolbar({
             <label
               className={`${styles.swatch} ${styles.swatchCustom}${isCustomColor ? ' ' + styles.swatchOn : ''}`}
               title="Eigene Farbe"
+              style={isCustomColor && activeColor ? { background: activeColor } : undefined}
             >
+              {!isCustomColor && <Icon name="plus" size={18} stroke={2.2} />}
               <input
                 type="color"
                 aria-label="Eigene Farbe wählen"
