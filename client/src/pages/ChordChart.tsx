@@ -136,7 +136,8 @@ export function ChordChart({
     img.src = '/logo-tight.png';
   }, []);
 
-  const drawColors = ['#14110F', '#DD0000', '#FFCE00'];
+  // Vier klar unterscheidbare Anmerkungsfarben (gut lesbar auf weißen Notenseiten).
+  const drawColors = ['#14110F', '#DD0000', '#0061A1', '#2E9E5B'];
 
   // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
   const liveRef = useRef({ songs, drawMode, onReload, lastReturn: 0 });
