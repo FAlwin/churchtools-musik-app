@@ -21,19 +21,6 @@
   max-width: 280px;
 }
 
-// Dezente Diagnose-Zeile (technisch, klein) – umbrechend, damit lange Struktur lesbar bleibt.
-.detail {
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--text2);
-  opacity: 0.7;
-  max-width: 320px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  text-align: left;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
 .retry {
   margin-top: 4px;
   height: 44px;

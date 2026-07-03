@@ -7,6 +7,25 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.4.1] – 2026-07-04
+
+### Geändert
+
+- **Spalten & Textgröße geräteübergreifend:** Diese Einstellungen sind jetzt auf allen Geräten
+  gleich (über das Konto synchronisiert). Nur der **Zoom** bleibt bewusst pro Gerät getrennt
+  (iPad/PC vs. iPhone).
+- **Eintrag hinzufügen (Text):** zeigt jetzt dieselben Feld-Überschriften wie das Bearbeiten
+  (Titel · Dauer · Zuständig · Bemerkung).
+- **Verknüpfung aufheben:** entfernt jetzt auch den Titel (kein zurückbleibender Liedtitel), und
+  der Bearbeiten-Dialog bleibt offen – so kann man den Punkt direkt neu benennen.
+- **Ladekringel** ist ein weich auslaufender Ring statt eines harten Segments.
+
+### Behoben
+
+- **Sporadisches „keine Berechtigung"-Schloss:** Liefert ChurchTools kurzzeitig leere Rechte
+  (ein bekannter Aussetzer, z. B. beim Neu-Laden), versucht die App es jetzt automatisch erneut,
+  statt sofort das Schloss zu zeigen. Ein **Admin** bekommt zudem immer Zugriff.
+
 ## [2.4.0] – 2026-07-03
 
 ### Neu

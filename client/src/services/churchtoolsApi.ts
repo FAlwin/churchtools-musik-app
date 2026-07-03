@@ -31,8 +31,15 @@ export function getMe(): Promise<AuthStatus> {
 }
 
 /** Rechte des angemeldeten Nutzers (steuert die sichtbare UI). */
-export function getCapabilities(): Promise<UserCapabilities> {
-  return apiFetch<UserCapabilities>('/api/capabilities');
+export async function getCapabilities(): Promise<UserCapabilities> {
+  const caps = await apiFetch<UserCapabilities>('/api/capabilities');
+  // ChurchTools liefert sporadisch alle Rechte-Zuordnungen leer (Struktur da, Werte []), obwohl
+  // der Nutzer Zugriff hat. Das als transienten Fehler werfen → useCapabilities versucht
+  // automatisch neu; hält es an, zeigt App.tsx den Fehlerschirm mit „Erneut versuchen".
+  if (!caps.canViewSongs && !caps.canViewAgendas) {
+    throw new Error('Berechtigungen wurden unvollständig geladen – bitte erneut versuchen.');
+  }
+  return caps;
 }
 
 export function getServices(range?: { from?: string; to?: string }): Promise<Service[]> {
