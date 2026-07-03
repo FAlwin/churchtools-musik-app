@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fileIdFromUrl, extractSessionCookie } from './churchtools.js';
+import { fileIdFromUrl, extractSessionCookie, parseCapabilities } from './churchtools.js';
 
 describe('fileIdFromUrl', () => {
   it('liest die id aus einer ChurchTools-Download-URL', () => {
@@ -33,5 +33,40 @@ describe('extractSessionCookie', () => {
   it('pickt das ChurchTools-Cookie aus mehreren Set-Cookie-Headern', () => {
     const res = resWithCookies(['foo=bar; Path=/', 'ChurchTools_sess=token99; HttpOnly']);
     expect(extractSessionCookie(res)).toBe('ChurchTools_sess=token99');
+  });
+});
+
+describe('parseCapabilities', () => {
+  // Leere/ungültige Antwort = Aussetzer → wirft, damit der Client neu versucht (statt „keine Rechte").
+  it('wirft bei komplett leerer Antwort', () => {
+    expect(() => parseCapabilities({})).toThrow();
+  });
+  it('wirft bei null/undefined', () => {
+    expect(() => parseCapabilities(null)).toThrow();
+    expect(() => parseCapabilities(undefined)).toThrow();
+  });
+
+  // Antwort vorhanden, aber kein churchservice-Block = Nutzer hat wirklich keine Lieder-/Ablauf-
+  // Rechte → false-Werte, KEIN Wurf.
+  it('liefert false ohne Wurf, wenn andere Module da sind aber churchservice fehlt', () => {
+    const caps = parseCapabilities({ churchcore: { 'administer settings': [] } });
+    expect(caps.canViewSongs).toBe(false);
+    expect(caps.canViewAgendas).toBe(false);
+  });
+
+  it('erkennt vorhandene Lieder-/Ablauf-Rechte (Arrays mit IDs)', () => {
+    const caps = parseCapabilities({
+      churchservice: { 'view songcategory': [1, 2], 'view agenda': [5] },
+    });
+    expect(caps.canViewSongs).toBe(true);
+    expect(caps.canViewAgendas).toBe(true);
+  });
+
+  it('wertet leere Rechte-Arrays im churchservice als „nein"', () => {
+    const caps = parseCapabilities({
+      churchservice: { 'view songcategory': [], 'view agenda': [] },
+    });
+    expect(caps.canViewSongs).toBe(false);
+    expect(caps.canViewAgendas).toBe(false);
   });
 });

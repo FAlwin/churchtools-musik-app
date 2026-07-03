@@ -153,13 +153,18 @@ export function useAgendaServices(enabled: boolean) {
   });
 }
 
-/** Lädt die Rechte des angemeldeten Nutzers. */
+/** Lädt die Rechte des angemeldeten Nutzers. Dieser Aufruf ist das „Tor" zur App – schlägt er
+ *  wegen eines ChurchTools-Aussetzers (z. B. leere Rechte-Antwort → 502) fehl, versuchen wir es
+ *  mehrfach automatisch mit wachsender Pause, statt gleich das „keine Berechtigung"-Schloss bzw.
+ *  den Fehlerschirm zu zeigen. */
 export function useCapabilities(enabled: boolean) {
   return useQuery({
     queryKey: ['capabilities'],
     queryFn: () => api.getCapabilities(),
     enabled,
     staleTime: 1000 * 60 * 30,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
 }
 
