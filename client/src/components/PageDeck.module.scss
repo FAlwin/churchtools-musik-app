@@ -146,7 +146,10 @@
   transform: translate(-50%, -50%);
   font-family: var(--ui);
   font-weight: 700;
-  white-space: nowrap;
+  // pre: Zeilenumbrüche (\n) werden dargestellt, aber lange Zeilen nicht automatisch umbrochen.
+  white-space: pre;
+  text-align: center;
+  line-height: 1.15;
   user-select: none;
   touch-action: none;
   // Kein Hintergrund-Balken – nur ein dezenter weißer Halo für Lesbarkeit über Akkorden/Text.
