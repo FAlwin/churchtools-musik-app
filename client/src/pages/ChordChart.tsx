@@ -123,7 +123,7 @@ export function ChordChart({
   const [drawMode, setDrawMode] = useState(false);
   // Anmerkungs-Farben fest Schwarz/Rot/Gelb (wir arbeiten nur noch auf weißen PDF-Seiten → kein
   // Weiß, kein Dunkelmodus-Wechsel). Plus der freie Farbwähler in der Leiste.
-  const [drawColor, setDrawColor] = useState('#14110F');
+  const [drawColor, setDrawColor] = useState('#0061A1'); // Standard-Anmerkungsfarbe: Blau
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
   const [streamZoomed, setStreamZoomed] = useState(false); // eine sichtbare Seite (Strom oder Dokument) ist reingezoomt
   const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → PageDeck setzt sichtbaren Zoom zurück
@@ -136,8 +136,8 @@ export function ChordChart({
     img.src = '/logo-tight.png';
   }, []);
 
-  // Vier klar unterscheidbare Anmerkungsfarben (gut lesbar auf weißen Notenseiten).
-  const drawColors = ['#14110F', '#DD0000', '#0061A1', '#2E9E5B'];
+  // Vier Anmerkungsfarben (gut lesbar auf weißen Notenseiten): Blau, Bordeaux-Rot, Grün, Orange.
+  const drawColors = ['#0061A1', '#9B2242', '#2E7D32', '#E8730C'];
 
   // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
   const liveRef = useRef({ songs, drawMode, onReload, lastReturn: 0 });

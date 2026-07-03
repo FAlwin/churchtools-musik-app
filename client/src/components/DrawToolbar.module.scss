@@ -61,15 +61,15 @@
     border-color: var(--blue);
   }
 }
-// Eigene Farbe: neutraler Knopf mit „+" (öffnet den System-Farbwähler). Ist eine eigene Farbe
-// aktiv, zeigt der Knopf diese Farbe (Hintergrund per inline-Style).
+// Eigene Farbe: Knopf mit stets sichtbarem „+" (öffnet den System-Farbwähler). Ist eine eigene
+// Farbe aktiv, zeigt der Knopf diese Farbe (Hintergrund per inline-Style) – das „+" bleibt via
+// weißem Symbol + dunklem Halo auf jedem Untergrund erkennbar.
 .swatchCustom {
-  background: var(--surface3);
+  background: #8a8f98;
   border-color: var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text2);
   input {
     position: absolute;
     inset: 0;
@@ -80,6 +80,11 @@
     border: none;
     padding: 0;
   }
+}
+.customPlus {
+  color: #fff;
+  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.75));
+  pointer-events: none;
 }
 
 .sep {
