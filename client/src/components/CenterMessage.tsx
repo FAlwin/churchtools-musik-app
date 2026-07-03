@@ -10,17 +10,14 @@ interface CenterMessageProps {
   /** Optionale Zusatzaktion (z.B. Abmelden) mit eigenem Text. */
   actionLabel?: string;
   onAction?: () => void;
-  /** Dezenter technischer Zusatztext (z. B. Diagnose), klein/grau unter der Meldung. */
-  detail?: string;
 }
 
 /** Zentrierte Statusmeldung (Laden, leer, Fehler) für Screen-Inhalte. */
-export function CenterMessage({ loading, icon, text, onRetry, actionLabel, onAction, detail }: CenterMessageProps) {
+export function CenterMessage({ loading, icon, text, onRetry, actionLabel, onAction }: CenterMessageProps) {
   return (
     <div className={styles.wrap}>
       {loading ? <Spinner /> : icon && <div className={styles.icon}>{icon}</div>}
       <div className={styles.text}>{text}</div>
-      {detail && <pre className={styles.detail}>{detail}</pre>}
       {onRetry && (
         <button className={styles.retry} onClick={onRetry}>
           Erneut versuchen

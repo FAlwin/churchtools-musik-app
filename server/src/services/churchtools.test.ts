@@ -69,4 +69,15 @@ describe('parseCapabilities', () => {
     expect(caps.canViewSongs).toBe(false);
     expect(caps.canViewAgendas).toBe(false);
   });
+
+  // Admin (churchcore:administer persons) darf alles – auch ohne explizite Kategorie-/Kalender-Rechte.
+  it('gibt Admins Zugriff, auch bei leeren Kategorie-/Kalender-Rechten', () => {
+    const caps = parseCapabilities({
+      churchcore: { 'administer persons': [1] },
+      churchservice: { 'view songcategory': [], 'view agenda': [] },
+    });
+    expect(caps.isAdmin).toBe(true);
+    expect(caps.canViewSongs).toBe(true);
+    expect(caps.canViewAgendas).toBe(true);
+  });
 });

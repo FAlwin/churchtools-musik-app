@@ -103,9 +103,6 @@ export interface UserCapabilities {
   canEditAgendas: boolean;
   canEditSongs: boolean;
   isAdmin: boolean;
-  /** TEMP-Diagnose: nur gesetzt, wenn keine Lieder/Abläufe-Rechte erkannt wurden (Struktur der
-   *  ChurchTools-Antwort, damit ein Screenshot der Schloss-Seite die Ursache zeigt). */
-  diag?: unknown;
 }
 
 /** Ermittelt aus den ChurchTools-Rechten (Modul churchservice), was der Nutzer darf. */
@@ -115,23 +112,11 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
     '/api/permissions/global',
   );
   const caps = parseCapabilities(data);
-  // TEMP-Diagnose (#84-Nachgang): Wenn ChurchTools weder Lieder- noch Ablauf-Rechte meldet, die
-  // STRUKTUR der Antwort loggen (nur Schlüssel/IDs, keine sensiblen Inhalte) – zeigt, ob nur die
-  // Rechte-Arrays leer ankamen (sporadischer CT-Aussetzer) oder der Block wirklich fehlt.
+  // Leises Server-Log, falls ChurchTools keine Lieder/Abläufe-Rechte liefert – hilft bei künftiger
+  // Diagnose. Den sporadischen Aussetzer (alle Rechte-Arrays leer) behandelt der Client als
+  // transienten Fehler und versucht automatisch neu.
   if (!caps.canViewSongs && !caps.canViewAgendas) {
-    const cs = (data && typeof data === 'object' ? data.churchservice : undefined) as
-      | Record<string, unknown>
-      | undefined;
-    const diag = {
-      topKeys: data && typeof data === 'object' ? Object.keys(data) : null,
-      hasChurchservice: !!cs,
-      csKeys: cs ? Object.keys(cs) : null,
-      viewSongcategory: cs?.['view songcategory'] ?? null,
-      viewAgenda: cs?.['view agenda'] ?? null,
-      isAdmin: caps.isAdmin,
-    };
-    console.warn('[capabilities] keine Lieder/Abläufe-Rechte:', JSON.stringify(diag));
-    caps.diag = diag;
+    console.warn('[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer)');
   }
   return caps;
 }
@@ -158,11 +143,12 @@ export function parseCapabilities(
   // Admin-Recht aus der Konfiguration (Form `modul:recht`).
   const [adminModule, adminPerm] = config.adminPermission.split(':');
   const isAdmin = has(data[adminModule]?.[adminPerm]);
+  // Ein Admin darf ohnehin alles – auch ohne explizit zugewiesene Kategorie-/Kalender-Rechte.
   return {
-    canViewSongs: has(cs['view songcategory']),
-    canViewAgendas: has(cs['view agenda']),
-    canEditAgendas: has(cs['edit agenda']),
-    canEditSongs: has(cs['edit songcategory']),
+    canViewSongs: isAdmin || has(cs['view songcategory']),
+    canViewAgendas: isAdmin || has(cs['view agenda']),
+    canEditAgendas: isAdmin || has(cs['edit agenda']),
+    canEditSongs: isAdmin || has(cs['edit songcategory']),
     isAdmin,
   };
 }
