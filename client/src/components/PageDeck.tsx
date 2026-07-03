@@ -156,7 +156,7 @@ export function PageDeck({
   // Vorab dekodierte Strich-Bilder der Nachbarseiten (localStorage-PNGs) für den Streifen.
   const strokeImgCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const [aspects, setAspects] = useState<string[]>(['210 / 297', '210 / 297']);
-  const [textSize, setTextSize] = useState(5); // cqh = % der Seitenhöhe (gut lesbare Standardgröße)
+  const [textSize, setTextSize] = useState(1.5); // cqh = % der Seitenhöhe (~13 pt, nahe der Liedtext-Größe)
   const [confirmClear, setConfirmClear] = useState(false);
 
   const pageCount = pages.length;
@@ -1125,9 +1125,11 @@ export function PageDeck({
           }}
           textSize={textSize}
           setTextSize={setTextSize}
-          sizeStep={1}
-          sizeMin={2}
-          sizeMax={14}
+          sizeStep={0.25}
+          sizeMin={1}
+          sizeMax={10}
+          // Anzeige als vertraute „pt"-Zahl (A4-Höhe ≈ 842 pt → pt ≈ cqh × 8,42), gerundet.
+          sizeLabel={(v) => `${Math.round(v * 8.42)}`}
           allowText
           onClear={() => setConfirmClear(true)}
           isTextSelected={activeDraw.selectedId !== null}
