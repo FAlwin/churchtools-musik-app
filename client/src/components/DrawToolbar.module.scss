@@ -151,30 +151,23 @@
   }
 }
 
-// Ausklapp-Hinweis: dezentes, nach links zeigendes Dreieck an der linken Kante der Knöpfe, die
-// beim (erneuten) Antippen eine Auswahl nach links aufklappen (Farbe + die vier Werkzeuge).
-.expandable {
-  position: relative;
-}
-.expandable::after {
-  content: '';
+// Ausklapp-Hinweis: drei dezente Pünktchen unten am AKTIVEN Werkzeug – signalisiert „nochmal
+// tippen für Einstellungen", ohne das Design mit permanenten Symbolen zu belasten. currentColor
+// → auf dem aktiven (blauen) Knopf automatisch weiß.
+.moreHint {
   position: absolute;
-  left: 3px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-top: 3px solid transparent;
-  border-bottom: 3px solid transparent;
-  border-right: 4px solid currentColor;
-  opacity: 0.4;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow:
+    -4.5px 0 0 currentColor,
+    4.5px 0 0 currentColor;
+  opacity: 0.65;
   pointer-events: none;
-}
-// Auf dem farbigen Farbknopf ein weißes Dreieck mit Halo → auf jedem Farbton erkennbar.
-.colorBtn.expandable::after {
-  border-right-color: #fff;
-  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7));
-  opacity: 0.95;
 }
 .sizeOpt {
   width: 38px;
@@ -222,6 +215,7 @@
 }
 
 .toolBtn {
+  position: relative;
   width: 40px;
   height: 40px;
   border-radius: 11px;
