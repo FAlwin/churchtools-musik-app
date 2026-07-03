@@ -36,11 +36,12 @@ interface DrawToolbarProps {
   onToolSize?: (tool: 'pen' | 'marker' | 'eraser', size: number) => void;
 }
 
-// Voreingestellte Strichstärken je Werkzeug (Canvas-Pixel bei Renderskala 2).
+// Voreingestellte Strichstärken je Werkzeug (Canvas-Pixel bei Renderskala 2) – von fein bis
+// richtig dick (Marker/Radierer bis „Flächen-Format").
 const TOOL_SIZE_PRESETS: Record<'pen' | 'marker' | 'eraser', number[]> = {
-  pen: [2, 3, 5, 8],
-  marker: [12, 18, 28],
-  eraser: [16, 26, 44],
+  pen: [2, 3, 5, 10, 16],
+  marker: [12, 18, 28, 44, 64],
+  eraser: [16, 26, 44, 72, 110],
 };
 
 /**
@@ -198,7 +199,9 @@ export function DrawToolbar({
           <div className={styles.sizePopover}>
             {TOOL_SIZE_PRESETS[sizeTool].map((sz) => {
               const active = toolSizes[sizeTool] === sz;
-              const dot = Math.max(4, Math.min(24, Math.round(sz * 0.7)));
+              // Wurzel-Skala: auch die dicken Stufen (bis 110) bleiben als Punkt im Knopf
+              // darstellbar und trotzdem klar voneinander unterscheidbar.
+              const dot = Math.max(5, Math.min(30, Math.round(3.2 * Math.sqrt(sz))));
               return (
                 <button
                   key={sz}
