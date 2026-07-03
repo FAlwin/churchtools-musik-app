@@ -117,9 +117,11 @@ export default function App() {
     return (
       <Screen>
         {capsQuery.isError ? (
+          // Deckt auch den ChurchTools-Aussetzer ab (leere Rechte-Zuordnungen): getCapabilities
+          // wirft dann, nach den automatischen Neuversuchen landet man hier mit „Erneut versuchen".
           <CenterMessage
             icon="⚠️"
-            text="Berechtigungen konnten nicht geladen werden."
+            text="Berechtigungen konnten nicht geladen werden. Bitte erneut versuchen."
             onRetry={() => capsQuery.refetch()}
             actionLabel="Abmelden"
             onAction={() => auth.logout()}
@@ -127,20 +129,6 @@ export default function App() {
         ) : (
           <CenterMessage loading text="Einen Moment…" />
         )}
-      </Screen>
-    );
-  }
-
-  if (!canViewAgendas && !canViewSongs) {
-    return (
-      <Screen>
-        <CenterMessage
-          icon="🔒"
-          text="Dein ChurchTools-Konto hat keine Berechtigung für Lieder oder Abläufe."
-          actionLabel="Abmelden"
-          onAction={() => auth.logout()}
-          detail={caps.diag ? `Diagnose (bitte Screenshot): ${JSON.stringify(caps.diag)}` : undefined}
-        />
       </Screen>
     );
   }
