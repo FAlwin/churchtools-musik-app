@@ -60,9 +60,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
 
   const history = useRef<Snapshot[]>([]);
   const redoStack = useRef<Snapshot[]>([]);
-  const drag = useRef<{ id: number; sx: number; sy: number; ofx: number; ofy: number; moved: boolean; wasSel: boolean } | null>(
-    null,
-  );
+  const drag = useRef<{ id: number; sx: number; sy: number; ofx: number; ofy: number; moved: boolean } | null>(null);
 
   const drawKey = storageKey;
   const textKey = storageKey ? `${storageKey}_text` : null;
@@ -235,9 +233,8 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
 
   function startDrag(e: React.PointerEvent, o: PageTextObj) {
     e.stopPropagation();
-    const wasSel = selectedId === o.id;
     setSelectedId(o.id);
-    drag.current = { id: o.id, sx: e.clientX, sy: e.clientY, ofx: o.fx, ofy: o.fy, moved: false, wasSel };
+    drag.current = { id: o.id, sx: e.clientX, sy: e.clientY, ofx: o.fx, ofy: o.fy, moved: false };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function moveDrag(e: React.PointerEvent, id: number) {
