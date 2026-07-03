@@ -164,79 +164,35 @@
   background: rgba(255, 255, 255, 0.9);
 }
 
-// Text-Eingabe-Leiste: direkt ÜBER der Tastatur (dort, wo man schreibt), mittig.
-.textBar {
-  position: fixed;
-  bottom: calc(var(--kb, 0px) + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: min(560px, calc(100vw - 24px));
-  padding: 9px 11px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+// Inline-Eingabe: blinkender Cursor direkt an der Tipp-Stelle (wie in Word/GoodNotes).
+.textEditing {
+  outline: 0.4cqh dashed var(--blue);
+  outline-offset: 0.5cqh;
+  background: rgba(255, 255, 255, 0.94);
+  caret-color: var(--blue);
+  min-width: 2cqh; // auch ohne Text sichtbar (nur Cursor)
+  min-height: 1em;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
-.textBarInput {
-  font-family: var(--ui);
-  font-size: 17px;
-  font-weight: 700;
-  height: 40px;
-  padding: 0 12px;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface2);
-  outline: none;
-  min-width: 120px;
-  flex: 1;
-
-  &:focus {
-    border-color: var(--blue);
-  }
-}
-
-.textBarSize {
-  font-family: var(--ui);
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--text2);
+// Zieh-Knopf am Auswahlrahmen (Ecke unten rechts): Größe des Textes per Ziehen ändern.
+.textHandle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  transform: translate(65%, 65%);
+  width: 3.2cqh;
+  height: 3.2cqh;
   min-width: 18px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.textBarSizeBtn,
-.textBarOk,
-.textBarCancel {
-  flex-shrink: 0;
-  height: 40px;
-  border: none;
-  border-radius: 10px;
-  font-family: var(--ui);
-  font-weight: 800;
-  cursor: pointer;
-}
-.textBarSizeBtn {
-  width: 40px;
-  font-size: 13px;
-  background: var(--surface3);
-  color: var(--text);
-}
-.textBarOk {
-  padding: 0 16px;
-  font-size: 14px;
+  min-height: 18px;
+  border-radius: 50%;
   background: var(--blue);
-  color: #fff;
-}
-.textBarCancel {
-  width: 36px;
-  font-size: 16px;
-  background: var(--surface3);
-  color: var(--text2);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: nwse-resize;
+  touch-action: none;
+  pointer-events: all;
 }
 
 // Zoom-Anpassen-Leiste (erscheint nach einer Zoom-Geste), mittig unten.
