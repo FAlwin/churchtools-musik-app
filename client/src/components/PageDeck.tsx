@@ -60,6 +60,31 @@ export interface PageDeckProps {
   resetZoomSignal?: number;
 }
 
+// Gelernte Höhe der iOS-Bildschirmtastatur (px). Damit heben wir den Chart-Bereich schon BEIM
+// Fokussieren an – ist der Cursor beim Öffnen der Tastatur bereits sichtbar, verschiebt iOS die
+// App gar nicht erst. Persistiert, damit auch der erste Text nach einem Neustart sauber läuft.
+let lastKbHeight = Number(localStorage.getItem('musikapp:kbHeight')) || 0;
+function learnKbHeight(kb: number): void {
+  if (kb === lastKbHeight) return;
+  lastKbHeight = kb;
+  try {
+    localStorage.setItem('musikapp:kbHeight', String(kb));
+  } catch {
+    /* voll/gesperrt → nur In-Memory */
+  }
+}
+
+// iOS scrollt beim Öffnen der Tastatur nicht nur das Fenster, sondern notfalls auch GECLIPPTE
+// Vorfahren (trotz overflow:hidden), um den Cursor freizustellen → alles zurückdrehen; das
+// Freistellen übernimmt unser gezielter transform-Hub auf dem Chart-Bereich.
+function resetRevealScrolls(el: HTMLElement): void {
+  if (window.scrollY !== 0) window.scrollTo(0, 0);
+  for (let n = el.parentElement; n; n = n.parentElement) {
+    if (n.scrollTop !== 0) n.scrollTop = 0;
+    if (n.scrollLeft !== 0) n.scrollLeft = 0;
+  }
+}
+
 function isLandscape(): boolean {
   // matchMedia('orientation') ist beim Screen-Wechsel/SPA-Navigation stabiler als innerWidth/Height
   // (die kurzzeitig falsch gemeldet werden) → verhindert, dass der Zoom-Schlüssel (perView) kippt
@@ -663,32 +688,49 @@ export function PageDeck({
     const vv = window.visualViewport;
     const root = rootRef.current;
     if (!anyPending || !vv || !root) return;
+    const slot = drawA.pending ? 0 : 1;
     const adjust = () => {
-      if (window.scrollY !== 0) window.scrollTo(0, 0);
-      root.style.transform = ''; // erst zurücksetzen → natürliche Position messen
-      const slot = drawA.pending ? 0 : 1;
       const el = editRefs.current[slot];
-      const kb = window.innerHeight - vv.height - vv.offsetTop;
-      if (!el || kb <= 0) return;
+      if (!el) return;
+      resetRevealScrolls(el);
+      // Tastaturhöhe gegen die EINGEFRORENE App-Höhe messen (main.tsx pausiert --app-h beim
+      // Tippen) → funktioniert egal, ob iOS die Tastatur überlagert oder das Fenster verkleinert.
+      const kb = Math.round(document.documentElement.clientHeight - vv.height - vv.offsetTop);
+      // (Noch) keine Bildschirmtastatur → den Vorab-Hub aus focusEditor nicht anfassen.
+      if (kb <= 60) return;
+      learnKbHeight(kb);
+      root.style.transform = ''; // erst zurücksetzen → natürliche Position messen
       const overlap = el.getBoundingClientRect().bottom + 12 - (vv.offsetTop + vv.height);
       if (overlap > 0) root.style.transform = `translateY(${-Math.ceil(overlap)}px)`;
     };
     adjust();
     vv.addEventListener('resize', adjust);
     vv.addEventListener('scroll', adjust);
+    // capture:true fängt auch Scrolls der Vorfahren-Container (die kein window-Scroll sind).
+    document.addEventListener('scroll', adjust, true);
     return () => {
       vv.removeEventListener('resize', adjust);
       vv.removeEventListener('scroll', adjust);
+      document.removeEventListener('scroll', adjust, true);
       root.style.transform = '';
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anyPending]);
+  }, [anyPending, drawA.pending, drawB.pending]);
 
   // Inline-Eingabe fokussieren + Cursor ans Ende. MUSS synchron in der Tipp-Geste passieren,
   // damit iOS die Tastatur öffnet (asynchroner Fokus per setTimeout wird von iOS ignoriert).
   function focusEditor(slot: number) {
     const el = editRefs.current[slot];
     if (!el) return;
+    // VOR dem Fokus anheben (gelernte Tastaturhöhe): ist der Cursor beim Aufklappen der Tastatur
+    // schon frei, verschiebt iOS Fenster/Container gar nicht erst. Ohne gelernte Höhe (z. B.
+    // Hardware-Tastatur) passiert hier nichts – dann korrigiert notfalls adjust() oben.
+    const root = rootRef.current;
+    if (root && lastKbHeight > 0) {
+      root.style.transform = '';
+      const overlap = el.getBoundingClientRect().bottom + 12 - (document.documentElement.clientHeight - lastKbHeight);
+      if (overlap > 0) root.style.transform = `translateY(${-Math.ceil(overlap)}px)`;
+    }
     el.focus();
     const range = document.createRange();
     range.selectNodeContents(el);
