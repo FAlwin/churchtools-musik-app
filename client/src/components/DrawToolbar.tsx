@@ -104,7 +104,6 @@ export function DrawToolbar({
   // Format (Fett/Kursiv/Unterstrichen/Ausrichtung): bei ausgewähltem Text dessen Stil, sonst der
   // Pinsel-Stil für neu platzierten Text.
   const activeStyle = (isTextSelected ? selectedStyle : textStyle) ?? textStyle;
-  const showFormat = showSize && !!activeStyle;
   function toggleFmt(key: 'bold' | 'italic' | 'underline') {
     if (isTextSelected) onSelectedStyle?.({ [key]: !activeStyle?.[key] });
     else setTextStyle?.((s) => ({ ...s, [key]: !s[key] }));
@@ -195,120 +194,129 @@ export function DrawToolbar({
 
       <div className={styles.sep} />
 
-      {/* Werkzeuge – erneuter Tipp auf das aktive Zeichenwerkzeug öffnet die Strichstärke. */}
+      {/* Werkzeuge – jedes in einem Slot, damit sein Popover genau auf SEINER Höhe links ausklappt.
+          Erneuter Tipp auf das aktive Zeichenwerkzeug öffnet die Strichstärke; das Text-Werkzeug
+          zeigt seine Einstellungen (Größe/Format) als horizontalen Balken. */}
       <div className={styles.toolsGroup} ref={toolsRef}>
         {(['pen', 'marker', 'eraser'] as const).map((t) => (
-          <button
-            key={t}
-            className={`${styles.toolBtn}${drawTool === t ? ' ' + styles.on : ''}`}
-            onClick={() => chooseTool(t)}
-            title={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
-            aria-label={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
-          >
-            <Icon name={t === 'pen' ? 'pencil' : t === 'marker' ? 'marker' : 'eraser'} size={20} stroke={2} />
-          </button>
+          <div key={t} className={styles.toolSlot}>
+            <button
+              className={`${styles.toolBtn}${drawTool === t ? ' ' + styles.on : ''}`}
+              onClick={() => chooseTool(t)}
+              title={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
+              aria-label={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
+            >
+              <Icon name={t === 'pen' ? 'pencil' : t === 'marker' ? 'marker' : 'eraser'} size={20} stroke={2} />
+            </button>
+            {/* Strichstärke-Popover – klappt auf Höhe GENAU dieses Werkzeugs nach links auf. */}
+            {sizeTool === t && toolSizes && onToolSize && (
+              <div className={styles.sizePopover}>
+                {TOOL_SIZE_PRESETS[t].map((sz) => {
+                  const active = toolSizes[t] === sz;
+                  // Wurzel-Skala: auch die dicken Stufen (bis 110) bleiben als Punkt im Knopf
+                  // darstellbar und trotzdem klar voneinander unterscheidbar.
+                  const dot = Math.max(5, Math.min(30, Math.round(3.2 * Math.sqrt(sz))));
+                  return (
+                    <button
+                      key={sz}
+                      className={`${styles.sizeOpt}${active ? ' ' + styles.sizeOptOn : ''}`}
+                      onClick={() => {
+                        onToolSize(t, sz);
+                        setSizeTool(null);
+                      }}
+                      aria-label={`Stärke ${sz}`}
+                    >
+                      <span className={styles.sizeDot} style={{ width: dot, height: dot }} />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         ))}
         {allowText && (
-          <button
-            className={`${styles.toolBtn}${drawTool === 'text' ? ' ' + styles.on : ''}`}
-            onClick={() => chooseTool('text')}
-            title="Text"
-            aria-label="Text"
-          >
-            <Icon name="type" size={20} stroke={2} />
-          </button>
-        )}
-        {/* Strichstärke-Popover (links) für das aktive Zeichenwerkzeug */}
-        {sizeTool && toolSizes && onToolSize && (
-          <div className={styles.sizePopover}>
-            {TOOL_SIZE_PRESETS[sizeTool].map((sz) => {
-              const active = toolSizes[sizeTool] === sz;
-              // Wurzel-Skala: auch die dicken Stufen (bis 110) bleiben als Punkt im Knopf
-              // darstellbar und trotzdem klar voneinander unterscheidbar.
-              const dot = Math.max(5, Math.min(30, Math.round(3.2 * Math.sqrt(sz))));
-              return (
+          <div className={styles.toolSlot}>
+            <button
+              className={`${styles.toolBtn}${drawTool === 'text' ? ' ' + styles.on : ''}`}
+              onClick={() => chooseTool('text')}
+              title="Text"
+              aria-label="Text"
+            >
+              <Icon name="type" size={20} stroke={2} />
+            </button>
+            {/* Text-Einstellungen als horizontaler Balken links neben dem Text-Werkzeug:
+                Größe · Fett/Kursiv/Unterstrichen · Ausrichtung. */}
+            {showSize && activeStyle && (
+              <div className={styles.textPopover}>
                 <button
-                  key={sz}
-                  className={`${styles.sizeOpt}${active ? ' ' + styles.sizeOptOn : ''}`}
-                  onClick={() => {
-                    onToolSize(sizeTool, sz);
-                    setSizeTool(null);
-                  }}
-                  aria-label={`Stärke ${sz}`}
+                  className={styles.toolBtn}
+                  onClick={() => changeSize(-sizeStep)}
+                  title="Kleiner"
+                  aria-label="Kleiner"
                 >
-                  <span className={styles.sizeDot} style={{ width: dot, height: dot }} />
+                  <span className={styles.sizeBtnLabel}>A−</span>
                 </button>
-              );
-            })}
+                <span className={styles.sizeValue}>{sizeLabel ? sizeLabel(shownSize) : Math.round(shownSize)}</span>
+                <button
+                  className={styles.toolBtn}
+                  onClick={() => changeSize(sizeStep)}
+                  title="Größer"
+                  aria-label="Größer"
+                >
+                  <span className={styles.sizeBtnLabel}>A+</span>
+                </button>
+                <div className={styles.vsep} />
+                <button
+                  className={`${styles.toolBtn}${activeStyle.bold ? ' ' + styles.on : ''}`}
+                  onClick={() => toggleFmt('bold')}
+                  title="Fett"
+                  aria-label="Fett"
+                  aria-pressed={activeStyle.bold}
+                >
+                  <span className={styles.fmtLabel} style={{ fontWeight: 800 }}>
+                    B
+                  </span>
+                </button>
+                <button
+                  className={`${styles.toolBtn}${activeStyle.italic ? ' ' + styles.on : ''}`}
+                  onClick={() => toggleFmt('italic')}
+                  title="Kursiv"
+                  aria-label="Kursiv"
+                  aria-pressed={activeStyle.italic}
+                >
+                  <span className={styles.fmtLabel} style={{ fontStyle: 'italic', fontWeight: 600 }}>
+                    I
+                  </span>
+                </button>
+                <button
+                  className={`${styles.toolBtn}${activeStyle.underline ? ' ' + styles.on : ''}`}
+                  onClick={() => toggleFmt('underline')}
+                  title="Unterstrichen"
+                  aria-label="Unterstrichen"
+                  aria-pressed={activeStyle.underline}
+                >
+                  <span className={styles.fmtLabel} style={{ textDecoration: 'underline', fontWeight: 600 }}>
+                    U
+                  </span>
+                </button>
+                <div className={styles.vsep} />
+                {(['left', 'center', 'right'] as const).map((a) => (
+                  <button
+                    key={a}
+                    className={`${styles.toolBtn}${activeStyle.align === a ? ' ' + styles.on : ''}`}
+                    onClick={() => setAlign(a)}
+                    title={a === 'left' ? 'Linksbündig' : a === 'center' ? 'Zentriert' : 'Rechtsbündig'}
+                    aria-label={a === 'left' ? 'Linksbündig' : a === 'center' ? 'Zentriert' : 'Rechtsbündig'}
+                    aria-pressed={activeStyle.align === a}
+                  >
+                    <Icon name={`align-${a}` as 'align-left' | 'align-center' | 'align-right'} size={19} stroke={2} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
-
-      {/* Größe (nur bei Text-Werkzeug oder ausgewähltem Text) */}
-      {showSize && (
-        <>
-          <div className={styles.sep} />
-          <button className={styles.toolBtn} onClick={() => changeSize(-sizeStep)} title="Kleiner" aria-label="Kleiner">
-            <span className={styles.sizeBtnLabel}>A−</span>
-          </button>
-          <span className={styles.sizeValue}>{sizeLabel ? sizeLabel(shownSize) : Math.round(shownSize)}</span>
-          <button className={styles.toolBtn} onClick={() => changeSize(sizeStep)} title="Größer" aria-label="Größer">
-            <span className={styles.sizeBtnLabel}>A+</span>
-          </button>
-        </>
-      )}
-
-      {/* Format: Fett/Kursiv/Unterstrichen + Ausrichtung (gilt je Textblock) */}
-      {showFormat && activeStyle && (
-        <>
-          <div className={styles.sep} />
-          <button
-            className={`${styles.toolBtn}${activeStyle.bold ? ' ' + styles.on : ''}`}
-            onClick={() => toggleFmt('bold')}
-            title="Fett"
-            aria-label="Fett"
-            aria-pressed={activeStyle.bold}
-          >
-            <span className={styles.fmtLabel} style={{ fontWeight: 800 }}>
-              B
-            </span>
-          </button>
-          <button
-            className={`${styles.toolBtn}${activeStyle.italic ? ' ' + styles.on : ''}`}
-            onClick={() => toggleFmt('italic')}
-            title="Kursiv"
-            aria-label="Kursiv"
-            aria-pressed={activeStyle.italic}
-          >
-            <span className={styles.fmtLabel} style={{ fontStyle: 'italic', fontWeight: 600 }}>
-              I
-            </span>
-          </button>
-          <button
-            className={`${styles.toolBtn}${activeStyle.underline ? ' ' + styles.on : ''}`}
-            onClick={() => toggleFmt('underline')}
-            title="Unterstrichen"
-            aria-label="Unterstrichen"
-            aria-pressed={activeStyle.underline}
-          >
-            <span className={styles.fmtLabel} style={{ textDecoration: 'underline', fontWeight: 600 }}>
-              U
-            </span>
-          </button>
-          {(['left', 'center', 'right'] as const).map((a) => (
-            <button
-              key={a}
-              className={`${styles.toolBtn}${activeStyle.align === a ? ' ' + styles.on : ''}`}
-              onClick={() => setAlign(a)}
-              title={a === 'left' ? 'Linksbündig' : a === 'center' ? 'Zentriert' : 'Rechtsbündig'}
-              aria-label={a === 'left' ? 'Linksbündig' : a === 'center' ? 'Zentriert' : 'Rechtsbündig'}
-              aria-pressed={activeStyle.align === a}
-            >
-              <Icon name={`align-${a}` as 'align-left' | 'align-center' | 'align-right'} size={19} stroke={2} />
-            </button>
-          ))}
-        </>
-      )}
 
       {/* Aktionen */}
       <div className={styles.sep} />
