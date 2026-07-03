@@ -135,6 +135,47 @@
   margin: 0 2px;
   flex-shrink: 0;
 }
+
+// Der Text-Balken kann breit werden → auf schmalen Screens (Handy) umbrechen und in der Breite
+// begrenzen, damit er NIE über den Bildschirmrand hinausragt (statt abgeschnitten zu werden).
+.textPopover {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: calc(100vw - 84px);
+}
+@media (max-width: 640px) {
+  .textPopover {
+    border-radius: 20px; // mehrzeilig sieht ein leicht gerundetes Rechteck besser aus als eine Pille
+    gap: 5px;
+    padding: 7px 8px;
+  }
+}
+
+// Ausklapp-Hinweis: dezentes, nach links zeigendes Dreieck an der linken Kante der Knöpfe, die
+// beim (erneuten) Antippen eine Auswahl nach links aufklappen (Farbe + die vier Werkzeuge).
+.expandable {
+  position: relative;
+}
+.expandable::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-right: 4px solid currentColor;
+  opacity: 0.4;
+  pointer-events: none;
+}
+// Auf dem farbigen Farbknopf ein weißes Dreieck mit Halo → auf jedem Farbton erkennbar.
+.colorBtn.expandable::after {
+  border-right-color: #fff;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7));
+  opacity: 0.95;
+}
 .sizeOpt {
   width: 38px;
   height: 38px;
