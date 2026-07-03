@@ -134,11 +134,17 @@ Im 2-up ist beim Anmerken nur die **aktive** Seite beschreibbar (die andere ausg
 
 **Anmerkungen** kapselt `hooks/usePageDraw.ts` **pro Seite**: Striche (Stift/Marker/Radierer) auf einer
 Anno-Canvas + Textfelder + **Rückgängig/Wiederholen**. Text wird **inline direkt auf der Seite**
-bearbeitet (Tipp = Cursor an der Stelle; außerhalb tippen legt fest; Tipp auf Text = auswählen,
-nochmal = bearbeiten, ziehen = verschieben, Ecken-Ziehknopf = Größe). Marker als **eine**
-halbtransparente Linie (Schnappschuss-Technik). Werkzeugleiste `components/DrawToolbar.tsx`:
-Farbknopf mit Aufklapp-Palette, vier Farben (Rot/Blau/Grün/Orange) + freier Picker; Größenanzeige
-in „pt" (intern cqh).
+bearbeitet (Tipp = Cursor an der Stelle; außerhalb tippen legt fest; **ein** Tipp auf einen Text
+öffnet ihn direkt zum Bearbeiten; ziehen = verschieben, Ecken-Ziehknopf = Größe; Zeilenumbrüche
+erlaubt). **Text-Format je Block** (fett/kursiv/unterstrichen + links/mitte/rechts) als optionale
+Felder in `PageTextObj` (`DEFAULT_TEXT_STYLE` = normal & mittig; Bestandstexte ohne `bold`-Feld
+gelten als fett → Fallback). Marker als **eine** halbtransparente Linie (Schnappschuss-Technik).
+Werkzeugleiste `components/DrawToolbar.tsx`: Farbknopf mit Aufklapp-Palette (vier Farben
+Rot/Blau/Grün/Orange + freier Picker). **Einheitliche Bedienung:** erster Tipp wählt ein Werkzeug,
+zweiter Tipp klappt dessen Einstellungen links auf Höhe des Werkzeugs auf (`expandedTool`) –
+Strichstärke bei Stift/Marker/Radierer, Text-Einstellungen als **senkrechte Spalte** (Größe in
+„pt" · Format · Ausrichtung); ein dezenter Punkt-Hinweis (`.moreHint`) am aktiven Werkzeug zeigt
+das an.
 
 **Speicherung pro Konto (Server, geräteübergreifend):** Anmerkungen + Zoom laufen über
 `services/annotations.ts` (localStorage = Cache, debounced Push, Pull beim Laden/Rückkehr/30 s; Pull

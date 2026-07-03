@@ -21,8 +21,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   die andere ist ausgegraut und gesperrt; ein Tipp wechselt die aktive Seite (kein versehentliches
   Kritzeln auf der falschen Seite mehr).
 - **Text-Anmerkungen direkt auf der Seite:** Antippen setzt einen Cursor genau an der Stelle
-  (wie in Word) – lostippen, außerhalb tippen legt den Text fest. Ausgewählten Text verschieben,
-  Größe über einen Ziehknopf ändern (Anzeige in vertrauten „pt").
+  (wie in Word) – lostippen, außerhalb tippen legt den Text fest. Zeilenumbrüche möglich;
+  ausgewählten Text verschieben, Größe über einen Ziehknopf ändern (Anzeige in vertrauten „pt");
+  ein Tipp auf einen bestehenden Text öffnet ihn direkt zum Bearbeiten.
+- **Text formatieren:** Fett, Kursiv, Unterstrichen sowie linksbündig/zentriert/rechtsbündig –
+  je Textblock, wirkt live auf den ausgewählten Text bzw. auf den nächsten neuen.
+- **Dickere Strichstärken:** Stift, Marker und Radierer bieten zusätzliche, deutlich dickere
+  Stufen (Radierer bis „Flächen-Format").
 - **Akkorde per 1-Tipp:** Im Editor fügt ein Tipp auf den Grundton den Akkord sofort ein; Zusätze
   (m, 7, maj7, sus4 …) und Bass (Slash-Akkorde wie A/C#) hängen sich direkt an.
 - **Staging-Version sichtbar:** Auf der Test-Instanz zeigt der „Mehr"-Tab den Build-Stand
@@ -36,6 +41,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   automatisch, Zurücksetzen über den Knopf in der Kopfleiste.
 - **Anmerkungs-Werkzeugleiste** aufgeräumt: klare, einheitliche Icons, größere Knöpfe, ein
   Farbknopf mit aufklappender Farbreihe. Vier Farben (Rot, Blau, Grün, Orange) + eigener Farbwähler.
+  Alle Werkzeuge einheitlich bedienbar: erster Tipp wählt, zweiter Tipp klappt die Einstellungen
+  auf (Strichstärke bzw. Text-Einstellungen als eigener Balken), ein dezenter Punkt-Hinweis am
+  aktiven Werkzeug zeigt das an. Die Einstellungen klappen jeweils auf Höhe ihres Werkzeugs auf.
 - **Editor** aufgeräumt: kompakter Kopf, moderner Text-Look (proportional statt „Schreibmaschine",
   Akkorde farbig), mehrseitige und scharfe Vorschau.
 - Die Fußzeilen-Punkte markieren im Querformat beide sichtbaren Lieder.
@@ -46,6 +54,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Lied-/Seitenwechsel, Hochformat↔Querformat und das Öffnen/Schließen des Editors; kein
   Zurückspringen zur Mitte mehr, gleiche Seite links wie rechts.
 - **Editor-Tastatur** schiebt nicht mehr die ganze Ansicht hoch – nur der Textbereich scrollt.
+- **Text-Anmerkung auf dem iPad:** Die Bildschirmtastatur öffnet jetzt zuverlässig und schiebt
+  die Ansicht nicht mehr weg – nur der Notenbereich hebt sich so weit, dass der Cursor sichtbar
+  bleibt; kein hängender Balken beim Schließen der Tastatur mehr.
+- **Sporadisches „keine Berechtigung"-Schloss behoben:** Eine kurzzeitig leere Rechte-Antwort von
+  ChurchTools wird jetzt als Aussetzer erkannt und automatisch erneut versucht, statt fälschlich
+  „keine Berechtigung für Lieder oder Abläufe" anzuzeigen.
 - Einseitige PDF steht im Querformat an der richtigen Stelle (rechts neben dem Vorgänger).
 
 ## [2.3.2] – 2026-07-02
