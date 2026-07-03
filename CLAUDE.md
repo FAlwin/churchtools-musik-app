@@ -150,7 +150,9 @@ das an.
 `services/annotations.ts` (localStorage = Cache, debounced Push, Pull beim Laden/Rückkehr/30 s; Pull
 überspringt Seiten mit noch nicht hochgeladener **oder gerade laufender** Änderung; ausstehende
 Uploads werden beim App-Verlassen sofort via `keepalive` geschickt). Pro-Lied-Einstellungen über
-`services/userSettings.ts`. **Schlüssel** je Eintrag: `song<id>_v<versionKey>_<seite>` (Zoom zusätzlich
+`services/userSettings.ts` (`utils/songVersions.ts`). **Anzeige-Einstellungen (Spalten `cols`,
+Textgröße `fs`) werden geräteübergreifend synchronisiert** (kein Geräte-Suffix); **NUR der Zoom
+bleibt pro Geräteklasse getrennt**. **Schlüssel** je Eintrag: `song<id>_v<versionKey>_<seite>` (Zoom zusätzlich
 `_d<geräteklasse><spalten>`, z. B. `_dlarge2`; **`KEY_RE` in `annotations.ts` UND die Server-Zod-Regel
 müssen diese Layout-Ziffer erlauben** – sonst wird der Querformat-Zoom nicht gesynct; Regressionstest
 `annotations.keys.test.ts`). Dokument-Anmerkungen nutzen `worship_docdraw_<fileId>_<seite>`.
