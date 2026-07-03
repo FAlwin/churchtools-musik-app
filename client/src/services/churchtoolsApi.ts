@@ -178,15 +178,12 @@ export function linkSongToAgendaItem(
   });
 }
 
-/** Hebt die Lied-Verknüpfung eines Punkts auf (Punkt bleibt als Text mit dem Liedtitel). */
-export function unlinkSongFromAgendaItem(
-  eventId: number,
-  itemId: number,
-  title: string,
-): Promise<{ ok: boolean }> {
+/** Hebt die Lied-Verknüpfung eines Punkts auf (Punkt bleibt als leerer Text-Eintrag; der Server
+ *  leert den Titel, damit der Liedtitel nicht zurückbleibt). */
+export function unlinkSongFromAgendaItem(eventId: number, itemId: number): Promise<{ ok: boolean }> {
   return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
     method: 'PUT',
-    body: JSON.stringify({ unlink: true, title }),
+    body: JSON.stringify({ unlink: true }),
   });
 }
 
