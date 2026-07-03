@@ -689,6 +689,10 @@ export function PageDeck({
     const root = rootRef.current;
     if (!anyPending || !vv || !root) return;
     const slot = drawA.pending ? 0 : 1;
+    // Merkt sich, ob die Tastatur in dieser Edit-Session schon offen war → unterscheidet den
+    // initialen Aufruf (Vorab-Hub aus focusEditor NICHT anfassen) vom Schließen der Tastatur
+    // (Hub zurücknehmen, sonst bleibt im Querformat ein grauer Balken hängen).
+    let kbWasOpen = false;
     const adjust = () => {
       const el = editRefs.current[slot];
       if (!el) return;
@@ -696,8 +700,13 @@ export function PageDeck({
       // Tastaturhöhe gegen die EINGEFRORENE App-Höhe messen (main.tsx pausiert --app-h beim
       // Tippen) → funktioniert egal, ob iOS die Tastatur überlagert oder das Fenster verkleinert.
       const kb = Math.round(document.documentElement.clientHeight - vv.height - vv.offsetTop);
-      // (Noch) keine Bildschirmtastatur → den Vorab-Hub aus focusEditor nicht anfassen.
-      if (kb <= 60) return;
+      if (kb <= 60) {
+        // Tastatur (wieder) zu: Vorab-Hub nur zurücknehmen, wenn sie zwischendurch offen war –
+        // sonst würde der initiale Aufruf den Hub aus focusEditor sofort löschen.
+        if (kbWasOpen) root.style.transform = '';
+        return;
+      }
+      kbWasOpen = true;
       learnKbHeight(kb);
       root.style.transform = ''; // erst zurücksetzen → natürliche Position messen
       const overlap = el.getBoundingClientRect().bottom + 12 - (vv.offsetTop + vv.height);
