@@ -31,7 +31,17 @@ interface DrawToolbarProps {
   onRedo?: () => void;
   canRedo?: boolean;
   onDeleteSelected?: () => void;
+  /** Strichstärke je Werkzeug + Setter (erneuter Tipp auf das aktive Werkzeug öffnet die Auswahl). */
+  toolSizes?: { pen: number; marker: number; eraser: number };
+  onToolSize?: (tool: 'pen' | 'marker' | 'eraser', size: number) => void;
 }
+
+// Voreingestellte Strichstärken je Werkzeug (Canvas-Pixel bei Renderskala 2).
+const TOOL_SIZE_PRESETS: Record<'pen' | 'marker' | 'eraser', number[]> = {
+  pen: [2, 3, 5, 8],
+  marker: [12, 18, 28],
+  eraser: [16, 26, 44],
+};
 
 /**
  * Aufgeräumte, vertikale Werkzeugleiste für den Zeichenmodus (rechter Rand): ein Farbknopf mit
@@ -63,9 +73,14 @@ export function DrawToolbar({
   onRedo,
   canRedo,
   onDeleteSelected,
+  toolSizes,
+  onToolSize,
 }: DrawToolbarProps) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const colorWrapRef = useRef<HTMLDivElement>(null);
+  // Offenes Größen-Popover für ein Zeichenwerkzeug (erneuter Tipp auf das aktive Werkzeug).
+  const [sizeTool, setSizeTool] = useState<'pen' | 'marker' | 'eraser' | null>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
 
   // Aktive Farbe/Größe: bei ausgewähltem Text dessen Werte, sonst die Voreinstellung.
   const activeColor = (isTextSelected ? selectedColor : drawColor) ?? drawColor;
@@ -93,6 +108,25 @@ export function DrawToolbar({
     if (isTextSelected) onSelectedResize?.(delta);
     else setTextSize?.((s) => Math.max(sizeMin, Math.min(sizeMax, s + delta)));
   }
+  // Werkzeug wählen; erneuter Tipp auf das AKTIVE Zeichenwerkzeug öffnet die Strichstärke-Auswahl.
+  function chooseTool(t: DrawTool) {
+    if ((t === 'pen' || t === 'marker' || t === 'eraser') && t === drawTool && onToolSize) {
+      setSizeTool((cur) => (cur === t ? null : t));
+      return;
+    }
+    setDrawTool(t);
+    setSizeTool(null);
+  }
+
+  // Strichstärke-Popover bei Klick außerhalb schließen.
+  useEffect(() => {
+    if (!sizeTool) return;
+    const onDown = (e: PointerEvent) => {
+      if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) setSizeTool(null);
+    };
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [sizeTool]);
 
   return (
     <div className={styles.toolbar}>
@@ -136,41 +170,52 @@ export function DrawToolbar({
 
       <div className={styles.sep} />
 
-      {/* Werkzeuge */}
-      <button
-        className={`${styles.toolBtn}${drawTool === 'pen' ? ' ' + styles.on : ''}`}
-        onClick={() => setDrawTool('pen')}
-        title="Stift"
-        aria-label="Stift"
-      >
-        <Icon name="pencil" size={20} stroke={2} />
-      </button>
-      <button
-        className={`${styles.toolBtn}${drawTool === 'marker' ? ' ' + styles.on : ''}`}
-        onClick={() => setDrawTool('marker')}
-        title="Marker"
-        aria-label="Marker"
-      >
-        <Icon name="marker" size={20} stroke={2} />
-      </button>
-      <button
-        className={`${styles.toolBtn}${drawTool === 'eraser' ? ' ' + styles.on : ''}`}
-        onClick={() => setDrawTool('eraser')}
-        title="Radierer"
-        aria-label="Radierer"
-      >
-        <Icon name="eraser" size={20} stroke={2} />
-      </button>
-      {allowText && (
-        <button
-          className={`${styles.toolBtn}${drawTool === 'text' ? ' ' + styles.on : ''}`}
-          onClick={() => setDrawTool('text')}
-          title="Text"
-          aria-label="Text"
-        >
-          <Icon name="type" size={20} stroke={2} />
-        </button>
-      )}
+      {/* Werkzeuge – erneuter Tipp auf das aktive Zeichenwerkzeug öffnet die Strichstärke. */}
+      <div className={styles.toolsGroup} ref={toolsRef}>
+        {(['pen', 'marker', 'eraser'] as const).map((t) => (
+          <button
+            key={t}
+            className={`${styles.toolBtn}${drawTool === t ? ' ' + styles.on : ''}`}
+            onClick={() => chooseTool(t)}
+            title={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
+            aria-label={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
+          >
+            <Icon name={t === 'pen' ? 'pencil' : t === 'marker' ? 'marker' : 'eraser'} size={20} stroke={2} />
+          </button>
+        ))}
+        {allowText && (
+          <button
+            className={`${styles.toolBtn}${drawTool === 'text' ? ' ' + styles.on : ''}`}
+            onClick={() => chooseTool('text')}
+            title="Text"
+            aria-label="Text"
+          >
+            <Icon name="type" size={20} stroke={2} />
+          </button>
+        )}
+        {/* Strichstärke-Popover (links) für das aktive Zeichenwerkzeug */}
+        {sizeTool && toolSizes && onToolSize && (
+          <div className={styles.sizePopover}>
+            {TOOL_SIZE_PRESETS[sizeTool].map((sz) => {
+              const active = toolSizes[sizeTool] === sz;
+              const dot = Math.max(4, Math.min(24, Math.round(sz * 0.7)));
+              return (
+                <button
+                  key={sz}
+                  className={`${styles.sizeOpt}${active ? ' ' + styles.sizeOptOn : ''}`}
+                  onClick={() => {
+                    onToolSize(sizeTool, sz);
+                    setSizeTool(null);
+                  }}
+                  aria-label={`Stärke ${sz}`}
+                >
+                  <span className={styles.sizeDot} style={{ width: dot, height: dot }} />
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Größe (nur bei Text-Werkzeug oder ausgewähltem Text) */}
       {showSize && (
