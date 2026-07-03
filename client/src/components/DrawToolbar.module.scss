@@ -127,42 +127,26 @@
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
   white-space: nowrap;
 }
-// Trenner im Text-Balken (Größe | Format | Ausrichtung). align-self:stretch → durchgehende Linie
-// über die volle Balken-Höhe (im liegenden iPad-Balken senkrecht) – sauber „wie am iPhone", wo
-// derselbe Trenner im stehenden Balken waagerecht über die volle Breite läuft.
+// Der Text-Balken ist auf ALLEN Geräten eine senkrechte Spalte (A−/13/A+ · B/I/U · Ausrichtung
+// untereinander) – einheitlicher, aufgeräumter Look. max-height + overflow als Schutz, falls die
+// Spalte mal höher als der Bildschirm wäre (z. B. Handy quer).
+.textPopover {
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  border-radius: 20px;
+  white-space: normal;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+// Trenner zwischen den Abschnitten: dezente waagerechte Linie über die volle Balken-Breite.
 .vsep {
   align-self: stretch;
-  width: 1px;
+  height: 1px;
   background: var(--border);
-  margin: 4px;
+  margin: 3px 4px;
   flex-shrink: 0;
-}
-
-// Der Text-Balken kann breit werden → auf schmalen Screens (Handy) umbrechen und in der Breite
-// begrenzen, damit er NIE über den Bildschirmrand hinausragt (statt abgeschnitten zu werden).
-.textPopover {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  max-width: calc(100vw - 84px);
-}
-// Auf schmalen Screens (Handy) als saubere senkrechte Spalte statt zufälligem Umbruch – die
-// Abschnitts-Trenner laufen dann waagerecht über die volle Breite (schöner als kurze senkrechte
-// Striche im Umbruch).
-@media (max-width: 640px) {
-  .textPopover {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    max-width: none;
-    border-radius: 20px;
-    gap: 5px;
-    padding: 8px;
-  }
-  .textPopover .vsep {
-    align-self: stretch;
-    width: auto;
-    height: 1px;
-    margin: 3px 4px;
-  }
 }
 
 // Ausklapp-Hinweis: drei dezente Pünktchen unten am AKTIVEN Werkzeug – signalisiert „nochmal
