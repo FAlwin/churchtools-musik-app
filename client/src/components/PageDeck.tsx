@@ -103,6 +103,7 @@ export function PageDeck({
   onZoomedChange,
   resetZoomSignal = 0,
 }: PageDeckProps) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
   // Inline-Texteingabe direkt auf der Seite (blinkender Cursor statt separater Leiste).
   const editRefs = useRef<(HTMLSpanElement | null)[]>([null, null]);
   const textCommitLock = useRef<[boolean, boolean]>([false, false]); // gegen Doppel-Commit (Blur + Tipp)
@@ -637,7 +638,13 @@ export function PageDeck({
     if (!d.pending || textCommitLock.current[slot]) return;
     textCommitLock.current[slot] = true;
     const el = editRefs.current[slot];
-    const value = (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    // innerText (nicht textContent) → erhält Zeilenumbrüche als \n; nur Ränder trimmen,
+    // interne Umbrüche/Abstände bleiben erhalten.
+    const value = (el?.innerText ?? '')
+      .replace(/\u00A0/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/[ \t]+\n/g, '\n')
+      .trim();
     d.confirmText(value, drawColor, textSize);
   }
   // Lock wieder freigeben, sobald die jeweilige Eingabe geschlossen/geöffnet wurde.
@@ -647,6 +654,35 @@ export function PageDeck({
   useEffect(() => {
     textCommitLock.current[1] = false;
   }, [drawB.pending]);
+
+  // Beim Text-Bearbeiten die iOS-Tastatur „vermeiden": statt die GANZE Seite hochzuschieben
+  // (iOS-Verhalten) heben wir NUR den Chart-Bereich so weit an, dass der Cursor knapp über der
+  // Tastatur sitzt – und setzen den Fenster-Scroll zurück, damit App-Kopf/-Fuß stehen bleiben.
+  const anyPending = !!(drawA.pending || drawB.pending);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const root = rootRef.current;
+    if (!anyPending || !vv || !root) return;
+    const adjust = () => {
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+      root.style.transform = ''; // erst zurücksetzen → natürliche Position messen
+      const slot = drawA.pending ? 0 : 1;
+      const el = editRefs.current[slot];
+      const kb = window.innerHeight - vv.height - vv.offsetTop;
+      if (!el || kb <= 0) return;
+      const overlap = el.getBoundingClientRect().bottom + 12 - (vv.offsetTop + vv.height);
+      if (overlap > 0) root.style.transform = `translateY(${-Math.ceil(overlap)}px)`;
+    };
+    adjust();
+    vv.addEventListener('resize', adjust);
+    vv.addEventListener('scroll', adjust);
+    return () => {
+      vv.removeEventListener('resize', adjust);
+      vv.removeEventListener('scroll', adjust);
+      root.style.transform = '';
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anyPending]);
 
   // Inline-Eingabe fokussieren + Cursor ans Ende. MUSS synchron in der Tipp-Geste passieren,
   // damit iOS die Tastatur öffnet (asynchroner Fokus per setTimeout wird von iOS ignoriert).
@@ -867,7 +903,7 @@ export function PageDeck({
     : null;
 
   return (
-    <div className={styles.root} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={onClick}>
+    <div ref={rootRef} className={styles.root} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={onClick}>
       {loading && (
         <div className={styles.center}>
           <Spinner />
@@ -1044,11 +1080,12 @@ export function PageDeck({
                               onPointerDown={(e) => e.stopPropagation()}
                               onBlur={() => commitInlineText(j)}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                                // Enter = Zeilenumbruch (Standard-Verhalten); Fertigstellen durch
+                                // Tippen daneben. Escape bricht ab.
+                                if (e.key === 'Escape') {
                                   e.preventDefault();
-                                  commitInlineText(j);
+                                  d.cancelText();
                                 }
-                                if (e.key === 'Escape') d.cancelText();
                               }}
                             />
                           );
