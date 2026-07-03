@@ -462,12 +462,19 @@ export function Setlist({
 
       {actionItem && (
         <ItemActionSheet
+          // Bei Wechsel Lied↔Text den Dialog neu aufbauen (frischer Titel-/Zustand) – z. B. nach
+          // dem Aufheben der Verknüpfung, damit sofort das leere Titelfeld erscheint.
+          key={`${actionItem.id}:${actionItem.song ? 'song' : 'text'}`}
           item={actionItem}
           services={services}
           onClose={() => setActionItem(null)}
           onRename={(title) => handleRename(actionItem.id, title)}
           onLinkSong={(arrangementId) => onLinkSong(actionItem.id, arrangementId)}
-          onUnlinkSong={() => onUnlinkSong(actionItem.id)}
+          onUnlinkSong={() =>
+            onUnlinkSong(actionItem.id).then(() =>
+              setActionItem((prev) => (prev ? { ...prev, song: null, title: '', type: 'text' } : prev)),
+            )
+          }
           onSetResponsible={(responsible) => onSetResponsible(actionItem.id, responsible)}
           onSetDuration={(durationMin) => onSetDuration(actionItem.id, durationMin)}
           timeHidden={actionItem.time === null}

@@ -162,12 +162,13 @@ export function ItemActionSheet({
                     onClick={() => {
                       setBusy(true);
                       setErr(null);
-                      onUnlinkSong()
-                        .then(onClose)
-                        .catch((e: unknown) => {
-                          setErr(e instanceof Error ? e.message : 'Aufheben fehlgeschlagen.');
-                          setBusy(false);
-                        });
+                      // Dialog bleibt offen: nach dem Aufheben aktualisiert die Elternebene den
+                      // Punkt (kein Lied mehr, Titel leer) und mountet den Dialog neu (key) →
+                      // frisches Titelfeld zum sofortigen Umbenennen.
+                      onUnlinkSong().catch((e: unknown) => {
+                        setErr(e instanceof Error ? e.message : 'Aufheben fehlgeschlagen.');
+                        setBusy(false);
+                      });
                     }}
                   >
                     <Icon name="link" size={17} className={styles.linkIcon} />
