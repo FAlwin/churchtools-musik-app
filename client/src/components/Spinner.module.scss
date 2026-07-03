@@ -2,9 +2,12 @@
   width: 26px;
   height: 26px;
   display: inline-block;
-  // Folgt der Textfarbe des Eltern-Elements: weiß auf blauen Buttons, dunkel auf hellem Grund.
-  border: 2.5px solid transparent;
-  border-top-color: currentColor;
   border-radius: 50%;
-  animation: spin 0.65s linear infinite;
+  // Weich auslaufender Ring (Verlauf von transparent zu voller Farbe) statt hartem Segment.
+  // Folgt der Textfarbe des Eltern-Elements: weiß auf blauen Buttons, dunkel auf hellem Grund.
+  background: conic-gradient(from 90deg, transparent 8%, currentColor);
+  // Maske stanzt die Mitte aus → nur ein ~3px breiter Ring am Rand bleibt sichtbar.
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+  animation: spin 0.9s linear infinite;
 }
