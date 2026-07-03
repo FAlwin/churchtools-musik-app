@@ -93,8 +93,7 @@ export function useLinkSongToAgendaItem(eventId: number | null) {
 export function useUnlinkSongFromAgendaItem(eventId: number | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { itemId: number; title: string }) =>
-      api.unlinkSongFromAgendaItem(eventId as number, v.itemId, v.title),
+    mutationFn: (v: { itemId: number }) => api.unlinkSongFromAgendaItem(eventId as number, v.itemId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });
       qc.invalidateQueries({ queryKey: ['services'] });

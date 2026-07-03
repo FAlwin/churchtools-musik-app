@@ -49,7 +49,7 @@ interface SetlistProps {
   /** Verknüpft einen bestehenden Punkt mit einem Lied. Wirft bei Fehler. */
   onLinkSong: (itemId: number, arrangementId: number) => Promise<void>;
   /** Hebt die Lied-Verknüpfung eines Punkts wieder auf. Wirft bei Fehler. */
-  onUnlinkSong: (itemId: number, title: string) => Promise<void>;
+  onUnlinkSong: (itemId: number) => Promise<void>;
   /** Setzt das Verantwortlich-Textfeld eines Punkts. Wirft bei Fehler. */
   onSetResponsible: (itemId: number, responsible: string) => Promise<void>;
   /** Setzt die Dauer eines Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
@@ -467,9 +467,7 @@ export function Setlist({
           onClose={() => setActionItem(null)}
           onRename={(title) => handleRename(actionItem.id, title)}
           onLinkSong={(arrangementId) => onLinkSong(actionItem.id, arrangementId)}
-          onUnlinkSong={() =>
-            onUnlinkSong(actionItem.id, actionItem.song?.title ?? actionItem.title)
-          }
+          onUnlinkSong={() => onUnlinkSong(actionItem.id)}
           onSetResponsible={(responsible) => onSetResponsible(actionItem.id, responsible)}
           onSetDuration={(durationMin) => onSetDuration(actionItem.id, durationMin)}
           timeHidden={actionItem.time === null}

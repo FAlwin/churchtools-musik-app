@@ -71,7 +71,7 @@ const updateItemSchema = z
     title: z.string().trim().min(1, 'Titel fehlt').max(255).optional(),
     // arrangementId verknüpft einen bestehenden Punkt mit einem Lied (wandelt ihn in type 'song').
     arrangementId: z.coerce.number().int().positive().optional(),
-    // unlink löst eine bestehende Lied-Verknüpfung wieder (Punkt bleibt als Text erhalten).
+    // unlink löst eine bestehende Lied-Verknüpfung wieder (Punkt bleibt als leerer Text-Eintrag).
     unlink: z.boolean().optional(),
     // responsible: Textfeld der Zuständigen (z.B. „[Musik]"); CT löst Dienst-Tokens selbst auf.
     responsible: z.string().trim().max(1000).optional(),
@@ -162,7 +162,9 @@ export async function putAgendaItem(req: Request, res: Response): Promise<void> 
     req.body,
   );
   await updateAgendaItem(req.ctCookie as string, eventId, itemId, {
-    title,
+    // Beim Aufheben der Lied-Verknüpfung den Titel leeren (der Liedtitel soll nicht als Text
+    // zurückbleiben); sonst den ggf. übergebenen neuen Titel verwenden.
+    title: unlink ? '' : title,
     arrangementId,
     unlink,
     responsible,

@@ -193,9 +193,7 @@ export default function App() {
         onLinkSong={(itemId, arrangementId) =>
           linkSongToAgendaItem.mutateAsync({ itemId, arrangementId }).then(() => undefined)
         }
-        onUnlinkSong={(itemId, title) =>
-          unlinkSongFromAgendaItem.mutateAsync({ itemId, title }).then(() => undefined)
-        }
+        onUnlinkSong={(itemId) => unlinkSongFromAgendaItem.mutateAsync({ itemId }).then(() => undefined)}
         onSetResponsible={(itemId, responsible) =>
           setAgendaItemResponsible.mutateAsync({ itemId, responsible }).then(() => undefined)
         }
