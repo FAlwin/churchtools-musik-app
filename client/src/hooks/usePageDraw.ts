@@ -1,8 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { pushField } from '../services/annotations';
 
+export type TextAlign = 'left' | 'center' | 'right';
+
+/** Absatz-Formatierung einer Text-Anmerkung (gilt für den ganzen Block). */
+export interface TextStyle {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  align: TextAlign;
+}
+
+/** Standard für neu platzierten Text: normale Stärke, mittig. */
+export const DEFAULT_TEXT_STYLE: TextStyle = { bold: false, italic: false, underline: false, align: 'center' };
+
 /** Eine Text-Anmerkung auf einer PDF-Seite. Position als Bruchteil der Seite (0..1), Größe in
- *  cqh (% der Seitenhöhe) → skaliert/zoomt verlustfrei mit der Seite mit. */
+ *  cqh (% der Seitenhöhe) → skaliert/zoomt verlustfrei mit der Seite mit. Format-Felder optional
+ *  (ältere gespeicherte Anmerkungen kennen sie nicht → Fallback über DEFAULT_TEXT_STYLE). */
 export interface PageTextObj {
   id: number;
   fx: number;
@@ -10,6 +24,10 @@ export interface PageTextObj {
   text: string;
   color: string;
   sizeCqh: number;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  align?: TextAlign;
 }
 
 interface Snapshot {
@@ -161,7 +179,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     setSelectedId(null);
     setPending({ fx, fy, cx, cy });
   }
-  function confirmText(text: string, color: string, sizeCqh: number) {
+  function confirmText(text: string, color: string, sizeCqh: number, style: TextStyle) {
     if (!pending) return;
     const t = text.trim();
     if (pending.editId != null) {
@@ -174,7 +192,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     } else if (t) {
       pushHistory();
       const id = Date.now();
-      setTexts((prev) => [...prev, { id, fx: pending.fx, fy: pending.fy, text: t, color, sizeCqh }]);
+      setTexts((prev) => [...prev, { id, fx: pending.fx, fy: pending.fy, text: t, color, sizeCqh, ...style }]);
       // Neuen Text gleich auswählen → Bearbeiten-/Verschieben-Rahmen erscheint.
       setSelectedId(id);
     }
@@ -201,6 +219,10 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
   }
   function setColor(id: number, color: string) {
     setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, color } : o)));
+  }
+  /** Absatz-Formatierung eines vorhandenen Textes ändern (wirkt live, wird automatisch gespeichert). */
+  function setStyle(id: number, patch: Partial<TextStyle>) {
+    setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
   }
   function resize(id: number, delta: number) {
     setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, sizeCqh: Math.max(1, Math.min(10, o.sizeCqh + delta)) } : o)));
@@ -276,6 +298,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     editText,
     deleteText,
     setColor,
+    setStyle,
     resize,
     setSize,
     startDrag,

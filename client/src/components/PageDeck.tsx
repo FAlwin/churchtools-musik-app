@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import type { DrawTool } from '../types/index';
-import { usePageDraw, type PageTextObj } from '../hooks/usePageDraw';
+import { usePageDraw, type PageTextObj, type TextStyle, DEFAULT_TEXT_STYLE } from '../hooks/usePageDraw';
 import { pushField } from '../services/annotations';
 import { deviceClass } from '../utils/deviceClass';
 import { DrawToolbar } from './DrawToolbar';
@@ -184,6 +184,9 @@ export function PageDeck({
   const strokeImgCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const [aspects, setAspects] = useState<string[]>(['210 / 297', '210 / 297']);
   const [textSize, setTextSize] = useState(1.5); // cqh = % der Seitenhöhe (~13 pt, nahe der Liedtext-Größe)
+  // Aktueller „Pinsel"-Stil für NEU platzierten Text (bei ausgewähltem Text wirken die Format-
+  // Knöpfe direkt auf das Objekt via dr_.setStyle). Startet normal & mittig (DEFAULT_TEXT_STYLE).
+  const [textStyle, setTextStyle] = useState<TextStyle>(DEFAULT_TEXT_STYLE);
   // Strichstärke je Werkzeug (Canvas-Pixel bei Renderskala 2) – einstellbar über die Werkzeugleiste.
   const [toolSizes, setToolSizes] = useState({ pen: 3, marker: 18, eraser: 26 });
   const [confirmClear, setConfirmClear] = useState(false);
@@ -670,7 +673,7 @@ export function PageDeck({
       .replace(/\n{3,}/g, '\n\n')
       .replace(/[ \t]+\n/g, '\n')
       .trim();
-    d.confirmText(value, drawColor, textSize);
+    d.confirmText(value, drawColor, textSize, textStyle);
   }
   // Lock wieder freigeben, sobald die jeweilige Eingabe geschlossen/geöffnet wurde.
   useEffect(() => {
@@ -1072,6 +1075,12 @@ export function PageDeck({
                               top: `${o.fy * 100}%`,
                               fontSize: `${o.sizeCqh}cqh`,
                               color: o.color,
+                              // Format je Block. Bestandstexte (ohne bold-Feld) waren immer fett →
+                              // Fallback true, damit sie unverändert aussehen; neue Texte sind normal.
+                              fontWeight: (o.bold ?? true) ? 700 : 400,
+                              fontStyle: o.italic ? 'italic' : 'normal',
+                              textDecoration: o.underline ? 'underline' : 'none',
+                              textAlign: o.align ?? 'center',
                               // Text nur im Text-Werkzeug interaktiv → mit Stift/Marker kann man
                               // ungehindert DARÜBER zeichnen (sonst „fängt" der Text die Eingabe ab).
                               pointerEvents: drawMode && drawTool === 'text' ? 'all' : 'none',
@@ -1106,6 +1115,15 @@ export function PageDeck({
                         (() => {
                           const p = d.pending;
                           const editing = p.editId != null ? d.texts.find((t) => t.id === p.editId) : null;
+                          // Beim Bearbeiten den Stil des Textes, sonst den aktuellen Pinsel-Stil.
+                          const st: TextStyle = editing
+                            ? {
+                                bold: editing.bold ?? true,
+                                italic: !!editing.italic,
+                                underline: !!editing.underline,
+                                align: editing.align ?? 'center',
+                              }
+                            : textStyle;
                           return (
                             <span
                               key={`edit-${d.pending.editId ?? 'new'}`}
@@ -1126,6 +1144,10 @@ export function PageDeck({
                                 top: `${(editing?.fy ?? p.fy) * 100}%`,
                                 fontSize: `${editing?.sizeCqh ?? textSize}cqh`,
                                 color: editing?.color ?? drawColor,
+                                fontWeight: st.bold ? 700 : 400,
+                                fontStyle: st.italic ? 'italic' : 'normal',
+                                textDecoration: st.underline ? 'underline' : 'none',
+                                textAlign: st.align,
                                 pointerEvents: 'all',
                               }}
                               onPointerDown={(e) => e.stopPropagation()}
@@ -1244,6 +1266,19 @@ export function PageDeck({
           selectedSize={selectedText?.sizeCqh}
           onSelectedColor={(c) => activeDraw.selectedId !== null && activeDraw.setColor(activeDraw.selectedId, c)}
           onSelectedResize={(delta) => activeDraw.selectedId !== null && activeDraw.resize(activeDraw.selectedId, delta)}
+          textStyle={textStyle}
+          setTextStyle={setTextStyle}
+          selectedStyle={
+            selectedText
+              ? {
+                  bold: selectedText.bold ?? true,
+                  italic: !!selectedText.italic,
+                  underline: !!selectedText.underline,
+                  align: selectedText.align ?? 'center',
+                }
+              : undefined
+          }
+          onSelectedStyle={(patch) => activeDraw.selectedId !== null && activeDraw.setStyle(activeDraw.selectedId, patch)}
           onUndo={activeDraw.undo}
           canUndo={activeDraw.canUndo}
           onRedo={activeDraw.redo}

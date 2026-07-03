@@ -156,6 +156,13 @@
   font-family: var(--ui);
 }
 
+// Buchstaben-Label der Format-Knöpfe (B / I / U)
+.fmtLabel {
+  font-size: 17px;
+  line-height: 1;
+  font-family: var(--ui);
+}
+
 .toolBtn {
   width: 40px;
   height: 40px;

@@ -40,7 +40,10 @@ export type IconName =
   | 'download'
   | 'undo'
   | 'redo'
-  | 'grip';
+  | 'grip'
+  | 'align-left'
+  | 'align-center'
+  | 'align-right';
 
 interface IconProps {
   name: IconName;
@@ -320,6 +323,24 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
           <circle cx="15" cy="12" r="1.6" />
           <circle cx="9" cy="18" r="1.6" />
           <circle cx="15" cy="18" r="1.6" />
+        </svg>
+      );
+    case 'align-left':
+      return (
+        <svg {...p}>
+          <path d="M4 6h16M4 12h10M4 18h13" />
+        </svg>
+      );
+    case 'align-center':
+      return (
+        <svg {...p}>
+          <path d="M4 6h16M7 12h10M6 18h12" />
+        </svg>
+      );
+    case 'align-right':
+      return (
+        <svg {...p}>
+          <path d="M4 6h16M10 12h10M7 18h13" />
         </svg>
       );
     default:
