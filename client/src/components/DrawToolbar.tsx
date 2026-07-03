@@ -90,15 +90,15 @@ export function DrawToolbar({
 }: DrawToolbarProps) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const colorWrapRef = useRef<HTMLDivElement>(null);
-  // Offenes Größen-Popover für ein Zeichenwerkzeug (erneuter Tipp auf das aktive Werkzeug).
-  const [sizeTool, setSizeTool] = useState<'pen' | 'marker' | 'eraser' | null>(null);
+  // Aktuell „ausgeklapptes" Werkzeug (erneuter Tipp auf das aktive Werkzeug): bei Stift/Marker/
+  // Radierer die Strichstärke, beim Text der Einstellungs-Balken.
+  const [expandedTool, setExpandedTool] = useState<DrawTool | null>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
 
   // Aktive Farbe/Größe: bei ausgewähltem Text dessen Werte, sonst die Voreinstellung.
   const activeColor = (isTextSelected ? selectedColor : drawColor) ?? drawColor;
   const isCustomColor = !!activeColor && !colors.includes(activeColor);
   const shownSize = isTextSelected ? (selectedSize ?? textSize) : textSize;
-  const showSize = drawTool === 'text' || isTextSelected;
   const showUndo = !!onUndo;
 
   // Format (Fett/Kursiv/Unterstrichen/Ausrichtung): bei ausgewähltem Text dessen Stil, sonst der
@@ -132,32 +132,41 @@ export function DrawToolbar({
     if (isTextSelected) onSelectedResize?.(delta);
     else setTextSize?.((s) => Math.max(sizeMin, Math.min(sizeMax, s + delta)));
   }
-  // Werkzeug wählen; erneuter Tipp auf das AKTIVE Zeichenwerkzeug öffnet die Strichstärke-Auswahl.
+  // Werkzeug wählen. Einheitlich für ALLE Werkzeuge: erster Tipp aktiviert das Werkzeug, ein
+  // erneuter Tipp auf das AKTIVE Werkzeug klappt seine Einstellungen auf/zu (Strichstärke bei
+  // Stift/Marker/Radierer, Einstellungs-Balken beim Text).
   function chooseTool(t: DrawTool) {
-    if ((t === 'pen' || t === 'marker' || t === 'eraser') && t === drawTool && onToolSize) {
-      setSizeTool((cur) => (cur === t ? null : t));
+    if (t === drawTool) {
+      setExpandedTool((cur) => (cur === t ? null : t));
       return;
     }
     setDrawTool(t);
-    setSizeTool(null);
+    setExpandedTool(null);
   }
 
-  // Strichstärke-Popover bei Klick außerhalb schließen.
+  // Wird ein Text auf der Seite ausgewählt, den Einstellungs-Balken automatisch öffnen (damit man
+  // ihn sofort formatieren kann) – analog zum zweiten Tipp aufs Text-Werkzeug.
   useEffect(() => {
-    if (!sizeTool) return;
+    if (isTextSelected) setExpandedTool('text');
+  }, [isTextSelected]);
+
+  // Strichstärke-Popover bei Klick außerhalb schließen. Der Text-Balken bleibt bewusst offen (er
+  // wird nur per Toggle am Text-Werkzeug oder Werkzeugwechsel geschlossen).
+  useEffect(() => {
+    if (!expandedTool || expandedTool === 'text') return;
     const onDown = (e: PointerEvent) => {
-      if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) setSizeTool(null);
+      if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) setExpandedTool(null);
     };
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);
-  }, [sizeTool]);
+  }, [expandedTool]);
 
   return (
     <div className={styles.toolbar}>
       {/* Farbe: ein Knopf zeigt die aktuelle Farbe, Tippen öffnet die Palette. */}
       <div className={styles.colorWrap} ref={colorWrapRef}>
         <button
-          className={styles.colorBtn}
+          className={`${styles.colorBtn} ${styles.expandable}`}
           style={{ background: activeColor }}
           onClick={() => setPaletteOpen((v) => !v)}
           aria-label="Farbe wählen"
@@ -201,7 +210,7 @@ export function DrawToolbar({
         {(['pen', 'marker', 'eraser'] as const).map((t) => (
           <div key={t} className={styles.toolSlot}>
             <button
-              className={`${styles.toolBtn}${drawTool === t ? ' ' + styles.on : ''}`}
+              className={`${styles.toolBtn} ${styles.expandable}${drawTool === t ? ' ' + styles.on : ''}`}
               onClick={() => chooseTool(t)}
               title={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
               aria-label={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
@@ -209,7 +218,7 @@ export function DrawToolbar({
               <Icon name={t === 'pen' ? 'pencil' : t === 'marker' ? 'marker' : 'eraser'} size={20} stroke={2} />
             </button>
             {/* Strichstärke-Popover – klappt auf Höhe GENAU dieses Werkzeugs nach links auf. */}
-            {sizeTool === t && toolSizes && onToolSize && (
+            {expandedTool === t && toolSizes && onToolSize && (
               <div className={styles.sizePopover}>
                 {TOOL_SIZE_PRESETS[t].map((sz) => {
                   const active = toolSizes[t] === sz;
@@ -222,7 +231,7 @@ export function DrawToolbar({
                       className={`${styles.sizeOpt}${active ? ' ' + styles.sizeOptOn : ''}`}
                       onClick={() => {
                         onToolSize(t, sz);
-                        setSizeTool(null);
+                        setExpandedTool(null);
                       }}
                       aria-label={`Stärke ${sz}`}
                     >
@@ -237,7 +246,7 @@ export function DrawToolbar({
         {allowText && (
           <div className={styles.toolSlot}>
             <button
-              className={`${styles.toolBtn}${drawTool === 'text' ? ' ' + styles.on : ''}`}
+              className={`${styles.toolBtn} ${styles.expandable}${drawTool === 'text' ? ' ' + styles.on : ''}`}
               onClick={() => chooseTool('text')}
               title="Text"
               aria-label="Text"
@@ -246,7 +255,7 @@ export function DrawToolbar({
             </button>
             {/* Text-Einstellungen als horizontaler Balken links neben dem Text-Werkzeug:
                 Größe · Fett/Kursiv/Unterstrichen · Ausrichtung. */}
-            {showSize && activeStyle && (
+            {expandedTool === 'text' && activeStyle && (
               <div className={styles.textPopover}>
                 <button
                   className={styles.toolBtn}
