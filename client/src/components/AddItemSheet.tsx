@@ -91,35 +91,47 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
 
       {(mode === 'header' || mode === 'text') && (
         <div className={styles.form}>
-          <input
-            className={styles.input}
-            placeholder={mode === 'header' ? 'Titel der Überschrift' : 'Titel des Eintrags'}
-            value={title}
-            autoFocus
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && title.trim() && durationValid) add(textPayload());
-            }}
-          />
+          <div className={styles.field}>
+            <span className={styles.label}>Titel</span>
+            <input
+              className={styles.input}
+              placeholder={mode === 'header' ? 'Titel der Überschrift' : 'Titel'}
+              value={title}
+              autoFocus
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && title.trim() && durationValid) add(textPayload());
+              }}
+            />
+          </div>
           {mode === 'text' && (
             <>
-              <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
-              <input
-                className={styles.input}
-                type="number"
-                inputMode="numeric"
-                min={0}
-                value={duration}
-                placeholder="Dauer in Minuten (optional)"
-                onChange={(e) => setDuration(e.target.value)}
-              />
-              <textarea
-                className={styles.textarea}
-                value={note}
-                rows={2}
-                placeholder="Bemerkung (optional)"
-                onChange={(e) => setNote(e.target.value)}
-              />
+              <div className={styles.field}>
+                <span className={styles.label}>Dauer (Minuten)</span>
+                <input
+                  className={styles.input}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={duration}
+                  placeholder="z. B. 5"
+                  onChange={(e) => setDuration(e.target.value)}
+                />
+              </div>
+              <div className={styles.field}>
+                <span className={styles.label}>Zuständig</span>
+                <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
+              </div>
+              <div className={styles.field}>
+                <span className={styles.label}>Bemerkung</span>
+                <textarea
+                  className={styles.textarea}
+                  value={note}
+                  rows={2}
+                  placeholder="Optionale Notiz…"
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </div>
             </>
           )}
           <button
