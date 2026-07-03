@@ -127,12 +127,14 @@
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
   white-space: nowrap;
 }
-// Senkrechter Trenner im horizontalen Text-Balken (Größe | Format | Ausrichtung).
+// Trenner im Text-Balken (Größe | Format | Ausrichtung). align-self:stretch → durchgehende Linie
+// über die volle Balken-Höhe (im liegenden iPad-Balken senkrecht) – sauber „wie am iPhone", wo
+// derselbe Trenner im stehenden Balken waagerecht über die volle Breite läuft.
 .vsep {
+  align-self: stretch;
   width: 1px;
-  height: 26px;
   background: var(--border);
-  margin: 0 2px;
+  margin: 4px;
   flex-shrink: 0;
 }
 
