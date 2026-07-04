@@ -4,8 +4,8 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 /** Prüf-Intervall im Vordergrund. Zusätzlich wird bei jeder Rückkehr in den Vordergrund geprüft. */
 const CHECK_INTERVAL_MS = 1000 * 60 * 60;
 
-/** Ergebnis einer manuellen Update-Suche (für den Knopf im „Mehr"-Tab). */
-export type CheckState = 'idle' | 'checking' | 'up-to-date' | 'update-ready';
+/** Ergebnis/Fortschritt einer manuellen Update-Suche (für den Knopf im „Mehr"-Tab). */
+export type CheckState = 'idle' | 'checking' | 'updating' | 'up-to-date' | 'update-ready';
 
 interface SwUpdate {
   /** true, sobald eine neue Version bereitliegt (steuert den Hinweis-Balken). */
@@ -81,17 +81,19 @@ export function SwUpdateProvider({ children }: { children: ReactNode }) {
       window.setTimeout(() => setCheckState('idle'), 2500);
       return;
     }
-    // Wartet der Worker schon (fertig installiert) → sofort melden; sonst auf „installed" warten.
-    // Sobald er installiert ist, zeigt zusätzlich der Balken (needRefresh via onNeedRefresh).
+    // Neue Version gefunden → direkt laden (statt auf den unzuverlässigen Balken zu warten).
+    // `updateServiceWorker(true)` übernimmt die wartende Version und lädt die Seite neu. Das
+    // braucht einen fertig installierten Worker; ist er noch am Installieren, warten wir darauf.
+    setCheckState('updating');
     if (worker.state === 'installed') {
-      setCheckState('update-ready');
+      void updateServiceWorker(true);
       return;
     }
     const w = worker;
     w.addEventListener('statechange', () => {
-      if (w.state === 'installed') setCheckState('update-ready');
+      if (w.state === 'installed') void updateServiceWorker(true);
     });
-  }, []);
+  }, [updateServiceWorker]);
 
   // Sobald eine Version bereitliegt, den Knopf-Status mitziehen.
   useEffect(() => {

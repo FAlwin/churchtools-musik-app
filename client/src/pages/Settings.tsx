@@ -18,6 +18,7 @@ import styles from './Settings.module.scss';
 const UPDATE_CHECK_LABEL = {
   idle: 'Nach Updates suchen',
   checking: 'Suche nach Updates…',
+  updating: 'Aktualisiere…',
   'up-to-date': 'Du bist auf dem neuesten Stand',
   'update-ready': 'Neue Version bereit – unten auf „Jetzt laden" tippen',
 } as const;
@@ -196,9 +197,9 @@ export function Settings({
           <button
             className={styles.updateCheckBtn}
             onClick={sw.checkNow}
-            disabled={sw.checkState === 'checking'}
+            disabled={sw.checkState === 'checking' || sw.checkState === 'updating'}
           >
-            {sw.checkState === 'checking' && <Spinner />}
+            {(sw.checkState === 'checking' || sw.checkState === 'updating') && <Spinner />}
             {UPDATE_CHECK_LABEL[sw.checkState]}
           </button>
         </div>
