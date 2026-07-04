@@ -49,7 +49,7 @@ export function SwUpdateProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const checkNow = useCallback(() => {
+  const checkNow = useCallback(async () => {
     const reg = regRef.current;
     if (!reg) {
       // Kein Service Worker (z. B. Entwicklungsmodus) – ehrlich „aktuell" melden.
@@ -58,22 +58,39 @@ export function SwUpdateProvider({ children }: { children: ReactNode }) {
       return;
     }
     setCheckState('checking');
-    const startedAt = Date.now();
-    void reg.update().catch(() => {});
-    // Nach der Prüfung taucht eine neue Version als installing→waiting auf; kurz nachverfolgen.
-    const poll = () => {
-      if (reg.waiting) {
-        setCheckState('update-ready');
-        return;
-      }
-      if (reg.installing || Date.now() - startedAt < 2500) {
-        window.setTimeout(poll, 400);
-        return;
-      }
+    try {
+      // WICHTIG: die Prüfung ABWARTEN. Erst danach steht fest, ob ChurchTools/der Server eine
+      // neue sw.js hat und ein neuer Worker zu installieren beginnt. (Der frühere Code gab nach
+      // 2,5 s auf und meldete fälschlich „aktuell", bevor die neue Version sichtbar wurde.)
+      await reg.update();
+    } catch {
+      // Offline o. ä. – nicht als „aktuell" verkaufen, einfach zurücksetzen.
+      setCheckState('idle');
+      return;
+    }
+    // Neuen Worker suchen; er taucht vereinzelt erst knapp nach dem Auflösen von update() auf,
+    // daher bei Bedarf einmal kurz nachfassen.
+    const find = (): ServiceWorker | null => reg.waiting ?? reg.installing ?? null;
+    let worker = find();
+    if (!worker) {
+      await new Promise((r) => window.setTimeout(r, 1500));
+      worker = find();
+    }
+    if (!worker) {
       setCheckState('up-to-date');
       window.setTimeout(() => setCheckState('idle'), 2500);
-    };
-    window.setTimeout(poll, 400);
+      return;
+    }
+    // Wartet der Worker schon (fertig installiert) → sofort melden; sonst auf „installed" warten.
+    // Sobald er installiert ist, zeigt zusätzlich der Balken (needRefresh via onNeedRefresh).
+    if (worker.state === 'installed') {
+      setCheckState('update-ready');
+      return;
+    }
+    const w = worker;
+    w.addEventListener('statechange', () => {
+      if (w.state === 'installed') setCheckState('update-ready');
+    });
   }, []);
 
   // Sobald eine Version bereitliegt, den Knopf-Status mitziehen.
