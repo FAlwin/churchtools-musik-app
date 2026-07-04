@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.5.0] – 2026-07-05
+
 ### Hinzugefügt
 
 - **Update-Hinweis in der App:** Liegt eine neue Version bereit, erscheint ein dezenter Balken
