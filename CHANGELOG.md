@@ -16,6 +16,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   z. B. der Fix für das „keine Berechtigung"-Schloss die Geräte nie von selbst. Es wird weiterhin
   **nie ungefragt** mitten in der Nutzung neu geladen.
 
+### Behoben
+
+- **Kopfleiste rutschte beim Sortieren weg (iPhone):** Beim Ziehen eines Ablauf-Punkts mit
+  Auto-Scroll verschwand die obere Leiste („‹ Termine" / „✓ Fertig") nach oben und war nur durch
+  Drehen des Geräts zurückzuholen. Der Auto-Scroll bleibt jetzt auf die Liste begrenzt und die
+  Ansicht wird nach dem Ziehen automatisch zurechtgerückt. (#56)
+
 ## [2.4.1] – 2026-07-04
 
 ### Geändert

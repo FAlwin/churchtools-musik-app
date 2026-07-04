@@ -17,6 +17,7 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { innerScrollOnly } from '../utils/dndAutoScroll';
 import { Spinner } from './Spinner';
 import { Icon } from './icons';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
@@ -135,7 +136,12 @@ export function LinksManager({ site, onClose }: { site: SiteConfig; onClose: () 
 
   return (
     <div className={styles.wrap}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+        autoScroll={innerScrollOnly}
+      >
         <SortableContext items={links.map((l) => l.id)} strategy={verticalListSortingStrategy}>
           <div className={styles.list}>
             {links.map((l) => (
