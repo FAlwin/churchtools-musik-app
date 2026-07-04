@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../services/churchtoolsApi';
+import { ApiError } from '../services/api';
 
 /** Lädt die Gottesdienste mit Setlist (Standardfenster: ~1 Woche zurück bis 6 Wochen voraus). */
 export function useServices(enabled: boolean) {
@@ -162,7 +163,10 @@ export function useCapabilities(enabled: boolean) {
     queryFn: () => api.getCapabilities(),
     enabled,
     staleTime: 1000 * 60 * 30,
-    retry: 3,
+    // Eine abgelaufene/ungültige ChurchTools-Sitzung (401) lässt sich nicht „wegwiederholen" –
+    // sofort aufgeben (App.tsx führt dann zum Login). Nur echte Aussetzer (502) 3× erneut versuchen.
+    retry: (failureCount, error) =>
+      error instanceof ApiError && error.status === 401 ? false : failureCount < 3,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
 }
