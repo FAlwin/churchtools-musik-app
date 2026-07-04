@@ -7,6 +7,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Update-Hinweis in der App:** Liegt eine neue Version bereit, erscheint ein dezenter Balken
+  „Neue Version verfügbar" mit **Jetzt laden** (übernimmt sie sofort) und **Später**. Die App
+  sucht dafür aktiv nach Updates – beim Start, bei Rückkehr in den Vordergrund und stündlich.
+  Bisher blieben Geräte (v. a. iPhone/iPad-PWA) unbemerkt auf altem Stand hängen; so erreichte
+  z. B. der Fix für das „keine Berechtigung"-Schloss die Geräte nie von selbst. Es wird weiterhin
+  **nie ungefragt** mitten in der Nutzung neu geladen.
+
 ### Behoben
 
 - **Kopfleiste rutschte beim Sortieren weg (iPhone):** Beim Ziehen eines Ablauf-Punkts mit
