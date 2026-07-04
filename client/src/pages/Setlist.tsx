@@ -28,6 +28,7 @@ import { generateSetlistPdf } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
 import { loadSongPdfOpts, loadAppLogo } from '../utils/songPdfOpts';
 import { selectedVersionKey, versionText } from '../utils/songVersions';
+import { innerScrollOnly, resetViewportAfterDrag } from '../utils/dndAutoScroll';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
@@ -308,6 +309,7 @@ export function Setlist({
   );
 
   function handleDragEnd(e: DragEndEvent) {
+    resetViewportAfterDrag(); // #56: weggerutschte Kopfleiste zurückholen (auch ohne Umsortierung)
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     const oldIndex = localItems.findIndex((i) => i.id === active.id);
@@ -424,6 +426,8 @@ export function Setlist({
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
+              onDragCancel={resetViewportAfterDrag}
+              autoScroll={innerScrollOnly}
             >
               <SortableContext
                 items={localItems.map((i) => i.id)}
