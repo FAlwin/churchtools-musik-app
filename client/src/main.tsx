@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import { UpdateBanner } from './components/UpdateBanner';
+import { SwUpdateProvider } from './hooks/useSwUpdate';
 import './styles/main.scss';
 
 // iOS-PWA: zuverlässige App-Höhe. `window.innerHeight` trackt im Standalone-Modus beide
@@ -59,9 +60,13 @@ const rootNode = DemoComp ? (
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      {rootNode}
-      {/* Global (auch auf dem Login-Screen): Hinweis, sobald eine neue Version bereitliegt. */}
-      <UpdateBanner />
+      {/* Ein Provider umschließt App + Balken, damit beide (und der „Nach Updates suchen"-Knopf
+          im Mehr-Tab) denselben Service-Worker-Zustand teilen. */}
+      <SwUpdateProvider>
+        {rootNode}
+        {/* Global (auch auf dem Login-Screen): Hinweis, sobald eine neue Version bereitliegt. */}
+        <UpdateBanner />
+      </SwUpdateProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 );

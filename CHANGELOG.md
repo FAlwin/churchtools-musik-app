@@ -15,6 +15,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Bisher blieben Geräte (v. a. iPhone/iPad-PWA) unbemerkt auf altem Stand hängen; so erreichte
   z. B. der Fix für das „keine Berechtigung"-Schloss die Geräte nie von selbst. Es wird weiterhin
   **nie ungefragt** mitten in der Nutzung neu geladen.
+- **„Nach Updates suchen" im Mehr-Tab:** Ein Knopf unter der Versionszeile prüft sofort auf eine
+  neue Version und zeigt dann den Lade-Balken bzw. meldet „Du bist auf dem neuesten Stand".
+  Verlässlicher Hebel gerade auf dem iPhone, wo die automatische Suche beim App-Wechsel manchmal
+  nicht anschlägt.
 
 ### Behoben
 
