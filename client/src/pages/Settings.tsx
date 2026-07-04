@@ -182,7 +182,7 @@ export function Settings({
         <SupportBox />
 
         <div className={styles.version}>
-          Churchtools Musik App · {import.meta.env.VITE_APP_VERSION || 'dev'}
+          <span>Churchtools Musik App · {import.meta.env.VITE_APP_VERSION || 'dev'}</span>
           {updateCheck.available && updateCheck.latest && (
             <a
               className={styles.updateNote}
