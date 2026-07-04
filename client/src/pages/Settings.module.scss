@@ -109,6 +109,30 @@
   }
 }
 
+.updateCheckBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 14px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:active {
+    opacity: 0.6;
+  }
+
+  &:disabled {
+    color: var(--text3);
+    cursor: default;
+  }
+}
+
 // Theme-Segment sitzt rechts in der Zeile
 .themeSeg {
   flex-shrink: 0;
