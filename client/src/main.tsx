@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
+import { UpdateBanner } from './components/UpdateBanner';
 import './styles/main.scss';
 
 // iOS-PWA: zuverlässige App-Höhe. `window.innerHeight` trackt im Standalone-Modus beide
@@ -57,6 +58,10 @@ const rootNode = DemoComp ? (
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>{rootNode}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      {rootNode}
+      {/* Global (auch auf dem Login-Screen): Hinweis, sobald eine neue Version bereitliegt. */}
+      <UpdateBanner />
+    </QueryClientProvider>
   </React.StrictMode>,
 );
