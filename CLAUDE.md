@@ -205,9 +205,15 @@ Geräteklasse `phone` vs `large` via `utils/deviceClass.ts`. Versions-Helfer: `u
   `:staging`, Scope `worship-test`, 60 s) zieht automatisch – über den **gepflegten Watchtower-Fork
   `nickfedor/watchtower`** (Original `containrrr` ist unmaintained / Docker-29-inkompatibel).
 - **Prod-Instanz (bewusstes Update, seit v2.2.0):** `deploy/docker-compose.prod.yml` (`worship-charts`,
-  Port 3001) ist auf **`:2` gepinnt** und hat **keinen Auto-Pull mehr**. Auf neue Versionen weist das
-  In-App-Update-Banner hin; aktualisiert wird bewusst per `docker compose pull && up -d` (SSH) bzw.
-  im Container Manager. Volume (`worship-data`) beim Neu-Erstellen behalten.
+  Port 3001) ist auf **`:2` gepinnt** und hat **keinen Auto-Pull mehr**. Aktualisiert wird bewusst per
+  `docker compose pull && up -d` (SSH) bzw. im Container Manager (Volume `worship-data` behalten).
+- **Frontend-Update auf den Geräten (Service Worker, seit v2.5.0):** Nach dem Server-Update holt sich
+  jedes Gerät den neuen Frontend-Build selbst – zuverlässig beim **Kaltstart/kompletten Neu-Öffnen**
+  (bzw. Neuladen) und auf Knopfdruck über **„Nach Updates suchen"** im Mehr-Tab (lädt eine gefundene
+  Version direkt). Der schwebende **„Neue Version verfügbar"-Balken** ist der passive Bonus-Weg (auf
+  iOS unzuverlässig). Davon getrennt: der ältere Hinweis **„Neue Version X verfügbar – Was ist neu"**
+  (`useUpdateCheck`) verlinkt nur die GitHub-Release-Notes. `registerType: 'prompt'` lädt nie
+  ungefragt mitten in der Nutzung neu.
 - **Gemeinden:** `deploy/docker-compose.yml` ist auf `:2` gepinnt; Update per `update.command`/`update.bat`.
 - **Env (Volume `/app/data`):** `SITE_CONFIG_PATH=/app/data/site.json`,
   `ANNOTATIONS_PATH=/app/data/annotations` (kontobezogene Anmerkungen/Einstellungen) – beim Re-Deploy
