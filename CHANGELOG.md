@@ -22,6 +22,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Auto-Scroll verschwand die obere Leiste („‹ Termine" / „✓ Fertig") nach oben und war nur durch
   Drehen des Geräts zurückzuholen. Der Auto-Scroll bleibt jetzt auf die Liste begrenzt und die
   Ansicht wird nach dem Ziehen automatisch zurechtgerückt. (#56)
+- **Abgelaufene Sitzung führt jetzt zum Login statt in eine Sackgasse:** War die App-Anmeldung noch
+  gültig, die ChurchTools-Sitzung dahinter aber abgelaufen, zeigte die App „Berechtigungen konnten
+  nicht geladen werden – Erneut versuchen" – was zwecklos war (nur Neu-Anmelden half). Jetzt erkennt
+  die App die abgelaufene Sitzung, meldet automatisch ab und führt direkt zum Login. (#104)
 
 ## [2.4.1] – 2026-07-04
 
