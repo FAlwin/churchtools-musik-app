@@ -23,6 +23,12 @@ interface AnnotationText {
   text: string;
   color: string;
   sizeCqh: number;
+  // Absatz-Format (optional) – muss mitgespeichert/-übertragen werden, sonst geht es beim
+  // Server-Roundtrip verloren (normaler Text würde wieder fett).
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  align?: 'left' | 'center' | 'right';
 }
 interface PageAnnotation {
   strokes?: string | null;

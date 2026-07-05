@@ -7,6 +7,17 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **Normaler Anmerkungs-Text wurde nach kurzer Zeit fett (#115):** Beim Server-Abgleich gingen die
+  Format-Angaben (fett/kursiv/unterstrichen/Ausrichtung) verloren, weil sie serverseitig nicht
+  gespeichert wurden – beim nächsten Laden wurde normaler Text fälschlich wieder fett. Die Formate
+  werden jetzt vollständig mitgespeichert.
+- **Gestrichelter Text-Rahmen blieb stehen (#114):** Beim Verlassen des Anmerkungsmodus wird die
+  Text-Auswahl jetzt sofort aufgehoben – der Rahmen bleibt nicht mehr bis zum Seitenwechsel sichtbar.
+- **Flackern der Anmerkungen beim Liedwechsel (#113):** Die Striche werden beim Wechsel aus dem
+  vorab geladenen Zwischenspeicher direkt gezeichnet, statt kurz zu verschwinden und neu zu laden.
+
 ## [2.5.1] – 2026-07-05
 
 ### Behoben

@@ -10,6 +10,13 @@ const textSchema = z.object({
   text: z.string().max(2000),
   color: z.string().max(20),
   sizeCqh: z.number(),
+  // Absatz-Format (optional; ältere Anmerkungen kennen es nicht). MUSS hier stehen, sonst schneidet
+  // Zod die Felder beim Speichern weg → beim nächsten Pull fehlt z. B. `bold` und normaler Text
+  // wird fälschlich fett dargestellt (Client-Fallback für Bestandstexte).
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+  underline: z.boolean().optional(),
+  align: z.enum(['left', 'center', 'right']).optional(),
 });
 
 const annoSchema = z.object({

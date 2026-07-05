@@ -218,6 +218,17 @@ export function PageDeck({
   const activeSlot = Math.max(0, Math.min(perView - 1, activePage - pageIndex));
   const activeDraw = draws[activeSlot];
 
+  // Anmerkungsmodus verlassen → Text-Auswahl aufheben. Sonst bliebe der gestrichelte Rahmen des
+  // zuletzt bearbeiteten Textes stehen (er hängt an selectedId) und verschwände erst beim
+  // nächsten Seitenwechsel.
+  useEffect(() => {
+    if (!drawMode) {
+      drawA.setSelectedId(null);
+      drawB.setSelectedId(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawMode]);
+
   useEffect(() => {
     const onResize = () => setLandscape(isLandscape());
     window.addEventListener('resize', onResize);
@@ -255,9 +266,17 @@ export function PageDeck({
       const key = drawKeyFor(pageIndex + j);
       const saved = key ? localStorage.getItem(key) : null;
       if (saved) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 0, 0);
-        img.src = saved;
+        // Vorab dekodiertes Bild aus dem Cache SYNCHRON zeichnen → kein kurzer blanker Moment
+        // (Flackern) beim Liedwechsel. Nur bei Deckungsgleichheit mit dem aktuellen Stand nutzen,
+        // sonst frisch (asynchron) laden.
+        const cached = key ? strokeImgCache.current.get(key) : undefined;
+        if (cached && cached.complete && cached.naturalWidth > 0 && cached.src === saved) {
+          ctx.drawImage(cached, 0, 0);
+        } else {
+          const img = new Image();
+          img.onload = () => ctx.drawImage(img, 0, 0);
+          img.src = saved;
+        }
       }
       nextAspects[j] = `${src.width} / ${src.height}`;
     }
