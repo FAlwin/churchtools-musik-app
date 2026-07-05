@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import type { DrawTool } from '../types/index';
@@ -365,7 +365,10 @@ export function PageDeck({
 
   // Slide auslösen, wenn sich NUR die Seite um ±1 ändert (Blättern). Layout-/Strom-Wechsel
   // (Drehen, Neuaufbau, Sprung übers Lied-Menü) schalten weiterhin hart um.
-  useEffect(() => {
+  // useLayoutEffect (nicht useEffect): Die Abdeckung MUSS gesetzt sein, BEVOR der Browser den
+  // ersten Frame nach dem Seitenwechsel zeichnet – sonst blitzt kurz der noch veraltete
+  // Anmerkungs-Stand der vorherigen Seite auf der neuen Seite auf (#113).
+  useLayoutEffect(() => {
     const prev = prevPageIndex.current;
     prevPageIndex.current = pageIndex;
     const guard = slideGuard.current;
