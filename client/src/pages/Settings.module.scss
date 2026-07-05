@@ -91,12 +91,6 @@
 }
 
 .version {
-  // Spalte: Versionszeile, optionaler „neue Version"-Link und der Update-Knopf stehen
-  // jeweils zentriert untereinander (Knopf nicht mehr direkt neben dem Text).
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
   text-align: center;
   color: var(--text3);
   font-size: 12px;
@@ -104,35 +98,14 @@
 }
 
 .updateNote {
+  display: block;
+  margin-top: 6px;
   color: var(--blue);
   font-weight: 600;
   text-decoration: none;
 
   &:active {
     opacity: 0.6;
-  }
-}
-
-.updateCheckBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--blue);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:active {
-    opacity: 0.6;
-  }
-
-  &:disabled {
-    color: var(--text3);
-    cursor: default;
   }
 }
 

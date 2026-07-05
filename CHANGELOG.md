@@ -7,6 +7,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **„Nach Updates suchen"-Knopf entfernt:** Er war überflüssig – beim (kompletten) Neu-Öffnen der App
+  wird ohnehin automatisch die neueste Version geladen. Die stille Auto-Aktualisierung und der
+  Versions-Hinweis bleiben.
+
 ### Behoben
 
 - **Normaler Anmerkungs-Text wurde nach kurzer Zeit fett (#115):** Beim Server-Abgleich gingen die
