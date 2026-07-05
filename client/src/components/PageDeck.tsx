@@ -1077,16 +1077,10 @@ export function PageDeck({
                       }}
                       onPointerDown={(e) => layerDown(e, j)}
                     >
-                      {/* Während der Blätter-Animation die ECHTE Textebene ausblenden: der
-                          Slide-Streifen zeigt bereits die (korrekten, eingebackenen) Texte der
-                          jeweiligen Seite. Sonst blitzt hier kurz der noch veraltete Text der
-                          vorherigen Seite auf (#113 – nur Text, weil Striche in die Slide-Grafik
-                          eingebacken sind). */}
-                      {!slide &&
-                        d.texts
-                          // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
-                          .filter((o) => o.id !== d.pending?.editId)
-                          .map((o) => (
+                      {d.texts
+                        // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
+                        .filter((o) => o.id !== d.pending?.editId)
+                        .map((o) => (
                           <div
                             key={o.id}
                             className={`${styles.textObj}${o.id === d.selectedId ? ' ' + styles.textSel : ''}`}
@@ -1237,6 +1231,13 @@ export function PageDeck({
                                   top: `${o.fy * 100}%`,
                                   fontSize: `${o.sizeCqh}cqh`,
                                   color: o.color,
+                                  // Exakt wie in der Live-Ansicht formatieren, sonst springt der Text
+                                  // beim Übergang Slide→Live (CSS-Default 700 vs. echtes Gewicht) und
+                                  // blinkt (#113, v. a. normaler Text = 400).
+                                  fontWeight: (o.bold ?? true) ? 700 : 400,
+                                  fontStyle: o.italic ? 'italic' : 'normal',
+                                  textDecoration: o.underline ? 'underline' : 'none',
+                                  textAlign: o.align ?? 'center',
                                 }}
                               >
                                 {o.text}
