@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.5.1] – 2026-07-05
+
 ### Behoben
 
 - **„Too many requests" im Gemeinde-WLAN behoben:** Das Anfrage-Limit galt versehentlich auch für
