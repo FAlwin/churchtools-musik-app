@@ -29,13 +29,20 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false 
 app.use(express.json({ limit: '8mb' }));
 app.use(cookieParser(config.sessionSecret));
 
-// Allgemeines Rate-Limit (Login bekommt in Schritt 7 ein strengeres)
+// Allgemeines Rate-Limit – NUR auf echte API-Aktionen (`/api`), nicht auf statische
+// Frontend-Dateien (JS/CSS/Icons); die zählten sonst jede beim App-Laden mit.
+// Gezählt wird PRO ANGEMELDETEM NUTZER (Session-Cookie), sonst pro IP: Im Gemeinde-WLAN gehen
+// alle Geräte über EINE öffentliche IP raus – ohne Nutzer-Schlüssel teilte sich das ganze Team
+// ein Kontingent und lief sofort in „Too many requests". (Login bekommt zusätzlich ein strengeres.)
 app.use(
+  '/api',
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    max: 600,
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: (req) =>
+      (req.signedCookies?.ct_session as string | undefined) || req.ip || 'unbekannt',
   }),
 );
 

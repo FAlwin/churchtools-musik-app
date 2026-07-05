@@ -7,6 +7,14 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **„Too many requests" im Gemeinde-WLAN behoben:** Das Anfrage-Limit galt versehentlich auch für
+  statische Dateien und zählte pro IP – da im Gemeinde-WLAN alle Geräte über eine öffentliche IP
+  laufen, teilte sich das ganze Team ein Kontingent und lief beim gemeinsamen Nutzen sofort voll.
+  Das Limit greift jetzt nur noch für echte Aktionen und zählt **pro angemeldetem Nutzer**;
+  Grenzwerte großzügiger.
+
 ## [2.5.0] – 2026-07-05
 
 ### Hinzugefügt
