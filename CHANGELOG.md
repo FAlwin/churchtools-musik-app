@@ -7,6 +7,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **„Nach Updates suchen"-Knopf entfernt:** Er war überflüssig – beim (kompletten) Neu-Öffnen der App
+  wird ohnehin automatisch die neueste Version geladen. Die stille Auto-Aktualisierung und der
+  Versions-Hinweis bleiben.
+
 ### Behoben
 
 - **Normaler Anmerkungs-Text wurde nach kurzer Zeit fett (#115):** Beim Server-Abgleich gingen die
@@ -15,10 +21,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   werden jetzt vollständig mitgespeichert.
 - **Gestrichelter Text-Rahmen blieb stehen (#114):** Beim Verlassen des Anmerkungsmodus wird die
   Text-Auswahl jetzt sofort aufgehoben – der Rahmen bleibt nicht mehr bis zum Seitenwechsel sichtbar.
-- **Flackern der Anmerkungen beim Weiterwischen (#113):** Auf der neuen Seite blitzten kurz die
-  Anmerkungen der vorherigen Seite auf. Die Blätter-Abdeckung wird jetzt gesetzt, bevor der erste
-  Frame gezeichnet wird, sodass der veraltete Stand nicht mehr sichtbar wird; zusätzlich werden die
-  Striche beim Wechsel direkt aus dem Zwischenspeicher gezeichnet.
+- **Flackern der Text-Anmerkungen beim Weiterwischen (#113):** Auf der neuen Seite blitzten kurz die
+  Texte der vorherigen Seite auf (nur Text, da Striche in die Blätter-Grafik eingebacken sind). Die
+  echte Textebene wird während der Blätter-Animation ausgeblendet – der Übergang zeigt bereits die
+  korrekten Texte.
 
 ## [2.5.1] – 2026-07-05
 

@@ -11,17 +11,7 @@ import { LinksManager } from '../components/LinksManager';
 import { SupportBox } from '../components/SupportBox';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
-import { useSwUpdate } from '../hooks/useSwUpdate';
 import styles from './Settings.module.scss';
-
-/** Beschriftung des „Nach Updates suchen"-Knopfes je nach Zustand. */
-const UPDATE_CHECK_LABEL = {
-  idle: 'Nach Updates suchen',
-  checking: 'Suche nach Updates…',
-  updating: 'Aktualisiere…',
-  'up-to-date': 'Du bist auf dem neuesten Stand',
-  'update-ready': 'Neue Version bereit – unten auf „Jetzt laden" tippen',
-} as const;
 
 interface SettingsProps {
   site: SiteConfig;
@@ -59,7 +49,6 @@ export function Settings({
   const [orgDraft, setOrgDraft] = useState(site.orgName);
   const update = useUpdateSiteConfig();
   const updateCheck = useUpdateCheck();
-  const sw = useSwUpdate();
   const logo = theme === 'dark' ? '/logo-rund-dunkel.png' : '/logo-rund-hell.png';
 
   function saveOrg() {
@@ -183,7 +172,7 @@ export function Settings({
         <SupportBox />
 
         <div className={styles.version}>
-          <span>Churchtools Musik App · {import.meta.env.VITE_APP_VERSION || 'dev'}</span>
+          Churchtools Musik App · {import.meta.env.VITE_APP_VERSION || 'dev'}
           {updateCheck.available && updateCheck.latest && (
             <a
               className={styles.updateNote}
@@ -194,14 +183,6 @@ export function Settings({
               Neue Version {updateCheck.latest} verfügbar – Was ist neu
             </a>
           )}
-          <button
-            className={styles.updateCheckBtn}
-            onClick={sw.checkNow}
-            disabled={sw.checkState === 'checking' || sw.checkState === 'updating'}
-          >
-            {(sw.checkState === 'checking' || sw.checkState === 'updating') && <Spinner />}
-            {UPDATE_CHECK_LABEL[sw.checkState]}
-          </button>
         </div>
       </Scroll>
 
