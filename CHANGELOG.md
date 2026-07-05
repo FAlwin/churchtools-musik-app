@@ -21,10 +21,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   werden jetzt vollständig mitgespeichert.
 - **Gestrichelter Text-Rahmen blieb stehen (#114):** Beim Verlassen des Anmerkungsmodus wird die
   Text-Auswahl jetzt sofort aufgehoben – der Rahmen bleibt nicht mehr bis zum Seitenwechsel sichtbar.
-- **Flackern der Text-Anmerkungen beim Weiterwischen (#113):** Auf der neuen Seite blitzten kurz die
-  Texte der vorherigen Seite auf (nur Text, da Striche in die Blätter-Grafik eingebacken sind). Die
-  echte Textebene wird während der Blätter-Animation ausgeblendet – der Übergang zeigt bereits die
-  korrekten Texte.
+- **Text-Anmerkungen blinkten beim Weiterwischen (#113):** Am Ende der Blätter-Animation sprang
+  normaler Text kurz auf fett, weil der Text im Übergang immer fett dargestellt wurde. Der Übergang
+  übernimmt jetzt exakt die Formatierung der Live-Ansicht (fett/normal/kursiv/…), der Wechsel ist
+  nahtlos. (Die Abdeckung wird zudem bereits vor dem ersten Frame gesetzt.)
 
 ## [2.5.1] – 2026-07-05
 
