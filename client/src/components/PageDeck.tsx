@@ -266,17 +266,9 @@ export function PageDeck({
       const key = drawKeyFor(pageIndex + j);
       const saved = key ? localStorage.getItem(key) : null;
       if (saved) {
-        // Vorab dekodiertes Bild aus dem Cache SYNCHRON zeichnen → kein kurzer blanker Moment
-        // (Flackern) beim Liedwechsel. Nur bei Deckungsgleichheit mit dem aktuellen Stand nutzen,
-        // sonst frisch (asynchron) laden.
-        const cached = key ? strokeImgCache.current.get(key) : undefined;
-        if (cached && cached.complete && cached.naturalWidth > 0 && cached.src === saved) {
-          ctx.drawImage(cached, 0, 0);
-        } else {
-          const img = new Image();
-          img.onload = () => ctx.drawImage(img, 0, 0);
-          img.src = saved;
-        }
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = saved;
       }
       nextAspects[j] = `${src.width} / ${src.height}`;
     }
@@ -1085,10 +1077,16 @@ export function PageDeck({
                       }}
                       onPointerDown={(e) => layerDown(e, j)}
                     >
-                      {d.texts
-                        // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
-                        .filter((o) => o.id !== d.pending?.editId)
-                        .map((o) => (
+                      {/* Während der Blätter-Animation die ECHTE Textebene ausblenden: der
+                          Slide-Streifen zeigt bereits die (korrekten, eingebackenen) Texte der
+                          jeweiligen Seite. Sonst blitzt hier kurz der noch veraltete Text der
+                          vorherigen Seite auf (#113 – nur Text, weil Striche in die Slide-Grafik
+                          eingebacken sind). */}
+                      {!slide &&
+                        d.texts
+                          // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
+                          .filter((o) => o.id !== d.pending?.editId)
+                          .map((o) => (
                           <div
                             key={o.id}
                             className={`${styles.textObj}${o.id === d.selectedId ? ' ' + styles.textSel : ''}`}
