@@ -131,6 +131,7 @@ export function Agenda({
           {held && (
             <span
               className={styles.offBadge}
+              data-tour="offline"
               title={`Offline verfügbar (Stand ${new Date(offlineReg[s.id].savedAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})`}
               aria-label="Offline verfügbar"
             >
@@ -143,6 +144,7 @@ export function Agenda({
         {isFuture && !held && online && (
           <button
             className={styles.songBook}
+            data-tour="offline"
             onClick={() => void saveRow(s)}
             disabled={savingId !== null}
             aria-label="Für offline speichern"
@@ -154,6 +156,7 @@ export function Agenda({
         {s.songCount > 0 && (
           <button
             className={styles.songBook}
+            data-tour="songbook"
             onClick={() => (blocked ? showToast(OFFLINE_HINT) : onOpenSongs(s))}
             aria-label={`Liederheft öffnen (${s.songCount} ${s.songCount === 1 ? 'Lied' : 'Lieder'})`}
             title="Liederheft öffnen"
@@ -168,10 +171,13 @@ export function Agenda({
   }
 
   function groups(list: Service[]) {
-    return groupByMonth(list).map((g) => (
+    return groupByMonth(list).map((g, gi) => (
       <div key={g.key} className={styles.group}>
         <div className={styles.groupHdr}>{g.key}</div>
-        <div className={styles.cardList}>{g.items.map(row)}</div>
+        {/* Erste Monatsgruppe trägt den Tour-Marker (Einführung hebt die Terminliste hervor). */}
+        <div className={styles.cardList} data-tour={gi === 0 ? 'termine-liste' : undefined}>
+          {g.items.map(row)}
+        </div>
       </div>
     ));
   }

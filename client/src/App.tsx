@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Login } from './pages/Login';
 import { Agenda } from './pages/Agenda';
 import { Setlist } from './pages/Setlist';
@@ -34,6 +34,14 @@ import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
 import { TabBar, type TabId } from './components/TabBar';
 import { Toast, useToast } from './components/Toast';
+import { Coachmarks } from './components/Coachmarks';
+import {
+  TERMINE_STEPS,
+  TOUR_TERMINE,
+  isTourDone,
+  markTourDone,
+  resetTours,
+} from './utils/onboarding';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { ApiError } from './services/api';
 
@@ -65,6 +73,11 @@ export default function App() {
   // ohne Netz ausgegraut, ein Tipp erklärt das kurz (#32).
   const online = useOnlineStatus();
   const { toast: offlineToast, showToast: showOfflineToast } = useToast();
+
+  // Geführte Einführung (#Onboarding): startet automatisch beim ersten Mal, sobald die Termine
+  // geladen sind (dann existieren die hervorzuhebenden Elemente). „Einführung nochmal ansehen"
+  // im Mehr-Tab setzt zurück und startet sie erneut.
+  const [tourActive, setTourActive] = useState(false);
 
   const {
     restored,
@@ -123,6 +136,20 @@ export default function App() {
     if (sessionExpired) void auth.logout();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionExpired]);
+
+  // Einführung beim ersten Mal automatisch starten – erst wenn die Termine da sind (dann existieren
+  // die hervorzuhebenden Elemente) und keine Vollansicht offen ist.
+  useEffect(() => {
+    if (
+      tab === 'termine' &&
+      view === null &&
+      canViewAgendas &&
+      (servicesQuery.data?.length ?? 0) > 0 &&
+      !isTourDone(TOUR_TERMINE)
+    ) {
+      setTourActive(true);
+    }
+  }, [tab, view, canViewAgendas, servicesQuery.data]);
 
   if (auth.isLoading) {
     return (
@@ -359,6 +386,11 @@ export default function App() {
             isAdmin={isAdmin}
             userName={auth.user ? `${auth.user.firstName} ${auth.user.lastName}`.trim() : undefined}
             onLogout={() => auth.logout()}
+            onReplayIntro={() => {
+              resetTours();
+              setTab('termine');
+              setTourActive(true);
+            }}
           />
         )}
       </div>
@@ -375,6 +407,15 @@ export default function App() {
         }}
       />
       <Toast message={offlineToast} />
+      {tab === 'termine' && tourActive && (
+        <Coachmarks
+          steps={TERMINE_STEPS}
+          onClose={() => {
+            markTourDone(TOUR_TERMINE);
+            setTourActive(false);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -21,7 +21,7 @@ interface TabBarProps {
 /** Untere Navigationsleiste im ChurchTools-Stil. */
 export function TabBar({ active, tabs, dimmed = [], onChange }: TabBarProps) {
   return (
-    <div className={styles.tabbar}>
+    <div className={styles.tabbar} data-tour="tabbar">
       {tabs.map((id) => {
         const meta = TAB_META[id];
         const on = active === id;
