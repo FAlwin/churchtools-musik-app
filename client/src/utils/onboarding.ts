@@ -6,6 +6,7 @@ import type { CoachStep } from '../components/Coachmarks';
  */
 const PREFIX = 'worship:onboard-';
 export const TOUR_TERMINE = 'termine-v1';
+export const TOUR_CHART = 'chart-v1';
 
 export function isTourDone(key: string): boolean {
   try {
@@ -56,5 +57,29 @@ export const TERMINE_STEPS: CoachStep[] = [
     selector: '[data-tour="tabbar"]',
     title: 'Die Bereiche',
     body: 'Unter „Lieder" durchsuchst du alle Lieder, unter „Mehr" findest du Einstellungen – und kannst diese Einführung erneut starten.',
+  },
+];
+
+/** Gruppe 2 – Chart-Ansicht (beim ersten Öffnen eines Liedes). */
+export const CHART_STEPS: CoachStep[] = [
+  {
+    selector: '[data-tour="chart-blaettern"]',
+    title: 'Blättern & Zoomen',
+    body: 'Wische seitwärts, um zwischen den Seiten zu blättern. Mit zwei Fingern zoomst du rein und wieder heraus.',
+  },
+  {
+    selector: '[data-tour="chart-lied"]',
+    title: 'Lied-Optionen',
+    body: 'Tippe auf den Titel, um die Tonart zu ändern, eine Version zu wählen oder zu transponieren.',
+  },
+  {
+    selector: '[data-tour="chart-aussehen"]',
+    title: 'Darstellung',
+    body: 'Hier passt du Schriftgröße und Spaltenzahl an.',
+  },
+  {
+    selector: '[data-tour="chart-anmerken"]',
+    title: 'Anmerkungen',
+    body: 'Zeichne oder schreibe Notizen direkt auf die Seite – sie werden pro Konto gespeichert.',
   },
 ];

@@ -7,6 +7,8 @@ import { SectionTransposeSheet } from '../components/SectionTransposeSheet';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
 import { PageDeck } from '../components/PageDeck';
+import { Coachmarks } from '../components/Coachmarks';
+import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
 import { Icon } from '../components/icons';
 import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
 import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
@@ -54,7 +56,10 @@ export function ChordChart({
   // Signatur über den INHALT aller Versionen → der Strom wird neu erzeugt, sobald sich ein Lied-Text
   // ändert (z. B. nach dem Bearbeiten/Anlegen einer Version), nicht nur bei geänderter Lied-Liste.
   const songsSig = songs
-    .map((s) => `${s.id}:${s.chordpro?.length ?? 0}:${s.versions.map((v) => v.key + v.text.length).join('|')}`)
+    .map(
+      (s) =>
+        `${s.id}:${s.chordpro?.length ?? 0}:${s.versions.map((v) => v.key + v.text.length).join('|')}`,
+    )
     .join(',');
   useEffect(() => {
     setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
@@ -120,6 +125,9 @@ export function ChordChart({
   const [showSongMenu, setShowSongMenu] = useState(false);
 
   const [drawMode, setDrawMode] = useState(false);
+  // Geführte Einführung Chart-Ansicht (#Onboarding, Gruppe 2): startet beim ersten Öffnen, sobald
+  // die Seiten gerendert sind (dann existieren die hervorzuhebenden Elemente).
+  const [chartTour, setChartTour] = useState(false);
   // Anmerkungs-Farben fest Schwarz/Rot/Gelb (wir arbeiten nur noch auf weißen PDF-Seiten → kein
   // Weiß, kein Dunkelmodus-Wechsel). Plus der freie Farbwähler in der Leiste.
   const [drawColor, setDrawColor] = useState('#0062ac'); // Standard-Anmerkungsfarbe: Blau
@@ -159,7 +167,10 @@ export function ChordChart({
       liveRef.current.lastReturn = now;
       const list = liveRef.current.songs;
       if (!liveRef.current.drawMode) {
-        await Promise.all([pullAnnotations(list.map((s) => s.id)), pullSettings(list.map((s) => s.id))]);
+        await Promise.all([
+          pullAnnotations(list.map((s) => s.id)),
+          pullSettings(list.map((s) => s.id)),
+        ]);
         setSettings(Object.fromEntries(list.map((s) => [s.id, loadSettings(s)])));
         setSyncTick((t) => t + 1);
       }
@@ -223,6 +234,11 @@ export function ChordChart({
     settings,
   });
 
+  // Einführung Chart-Ansicht beim ersten Mal starten – erst wenn die Seiten fertig gerendert sind.
+  useEffect(() => {
+    if (!pagesLoading && pages.length > 0 && !isTourDone(TOUR_CHART)) setChartTour(true);
+  }, [pagesLoading, pages.length]);
+
   // Blättern/Ausrichtung/Tastatur. Tastatur-Navigation pausiert, solange Editor oder Zeichenmodus
   // offen sind (per Ref übergeben, weil `showEditor` erst unten aus dem Editor-Hook kommt).
   const navBlockedRef = useRef(false);
@@ -274,7 +290,10 @@ export function ChordChart({
   const sections = parseChordPro(displayedChordpro);
   const editorTemplate = `{title: ${song.title}}\n{key: ${song.targetKey || song.originalKey || 'C'}}\n\n{comment: Vers 1}\n[${song.targetKey || 'C'}]Hier Text mit Akkorden eingeben\n\n{comment: Chorus}\n`;
 
-  const activeDoc = set.viewSource === 'chords' ? null : song.documents.find((d) => d.fileId === set.viewSource) ?? null;
+  const activeDoc =
+    set.viewSource === 'chords'
+      ? null
+      : (song.documents.find((d) => d.fileId === set.viewSource) ?? null);
 
   // Anmerkungs-/Zoom-Schlüssel je Strom-Seite – Schema identisch zu vorher (Akkorde an Lied+Version,
   // Dokumente an Datei-ID), damit bestehende Anmerkungen erhalten bleiben.
@@ -346,7 +365,8 @@ export function ChordChart({
   } else {
     if (!set.lyricsOnly) headInfo.push(<span className={styles.infoKey}>{curKey}</span>);
     if (set.lyricsOnly) headInfo.push('Nur Text');
-    if (!set.lyricsOnly && set.capo > 0) headInfo.push(<span className={styles.infoCapo}>Capo {set.capo}</span>);
+    if (!set.lyricsOnly && set.capo > 0)
+      headInfo.push(<span className={styles.infoCapo}>Capo {set.capo}</span>);
     if (hasVersions) headInfo.push(currentVersion.name);
     if (song.bpm !== null) headInfo.push(`♩ ${song.bpm}`);
   }
@@ -362,6 +382,7 @@ export function ChordChart({
           <div className={styles.center}>
             <button
               className={styles.menuBtn}
+              data-tour="chart-lied"
               onClick={() => setShowSongMenu((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={showSongMenu}
@@ -388,6 +409,7 @@ export function ChordChart({
             {!activeDoc && (
               <button
                 className={`${styles.toolBtn}${showAppearance ? ' ' + styles.on : ''}`}
+                data-tour="chart-aussehen"
                 onClick={() => setShowAppearance((v) => !v)}
                 title="Aussehen"
               >
@@ -406,6 +428,7 @@ export function ChordChart({
             )}
             <button
               className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
+              data-tour="chart-anmerken"
               onClick={() => setDrawMode((d) => !d)}
               title="Anmerkungen"
             >
@@ -423,14 +446,18 @@ export function ChordChart({
               <div className={styles.appRow}>
                 <button
                   className={styles.stepBtn}
-                  onClick={() => updateSetting(song.id, { fontSize: Math.max(12, set.fontSize - 2) })}
+                  onClick={() =>
+                    updateSetting(song.id, { fontSize: Math.max(12, set.fontSize - 2) })
+                  }
                 >
                   A−
                 </button>
                 <span className={styles.stepValue}>{set.fontSize}</span>
                 <button
                   className={styles.stepBtn}
-                  onClick={() => updateSetting(song.id, { fontSize: Math.min(40, set.fontSize + 2) })}
+                  onClick={() =>
+                    updateSetting(song.id, { fontSize: Math.min(40, set.fontSize + 2) })
+                  }
                 >
                   A+
                 </button>
@@ -494,7 +521,9 @@ export function ChordChart({
                 >
                   <span>Abschnitte transponieren</span>
                   {Object.keys(set.secShift).length > 0 ? (
-                    <span className={styles.mmValueActive}>{Object.keys(set.secShift).length} aktiv</span>
+                    <span className={styles.mmValueActive}>
+                      {Object.keys(set.secShift).length} aktiv
+                    </span>
                   ) : (
                     <span className={styles.mmValue}>–</span>
                   )}
@@ -532,7 +561,11 @@ export function ChordChart({
                     setShowSongMenu(false);
                   }}
                 >
-                  <span>{isOriginal ? 'Bearbeiten (neue Version)' : `„${currentVersion.name}" bearbeiten`}</span>
+                  <span>
+                    {isOriginal
+                      ? 'Bearbeiten (neue Version)'
+                      : `„${currentVersion.name}" bearbeiten`}
+                  </span>
                   <span className={styles.mmValue}>🖉</span>
                 </button>
               )}
@@ -548,7 +581,9 @@ export function ChordChart({
                 }}
               >
                 <span>Akkorde &amp; Text</span>
-                {set.viewSource === 'chords' && !set.lyricsOnly && <span className={styles.mmCheck}>✓</span>}
+                {set.viewSource === 'chords' && !set.lyricsOnly && (
+                  <span className={styles.mmCheck}>✓</span>
+                )}
               </button>
               <button
                 className={`${styles.mmItem}${set.viewSource === 'chords' && set.lyricsOnly ? ' ' + styles.on : ''}`}
@@ -558,7 +593,9 @@ export function ChordChart({
                 }}
               >
                 <span>Nur Text</span>
-                {set.viewSource === 'chords' && set.lyricsOnly && <span className={styles.mmCheck}>✓</span>}
+                {set.viewSource === 'chords' && set.lyricsOnly && (
+                  <span className={styles.mmCheck}>✓</span>
+                )}
               </button>
               {song.documents.map((d) => (
                 <button
@@ -672,7 +709,7 @@ export function ChordChart({
         )}
 
         {/* Anzeige-Bereich: EIN durchgehender Strom (Akkorde + Dokumente gemischt) */}
-        <div className={styles.chartArea}>
+        <div className={styles.chartArea} data-tour="chart-blaettern">
           {songs.length > 0 ? (
             <PageDeck
               pages={pages}
@@ -735,7 +772,12 @@ export function ChordChart({
 
         {/* Footer */}
         <div className={styles.ftr}>
-          <button className={styles.navBtn} onClick={prev} disabled={atStart} aria-label="Zurück / vorige Seite">
+          <button
+            className={styles.navBtn}
+            onClick={prev}
+            disabled={atStart}
+            aria-label="Zurück / vorige Seite"
+          >
             <Icon name="chev-left" size={22} stroke={2.4} />
           </button>
           <div className={styles.ftrCenter}>
@@ -760,10 +802,25 @@ export function ChordChart({
               </div>
             ) : null}
           </div>
-          <button className={styles.navBtn} onClick={next} disabled={atEnd} aria-label="Weiter / nächste Seite">
+          <button
+            className={styles.navBtn}
+            onClick={next}
+            disabled={atEnd}
+            aria-label="Weiter / nächste Seite"
+          >
             <Icon name="chev-right" size={22} stroke={2.4} />
           </button>
         </div>
+
+        {chartTour && (
+          <Coachmarks
+            steps={CHART_STEPS}
+            onClose={() => {
+              markTourDone(TOUR_CHART);
+              setChartTour(false);
+            }}
+          />
+        )}
       </>
     </Screen>
   );

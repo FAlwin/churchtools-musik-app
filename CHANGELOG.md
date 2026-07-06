@@ -5,6 +5,23 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Hinzugefügt
+
+- **Geführte Einführung für neue Nutzer:** Beim ersten Mal erklären kleine Hinweisblasen direkt am
+  jeweiligen Knopf, was wofür da ist – in den Terminen (Terminliste, Liedblätter öffnen,
+  Offline-Symbol, Bereiche) und in der Liedansicht (Blättern & Zoomen, Lied-Optionen, Darstellung,
+  Anmerkungen). Jederzeit „Überspringen"; im Mehr-Tab lässt sich die Einführung erneut starten.
+
+### Geändert
+
+- **Termine-Ansicht aufgeräumt:** Die Liederanzahl steht jetzt als kleine Zahl am Noten-Knopf
+  (vorher in der Textzeile abgeschnitten). Das Symbol zum Offline-Speichern ist eine Wolke mit
+  Pfeil (statt eines Geräte-Download-Pfeils), passend zur „Wolke mit Haken" für „liegt offline vor".
+- **„Vergangene" ohne Netz ausgegraut:** Vergangene Gottesdienste werden live geladen und sind
+  offline nicht verfügbar – der Umschalter ist dann ausgegraut und erklärt das per kurzem Hinweis.
+
 ## [2.6.0] – 2026-07-06
 
 ### Hinzugefügt
