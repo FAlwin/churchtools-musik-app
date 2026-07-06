@@ -99,11 +99,23 @@ export function Coachmarks({ steps, onClose }: CoachmarksProps) {
   if (!box) return null;
   const step = steps[idx];
   const vh = window.innerHeight;
-  // Blase über oder unter das Element setzen – je nachdem, wo mehr Platz ist.
-  const below = box.top + box.height / 2 < vh / 2;
-  const bubbleStyle = below
-    ? { top: box.top + box.height + PAD + GAP }
-    : { bottom: vh - box.top + PAD + GAP };
+  // Blase unter das Element setzen, wenn dort Platz ist; sonst darüber; sonst (sehr großes Ziel,
+  // z. B. der ganze Chart-Bereich) unten schwebend. In JEDEM Fall in den sicheren Bereich klemmen,
+  // damit sie NICHT unter der iOS-Statusleiste oben oder der Fuß-/Tab-Leiste unten verschwindet.
+  const SAFE_TOP = 56; // Statusleiste/Notch
+  const SAFE_BOTTOM = 100; // Fuß-/Tab-Leiste + Home-Indikator
+  const EST_H = 160; // grobe Blasenhöhe
+  const gap = PAD + GAP;
+  let top: number;
+  if (box.top + box.height + gap + EST_H <= vh - SAFE_BOTTOM) {
+    top = box.top + box.height + gap;
+  } else if (box.top - gap - EST_H >= SAFE_TOP) {
+    top = box.top - gap - EST_H;
+  } else {
+    top = vh - SAFE_BOTTOM - EST_H;
+  }
+  top = Math.max(SAFE_TOP, Math.min(top, vh - SAFE_BOTTOM - EST_H));
+  const bubbleStyle = { top };
 
   return createPortal(
     <div className={styles.root} role="dialog" aria-modal="true">
