@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Service } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
@@ -76,6 +76,12 @@ export function Agenda({
   const offlineReg = useOfflineServices();
   const { toast, showToast } = useToast();
 
+  // Vergangene Gottesdienste werden live geladen → ohne Netz nicht verfügbar. War man auf
+  // „Vergangene" und geht offline, zurück auf „Kommende" (das Segment graut „Vergangene" aus).
+  useEffect(() => {
+    if (!online && tab === 'past') setTab('upcoming');
+  }, [online, tab]);
+
   const today = new Date().toISOString().slice(0, 10);
   const pastQuery = usePastServices(monthsBack, tab === 'past' && online);
   const upcoming = services
@@ -126,13 +132,12 @@ export function Agenda({
               <span>{s.weekday}</span>
               <span className={styles.dotSep}>·</span>
               <span>{s.time}</span>
-              <span className={styles.dotSep}>·</span>
-              <span>{s.songCount} Lieder</span>
             </div>
           </div>
           {held && (
             <span
               className={styles.offBadge}
+              data-tour="offline"
               title={`Offline verfügbar (Stand ${new Date(offlineReg[s.id].savedAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})`}
               aria-label="Offline verfügbar"
             >
@@ -145,22 +150,26 @@ export function Agenda({
         {isFuture && !held && online && (
           <button
             className={styles.songBook}
+            data-tour="offline"
             onClick={() => void saveRow(s)}
             disabled={savingId !== null}
             aria-label="Für offline speichern"
             title="Für offline speichern"
           >
-            {savingId === s.id ? <Spinner /> : <Icon name="download" size={20} stroke={2.2} />}
+            {savingId === s.id ? <Spinner /> : <Icon name="cloud-download" size={21} stroke={2} />}
           </button>
         )}
         {s.songCount > 0 && (
           <button
             className={styles.songBook}
+            data-tour="songbook"
             onClick={() => (blocked ? showToast(OFFLINE_HINT) : onOpenSongs(s))}
-            aria-label="Liederheft öffnen"
+            aria-label={`Liederheft öffnen (${s.songCount} ${s.songCount === 1 ? 'Lied' : 'Lieder'})`}
             title="Liederheft öffnen"
           >
             <Icon name="music" size={21} stroke={2.2} />
+            {/* Kleine Zahl am Noten-Knopf = Anzahl Lieder (früher in der Textzeile, dort abgeschnitten). */}
+            <span className={styles.songCount}>{s.songCount}</span>
           </button>
         )}
       </div>
@@ -168,10 +177,13 @@ export function Agenda({
   }
 
   function groups(list: Service[]) {
-    return groupByMonth(list).map((g) => (
+    return groupByMonth(list).map((g, gi) => (
       <div key={g.key} className={styles.group}>
         <div className={styles.groupHdr}>{g.key}</div>
-        <div className={styles.cardList}>{g.items.map(row)}</div>
+        {/* Erste Monatsgruppe trägt den Tour-Marker (Einführung hebt die Terminliste hervor). */}
+        <div className={styles.cardList} data-tour={gi === 0 ? 'termine-liste' : undefined}>
+          {g.items.map(row)}
+        </div>
       </div>
     ));
   }
@@ -187,7 +199,14 @@ export function Agenda({
           { value: 'upcoming', label: 'Kommende' },
           { value: 'past', label: 'Vergangene' },
         ]}
-        onChange={setTab}
+        dimmed={online ? [] : ['past']}
+        onChange={(v) => {
+          if (!online && v === 'past') {
+            showToast('Vergangene Gottesdienste sind offline nicht verfügbar.');
+            return;
+          }
+          setTab(v);
+        }}
       />
 
       <Scroll onRefresh={tab === 'upcoming' ? onRetry : () => pastQuery.refetch()}>

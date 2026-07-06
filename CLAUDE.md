@@ -167,6 +167,23 @@ Geräteklasse `phone` vs `large` via `utils/deviceClass.ts`. Versions-Helfer: `u
 - **Farben:** Primär Blau `#0061A1`, Destruktiv Rot `#B22247`; Akkorde im Chart schwarz/fett
   (SongSelect-Stil). Details: `docs/entwicklung/design-system.md`
 
+## Onboarding / Geführte Einführung (VERBINDLICH)
+Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblasen am echten Element
+(`components/Coachmarks.tsx`; Schritte + „gesehen"-Merker in `utils/onboarding.ts`; Ziele per
+`data-tour="…"`-Attribut). Verbindliche Regel bei **jeder** Änderung/**jedem** neuen Feature:
+
+1. **Einführung mitdenken:** Ändert oder ergänzt ein Feature die Bedienung (neuer Knopf, neue Geste,
+   neuer Bereich), MUSS die Einführung dazu passen – Schritt ergänzen/anpassen in `utils/onboarding.ts`
+   und ggf. ein `data-tour`-Attribut am neuen Element setzen. Betrifft es einen bestehenden Bereich,
+   fügt man den Schritt in die passende Gruppe (`TERMINE_STEPS` / `CHART_STEPS`) ein.
+2. **Damit es beim ersten Öffnen nach dem Update erscheint:** die betroffene Tour-**Version** erhöhen
+   (`TOUR_TERMINE = 'termine-v1'` → `'termine-v2'` bzw. `TOUR_CHART`). Der Merker in localStorage
+   passt dann nicht mehr → die (aktualisierte) Einführung erscheint bei allen automatisch beim ersten
+   Öffnen. Ohne Versionserhöhung sehen Bestandsnutzer den neuen Schritt NICHT.
+3. **Für ganz neue Bereiche** eine neue Tour-Gruppe + `TOUR_*`-Konstante anlegen und dort auslösen
+   (Muster: `App.tsx` für Termine, `ChordChart.tsx` für die Chart-Ansicht – Start erst, wenn die
+   Ziel-Elemente gerendert sind).
+
 ## Tests & CI
 - **Befehle:** `npm test` (alle), `npm run test:cov` (Coverage), im Client
   `npm run test:watch`.
@@ -224,17 +241,20 @@ Diese Checkliste wird **bei jedem Release** abgearbeitet – nichts überspringe
 den Skill `/festhalten`, der genau das automatisiert.
 
 1. **Code grün:** `npm run lint` + `npm run build` + `npm test` laufen sauber durch.
-2. **Doku & Struktur aktuell:** Root enthält nur das Nötigste (`README.md`, `INSTALL.md`,
+2. **Einführung geprüft:** Bringt das Release ein neues/geändertes Bedienelement? Dann die geführte
+   Einführung angepasst (Schritt + `data-tour`) UND die betroffene Tour-Version erhöht, damit sie
+   beim ersten Öffnen erscheint (siehe „Onboarding / Geführte Einführung"). Wenn nein: bewusst nichts.
+3. **Doku & Struktur aktuell:** Root enthält nur das Nötigste (`README.md`, `INSTALL.md`,
    `UPDATE.md`, `CHANGELOG.md`, `LICENSE`, `CLAUDE.md`); alles andere liegt geordnet in
    `docs/{betrieb,entwicklung,archiv}/`. Keine veralteten Aussagen, keine toten Verweise
    (z. B. auf gelöschte Dateien), keine Doppelungen (Changelog/API nur an einer Stelle).
-3. **Installations-Anleitung gegen die Realität prüfen:** `INSTALL.md` + `UPDATE.md` +
+4. **Installations-Anleitung gegen die Realität prüfen:** `INSTALL.md` + `UPDATE.md` +
    die Setup-/Update-Skripte in `deploy/` müssen zum tatsächlichen Vorgehen passen.
-4. **CHANGELOG pflegen:** Abschnitt `[Unreleased]` mit den Änderungen seit dem letzten Tag füllen
+5. **CHANGELOG pflegen:** Abschnitt `[Unreleased]` mit den Änderungen seit dem letzten Tag füllen
    und auf die neue Version (`## [X.Y.Z] – Datum`) hochziehen. Versionierung nach SemVer.
-5. **Taggen:** `git tag vX.Y.Z && git push origin vX.Y.Z` → CI baut `:latest` + `:X.Y` + `:X`
+6. **Taggen:** `git tag vX.Y.Z && git push origin vX.Y.Z` → CI baut `:latest` + `:X.Y` + `:X`
    (Major-Tag, damit Gemeinden sicher auf `:2` bleiben können). Prod-Deploy bewusst, nicht nebenbei.
-6. **Memory aktualisieren:** Projekt-Memory + `MEMORY.md`-Index auf den neuen Stand bringen.
+7. **Memory aktualisieren:** Projekt-Memory + `MEMORY.md`-Index auf den neuen Stand bringen.
 
 ## Changelog
 Release-Notes & Versionshistorie: siehe `CHANGELOG.md` (Single Source – hier nicht doppelt pflegen).
@@ -248,6 +268,9 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
+- **Aktuell (v2.7.0, 2026-07-07):** Geführte Einführung für neue Nutzer (Termine, Ablauf-Ansicht,
+  Bearbeiten-Modus, Chart-Ansicht) live; Offline-Reserve produktiv (seit v2.6.0, auf iOS-Kaltstart
+  bestätigt). Onboarding-Pflege ist verbindlich → Sektion „Onboarding / Geführte Einführung".
 - **Fertig & produktiv:** App funktional vollständig (Charts + automatisches Transponieren,
   ChordPro-Editor, Dokumenten-Viewer, kompletter Ablauf + Bearbeiten, „Alle Lieder" mit
   Statistik, rechtebewusste UI). Auf dem NAS deployt (Container Manager, `worship-charts`),
@@ -258,8 +281,8 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
 - **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
   mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
-- **Offen / optional:** Musik-Abwesenheitsplaner nachbauen (separates Projekt); Offline-Reserve
-  (Issue #32, Plan `docs/entwicklung/plan-offline-reserve.md`).
+- **Offen / optional:** Musik-Abwesenheitsplaner nachbauen (separates Projekt); globale/private
+  Notizen (Issue #124); Security-Hygiene #45/#46/#47. Offline-Reserve (#32) ist umgesetzt & live.
 
 ## Deployment-Stand (NAS) – wichtige Lernpunkte
 - Prod läuft image-basiert (GHCR) im Container Manager (Projekt `worship-charts`, Port 3001).

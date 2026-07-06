@@ -33,6 +33,7 @@
 }
 // Noten-Button rechts: öffnet direkt das Liederheft (Charts).
 .songBook {
+  position: relative;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -48,6 +49,25 @@
   &:active {
     background: var(--surface3);
   }
+}
+
+// Kleine Zahl (= Liederanzahl) oben rechts am Noten-Knopf.
+.songCount {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  color: #fff;
+  background: var(--blue);
+  border-radius: 8px;
+  pointer-events: none;
 }
 
 .dateBadge {

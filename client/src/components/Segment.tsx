@@ -11,16 +11,24 @@ interface SegmentProps<T extends string> {
   onChange: (value: T) => void;
   /** Optionale Klasse für äußere Abstände. */
   className?: string;
+  /** Ausgegraute Optionen (z. B. „Vergangene" ohne Netz) – bleiben tippbar, der Aufrufer erklärt warum. */
+  dimmed?: T[];
 }
 
 /** Segment-Control (iOS-/ChurchTools-Stil): eine Auswahl aus 2–3 Optionen. */
-export function Segment<T extends string>({ value, options, onChange, className }: SegmentProps<T>) {
+export function Segment<T extends string>({
+  value,
+  options,
+  onChange,
+  className,
+  dimmed = [],
+}: SegmentProps<T>) {
   return (
     <div className={`${styles.seg}${className ? ' ' + className : ''}`}>
       {options.map((o) => (
         <button
           key={o.value}
-          className={`${styles.btn}${value === o.value ? ' ' + styles.on : ''}`}
+          className={`${styles.btn}${value === o.value ? ' ' + styles.on : ''}${dimmed.includes(o.value) ? ' ' + styles.off : ''}`}
           onClick={() => onChange(o.value)}
         >
           {o.label}

@@ -26,6 +26,8 @@ interface SettingsProps {
   /** Name des angemeldeten ChurchTools-Kontos (für die Profilkarte). */
   userName?: string;
   onLogout: () => void;
+  /** Startet die geführte Einführung erneut. */
+  onReplayIntro: () => void;
 }
 
 const THEME_OPTIONS: { value: ThemePref; label: string; icon: 'sun' | 'moon' | 'cog' }[] = [
@@ -45,13 +47,18 @@ export function Settings({
   isAdmin,
   userName,
   onLogout,
+  onReplayIntro,
 }: SettingsProps) {
   const [showOrg, setShowOrg] = useState(false);
   const [showLinks, setShowLinks] = useState(false);
   const [orgDraft, setOrgDraft] = useState(site.orgName);
   const update = useUpdateSiteConfig();
   const updateCheck = useUpdateCheck();
-  const [offline, setOffline] = useState<{ files: number; records: number; savedAt: number | null } | null>(null);
+  const [offline, setOffline] = useState<{
+    files: number;
+    records: number;
+    savedAt: number | null;
+  } | null>(null);
   const [autoOffline, setAutoOffline] = useState(isOfflineAutoEnabled());
   useEffect(() => {
     void getOfflineStatus().then(setOffline);
@@ -189,6 +196,17 @@ export function Settings({
             </div>
           </div>
         )}
+
+        {/* Hilfe */}
+        <div className={styles.group}>
+          <div className={styles.groupHdr}>Hilfe</div>
+          <div className={styles.cardList}>
+            <button className={`${styles.setRow} ${styles.tappable}`} onClick={onReplayIntro}>
+              <span className={styles.setLabel}>Einführung nochmal ansehen</span>
+              <Icon name="chev-right" size={18} className={styles.extIcon} />
+            </button>
+          </div>
+        </div>
 
         {/* Konto */}
         <div className={styles.group}>
