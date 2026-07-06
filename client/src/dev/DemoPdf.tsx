@@ -3,6 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import '../pdfSetup';
 import type { SetlistSong } from '@shared/types/index';
 import { generateChordPdf } from '../utils/chordPdf';
+import { logoTightUrl } from '../utils/logoAsset';
 
 /**
  * NUR Entwicklung (?demo=pdf): erzeugt aus einem Mock-Lied eine PDF und rendert sie via pdfjs
@@ -67,7 +68,7 @@ export function DemoPdf() {
   useEffect(() => {
     const img = new Image();
     img.onload = () => setLogo(img);
-    img.src = '/logo-tight.png';
+    img.src = logoTightUrl;
   }, []);
 
   useEffect(() => {

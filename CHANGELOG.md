@@ -17,7 +17,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Liedersammlung **ausgegraut** (Tipp erklärt es kurz). Technik: React-Query-Persistenz in
   IndexedDB, Datei-Cache im Service Worker, PDF-Renderer komplett im App-Bundle; Dokumente werden
   als Ganzes geladen statt gestreamt – dadurch öffnen Lieder offline ohne die früheren ~10-Sekunden-
-  Hänger. Grenze: Ohne Netz kein neues Anmelden.
+  Hänger. Das App-Logo in der Ecke der Akkord-Blätter ist jetzt fest eingebettet und erscheint
+  daher auch offline (vorher fehlte es dort). Grenze: Ohne Netz kein neues Anmelden.
 
 ### Geändert
 

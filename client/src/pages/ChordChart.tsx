@@ -16,6 +16,7 @@ import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
 import { type SongSettings, DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
+import { logoTightUrl } from '../utils/logoAsset';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
 import { useSetlistPages } from '../hooks/useSetlistPages';
@@ -126,12 +127,13 @@ export function ChordChart({
   const [streamZoomed, setStreamZoomed] = useState(false); // eine sichtbare Seite (Strom oder Dokument) ist reingezoomt
   const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → PageDeck setzt sichtbaren Zoom zurück
 
-  // App-Logo für die PDF-Kopfzeile (oben rechts) einmalig vorladen.
+  // App-Logo für die PDF-Kopfzeile (oben rechts) einmalig vorladen. Quelle ist die eingebettete
+  // Data-URI (logoAsset) → auch offline sofort da (loser public-Pfad wurde offline nicht gecacht).
   const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
   useEffect(() => {
     const img = new Image();
     img.onload = () => setLogoImg(img);
-    img.src = '/logo-tight.png';
+    img.src = logoTightUrl;
   }, []);
 
   // Vier Anmerkungsfarben (ECG-Palette): Rot, Blau, Grün (Türkis), Orange.
