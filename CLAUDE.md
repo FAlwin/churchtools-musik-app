@@ -268,6 +268,9 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
+- **Aktuell (v2.7.0, 2026-07-07):** Geführte Einführung für neue Nutzer (Termine, Ablauf-Ansicht,
+  Bearbeiten-Modus, Chart-Ansicht) live; Offline-Reserve produktiv (seit v2.6.0, auf iOS-Kaltstart
+  bestätigt). Onboarding-Pflege ist verbindlich → Sektion „Onboarding / Geführte Einführung".
 - **Fertig & produktiv:** App funktional vollständig (Charts + automatisches Transponieren,
   ChordPro-Editor, Dokumenten-Viewer, kompletter Ablauf + Bearbeiten, „Alle Lieder" mit
   Statistik, rechtebewusste UI). Auf dem NAS deployt (Container Manager, `worship-charts`),
@@ -278,8 +281,8 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
 - **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
   mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
-- **Offen / optional:** Musik-Abwesenheitsplaner nachbauen (separates Projekt); Offline-Reserve
-  (Issue #32, Plan `docs/entwicklung/plan-offline-reserve.md`).
+- **Offen / optional:** Musik-Abwesenheitsplaner nachbauen (separates Projekt); globale/private
+  Notizen (Issue #124); Security-Hygiene #45/#46/#47. Offline-Reserve (#32) ist umgesetzt & live.
 
 ## Deployment-Stand (NAS) – wichtige Lernpunkte
 - Prod läuft image-basiert (GHCR) im Container Manager (Projekt `worship-charts`, Port 3001).
