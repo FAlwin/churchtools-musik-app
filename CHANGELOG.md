@@ -5,15 +5,20 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
-## [2.5.2] – 2026-07-06
+## [Unreleased]
 
 ### Hinzugefügt
 
-- **Offline-Reserve (Phase 1):** Einmal online geöffnete Gottesdienste – Termine, Ablauf, Charts
+- **Offline-Reserve (#32):** Einmal online geöffnete Gottesdienste – Termine, Ablauf, Charts
   (ChordPro) und hochgeladene PDFs/Bilder – bleiben im Saal auch ohne Netz verfügbar. Umgesetzt über
   persistente Zwischenspeicherung (React-Query in IndexedDB) und Laufzeit-Caching der Dokumente im
-  Service Worker. Grenze: Ohne Netz kein neues Anmelden und kein Laden bisher ungeöffneter
-  Gottesdienste. (#32)
+  Service Worker; der PDF-Renderer steckt jetzt komplett im App-Bundle (vorher scheiterten Charts
+  offline am nachgeladenen Worker). Dazu: **„Für offline speichern"-Knopf** pro Gottesdienst,
+  Schalter **„Kommende Gottesdienste offline halten"** (der nächste Gottesdienst wird automatisch
+  vorgehalten) und eine Offline-Statuszeile im Mehr-Tab. Grenze: Ohne Netz kein neues Anmelden und
+  kein Laden bisher ungeöffneter Gottesdienste.
+
+## [2.5.2] – 2026-07-06
 
 ### Geändert
 
