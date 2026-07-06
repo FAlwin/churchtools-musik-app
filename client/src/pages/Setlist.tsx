@@ -24,6 +24,15 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddItemSheet } from '../components/AddItemSheet';
 import { ItemActionSheet } from '../components/ItemActionSheet';
 import { Icon } from '../components/icons';
+import { Coachmarks } from '../components/Coachmarks';
+import {
+  SETLIST_STEPS,
+  SETLIST_EDIT_STEPS,
+  TOUR_SETLIST,
+  TOUR_SETLIST_EDIT,
+  isTourDone,
+  markTourDone,
+} from '../utils/onboarding';
 import { generateSetlistPdf } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
 import { loadSongPdfOpts, loadAppLogo } from '../utils/songPdfOpts';
@@ -160,6 +169,7 @@ function AgendaFullView({
             <button
               key={item.id}
               className={`${styles.flowRowBtn} ${styles.songRow}`}
+              data-tour={idx === 0 ? 'setlist-song' : undefined}
               onClick={() => onSelect(idx)}
             >
               {timeCol}
@@ -200,7 +210,12 @@ function SortableRow({
   if (item.isHeader) {
     return (
       <div ref={setNodeRef} style={style} className={`${styles.sectionBand} ${styles.editBand}`}>
-        <button className={styles.bandHandle} {...attributes} {...listeners} aria-label="Verschieben">
+        <button
+          className={styles.bandHandle}
+          {...attributes}
+          {...listeners}
+          aria-label="Verschieben"
+        >
           <Icon name="grip" size={16} />
         </button>
         <button className={styles.bandEdit} onClick={() => onOpenActions(item)}>
@@ -226,10 +241,16 @@ function SortableRow({
       style={style}
       className={`${styles.flowRow}${item.song ? ' ' + styles.songRow : ''}`}
     >
-      <button className={styles.dragCol} {...attributes} {...listeners} aria-label="Verschieben">
+      <button
+        className={styles.dragCol}
+        data-tour="edit-drag"
+        {...attributes}
+        {...listeners}
+        aria-label="Verschieben"
+      >
         <Icon name="grip" size={18} />
       </button>
-      <button className={styles.editBody} onClick={() => onOpenActions(item)}>
+      <button className={styles.editBody} data-tour="edit-item" onClick={() => onOpenActions(item)}>
         <div className={styles.flowHead}>
           <span className={styles.flowTitle}>{item.song ? item.song.title : item.title}</span>
           {item.song && <span className={styles.flowSongTag}>🎵</span>}
@@ -238,7 +259,11 @@ function SortableRow({
         {item.note && <div className={styles.flowNote}>{item.note}</div>}
         <ResponsibleLine entries={item.responsible} />
       </button>
-      <button className={styles.rowEdit} onClick={() => onOpenActions(item)} aria-label="Bearbeiten">
+      <button
+        className={styles.rowEdit}
+        onClick={() => onOpenActions(item)}
+        aria-label="Bearbeiten"
+      >
         <Icon name="pencil" size={15} stroke={2} />
       </button>
     </div>
@@ -269,6 +294,10 @@ export function Setlist({
   canEdit = false,
 }: SetlistProps) {
   const [editMode, setEditMode] = useState(false);
+  // Geführte Einführung (#Onboarding, Gruppen 3+4): Ablauf-Ansicht beim ersten Öffnen, Bearbeiten-
+  // Modus beim ersten Wechsel dorthin. Startet erst, wenn die Ziel-Elemente gerendert sind.
+  const [setlistTour, setSetlistTour] = useState(false);
+  const [editTour, setEditTour] = useState(false);
   const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
   const [err, setErr] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
@@ -284,6 +313,18 @@ export function Setlist({
   useEffect(() => {
     setLocalItems(items);
   }, [items]);
+
+  // Einführung Ablauf-Ansicht beim ersten Öffnen (Daten geladen, Ansicht-Modus).
+  useEffect(() => {
+    if (!isLoading && !isError && items.length > 0 && !editMode && !isTourDone(TOUR_SETLIST)) {
+      setSetlistTour(true);
+    }
+  }, [isLoading, isError, items.length, editMode]);
+
+  // Einführung Bearbeiten-Modus beim ersten Wechsel dorthin.
+  useEffect(() => {
+    if (editMode && !isTourDone(TOUR_SETLIST_EDIT)) setEditTour(true);
+  }, [editMode]);
 
   // Neu angelegtes Lied im aktualisierten Ablauf finden und sein Bearbeiten-Modal öffnen.
   useEffect(() => {
@@ -383,6 +424,7 @@ export function Setlist({
                 <IconButton
                   onClick={() => void handleExportPdf()}
                   title="Alle Lieder als PDF teilen"
+                  dataTour="setlist-share"
                 >
                   <Icon name="share" size={20} stroke={2.2} />
                 </IconButton>
@@ -394,6 +436,7 @@ export function Setlist({
                     setEditMode((v) => !v);
                   }}
                   title={editMode ? 'Fertig' : 'Ablauf bearbeiten'}
+                  dataTour="setlist-edit"
                 >
                   <Icon name={editMode ? 'check' : 'pencil'} size={20} stroke={2.2} />
                 </IconButton>
@@ -440,7 +483,7 @@ export function Setlist({
                 </div>
               </SortableContext>
             </DndContext>
-            <button className={styles.addBtn} onClick={() => setShowAdd(true)}>
+            <button className={styles.addBtn} data-tour="edit-add" onClick={() => setShowAdd(true)}>
               ＋ Eintrag hinzufügen
             </button>
           </>
@@ -476,7 +519,9 @@ export function Setlist({
           onLinkSong={(arrangementId) => onLinkSong(actionItem.id, arrangementId)}
           onUnlinkSong={() =>
             onUnlinkSong(actionItem.id).then(() =>
-              setActionItem((prev) => (prev ? { ...prev, song: null, title: '', type: 'text' } : prev)),
+              setActionItem((prev) =>
+                prev ? { ...prev, song: null, title: '', type: 'text' } : prev,
+              ),
             )
           }
           onSetResponsible={(responsible) => onSetResponsible(actionItem.id, responsible)}
@@ -485,6 +530,25 @@ export function Setlist({
           onToggleHidden={(hidden) => onToggleHidden(actionItem.id, hidden)}
           onSetNote={(note) => onSetNote(actionItem.id, note)}
           onRequestDelete={() => setPendingDelete(actionItem)}
+        />
+      )}
+
+      {setlistTour && (
+        <Coachmarks
+          steps={SETLIST_STEPS}
+          onClose={() => {
+            markTourDone(TOUR_SETLIST);
+            setSetlistTour(false);
+          }}
+        />
+      )}
+      {editTour && (
+        <Coachmarks
+          steps={SETLIST_EDIT_STEPS}
+          onClose={() => {
+            markTourDone(TOUR_SETLIST_EDIT);
+            setEditTour(false);
+          }}
         />
       )}
     </Screen>

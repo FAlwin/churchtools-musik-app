@@ -7,6 +7,8 @@ import type { CoachStep } from '../components/Coachmarks';
 const PREFIX = 'worship:onboard-';
 export const TOUR_TERMINE = 'termine-v1';
 export const TOUR_CHART = 'chart-v1';
+export const TOUR_SETLIST = 'setlist-v1';
+export const TOUR_SETLIST_EDIT = 'setlist-edit-v1';
 
 export function isTourDone(key: string): boolean {
   try {
@@ -81,5 +83,43 @@ export const CHART_STEPS: CoachStep[] = [
     selector: '[data-tour="chart-anmerken"]',
     title: 'Anmerkungen',
     body: 'Zeichne oder schreibe Notizen direkt auf die Seite – sie werden pro Konto gespeichert.',
+  },
+];
+
+/** Gruppe 3 – Ablauf-Ansicht (beim ersten Öffnen eines Gottesdienstes). */
+export const SETLIST_STEPS: CoachStep[] = [
+  {
+    selector: '[data-tour="setlist-song"]',
+    title: 'Lieder öffnen',
+    body: 'Tippe ein Lied im Ablauf an, um seine Akkord-Blätter zu öffnen.',
+  },
+  {
+    selector: '[data-tour="setlist-share"]',
+    title: 'Als PDF teilen',
+    body: 'Alle Lieder dieses Gottesdienstes auf einmal als PDF teilen – z. B. per Mail oder zum Drucken.',
+  },
+  {
+    selector: '[data-tour="setlist-edit"]',
+    title: 'Ablauf bearbeiten',
+    body: 'Reihenfolge ändern, Punkte hinzufügen oder anpassen. Tippe hier, um in den Bearbeiten-Modus zu wechseln.',
+  },
+];
+
+/** Gruppe 4 – Ablauf-Bearbeiten (beim ersten Wechsel in den Bearbeiten-Modus). */
+export const SETLIST_EDIT_STEPS: CoachStep[] = [
+  {
+    selector: '[data-tour="edit-drag"]',
+    title: 'Sortieren',
+    body: 'Ziehe einen Punkt an diesem Griff, um die Reihenfolge zu ändern.',
+  },
+  {
+    selector: '[data-tour="edit-item"]',
+    title: 'Punkt bearbeiten',
+    body: 'Tippe einen Eintrag an, um Titel, Dauer, Zuständige zu ändern oder ein Lied zu verknüpfen.',
+  },
+  {
+    selector: '[data-tour="edit-add"]',
+    title: 'Hinzufügen',
+    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu.',
   },
 ];

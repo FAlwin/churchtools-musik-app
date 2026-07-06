@@ -11,8 +11,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 - **Geführte Einführung für neue Nutzer:** Beim ersten Mal erklären kleine Hinweisblasen direkt am
   jeweiligen Knopf, was wofür da ist – in den Terminen (Terminliste, Liedblätter öffnen,
-  Offline-Symbol, Bereiche) und in der Liedansicht (Blättern & Zoomen, Lied-Optionen, Darstellung,
-  Anmerkungen). Jederzeit „Überspringen"; im Mehr-Tab lässt sich die Einführung erneut starten.
+  Offline-Symbol, Bereiche), in der Ablauf-Ansicht (Lied öffnen, als PDF teilen, bearbeiten) samt
+  Bearbeiten-Modus (Sortieren, Punkt bearbeiten, Hinzufügen) und in der Liedansicht (Blättern &
+  Zoomen, Lied-Optionen, Darstellung, Anmerkungen). Jederzeit „Überspringen"; im Mehr-Tab lässt
+  sich die Einführung erneut starten.
 
 ### Geändert
 

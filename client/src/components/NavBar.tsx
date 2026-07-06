@@ -7,12 +7,20 @@ interface IconButtonProps {
   title?: string;
   children: ReactNode;
   style?: React.CSSProperties;
+  /** Markierung für die geführte Einführung (setzt data-tour auf den Button). */
+  dataTour?: string;
 }
 
 /** Icon-Button für die Navigationsleiste (transparent, blaue Tinte). */
-export function IconButton({ onClick, title, children, style }: IconButtonProps) {
+export function IconButton({ onClick, title, children, style, dataTour }: IconButtonProps) {
   return (
-    <button className={styles.ibtn} onClick={onClick} title={title} style={style}>
+    <button
+      className={styles.ibtn}
+      onClick={onClick}
+      title={title}
+      style={style}
+      data-tour={dataTour}
+    >
       {children}
     </button>
   );
