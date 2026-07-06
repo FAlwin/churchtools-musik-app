@@ -20,21 +20,17 @@
   background: #e6e8ec;
   pointer-events: none;
 }
-.slideStrip {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 200%;
-  height: 100%;
-  display: flex;
-  will-change: transform;
-}
+// Jede Hälfte (alte/neue Seite) ist eine EIGENE bildschirmbreite Ebene, die einzeln geschoben
+// wird – KEIN 200 %-Streifen. Ein doppelt breiter Streifen überschreitet auf dem iPad (Retina)
+// die maximale GPU-Texturbreite → WebKit kachelt die Ebene und rastert Text-Kacheln verzögert
+// (Canvas-Inhalte sind eigene Texturen und nicht betroffen) → der Anmerkungs-TEXT blitzte beim
+// VORWÄRTS-Blättern auf (#113). Außerdem enden jetzt BEIDE Richtungen bei translateX(0) – exakt
+// der Zustand, der rückwärts schon immer flackerfrei war (vorher endete vorwärts bei -50 %).
 .slidePane {
-  position: relative;
-  flex: none;
-  width: 50%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
+  will-change: transform;
 }
 // Repliziert die Transform-Ebene der Zoom-Bibliothek (Inhalt spannt die Hälfte, Zoom als
 // translate+scale mit Ursprung oben links) → gezoomte Seiten sehen im Streifen identisch aus.
