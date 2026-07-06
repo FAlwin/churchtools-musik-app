@@ -57,7 +57,10 @@ export function Coachmarks({ steps, onClose }: CoachmarksProps) {
       setIdx(cur);
       return;
     }
-    el.scrollIntoView({ block: 'center', behavior: 'auto' });
+    // `nearest` statt `center`: schon sichtbare Ziele werden NICHT gescrollt. `center` zentrierte
+    // z. B. die Tab-Leiste (unten) und schob dabei den ganzen Viewport nach oben – dieser Versatz
+    // blieb und schlug auf die danach geöffnete Ansicht durch („oben abgeschnitten").
+    el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
     const r = el.getBoundingClientRect();
     setBox({ top: r.top, left: r.left, width: r.width, height: r.height });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,6 +86,9 @@ export function Coachmarks({ steps, onClose }: CoachmarksProps) {
   function close() {
     if (closedRef.current) return;
     closedRef.current = true;
+    // Sicherheitsnetz: einen etwaigen Viewport-Versatz (durch scrollIntoView) zurücksetzen, bevor
+    // die App weiterrendert/navigiert – sonst startet die nächste Ansicht verschoben.
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
     onClose();
   }
   function next() {
