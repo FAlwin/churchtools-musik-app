@@ -5,7 +5,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
-## [Unreleased]
+## [2.5.2] – 2026-07-06
 
 ### Geändert
 
@@ -29,6 +29,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Richtungen enden exakt deckungsgleich mit der Live-Ansicht. Zusätzlich: Text-Formatierung im
   Übergang exakt wie live (fett/normal/kursiv/…), Textebene wird beim Seitenwechsel synchron
   zurückgesetzt, Abdeckung steht garantiert vor dem ersten Frame.
+- **Altes Lied blitzte bei sehr schnellem Blättern auf:** Startete ein neuer Übergang, während der
+  vorherige noch lief (z. B. schnelles Tastatur-Blättern), blieb die alte Seiten-Grafik über der
+  neuen liegen. Die Übergangs-Ebenen werden jetzt pro Blättern frisch aufgebaut.
 
 ## [2.5.1] – 2026-07-05
 
