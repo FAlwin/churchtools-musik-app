@@ -1245,7 +1245,11 @@ export function PageDeck({
             { pk: 'old', pane: slidePanes.current.old },
             { pk: 'neu', pane: slidePanes.current.neu },
           ].map(({ pk, pane }) => (
-            <div key={pk} data-pane={pk} className={styles.slidePane}>
+            // key mit tick: Startet ein neuer Übergang, WÄHREND der alte noch läuft (schnelles
+            // Tastatur-Blättern), werden die Ebenen frisch aufgebaut statt wiederverwendet.
+            // Sonst bliebe die alte Seiten-Grafik im DOM liegen (der Einfüge-Ref entfernt sie
+            // nicht) und deckte als späteres Geschwister die neue ab → altes Lied blitzte auf.
+            <div key={`${pk}${slide.tick}`} data-pane={pk} className={styles.slidePane}>
               {pane.length === 2 && <div className={styles.divider} />}
               <div className={styles.row}>
                 {pane.map((s, j) => (
