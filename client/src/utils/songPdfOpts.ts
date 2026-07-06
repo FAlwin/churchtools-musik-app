@@ -52,12 +52,5 @@ export function loadSongPdfOpts(
   };
 }
 
-/** Lädt das App-Logo (für die PDF-Kopfzeile). Liefert ein Promise auf das Bild (oder null). */
-export function loadAppLogo(): Promise<HTMLImageElement | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = '/logo-tight.png';
-  });
-}
+// Logo wird zentral aus dem eingebetteten Asset geladen (offline-sicher, siehe utils/logoAsset).
+export { loadAppLogo } from './logoAsset';

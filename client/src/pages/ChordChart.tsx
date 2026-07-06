@@ -16,6 +16,7 @@ import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
 import { type SongSettings, DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
+import { logoTightUrl } from '../utils/logoAsset';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
 import { useSetlistPages } from '../hooks/useSetlistPages';
@@ -27,7 +28,6 @@ interface ChordChartProps {
   startIndex: number;
   onBack: () => void;
   onReload?: () => void;
-  reloading?: boolean;
   /** Darf der Nutzer den ChordPro-Text bearbeiten? (blendet Editor-Funktionen aus) */
   canEditSong?: boolean;
   theme: Theme;
@@ -44,7 +44,6 @@ export function ChordChart({
   startIndex,
   onBack,
   onReload,
-  reloading,
   canEditSong = false,
 }: ChordChartProps) {
   // Einstellungen aller Lieder (für den durchgehenden Strom). Aus localStorage initialisiert.
@@ -128,12 +127,13 @@ export function ChordChart({
   const [streamZoomed, setStreamZoomed] = useState(false); // eine sichtbare Seite (Strom oder Dokument) ist reingezoomt
   const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → PageDeck setzt sichtbaren Zoom zurück
 
-  // App-Logo für die PDF-Kopfzeile (oben rechts) einmalig vorladen.
+  // App-Logo für die PDF-Kopfzeile (oben rechts) einmalig vorladen. Quelle ist die eingebettete
+  // Data-URI (logoAsset) → auch offline sofort da (loser public-Pfad wurde offline nicht gecacht).
   const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
   useEffect(() => {
     const img = new Image();
     img.onload = () => setLogoImg(img);
-    img.src = '/logo-tight.png';
+    img.src = logoTightUrl;
   }, []);
 
   // Vier Anmerkungsfarben (ECG-Palette): Rot, Blau, Grün (Türkis), Orange.
@@ -165,11 +165,21 @@ export function ChordChart({
       }
       liveRef.current.onReload?.();
     }
+    // Inhalt (Ablauf/Liedtexte) alle 60 s still nachladen – ersetzt den früheren
+    // „Aktualisieren"-Knopf: Änderungen erscheinen auch, wenn das Gerät die ganze Zeit offen im
+    // Lied bleibt (z. B. iPad auf der Bühne). Neu gezeichnet wird nur bei echten Änderungen
+    // (songsSig); offline scheitert das Nachladen lautlos.
+    function refreshContent() {
+      if (document.hidden || liveRef.current.drawMode) return;
+      liveRef.current.onReload?.();
+    }
     const id = setInterval(() => void refreshAnno(), 30000);
+    const idContent = setInterval(refreshContent, 60000);
     window.addEventListener('focus', onReturn);
     document.addEventListener('visibilitychange', onReturn);
     return () => {
       clearInterval(id);
+      clearInterval(idContent);
       window.removeEventListener('focus', onReturn);
       document.removeEventListener('visibilitychange', onReturn);
     };
@@ -392,11 +402,6 @@ export function ChordChart({
                 aria-label="Zoom zurücksetzen"
               >
                 <Icon name="zoom-reset" size={18} stroke={2} />
-              </button>
-            )}
-            {onReload && (
-              <button className={styles.toolBtn} onClick={onReload} disabled={reloading} title="Aktualisieren">
-                <span className={reloading ? styles.spin : undefined}>↻</span>
               </button>
             )}
             <button

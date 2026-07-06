@@ -13,10 +13,12 @@ interface LoginProps {
   /** Name (fest) + Gemeinde-Name. */
   site: SiteConfig;
   theme: Theme;
+  /** Kein Server erreichbar → Anmelden ist zwecklos; wir erklären das statt eine Sackgasse zu bieten. */
+  offline?: boolean;
 }
 
 /** Anmelde-Screen mit Logo und ChurchTools-Zugangsdaten. */
-export function Login({ onLogin, site, theme }: LoginProps) {
+export function Login({ onLogin, site, theme, offline = false }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,6 +48,13 @@ export function Login({ onLogin, site, theme }: LoginProps) {
         />
         <div className={styles.name}>{site.appName}</div>
         <div className={styles.sub}>{site.orgName}</div>
+        {offline && (
+          <div className={styles.offlineNote}>
+            Keine Verbindung. Zum Anmelden bitte einmal online gehen (WLAN mit Internet oder
+            Mobilfunk). Bereits gespeicherte Gottesdienste bleiben ohne Anmeldung leider nicht
+            zugänglich.
+          </div>
+        )}
         <form className={styles.form} onSubmit={submit}>
           <div className={styles.field}>
             <label className={styles.label}>E-Mail</label>
@@ -70,7 +79,7 @@ export function Login({ onLogin, site, theme }: LoginProps) {
             />
           </div>
           {error && <div className={styles.error}>{error}</div>}
-          <button className={styles.btn} type="submit" disabled={loading}>
+          <button className={styles.btn} type="submit" disabled={loading || offline}>
             {loading ? <Spinner /> : 'Anmelden'}
           </button>
         </form>

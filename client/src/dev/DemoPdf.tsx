@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import '../pdfSetup';
 import type { SetlistSong } from '@shared/types/index';
 import { generateChordPdf } from '../utils/chordPdf';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+import { logoTightUrl } from '../utils/logoAsset';
 
 /**
  * NUR Entwicklung (?demo=pdf): erzeugt aus einem Mock-Lied eine PDF und rendert sie via pdfjs
@@ -69,7 +68,7 @@ export function DemoPdf() {
   useEffect(() => {
     const img = new Image();
     img.onload = () => setLogo(img);
-    img.src = '/logo-tight.png';
+    img.src = logoTightUrl;
   }, []);
 
   useEffect(() => {

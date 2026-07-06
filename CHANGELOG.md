@@ -5,6 +5,39 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [2.6.0] – 2026-07-06
+
+### Hinzugefügt
+
+- **Offline-Reserve (#32):** Gottesdienste sind im Saal auch ohne Netz verfügbar. Der **nächste**
+  Gottesdienst wird automatisch komplett vorgehalten (Ablauf, Charts, PDFs/Bilder – Schalter im
+  Mehr-Tab); weitere kommende Gottesdienste lassen sich per **Download-Knopf direkt am Termin**
+  offline speichern und werden danach automatisch aktuell gehalten. Ein **Wolken-Symbol am Termin**
+  zeigt dauerhaft, was offline bereitliegt. Ohne Netz werden nicht verfügbare Termine und die
+  Liedersammlung **ausgegraut** (Tipp erklärt es kurz). Technik: React-Query-Persistenz in
+  IndexedDB, Datei-Cache im Service Worker, PDF-Renderer komplett im App-Bundle; Dokumente werden
+  als Ganzes geladen statt gestreamt – dadurch öffnen Lieder offline ohne die früheren ~10-Sekunden-
+  Hänger. Das App-Logo in der Ecke der Akkord-Blätter ist jetzt fest eingebettet und erscheint
+  daher auch offline (vorher fehlte es dort). Grenze: Ohne Netz kein neues Anmelden.
+- **Verlässliche Offline-Erkennung & keine Sackgassen (#32):** Die App erkennt „offline" jetzt am
+  tatsächlichen Server-Kontakt statt nur an der Netz-Anzeige des Geräts – so greift das Ausgrauen
+  auch im Gemeinde-WLAN ohne Internet-/Server-Zugang. Beim Neustart wartet die App, bis der
+  Offline-Speicher geladen ist (kein kurzer Anmelde-Bildschirm mehr, der gemerkte Gottesdienst
+  bleibt erhalten). Lade- und Fehleransichten haben immer einen Rückweg, und der Anmelde-Bildschirm
+  erklärt offline, dass eine Verbindung nötig ist – man bleibt nicht mehr in einer Schleife hängen.
+- **Weißer Bildschirm beim Öffnen ohne Netz behoben (#32):** Nach dem kompletten Schließen blieb die
+  App beim Wieder-Öffnen ohne Netz manchmal weiß. Ursache war ein „wartender" Hintergrund-Prozess
+  (Service Worker), der auf iPad/iPhone beim Kaltstart die App-Hülle nicht auslieferte. Der neue
+  Stand aktiviert sich jetzt sofort und zuverlässig – **ohne** die laufende App mitten im
+  Gottesdienst neu zu laden. Zusätzliches Sicherheitsnetz: Startet die App einmal nicht, erscheint
+  statt eines weißen Bildschirms eine Meldung mit „Neu laden".
+
+### Geändert
+
+- **„Aktualisieren"-Knopf im Lied entfernt:** Der Inhalt (Ablauf/Liedtexte) aktualisiert sich jetzt
+  alle 60 Sekunden von selbst – auch wenn das Gerät dauerhaft offen im Lied bleibt. Neu gezeichnet
+  wird nur bei echten Änderungen; ohne Netz scheitert das Nachladen lautlos.
+
 ## [2.5.2] – 2026-07-06
 
 ### Geändert
@@ -195,6 +228,18 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 - **Lied-Menü leichter auffindbar:** In der Akkord-Ansicht öffnet jetzt der gesamte Kopf-Bereich
   (Titel samt Tonart/Capo/Version/Tempo) das Lied-Menü – mit deutlich sichtbarem Auslöser, nicht
   mehr nur über den Titel. (#42)
+- **Ablauf-Bearbeiten an die Ansicht angeglichen:** Beim Umschalten in den Bearbeiten-Modus bleiben
+  Zeilenhöhe und Position gleich (die Uhrzeit-Spalte wird zum Ziehen-Griff, Dauer und Zuständige
+  bleiben sichtbar). Lieder sind deutlich hervorgehoben, die Minutenangaben stehen auf einer Linie,
+  ein Stift zeigt die Bearbeitbarkeit; Überschriften ohne Uhrzeit.
+
+### Behoben
+
+- Termine am gleichen Tag werden nach Uhrzeit sortiert. (#36)
+- Manuell (als Freitext) zugeordnete Zuständige werden im Ablauf angezeigt. (#38)
+- Beim Wechsel des Zeichenwerkzeugs schließt eine offene Textbearbeitung. (#39)
+- Pinch-Zoom in der Akkord-Ansicht bleibt erhalten und friert beim Drehen (Hoch-/Querformat)
+  nicht mehr ein. (#33)
 
 ### Behoben
 

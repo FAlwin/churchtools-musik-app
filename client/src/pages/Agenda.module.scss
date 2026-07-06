@@ -133,3 +133,17 @@
     cursor: default;
   }
 }
+
+// Offline nicht verfügbar (kein Netz + nicht gespeichert): ausgegraut, Tipp zeigt Hinweis (#32).
+.cardOff {
+  opacity: 0.45;
+}
+
+// „Liegt offline vor"-Badge (Wolke mit Häkchen) rechts neben den Termindaten.
+.offBadge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--green, #1bb0a2);
+  margin-right: 2px;
+}

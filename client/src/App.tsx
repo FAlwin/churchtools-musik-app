@@ -10,6 +10,7 @@ import { useWakeLock } from './hooks/useWakeLock';
 import { useAuth } from './hooks/useAuth';
 import { useSiteConfig } from './hooks/useSiteConfig';
 import { useAppNav } from './hooks/useAppNav';
+import { useOfflineAutoSync } from './hooks/useOfflineAutoSync';
 import {
   useServices,
   useAgenda,
@@ -32,6 +33,8 @@ import {
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
 import { TabBar, type TabId } from './components/TabBar';
+import { Toast, useToast } from './components/Toast';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { ApiError } from './services/api';
 
 /** Wurzel-Komponente: Auth + Tab-Navigation (Termine/Lieder/Mehr) mit echten ChurchTools-Daten. */
@@ -46,8 +49,7 @@ export default function App() {
   // Abgelaufene/ungültige ChurchTools-Sitzung: Unser App-Cookie ist noch da (darum kein Login-
   // Screen), aber ChurchTools kennt uns nicht mehr (401). Wiederholen ist zwecklos → automatisch
   // abmelden (verwirft das tote Cookie) und zum Login führen, statt „Erneut versuchen" anzubieten.
-  const sessionExpired =
-    capsQuery.error instanceof ApiError && capsQuery.error.status === 401;
+  const sessionExpired = capsQuery.error instanceof ApiError && capsQuery.error.status === 401;
   const canViewAgendas = caps?.canViewAgendas ?? false;
   const canViewSongs = caps?.canViewSongs ?? false;
   const canEditAgendas = caps?.canEditAgendas ?? false;
@@ -57,14 +59,31 @@ export default function App() {
   // servicesQuery hängt nicht vom Navigations-Zustand ab → vor useAppNav, das die Terminliste
   // braucht, um den gespeicherten Gottesdienst nach einem Kaltstart wiederzufinden.
   const servicesQuery = useServices(auth.isAuthenticated && canViewAgendas);
+  // Hält den nächsten Gottesdienst automatisch offline bereit (falls in den Einstellungen aktiv).
+  useOfflineAutoSync(servicesQuery.data);
+  // Offline-Zustand: Liedersammlung braucht das Netz (Charts werden je Lied geladen) → Tab wird
+  // ohne Netz ausgegraut, ein Tipp erklärt das kurz (#32).
+  const online = useOnlineStatus();
+  const { toast: offlineToast, showToast: showOfflineToast } = useToast();
 
-  const { restored, tab, setTab, view, setView, service, setService, songIndex, setSongIndex, libSel, setLibSel } =
-    useAppNav({
-      isAuthenticated: auth.isAuthenticated,
-      isAuthLoading: auth.isLoading,
-      services: servicesQuery.data,
-      servicesLoading: servicesQuery.isLoading,
-    });
+  const {
+    restored,
+    tab,
+    setTab,
+    view,
+    setView,
+    service,
+    setService,
+    songIndex,
+    setSongIndex,
+    libSel,
+    setLibSel,
+  } = useAppNav({
+    isAuthenticated: auth.isAuthenticated,
+    isAuthLoading: auth.isLoading,
+    services: servicesQuery.data,
+    servicesLoading: servicesQuery.isLoading,
+  });
 
   const agendaQuery = useAgenda(service?.id ?? null);
   const reorderAgenda = useReorderAgenda(service?.id ?? null);
@@ -118,6 +137,7 @@ export default function App() {
       <Login
         site={site}
         theme={settings.theme}
+        offline={!online}
         onLogin={async (email, password) => {
           await auth.login(email, password);
         }}
@@ -131,6 +151,15 @@ export default function App() {
         {sessionExpired ? (
           // Sitzung abgelaufen: Der Effekt oben meldet gerade ab → gleich erscheint der Login.
           <CenterMessage loading text="Sitzung abgelaufen – bitte neu anmelden…" />
+        ) : !online ? (
+          // Offline und keine gespeicherten Berechtigungen (z. B. nach einem App-Update) → kein
+          // Endlos-Warten, sondern klare Meldung + Rückweg (statt Sackgasse).
+          <CenterMessage
+            icon="📴"
+            text="Offline – Berechtigungen nicht verfügbar. Bitte die App einmal online öffnen."
+            actionLabel="Abmelden"
+            onAction={() => auth.logout()}
+          />
         ) : capsQuery.isError ? (
           // Echter ChurchTools-Aussetzer (leere Rechte-Zuordnungen, 502): getCapabilities wirft,
           // nach den automatischen Neuversuchen landet man hier mit „Erneut versuchen".
@@ -168,7 +197,18 @@ export default function App() {
   if (restoringView || loadingSongbook) {
     return (
       <Screen>
-        <CenterMessage loading text="Einen Moment…" />
+        <CenterMessage
+          loading
+          text="Einen Moment…"
+          // Sicherheits-Rückweg: dauert das Laden (z. B. offline, Daten nicht im Cache) zu lange,
+          // kommt man immer zur Terminübersicht zurück – kein Hängenbleiben im Lade-Screen.
+          actionLabel="Zur Übersicht"
+          onAction={() => {
+            setService(null);
+            setView(null);
+            setTab('termine');
+          }}
+        />
       </Screen>
     );
   }
@@ -196,7 +236,9 @@ export default function App() {
         onLinkSong={(itemId, arrangementId) =>
           linkSongToAgendaItem.mutateAsync({ itemId, arrangementId }).then(() => undefined)
         }
-        onUnlinkSong={(itemId) => unlinkSongFromAgendaItem.mutateAsync({ itemId }).then(() => undefined)}
+        onUnlinkSong={(itemId) =>
+          unlinkSongFromAgendaItem.mutateAsync({ itemId }).then(() => undefined)
+        }
         onSetResponsible={(itemId, responsible) =>
           setAgendaItemResponsible.mutateAsync({ itemId, responsible }).then(() => undefined)
         }
@@ -224,7 +266,6 @@ export default function App() {
           startIndex={songIndex}
           onBack={() => setView({ type: 'setlist' })}
           onReload={() => agendaQuery.refetch()}
-          reloading={agendaQuery.isFetching}
           canEditSong={canEditSongs}
           theme={settings.theme}
           fontId={settings.fontId}
@@ -238,7 +279,6 @@ export default function App() {
           startIndex={0}
           onBack={() => setView(null)}
           onReload={() => songChart.refetch()}
-          reloading={songChart.isFetching}
           canEditSong={canEditSongs}
           theme={settings.theme}
           fontId={settings.fontId}
@@ -296,6 +336,10 @@ export default function App() {
             isError={songLibrary.isError}
             onRetry={() => songLibrary.refetch()}
             onSelect={(e) => {
+              if (!online) {
+                showOfflineToast('Liedersammlung ist offline nicht verfügbar.');
+                return;
+              }
               setLibSel({ songId: e.songId, arrangementId: e.arrangementId });
               setView({ type: 'chart', source: 'lieder' });
             }}
@@ -318,7 +362,19 @@ export default function App() {
           />
         )}
       </div>
-      <TabBar active={tab} tabs={tabs} onChange={setTab} />
+      <TabBar
+        active={tab}
+        tabs={tabs}
+        dimmed={online ? [] : ['lieder']}
+        onChange={(t) => {
+          if (!online && t === 'lieder') {
+            showOfflineToast('Liedersammlung ist offline nicht verfügbar.');
+            return;
+          }
+          setTab(t);
+        }}
+      />
+      <Toast message={offlineToast} />
     </div>
   );
 }
