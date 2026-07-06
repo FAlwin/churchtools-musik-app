@@ -44,7 +44,8 @@ export type IconName =
   | 'align-left'
   | 'align-center'
   | 'align-right'
-  | 'cloud-check';
+  | 'cloud-check'
+  | 'cloud-download';
 
 interface IconProps {
   name: IconName;
@@ -307,6 +308,15 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <path d="M17.5 18.5a4.3 4.3 0 0 0 .4-8.6 6 6 0 0 0-11.8 1.2 3.8 3.8 0 0 0 .4 7.4h11Z" />
           <path d="m9.2 13.7 2.1 2.1 3.9-3.9" />
+        </svg>
+      );
+    // Wolke mit Pfeil nach unten: „für offline speichern/holen" (gleiche Wolke wie cloud-check,
+    // damit beide als Familie lesbar sind – NICHT der Geräte-Download-Pfeil, #32).
+    case 'cloud-download':
+      return (
+        <svg {...p}>
+          <path d="M17.5 17.5a4.3 4.3 0 0 0 .4-8.6 6 6 0 0 0-11.8 1.2 3.8 3.8 0 0 0 .4 7.4" />
+          <path d="M12 12v6M9.5 15.5 12 18l2.5-2.5" />
         </svg>
       );
     case 'undo':

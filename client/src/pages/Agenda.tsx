@@ -126,8 +126,6 @@ export function Agenda({
               <span>{s.weekday}</span>
               <span className={styles.dotSep}>·</span>
               <span>{s.time}</span>
-              <span className={styles.dotSep}>·</span>
-              <span>{s.songCount} Lieder</span>
             </div>
           </div>
           {held && (
@@ -150,17 +148,19 @@ export function Agenda({
             aria-label="Für offline speichern"
             title="Für offline speichern"
           >
-            {savingId === s.id ? <Spinner /> : <Icon name="download" size={20} stroke={2.2} />}
+            {savingId === s.id ? <Spinner /> : <Icon name="cloud-download" size={21} stroke={2} />}
           </button>
         )}
         {s.songCount > 0 && (
           <button
             className={styles.songBook}
             onClick={() => (blocked ? showToast(OFFLINE_HINT) : onOpenSongs(s))}
-            aria-label="Liederheft öffnen"
+            aria-label={`Liederheft öffnen (${s.songCount} ${s.songCount === 1 ? 'Lied' : 'Lieder'})`}
             title="Liederheft öffnen"
           >
             <Icon name="music" size={21} stroke={2.2} />
+            {/* Kleine Zahl am Noten-Knopf = Anzahl Lieder (früher in der Textzeile, dort abgeschnitten). */}
+            <span className={styles.songCount}>{s.songCount}</span>
           </button>
         )}
       </div>
