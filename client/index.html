@@ -62,18 +62,102 @@
       </div>
     </div>
     <script>
-      // Dauert der Start ungewöhnlich lange (hängender/fehlender App-Code), Nachlade-Knopf zeigen.
-      setTimeout(function () {
-        var msg = document.getElementById('boot-msg');
-        var btn = document.getElementById('boot-reload');
-        if (msg && btn) {
-          msg.textContent = 'Das dauert länger als üblich.';
+      // Startet die App nicht (weißes/hängendes Bild), nach kurzer Zeit eine BORD-DIAGNOSE zeigen:
+      // Service-Worker-Zustand, Cache-Inhalt, Startfehler – direkt auf dem Gerät lesbar, komplett
+      // offline-fähig. Verschwindet automatisch, sobald React rendert (ersetzt #root-Inhalt). (#32)
+      (function () {
+        var bootErrors = [];
+        window.addEventListener('error', function (e) {
+          bootErrors.push(String((e && (e.message || (e.target && e.target.src))) || 'Fehler'));
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          bootErrors.push('P: ' + String((e && e.reason && e.reason.message) || e.reason || '?'));
+        });
+        function line(t) {
+          var d = document.createElement('div');
+          d.style.cssText = 'font-size:12px;color:#556;max-width:320px;word-break:break-word';
+          d.textContent = t;
+          return d;
+        }
+        setTimeout(function () {
+          var fb = document.getElementById('boot-fallback');
+          var msg = document.getElementById('boot-msg');
+          var btn = document.getElementById('boot-reload');
+          if (!fb || !msg || !btn) return; // App läuft längst
+          msg.textContent = 'Die App startet nicht. Diagnose:';
           btn.style.display = '';
           btn.addEventListener('click', function () {
             location.reload();
           });
-        }
-      }, 8000);
+          fb.appendChild(line('Netz laut Gerät: ' + (navigator.onLine ? 'ja' : 'nein (offline)')));
+          try {
+            localStorage.setItem('boot-test', '1');
+            fb.appendChild(line('Speicher: ok'));
+          } catch (e) {
+            fb.appendChild(line('Speicher: GESPERRT (' + e + ')'));
+          }
+          if (!('serviceWorker' in navigator)) {
+            fb.appendChild(line('Service Worker: NICHT unterstützt'));
+          } else {
+            fb.appendChild(
+              line(
+                'SW steuert Seite: ' +
+                  (navigator.serviceWorker.controller
+                    ? 'ja (' + navigator.serviceWorker.controller.scriptURL.split('/').pop() + ')'
+                    : 'NEIN'),
+              ),
+            );
+            navigator.serviceWorker
+              .getRegistrations()
+              .then(function (regs) {
+                if (!regs.length) return fb.appendChild(line('SW registriert: KEINER'));
+                regs.forEach(function (r) {
+                  fb.appendChild(
+                    line(
+                      'SW: aktiv=' +
+                        (r.active ? 'ja' : 'nein') +
+                        ' wartend=' +
+                        (r.waiting ? 'ja' : 'nein') +
+                        ' installierend=' +
+                        (r.installing ? 'ja' : 'nein'),
+                    ),
+                  );
+                });
+              })
+              .catch(function (e) {
+                fb.appendChild(line('SW-Abfrage-Fehler: ' + e));
+              });
+          }
+          if (typeof caches !== 'undefined') {
+            caches
+              .keys()
+              .then(function (names) {
+                fb.appendChild(line('Caches: ' + (names.length ? names.join(', ') : 'LEER')));
+                var pre = names.find(function (n) {
+                  return n.indexOf('precache') !== -1;
+                });
+                if (!pre) return;
+                return caches.open(pre).then(function (c) {
+                  return c.keys().then(function (keys) {
+                    var hasJs = keys.some(function (k) {
+                      return /assets\/index-.*\.js/.test(k.url);
+                    });
+                    fb.appendChild(
+                      line('Precache: ' + keys.length + ' Einträge, App-Code ' + (hasJs ? 'da' : 'FEHLT')),
+                    );
+                  });
+                });
+              })
+              .catch(function (e) {
+                fb.appendChild(line('Cache-Abfrage-Fehler: ' + e));
+              });
+          } else {
+            fb.appendChild(line('Cache-API: fehlt'));
+          }
+          if (bootErrors.length) fb.appendChild(line('Fehler: ' + bootErrors.slice(0, 4).join(' | ')));
+          else fb.appendChild(line('Keine Startfehler gemeldet (App-Code kam vermutlich nicht an)'));
+        }, 3000);
+      })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
