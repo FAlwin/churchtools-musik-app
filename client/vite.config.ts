@@ -14,11 +14,11 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // 'autoUpdate': der neue Service Worker übernimmt zuverlässig beim nächsten Öffnen (skipWaiting),
-      // ohne den früher nötigen „App komplett schließen"-Tanz auf iOS-PWAs. Auf iPads verhinderte
-      // 'prompt' sonst, dass Updates (z. B. die Offline-Reserve #32) überhaupt aktiv wurden. Neue
-      // Versionen werden ohnehin nur bewusst deployt (Prod ohne Auto-Pull), daher unkritisch.
-      registerType: 'autoUpdate',
+      // 'prompt' statt 'autoUpdate': ein neuer Service Worker lädt die laufende App NICHT
+      // automatisch mitten im Betrieb neu (störend im Gottesdienst). Updates kommen über den
+      // Hinweis-Balken (useSwUpdate) bzw. beim nächsten Kaltstart. (Bewusste Entscheidung aus
+      // v2.5.0 – NICHT wieder auf autoUpdate stellen.)
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'logo.png'],
       // Manifest wird zur Laufzeit vom Server geliefert (/api/manifest.webmanifest,
       // gebrandet pro Gemeinde). Das Plugin generiert daher KEIN statisches Manifest;

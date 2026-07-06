@@ -1,0 +1,52 @@
+// Schwebender Hinweis-Balken über der Tab-Leiste (deren Höhe: Icons + Safe-Area, siehe TabBar).
+.banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(max(34px, env(safe-area-inset-bottom) + 20px) + 62px);
+  z-index: 30; // über der Tab-Leiste (20), unter Sheets/Dialogen
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.later {
+  background: none;
+  border: none;
+  padding: 8px 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+
+  &:active {
+    opacity: 0.6;
+  }
+}
+
+.load {
+  background: var(--blue);
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+
+  &:active {
+    opacity: 0.8;
+  }
+}

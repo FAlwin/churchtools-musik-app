@@ -1,10 +1,15 @@
 .overlay {
-  position: absolute;
+  // Vollbild (fixed) → hinter der halbtransparenten iOS-Tastatur schimmert nichts durch.
+  // --kb (Tastatur-Höhe, per JS aus dem visualViewport) verkürzt den Inhalt nach unten:
+  // Kopf-/Werkzeugleiste bleiben stehen, nur der intern scrollende Editor-Bereich schrumpft.
+  position: fixed;
   inset: 0;
   z-index: 120;
   background: var(--bg);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  padding-bottom: var(--kb, 0px);
   animation: fadeIn 0.15s ease both;
 }
 
@@ -17,7 +22,6 @@
   background: var(--blue);
   flex-shrink: 0;
 }
-
 .title {
   flex: 1;
   min-width: 0;
@@ -29,7 +33,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .barBtn {
   height: 38px;
   padding: 0 14px;
@@ -43,6 +46,20 @@
 .cancel {
   background: rgba(0, 0, 0, 0.22);
   color: #fff;
+}
+// Icon-Knopf in der blauen Leiste (z. B. Version löschen).
+.barIconBtn {
+  width: 42px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
 }
 .save {
   background: #fff;
@@ -62,24 +79,18 @@
   text-align: center;
 }
 
-.nameRow {
+// Meta-Zeile: Versionsname + Rückgängig/Wiederholen + Ansicht-Umschalter in EINER Zeile.
+.metaRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px 4px;
+  gap: 8px;
+  padding: 8px 12px 2px;
   flex-shrink: 0;
-}
-.nameLbl {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text3);
-  flex-shrink: 0;
+  flex-wrap: wrap; // auf schmalen Fenstern sauber umbrechen
 }
 .nameInput {
   flex: 1;
-  min-width: 0;
+  min-width: 140px;
   height: 38px;
   padding: 0 12px;
   border: 1.5px solid var(--border);
@@ -89,10 +100,205 @@
   font-family: var(--ui);
   font-size: 15px;
   outline: none;
-
   &:focus {
     border-color: var(--blue);
   }
+}
+
+// ── Eingabe-Toolbar ──
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px;
+  flex-shrink: 0;
+  // Eine feste Zeile (kein Umbruch), damit die Leiste beim Hinzukommen neuer „Zuletzt"-Chips
+  // nicht springt. WICHTIG: KEIN overflow:hidden hier – das würde die nach unten aufklappenden
+  // Akkord-/Format-Menüs abschneiden. Das Chip-Clipping macht .tbRecent selbst.
+  flex-wrap: nowrap;
+}
+.dd {
+  position: relative;
+}
+.ddBtn {
+  height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ddPanel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 220px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+  padding: 6px;
+}
+.ddPanelWide {
+  min-width: 300px;
+}
+// ── Akkord-Baukasten: Grundton → Art → optionaler Basston → Einfügen ──
+.cbPanel {
+  min-width: 330px;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 10px;
+}
+.cbLbl {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 8px 2px 5px;
+  &:first-child {
+    padding-top: 2px;
+  }
+}
+.cbGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 5px;
+}
+.cbChip {
+  height: 34px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface3);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  &:active {
+    background: var(--blue-soft);
+  }
+}
+// Grundton-Chips sind die primäre Aktion (fügen sofort ein) → kräftiger hervorheben.
+.cbRoot {
+  border-color: var(--blue);
+  color: var(--blue-ink);
+  font-weight: 800;
+}
+// Format-Eintrag: deutsche Erklärung zuerst, dann der Fach-Tag.
+.ddFormat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  &:hover {
+    background: var(--surface3);
+  }
+}
+.ddFormatLabel {
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ddFormatTag {
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11.5px;
+  color: var(--cp-dir);
+  background: var(--surface3);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+
+// Zuletzt genutzte Akkorde – direkt in der Toolbar (sichtbar nach der ersten Nutzung).
+// Nimmt den Restplatz und schneidet NUR die eigenen überzähligen Chips ab (nicht die Menüs).
+.tbRecent {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: nowrap; // eine Zeile, kein Layout-Springen
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-width: 0;
+}
+.tbRecentLbl,
+.recentChip {
+  flex-shrink: 0;
+}
+.tbRecentLbl {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.recentChip {
+  height: 30px;
+  padding: 0 10px;
+  border: 1.5px solid var(--blue);
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--blue-ink);
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.iconBtn {
+  width: 36px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+// ── Ansicht-Umschalter (Editor / Beide / Vorschau) – kompakt in der Meta-Zeile ──
+.viewSeg {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto; // rechtsbündig in der Meta-Zeile
+}
+.vseg {
+  height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface2);
+  color: var(--text2);
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.vsegOn {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
 }
 
 .split {
@@ -100,71 +306,82 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-
   @media (min-width: 768px) {
     flex-direction: row;
   }
 }
-
-.editPane,
-.previewPane {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
+// Ausgeblendeter (aber gemounteter) Bereich – !important, damit es die Pane-Anzeige sicher schlägt.
+.paneHidden {
+  display: none !important;
 }
 
 .editPane {
-  border-bottom: 2px solid var(--border);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
   @media (min-width: 768px) {
-    border-bottom: none;
     border-right: 2px solid var(--border);
   }
 }
-
-.textarea {
-  width: 100%;
-  height: 100%;
-  min-height: 200px;
-  border: none;
-  outline: none;
-  resize: none;
-  padding: 16px;
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  background: var(--surface2);
-  color: var(--text);
+.previewPane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
 }
 
+.previewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 12px;
+  flex-shrink: 0;
+}
 .paneLbl {
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text3);
-  padding: 8px 14px 0;
+  padding: 8px 14px 6px;
 }
-
-.preview {
-  padding: 8px 16px 24px;
+.transpose {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
-
-.hint {
-  font-size: 12px;
-  color: var(--text2);
-  padding: 6px 14px 10px;
-  line-height: 1.4;
+// Beschriftung vor dem Transponier-Regler (sonst wirkt − / + wie ein Zoom).
+.tLbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  margin-right: 4px;
 }
-
-.reset {
-  background: transparent;
+.tBtn {
+  width: 30px;
+  height: 28px;
   border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
   color: var(--blue-ink);
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
-  font-family: var(--ui);
 }
+.tVal {
+  min-width: 36px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: var(--text2);
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+

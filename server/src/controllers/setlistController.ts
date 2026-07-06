@@ -71,7 +71,7 @@ const updateItemSchema = z
     title: z.string().trim().min(1, 'Titel fehlt').max(255).optional(),
     // arrangementId verknüpft einen bestehenden Punkt mit einem Lied (wandelt ihn in type 'song').
     arrangementId: z.coerce.number().int().positive().optional(),
-    // unlink löst eine bestehende Lied-Verknüpfung wieder (Punkt bleibt als Text erhalten).
+    // unlink löst eine bestehende Lied-Verknüpfung wieder (Punkt bleibt als leerer Text-Eintrag).
     unlink: z.boolean().optional(),
     // responsible: Textfeld der Zuständigen (z.B. „[Musik]"); CT löst Dienst-Tokens selbst auf.
     responsible: z.string().trim().max(1000).optional(),
@@ -98,6 +98,7 @@ const createItemSchema = z
     arrangementId: z.coerce.number().int().positive().optional(),
     responsible: z.string().trim().max(1000).optional(),
     note: z.string().max(2000).optional(),
+    durationMin: z.coerce.number().int().min(0).optional(),
   })
   .refine((d) => d.type !== 'song' || d.arrangementId !== undefined, {
     message: 'Für ein Lied ist arrangementId erforderlich.',
@@ -107,13 +108,16 @@ const createItemSchema = z
 /** POST /api/services/:eventId/agenda/items – neuen Ablaufpunkt anlegen. */
 export async function postAgendaItem(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
-  const { type, title, arrangementId, responsible, note } = createItemSchema.parse(req.body);
+  const { type, title, arrangementId, responsible, note, durationMin } = createItemSchema.parse(
+    req.body,
+  );
   await createAgendaItem(req.ctCookie as string, eventId, {
     type,
     title: title ?? (type === 'header' ? 'Überschrift' : type === 'song' ? 'Lied' : 'Neuer Punkt'),
     arrangementId,
     responsible,
     note,
+    durationMin,
   });
   invalidateSongUsageCache(); // Liederzahl/„zuletzt" können sich geändert haben
   res.json({ ok: true });
@@ -158,7 +162,9 @@ export async function putAgendaItem(req: Request, res: Response): Promise<void> 
     req.body,
   );
   await updateAgendaItem(req.ctCookie as string, eventId, itemId, {
-    title,
+    // Beim Aufheben der Lied-Verknüpfung den Titel leeren (der Liedtitel soll nicht als Text
+    // zurückbleiben); sonst den ggf. übergebenen neuen Titel verwenden.
+    title: unlink ? '' : title,
     arrangementId,
     unlink,
     responsible,

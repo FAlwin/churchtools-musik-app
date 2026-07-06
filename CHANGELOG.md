@@ -17,6 +17,182 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Geändert
 
+- **„Nach Updates suchen"-Knopf entfernt:** Er war überflüssig – beim (kompletten) Neu-Öffnen der App
+  wird ohnehin automatisch die neueste Version geladen. Die stille Auto-Aktualisierung und der
+  Versions-Hinweis bleiben.
+
+### Behoben
+
+- **Normaler Anmerkungs-Text wurde nach kurzer Zeit fett (#115):** Beim Server-Abgleich gingen die
+  Format-Angaben (fett/kursiv/unterstrichen/Ausrichtung) verloren, weil sie serverseitig nicht
+  gespeichert wurden – beim nächsten Laden wurde normaler Text fälschlich wieder fett. Die Formate
+  werden jetzt vollständig mitgespeichert.
+- **Gestrichelter Text-Rahmen blieb stehen (#114):** Beim Verlassen des Anmerkungsmodus wird die
+  Text-Auswahl jetzt sofort aufgehoben – der Rahmen bleibt nicht mehr bis zum Seitenwechsel sichtbar.
+- **Text-Anmerkungen blinkten beim Weiterwischen (#113):** Am Ende der Blätter-Animation sprang
+  normaler Text kurz auf fett, weil der Text im Übergang immer fett dargestellt wurde. Der Übergang
+  übernimmt jetzt exakt die Formatierung der Live-Ansicht (fett/normal/kursiv/…), der Wechsel ist
+  nahtlos. (Die Abdeckung wird zudem bereits vor dem ersten Frame gesetzt.)
+
+## [2.5.1] – 2026-07-05
+
+### Behoben
+
+- **„Too many requests" im Gemeinde-WLAN behoben:** Das Anfrage-Limit galt versehentlich auch für
+  statische Dateien und zählte pro IP – da im Gemeinde-WLAN alle Geräte über eine öffentliche IP
+  laufen, teilte sich das ganze Team ein Kontingent und lief beim gemeinsamen Nutzen sofort voll.
+  Das Limit greift jetzt nur noch für echte Aktionen und zählt **pro angemeldetem Nutzer**;
+  Grenzwerte großzügiger.
+
+## [2.5.0] – 2026-07-05
+
+### Hinzugefügt
+
+- **Update-Hinweis in der App:** Liegt eine neue Version bereit, erscheint ein dezenter Balken
+  „Neue Version verfügbar" mit **Jetzt laden** (übernimmt sie sofort) und **Später**. Die App
+  sucht dafür aktiv nach Updates – beim Start, bei Rückkehr in den Vordergrund und stündlich.
+  Bisher blieben Geräte (v. a. iPhone/iPad-PWA) unbemerkt auf altem Stand hängen; so erreichte
+  z. B. der Fix für das „keine Berechtigung"-Schloss die Geräte nie von selbst. Es wird weiterhin
+  **nie ungefragt** mitten in der Nutzung neu geladen.
+- **„Nach Updates suchen" im Mehr-Tab:** Ein Knopf unter der Versionszeile prüft sofort auf eine
+  neue Version und **lädt sie direkt** (kurz „Aktualisiere…", dann neu geladen) bzw. meldet „Du bist
+  auf dem neuesten Stand". Verlässlicher Hebel gerade auf dem iPhone, wo die automatische Suche
+  beim App-Wechsel manchmal nicht anschlägt.
+
+### Behoben
+
+- **Kopfleiste rutschte beim Sortieren weg (iPhone):** Beim Ziehen eines Ablauf-Punkts mit
+  Auto-Scroll verschwand die obere Leiste („‹ Termine" / „✓ Fertig") nach oben und war nur durch
+  Drehen des Geräts zurückzuholen. Der Auto-Scroll bleibt jetzt auf die Liste begrenzt und die
+  Ansicht wird nach dem Ziehen automatisch zurechtgerückt. (#56)
+- **Abgelaufene Sitzung führt jetzt zum Login statt in eine Sackgasse:** War die App-Anmeldung noch
+  gültig, die ChurchTools-Sitzung dahinter aber abgelaufen, zeigte die App „Berechtigungen konnten
+  nicht geladen werden – Erneut versuchen" – was zwecklos war (nur Neu-Anmelden half). Jetzt erkennt
+  die App die abgelaufene Sitzung, meldet automatisch ab und führt direkt zum Login. (#104)
+
+## [2.4.1] – 2026-07-04
+
+### Geändert
+
+- **Spalten & Textgröße geräteübergreifend:** Diese Einstellungen sind jetzt auf allen Geräten
+  gleich (über das Konto synchronisiert). Nur der **Zoom** bleibt bewusst pro Gerät getrennt
+  (iPad/PC vs. iPhone).
+- **Eintrag hinzufügen (Text):** zeigt jetzt dieselben Feld-Überschriften wie das Bearbeiten
+  (Titel · Dauer · Zuständig · Bemerkung).
+- **Verknüpfung aufheben:** entfernt jetzt auch den Titel (kein zurückbleibender Liedtitel), und
+  der Bearbeiten-Dialog bleibt offen – so kann man den Punkt direkt neu benennen.
+- **Ladekringel** ist ein weich auslaufender Ring statt eines harten Segments.
+
+### Behoben
+
+- **Sporadisches „keine Berechtigung"-Schloss:** Liefert ChurchTools kurzzeitig leere Rechte
+  (ein bekannter Aussetzer, z. B. beim Neu-Laden), versucht die App es jetzt automatisch erneut,
+  statt sofort das Schloss zu zeigen. Ein **Admin** bekommt zudem immer Zugriff.
+
+## [2.4.0] – 2026-07-03
+
+### Neu
+
+- **PDFs mitten im Ablauf:** Hochgeladene Lied-PDFs/Bilder sind jetzt Teil des **durchgehenden
+  Ablaufs** – man wischt nahtlos über alle Lieder (Akkorde und PDFs gemischt), und im Querformat
+  stehen zwei Seiten nebeneinander (auch über Lied-Grenzen). Vorher war eine PDF eine isolierte
+  Einzelansicht.
+- **Weiche Blätter-Animation:** Beim Blättern schiebt sich die neue Seite horizontal herein (wie
+  im Foto-Viewer) – ruhiger Übergang statt hartem Umschalten.
+- **Anmerkungen im 2-Seiten-Modus:** Nur die **aktive** Seite ist beschreibbar und hervorgehoben,
+  die andere ist ausgegraut und gesperrt; ein Tipp wechselt die aktive Seite (kein versehentliches
+  Kritzeln auf der falschen Seite mehr).
+- **Text-Anmerkungen direkt auf der Seite:** Antippen setzt einen Cursor genau an der Stelle
+  (wie in Word) – lostippen, außerhalb tippen legt den Text fest. Zeilenumbrüche möglich;
+  ausgewählten Text verschieben, Größe über einen Ziehknopf ändern (Anzeige in vertrauten „pt");
+  ein Tipp auf einen bestehenden Text öffnet ihn direkt zum Bearbeiten.
+- **Text formatieren:** Fett, Kursiv, Unterstrichen sowie linksbündig/zentriert/rechtsbündig –
+  je Textblock, wirkt live auf den ausgewählten Text bzw. auf den nächsten neuen.
+- **Dickere Strichstärken:** Stift, Marker und Radierer bieten zusätzliche, deutlich dickere
+  Stufen (Radierer bis „Flächen-Format").
+- **Akkorde per 1-Tipp:** Im Editor fügt ein Tipp auf den Grundton den Akkord sofort ein; Zusätze
+  (m, 7, maj7, sus4 …) und Bass (Slash-Akkorde wie A/C#) hängen sich direkt an.
+- **Staging-Version sichtbar:** Auf der Test-Instanz zeigt der „Mehr"-Tab den Build-Stand
+  (`staging-<commit>`), damit man den geladenen Stand erkennt.
+
+### Geändert
+
+- **Zoom-/Blätter-Gesten neu:** **ein Finger blättert, zwei Finger zoomen und verschieben** – auch
+  im Zeichenmodus (Zoomen/Verschieben kritzelt nicht mehr ins Dokument; beim Apple Pencil zeichnet
+  der Stift, die Finger zoomen). Die „Zurück/Fertig"-Leiste entfällt – ein Pinch zoomt und speichert
+  automatisch, Zurücksetzen über den Knopf in der Kopfleiste.
+- **Anmerkungs-Werkzeugleiste** aufgeräumt: klare, einheitliche Icons, größere Knöpfe, ein
+  Farbknopf mit aufklappender Farbreihe. Vier Farben (Rot, Blau, Grün, Orange) + eigener Farbwähler.
+  Alle Werkzeuge einheitlich bedienbar: erster Tipp wählt, zweiter Tipp klappt die Einstellungen
+  auf (Strichstärke bzw. Text-Einstellungen als eigener Balken), ein dezenter Punkt-Hinweis am
+  aktiven Werkzeug zeigt das an. Die Einstellungen klappen jeweils auf Höhe ihres Werkzeugs auf.
+- **Editor** aufgeräumt: kompakter Kopf, moderner Text-Look (proportional statt „Schreibmaschine",
+  Akkorde farbig), mehrseitige und scharfe Vorschau.
+- Die Fußzeilen-Punkte markieren im Querformat beide sichtbaren Lieder.
+
+### Behoben
+
+- **Zoom bleibt zuverlässig erhalten** – lokal wie serverseitig, über App-Wechsel/Neustart,
+  Lied-/Seitenwechsel, Hochformat↔Querformat und das Öffnen/Schließen des Editors; kein
+  Zurückspringen zur Mitte mehr, gleiche Seite links wie rechts.
+- **Editor-Tastatur** schiebt nicht mehr die ganze Ansicht hoch – nur der Textbereich scrollt.
+- **Text-Anmerkung auf dem iPad:** Die Bildschirmtastatur öffnet jetzt zuverlässig und schiebt
+  die Ansicht nicht mehr weg – nur der Notenbereich hebt sich so weit, dass der Cursor sichtbar
+  bleibt; kein hängender Balken beim Schließen der Tastatur mehr.
+- **Sporadisches „keine Berechtigung"-Schloss behoben:** Eine kurzzeitig leere Rechte-Antwort von
+  ChurchTools wird jetzt als Aussetzer erkannt und automatisch erneut versucht, statt fälschlich
+  „keine Berechtigung für Lieder oder Abläufe" anzuzeigen.
+- Einseitige PDF steht im Querformat an der richtigen Stelle (rechts neben dem Vorgänger).
+
+## [2.3.2] – 2026-07-02
+
+### Geändert
+
+- **Länger angemeldet bleiben:** Die Anmeldung gilt jetzt **30 Tage** statt nur 12 Stunden und
+  verlängert sich bei jeder Nutzung automatisch (gleitendes Ablaufdatum) – das ständige
+  Neu-Anmelden entfällt bei regelmäßiger Nutzung. Hinweis: ChurchTools kann seine eigene Sitzung
+  unabhängig davon früher beenden; auf dem iPhone/iPad (Web-App vom Home-Bildschirm) löscht iOS
+  Cookies nach etwa 7 Tagen ohne Nutzung – beides liegt außerhalb der App.
+
+## [2.3.1] – 2026-07-02
+
+### Neu
+
+- **Mehr Einstellungen beim Hinzufügen:** Das Fenster „Eintrag hinzufügen" hat für Text-Punkte
+  jetzt ein Feld **Dauer (Minuten)** – vorher fehlte es hier.
+- **Direkt weiterbearbeiten nach Lied-Hinzufügen:** Sobald ein Lied zum Ablauf hinzugefügt wurde,
+  öffnet sich automatisch dessen Bearbeiten-Dialog, sodass Dauer, Zuständige, Bemerkung und die
+  Uhrzeit-Anzeige gleich gesetzt werden können.
+
+### Behoben
+
+- **Überschriften im Bearbeiten-Modus wieder bearbeitbar:** Eine Überschrift lässt sich jetzt per
+  Antippen (bzw. über den Stift) umbenennen; bisher war sie nur verschiebbar.
+
+### Geändert
+
+- **Optik im Bearbeiten-Modus:** Das unsauber dargestellte Zeichen „⠿" ist durch ein sauberes
+  6-Punkte-Griff-Icon ersetzt; die Ziehgriffe sind kräftiger und der Bearbeiten-Stift in
+  Akzent-Blau hervorgehoben.
+
+## [2.3.0] – 2026-07-01
+
+### Neu
+
+- **Komfortabler ChordPro-Editor (neu gebaut):** Der Lied-Editor basiert jetzt auf CodeMirror und
+  bietet Syntax-Farben (Akkorde blau, Direktiven teal), echtes **Rückgängig/Wiederholen**, sauberes
+  Einfügen an der Cursorposition, **Auswahl-Menüs** für Akkorde (Dur/Moll/7) und Formate (deutsch
+  beschriftet mit Erklärung), zuletzt genutzte Akkorde, Transponier-Regler und eine **echte
+  PDF-Vorschau** („wie gedruckt") mit Umschalter **Editor · Beide · Vorschau** (je nach Fenstergröße). (#37)
+
+### Geändert
+
+- **Editor besser lesbar:** In den Info-Zeilen (`{title: …}`, `{artist: …}`, `{key: …}`) wird nur
+  noch das Label dezent teal eingefärbt – der eigentliche Wert (Titel/Artist/Tonart) steht jetzt
+  kräftig und gut lesbar in normaler Textfarbe. Liedtext etwas größer und luftiger.
+- **Ablauf-Bearbeiten an die Ansicht angeglichen:** Der Bearbeiten-Modus sieht jetzt genauso aus wie
+  die normale Ablauf-Ansicht (gleiche Positionen und Höhen) – kein Springen mehr beim Umschalten;
+  Ziehgriff in der Zeit-Spalte, Bearbeiten per Stift.
 - **Lied-Menü leichter auffindbar:** In der Akkord-Ansicht öffnet jetzt der gesamte Kopf-Bereich
   (Titel samt Tonart/Capo/Version/Tempo) das Lied-Menü – mit deutlich sichtbarem Auslöser, nicht
   mehr nur über den Titel. (#42)
@@ -33,12 +209,26 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 - Pinch-Zoom in der Akkord-Ansicht bleibt erhalten und friert beim Drehen (Hoch-/Querformat)
   nicht mehr ein. (#33)
 
+### Behoben
+
+- **Festhängender Zoom in der Akkord-Ansicht (iPad):** Ein reingezoomter Ausschnitt konnte beim
+  Drehen bzw. über mehrere Lieder hinweg „kleben" bleiben oder fälschlich für alle Lieder gelten.
+  Der Zoom wird jetzt pro Ausrichtung (Hoch-/Querformat) und pro Lied-Seite getrennt gemerkt. (#33)
+- **Reihenfolge gleichzeitiger Termine:** Termine bzw. Einträge mit derselben Uhrzeit werden jetzt
+  stabil und nachvollziehbar sortiert. (#36)
+- **Zuständige als Freitext:** Frei eingetragene Namen (ohne Dienst-Klammern) werden im Ablauf jetzt
+  mit angezeigt – nicht nur die über den Dienstplan zugewiesenen Personen. (#38)
+- **Textfeld-Werkzeug:** Das Wechseln des Werkzeugs bzw. ein Tipp ins Leere schließt ein offenes
+  Textfeld jetzt sauber und legt kein ungewolltes neues Feld an. (#39)
+
 ### Intern
 
 - Anzeige- und Zustandslogik von `App` und `ChordChart` in eigene Hooks ausgelagert
   (`useAppNav`/`navStorage`, `useChartNavigation`, `useChartEditor`), tote Kopf-Styles entfernt –
   reine Wartbarkeit, ohne Funktionsänderung.
 - GitHub-Actions auf Node-24-fähige Versionen gehoben (beseitigt die Node-20-Abkündigungswarnung).
+- Die geplante **Offline-Reserve** (Issue #32) wurde bewusst wieder aus `main` herausgetrennt und
+  liegt separat auf einem eigenen Branch – auf iPad noch nicht zuverlässig; wird später fortgesetzt.
 
 ## [2.2.0] – 2026-06-30
 

@@ -15,6 +15,7 @@ interface AddItemSheetProps {
     arrangementId?: number;
     responsible?: string;
     note?: string;
+    durationMin?: number;
   }) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Feld). */
   services: AgendaServiceOption[];
@@ -28,8 +29,23 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
   const [title, setTitle] = useState('');
   const [responsible, setResponsible] = useState('');
   const [note, setNote] = useState('');
+  const [duration, setDuration] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const durationNum = duration.trim() === '' ? null : Number(duration);
+  const durationValid = durationNum === null || (Number.isInteger(durationNum) && durationNum >= 0);
+
+  /** Baut die Payload für einen Text-/Überschrift-Punkt (Dauer nur bei gültiger Eingabe). */
+  function textPayload(): Parameters<typeof onAdd>[0] {
+    return {
+      type: mode as 'header' | 'text',
+      title: title.trim(),
+      responsible: responsible.trim() || undefined,
+      note: note.trim() || undefined,
+      durationMin: durationNum !== null ? durationNum : undefined,
+    };
+  }
 
   async function add(data: Parameters<typeof onAdd>[0]) {
     setBusy(true);
@@ -75,45 +91,53 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
 
       {(mode === 'header' || mode === 'text') && (
         <div className={styles.form}>
-          <input
-            className={styles.input}
-            placeholder={mode === 'header' ? 'Titel der Überschrift' : 'Titel des Eintrags'}
-            value={title}
-            autoFocus
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && title.trim())
-                add({
-                  type: mode,
-                  title: title.trim(),
-                  responsible: responsible.trim() || undefined,
-                  note: note.trim() || undefined,
-                });
-            }}
-          />
+          <div className={styles.field}>
+            <span className={styles.label}>Titel</span>
+            <input
+              className={styles.input}
+              placeholder={mode === 'header' ? 'Titel der Überschrift' : 'Titel'}
+              value={title}
+              autoFocus
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && title.trim() && durationValid) add(textPayload());
+              }}
+            />
+          </div>
           {mode === 'text' && (
             <>
-              <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
-              <textarea
-                className={styles.textarea}
-                value={note}
-                rows={2}
-                placeholder="Bemerkung (optional)"
-                onChange={(e) => setNote(e.target.value)}
-              />
+              <div className={styles.field}>
+                <span className={styles.label}>Dauer (Minuten)</span>
+                <input
+                  className={styles.input}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={duration}
+                  placeholder="z. B. 5"
+                  onChange={(e) => setDuration(e.target.value)}
+                />
+              </div>
+              <div className={styles.field}>
+                <span className={styles.label}>Zuständig</span>
+                <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
+              </div>
+              <div className={styles.field}>
+                <span className={styles.label}>Bemerkung</span>
+                <textarea
+                  className={styles.textarea}
+                  value={note}
+                  rows={2}
+                  placeholder="Optionale Notiz…"
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </div>
             </>
           )}
           <button
             className={styles.primary}
-            disabled={!title.trim() || busy}
-            onClick={() =>
-              add({
-                type: mode,
-                title: title.trim(),
-                responsible: responsible.trim() || undefined,
-                note: note.trim() || undefined,
-              })
-            }
+            disabled={!title.trim() || busy || !durationValid}
+            onClick={() => add(textPayload())}
           >
             {busy ? 'Füge hinzu…' : 'Hinzufügen'}
           </button>

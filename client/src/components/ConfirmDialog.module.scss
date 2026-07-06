@@ -1,7 +1,9 @@
 .overlay {
-  position: absolute;
+  // fixed + höchster z-index: Bestätigungen liegen IMMER zuoberst – auch über dem
+  // Vollbild-Editor (z-index 120), z. B. beim Löschen einer Version aus dessen Kopfzeile.
+  position: fixed;
   inset: 0;
-  z-index: 110;
+  z-index: 200;
   background: var(--scrim);
   backdrop-filter: blur(2px);
   display: flex;

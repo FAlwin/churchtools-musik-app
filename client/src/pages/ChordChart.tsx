@@ -4,11 +4,9 @@ import { Screen } from '../components/Screen';
 import { KeyPicker } from '../components/KeyPicker';
 import { CapoPicker } from '../components/CapoPicker';
 import { SectionTransposeSheet } from '../components/SectionTransposeSheet';
-import { DrawToolbar } from '../components/DrawToolbar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
-import { DocumentView } from '../components/DocumentView';
-import { StreamView } from '../components/StreamView';
+import { PageDeck } from '../components/PageDeck';
 import { Icon } from '../components/icons';
 import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
 import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
@@ -20,6 +18,7 @@ import { sharePdf } from '../utils/sharePdf';
 import { type SongSettings, DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
+import { useSetlistPages } from '../hooks/useSetlistPages';
 import type { DrawTool, Theme } from '../types/index';
 import styles from './ChordChart.module.scss';
 
@@ -120,17 +119,14 @@ export function ChordChart({
   const [showSecTranspose, setShowSecTranspose] = useState(false);
   const [showAppearance, setShowAppearance] = useState(false);
   const [showSongMenu, setShowSongMenu] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
 
   const [drawMode, setDrawMode] = useState(false);
   // Anmerkungs-Farben fest Schwarz/Rot/Gelb (wir arbeiten nur noch auf weißen PDF-Seiten → kein
   // Weiß, kein Dunkelmodus-Wechsel). Plus der freie Farbwähler in der Leiste.
-  const [drawColor, setDrawColor] = useState('#14110F');
+  const [drawColor, setDrawColor] = useState('#0062ac'); // Standard-Anmerkungsfarbe: Blau
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
-  const [docClearSignal, setDocClearSignal] = useState(0);
-  const [docAdjust, setDocAdjust] = useState(false); // nur für Einzel-Dokument-Ansicht
-  const [streamZoomed, setStreamZoomed] = useState(false); // eine Seite des Akkord-Stroms ist reingezoomt
-  const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → StreamView setzt sichtbaren Zoom zurück
+  const [streamZoomed, setStreamZoomed] = useState(false); // eine sichtbare Seite (Strom oder Dokument) ist reingezoomt
+  const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → PageDeck setzt sichtbaren Zoom zurück
 
   // App-Logo für die PDF-Kopfzeile (oben rechts) einmalig vorladen.
   const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
@@ -140,7 +136,8 @@ export function ChordChart({
     img.src = '/logo-tight.png';
   }, []);
 
-  const drawColors = ['#14110F', '#DD0000', '#FFCE00'];
+  // Vier Anmerkungsfarben (ECG-Palette): Rot, Blau, Grün (Türkis), Orange.
+  const drawColors = ['#bb2946', '#0062ac', '#1bb0a2', '#fb8f00'];
 
   // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
   const liveRef = useRef({ songs, drawMode, onReload, lastReturn: 0 });
@@ -202,7 +199,19 @@ export function ChordChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songsSig, settings, logoImg]);
 
-  const owners = stream?.owners ?? [];
+  // Durchgehender Strom: Akkord- UND Dokument-Seiten in Setlist-Reihenfolge zu EINER Seiten-Liste
+  // (jedes Lied steuert je nach viewSource seine Akkorde ODER sein hochgeladenes Dokument bei).
+  const {
+    pages,
+    owners,
+    loading: pagesLoading,
+    error: pagesError,
+  } = useSetlistPages({
+    chordPdfData: stream?.data ?? null,
+    chordOwners: stream?.owners ?? [],
+    songs,
+    settings,
+  });
 
   // Blättern/Ausrichtung/Tastatur. Tastatur-Navigation pausiert, solange Editor oder Zeichenmodus
   // offen sind (per Ref übergeben, weil `showEditor` erst unten aus dem Editor-Hook kommt).
@@ -213,6 +222,34 @@ export function ChordChart({
   const activeSongIdx = owners[activeIdx]?.songIdx ?? 0;
   const song = songs[activeSongIdx] ?? songs[songs.length - 1];
   const set = settings[song.id] ?? DEFAULT_SETTINGS;
+
+  // Aktuell SICHTBARE Lieder (fürs Fußzeilen-Punkte-Highlight): im Querformat 2 Seiten → bis zu
+  // 2 Lieder nebeneinander, beide markieren. matchMedia('orientation') ist beim Wechsel stabil.
+  const [landscape, setLandscape] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(orientation: landscape)').matches
+      : typeof window !== 'undefined'
+        ? window.innerWidth > window.innerHeight
+        : false,
+  );
+  useEffect(() => {
+    const f = () =>
+      setLandscape(
+        typeof window.matchMedia === 'function'
+          ? window.matchMedia('(orientation: landscape)').matches
+          : window.innerWidth > window.innerHeight,
+      );
+    window.addEventListener('resize', f);
+    window.addEventListener('orientationchange', f);
+    return () => {
+      window.removeEventListener('resize', f);
+      window.removeEventListener('orientationchange', f);
+    };
+  }, []);
+  const visibleSongIdx = new Set<number>();
+  if (owners[pageIdx]) visibleSongIdx.add(owners[pageIdx].songIdx);
+  if (landscape && owners[pageIdx + 1]) visibleSongIdx.add(owners[pageIdx + 1].songIdx);
+  if (visibleSongIdx.size === 0) visibleSongIdx.add(activeSongIdx);
 
   // ── abgeleitete Werte des AKTIVEN Lieds ──
   const curKey = set.key || song.targetKey;
@@ -229,14 +266,30 @@ export function ChordChart({
 
   const activeDoc = set.viewSource === 'chords' ? null : song.documents.find((d) => d.fileId === set.viewSource) ?? null;
 
-  useEffect(() => {
-    setDocAdjust(false);
-  }, [set.viewSource, song.id]);
-
-  function clearDrawing() {
-    setDocClearSignal((n) => n + 1);
-    setConfirmClear(false);
-  }
+  // Anmerkungs-/Zoom-Schlüssel je Strom-Seite – Schema identisch zu vorher (Akkorde an Lied+Version,
+  // Dokumente an Datei-ID), damit bestehende Anmerkungen erhalten bleiben.
+  const drawKeyFor = (page: number): string | null => {
+    const o = owners[page];
+    if (!o) return null;
+    return o.kind === 'doc'
+      ? `worship_docdraw_${o.fileId}_${o.localPage}`
+      : `worship_docdraw_song${o.songId}_v${o.versionKey}_${o.localPage}`;
+  };
+  const zoomKeyBaseFor = (page: number): string => {
+    const o = owners[page];
+    if (!o) return `worship_doczoom_p${page}`;
+    return o.kind === 'doc'
+      ? `worship_doczoom_${o.fileId}_${o.localPage}`
+      : `worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}`;
+  };
+  // Seiten-Hinweis nur bei mehrseitigen Einheiten (Lied/Dokument): „Seite x / y".
+  const pageLabel = (activePg: number, pageIdx: number): string | null => {
+    const cur = owners[activePg] ?? owners[pageIdx];
+    if (!cur) return null;
+    const unitPages = owners.filter((o) => o.songIdx === cur.songIdx).length;
+    if (unitPages <= 1) return null;
+    return `Seite ${cur.localPage + 1} / ${unitPages}`;
+  };
 
   // ChordPro-Versionen anlegen/bearbeiten/löschen (Zustand + ChurchTools-Aufrufe im Hook gebündelt).
   const {
@@ -263,6 +316,16 @@ export function ChordChart({
   });
   // Tastatur-Navigation aussetzen, solange Editor oder Zeichenmodus offen sind.
   navBlockedRef.current = showEditor || drawMode;
+
+  // Beim SCHLIESSEN des Editors die Chart-Ansicht neu ausrichten (syncTick): Der Editor-Overlay
+  // (fixed, Tastatur/visualViewport) kann den Zoom der dahinterliegenden Seiten verschieben →
+  // beim Zurückkommen sonst „steckende" Seite. syncTick stellt gespeicherten Zoom wieder her bzw.
+  // setzt auf Fit.
+  const prevShowEditor = useRef(showEditor);
+  useEffect(() => {
+    if (prevShowEditor.current && !showEditor) setSyncTick((t) => t + 1);
+    prevShowEditor.current = showEditor;
+  }, [showEditor]);
 
   const nextSong = activeSongIdx < songs.length - 1 ? songs[activeSongIdx + 1] : null;
 
@@ -321,7 +384,7 @@ export function ChordChart({
                 Aa
               </button>
             )}
-            {!activeDoc && streamZoomed && (
+            {streamZoomed && (
               <button
                 className={styles.toolBtn}
                 onClick={() => setResetZoomSignal((n) => n + 1)}
@@ -331,20 +394,6 @@ export function ChordChart({
                 <Icon name="zoom-reset" size={18} stroke={2} />
               </button>
             )}
-            {activeDoc && (
-              <button
-                className={`${styles.toolBtn}${docAdjust ? ' ' + styles.on : ''}`}
-                onClick={() =>
-                  setDocAdjust((a) => {
-                    if (!a) setDrawMode(false);
-                    return !a;
-                  })
-                }
-                title={docAdjust ? 'Fertig' : 'Anpassen (Zoom)'}
-              >
-                {docAdjust ? <Icon name="check" size={18} stroke={2.4} /> : <Icon name="search" size={18} stroke={2} />}
-              </button>
-            )}
             {onReload && (
               <button className={styles.toolBtn} onClick={onReload} disabled={reloading} title="Aktualisieren">
                 <span className={reloading ? styles.spin : undefined}>↻</span>
@@ -352,12 +401,7 @@ export function ChordChart({
             )}
             <button
               className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
-              onClick={() =>
-                setDrawMode((d) => {
-                  if (!d) setDocAdjust(false);
-                  return !d;
-                })
-              }
+              onClick={() => setDrawMode((d) => !d)}
               title="Anmerkungen"
             >
               <Icon name="pencil" size={18} stroke={2.2} />
@@ -622,25 +666,17 @@ export function ChordChart({
           />
         )}
 
-        {/* Anzeige-Bereich */}
+        {/* Anzeige-Bereich: EIN durchgehender Strom (Akkorde + Dokumente gemischt) */}
         <div className={styles.chartArea}>
-          {activeDoc ? (
-            <DocumentView
-              songId={song.id}
-              doc={activeDoc}
-              drawMode={drawMode}
-              drawColor={drawColor}
-              drawTool={drawTool}
-              clearSignal={docClearSignal}
-              adjust={docAdjust}
-              onAdjustChange={setDocAdjust}
-              onPrev={prev}
-              onNext={next}
-            />
-          ) : stream && owners.length > 0 ? (
-            <StreamView
-              pdfData={stream.data}
-              owners={owners}
+          {songs.length > 0 ? (
+            <PageDeck
+              pages={pages}
+              loading={pagesLoading}
+              error={pagesError}
+              loadingLabel="Lieder werden vorbereitet…"
+              drawKeyFor={drawKeyFor}
+              zoomKeyBaseFor={zoomKeyBaseFor}
+              pageLabel={pageLabel}
               pageIndex={pageIdx}
               onPageIndex={setPage}
               activePage={activeIdx}
@@ -667,29 +703,6 @@ export function ChordChart({
             </div>
           )}
         </div>
-
-        {/* Zeichen-Werkzeugleiste (nur für hochgeladene Einzeldokumente; der Strom bringt seine eigene mit) */}
-        {drawMode && activeDoc && (
-          <DrawToolbar
-            colors={drawColors}
-            drawColor={drawColor}
-            setDrawColor={setDrawColor}
-            drawTool={drawTool}
-            setDrawTool={setDrawTool}
-            onClear={() => setConfirmClear(true)}
-            allowText={false}
-          />
-        )}
-
-        {confirmClear && activeDoc && (
-          <ConfirmDialog
-            title="Markierungen löschen?"
-            message={`Alle Zeichnungen auf der aktiven Seite werden entfernt. Das kann nicht rückgängig gemacht werden.`}
-            confirmLabel="Löschen"
-            onConfirm={clearDrawing}
-            onCancel={() => setConfirmClear(false)}
-          />
-        )}
 
         {showEditor && (
           <ChordEditor
@@ -726,7 +739,7 @@ export function ChordChart({
                 {songs.map((_, i) => (
                   <div
                     key={i}
-                    className={`${styles.dot}${i === activeSongIdx ? ' ' + styles.on : ''}`}
+                    className={`${styles.dot}${visibleSongIdx.has(i) ? ' ' + styles.on : ''}`}
                     onClick={() => goToSong(i)}
                   />
                 ))}

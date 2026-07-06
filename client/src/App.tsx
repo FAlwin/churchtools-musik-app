@@ -33,6 +33,7 @@ import {
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
 import { TabBar, type TabId } from './components/TabBar';
+import { ApiError } from './services/api';
 
 /** Wurzel-Komponente: Auth + Tab-Navigation (Termine/Lieder/Mehr) mit echten ChurchTools-Daten. */
 export default function App() {
@@ -43,6 +44,11 @@ export default function App() {
 
   const capsQuery = useCapabilities(auth.isAuthenticated);
   const caps = capsQuery.data;
+  // Abgelaufene/ungültige ChurchTools-Sitzung: Unser App-Cookie ist noch da (darum kein Login-
+  // Screen), aber ChurchTools kennt uns nicht mehr (401). Wiederholen ist zwecklos → automatisch
+  // abmelden (verwirft das tote Cookie) und zum Login führen, statt „Erneut versuchen" anzubieten.
+  const sessionExpired =
+    capsQuery.error instanceof ApiError && capsQuery.error.status === 401;
   const canViewAgendas = caps?.canViewAgendas ?? false;
   const canViewSongs = caps?.canViewSongs ?? false;
   const canEditAgendas = caps?.canEditAgendas ?? false;
@@ -96,6 +102,12 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caps]);
 
+  // Abgelaufene Sitzung → automatisch abmelden, damit der Login-Screen erscheint.
+  useEffect(() => {
+    if (sessionExpired) void auth.logout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionExpired]);
+
   if (auth.isLoading) {
     return (
       <Screen>
@@ -119,10 +131,15 @@ export default function App() {
   if (!caps) {
     return (
       <Screen>
-        {capsQuery.isError ? (
+        {sessionExpired ? (
+          // Sitzung abgelaufen: Der Effekt oben meldet gerade ab → gleich erscheint der Login.
+          <CenterMessage loading text="Sitzung abgelaufen – bitte neu anmelden…" />
+        ) : capsQuery.isError ? (
+          // Echter ChurchTools-Aussetzer (leere Rechte-Zuordnungen, 502): getCapabilities wirft,
+          // nach den automatischen Neuversuchen landet man hier mit „Erneut versuchen".
           <CenterMessage
             icon="⚠️"
-            text="Berechtigungen konnten nicht geladen werden."
+            text="Berechtigungen konnten nicht geladen werden. Bitte erneut versuchen."
             onRetry={() => capsQuery.refetch()}
             actionLabel="Abmelden"
             onAction={() => auth.logout()}
@@ -130,19 +147,6 @@ export default function App() {
         ) : (
           <CenterMessage loading text="Einen Moment…" />
         )}
-      </Screen>
-    );
-  }
-
-  if (!canViewAgendas && !canViewSongs) {
-    return (
-      <Screen>
-        <CenterMessage
-          icon="🔒"
-          text="Dein ChurchTools-Konto hat keine Berechtigung für Lieder oder Abläufe."
-          actionLabel="Abmelden"
-          onAction={() => auth.logout()}
-        />
       </Screen>
     );
   }
@@ -195,9 +199,7 @@ export default function App() {
         onLinkSong={(itemId, arrangementId) =>
           linkSongToAgendaItem.mutateAsync({ itemId, arrangementId }).then(() => undefined)
         }
-        onUnlinkSong={(itemId, title) =>
-          unlinkSongFromAgendaItem.mutateAsync({ itemId, title }).then(() => undefined)
-        }
+        onUnlinkSong={(itemId) => unlinkSongFromAgendaItem.mutateAsync({ itemId }).then(() => undefined)}
         onSetResponsible={(itemId, responsible) =>
           setAgendaItemResponsible.mutateAsync({ itemId, responsible }).then(() => undefined)
         }

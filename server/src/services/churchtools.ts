@@ -84,7 +84,8 @@ export async function whoami(cookie: string): Promise<ChurchToolsUser> {
   return { id: me.id, firstName: me.firstName, lastName: me.lastName };
 }
 
-// Cookie → ChurchTools-Person-ID, gecacht (Session läuft 12 h) – spart whoami-Abrufe je Anmerkung.
+// Cookie → ChurchTools-Person-ID, gecacht mit 12-h-Auffrischung – spart whoami-Abrufe je Anmerkung
+// und prüft periodisch, ob das Cookie noch gilt (unabhängig von der App-Cookie-Lebensdauer).
 const userIdCache = new Map<string, { id: number; at: number }>();
 
 /** Liefert die ChurchTools-Person-ID zum Session-Cookie (gecacht). */
@@ -110,16 +111,43 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
     cookie,
     '/api/permissions/global',
   );
-  const cs = data?.churchservice ?? {};
+  const caps = parseCapabilities(data);
+  // Leises Server-Log, falls ChurchTools keine Lieder/Abläufe-Rechte liefert – hilft bei künftiger
+  // Diagnose des sporadischen Aussetzers (alle Rechte-Arrays leer).
+  if (!caps.canViewSongs && !caps.canViewAgendas) {
+    console.warn('[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer)');
+  }
+  return caps;
+}
+
+/**
+ * Wertet die ChurchTools-Rechte-Antwort (`/api/permissions/global`) aus.
+ *
+ * WICHTIG: Eine gültige Antwort enthält für jeden angemeldeten Nutzer IMMER mindestens einen
+ * Modul-Block. Eine komplett leere Antwort ist daher NICHT „der Nutzer hat keine Rechte", sondern
+ * ein vorübergehender Aussetzer (kurz überlastetes/inkonsistentes ChurchTools, wackelige
+ * Verbindung). Wir werfen dann, damit der Client automatisch neu versucht – statt fälschlich das
+ * endgültige „keine Berechtigung"-Schloss zu zeigen. Fehlt hingegen nur der churchservice-Block
+ * (andere Module sind vorhanden), hat der Nutzer wirklich keine Lieder-/Ablauf-Rechte → reguläre
+ * false-Werte ohne Wurf.
+ */
+export function parseCapabilities(
+  data: Record<string, Record<string, unknown>> | null | undefined,
+): UserCapabilities {
+  if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+    throw new HttpError(502, 'Leere Rechte-Antwort von ChurchTools – bitte erneut versuchen.');
+  }
+  const cs = data.churchservice ?? {};
   const has = (v: unknown): boolean => (Array.isArray(v) ? v.length > 0 : Boolean(v));
   // Admin-Recht aus der Konfiguration (Form `modul:recht`).
   const [adminModule, adminPerm] = config.adminPermission.split(':');
-  const isAdmin = has(data?.[adminModule]?.[adminPerm]);
+  const isAdmin = has(data[adminModule]?.[adminPerm]);
+  // Ein Admin darf ohnehin alles – auch ohne explizit zugewiesene Kategorie-/Kalender-Rechte.
   return {
-    canViewSongs: has(cs['view songcategory']),
-    canViewAgendas: has(cs['view agenda']),
-    canEditAgendas: has(cs['edit agenda']),
-    canEditSongs: has(cs['edit songcategory']),
+    canViewSongs: isAdmin || has(cs['view songcategory']),
+    canViewAgendas: isAdmin || has(cs['view agenda']),
+    canEditAgendas: isAdmin || has(cs['edit agenda']),
+    canEditSongs: isAdmin || has(cs['edit songcategory']),
     isAdmin,
   };
 }
@@ -383,6 +411,8 @@ export async function createAgendaItem(
     arrangementId?: number;
     responsible?: string;
     note?: string;
+    /** Dauer in Minuten (UI-Einheit) – wird in CT-Sekunden umgerechnet. */
+    durationMin?: number;
   },
 ): Promise<void> {
   const csrf = await getCsrfToken(cookie);
@@ -391,6 +421,8 @@ export async function createAgendaItem(
   if (data.type === 'song' && data.arrangementId) body.arrangementId = data.arrangementId;
   if (data.responsible) body.responsible = data.responsible;
   if (data.note) body.note = data.note;
+  // CT erwartet die Dauer in Sekunden (Feld `duration`), die UI arbeitet in Minuten.
+  if (data.durationMin !== undefined) body.duration = data.durationMin * 60;
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items`, {
     method: 'POST',
     headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },

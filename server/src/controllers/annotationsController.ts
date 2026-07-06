@@ -10,6 +10,13 @@ const textSchema = z.object({
   text: z.string().max(2000),
   color: z.string().max(20),
   sizeCqh: z.number(),
+  // Absatz-Format (optional; ältere Anmerkungen kennen es nicht). MUSS hier stehen, sonst schneidet
+  // Zod die Felder beim Speichern weg → beim nächsten Pull fehlt z. B. `bold` und normaler Text
+  // wird fälschlich fett dargestellt (Client-Fallback für Bestandstexte).
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+  underline: z.boolean().optional(),
+  align: z.enum(['left', 'center', 'right']).optional(),
 });
 
 const annoSchema = z.object({
@@ -19,11 +26,13 @@ const annoSchema = z.object({
   zoom: z.object({ x: z.number(), y: z.number(), scale: z.number() }).nullable().optional(),
 });
 
-// Schlüsselform: song<id>_v<versionKey>_<seite> (+ optional _d<geräteklasse> beim Zoom)
+// Schlüsselform: song<id>_v<versionKey>_<seite> (+ optional _d<geräteklasse><spalten> beim Zoom,
+// z. B. _dlarge2 im iPad-Querformat). Die Layout-Ziffer muss erlaubt sein (sonst wird der
+// Querformat-Zoom serverseitig abgelehnt und nie gespeichert).
 const keySchema = z
   .string()
   .max(120)
-  .regex(/^song\d+_v[a-z0-9-]+_\d+(?:_d(?:phone|large))?$/i, 'Ungültiger Anmerkungs-Schlüssel.');
+  .regex(/^song\d+_v[a-z0-9-]+_\d+(?:_d(?:phone|large)\d?)?$/i, 'Ungültiger Anmerkungs-Schlüssel.');
 
 /** GET /api/annotations?songs=1,2,3 – alle Anmerkungen des Kontos zu diesen Liedern. */
 export async function getAnnotations(req: Request, res: Response): Promise<void> {

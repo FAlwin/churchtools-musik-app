@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { AgendaItem, AgendaServiceOption, Service } from '@shared/types/index';
 import {
   DndContext,
@@ -29,6 +29,7 @@ import { generateSetlistPdf } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
 import { loadSongPdfOpts, loadAppLogo } from '../utils/songPdfOpts';
 import { selectedVersionKey, versionText } from '../utils/songVersions';
+import { innerScrollOnly, resetViewportAfterDrag } from '../utils/dndAutoScroll';
 import styles from './Setlist.module.scss';
 
 interface SetlistProps {
@@ -50,7 +51,7 @@ interface SetlistProps {
   /** Verknüpft einen bestehenden Punkt mit einem Lied. Wirft bei Fehler. */
   onLinkSong: (itemId: number, arrangementId: number) => Promise<void>;
   /** Hebt die Lied-Verknüpfung eines Punkts wieder auf. Wirft bei Fehler. */
-  onUnlinkSong: (itemId: number, title: string) => Promise<void>;
+  onUnlinkSong: (itemId: number) => Promise<void>;
   /** Setzt das Verantwortlich-Textfeld eines Punkts. Wirft bei Fehler. */
   onSetResponsible: (itemId: number, responsible: string) => Promise<void>;
   /** Setzt die Dauer eines Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
@@ -66,6 +67,7 @@ interface SetlistProps {
     arrangementId?: number;
     responsible?: string;
     note?: string;
+    durationMin?: number;
   }) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
   services: AgendaServiceOption[];
@@ -200,9 +202,18 @@ function SortableRow({
     return (
       <div ref={setNodeRef} style={style} className={`${styles.sectionBand} ${styles.editBand}`}>
         <button className={styles.bandHandle} {...attributes} {...listeners} aria-label="Verschieben">
-          ⠿
+          <Icon name="grip" size={16} />
         </button>
-        {item.title}
+        <button className={styles.bandEdit} onClick={() => onOpenActions(item)}>
+          {item.title}
+        </button>
+        <button
+          className={styles.rowEdit}
+          onClick={() => onOpenActions(item)}
+          aria-label="Bearbeiten"
+        >
+          <Icon name="pencil" size={15} stroke={2} />
+        </button>
       </div>
     );
   }
@@ -217,7 +228,7 @@ function SortableRow({
       className={`${styles.flowRow}${item.song ? ' ' + styles.songRow : ''}`}
     >
       <button className={styles.dragCol} {...attributes} {...listeners} aria-label="Verschieben">
-        ⠿
+        <Icon name="grip" size={18} />
       </button>
       <button className={styles.editBody} onClick={() => onOpenActions(item)}>
         <div className={styles.flowHead}>
@@ -264,11 +275,34 @@ export function Setlist({
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [actionItem, setActionItem] = useState<AgendaItem | null>(null);
+  // Nach dem Hinzufügen eines Lieds automatisch dessen Bearbeiten-Modal öffnen (Dauer usw. sofort
+  // einstellbar). Wir merken uns die IDs vor dem Anlegen und öffnen den erst danach neu
+  // auftauchenden Punkt, sobald der aktualisierte Ablauf eintrifft.
+  const [awaitNewSong, setAwaitNewSong] = useState(false);
+  const idsBeforeAddRef = useRef<Set<number>>(new Set());
 
   // Server-Stand (auch nach dem Speichern) übernehmen.
   useEffect(() => {
     setLocalItems(items);
   }, [items]);
+
+  // Neu angelegtes Lied im aktualisierten Ablauf finden und sein Bearbeiten-Modal öffnen.
+  useEffect(() => {
+    if (!awaitNewSong) return;
+    const created = items.find((i) => !idsBeforeAddRef.current.has(i.id));
+    if (created) {
+      setActionItem(created);
+      setAwaitNewSong(false);
+    }
+  }, [items, awaitNewSong]);
+
+  /** Legt einen Punkt an; bei Liedern anschließend das Bearbeiten-Modal öffnen. */
+  async function handleAdd(data: Parameters<typeof onAdd>[0]): Promise<void> {
+    const isSong = data.type === 'song';
+    if (isSong) idsBeforeAddRef.current = new Set(items.map((i) => i.id));
+    await onAdd(data); // wirft bei Fehler → AddItemSheet zeigt die Meldung, schließt nicht
+    if (isSong) setAwaitNewSong(true);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -276,6 +310,7 @@ export function Setlist({
   );
 
   function handleDragEnd(e: DragEndEvent) {
+    resetViewportAfterDrag(); // #56: weggerutschte Kopfleiste zurückholen (auch ohne Umsortierung)
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     const oldIndex = localItems.findIndex((i) => i.id === active.id);
@@ -379,15 +414,22 @@ export function Setlist({
         ) : editMode ? (
           <>
             <div className={styles.editHint}>
-              {isReordering
-                ? 'Speichere…'
-                : 'Ziehen (⠿) zum Sortieren · Eintrag antippen zum Bearbeiten.'}
+              {isReordering ? (
+                'Speichere…'
+              ) : (
+                <>
+                  Ziehen <Icon name="grip" size={14} className={styles.hintIcon} /> zum Sortieren ·
+                  Eintrag antippen zum Bearbeiten.
+                </>
+              )}
             </div>
             {err && <div className={styles.editError}>{err}</div>}
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
+              onDragCancel={resetViewportAfterDrag}
+              autoScroll={innerScrollOnly}
             >
               <SortableContext
                 items={localItems.map((i) => i.id)}
@@ -421,18 +463,23 @@ export function Setlist({
       )}
 
       {showAdd && (
-        <AddItemSheet onClose={() => setShowAdd(false)} onAdd={onAdd} services={services} />
+        <AddItemSheet onClose={() => setShowAdd(false)} onAdd={handleAdd} services={services} />
       )}
 
       {actionItem && (
         <ItemActionSheet
+          // Bei Wechsel Lied↔Text den Dialog neu aufbauen (frischer Titel-/Zustand) – z. B. nach
+          // dem Aufheben der Verknüpfung, damit sofort das leere Titelfeld erscheint.
+          key={`${actionItem.id}:${actionItem.song ? 'song' : 'text'}`}
           item={actionItem}
           services={services}
           onClose={() => setActionItem(null)}
           onRename={(title) => handleRename(actionItem.id, title)}
           onLinkSong={(arrangementId) => onLinkSong(actionItem.id, arrangementId)}
           onUnlinkSong={() =>
-            onUnlinkSong(actionItem.id, actionItem.song?.title ?? actionItem.title)
+            onUnlinkSong(actionItem.id).then(() =>
+              setActionItem((prev) => (prev ? { ...prev, song: null, title: '', type: 'text' } : prev)),
+            )
           }
           onSetResponsible={(responsible) => onSetResponsible(actionItem.id, responsible)}
           onSetDuration={(durationMin) => onSetDuration(actionItem.id, durationMin)}

@@ -37,7 +37,13 @@ export type IconName =
   | 'eye'
   | 'eye-off'
   | 'zoom-reset'
-  | 'download';
+  | 'download'
+  | 'undo'
+  | 'redo'
+  | 'grip'
+  | 'align-left'
+  | 'align-center'
+  | 'align-right';
 
 interface IconProps {
   name: IconName;
@@ -183,7 +189,8 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
     case 'pencil':
       return (
         <svg {...p}>
-          <path d="M16.5 4.5l3 3L8 19l-4 1 1-4Z" />
+          <path d="M21.17 6.81a1 1 0 0 0-3.98-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5Z" />
+          <path d="m15 5 4 4" />
         </svg>
       );
     case 'columns':
@@ -274,16 +281,16 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
     case 'marker':
       return (
         <svg {...p}>
-          <path d="M3 21h6" />
-          <path d="M8.5 17.5l-3 1 1-3 9-9a2.1 2.1 0 0 1 3 3l-9 9Z" />
-          <path d="M13.5 6.5l3 3" />
+          <path d="m9 11-6 6v3h9l3-3" />
+          <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" />
         </svg>
       );
     case 'eraser':
       return (
         <svg {...p}>
-          <path d="M4 20h16" />
-          <path d="M14.5 6.4l3.1 3.1a2 2 0 0 1 0 2.8L13 17H8.5l-3.6-3.6a2 2 0 0 1 0-2.8l6.8-4.2a2 2 0 0 1 2.8 0Z" />
+          <path d="m7 21-4.3-4.3a1.7 1.7 0 0 1 0-2.4l9.3-9.3a1.7 1.7 0 0 1 2.4 0l5.6 5.6a1.7 1.7 0 0 1 0 2.4L13 21Z" />
+          <path d="M22 21H7" />
+          <path d="m5 11 9 9" />
         </svg>
       );
     case 'download':
@@ -291,6 +298,49 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <path d="M12 3v12M8 11l4 4 4-4" />
           <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+        </svg>
+      );
+    case 'undo':
+      return (
+        <svg {...p}>
+          <path d="M9 7l-5 5 5 5" />
+          <path d="M4 12h11a5 5 0 0 1 0 10h-3" />
+        </svg>
+      );
+    case 'redo':
+      return (
+        <svg {...p}>
+          <path d="M15 7l5 5-5 5" />
+          <path d="M20 12H9a5 5 0 0 0 0 10h3" />
+        </svg>
+      );
+    case 'grip':
+      return (
+        <svg {...f}>
+          <circle cx="9" cy="6" r="1.6" />
+          <circle cx="15" cy="6" r="1.6" />
+          <circle cx="9" cy="12" r="1.6" />
+          <circle cx="15" cy="12" r="1.6" />
+          <circle cx="9" cy="18" r="1.6" />
+          <circle cx="15" cy="18" r="1.6" />
+        </svg>
+      );
+    case 'align-left':
+      return (
+        <svg {...p}>
+          <path d="M4 6h16M4 12h10M4 18h13" />
+        </svg>
+      );
+    case 'align-center':
+      return (
+        <svg {...p}>
+          <path d="M4 6h16M7 12h10M6 18h12" />
+        </svg>
+      );
+    case 'align-right':
+      return (
+        <svg {...p}>
+          <path d="M4 6h16M10 12h10M7 18h13" />
         </svg>
       );
     default:

@@ -1,57 +1,75 @@
 .toolbar {
   position: absolute;
   right: 12px;
-  bottom: 80px;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 50;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   background: var(--surface2);
-  border-radius: 16px;
-  padding: 12px 8px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+  border-radius: 18px;
+  padding: 10px 8px;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.2);
   border: 1px solid var(--border);
   animation: fadeIn 0.15s ease both;
 }
 
-.color {
-  width: 26px;
-  height: 26px;
+// ── Farbe: ein Knopf + Aufklapp-Palette ──
+.colorWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.colorBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1.5px var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+// Palette klappt als EINE horizontale Reihe nach LINKS auf (Leiste sitzt am rechten Rand).
+.palette {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+}
+.swatch {
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 2.5px solid transparent;
   cursor: pointer;
-  transition:
-    transform 0.12s,
-    border-color 0.12s;
-  flex-shrink: 0;
-
-  &.on {
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  &.swatchOn {
     border-color: var(--blue);
-    transform: scale(1.2);
   }
 }
-
-// Freier Farbwähler – Regenbogen-Feld, öffnet den System-Farbwähler
-.colorPicker {
-  position: relative;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2.5px solid transparent;
-  cursor: pointer;
-  flex-shrink: 0;
-  overflow: hidden;
-  background: conic-gradient(red, orange, yellow, lime, aqua, blue, magenta, red);
-  transition:
-    transform 0.12s,
-    border-color 0.12s;
-
-  &.on {
-    border-color: var(--blue);
-    transform: scale(1.2);
-  }
-
+// Eigene Farbe: Knopf mit stets sichtbarem „+" (öffnet den System-Farbwähler). Ist eine eigene
+// Farbe aktiv, zeigt der Knopf diese Farbe (Hintergrund per inline-Style) – das „+" bleibt via
+// weißem Symbol + dunklem Halo auf jedem Untergrund erkennbar.
+.swatchCustom {
+  background: #8a8f98;
+  border-color: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   input {
     position: absolute;
     inset: 0;
@@ -63,31 +81,145 @@
     padding: 0;
   }
 }
-
-.sep {
-  width: 22px;
-  height: 1px;
-  background: var(--border);
+.customPlus {
+  color: #fff;
+  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.75));
+  pointer-events: none;
 }
 
-// Aktuelle Textgröße zwischen A− und A+
+.sep {
+  width: 24px;
+  height: 1px;
+  background: var(--border);
+  margin: 1px 0;
+}
+
+// Gruppe der Zeichenwerkzeuge.
+.toolsGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+// Ein Werkzeug-Platz: Anker für sein eigenes Popover → dieses klappt genau auf SEINER Höhe auf.
+.toolSlot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+// Popover (Strichstärke bzw. Text-Einstellungen): horizontale Reihe, klappt nach LINKS auf, auf
+// Höhe des zugehörigen Werkzeugs (Anker = .toolSlot).
+.sizePopover,
+.textPopover {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+}
+// Der Text-Balken ist auf ALLEN Geräten eine senkrechte Spalte (A−/13/A+ · B/I/U · Ausrichtung
+// untereinander) – einheitlicher, aufgeräumter Look. max-height + overflow als Schutz, falls die
+// Spalte mal höher als der Bildschirm wäre (z. B. Handy quer).
+.textPopover {
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  border-radius: 20px;
+  white-space: normal;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+// Trenner zwischen den Abschnitten: dezente waagerechte Linie über die volle Balken-Breite.
+.vsep {
+  align-self: stretch;
+  height: 1px;
+  background: var(--border);
+  margin: 3px 4px;
+  flex-shrink: 0;
+}
+
+// Ausklapp-Hinweis: drei dezente Pünktchen unten am AKTIVEN Werkzeug – signalisiert „nochmal
+// tippen für Einstellungen", ohne das Design mit permanenten Symbolen zu belasten. currentColor
+// → auf dem aktiven (blauen) Knopf automatisch weiß.
+.moreHint {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow:
+    -4.5px 0 0 currentColor,
+    4.5px 0 0 currentColor;
+  opacity: 0.65;
+  pointer-events: none;
+}
+.sizeOpt {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  &.sizeOptOn {
+    border-color: var(--blue);
+    background: var(--blue-soft);
+  }
+}
+.sizeDot {
+  display: block;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+// Aktuelle Textgröße zwischen A− und A+ (als „pt"-Zahl).
 .sizeValue {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   color: var(--text);
-  min-width: 20px;
+  min-width: 22px;
   text-align: center;
+  font-family: var(--ui);
+  font-variant-numeric: tabular-nums;
+}
+.sizeBtnLabel {
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--ui);
+}
+
+// Buchstaben-Label der Format-Knöpfe (B / I / U)
+.fmtLabel {
+  font-size: 17px;
+  line-height: 1;
   font-family: var(--ui);
 }
 
 .toolBtn {
-  width: 32px;
-  height: 30px;
-  border-radius: 8px;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
   border: 1.5px solid var(--border);
   background: var(--surface2);
   cursor: pointer;
-  font-size: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,24 +232,22 @@
     border-color: var(--blue);
     color: #fff;
   }
-  &:hover:not(.on) {
+  &:hover:not(.on):not(:disabled) {
     background: var(--surface3);
   }
   &:disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: default;
   }
 }
 
 .clear {
-  width: 32px;
-  height: 30px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
   border: 1.5px solid rgba(178, 34, 71, 0.35);
   background: var(--surface2);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;

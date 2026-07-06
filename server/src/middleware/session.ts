@@ -4,6 +4,10 @@ import { config } from '../config.js';
 import { getCapabilities } from '../services/churchtools.js';
 
 const COOKIE_NAME = 'ct_session';
+// Sitzungsdauer des App-Cookies. Rollierend: bei jeder Nutzung (requireSession) neu gesetzt,
+// sodass regelmäßige Nutzer praktisch angemeldet bleiben; nur nach 30 Tagen ohne Nutzung fällt
+// die Anmeldung weg. (Die ChurchTools-Sitzung dahinter kann CT unabhängig früher beenden.)
+const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 Tage
 
 /** Express-Request um das ChurchTools-Session-Cookie erweitern. */
 declare global {
@@ -27,7 +31,7 @@ export function setSession(res: Response, churchToolsCookie: string): void {
     secure: config.cookieSecure,
     sameSite: 'lax',
     signed: true,
-    maxAge: 1000 * 60 * 60 * 12, // 12 Stunden
+    maxAge: SESSION_MAX_AGE_MS,
     path: '/',
   });
 }
@@ -36,13 +40,17 @@ export function clearSession(res: Response): void {
   res.clearCookie(COOKIE_NAME, { path: '/' });
 }
 
-/** Middleware: stellt sicher, dass eine gültige Session vorliegt, und hängt sie an req.ctCookie. */
-export function requireSession(req: Request, _res: Response, next: NextFunction): void {
+/**
+ * Middleware: stellt sicher, dass eine gültige Session vorliegt, und hängt sie an req.ctCookie.
+ * Verlängert das Cookie rollierend bei jeder authentifizierten Anfrage (gleitendes Ablaufdatum).
+ */
+export function requireSession(req: Request, res: Response, next: NextFunction): void {
   const cookie = req.signedCookies?.[COOKIE_NAME];
   if (!cookie || typeof cookie !== 'string') {
     throw new HttpError(401, 'Nicht angemeldet.');
   }
   req.ctCookie = cookie;
+  setSession(res, cookie); // rollierend: Ablaufdatum bei jeder Nutzung neu setzen
   next();
 }
 

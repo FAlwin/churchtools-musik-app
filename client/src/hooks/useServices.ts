@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../services/churchtoolsApi';
+import { ApiError } from '../services/api';
 
 /** Lädt die Gottesdienste mit Setlist (Standardfenster: ~1 Woche zurück bis 6 Wochen voraus). */
 export function useServices(enabled: boolean) {
@@ -93,8 +94,7 @@ export function useLinkSongToAgendaItem(eventId: number | null) {
 export function useUnlinkSongFromAgendaItem(eventId: number | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { itemId: number; title: string }) =>
-      api.unlinkSongFromAgendaItem(eventId as number, v.itemId, v.title),
+    mutationFn: (v: { itemId: number }) => api.unlinkSongFromAgendaItem(eventId as number, v.itemId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });
       qc.invalidateQueries({ queryKey: ['services'] });
@@ -153,13 +153,21 @@ export function useAgendaServices(enabled: boolean) {
   });
 }
 
-/** Lädt die Rechte des angemeldeten Nutzers. */
+/** Lädt die Rechte des angemeldeten Nutzers. Dieser Aufruf ist das „Tor" zur App – schlägt er
+ *  wegen eines ChurchTools-Aussetzers (z. B. leere Rechte-Antwort → 502) fehl, versuchen wir es
+ *  mehrfach automatisch mit wachsender Pause, statt gleich das „keine Berechtigung"-Schloss bzw.
+ *  den Fehlerschirm zu zeigen. */
 export function useCapabilities(enabled: boolean) {
   return useQuery({
     queryKey: ['capabilities'],
     queryFn: () => api.getCapabilities(),
     enabled,
     staleTime: 1000 * 60 * 30,
+    // Eine abgelaufene/ungültige ChurchTools-Sitzung (401) lässt sich nicht „wegwiederholen" –
+    // sofort aufgeben (App.tsx führt dann zum Login). Nur echte Aussetzer (502) 3× erneut versuchen.
+    retry: (failureCount, error) =>
+      error instanceof ApiError && error.status === 401 ? false : failureCount < 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
 }
 
@@ -234,6 +242,7 @@ export function useCreateAgendaItem(eventId: number | null) {
       arrangementId?: number;
       responsible?: string;
       note?: string;
+      durationMin?: number;
     }) => api.createAgendaItem(eventId as number, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });

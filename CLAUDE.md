@@ -111,29 +111,52 @@ im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site
 `--orange`/`--teal`/`--chord`; Akzent = Blau, Destruktiv = Rot), System-Font, gemeinsame Bausteine
 (SCSS-Mixins `styles/_mixins.scss`, `<Segment>`, `Icon`/Line-Icons statt Emojis).
 
-## Akkord-Ansicht: PDF-Strom + Anmerkungen
-Die Akkord-Ansicht ist **kein** Live-HTML-Chart mehr, sondern ein **erzeugtes PDF**: `utils/chordPdf.ts`
-baut aus ChordPro ein A4-PDF (SongSelect-Look, alles schwarz, Logo oben rechts). Der ganze Ablauf
-wird zu **einer** PDF zusammengefasst (`generateSetlistPdfWithOwners` → `owners[]` = welche Seite zu
-welchem Lied/Seite/Version gehört). `components/StreamView.tsx` rendert den Strom (pdf.js → Canvas):
-Hochformat 1 Seite, **Querformat 2 Seiten nebeneinander** über Liedgrenzen, je Seite eigener Zoom.
-*(Live-Chart-Reste `useDrawing.ts`/`usePagedColumns.ts`/`constants.ts` wurden entfernt.)*
+## Akkord-Ansicht: durchgehender Seiten-Strom + Anmerkungen
+Die Akkord-Ansicht ist **kein** Live-HTML-Chart mehr, sondern ein **Seiten-Strom aus Canvas-Seiten**.
+`utils/chordPdf.ts` baut aus ChordPro ein A4-PDF (SongSelect-Look, alles schwarz, Logo oben rechts);
+`generateSetlistPdfWithOwners` erzeugt daraus **eine** kombinierte PDF + `owners[]` (welche Seite zu
+welchem Lied/Seite/Version gehört).
+
+`hooks/useSetlistPages.ts` fügt daraus + aus **hochgeladenen Dokumenten** (PDF/Bild) **einen
+durchgehenden Strom** zusammen: je Lied steuert – nach `viewSource` – entweder seine Akkord-Seiten
+**oder** sein gewähltes Dokument bei (Dokument-Canvas je Datei-ID gecacht). Ergebnis: `pages[]`
+(Canvas) + erweiterte `owners[]` (`kind: 'chord' | 'doc'`).
+`components/PageDeck.tsx` ist die **gemeinsame 2-Seiten-Engine**, die diesen Strom rendert (pdf.js/
+Bild → Canvas): Hochformat 1 Seite, **Querformat 2 Seiten nebeneinander** über Liedgrenzen, je Seite
+eigener Zoom. `StreamView`/`DocumentView` gibt es nicht mehr (durch PageDeck ersetzt).
+Blättern schiebt horizontal ein (Slide-Übergang). *(Live-Chart-Reste `useDrawing.ts`/
+`usePagedColumns.ts`/`constants.ts` wurden früher entfernt.)*
+
+**Gesten:** **ein Finger blättert, zwei Finger zoomen + verschieben** (auch im Zeichenmodus – ein
+begonnener Strich wird bei Zweitfinger verworfen; Apple Pencil zeichnet, Finger zoomen). Pinch zoomt
+und **speichert automatisch** (kein „Fertig"-Modus); Zurücksetzen über den Knopf in der Kopfleiste.
+Im 2-up ist beim Anmerken nur die **aktive** Seite beschreibbar (die andere ausgegraut/gesperrt).
 
 **Anmerkungen** kapselt `hooks/usePageDraw.ts` **pro Seite**: Striche (Stift/Marker/Radierer) auf einer
-Anno-Canvas + Textfelder (platzieren/auswählen/verschieben/bearbeiten) + **Rückgängig/Wiederholen**.
-Bedienung: Text-Werkzeug → ins Leere tippen = Feld; nach Bestätigen ist der Text ausgewählt (Rahmen);
-tippen = auswählen, nochmal = bearbeiten, ziehen = verschieben; Tipp ins Leere hebt Auswahl auf.
-Marker wird als **eine** halbtransparente Linie gemalt (Schnappschuss-Technik, kein „Gepunktel").
-Farben fest **Schwarz/Rot/Gelb** + freier Picker. Hochgeladene Dokumente (PDF/Bild) nutzen weiter
-`components/DocumentView.tsx` (eigene, lokale Anmerkungen).
+Anno-Canvas + Textfelder + **Rückgängig/Wiederholen**. Text wird **inline direkt auf der Seite**
+bearbeitet (Tipp = Cursor an der Stelle; außerhalb tippen legt fest; **ein** Tipp auf einen Text
+öffnet ihn direkt zum Bearbeiten; ziehen = verschieben, Ecken-Ziehknopf = Größe; Zeilenumbrüche
+erlaubt). **Text-Format je Block** (fett/kursiv/unterstrichen + links/mitte/rechts) als optionale
+Felder in `PageTextObj` (`DEFAULT_TEXT_STYLE` = normal & mittig; Bestandstexte ohne `bold`-Feld
+gelten als fett → Fallback). Marker als **eine** halbtransparente Linie (Schnappschuss-Technik).
+Werkzeugleiste `components/DrawToolbar.tsx`: Farbknopf mit Aufklapp-Palette (vier Farben
+Rot/Blau/Grün/Orange + freier Picker). **Einheitliche Bedienung:** erster Tipp wählt ein Werkzeug,
+zweiter Tipp klappt dessen Einstellungen links auf Höhe des Werkzeugs auf (`expandedTool`) –
+Strichstärke bei Stift/Marker/Radierer, Text-Einstellungen als **senkrechte Spalte** (Größe in
+„pt" · Format · Ausrichtung); ein dezenter Punkt-Hinweis (`.moreHint`) am aktiven Werkzeug zeigt
+das an.
 
 **Speicherung pro Konto (Server, geräteübergreifend):** Anmerkungen + Zoom laufen über
 `services/annotations.ts` (localStorage = Cache, debounced Push, Pull beim Laden/Rückkehr/30 s; Pull
-überspringt Seiten mit noch nicht hochgeladener Änderung). Pro-Lied-Einstellungen über
-`services/userSettings.ts`. **Schlüssel** je Eintrag: `song<id>_v<versionKey>_<seite>` (Zoom zusätzlich
-`_d<geräteklasse>`). Geräteklasse `phone` vs `large` (Tablet+Computer) via `utils/deviceClass.ts` –
-display-abhängige Werte (Spalten/Schrift/Zoom) gelten pro Gerätetyp, musikalische (Tonart/Kapo/
-Abschnitte/Version) überall gleich. Versions-Helfer: `utils/songVersions.ts`.
+überspringt Seiten mit noch nicht hochgeladener **oder gerade laufender** Änderung; ausstehende
+Uploads werden beim App-Verlassen sofort via `keepalive` geschickt). Pro-Lied-Einstellungen über
+`services/userSettings.ts` (`utils/songVersions.ts`). **Anzeige-Einstellungen (Spalten `cols`,
+Textgröße `fs`) werden geräteübergreifend synchronisiert** (kein Geräte-Suffix); **NUR der Zoom
+bleibt pro Geräteklasse getrennt**. **Schlüssel** je Eintrag: `song<id>_v<versionKey>_<seite>` (Zoom zusätzlich
+`_d<geräteklasse><spalten>`, z. B. `_dlarge2`; **`KEY_RE` in `annotations.ts` UND die Server-Zod-Regel
+müssen diese Layout-Ziffer erlauben** – sonst wird der Querformat-Zoom nicht gesynct; Regressionstest
+`annotations.keys.test.ts`). Dokument-Anmerkungen nutzen `worship_docdraw_<fileId>_<seite>`.
+Geräteklasse `phone` vs `large` via `utils/deviceClass.ts`. Versions-Helfer: `utils/songVersions.ts`.
 
 ## Domänen-Besonderheiten
 - **ChordPro:** zwei Dialekte unterstützen – Standard (`{start_of_verse}`) UND
@@ -182,9 +205,15 @@ Abschnitte/Version) überall gleich. Versions-Helfer: `utils/songVersions.ts`.
   `:staging`, Scope `worship-test`, 60 s) zieht automatisch – über den **gepflegten Watchtower-Fork
   `nickfedor/watchtower`** (Original `containrrr` ist unmaintained / Docker-29-inkompatibel).
 - **Prod-Instanz (bewusstes Update, seit v2.2.0):** `deploy/docker-compose.prod.yml` (`worship-charts`,
-  Port 3001) ist auf **`:2` gepinnt** und hat **keinen Auto-Pull mehr**. Auf neue Versionen weist das
-  In-App-Update-Banner hin; aktualisiert wird bewusst per `docker compose pull && up -d` (SSH) bzw.
-  im Container Manager. Volume (`worship-data`) beim Neu-Erstellen behalten.
+  Port 3001) ist auf **`:2` gepinnt** und hat **keinen Auto-Pull mehr**. Aktualisiert wird bewusst per
+  `docker compose pull && up -d` (SSH) bzw. im Container Manager (Volume `worship-data` behalten).
+- **Frontend-Update auf den Geräten (Service Worker, seit v2.5.0):** Nach dem Server-Update holt sich
+  jedes Gerät den neuen Frontend-Build selbst – zuverlässig beim **Kaltstart/kompletten Neu-Öffnen**
+  (bzw. Neuladen) und auf Knopfdruck über **„Nach Updates suchen"** im Mehr-Tab (lädt eine gefundene
+  Version direkt). Der schwebende **„Neue Version verfügbar"-Balken** ist der passive Bonus-Weg (auf
+  iOS unzuverlässig). Davon getrennt: der ältere Hinweis **„Neue Version X verfügbar – Was ist neu"**
+  (`useUpdateCheck`) verlinkt nur die GitHub-Release-Notes. `registerType: 'prompt'` lädt nie
+  ungefragt mitten in der Nutzung neu.
 - **Gemeinden:** `deploy/docker-compose.yml` ist auf `:2` gepinnt; Update per `update.command`/`update.bat`.
 - **Env (Volume `/app/data`):** `SITE_CONFIG_PATH=/app/data/site.json`,
   `ANNOTATIONS_PATH=/app/data/annotations` (kontobezogene Anmerkungen/Einstellungen) – beim Re-Deploy
