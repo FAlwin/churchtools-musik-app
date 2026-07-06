@@ -25,3 +25,10 @@
   color: var(--text);
   box-shadow: 0 1px 3px rgba(22, 33, 42, 0.12);
 }
+
+// Ausgegraut (z. B. „Vergangene" ohne Netz): sichtbar zurückgestellt, bleibt aber tippbar,
+// damit der Aufrufer per kurzem Hinweis erklären kann, warum es gerade nicht geht.
+.off {
+  color: var(--text3);
+  opacity: 0.55;
+}

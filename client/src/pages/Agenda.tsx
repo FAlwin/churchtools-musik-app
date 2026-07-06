@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Service } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
@@ -75,6 +75,12 @@ export function Agenda({
   const online = useOnlineStatus();
   const offlineReg = useOfflineServices();
   const { toast, showToast } = useToast();
+
+  // Vergangene Gottesdienste werden live geladen → ohne Netz nicht verfügbar. War man auf
+  // „Vergangene" und geht offline, zurück auf „Kommende" (das Segment graut „Vergangene" aus).
+  useEffect(() => {
+    if (!online && tab === 'past') setTab('upcoming');
+  }, [online, tab]);
 
   const today = new Date().toISOString().slice(0, 10);
   const pastQuery = usePastServices(monthsBack, tab === 'past' && online);
@@ -193,7 +199,14 @@ export function Agenda({
           { value: 'upcoming', label: 'Kommende' },
           { value: 'past', label: 'Vergangene' },
         ]}
-        onChange={setTab}
+        dimmed={online ? [] : ['past']}
+        onChange={(v) => {
+          if (!online && v === 'past') {
+            showToast('Vergangene Gottesdienste sind offline nicht verfügbar.');
+            return;
+          }
+          setTab(v);
+        }}
       />
 
       <Scroll onRefresh={tab === 'upcoming' ? onRetry : () => pastQuery.refetch()}>
