@@ -40,3 +40,8 @@
 .on {
   color: var(--blue-ink);
 }
+
+// Ausgegrauter Tab (z. B. Liedersammlung ohne Netz) – tippbar, Hinweis kommt vom Aufrufer.
+.off {
+  opacity: 0.4;
+}

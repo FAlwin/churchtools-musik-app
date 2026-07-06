@@ -13,20 +13,23 @@ interface TabBarProps {
   active: TabId;
   /** Sichtbare Tabs (rechteabhängig zusammengestellt). */
   tabs: TabId[];
+  /** Ausgegraute Tabs (z. B. Liedersammlung ohne Netz) – bleiben tippbar, der Aufrufer erklärt warum. */
+  dimmed?: TabId[];
   onChange: (tab: TabId) => void;
 }
 
 /** Untere Navigationsleiste im ChurchTools-Stil. */
-export function TabBar({ active, tabs, onChange }: TabBarProps) {
+export function TabBar({ active, tabs, dimmed = [], onChange }: TabBarProps) {
   return (
     <div className={styles.tabbar}>
       {tabs.map((id) => {
         const meta = TAB_META[id];
         const on = active === id;
+        const off = dimmed.includes(id);
         return (
           <button
             key={id}
-            className={`${styles.tab}${on ? ' ' + styles.on : ''}`}
+            className={`${styles.tab}${on ? ' ' + styles.on : ''}${off ? ' ' + styles.off : ''}`}
             onClick={() => onChange(id)}
           >
             <Icon name={meta.icon} size={24} stroke={1.9} />

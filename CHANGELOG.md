@@ -9,14 +9,21 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Hinzugefügt
 
-- **Offline-Reserve (#32):** Einmal online geöffnete Gottesdienste – Termine, Ablauf, Charts
-  (ChordPro) und hochgeladene PDFs/Bilder – bleiben im Saal auch ohne Netz verfügbar. Umgesetzt über
-  persistente Zwischenspeicherung (React-Query in IndexedDB) und Laufzeit-Caching der Dokumente im
-  Service Worker; der PDF-Renderer steckt jetzt komplett im App-Bundle (vorher scheiterten Charts
-  offline am nachgeladenen Worker). Dazu: **„Für offline speichern"-Knopf** pro Gottesdienst,
-  Schalter **„Kommende Gottesdienste offline halten"** (der nächste Gottesdienst wird automatisch
-  vorgehalten) und eine Offline-Statuszeile im Mehr-Tab. Grenze: Ohne Netz kein neues Anmelden und
-  kein Laden bisher ungeöffneter Gottesdienste.
+- **Offline-Reserve (#32):** Gottesdienste sind im Saal auch ohne Netz verfügbar. Der **nächste**
+  Gottesdienst wird automatisch komplett vorgehalten (Ablauf, Charts, PDFs/Bilder – Schalter im
+  Mehr-Tab); weitere kommende Gottesdienste lassen sich per **Download-Knopf direkt am Termin**
+  offline speichern und werden danach automatisch aktuell gehalten. Ein **Wolken-Symbol am Termin**
+  zeigt dauerhaft, was offline bereitliegt. Ohne Netz werden nicht verfügbare Termine und die
+  Liedersammlung **ausgegraut** (Tipp erklärt es kurz). Technik: React-Query-Persistenz in
+  IndexedDB, Datei-Cache im Service Worker, PDF-Renderer komplett im App-Bundle; Dokumente werden
+  als Ganzes geladen statt gestreamt – dadurch öffnen Lieder offline ohne die früheren ~10-Sekunden-
+  Hänger. Grenze: Ohne Netz kein neues Anmelden.
+
+### Geändert
+
+- **„Aktualisieren"-Knopf im Lied entfernt:** Der Inhalt (Ablauf/Liedtexte) aktualisiert sich jetzt
+  alle 60 Sekunden von selbst – auch wenn das Gerät dauerhaft offen im Lied bleibt. Neu gezeichnet
+  wird nur bei echten Änderungen; ohne Netz scheitert das Nachladen lautlos.
 
 ## [2.5.2] – 2026-07-06
 

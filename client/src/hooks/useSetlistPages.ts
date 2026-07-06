@@ -35,9 +35,19 @@ interface Args {
 const RENDER_SCALE = 2;
 
 async function renderPdfToCanvases(source: { data: ArrayBuffer } | { url: string }): Promise<HTMLCanvasElement[]> {
-  const pdf = await pdfjsLib.getDocument(
-    'data' in source ? { data: source.data } : { url: source.url, withCredentials: true },
-  ).promise;
+  // Dokumente IMMER komplett per fetch laden statt pdf.js selbst streamen zu lassen: pdf.js nutzt
+  // sonst Range-Requests (Teilstücke), die den Service-Worker-Datei-Cache verfehlen/verwirren –
+  // offline hing der Aufbau dadurch ~10 s, bis der Fallback griff (#32). Ein normaler GET trifft
+  // den CacheFirst-Eintrag sauber; die Lied-PDFs sind klein, Volllast auch online unkritisch.
+  let data: ArrayBuffer;
+  if ('data' in source) {
+    data = source.data;
+  } else {
+    const res = await fetch(source.url, { credentials: 'include' });
+    if (!res.ok) throw new Error(`Dokument konnte nicht geladen werden (${res.status})`);
+    data = await res.arrayBuffer();
+  }
+  const pdf = await pdfjsLib.getDocument({ data }).promise;
   const out: HTMLCanvasElement[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);

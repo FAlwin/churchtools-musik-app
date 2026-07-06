@@ -43,7 +43,8 @@ export type IconName =
   | 'grip'
   | 'align-left'
   | 'align-center'
-  | 'align-right';
+  | 'align-right'
+  | 'cloud-check';
 
 interface IconProps {
   name: IconName;
@@ -298,6 +299,14 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <path d="M12 3v12M8 11l4 4 4-4" />
           <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+        </svg>
+      );
+    // Wolke mit Häkchen: „liegt offline vor" (Termin-Badge, #32).
+    case 'cloud-check':
+      return (
+        <svg {...p}>
+          <path d="M17.5 18.5a4.3 4.3 0 0 0 .4-8.6 6 6 0 0 0-11.8 1.2 3.8 3.8 0 0 0 .4 7.4h11Z" />
+          <path d="m9.2 13.7 2.1 2.1 3.9-3.9" />
         </svg>
       );
     case 'undo':

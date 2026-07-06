@@ -33,6 +33,8 @@ import {
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
 import { TabBar, type TabId } from './components/TabBar';
+import { Toast, useToast } from './components/Toast';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { ApiError } from './services/api';
 
 /** Wurzel-Komponente: Auth + Tab-Navigation (Termine/Lieder/Mehr) mit echten ChurchTools-Daten. */
@@ -47,8 +49,7 @@ export default function App() {
   // Abgelaufene/ungültige ChurchTools-Sitzung: Unser App-Cookie ist noch da (darum kein Login-
   // Screen), aber ChurchTools kennt uns nicht mehr (401). Wiederholen ist zwecklos → automatisch
   // abmelden (verwirft das tote Cookie) und zum Login führen, statt „Erneut versuchen" anzubieten.
-  const sessionExpired =
-    capsQuery.error instanceof ApiError && capsQuery.error.status === 401;
+  const sessionExpired = capsQuery.error instanceof ApiError && capsQuery.error.status === 401;
   const canViewAgendas = caps?.canViewAgendas ?? false;
   const canViewSongs = caps?.canViewSongs ?? false;
   const canEditAgendas = caps?.canEditAgendas ?? false;
@@ -60,14 +61,29 @@ export default function App() {
   const servicesQuery = useServices(auth.isAuthenticated && canViewAgendas);
   // Hält den nächsten Gottesdienst automatisch offline bereit (falls in den Einstellungen aktiv).
   useOfflineAutoSync(servicesQuery.data);
+  // Offline-Zustand: Liedersammlung braucht das Netz (Charts werden je Lied geladen) → Tab wird
+  // ohne Netz ausgegraut, ein Tipp erklärt das kurz (#32).
+  const online = useOnlineStatus();
+  const { toast: offlineToast, showToast: showOfflineToast } = useToast();
 
-  const { restored, tab, setTab, view, setView, service, setService, songIndex, setSongIndex, libSel, setLibSel } =
-    useAppNav({
-      isAuthenticated: auth.isAuthenticated,
-      isAuthLoading: auth.isLoading,
-      services: servicesQuery.data,
-      servicesLoading: servicesQuery.isLoading,
-    });
+  const {
+    restored,
+    tab,
+    setTab,
+    view,
+    setView,
+    service,
+    setService,
+    songIndex,
+    setSongIndex,
+    libSel,
+    setLibSel,
+  } = useAppNav({
+    isAuthenticated: auth.isAuthenticated,
+    isAuthLoading: auth.isLoading,
+    services: servicesQuery.data,
+    servicesLoading: servicesQuery.isLoading,
+  });
 
   const agendaQuery = useAgenda(service?.id ?? null);
   const reorderAgenda = useReorderAgenda(service?.id ?? null);
@@ -199,7 +215,9 @@ export default function App() {
         onLinkSong={(itemId, arrangementId) =>
           linkSongToAgendaItem.mutateAsync({ itemId, arrangementId }).then(() => undefined)
         }
-        onUnlinkSong={(itemId) => unlinkSongFromAgendaItem.mutateAsync({ itemId }).then(() => undefined)}
+        onUnlinkSong={(itemId) =>
+          unlinkSongFromAgendaItem.mutateAsync({ itemId }).then(() => undefined)
+        }
         onSetResponsible={(itemId, responsible) =>
           setAgendaItemResponsible.mutateAsync({ itemId, responsible }).then(() => undefined)
         }
@@ -227,7 +245,6 @@ export default function App() {
           startIndex={songIndex}
           onBack={() => setView({ type: 'setlist' })}
           onReload={() => agendaQuery.refetch()}
-          reloading={agendaQuery.isFetching}
           canEditSong={canEditSongs}
           theme={settings.theme}
           fontId={settings.fontId}
@@ -241,7 +258,6 @@ export default function App() {
           startIndex={0}
           onBack={() => setView(null)}
           onReload={() => songChart.refetch()}
-          reloading={songChart.isFetching}
           canEditSong={canEditSongs}
           theme={settings.theme}
           fontId={settings.fontId}
@@ -299,6 +315,10 @@ export default function App() {
             isError={songLibrary.isError}
             onRetry={() => songLibrary.refetch()}
             onSelect={(e) => {
+              if (!online) {
+                showOfflineToast('Liedersammlung ist offline nicht verfügbar.');
+                return;
+              }
               setLibSel({ songId: e.songId, arrangementId: e.arrangementId });
               setView({ type: 'chart', source: 'lieder' });
             }}
@@ -321,7 +341,19 @@ export default function App() {
           />
         )}
       </div>
-      <TabBar active={tab} tabs={tabs} onChange={setTab} />
+      <TabBar
+        active={tab}
+        tabs={tabs}
+        dimmed={online ? [] : ['lieder']}
+        onChange={(t) => {
+          if (!online && t === 'lieder') {
+            showOfflineToast('Liedersammlung ist offline nicht verfügbar.');
+            return;
+          }
+          setTab(t);
+        }}
+      />
+      <Toast message={offlineToast} />
     </div>
   );
 }
