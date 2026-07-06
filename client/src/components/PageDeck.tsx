@@ -1,8 +1,17 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
+import {
+  TransformWrapper,
+  TransformComponent,
+  type ReactZoomPanPinchRef,
+} from 'react-zoom-pan-pinch';
 import type { DrawTool } from '../types/index';
-import { usePageDraw, type PageTextObj, type TextStyle, DEFAULT_TEXT_STYLE } from '../hooks/usePageDraw';
+import {
+  usePageDraw,
+  type PageTextObj,
+  type TextStyle,
+  DEFAULT_TEXT_STYLE,
+} from '../hooks/usePageDraw';
 import { pushField } from '../services/annotations';
 import { deviceClass } from '../utils/deviceClass';
 import { DrawToolbar } from './DrawToolbar';
@@ -89,7 +98,8 @@ function isLandscape(): boolean {
   // matchMedia('orientation') ist beim Screen-Wechsel/SPA-Navigation stabiler als innerWidth/Height
   // (die kurzzeitig falsch gemeldet werden) → verhindert, dass der Zoom-Schlüssel (perView) kippt
   // und der gespeicherte Zoom beim Wieder-Betreten erst „falsch" erscheint und dann springt.
-  if (typeof window.matchMedia === 'function') return window.matchMedia('(orientation: landscape)').matches;
+  if (typeof window.matchMedia === 'function')
+    return window.matchMedia('(orientation: landscape)').matches;
   return window.innerWidth > window.innerHeight;
 }
 
@@ -133,11 +143,23 @@ export function PageDeck({
   const editRefs = useRef<(HTMLSpanElement | null)[]>([null, null]);
   const textCommitLock = useRef<[boolean, boolean]>([false, false]); // gegen Doppel-Commit (Blur + Tipp)
   // Zieh-Knopf am Auswahlrahmen: Startgröße + Start-Y + Ebenenhöhe für die Größenänderung.
-  const resizeDrag = useRef<{ slot: number; id: number; startY: number; startSize: number; layerH: number } | null>(null);
-  const contentRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
+  const resizeDrag = useRef<{
+    slot: number;
+    id: number;
+    startY: number;
+    startSize: number;
+    layerH: number;
+  } | null>(null);
+  const contentRefs = [
+    useRef<HTMLCanvasElement | null>(null),
+    useRef<HTMLCanvasElement | null>(null),
+  ];
   const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
   const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
-  const transformRefs = [useRef<ReactZoomPanPinchRef | null>(null), useRef<ReactZoomPanPinchRef | null>(null)];
+  const transformRefs = [
+    useRef<ReactZoomPanPinchRef | null>(null),
+    useRef<ReactZoomPanPinchRef | null>(null),
+  ];
   // Letzter Zoom-Faktor je Slot – um „aktives Herauszoomen" von programmatischem Reset zu unterscheiden.
   const lastScale = useRef<[number, number]>([1, 1]);
   // Marker glatt: aktiver Strich wird als EINE Linie aus allen Punkten neu gezeichnet (auf einem
@@ -176,7 +198,7 @@ export function PageDeck({
   // Tippen, Fußzeile, Tastatur) und kaschiert das harte Umschalten beim Seitenwechsel.
   const [slide, setSlide] = useState<{ dir: 1 | -1; tick: number } | null>(null);
   const slidePanes = useRef<{ old: SlideSlot[]; neu: SlideSlot[] } | null>(null);
-  const slideStripRef = useRef<HTMLDivElement | null>(null);
+  const slideOverlayRef = useRef<HTMLDivElement | null>(null);
   const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevPageIndex = useRef<number | null>(null);
   const slideGuard = useRef<{ perView: number; pages: HTMLCanvasElement[] } | null>(null);
@@ -197,7 +219,8 @@ export function PageDeck({
   // Zoom hängt an der Bildschirm-Geometrie → Geräteklasse UND Layout (1-spaltig Hochformat /
   // 2-spaltig Querformat) im Schlüssel. Sonst würde ein im Hochformat gespeicherter Pixel-
   // Ausschnitt im Querformat (halbe Breite, 2 Seiten) angewendet und die Seite „einfrieren" (#33).
-  const zoomKeyFor = (page: number): string => `${zoomKeyBaseFor(page)}_d${deviceClass()}${perView}`;
+  const zoomKeyFor = (page: number): string =>
+    `${zoomKeyBaseFor(page)}_d${deviceClass()}${perView}`;
   function loadZoom(page: number): { x: number; y: number; scale: number } | null {
     try {
       const s = localStorage.getItem(zoomKeyFor(page));
@@ -378,30 +401,39 @@ export function PageDeck({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, perView, pages, loading]);
 
-  // Slide abspielen: Streifen (200 % breit, [links|rechts]-Hälften) horizontal schieben.
-  useEffect(() => {
+  // Slide abspielen: alte und neue Ebene (je bildschirmbreit) GLEICHZEITIG horizontal schieben.
+  // useLayoutEffect: Text-Ebenen-Größen und Startpositionen stehen garantiert VOR dem ersten
+  // gezeichneten Frame (Safari flusht passive Effekte nicht zuverlässig vor dem Paint, #113).
+  useLayoutEffect(() => {
     if (!slide) return;
-    const el = slideStripRef.current;
-    if (!el) {
+    const overlay = slideOverlayRef.current;
+    const oldPane = overlay?.querySelector<HTMLElement>('[data-pane="old"]');
+    const neuPane = overlay?.querySelector<HTMLElement>('[data-pane="neu"]');
+    if (!overlay || !oldPane || !neuPane) {
       setSlide(null);
       return;
     }
     // Text-Ebenen exakt auf die (unskalierte) Layout-Größe ihrer Seiten-Canvas bringen –
     // container-type:size macht die cqh-Schriftgrößen dann seitenrelativ wie in der Live-Ansicht.
-    el.querySelectorAll<HTMLElement>('[data-slide-textlayer]').forEach((tl) => {
+    overlay.querySelectorAll<HTMLElement>('[data-slide-textlayer]').forEach((tl) => {
       const cv = tl.previousElementSibling as HTMLElement | null;
       if (cv) {
         tl.style.width = `${cv.offsetWidth}px`;
         tl.style.height = `${cv.offsetHeight}px`;
       }
     });
-    const from = slide.dir === 1 ? '0%' : '-50%';
-    const to = slide.dir === 1 ? '-50%' : '0%';
-    el.style.transition = 'none';
-    el.style.transform = `translateX(${from})`;
-    void el.offsetWidth; // Reflow → Startposition steht, bevor die Transition beginnt
-    el.style.transition = 'transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)';
-    el.style.transform = `translateX(${to})`;
+    // Startpositionen: alte Ebene deckt den Bildschirm, neue steht daneben (vorwärts rechts,
+    // rückwärts links). Beide Richtungen ENDEN bei translateX(0) – pixelgenau wie die Live-Ansicht.
+    oldPane.style.transition = 'none';
+    neuPane.style.transition = 'none';
+    oldPane.style.transform = 'translateX(0)';
+    neuPane.style.transform = `translateX(${slide.dir === 1 ? '100%' : '-100%'})`;
+    void overlay.offsetWidth; // Reflow → Startpositionen stehen, bevor die Transition beginnt
+    const tr = 'transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)';
+    oldPane.style.transition = tr;
+    neuPane.style.transition = tr;
+    oldPane.style.transform = `translateX(${slide.dir === 1 ? '-100%' : '100%'})`;
+    neuPane.style.transform = 'translateX(0)';
     slideTimer.current = setTimeout(() => {
       slidePanes.current = null;
       setSlide(null);
@@ -754,7 +786,10 @@ export function PageDeck({
     const root = rootRef.current;
     if (root && lastKbHeight > 0) {
       root.style.transform = '';
-      const overlap = el.getBoundingClientRect().bottom + 12 - (document.documentElement.clientHeight - lastKbHeight);
+      const overlap =
+        el.getBoundingClientRect().bottom +
+        12 -
+        (document.documentElement.clientHeight - lastKbHeight);
       if (overlap > 0) root.style.transform = `translateY(${-Math.ceil(overlap)}px)`;
     }
     el.focus();
@@ -805,7 +840,13 @@ export function PageDeck({
     const layer = layerRefs[slot].current;
     if (!layer) return;
     draws[slot].pushHistory();
-    resizeDrag.current = { slot, id, startY: e.clientY, startSize: size, layerH: layer.clientHeight };
+    resizeDrag.current = {
+      slot,
+      id,
+      startY: e.clientY,
+      startSize: size,
+      layerH: layer.clientHeight,
+    };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function handleResizeMove(e: React.PointerEvent) {
@@ -966,12 +1007,19 @@ export function PageDeck({
     return `${styles.slot} ${styles.slotInactive}`;
   }
 
-  const label = !loading && !error && pageCount > 0 && !drawMode && pageLabel
-    ? pageLabel(activePage, pageIndex, pageCount)
-    : null;
+  const label =
+    !loading && !error && pageCount > 0 && !drawMode && pageLabel
+      ? pageLabel(activePage, pageIndex, pageCount)
+      : null;
 
   return (
-    <div ref={rootRef} className={styles.root} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={onClick}>
+    <div
+      ref={rootRef}
+      className={styles.root}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      onClick={onClick}
+    >
       {loading && (
         <div className={styles.center}>
           <Spinner />
@@ -1053,7 +1101,9 @@ export function PageDeck({
                     // allein stehende Seite im Querformat (z. B. letzte Seite oder 2-Spalten-Lied
                     // auf einer Seite) gehört in die LINKE Hälfte wie ein normales linkes Blatt –
                     // NICHT über den ganzen Bildschirm zentriert. Nur im Hochformat (1 Spalte) mittig.
-                    style={{ justifyItems: perView === 2 && slots.length === 1 ? 'start' : 'center' }}
+                    style={{
+                      justifyItems: perView === 2 && slots.length === 1 ? 'start' : 'center',
+                    }}
                   >
                     <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
                     <canvas
@@ -1128,7 +1178,8 @@ export function PageDeck({
                       {d.pending &&
                         (() => {
                           const p = d.pending;
-                          const editing = p.editId != null ? d.texts.find((t) => t.id === p.editId) : null;
+                          const editing =
+                            p.editId != null ? d.texts.find((t) => t.id === p.editId) : null;
                           // Beim Bearbeiten den Stil des Textes, sonst den aktuellen Pinsel-Stil.
                           const st: TextStyle = editing
                             ? {
@@ -1189,69 +1240,77 @@ export function PageDeck({
       {/* Slide-Übergang: deckt die Live-Ansicht während des Blätterns ab und schiebt alte und
           neue Seiten horizontal (wie im Foto-Viewer). Nicht interaktiv (pointer-events: none). */}
       {slide && slidePanes.current && (
-        <div className={styles.slideOverlay} aria-hidden="true">
-          <div ref={slideStripRef} className={styles.slideStrip}>
-            {[
-              slide.dir === 1 ? slidePanes.current.old : slidePanes.current.neu,
-              slide.dir === 1 ? slidePanes.current.neu : slidePanes.current.old,
-            ].map((pane, pi) => (
-              <div key={pi} className={styles.slidePane}>
-                {pane.length === 2 && <div className={styles.divider} />}
-                <div className={styles.row}>
-                  {pane.map((s, j) => (
-                    <div key={j} className={styles.slot}>
+        <div ref={slideOverlayRef} className={styles.slideOverlay} aria-hidden="true">
+          {[
+            { pk: 'old', pane: slidePanes.current.old },
+            { pk: 'neu', pane: slidePanes.current.neu },
+          ].map(({ pk, pane }) => (
+            // key mit tick: Startet ein neuer Übergang, WÄHREND der alte noch läuft (schnelles
+            // Tastatur-Blättern), werden die Ebenen frisch aufgebaut statt wiederverwendet.
+            // Sonst bliebe die alte Seiten-Grafik im DOM liegen (der Einfüge-Ref entfernt sie
+            // nicht) und deckte als späteres Geschwister die neue ab → altes Lied blitzte auf.
+            <div key={`${pk}${slide.tick}`} data-pane={pk} className={styles.slidePane}>
+              {pane.length === 2 && <div className={styles.divider} />}
+              <div className={styles.row}>
+                {pane.map((s, j) => (
+                  <div key={j} className={styles.slot}>
+                    <div
+                      className={styles.slideContent}
+                      style={
+                        s.zoom
+                          ? {
+                              transform: `translate3d(${s.zoom.x}px, ${s.zoom.y}px, 0) scale(${s.zoom.scale})`,
+                              transformOrigin: '0 0',
+                            }
+                          : undefined
+                      }
+                    >
                       <div
-                        className={styles.slideContent}
-                        style={
-                          s.zoom
-                            ? {
-                                transform: `translate3d(${s.zoom.x}px, ${s.zoom.y}px, 0) scale(${s.zoom.scale})`,
-                                transformOrigin: '0 0',
-                              }
-                            : undefined
-                        }
+                        className={styles.pageBox}
+                        style={{
+                          justifyItems: perView === 2 && pane.length === 1 ? 'start' : 'center',
+                        }}
+                        ref={(n) => {
+                          if (n && s.canvas.parentElement !== n) {
+                            s.canvas.className = styles.contentCanvas;
+                            n.insertBefore(s.canvas, n.firstChild);
+                          }
+                        }}
                       >
                         <div
-                          className={styles.pageBox}
-                          style={{ justifyItems: perView === 2 && pane.length === 1 ? 'start' : 'center' }}
-                          ref={(n) => {
-                            if (n && s.canvas.parentElement !== n) {
-                              s.canvas.className = styles.contentCanvas;
-                              n.insertBefore(s.canvas, n.firstChild);
-                            }
-                          }}
+                          data-slide-textlayer
+                          className={styles.textLayer}
+                          style={{ aspectRatio: s.aspect }}
                         >
-                          <div data-slide-textlayer className={styles.textLayer} style={{ aspectRatio: s.aspect }}>
-                            {s.texts.map((o) => (
-                              <div
-                                key={o.id}
-                                className={styles.textObj}
-                                style={{
-                                  left: `${o.fx * 100}%`,
-                                  top: `${o.fy * 100}%`,
-                                  fontSize: `${o.sizeCqh}cqh`,
-                                  color: o.color,
-                                  // Exakt wie in der Live-Ansicht formatieren, sonst springt der Text
-                                  // beim Übergang Slide→Live (CSS-Default 700 vs. echtes Gewicht) und
-                                  // blinkt (#113, v. a. normaler Text = 400).
-                                  fontWeight: (o.bold ?? true) ? 700 : 400,
-                                  fontStyle: o.italic ? 'italic' : 'normal',
-                                  textDecoration: o.underline ? 'underline' : 'none',
-                                  textAlign: o.align ?? 'center',
-                                }}
-                              >
-                                {o.text}
-                              </div>
-                            ))}
-                          </div>
+                          {s.texts.map((o) => (
+                            <div
+                              key={o.id}
+                              className={styles.textObj}
+                              style={{
+                                left: `${o.fx * 100}%`,
+                                top: `${o.fy * 100}%`,
+                                fontSize: `${o.sizeCqh}cqh`,
+                                color: o.color,
+                                // Exakt wie in der Live-Ansicht formatieren, sonst springt der Text
+                                // beim Übergang Slide→Live (CSS-Default 700 vs. echtes Gewicht) und
+                                // blinkt (#113, v. a. normaler Text = 400).
+                                fontWeight: (o.bold ?? true) ? 700 : 400,
+                                fontStyle: o.italic ? 'italic' : 'normal',
+                                textDecoration: o.underline ? 'underline' : 'none',
+                                textAlign: o.align ?? 'center',
+                              }}
+                            >
+                              {o.text}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -1285,8 +1344,12 @@ export function PageDeck({
           isTextSelected={activeDraw.selectedId !== null}
           selectedColor={selectedText?.color}
           selectedSize={selectedText?.sizeCqh}
-          onSelectedColor={(c) => activeDraw.selectedId !== null && activeDraw.setColor(activeDraw.selectedId, c)}
-          onSelectedResize={(delta) => activeDraw.selectedId !== null && activeDraw.resize(activeDraw.selectedId, delta)}
+          onSelectedColor={(c) =>
+            activeDraw.selectedId !== null && activeDraw.setColor(activeDraw.selectedId, c)
+          }
+          onSelectedResize={(delta) =>
+            activeDraw.selectedId !== null && activeDraw.resize(activeDraw.selectedId, delta)
+          }
           textStyle={textStyle}
           setTextStyle={setTextStyle}
           selectedStyle={
@@ -1299,12 +1362,16 @@ export function PageDeck({
                 }
               : undefined
           }
-          onSelectedStyle={(patch) => activeDraw.selectedId !== null && activeDraw.setStyle(activeDraw.selectedId, patch)}
+          onSelectedStyle={(patch) =>
+            activeDraw.selectedId !== null && activeDraw.setStyle(activeDraw.selectedId, patch)
+          }
           onUndo={activeDraw.undo}
           canUndo={activeDraw.canUndo}
           onRedo={activeDraw.redo}
           canRedo={activeDraw.canRedo}
-          onDeleteSelected={() => activeDraw.selectedId !== null && activeDraw.deleteText(activeDraw.selectedId)}
+          onDeleteSelected={() =>
+            activeDraw.selectedId !== null && activeDraw.deleteText(activeDraw.selectedId)
+          }
         />
       )}
 

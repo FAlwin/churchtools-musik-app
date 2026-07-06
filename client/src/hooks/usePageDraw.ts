@@ -67,6 +67,26 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
   // Zuletzt geladener Text-Stand (JSON) – verhindert das Zurück-Pushen gerade geladener Daten.
   const loadedJson = useRef('[]');
 
+  // Beim Seiten-/Schlüsselwechsel die Texte SYNCHRON – noch während des Renderns – auf den neuen
+  // Stand bringen. Sonst zeigt die neue Seite einen Frame lang noch die Texte der vorherigen
+  // (beim Vorwärtswischen als kurzes Aufblitzen sichtbar, #113). Der Effekt unten übernimmt danach
+  // nur noch Verlauf-Reset und den Server-Pull (reloadTick). Bedingtes setState im Render ist das
+  // dokumentierte „State an geänderte Props anpassen"-Muster.
+  const prevTextKey = useRef(textKey);
+  if (textKey !== prevTextKey.current) {
+    prevTextKey.current = textKey;
+    let loaded: PageTextObj[] = [];
+    try {
+      const s = textKey ? localStorage.getItem(textKey) : null;
+      loaded = s ? (JSON.parse(s) as PageTextObj[]) : [];
+    } catch {
+      loaded = [];
+    }
+    setTexts(loaded);
+    loadedJson.current = JSON.stringify(loaded);
+    setSelectedId(null);
+  }
+
   // Texte laden, wenn die Seite (Schlüssel) wechselt ODER nach einem Server-Pull (reloadTick).
   useEffect(() => {
     if (!textKey) {

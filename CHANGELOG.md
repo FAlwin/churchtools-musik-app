@@ -21,10 +21,14 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   werden jetzt vollständig mitgespeichert.
 - **Gestrichelter Text-Rahmen blieb stehen (#114):** Beim Verlassen des Anmerkungsmodus wird die
   Text-Auswahl jetzt sofort aufgehoben – der Rahmen bleibt nicht mehr bis zum Seitenwechsel sichtbar.
-- **Text-Anmerkungen blinkten beim Weiterwischen (#113):** Am Ende der Blätter-Animation sprang
-  normaler Text kurz auf fett, weil der Text im Übergang immer fett dargestellt wurde. Der Übergang
-  übernimmt jetzt exakt die Formatierung der Live-Ansicht (fett/normal/kursiv/…), der Wechsel ist
-  nahtlos. (Die Abdeckung wird zudem bereits vor dem ersten Frame gesetzt.)
+- **Text-Anmerkungen blinkten beim Weiterwischen (#113):** Die Blätter-Animation nutzte einen
+  doppelt breiten Schiebe-Streifen, der auf dem iPad (Retina) die maximale GPU-Texturbreite
+  überschritt – WebKit zeichnete den Anmerkungs-Text dadurch verzögert (Striche/Seiten sind eigene
+  Texturen und waren nicht betroffen), und vorwärts endete die Animation auf einer krummen Position.
+  Jetzt werden alte und neue Seite als zwei getrennte, je bildschirmbreite Ebenen geschoben; beide
+  Richtungen enden exakt deckungsgleich mit der Live-Ansicht. Zusätzlich: Text-Formatierung im
+  Übergang exakt wie live (fett/normal/kursiv/…), Textebene wird beim Seitenwechsel synchron
+  zurückgesetzt, Abdeckung steht garantiert vor dem ersten Frame.
 
 ## [2.5.1] – 2026-07-05
 
