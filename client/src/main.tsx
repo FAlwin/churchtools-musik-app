@@ -4,6 +4,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import App from './App';
 import { queryClient, persistOptions } from './queryClient';
 import { UpdateBanner } from './components/UpdateBanner';
+import { RestoreGate } from './components/RestoreGate';
 import { SwUpdateProvider } from './hooks/useSwUpdate';
 import './styles/main.scss';
 
@@ -59,9 +60,12 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       {/* Ein Provider umschließt App + Balken, damit beide denselben Service-Worker-Zustand teilen. */}
       <SwUpdateProvider>
-        {rootNode}
-        {/* Global (auch auf dem Login-Screen): Hinweis, sobald eine neue Version bereitliegt. */}
-        <UpdateBanner />
+        {/* Erst rendern, wenn der Offline-Cache wiederhergestellt ist (kein Login-Blitz beim Start). */}
+        <RestoreGate>
+          {rootNode}
+          {/* Global (auch auf dem Login-Screen): Hinweis, sobald eine neue Version bereitliegt. */}
+          <UpdateBanner />
+        </RestoreGate>
       </SwUpdateProvider>
     </PersistQueryClientProvider>
   </React.StrictMode>,

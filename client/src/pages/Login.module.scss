@@ -83,6 +83,18 @@
   text-align: center;
 }
 
+// Offline-Hinweis über dem Anmeldeformular (kein Server erreichbar).
+.offlineNote {
+  margin: 4px 0 2px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--surface3, rgba(0, 0, 0, 0.06));
+  color: var(--text2, #556);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
 .btn {
   height: 48px;
   border-radius: 8px;

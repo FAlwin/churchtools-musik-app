@@ -19,6 +19,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   als Ganzes geladen statt gestreamt – dadurch öffnen Lieder offline ohne die früheren ~10-Sekunden-
   Hänger. Das App-Logo in der Ecke der Akkord-Blätter ist jetzt fest eingebettet und erscheint
   daher auch offline (vorher fehlte es dort). Grenze: Ohne Netz kein neues Anmelden.
+- **Verlässliche Offline-Erkennung & keine Sackgassen (#32):** Die App erkennt „offline" jetzt am
+  tatsächlichen Server-Kontakt statt nur an der Netz-Anzeige des Geräts – so greift das Ausgrauen
+  auch im Gemeinde-WLAN ohne Internet-/Server-Zugang. Beim Neustart wartet die App, bis der
+  Offline-Speicher geladen ist (kein kurzer Anmelde-Bildschirm mehr, der gemerkte Gottesdienst
+  bleibt erhalten). Lade- und Fehleransichten haben immer einen Rückweg, und der Anmelde-Bildschirm
+  erklärt offline, dass eine Verbindung nötig ist – man bleibt nicht mehr in einer Schleife hängen.
 
 ### Geändert
 

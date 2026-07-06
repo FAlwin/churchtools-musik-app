@@ -137,6 +137,7 @@ export default function App() {
       <Login
         site={site}
         theme={settings.theme}
+        offline={!online}
         onLogin={async (email, password) => {
           await auth.login(email, password);
         }}
@@ -150,6 +151,15 @@ export default function App() {
         {sessionExpired ? (
           // Sitzung abgelaufen: Der Effekt oben meldet gerade ab → gleich erscheint der Login.
           <CenterMessage loading text="Sitzung abgelaufen – bitte neu anmelden…" />
+        ) : !online ? (
+          // Offline und keine gespeicherten Berechtigungen (z. B. nach einem App-Update) → kein
+          // Endlos-Warten, sondern klare Meldung + Rückweg (statt Sackgasse).
+          <CenterMessage
+            icon="📴"
+            text="Offline – Berechtigungen nicht verfügbar. Bitte die App einmal online öffnen."
+            actionLabel="Abmelden"
+            onAction={() => auth.logout()}
+          />
         ) : capsQuery.isError ? (
           // Echter ChurchTools-Aussetzer (leere Rechte-Zuordnungen, 502): getCapabilities wirft,
           // nach den automatischen Neuversuchen landet man hier mit „Erneut versuchen".
@@ -187,7 +197,18 @@ export default function App() {
   if (restoringView || loadingSongbook) {
     return (
       <Screen>
-        <CenterMessage loading text="Einen Moment…" />
+        <CenterMessage
+          loading
+          text="Einen Moment…"
+          // Sicherheits-Rückweg: dauert das Laden (z. B. offline, Daten nicht im Cache) zu lange,
+          // kommt man immer zur Terminübersicht zurück – kein Hängenbleiben im Lade-Screen.
+          actionLabel="Zur Übersicht"
+          onAction={() => {
+            setService(null);
+            setView(null);
+            setTab('termine');
+          }}
+        />
       </Screen>
     );
   }
