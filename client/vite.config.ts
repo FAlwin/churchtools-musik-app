@@ -25,6 +25,15 @@ export default defineConfig({
       // der <link rel="manifest"> steht fest in index.html.
       manifest: false,
       workbox: {
+        // Neuer Service Worker aktiviert sich SOFORT (kein „wartender SW"), statt bis zum manuellen
+        // Umschalten zu warten. Genau dieser Schwebezustand ließ die PWA auf iOS beim Kaltstart
+        // OHNE Netz weiß bleiben: der wartende SW übernahm die Navigation nicht → Shell kam nicht aus
+        // dem Cache. skipWaiting+clientsClaim beseitigt das; cleanupOutdatedCaches räumt alte
+        // Precaches auf. Es wird KEIN automatischer Reload ausgelöst (registerType bleibt 'prompt') →
+        // die laufende App lädt nie ungefragt mitten im Gottesdienst neu. (#32)
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         // Precache MUSS `.mjs` (+ Fonts/wasm) einschließen – sonst fehlt offline der pdf.js-Worker
         // (pdf.worker.min.mjs) und das Rendern der Charts scheitert mit „fake worker failed" (#32).
         globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,woff,woff2,wasm}'],

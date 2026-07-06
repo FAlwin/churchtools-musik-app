@@ -25,6 +25,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Offline-Speicher geladen ist (kein kurzer Anmelde-Bildschirm mehr, der gemerkte Gottesdienst
   bleibt erhalten). Lade- und Fehleransichten haben immer einen Rückweg, und der Anmelde-Bildschirm
   erklärt offline, dass eine Verbindung nötig ist – man bleibt nicht mehr in einer Schleife hängen.
+- **Weißer Bildschirm beim Öffnen ohne Netz behoben (#32):** Nach dem kompletten Schließen blieb die
+  App beim Wieder-Öffnen ohne Netz manchmal weiß. Ursache war ein „wartender" Hintergrund-Prozess
+  (Service Worker), der auf iPad/iPhone beim Kaltstart die App-Hülle nicht auslieferte. Der neue
+  Stand aktiviert sich jetzt sofort und zuverlässig – **ohne** die laufende App mitten im
+  Gottesdienst neu zu laden. Zusätzliches Sicherheitsnetz: Startet die App einmal nicht, erscheint
+  statt eines weißen Bildschirms eine Meldung mit „Neu laden".
 
 ### Geändert
 

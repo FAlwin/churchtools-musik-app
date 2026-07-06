@@ -18,7 +18,63 @@
     <!-- Kein Web-Font: die App nutzt durchgängig den System-Font (var(--ui)). -->
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Boot-Fallback: sofort sichtbar, BEVOR das App-JS lädt/startet. React (createRoot) ersetzt
+         diesen Inhalt beim ersten Rendern. Bleibt er stehen (App-JS lädt nicht / Startfehler),
+         sieht man statt eines WEISSEN Bildschirms eine Meldung – und nach kurzer Zeit einen
+         Nachlade-Knopf. Alles inline (Styles + Skript), damit es auch ohne geladenes CSS/JS wirkt;
+         index.html liegt im Offline-Precache → funktioniert auch ohne Netz. (#32) -->
+    <div id="root">
+      <div
+        id="boot-fallback"
+        style="
+          position: fixed;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 14px;
+          font-family:
+            system-ui,
+            -apple-system,
+            sans-serif;
+          color: #667;
+          background: #f5f6f8;
+          padding: 24px;
+          text-align: center;
+        "
+      >
+        <div id="boot-msg" style="font-size: 15px">Einen Moment…</div>
+        <button
+          id="boot-reload"
+          style="
+            display: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            border: none;
+            border-radius: 8px;
+            background: #0061a1;
+            color: #fff;
+          "
+        >
+          Neu laden
+        </button>
+      </div>
+    </div>
+    <script>
+      // Dauert der Start ungewöhnlich lange (hängender/fehlender App-Code), Nachlade-Knopf zeigen.
+      setTimeout(function () {
+        var msg = document.getElementById('boot-msg');
+        var btn = document.getElementById('boot-reload');
+        if (msg && btn) {
+          msg.textContent = 'Das dauert länger als üblich.';
+          btn.style.display = '';
+          btn.addEventListener('click', function () {
+            location.reload();
+          });
+        }
+      }, 8000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

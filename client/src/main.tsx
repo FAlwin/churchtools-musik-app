@@ -5,6 +5,7 @@ import App from './App';
 import { queryClient, persistOptions } from './queryClient';
 import { UpdateBanner } from './components/UpdateBanner';
 import { RestoreGate } from './components/RestoreGate';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { SwUpdateProvider } from './hooks/useSwUpdate';
 import './styles/main.scss';
 
@@ -55,18 +56,21 @@ const rootNode = DemoComp ? (
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    {/* PersistQueryClientProvider: wie QueryClientProvider, spiegelt den Query-Cache zusätzlich
-        nach IndexedDB → einmal geladene Gottesdienste bleiben offline verfügbar (#32). */}
-    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-      {/* Ein Provider umschließt App + Balken, damit beide denselben Service-Worker-Zustand teilen. */}
-      <SwUpdateProvider>
-        {/* Erst rendern, wenn der Offline-Cache wiederhergestellt ist (kein Login-Blitz beim Start). */}
-        <RestoreGate>
-          {rootNode}
-          {/* Global (auch auf dem Login-Screen): Hinweis, sobald eine neue Version bereitliegt. */}
-          <UpdateBanner />
-        </RestoreGate>
-      </SwUpdateProvider>
-    </PersistQueryClientProvider>
+    {/* Fängt Start-/Render-Fehler ab → statt weißem Bildschirm eine Meldung mit Nachlade-Knopf. */}
+    <ErrorBoundary>
+      {/* PersistQueryClientProvider: wie QueryClientProvider, spiegelt den Query-Cache zusätzlich
+          nach IndexedDB → einmal geladene Gottesdienste bleiben offline verfügbar (#32). */}
+      <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+        {/* Ein Provider umschließt App + Balken, damit beide denselben Service-Worker-Zustand teilen. */}
+        <SwUpdateProvider>
+          {/* Erst rendern, wenn der Offline-Cache wiederhergestellt ist (kein Login-Blitz beim Start). */}
+          <RestoreGate>
+            {rootNode}
+            {/* Global (auch auf dem Login-Screen): Hinweis, sobald eine neue Version bereitliegt. */}
+            <UpdateBanner />
+          </RestoreGate>
+        </SwUpdateProvider>
+      </PersistQueryClientProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 );
