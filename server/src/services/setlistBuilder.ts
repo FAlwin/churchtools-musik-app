@@ -29,11 +29,12 @@ import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
 
 /**
- * Marker für von uns verwaltete, benannte Versionen: „<Titel> — <Name> (ECG).chordpro".
- * Das `(ECG)`-Kürzel erkennt unsere Dateien zuverlässig (kein Verwechseln mit Originaldateien,
- * die zufällig einen Bindestrich enthalten).
+ * Marker für von uns verwaltete, benannte Versionen: „<Titel> — <Name> (App).chordpro".
+ * Das `(App)`-Kürzel erkennt unsere Dateien zuverlässig (kein Verwechseln mit Originaldateien,
+ * die zufällig einen Bindestrich enthalten) und ist – anders als das frühere `(ECG)` – nicht
+ * gemeindespezifisch. Alt-Bestand mit `(ECG)` wird weiterhin erkannt (siehe versionNameOf).
  */
-const VERSION_TAG = '(ECG)';
+const VERSION_TAG = '(App)';
 
 /** Macht aus einem Versionsnamen einen stabilen Schlüssel (Slug). */
 export function versionSlug(name: string): string {
@@ -48,11 +49,12 @@ export function versionSlug(name: string): string {
 
 /**
  * Erkennt am Namen, ob eine Datei eine von uns verwaltete Version ist, und liefert deren Namen.
- * Neuer Marker „— <Name> (ECG).chordpro"; abwärtskompatibel „— Bearbeitet.chordpro" /
- * „— ECG.chordpro" (Bestandsdateien älterer Instanzen → Name „Bearbeitet").
+ * Aktueller Marker „— <Name> (App).chordpro"; abwärtskompatibel:
+ *  - „— <Name> (ECG).chordpro" (Bestandsdateien mit dem früheren, gemeindespezifischen Kürzel)
+ *  - „— Bearbeitet.chordpro" / „— ECG.chordpro" (ganz alte namenlose Varianten → Name „Bearbeitet").
  */
 export function versionNameOf(f: CtArrangementFile): string | null {
-  const tagged = f.name.match(/[—-]\s*(.+?)\s*\(ECG\)\.chordpro$/i);
+  const tagged = f.name.match(/[—-]\s*(.+?)\s*\((?:App|ECG)\)\.chordpro$/i);
   if (tagged) return tagged[1].trim();
   if (/[—-]\s*(?:bearbeitet|ecg)\.chordpro$/i.test(f.name)) return 'Bearbeitet';
   return null;
