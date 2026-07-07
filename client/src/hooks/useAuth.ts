@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from '../services/churchtoolsApi';
+import { clearDeviceData } from '../utils/clearDeviceData';
 
 /** Anmeldestatus + Login/Logout. Nutzt das /api/auth/me-Cookie des Backends. */
 export function useAuth() {
@@ -13,15 +14,19 @@ export function useAuth() {
   });
 
   const loginMutation = useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) => api.login(email, password),
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      api.login(email, password),
     onSuccess: (status) => qc.setQueryData(['me'], status),
   });
 
   const logoutMutation = useMutation({
     mutationFn: api.logout,
-    onSuccess: () => {
+    onSuccess: async () => {
+      // ALLE Konto-Daten aus Speicher + Gerät räumen (geteilte Gemeinde-Geräte!): erst den
+      // In-Memory-Cache leeren, dann IndexedDB/Datei-Cache/localStorage (clearDeviceData).
+      qc.removeQueries();
       qc.setQueryData(['me'], { authenticated: false });
-      qc.removeQueries({ queryKey: ['services'] });
+      await clearDeviceData();
     },
   });
 

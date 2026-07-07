@@ -5,6 +5,20 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [2.7.1] – 2026-07-07
+
+### Sicherheit
+
+- **Abmelden räumt jetzt vollständig auf:** Beim Logout wird auch die dahinterliegende
+  ChurchTools-Sitzung serverseitig beendet (vorher blieb sie bis zu ihrem eigenen Ablauf gültig),
+  und alle auf dem Gerät zwischengespeicherten Konto-Daten werden entfernt – Offline-Vorrat
+  (Abläufe, Lieder, PDFs), lokale Anmerkungs-/Einstellungs-Caches. Wichtig für geteilte
+  Gemeinde-Geräte: Der nächste Nutzer sieht keine Daten des vorherigen. Geräte-Einstellungen
+  (z. B. „Einführung gesehen") bleiben erhalten.
+- **Anmeldung läuft nach spätestens 90 Tagen ab:** Die automatische Verlängerung bei Nutzung
+  verlängert nicht mehr unbegrenzt – 90 Tage nach dem Login ist eine Neuanmeldung nötig.
+  Bestehende Anmeldungen bleiben beim Update erhalten (Frist zählt ab jetzt).
+
 ## [2.7.0] – 2026-07-07
 
 ### Hinzugefügt

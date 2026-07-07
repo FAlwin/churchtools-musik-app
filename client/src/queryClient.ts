@@ -46,14 +46,30 @@ export const persistOptions = { persister, maxAge: WEEK, buster: BUSTER };
  * bevor der Nutzer das Netz verlässt. Format identisch zum Provider (PersistedClient).
  */
 export async function saveOfflineNow(): Promise<void> {
-  await set(CACHE_KEY, JSON.stringify({ buster: BUSTER, timestamp: Date.now(), clientState: dehydrate(queryClient) }));
+  await set(
+    CACHE_KEY,
+    JSON.stringify({ buster: BUSTER, timestamp: Date.now(), clientState: dehydrate(queryClient) }),
+  );
+}
+
+/**
+ * Entfernt den persistierten Query-Cache aus IndexedDB – Teil des Abmelde-Aufräumens
+ * (utils/clearDeviceData): Abläufe mit Personennamen sollen auf geteilten Geräten nicht für
+ * den nächsten Nutzer liegen bleiben.
+ */
+export async function clearPersistedCache(): Promise<void> {
+  await del(CACHE_KEY);
 }
 
 /**
  * Diagnose für den Mehr-Tab: was liegt tatsächlich offline bereit? Zeigt, ob Persistenz +
  * Datei-Cache greifen (macht die bisher unsichtbare Offline-Reserve überprüfbar).
  */
-export async function getOfflineStatus(): Promise<{ files: number; records: number; savedAt: number | null }> {
+export async function getOfflineStatus(): Promise<{
+  files: number;
+  records: number;
+  savedAt: number | null;
+}> {
   let files = 0;
   try {
     if (typeof caches !== 'undefined') {
@@ -67,7 +83,10 @@ export async function getOfflineStatus(): Promise<{ files: number; records: numb
   try {
     const raw = await get<string>(CACHE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as { timestamp?: number; clientState?: { queries?: unknown[] } };
+      const parsed = JSON.parse(raw) as {
+        timestamp?: number;
+        clientState?: { queries?: unknown[] };
+      };
       records = parsed.clientState?.queries?.length ?? 0;
       savedAt = parsed.timestamp ?? null;
     }
