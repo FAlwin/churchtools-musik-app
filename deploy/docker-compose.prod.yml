@@ -24,6 +24,9 @@ services:
       NODE_ENV: production
       CHURCHTOOLS_BASE_URL: ${CHURCHTOOLS_BASE_URL}
       SESSION_SECRET: ${SESSION_SECRET}
+      # Prod läuft ausschließlich über HTTPS (Synology Reverse Proxy + Let's Encrypt) → Secure-Flag
+      # am Session-Cookie an. Default true; über die Prod-.env übersteuerbar, falls je nötig.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
       ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
     ports:
       - '3001:3001'
