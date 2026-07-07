@@ -232,3 +232,21 @@ Ausführliche Hilfe mit Schritt-für-Schritt-Lösungen: [docs/betrieb/troublesho
 - **Manuell / NAS:** `docker compose pull` + `docker compose up -d`.
 
 Eure Daten und Einstellungen bleiben dabei erhalten. Details: [UPDATE.md](UPDATE.md).
+
+---
+
+## Welche Compose-Datei? (Basis / Produktiv / Test)
+
+Im Ordner `deploy/` liegen drei Varianten. Für die allermeisten Gemeinden reicht die **Basis-Datei**.
+
+| Datei | Wofür | Auto-Update |
+|---|---|---|
+| `docker-compose.yml` | **Empfohlener Standard.** Einfacher Produktivbetrieb einer Gemeinde. Updates spielt ihr bewusst ein (`docker compose pull` + `up -d`, oder per `update`-Skript). | nein |
+| `docker-compose.prod.yml` | Wie die Basis, aber das Image ist auf den Major-Tag `:2` gepinnt (keine ungewollten Sprünge auf eine größere Umstellung). Sinnvoll, wenn ihr maximale Kontrolle über den Zeitpunkt von Updates wollt. | nein |
+| `docker-compose.staging.yml` | **Nur zum Testen.** Eine zweite, parallele Instanz neben der Live-App (eigener Port `3002`, eigenes Volume). Zieht über Watchtower automatisch neue Test-Versionen. Für Gemeinden, die neue Versionen vorab prüfen wollen. | ja (Watchtower) |
+
+Hinweise:
+
+- Die Dateien nutzen unterschiedliche **Volume-Namen** (`musik-data` in der Basis, `worship-data` in Prod, `worship-data-test` in Staging). Wechselt ihr die Datei, zeigt Docker auf ein anderes Volume – bleibt bei **einer** Datei, damit eure Daten (Gemeindename, Links, Anmerkungen) erhalten bleiben.
+- Prod und Staging könnt ihr **gleichzeitig** betreiben (verschiedene Ports/Volumes) – so testet ihr eine neue Version auf `:3002`, während die Gemeinde weiter auf `:3001` arbeitet.
+- Für Staging empfiehlt sich eine **eigene, von Prod getrennte** `.env` (getrennte `CHURCHTOOLS_BASE_URL`/`SESSION_SECRET`).

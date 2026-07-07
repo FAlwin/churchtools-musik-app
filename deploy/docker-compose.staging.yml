@@ -1,20 +1,24 @@
 # Test-Instanz (Staging) – fertiges :staging-Image aus GHCR, KEIN lokaler Build.
+# Läuft parallel neben der Live-App auf einem eigenen Port + eigenem Volume, damit neue
+# Versionen gefahrlos getestet werden können, bevor sie in Produktion gehen.
+#
 # Watchtower zieht neue :staging-Images automatisch (Auto-Deploy) → kein Rebuild im Container-Manager.
 # Hinweis: Hier läuft bewusst der GEPFLEGTE Watchtower-Fork (nickfedor/watchtower), da das
 # Original containrrr/watchtower unmaintained und mit Docker 28/29+ inkompatibel ist. Drop-in:
 # gleiche Labels (com.centurylinklabs.watchtower.*) und Flags (--interval/--cleanup/--scope).
-# Nur die Test-Instanz zieht automatisch; Prod (docker-compose.prod.yml) aktualisiert bewusst.
+# NUR die Test-Instanz zieht automatisch; Prod (docker-compose.prod.yml) aktualisiert bewusst.
 #
-# Einmalige Einrichtung im Synology Container-Manager:
-#   1. Aktuelles Test-Projekt (worship-charts-test, baut aus Quellcode) stoppen + löschen
-#      – Volume worship-data-test BEHALTEN (Anmerkungen/Einstellungen).
-#   2. Neues Projekt aus DIESER Datei + der vorhandenen Test-.env erstellen.
-#   3. Fertig: ab jetzt zieht Watchtower nach jedem Push (sobald die CI das Image gebaut hat)
+# Einrichtung im Synology Container-Manager:
+#   1. Neues Projekt aus DIESER Datei + einer Test-.env erstellen (eigene, von Prod getrennte
+#      CHURCHTOOLS_BASE_URL/SESSION_SECRET sind empfehlenswert).
+#   2. Reverse Proxy (optional) auf eine Test-Domain → localhost:3002.
+#   3. Volume worship-data-test enthält die Test-Daten (Anmerkungen/Einstellungen) – BEHALTEN.
+#   4. Fertig: ab jetzt zieht Watchtower nach jedem Push (sobald die CI das Image gebaut hat)
 #      automatisch die neue Version (Prüfintervall 60 s).
 services:
   app:
     image: ghcr.io/falwin/churchtools-musik-app:staging
-    container_name: worship-charts-test
+    container_name: musik-app-test
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -27,22 +31,22 @@ services:
       - worship-data-test:/app/data
     labels:
       # Nur von der Test-Watchtower verwaltet (Prod bleibt unangetastet).
-      - com.centurylinklabs.watchtower.scope=worship-test
+      - com.centurylinklabs.watchtower.scope=musik-app-test
 
   watchtower:
     image: nickfedor/watchtower
-    container_name: worship-watchtower-test
+    container_name: musik-app-watchtower-test
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    # Alle 60 s prüfen, nur Container mit Scope 'worship-test', alte Images aufräumen.
-    command: --interval 60 --cleanup --scope worship-test
+    # Alle 60 s prüfen, nur Container mit Scope 'musik-app-test', alte Images aufräumen.
+    command: --interval 60 --cleanup --scope musik-app-test
     labels:
-      - com.centurylinklabs.watchtower.scope=worship-test
+      - com.centurylinklabs.watchtower.scope=musik-app-test
 
 volumes:
   # Persistente Test-Daten (Anmerkungen/Einstellungen/site.json). Hinweis: Wird beim Neu-Erstellen
   # des Projekts ggf. neu angelegt → orgName ggf. einmal neu setzen; Geräte-Anmerkungen werden beim
-  # ersten Öffnen erneut hochgeladen.
+  # ersten Öffnen erneut hochgeladen. Der Volume-Name bleibt bewusst `worship-data-test`, damit
+  # bestehende Instanzen ihre Daten ohne Umkopieren behalten.
   worship-data-test:
-
