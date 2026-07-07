@@ -92,9 +92,32 @@ const userIdCache = new Map<string, { id: number; at: number }>();
 export async function getUserId(cookie: string): Promise<number> {
   const c = userIdCache.get(cookie);
   if (c && Date.now() - c.at < 12 * 3_600_000) return c.id;
+  // Abgelaufene Fremd-Einträge bei dieser Gelegenheit räumen (sonst wächst die Map über Monate).
+  for (const [k, v] of userIdCache) {
+    if (Date.now() - v.at >= 12 * 3_600_000) userIdCache.delete(k);
+  }
   const me = await whoami(cookie);
   userIdCache.set(cookie, { id: me.id, at: Date.now() });
   return me.id;
+}
+
+/**
+ * Beendet die ChurchTools-Session serverseitig (best effort). Ohne diesen Aufruf bliebe die
+ * CT-Session nach dem App-Logout bis zu ihrem eigenen Ablauf gültig – ein je abgegriffenes
+ * Cookie wäre trotz „Abmelden" weiter nutzbar. Fehler werden bewusst geschluckt (der Logout in
+ * der App soll auch klappen, wenn ChurchTools gerade nicht erreichbar ist); der Cache-Eintrag
+ * zum Cookie wird in jedem Fall entfernt.
+ */
+export async function logout(cookie: string): Promise<void> {
+  userIdCache.delete(cookie);
+  try {
+    await fetch(`${BASE}/api/logout`, {
+      method: 'POST',
+      headers: { Cookie: cookie, Accept: 'application/json' },
+    });
+  } catch {
+    /* ChurchTools nicht erreichbar → App-Logout trotzdem durchziehen */
+  }
 }
 
 export interface UserCapabilities {
@@ -115,7 +138,9 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
   // Leises Server-Log, falls ChurchTools keine Lieder/Abläufe-Rechte liefert – hilft bei künftiger
   // Diagnose des sporadischen Aussetzers (alle Rechte-Arrays leer).
   if (!caps.canViewSongs && !caps.canViewAgendas) {
-    console.warn('[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer)');
+    console.warn(
+      '[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer)',
+    );
   }
   return caps;
 }

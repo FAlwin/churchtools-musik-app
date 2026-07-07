@@ -53,6 +53,11 @@ function markServiceOffline(serviceId: number, date: string): void {
   writeRegistry(reg);
 }
 
+/** Verzeichnis komplett leeren (Abmelde-Aufräumen, utils/clearDeviceData). */
+export function clearOfflineRegistry(): void {
+  writeRegistry({});
+}
+
 /** Vergangene Gottesdienste aus dem Verzeichnis räumen (ihr Datei-Cache läuft separat ab). */
 export function pruneOfflineRegistry(): void {
   const today = new Date().toISOString().slice(0, 10);
