@@ -145,13 +145,14 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
       '[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer)',
     );
   }
-  // Globale Anmerkungen: NUR aktive Mitglieder der konfigurierten Musiker-Gruppe (kein Admin-Bypass –
-  // „nur Musiker sehen sie"; wer sie können soll, gehört in die Gruppe). Ohne Gruppe: Funktion aus.
-  const { musicianGroupId } = await getSiteConfig();
+  // Globale Anmerkungen: NUR aktive Mitglieder einer der konfigurierten Musiker-Gruppen (kein
+  // Admin-Bypass – „nur Musiker sehen sie"; wer sie können soll, gehört in eine der Gruppen).
+  // Ohne konfigurierte Gruppe: Funktion aus. Mitgliedschaft in EINER Gruppe genügt.
+  const { musicianGroupIds } = await getSiteConfig();
   let canUseGlobalNotes = false;
-  if (musicianGroupId != null) {
+  if (musicianGroupIds.length > 0) {
     const groupIds = await getActiveGroupIds(cookie, await getUserId(cookie));
-    canUseGlobalNotes = groupIds.has(musicianGroupId);
+    canUseGlobalNotes = musicianGroupIds.some((id) => groupIds.has(id));
   }
   return { ...caps, canUseGlobalNotes };
 }

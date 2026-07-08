@@ -28,23 +28,30 @@ export const siteConfigSchema = z
     orgName: z.string().trim().min(1).max(80),
     // Obergrenze als reine Missbrauchs-Bremse, weit über realer Nutzung.
     links: z.array(linkSchema).max(50).optional().default([]),
-    // ChurchTools-Gruppen-ID für „globale" Anmerkungen; null = Funktion aus.
-    musicianGroupId: z.number().int().positive().nullable().optional().default(null),
+    // ChurchTools-Gruppen-IDs für „globale" Anmerkungen; leer = Funktion aus.
+    musicianGroupIds: z.array(z.number().int().positive()).max(50).optional().default([]),
+    // Abwärtskompatibel: frühere Einzel-ID (wird beim Einlesen in das Array überführt).
+    musicianGroupId: z.number().int().positive().nullable().optional(),
   })
   .passthrough();
 
 let cache: SiteConfig | null = null;
 
-type Editable = Pick<SiteConfig, 'orgName' | 'links' | 'musicianGroupId'>;
+type Editable = Pick<SiteConfig, 'orgName' | 'links' | 'musicianGroupIds'>;
 
 /** Setzt eine eingelesene/eingehende Konfiguration auf die festen Felder + anpassbare Werte zusammen. */
-function normalize({ orgName, links = [], musicianGroupId = null }: Partial<Editable> & { orgName: string }): SiteConfig {
+function normalize({
+  orgName,
+  links = [],
+  musicianGroupIds = [],
+}: Partial<Editable> & { orgName: string }): SiteConfig {
+  // Duplikate entfernen (falls mehrfach übergeben).
   return {
     appName: DEFAULT_SITE_CONFIG.appName,
     description: DEFAULT_SITE_CONFIG.description,
     orgName,
     links,
-    musicianGroupId,
+    musicianGroupIds: [...new Set(musicianGroupIds)],
   };
 }
 
@@ -54,20 +61,25 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   try {
     const raw = await fs.readFile(config.siteConfigPath, 'utf-8');
     const parsed = siteConfigSchema.safeParse(JSON.parse(raw));
-    cache = parsed.success
-      ? normalize({
-          orgName: parsed.data.orgName,
-          links: parsed.data.links,
-          musicianGroupId: parsed.data.musicianGroupId,
-        })
-      : { ...DEFAULT_SITE_CONFIG };
+    if (parsed.success) {
+      // Altbestand: hatte nur die Einzel-ID `musicianGroupId` → in das Array überführen.
+      const ids =
+        parsed.data.musicianGroupIds.length > 0
+          ? parsed.data.musicianGroupIds
+          : parsed.data.musicianGroupId != null
+            ? [parsed.data.musicianGroupId]
+            : [];
+      cache = normalize({ orgName: parsed.data.orgName, links: parsed.data.links, musicianGroupIds: ids });
+    } else {
+      cache = { ...DEFAULT_SITE_CONFIG };
+    }
   } catch {
     cache = { ...DEFAULT_SITE_CONFIG };
   }
   return cache;
 }
 
-/** Schreibt die Konfiguration atomar (orgName + links + musicianGroupId) und aktualisiert den Cache. */
+/** Schreibt die Konfiguration atomar (orgName + links + musicianGroupIds) und aktualisiert den Cache. */
 export async function saveSiteConfig(next: Partial<Editable> & { orgName: string }): Promise<SiteConfig> {
   const cfg = normalize(next);
   const dir = path.dirname(config.siteConfigPath);

@@ -21,7 +21,7 @@ export async function putSiteConfigCtrl(req: Request, res: Response): Promise<vo
     await saveSiteConfig({
       orgName: parsed.data.orgName,
       links: parsed.data.links,
-      musicianGroupId: parsed.data.musicianGroupId,
+      musicianGroupIds: parsed.data.musicianGroupIds,
     }),
   );
 }
