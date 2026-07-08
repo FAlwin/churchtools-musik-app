@@ -150,11 +150,12 @@ export function Settings({
                   <strong>„Zum Startbildschirm hinzufügen"</strong>.
                 </p>
               ) : (
-                // Sonstige (z. B. Desktop-Firefox ohne Prompt)
+                // Sonstige Desktop-Browser ohne nativen Prompt (Chrome/Edge über HTTP, Firefox …)
                 <p className={styles.installHint}>
-                  Über das Browser-Menü <strong>„App installieren"</strong> bzw.{' '}
-                  <strong>„Zum Startbildschirm hinzufügen"</strong> kannst du die App wie ein
-                  Programm auf dem Gerät ablegen.
+                  Über das <strong>Browser-Menü</strong> kannst du die App wie ein Programm ablegen –
+                  in Chrome/Edge unter <strong>„Streamen, speichern und teilen"</strong> →{' '}
+                  <strong>„Seite als App installieren"</strong>, in anderen Browsern über{' '}
+                  <strong>„Zum Startbildschirm hinzufügen"</strong>.
                 </p>
               )}
             </div>
