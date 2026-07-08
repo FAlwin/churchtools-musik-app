@@ -26,6 +26,16 @@ export function useSiteConfig() {
   return query;
 }
 
+/** Lädt die ChurchTools-Gruppen (nur wenn `enabled`, z. B. Admin im Mehr-Tab) für das Dropdown. */
+export function useGroups(enabled: boolean) {
+  return useQuery({
+    queryKey: ['ct-groups'],
+    queryFn: api.getGroups,
+    enabled,
+    staleTime: 1000 * 60 * 10,
+  });
+}
+
 /** Speichert das Branding (nur Admin) und aktualisiert sofort die Anzeige. */
 export function useUpdateSiteConfig() {
   const qc = useQueryClient();

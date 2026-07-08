@@ -9,7 +9,7 @@ import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
 import { LinksManager } from '../components/LinksManager';
 import { SupportBox } from '../components/SupportBox';
-import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
+import { useUpdateSiteConfig, useGroups } from '../hooks/useSiteConfig';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { getOfflineStatus } from '../queryClient';
 import { isOfflineAutoEnabled, setOfflineAutoEnabled } from '../services/offlineAuto';
@@ -51,8 +51,16 @@ export function Settings({
 }: SettingsProps) {
   const [showOrg, setShowOrg] = useState(false);
   const [showLinks, setShowLinks] = useState(false);
+  const [showMusicianGroup, setShowMusicianGroup] = useState(false);
   const [orgDraft, setOrgDraft] = useState(site.orgName);
   const update = useUpdateSiteConfig();
+  // Gruppen nur laden, wenn ein Admin im Mehr-Tab ist (für Anzeige + Auswahl der Musiker-Gruppe).
+  const groupsQuery = useGroups(isAdmin);
+  const musicianGroupName = groupsQuery.data?.find((g) => g.id === site.musicianGroupId)?.name;
+
+  function saveMusicianGroup(id: number | null) {
+    update.mutate({ ...site, musicianGroupId: id }, { onSuccess: () => setShowMusicianGroup(false) });
+  }
   const updateCheck = useUpdateCheck();
   const [offline, setOffline] = useState<{
     files: number;
@@ -193,6 +201,15 @@ export function Settings({
                     : `${site.links.length} ${site.links.length === 1 ? 'Link' : 'Links'}`}
                 </span>
               </button>
+              <button
+                className={`${styles.setRow} ${styles.tappable}`}
+                onClick={() => setShowMusicianGroup(true)}
+              >
+                <span className={styles.setLabel}>Musiker-Gruppe (Anmerkungen)</span>
+                <span className={styles.setValue}>
+                  {site.musicianGroupId == null ? 'keine' : (musicianGroupName ?? '…')}
+                </span>
+              </button>
             </div>
           </div>
         )}
@@ -261,6 +278,46 @@ export function Settings({
       {showLinks && (
         <Sheet title="Links verwalten" onClose={() => setShowLinks(false)}>
           <LinksManager site={site} onClose={() => setShowLinks(false)} />
+        </Sheet>
+      )}
+
+      {showMusicianGroup && (
+        <Sheet title="Musiker-Gruppe" onClose={() => setShowMusicianGroup(false)}>
+          <p className={styles.installHint}>
+            Mitglieder dieser ChurchTools-Gruppe können Anmerkungen <strong>für das ganze Team</strong>{' '}
+            sichtbar machen und sehen. Alle anderen haben weiterhin nur ihre <strong>privaten</strong>{' '}
+            Anmerkungen. Ohne Auswahl ist die Funktion aus.
+          </p>
+          {groupsQuery.isLoading && <Spinner />}
+          {groupsQuery.isError && (
+            <div className={styles.orgErr}>Gruppen konnten nicht geladen werden.</div>
+          )}
+          {groupsQuery.data && (
+            <div className={styles.cardList}>
+              <button
+                className={`${styles.setRow} ${styles.tappable}`}
+                onClick={() => saveMusicianGroup(null)}
+                disabled={update.isPending}
+              >
+                <span className={styles.setLabel}>Keine (Funktion aus)</span>
+                {site.musicianGroupId == null && <Icon name="check" size={18} className={styles.extIcon} />}
+              </button>
+              {groupsQuery.data.map((g) => (
+                <button
+                  key={g.id}
+                  className={`${styles.setRow} ${styles.tappable}`}
+                  onClick={() => saveMusicianGroup(g.id)}
+                  disabled={update.isPending}
+                >
+                  <span className={styles.setLabel}>{g.name}</span>
+                  {site.musicianGroupId === g.id && (
+                    <Icon name="check" size={18} className={styles.extIcon} />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          {update.isError && <div className={styles.orgErr}>Speichern fehlgeschlagen.</div>}
         </Sheet>
       )}
     </Screen>

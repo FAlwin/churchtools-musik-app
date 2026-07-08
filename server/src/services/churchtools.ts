@@ -8,6 +8,7 @@
  */
 import { config } from '../config.js';
 import { HttpError } from '../middleware/errorHandler.js';
+import { getSiteConfig } from './siteConfig.js';
 
 const BASE = config.churchtoolsBaseUrl.replace(/\/$/, '');
 
@@ -126,6 +127,8 @@ export interface UserCapabilities {
   canEditAgendas: boolean;
   canEditSongs: boolean;
   isAdmin: boolean;
+  /** Darf „globale" (fürs Team sichtbare) Anmerkungen sehen + setzen = Mitglied der Musiker-Gruppe. */
+  canUseGlobalNotes: boolean;
 }
 
 /** Ermittelt aus den ChurchTools-Rechten (Modul churchservice), was der Nutzer darf. */
@@ -142,7 +145,48 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
       '[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer)',
     );
   }
-  return caps;
+  // Globale Anmerkungen: NUR aktive Mitglieder der konfigurierten Musiker-Gruppe (kein Admin-Bypass –
+  // „nur Musiker sehen sie"; wer sie können soll, gehört in die Gruppe). Ohne Gruppe: Funktion aus.
+  const { musicianGroupId } = await getSiteConfig();
+  let canUseGlobalNotes = false;
+  if (musicianGroupId != null) {
+    const groupIds = await getActiveGroupIds(cookie, await getUserId(cookie));
+    canUseGlobalNotes = groupIds.has(musicianGroupId);
+  }
+  return { ...caps, canUseGlobalNotes };
+}
+
+/** IDs der Gruppen, in denen der Nutzer AKTIVES Mitglied ist (via `/api/persons/{id}/groups`). */
+export async function getActiveGroupIds(cookie: string, userId: number): Promise<Set<number>> {
+  interface Membership {
+    group?: { domainIdentifier?: string | number };
+    groupMemberStatus?: string;
+    memberEndDate?: string | null;
+  }
+  const rows = await ctGet<Membership[]>(cookie, `/api/persons/${userId}/groups`);
+  const ids = new Set<number>();
+  for (const r of rows ?? []) {
+    // Nur aktive, nicht beendete Mitgliedschaften zählen. Die Gruppen-ID steht in
+    // `group.domainIdentifier` (String) – `group.id` ist in dieser Antwort nicht gesetzt.
+    if (r.groupMemberStatus !== 'active' || r.memberEndDate) continue;
+    const id = Number(r.group?.domainIdentifier);
+    if (Number.isInteger(id)) ids.add(id);
+  }
+  return ids;
+}
+
+/** Sichtbare ChurchTools-Gruppen (id + name), alphabetisch – für das Admin-Dropdown „Musiker-Gruppe". */
+export async function getGroups(cookie: string): Promise<{ id: number; name: string }[]> {
+  interface Group {
+    id: number;
+    name: string;
+  }
+  // limit hoch genug für ein Dropdown; page=1 (CT beginnt bei 1, nicht 0).
+  const rows = await ctGet<Group[]>(cookie, '/api/groups?limit=200&page=1');
+  return (rows ?? [])
+    .filter((g) => Number.isInteger(g.id) && Boolean(g.name))
+    .map((g) => ({ id: g.id, name: g.name }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 }
 
 /**
@@ -174,6 +218,8 @@ export function parseCapabilities(
     canEditAgendas: isAdmin || has(cs['edit agenda']),
     canEditSongs: isAdmin || has(cs['edit songcategory']),
     isAdmin,
+    // Default; die tatsächliche Musiker-Gruppen-Prüfung ergänzt getCapabilities (braucht Cookie + Config).
+    canUseGlobalNotes: false,
   };
 }
 
