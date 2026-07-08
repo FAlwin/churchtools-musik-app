@@ -191,3 +191,35 @@
     opacity: 0.6;
   }
 }
+
+// Erklärtext oben in einem Einstellungs-Sheet (z. B. Musiker-Gruppen).
+.sheetHint {
+  margin: 0 0 4px;
+  padding: 4px 2px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text2);
+
+  strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+}
+
+// Auswahlkästchen (Mehrfachauswahl) am rechten Zeilenrand.
+.checkbox {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.checkboxOn {
+  background: var(--blue);
+  border-color: var(--blue);
+}

@@ -293,7 +293,7 @@ export function Settings({
 
       {showMusicianGroup && (
         <Sheet title="Musiker-Gruppen" onClose={() => setShowMusicianGroup(false)}>
-          <p className={styles.installHint}>
+          <p className={styles.sheetHint}>
             Mitglieder der ausgewählten ChurchTools-Gruppen können Anmerkungen{' '}
             <strong>für das ganze Team</strong> sichtbar machen und sehen (Mitgliedschaft in{' '}
             <strong>einer</strong> Gruppe genügt). Alle anderen haben weiterhin nur ihre{' '}
@@ -306,18 +306,23 @@ export function Settings({
           {groupsQuery.data && (
             <>
               <div className={styles.cardList}>
-                {groupsQuery.data.map((g) => (
-                  <button
-                    key={g.id}
-                    className={`${styles.setRow} ${styles.tappable}`}
-                    onClick={() => toggleGroup(g.id)}
-                  >
-                    <span className={styles.setLabel}>{g.name}</span>
-                    {groupDraft.includes(g.id) && (
-                      <Icon name="check" size={18} className={styles.extIcon} />
-                    )}
-                  </button>
-                ))}
+                {groupsQuery.data.map((g) => {
+                  const checked = groupDraft.includes(g.id);
+                  return (
+                    <button
+                      key={g.id}
+                      className={`${styles.setRow} ${styles.tappable}`}
+                      role="checkbox"
+                      aria-checked={checked}
+                      onClick={() => toggleGroup(g.id)}
+                    >
+                      <span className={styles.setLabel}>{g.name}</span>
+                      <span className={`${styles.checkbox}${checked ? ' ' + styles.checkboxOn : ''}`}>
+                        {checked && <Icon name="check" size={14} />}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
               {update.isError && <div className={styles.orgErr}>Speichern fehlgeschlagen.</div>}
               <button
