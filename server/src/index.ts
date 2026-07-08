@@ -69,7 +69,10 @@ if (config.isProduction) {
           formAction: ["'self'"],
           frameAncestors: ["'none'"],
           manifestSrc: ["'self'"],
-          upgradeInsecureRequests: [],
+          // BEWUSST KEIN upgrade-insecure-requests: Die App lädt ausschließlich relative,
+          // same-origin Ressourcen (nichts hochzustufen), aber die Direktive würde im reinen
+          // LAN-HTTP-Betrieb (Staging + Gemeinden ohne HTTPS) das App-JS auf https:// erzwingen
+          // → JS lädt nicht → nur der Boot-Fallback erscheint. Über HTTPS wäre sie wirkungslos.
         },
       },
       crossOriginEmbedderPolicy: false,
