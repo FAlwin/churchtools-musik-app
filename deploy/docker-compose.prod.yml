@@ -15,6 +15,16 @@
 #   2. Reverse Proxy davorsetzen: eure Domain (HTTPS/Let's Encrypt) → localhost:3001.
 #   3. Volume `worship-data` enthält Gemeindename + Links – beim Neu-Erstellen unter
 #      demselben Projektnamen bleibt es erhalten, NICHT löschen.
+# Projektname FEST verdrahtet – verhindert den Datenverlust vom 2026-07-08:
+# Der interne Volume-Name ist `<projektname>_<volume-key>`. Vergibt der Container Manager beim
+# (Neu-)Anlegen einen ABWEICHENDEN Projektnamen, hängt der Container an einem NEUEN, leeren Volume
+# (die alten Daten bleiben erhalten, sind aber nicht mehr eingehängt → App zeigt Werkseinstellung).
+# `name` fixiert den Projektnamen unabhängig vom Container Manager.
+#   ⚠️ EINMAL gesetzt NIE ändern – sonst neues leeres Volume.
+#   ⚠️ Bestehende Instanz: auf den VORHANDENEN Projektnamen setzen, damit das vorhandene Volume
+#      weitergenutzt wird. ECG-Prod = `worship-charts` (Volume `worship-charts_worship-data`).
+#      Neue Gemeinde: einen eigenen festen Namen wählen (z. B. `musik-app`).
+name: worship-charts
 services:
   app:
     image: ghcr.io/falwin/churchtools-musik-app:2
