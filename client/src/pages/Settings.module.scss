@@ -206,6 +206,26 @@
   }
 }
 
+// Anleitungstext „Als App installieren" (iOS / Fallback ohne nativen Dialog).
+.installHint {
+  margin: 0;
+  padding: 13px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text2);
+
+  strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+}
+
+// Teilen-Symbol inline im Fließtext.
+.hintIcon {
+  vertical-align: -2px;
+  color: var(--blue);
+}
+
 // Auswahlkästchen (Mehrfachauswahl) am rechten Zeilenrand.
 .checkbox {
   flex: 0 0 auto;

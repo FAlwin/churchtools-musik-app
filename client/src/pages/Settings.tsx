@@ -13,6 +13,8 @@ import { useUpdateSiteConfig, useGroups } from '../hooks/useSiteConfig';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { getOfflineStatus } from '../queryClient';
 import { isOfflineAutoEnabled, setOfflineAutoEnabled } from '../services/offlineAuto';
+import { usePwaInstall } from '../hooks/usePwaInstall';
+import { promptInstall } from '../services/pwaInstall';
 import styles from './Settings.module.scss';
 
 interface SettingsProps {
@@ -79,6 +81,7 @@ export function Settings({
     savedAt: number | null;
   } | null>(null);
   const [autoOffline, setAutoOffline] = useState(isOfflineAutoEnabled());
+  const pwa = usePwaInstall();
   useEffect(() => {
     void getOfflineStatus().then(setOffline);
   }, []);
@@ -108,6 +111,40 @@ export function Settings({
             {userName && <div className={styles.profileSub}>Angemeldet als {userName}</div>}
           </div>
         </div>
+
+        {/* Als App installieren – nur solange die App NICHT bereits als PWA läuft */}
+        {!pwa.standalone && (
+          <div className={styles.group}>
+            <div className={styles.groupHdr}>Als App installieren</div>
+            <div className={styles.cardList}>
+              {pwa.canPrompt ? (
+                // Chrome/Edge (Android + Desktop): echter Installations-Dialog
+                <button
+                  className={`${styles.setRow} ${styles.tappable}`}
+                  onClick={() => void promptInstall()}
+                >
+                  <span className={styles.setLabel}>Auf dem Startbildschirm installieren</span>
+                  <Icon name="download" size={18} className={styles.extIcon} />
+                </button>
+              ) : pwa.ios ? (
+                // iPhone/iPad: nur Anleitung möglich (Apple erlaubt keinen Auto-Dialog)
+                <p className={styles.installHint}>
+                  Tippe in Safari auf das Teilen-Symbol{' '}
+                  <Icon name="share" size={15} className={styles.hintIcon} /> und dann auf{' '}
+                  <strong>„Zum Home-Bildschirm"</strong> – so liegt die App wie eine echte App auf
+                  deinem Startbildschirm.
+                </p>
+              ) : (
+                // Sonstige (z. B. Desktop-Safari/Firefox ohne Prompt)
+                <p className={styles.installHint}>
+                  Über das Browser-Menü <strong>„App installieren"</strong> bzw.{' '}
+                  <strong>„Zum Startbildschirm hinzufügen"</strong> kannst du die App wie ein
+                  Programm auf dem Gerät ablegen.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Darstellung */}
         <div className={styles.group}>
