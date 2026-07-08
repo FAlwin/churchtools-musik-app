@@ -13,6 +13,8 @@ import { useUpdateSiteConfig, useGroups } from '../hooks/useSiteConfig';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { getOfflineStatus } from '../queryClient';
 import { isOfflineAutoEnabled, setOfflineAutoEnabled } from '../services/offlineAuto';
+import { usePwaInstall } from '../hooks/usePwaInstall';
+import { promptInstall } from '../services/pwaInstall';
 import styles from './Settings.module.scss';
 
 interface SettingsProps {
@@ -79,6 +81,7 @@ export function Settings({
     savedAt: number | null;
   } | null>(null);
   const [autoOffline, setAutoOffline] = useState(isOfflineAutoEnabled());
+  const pwa = usePwaInstall();
   useEffect(() => {
     void getOfflineStatus().then(setOffline);
   }, []);
@@ -108,6 +111,55 @@ export function Settings({
             {userName && <div className={styles.profileSub}>Angemeldet als {userName}</div>}
           </div>
         </div>
+
+        {/* Als App installieren – nur solange die App NICHT bereits als PWA läuft */}
+        {!pwa.standalone && (
+          <div className={styles.group}>
+            <div className={styles.groupHdr}>Als App installieren</div>
+            <div className={styles.cardList}>
+              {pwa.canPrompt ? (
+                // Chrome/Edge (Android + Desktop, HTTPS): echter Installations-Dialog
+                <button
+                  className={`${styles.setRow} ${styles.tappable}`}
+                  onClick={() => void promptInstall()}
+                >
+                  <span className={styles.setLabel}>Auf dem Startbildschirm installieren</span>
+                  <Icon name="download" size={18} className={styles.extIcon} />
+                </button>
+              ) : pwa.platform === 'ios' ? (
+                // iPhone/iPad-Safari: Teilen → „Zum Home-Bildschirm"
+                <p className={styles.installHint}>
+                  Tippe in Safari unten auf das Teilen-Symbol{' '}
+                  <Icon name="share" size={15} className={styles.hintIcon} /> und dann auf{' '}
+                  <strong>„Zum Home-Bildschirm"</strong> – so liegt die App wie eine echte App auf
+                  deinem Startbildschirm.
+                </p>
+              ) : pwa.platform === 'macSafari' ? (
+                // macOS-Safari: Teilen → „Zum Dock hinzufügen"
+                <p className={styles.installHint}>
+                  Klicke in Safari oben auf das Teilen-Symbol{' '}
+                  <Icon name="share" size={15} className={styles.hintIcon} /> und dann auf{' '}
+                  <strong>„Zum Dock hinzufügen"</strong> – so liegt die App wie ein Programm im Dock.
+                </p>
+              ) : pwa.platform === 'android' ? (
+                // Android ohne nativen Prompt (z. B. Firefox/Samsung Internet)
+                <p className={styles.installHint}>
+                  Öffne das Browser-Menü (<strong>⋮</strong>) und wähle{' '}
+                  <Icon name="plus" size={15} className={styles.hintIcon} />{' '}
+                  <strong>„App installieren"</strong> bzw.{' '}
+                  <strong>„Zum Startbildschirm hinzufügen"</strong>.
+                </p>
+              ) : (
+                // Sonstige (z. B. Desktop-Firefox ohne Prompt)
+                <p className={styles.installHint}>
+                  Über das Browser-Menü <strong>„App installieren"</strong> bzw.{' '}
+                  <strong>„Zum Startbildschirm hinzufügen"</strong> kannst du die App wie ein
+                  Programm auf dem Gerät ablegen.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Darstellung */}
         <div className={styles.group}>

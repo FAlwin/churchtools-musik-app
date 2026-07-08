@@ -7,7 +7,11 @@ import { UpdateBanner } from './components/UpdateBanner';
 import { RestoreGate } from './components/RestoreGate';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SwUpdateProvider } from './hooks/useSwUpdate';
+import { initPwaInstall } from './services/pwaInstall';
 import './styles/main.scss';
+
+// Früh registrieren: das `beforeinstallprompt`-Event feuert einmalig kurz nach dem Laden.
+initPwaInstall();
 
 // iOS-PWA: zuverlässige App-Höhe. `window.innerHeight` trackt im Standalone-Modus beide
 // Ausrichtungen korrekt (anders als `100dvh`, das beim Drehen hängen bleibt). Wert landet in
