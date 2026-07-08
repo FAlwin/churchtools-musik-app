@@ -68,3 +68,35 @@ export function isIos(): boolean {
   const iPadOs13Plus = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
   return iPhoneOrPad || iPadOs13Plus;
 }
+
+/** Echtes Safari (nicht Chrome/Edge/Firefox mit „Safari" im UA). */
+function isSafari(): boolean {
+  const ua = navigator.userAgent;
+  return /safari/i.test(ua) && !/chrome|chromium|crios|fxios|edg|android/i.test(ua);
+}
+
+/** macOS-Desktop-Safari (echter Mac, kein iPad): Installation läuft über „Zum Dock hinzufügen". */
+export function isMacSafari(): boolean {
+  const isMac = navigator.platform === 'MacIntel' && navigator.maxTouchPoints <= 1;
+  return isMac && isSafari();
+}
+
+/** Android-Gerät. */
+export function isAndroid(): boolean {
+  return /android/i.test(navigator.userAgent);
+}
+
+/**
+ * Welcher Installations-Weg soll angezeigt werden, wenn KEIN nativer Dialog bereitsteht
+ * (`canPromptInstall() === false`)? Bestimmt Text + Icon in den Einstellungen.
+ *  - 'ios'       → Safari „Teilen → Zum Home-Bildschirm"
+ *  - 'macSafari' → Safari „Teilen → Zum Dock hinzufügen"
+ *  - 'android'   → Browser-Menü „App installieren / Zum Startbildschirm hinzufügen"
+ *  - 'other'     → generischer Hinweis (Desktop-Firefox u. a.)
+ */
+export function installPlatform(): 'ios' | 'macSafari' | 'android' | 'other' {
+  if (isIos()) return 'ios';
+  if (isMacSafari()) return 'macSafari';
+  if (isAndroid()) return 'android';
+  return 'other';
+}
