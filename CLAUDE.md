@@ -224,10 +224,13 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
 - **Prod-Instanz (bewusstes Update, seit v2.2.0):** `deploy/docker-compose.prod.yml` (Container `musik-app`,
   Port 3001) ist auf **`:2` gepinnt** und hat **keinen Auto-Pull**. Aktualisiert wird bewusst per
   `docker compose pull && up -d` (SSH) bzw. im Container Manager (Volume `worship-data` behalten).
-- **Hinweis (seit #35):** Die Compose-Dateien nutzen jetzt generische Container-Namen (`musik-app`/
-  `-test`), damit andere Gemeinden sie direkt nutzen können. **Volume-Namen (`worship-data`/
-  `worship-data-test`) bleiben bewusst** → kein Datenverlust. Bereits laufende ECG-Instanzen heißen bis
-  zum nächsten Neuaufsetzen noch `worship-charts*` (Container-Name egal, Volume zählt).
+- **Repo-Vorlagen (seit #35):** generische Container-Namen (`musik-app`/`-test`) für andere Gemeinden;
+  **Volume-Keys (`worship-data`/`worship-data-test`) bleiben bewusst** → kein Datenverlust.
+- **Stand ECG-Prod (seit v2.8.0-Deploy 08.07.2026):** Läuft als Container-Manager-Projekt
+  **`worship-charts`** (Container `worship-charts`, Volume `worship-charts_worship-data`), Compose mit
+  fixem **`name: worship-charts`** + **`COOKIE_SECURE: true`** (Secure-Cookie über HTTPS bestätigt);
+  NAS-Compose unter `/volume1/docker/churchtools-musik-app/docker-compose.yml`. Der `name:`-Eintrag
+  fixiert den Volume-Präfix unabhängig vom CM-Projektnamen (Lehre aus dem Volume-Vorfall, s. u.).
 - **Frontend-Update auf den Geräten (Service Worker, seit v2.5.0):** Nach dem Server-Update holt sich
   jedes Gerät den neuen Frontend-Build selbst – zuverlässig beim **Kaltstart/kompletten Neu-Öffnen**
   (bzw. Neuladen) und auf Knopfdruck über **„Nach Updates suchen"** im Mehr-Tab (lädt eine gefundene
@@ -333,6 +336,21 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   IMMER aus `startTimes[eventId]` ableiten, nicht aus `start`. Diagnose-Skript: `server/scripts/probe-agenda-hidden.ts`.
 - **Rechte „Liederbuch für alle Mitglieder":** CT-Rolle braucht „Veranstaltungen sehen (view)"
   + „Einzelne Song-Kategorien sehen (view songcategory)" – sonst nichts. Kein Service-Konto nötig.
+
+## Berechtigungsmodell (Capabilities)
+- Server liest beim Login `/api/permissions/global` (Modul `churchservice`) → `parseCapabilities`
+  (`server/src/services/churchtools.ts`) leitet ab: `canViewSongs`/`canViewAgendas`/`canEditSongs`/
+  `canEditAgendas` (aus `view/edit songcategory|agenda`) + `isAdmin` (aus `ADMIN_PERMISSION`, Default
+  `churchcore:administer persons`; **Admin ⇒ alles**). Die Fähigkeiten steuern die Client-UI (`App.tsx`,
+  Tabs/Knöpfe); serverseitig erzwungen wird nur `requireSession` (alle Datenrouten) + `requireAdmin`
+  (nur `PUT /api/site-config`, `GET /api/groups`).
+- **Musiker-Gruppen (v2.8.0, Fundament für #124):** `canUseGlobalNotes` = aktives Mitglied **einer** der
+  in `site.json` konfigurierten **`musicianGroupIds`** (Admin wählt sie im Mehr-Tab per Mehrfachauswahl,
+  Dropdown aus `GET /api/groups`). Check: `getActiveGroupIds(cookie,userId)` → `/api/persons/{id}/groups`
+  (Filter `groupMemberStatus==="active"` + kein `memberEndDate`; Gruppen-ID steckt in
+  `group.domainIdentifier`). ECG-Musikteam = Gruppe 9. **Kein Admin-Bypass** („nur Musiker"). Die
+  eigentlichen globalen Anmerkungen (serverseitige Nur-Musiker-Auslieferung, Rendering, UI) = **Etappe 2**
+  (Issue #124); dann Chart-Onboarding-Tour um einen Schritt ergänzen (+ Tour-Version erhöhen).
 
 ## Schreibzugriff (Editor) – ChurchTools-Eigenheiten
 - Schreibende Calls brauchen ein CSRF-Token (`GET /api/csrftoken`) + Session-Cookie.
