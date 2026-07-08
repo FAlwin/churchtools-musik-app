@@ -32,8 +32,16 @@ describe('versionSlug', () => {
 });
 
 describe('versionNameOf (Versions-Erkennung, abwärtskompatibel)', () => {
-  it('erkennt den neuen (ECG)-Marker', () => {
+  it('erkennt den aktuellen (App)-Marker', () => {
+    expect(versionNameOf(file('Mein Lied — Akustik (App).chordpro'))).toBe('Akustik');
+  });
+  it('erkennt weiterhin den alten (ECG)-Marker (Bestandsdateien)', () => {
     expect(versionNameOf(file('Mein Lied — Akustik (ECG).chordpro'))).toBe('Akustik');
+  });
+  it('behält einen ECG-Bezug im Versionsnamen selbst (nur der Klammer-Marker zählt)', () => {
+    expect(versionNameOf(file('Danke — Standard ECG Donrath (App).chordpro'))).toBe(
+      'Standard ECG Donrath',
+    );
   });
   it('erkennt das alte „— Bearbeitet.chordpro"', () => {
     expect(versionNameOf(file('Mein Lied — Bearbeitet.chordpro'))).toBe('Bearbeitet');
@@ -50,11 +58,11 @@ describe('versionNameOf (Versions-Erkennung, abwärtskompatibel)', () => {
 });
 
 describe('versionFileName', () => {
-  it('baut den (ECG)-Dateinamen aus Titel + Versionsname', () => {
-    expect(versionFileName('Mein Lied', 'Akustik')).toBe('Mein Lied — Akustik (ECG).chordpro');
+  it('baut den (App)-Dateinamen aus Titel + Versionsname', () => {
+    expect(versionFileName('Mein Lied', 'Akustik')).toBe('Mein Lied — Akustik (App).chordpro');
   });
   it('entfernt unzulässige Zeichen aus Titel und Name', () => {
-    expect(versionFileName('A/B:C', 'X(Y)')).toBe('ABC — XY (ECG).chordpro');
+    expect(versionFileName('A/B:C', 'X(Y)')).toBe('ABC — XY (App).chordpro');
   });
 });
 

@@ -1,29 +1,32 @@
-# Produktiv-Instanz (ECG) – fertiges Image aus GHCR, KEIN lokaler Build.
+# Produktiv-Instanz – fertiges Image aus GHCR, KEIN lokaler Build.
 #
 # Update-Strategie (seit v2.2.0): bewusst statt blind ziehen.
 #   - Image auf den Major-Tag :2 gepinnt → keine ungewollte größere Umstellung (v3).
-#   - KEIN Auto-Pull-Dienst mehr (das alte containrrr/watchtower ist unmaintained
-#     und mit Docker 28/29+ inkompatibel). Auf neue Versionen weist das In-App-Banner hin.
-#   - Aktualisieren bewusst (nicht während der Gottesdienstzeit), per SSH im NAS-Ordner:
+#   - KEIN Auto-Pull-Dienst (Watchtower) im Produktivbetrieb: Updates werden bewusst
+#     eingespielt, nicht während einer Veranstaltung. Auf neue Versionen weist das
+#     In-App-Banner hin. (Eine Test-Instanz mit Auto-Update gibt es in docker-compose.staging.yml.)
+#   - Aktualisieren bewusst (nicht während der Gottesdienstzeit), per SSH im Projekt-Ordner:
 #         docker compose pull && docker compose up -d && docker image prune -f
 #     oder im Container Manager das Projekt neu aufbauen lassen. Daten-Volume behalten!
 #
-# Einmalige Umstellung im Synology Container-Manager:
-#   1. Aktuelles Projekt `worship-charts` stoppen + löschen
-#      – **Volume `worship-data` UNBEDINGT BEHALTEN** (enthält Gemeindename + Links).
-#   2. Neues Projekt aus DIESER Datei + der vorhandenen Prod-.env (CHURCHTOOLS_BASE_URL +
-#      SESSION_SECRET) erstellen. Möglichst denselben Projektnamen verwenden, damit das
-#      vorhandene Volume wiederverwendet wird.
-#   3. Reverse Proxy bleibt: musik.ecg-donrath.de → localhost:3001 (unverändert).
+# Einrichtung im Synology Container-Manager (oder per docker compose):
+#   1. Neues Projekt aus DIESER Datei + einer Prod-.env erstellen (siehe .env.example:
+#      mindestens CHURCHTOOLS_BASE_URL + SESSION_SECRET).
+#   2. Reverse Proxy davorsetzen: eure Domain (HTTPS/Let's Encrypt) → localhost:3001.
+#   3. Volume `worship-data` enthält Gemeindename + Links – beim Neu-Erstellen unter
+#      demselben Projektnamen bleibt es erhalten, NICHT löschen.
 services:
   app:
     image: ghcr.io/falwin/churchtools-musik-app:2
-    container_name: worship-charts
+    container_name: musik-app
     restart: unless-stopped
     environment:
       NODE_ENV: production
       CHURCHTOOLS_BASE_URL: ${CHURCHTOOLS_BASE_URL}
       SESSION_SECRET: ${SESSION_SECRET}
+      # Prod läuft ausschließlich über HTTPS (Reverse Proxy + Let's Encrypt) → Secure-Flag
+      # am Session-Cookie an. Default true; über die Prod-.env übersteuerbar, falls je nötig.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
       ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
     ports:
       - '3001:3001'
@@ -32,5 +35,6 @@ services:
 
 volumes:
   # WICHTIG: vorhandenes Prod-Volume wiederverwenden (Gemeindename/Links). Beim Neu-Erstellen
-  # unter demselben Projektnamen bleibt es erhalten.
+  # unter demselben Projektnamen bleibt es erhalten. Der Volume-Name bleibt bewusst `worship-data`,
+  # damit bestehende Instanzen ihre Daten ohne Umkopieren behalten.
   worship-data:

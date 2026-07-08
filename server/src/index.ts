@@ -1,5 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import express from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -22,9 +24,63 @@ const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '.
 if (config.isProduction) app.set('trust proxy', 1);
 
 // ── Sicherheit & Basis-Middleware ───────────────────────────
-// CSP aus: die App lädt externe Schriftarten + nutzt blob/worker (pdf.js).
-// Interne Gemeinde-App; die übrigen Helmet-Header bleiben aktiv.
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+// Content-Security-Policy: In Produktion restriktiv (zusätzliche Schutzschicht gegen XSS),
+// in der Entwicklung AUS – dort liefert der Vite-Dev-Server das HTML aus (mit HMR + Inline-
+// Scripts/eval); eine strenge CSP würde ihn nur brechen. (#47)
+//
+// Der einzige erlaubte Inline-Script ist der Boot-Fallback in index.html (#32). Statt
+// `script-src 'unsafe-inline'` (würde den XSS-Schutz aushebeln) erlauben wir ihn über seinen
+// sha256-Hash. Der Hash wird beim Start aus der gebauten index.html berechnet – so wandert er
+// automatisch mit, falls sich der Boot-Script je ändert (kein manuelles Nachpflegen).
+function inlineScriptHashes(): string[] {
+  try {
+    const html = readFileSync(path.join(clientDist, 'index.html'), 'utf8');
+    const hashes: string[] = [];
+    // Nur Inline-Scripts (ohne src=…); externe /assets/*.js sind bereits über 'self' abgedeckt.
+    const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
+    for (let m = re.exec(html); m; m = re.exec(html)) {
+      hashes.push(`'sha256-${createHash('sha256').update(m[1], 'utf8').digest('base64')}'`);
+    }
+    return hashes;
+  } catch {
+    return []; // z. B. wenn (noch) kein Build vorliegt – dann greift script-src 'self'
+  }
+}
+
+if (config.isProduction) {
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: false,
+        directives: {
+          defaultSrc: ["'self'"],
+          // App-JS liegt als externe /assets/*.js (self); Boot-Fallback via Hash. Kein unsafe-inline.
+          scriptSrc: ["'self'", ...inlineScriptHashes()],
+          // Inline-Styles nötig: Boot-Fallback nutzt style="…" und React setzt zur Laufzeit
+          // dynamische Styles (z. B. Slide-Transform beim Blättern). Style-Injektion ist ungefährlich.
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          // Logo (base64-DataURL) + Anmerkungs-PNGs (DataURL/Blob) + gerenderte PDF-Seiten.
+          imgSrc: ["'self'", 'data:', 'blob:'],
+          fontSrc: ["'self'"], // System-Font, kein Web-Font
+          connectSrc: ["'self'"], // Client spricht nur mit dem eigenen /api-Proxy
+          workerSrc: ["'self'", 'blob:'], // pdf.js-Worker ist inline → Blob-URL
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+          frameAncestors: ["'none'"],
+          manifestSrc: ["'self'"],
+          // BEWUSST KEIN upgrade-insecure-requests: Die App lädt ausschließlich relative,
+          // same-origin Ressourcen (nichts hochzustufen), aber die Direktive würde im reinen
+          // LAN-HTTP-Betrieb (Staging + Gemeinden ohne HTTPS) das App-JS auf https:// erzwingen
+          // → JS lädt nicht → nur der Boot-Fallback erscheint. Über HTTPS wäre sie wirkungslos.
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
+} else {
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+}
 // Limit höher: Logo (base64) + Anmerkungs-Striche einer Seite (PNG-DataURL) müssen hineinpassen.
 app.use(express.json({ limit: '8mb' }));
 app.use(cookieParser(config.sessionSecret));
