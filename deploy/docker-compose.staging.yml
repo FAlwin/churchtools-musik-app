@@ -15,6 +15,10 @@
 #   3. Volume worship-data-test enthält die Test-Daten (Anmerkungen/Einstellungen) – BEHALTEN.
 #   4. Fertig: ab jetzt zieht Watchtower nach jedem Push (sobald die CI das Image gebaut hat)
 #      automatisch die neue Version (Prüfintervall 60 s).
+# Projektname FEST verdrahtet (siehe docker-compose.prod.yml): fixiert den Volume-Präfix
+# `<projektname>_<volume-key>`, damit ein abweichender Container-Manager-Projektname nicht ein
+# neues, leeres Volume erzeugt. ⚠️ Einmal gesetzt NIE ändern. ECG-Test = `worship-charts-test`.
+name: worship-charts-test
 services:
   app:
     image: ghcr.io/falwin/churchtools-musik-app:staging

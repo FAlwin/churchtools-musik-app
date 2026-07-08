@@ -5,6 +5,16 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Geändert
+
+- **Deploy robuster gegen Datenverlust:** Die Compose-Dateien setzen den Projektnamen jetzt fest
+  (`name:`). Damit bleibt das Daten-Volume (Gemeindename, Links, Anmerkungen) auch dann erhalten,
+  wenn beim Aktualisieren im Container Manager versehentlich ein abweichender Projektname entsteht.
+  (Hintergrund: Ein einmalig falsch benanntes Projekt hatte am 08.07. dazu geführt, dass die App
+  ein leeres Volume einhängte und Werkseinstellungen zeigte – die Daten waren nie verloren.)
+
 ## [2.7.2] – 2026-07-08
 
 ### Sicherheit

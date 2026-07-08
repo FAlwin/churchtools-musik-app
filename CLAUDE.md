@@ -260,6 +260,17 @@ den Skill `/festhalten`, der genau das automatisiert.
    (Major-Tag, damit Gemeinden sicher auf `:2` bleiben können). Prod-Deploy bewusst, nicht nebenbei.
 7. **Memory aktualisieren:** Projekt-Memory + `MEMORY.md`-Index auf den neuen Stand bringen.
 
+**⚠️ Prod-Deploy & Daten-Volume (Lehre aus dem Vorfall 2026-07-08):** Beim Aktualisieren im
+Container Manager IMMER das **bestehende** Projekt „Zurücksetzen"/neu aufbauen – **nie ein neues
+Projekt anlegen**. Der interne Volume-Name ist `<projektname>_<volume-key>`; ein abweichender
+Projektname hängt den Container an ein **neues, leeres** Volume (Gemeindename/Links/Anmerkungen
+wirken „weg", liegen aber unversehrt im alten Volume). Absicherung: Die Compose-Dateien setzen
+`name:` fest (Prod `worship-charts`, Test `worship-charts-test`) → der Volume-Präfix ist damit
+unabhängig vom Container Manager fixiert (`name` **nie** ändern). Vor größeren Eingriffen ein
+Volume-Backup ziehen: `sudo tar czf ~/backup.tar.gz -C /volume1/@docker/volumes/<vol>/_data .`.
+Recovery bei falsch eingehängtem Volume: Daten per `cp -a` ins aktuell gemountete Volume kopieren
+(altes Volume nie löschen). Docker löscht benannte Volumes nie von selbst → Daten sind wiederherstellbar.
+
 ## Changelog
 Release-Notes & Versionshistorie: siehe `CHANGELOG.md` (Single Source – hier nicht doppelt pflegen).
 

@@ -3,6 +3,10 @@
 # So nutzt ihr es: diese Datei + eine .env (siehe .env.example) in einen Ordner
 # legen und starten mit:  docker compose up -d
 # Updates: siehe UPDATE.md.
+# Projektname fest verdrahtet: fixiert den Volume-Präfix `<projektname>_<volume-key>`, damit die
+# App auch dann dasselbe Datenvolume behält, wenn beim (Neu-)Anlegen im Container Manager ein
+# abweichender Projektname vergeben würde. ⚠️ Einmal gesetzt NIE ändern (sonst neues leeres Volume).
+name: churchtools-musik-app
 services:
   app:
     # :2 = automatisch alle Updates der Version 2 (neue Funktionen + Bugfixes), aber KEIN
