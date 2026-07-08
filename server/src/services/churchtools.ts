@@ -9,6 +9,7 @@
 import { config } from '../config.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { getSiteConfig } from './siteConfig.js';
+import { getCachedCapabilities, rememberCapabilities } from './capabilitiesCache.js';
 
 const BASE = config.churchtoolsBaseUrl.replace(/\/$/, '');
 
@@ -137,24 +138,69 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
     cookie,
     '/api/permissions/global',
   );
-  const caps = parseCapabilities(data);
-  // Leises Server-Log, falls ChurchTools keine Lieder/Abläufe-Rechte liefert – hilft bei künftiger
-  // Diagnose des sporadischen Aussetzers (alle Rechte-Arrays leer).
-  if (!caps.canViewSongs && !caps.canViewAgendas) {
+
+  // Konto-ID für den Rechte-Cache – best effort: schlägt whoami aus (eigener Aussetzer), arbeiten
+  // wir eben ohne Cache-Fallback weiter. `getUserId` ist 12 h gecacht, kostet also selten einen Call.
+  let userId: number | null = null;
+  try {
+    userId = await getUserId(cookie);
+  } catch {
+    /* whoami nicht erreichbar → ohne Cache fortfahren */
+  }
+
+  // ChurchTools liefert bei einem Aussetzer entweder eine komplett leere Antwort (parseCapabilities
+  // wirft) ODER den churchservice-Block mit leeren Rechte-Arrays (→ „alles false"). Beides sieht aus
+  // wie „kein Zugriff". In beiden Fällen überbrücken wir mit den zuletzt gültigen Rechten aus dem
+  // Cache; nur wenn es dort nichts gibt, greift das reguläre Verhalten (echt kein Zugriff / Fehler).
+  const bridgeFromCache = async (): Promise<UserCapabilities | null> => {
+    if (userId == null) return null;
+    const cached = await getCachedCapabilities(userId);
+    if (cached) {
+      console.warn(
+        '[capabilities] leere/blockierte ChurchTools-Antwort – zuletzt gültige Rechte aus Cache geliefert',
+      );
+      return cached;
+    }
+    return null;
+  };
+
+  let base: UserCapabilities;
+  try {
+    base = parseCapabilities(data);
+  } catch (err) {
+    // Komplett leere Antwort (totaler Aussetzer). Cache überbrückt; sonst Fehler durchreichen
+    // (der Client bietet dann „Erneut versuchen" an).
+    const cached = await bridgeFromCache();
+    if (cached) return cached;
+    throw err;
+  }
+
+  if (!base.canViewSongs && !base.canViewAgendas) {
+    // Rechte-Arrays leer: Aussetzer ODER echt kein Zugriff. Cache überbrückt den Aussetzer; ohne
+    // Cache als „kein Zugriff" zurückgeben (Client zeigt den Hinweis) – ein „alles false" wird
+    // bewusst NIE gecacht, daher sperrt der Cache echte Nicht-Berechtigte nie fälschlich ein.
+    const cached = await bridgeFromCache();
+    if (cached) return cached;
     console.warn(
       '[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer)',
     );
+    return { ...base, canUseGlobalNotes: false };
   }
+
   // Globale Anmerkungen: NUR aktive Mitglieder einer der konfigurierten Musiker-Gruppen (kein
   // Admin-Bypass – „nur Musiker sehen sie"; wer sie können soll, gehört in eine der Gruppen).
   // Ohne konfigurierte Gruppe: Funktion aus. Mitgliedschaft in EINER Gruppe genügt.
   const { musicianGroupIds } = await getSiteConfig();
   let canUseGlobalNotes = false;
-  if (musicianGroupIds.length > 0) {
-    const groupIds = await getActiveGroupIds(cookie, await getUserId(cookie));
+  if (musicianGroupIds.length > 0 && userId != null) {
+    const groupIds = await getActiveGroupIds(cookie, userId);
     canUseGlobalNotes = musicianGroupIds.some((id) => groupIds.has(id));
   }
-  return { ...caps, canUseGlobalNotes };
+
+  const full: UserCapabilities = { ...base, canUseGlobalNotes };
+  // Gültige Rechte merken → überbrückt künftige Aussetzer. Best effort, blockiert die Antwort nicht.
+  if (userId != null) void rememberCapabilities(userId, full);
+  return full;
 }
 
 /** IDs der Gruppen, in denen der Nutzer AKTIVES Mitglied ist (via `/api/persons/{id}/groups`). */
