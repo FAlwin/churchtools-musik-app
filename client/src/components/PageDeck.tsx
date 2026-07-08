@@ -1098,11 +1098,13 @@ export function PageDeck({
                   <div
                     className={styles.pageBox}
                     // Im 2-up (2 Seiten sichtbar) sitzt jede Seite mittig in IHRER Hälfte. Eine
-                    // allein stehende Seite im Querformat (z. B. letzte Seite oder 2-Spalten-Lied
-                    // auf einer Seite) gehört in die LINKE Hälfte wie ein normales linkes Blatt –
-                    // NICHT über den ganzen Bildschirm zentriert. Nur im Hochformat (1 Spalte) mittig.
+                    // allein stehende LETZTE Seite eines mehrseitigen Charts bleibt LINKS wie ein
+                    // normales linkes Blatt (springt so beim Blättern nicht in die Mitte). Ein
+                    // Chart mit NUR EINER Seite (pageCount === 1) wird dagegen über die volle Breite
+                    // zentriert – sonst klebte es unmotiviert links neben einer leeren Hälfte.
                     style={{
-                      justifyItems: perView === 2 && slots.length === 1 ? 'start' : 'center',
+                      justifyItems:
+                        perView === 2 && slots.length === 1 && pageCount > 1 ? 'start' : 'center',
                     }}
                   >
                     <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
