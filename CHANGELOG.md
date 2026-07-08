@@ -7,6 +7,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Hilfe „Als App installieren":** Der Mehr-Tab erklärt jetzt passend zum Gerät, wie man die App
+  auf den Startbildschirm legt – auf iPhone/iPad („Teilen → Zum Home-Bildschirm"), auf dem Mac
+  („Teilen → Zum Dock hinzufügen") und auf Android; unter Chrome/Edge erscheint ein echter
+  „Installieren"-Knopf. Der Hinweis verschwindet, sobald die App bereits installiert läuft.
+
 ### Geändert
 
 - **Deploy robuster gegen Datenverlust:** Die Compose-Dateien setzen den Projektnamen jetzt fest
