@@ -218,12 +218,16 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
 - **Images:** `.github/workflows/staging.yml` baut bei jedem Push (main/feature/**) ein `:staging`-Image
   (amd64) nach GHCR; `release.yml` baut bei Tag `vX.Y.Z` Multi-Arch mit den Tags `vX.Y.Z`, `X.Y`,
   **`X` (Major, z. B. `2`)** und `latest`.
-- **Test-Instanz (Auto-Deploy):** `deploy/docker-compose.staging.yml` (`worship-charts-test`, Port 3002,
-  `:staging`, Scope `worship-test`, 60 s) zieht automatisch – über den **gepflegten Watchtower-Fork
-  `nickfedor/watchtower`** (Original `containrrr` ist unmaintained / Docker-29-inkompatibel).
-- **Prod-Instanz (bewusstes Update, seit v2.2.0):** `deploy/docker-compose.prod.yml` (`worship-charts`,
-  Port 3001) ist auf **`:2` gepinnt** und hat **keinen Auto-Pull mehr**. Aktualisiert wird bewusst per
+- **Test-Instanz (Auto-Deploy):** `deploy/docker-compose.staging.yml` (Container `musik-app-test`, Port
+  3002, `:staging`, Scope `musik-app-test`, 60 s) zieht automatisch – über den **gepflegten
+  Watchtower-Fork `nickfedor/watchtower`** (Original `containrrr` ist unmaintained / Docker-29-inkompatibel).
+- **Prod-Instanz (bewusstes Update, seit v2.2.0):** `deploy/docker-compose.prod.yml` (Container `musik-app`,
+  Port 3001) ist auf **`:2` gepinnt** und hat **keinen Auto-Pull**. Aktualisiert wird bewusst per
   `docker compose pull && up -d` (SSH) bzw. im Container Manager (Volume `worship-data` behalten).
+- **Hinweis (seit #35):** Die Compose-Dateien nutzen jetzt generische Container-Namen (`musik-app`/
+  `-test`), damit andere Gemeinden sie direkt nutzen können. **Volume-Namen (`worship-data`/
+  `worship-data-test`) bleiben bewusst** → kein Datenverlust. Bereits laufende ECG-Instanzen heißen bis
+  zum nächsten Neuaufsetzen noch `worship-charts*` (Container-Name egal, Volume zählt).
 - **Frontend-Update auf den Geräten (Service Worker, seit v2.5.0):** Nach dem Server-Update holt sich
   jedes Gerät den neuen Frontend-Build selbst – zuverlässig beim **Kaltstart/kompletten Neu-Öffnen**
   (bzw. Neuladen) und auf Knopfdruck über **„Nach Updates suchen"** im Mehr-Tab (lädt eine gefundene
@@ -323,8 +327,9 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
 - Schreibende Calls brauchen ein CSRF-Token (`GET /api/csrftoken`) + Session-Cookie.
 - Upload: `POST /api/files/song_arrangement/{arrId}` multipart, Feld `files[]`.
 - Löschen: `DELETE /api/files/{fileId}` (fileId aus der fileUrl `?…id=` extrahiert).
-- Versionen werden als separate `"<Titel> — <Name> (ECG).chordpro"` gespeichert (Original bleibt
-  unangetastet); abwärtskompatibel zu alt `"— Bearbeitet.chordpro"`/`"— ECG.chordpro"` (Name „Bearbeitet").
+- Versionen werden als separate `"<Titel> — <Name> (App).chordpro"` gespeichert (Original bleibt
+  unangetastet); abwärtskompatibel zu Bestandsdateien `"(ECG)"` sowie alt `"— Bearbeitet.chordpro"`/
+  `"— ECG.chordpro"` (Name „Bearbeitet"). Marker `(App)` ist bewusst gemeinde-neutral (früher `(ECG)`).
   Erkennung/Slug in `server/src/services/setlistBuilder.ts` (`versionNameOf`, `versionSlug`).
 - Rechte regelt ChurchTools (403 → Hinweis im Editor). Verifiziert an Test-Lied „Treu" (songId 21).
 - Datei-Download braucht die volle fileUrl (nur `id` reicht nicht); Browser lädt nur über den Proxy.

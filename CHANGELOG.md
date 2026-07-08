@@ -5,6 +5,33 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Sicherheit
+
+- **Session-Cookie in Produktion nur über HTTPS:** In der Produktiv-Konfiguration trägt das
+  Anmelde-Cookie jetzt das `Secure`-Flag und geht damit nie über eine unverschlüsselte Verbindung.
+  (#45)
+- **Restriktive Content-Security-Policy in Produktion:** Statt die CSP komplett abzuschalten gilt
+  jetzt eine enge Richtlinie (nur eigene Quellen, kein eingeschleustes Fremd-Script; pdf.js-Worker
+  und Anmerkungs-Bilder ausdrücklich erlaubt). Im reinen LAN-HTTP-Betrieb bleibt die App voll
+  nutzbar. Zusätzliche Schutzschicht gegen Cross-Site-Scripting. (#47)
+
+### Behoben
+
+- **Neutraler Marker für bearbeitete Lieder:** Von der App gespeicherte Songversionen tragen jetzt
+  den Zusatz „(App)" statt des gemeindespezifischen „(ECG)". Bestehende „(ECG)"-Dateien (und die
+  ganz alten „— Bearbeitet"/„— ECG") werden weiterhin erkannt – es geht nichts verloren. (#34)
+- **Einseitige Lieder mittig:** Ein Lied/Ablauf mit nur einer Seite wird im Querformat jetzt über
+  die volle Breite zentriert statt links neben einer leeren Fläche angezeigt. (#128)
+
+### Geändert
+
+- **Direkt nachnutzbar für andere Gemeinden:** Die Produktiv- und Test-Compose-Dateien wurden von
+  gemeindespezifischen Namen befreit (generische Container-/Watchtower-Namen), und die
+  Installationsanleitung erklärt jetzt die drei Betriebs-Varianten (Basis / Produktiv / Test).
+  Bestehende Instanzen behalten ihr Daten-Volume ohne Migration. (#35)
+
 ## [2.7.1] – 2026-07-07
 
 ### Sicherheit
