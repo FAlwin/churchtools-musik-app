@@ -9,7 +9,7 @@ import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
 import { LinksManager } from '../components/LinksManager';
 import { SupportBox } from '../components/SupportBox';
-import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
+import { useUpdateSiteConfig, useGroups } from '../hooks/useSiteConfig';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { getOfflineStatus } from '../queryClient';
 import { isOfflineAutoEnabled, setOfflineAutoEnabled } from '../services/offlineAuto';
@@ -51,8 +51,27 @@ export function Settings({
 }: SettingsProps) {
   const [showOrg, setShowOrg] = useState(false);
   const [showLinks, setShowLinks] = useState(false);
+  const [showMusicianGroup, setShowMusicianGroup] = useState(false);
+  // Entwurf der Gruppen-Auswahl im Sheet (erst „Speichern" persistiert – Mehrfachauswahl).
+  const [groupDraft, setGroupDraft] = useState<number[]>([]);
   const [orgDraft, setOrgDraft] = useState(site.orgName);
   const update = useUpdateSiteConfig();
+  // Gruppen nur laden, wenn ein Admin im Mehr-Tab ist (für Anzeige + Auswahl der Musiker-Gruppen).
+  const groupsQuery = useGroups(isAdmin);
+
+  function openMusicianGroup() {
+    setGroupDraft(site.musicianGroupIds);
+    setShowMusicianGroup(true);
+  }
+  function toggleGroup(id: number) {
+    setGroupDraft((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]));
+  }
+  function saveMusicianGroups() {
+    update.mutate(
+      { ...site, musicianGroupIds: groupDraft },
+      { onSuccess: () => setShowMusicianGroup(false) },
+    );
+  }
   const updateCheck = useUpdateCheck();
   const [offline, setOffline] = useState<{
     files: number;
@@ -193,6 +212,14 @@ export function Settings({
                     : `${site.links.length} ${site.links.length === 1 ? 'Link' : 'Links'}`}
                 </span>
               </button>
+              <button className={`${styles.setRow} ${styles.tappable}`} onClick={openMusicianGroup}>
+                <span className={styles.setLabel}>Musiker-Gruppen (Anmerkungen)</span>
+                <span className={styles.setValue}>
+                  {site.musicianGroupIds.length === 0
+                    ? 'keine'
+                    : `${site.musicianGroupIds.length} ${site.musicianGroupIds.length === 1 ? 'Gruppe' : 'Gruppen'}`}
+                </span>
+              </button>
             </div>
           </div>
         )}
@@ -261,6 +288,58 @@ export function Settings({
       {showLinks && (
         <Sheet title="Links verwalten" onClose={() => setShowLinks(false)}>
           <LinksManager site={site} onClose={() => setShowLinks(false)} />
+        </Sheet>
+      )}
+
+      {showMusicianGroup && (
+        <Sheet title="Musiker-Gruppen" onClose={() => setShowMusicianGroup(false)}>
+          <p className={styles.sheetHint}>
+            Mitglieder der ausgewählten ChurchTools-Gruppen können Anmerkungen{' '}
+            <strong>für das ganze Team</strong> sichtbar machen und sehen (Mitgliedschaft in{' '}
+            <strong>einer</strong> Gruppe genügt). Alle anderen haben weiterhin nur ihre{' '}
+            <strong>privaten</strong> Anmerkungen. Ohne Auswahl ist die Funktion aus.
+          </p>
+          {groupsQuery.isLoading && <Spinner />}
+          {groupsQuery.isError && (
+            <div className={styles.orgErr}>Gruppen konnten nicht geladen werden.</div>
+          )}
+          {groupsQuery.data && (
+            <>
+              <div className={styles.cardList}>
+                {groupsQuery.data.map((g) => {
+                  const checked = groupDraft.includes(g.id);
+                  return (
+                    <button
+                      key={g.id}
+                      className={`${styles.setRow} ${styles.tappable}`}
+                      role="checkbox"
+                      aria-checked={checked}
+                      onClick={() => toggleGroup(g.id)}
+                    >
+                      <span className={styles.setLabel}>{g.name}</span>
+                      <span className={`${styles.checkbox}${checked ? ' ' + styles.checkboxOn : ''}`}>
+                        {checked && <Icon name="check" size={14} />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {update.isError && <div className={styles.orgErr}>Speichern fehlgeschlagen.</div>}
+              <button
+                className={styles.orgSave}
+                onClick={saveMusicianGroups}
+                disabled={update.isPending}
+              >
+                {update.isPending ? (
+                  <Spinner />
+                ) : groupDraft.length === 0 ? (
+                  'Speichern (Funktion aus)'
+                ) : (
+                  `Speichern (${groupDraft.length} ${groupDraft.length === 1 ? 'Gruppe' : 'Gruppen'})`
+                )}
+              </button>
+            </>
+          )}
         </Sheet>
       )}
     </Screen>

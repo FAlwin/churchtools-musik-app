@@ -189,6 +189,12 @@ export interface SiteConfig {
   orgName: string;
   /** Frei konfigurierbare externe Links (Mehr-Tab; optional auch Login-Seite). */
   links: SiteLink[];
+  /**
+   * ChurchTools-Gruppen-IDs, deren AKTIVE Mitglieder „globale" (für das Team sichtbare) Anmerkungen
+   * sehen und setzen dürfen. Leeres Array = Funktion aus (nur private Anmerkungen); Mitgliedschaft
+   * in EINER der Gruppen genügt. Vom Admin im Mehr-Tab gewählt (Mehrfachauswahl aus `GET /api/groups`).
+   */
+  musicianGroupIds: number[];
 }
 
 /** Info zur neuesten veröffentlichten Version – für den dezenten Update-Hinweis in der App. */
@@ -207,4 +213,5 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
   description: 'Chord Charts aus ChurchTools',
   orgName: 'Meine Gemeinde',
   links: [],
+  musicianGroupIds: [],
 };

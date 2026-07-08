@@ -12,3 +12,13 @@ export function updateSiteConfig(cfg: SiteConfig): Promise<SiteConfig> {
     body: JSON.stringify(cfg),
   });
 }
+
+export interface CtGroup {
+  id: number;
+  name: string;
+}
+
+/** ChurchTools-Gruppen für das Admin-Dropdown „Musiker-Gruppe" (nur Admin). */
+export function getGroups(): Promise<CtGroup[]> {
+  return apiFetch<CtGroup[]>('/api/groups');
+}
