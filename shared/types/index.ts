@@ -151,6 +151,10 @@ export interface UserCapabilities {
   canEditSongs: boolean;
   /** ChurchTools-Administrator? Steuert Zugriff auf die Branding-Einstellungen. */
   isAdmin: boolean;
+  /** Darf „globale" (fürs Team sichtbare) Anmerkungen SEHEN (Mitglied einer Gruppe mit Seh-Rolle). */
+  canUseGlobalNotes: boolean;
+  /** Darf globale Anmerkungen VERWALTEN (erstellen/bearbeiten/löschen; Gruppe mit Verwalten-Rolle). */
+  canManageGlobalNotes: boolean;
 }
 
 /** Antwort des Login-Endpunkts. */
@@ -190,11 +194,29 @@ export interface SiteConfig {
   /** Frei konfigurierbare externe Links (Mehr-Tab; optional auch Login-Seite). */
   links: SiteLink[];
   /**
-   * ChurchTools-Gruppen-IDs, deren AKTIVE Mitglieder „globale" (für das Team sichtbare) Anmerkungen
-   * sehen und setzen dürfen. Leeres Array = Funktion aus (nur private Anmerkungen); Mitgliedschaft
-   * in EINER der Gruppen genügt. Vom Admin im Mehr-Tab gewählt (Mehrfachauswahl aus `GET /api/groups`).
+   * Ausgewählte ChurchTools-Gruppen für globale Anmerkungen (UI-Label „Gruppen-Zuweisung" unter
+   * Verwaltung → Anmerkungen; Mehrfachauswahl aus `GET /api/groups`). Reine Gruppen-Auswahl macht
+   * NOCH KEIN Recht auf – erst die je Gruppe angehakten Rollen in `noteRoles` gewähren Sehen/Verwalten.
+   * Leeres Array = Funktion komplett aus (nur private Anmerkungen).
    */
   musicianGroupIds: number[];
+  /**
+   * Rollen-Freigabe JE Gruppe (aus `musicianGroupIds`). `view`/`manage` enthalten die erlaubten
+   * `groupTypeRoleId`s. WICHTIG: leere Liste bzw. kein Eintrag = NIEMAND (kein „alle"); erst das
+   * Anhaken einer Rolle gewährt das Recht. „Verwalten" schließt „Sehen" ein. Vom Admin im Mehr-Tab
+   * unter „Anmerkungen → Rollen-Zuweisung" gepflegt.
+   */
+  noteRoles?: NoteRolePerm[];
+}
+
+/** Rollen-Freigabe einer Gruppe für globale Anmerkungen (siehe `SiteConfig.noteRoles`). */
+export interface NoteRolePerm {
+  /** ChurchTools-Gruppen-ID (muss in `musicianGroupIds` enthalten sein). */
+  groupId: number;
+  /** Erlaubte `groupTypeRoleId`s fürs Sehen. Leer = NIEMAND sieht (in dieser Gruppe). */
+  view: number[];
+  /** Erlaubte `groupTypeRoleId`s fürs Verwalten. Leer = NIEMAND verwaltet (in dieser Gruppe). */
+  manage: number[];
 }
 
 /** Info zur neuesten veröffentlichten Version – für den dezenten Update-Hinweis in der App. */

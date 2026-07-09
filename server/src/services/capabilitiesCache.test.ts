@@ -27,6 +27,7 @@ const CAPS: UserCapabilities = {
   canEditSongs: false,
   isAdmin: false,
   canUseGlobalNotes: true,
+  canManageGlobalNotes: false,
 };
 
 describe('isCacheFresh', () => {

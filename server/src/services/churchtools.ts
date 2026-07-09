@@ -10,6 +10,11 @@ import { config } from '../config.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { getSiteConfig } from './siteConfig.js';
 import { getCachedCapabilities, rememberCapabilities } from './capabilitiesCache.js';
+import type { UserCapabilities, NoteRolePerm } from '@shared/types/index';
+
+// Einzige Quelle des Typs ist `@shared`; hier re-exportiert, damit Bestandsimporte
+// (z. B. capabilitiesCache) weiter aus diesem Modul beziehen können.
+export type { UserCapabilities };
 
 const BASE = config.churchtoolsBaseUrl.replace(/\/$/, '');
 
@@ -122,16 +127,6 @@ export async function logout(cookie: string): Promise<void> {
   }
 }
 
-export interface UserCapabilities {
-  canViewSongs: boolean;
-  canViewAgendas: boolean;
-  canEditAgendas: boolean;
-  canEditSongs: boolean;
-  isAdmin: boolean;
-  /** Darf „globale" (fürs Team sichtbare) Anmerkungen sehen + setzen = Mitglied der Musiker-Gruppe. */
-  canUseGlobalNotes: boolean;
-}
-
 /** Ermittelt aus den ChurchTools-Rechten (Modul churchservice), was der Nutzer darf. */
 export async function getCapabilities(cookie: string): Promise<UserCapabilities> {
   const data = await ctGet<Record<string, Record<string, unknown>>>(
@@ -184,45 +179,78 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
     console.warn(
       '[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer)',
     );
-    return { ...base, canUseGlobalNotes: false };
+    return { ...base, canUseGlobalNotes: false, canManageGlobalNotes: false };
   }
 
-  // Globale Anmerkungen: NUR aktive Mitglieder einer der konfigurierten Musiker-Gruppen (kein
-  // Admin-Bypass – „nur Musiker sehen sie"; wer sie können soll, gehört in eine der Gruppen).
-  // Ohne konfigurierte Gruppe: Funktion aus. Mitgliedschaft in EINER Gruppe genügt.
-  const { musicianGroupIds } = await getSiteConfig();
-  let canUseGlobalNotes = false;
+  // Globale Anmerkungen: kein Admin-Bypass. „Sehen"/„Verwalten" ergeben sich aus der aktiven
+  // Gruppen-Mitgliedschaft + der je Gruppe freigegebenen Rolle (siehe computeGlobalNotePerms).
+  // Ohne freigegebene Rolle darf niemand (leer = niemand).
+  const { musicianGroupIds, noteRoles = [] } = await getSiteConfig();
+  let globalPerms = { canUseGlobalNotes: false, canManageGlobalNotes: false };
   if (musicianGroupIds.length > 0 && userId != null) {
-    const groupIds = await getActiveGroupIds(cookie, userId);
-    canUseGlobalNotes = musicianGroupIds.some((id) => groupIds.has(id));
+    const memberships = await getActiveMemberships(cookie, userId);
+    globalPerms = computeGlobalNotePerms(memberships, musicianGroupIds, noteRoles);
   }
 
-  const full: UserCapabilities = { ...base, canUseGlobalNotes };
+  const full: UserCapabilities = { ...base, ...globalPerms };
   // Gültige Rechte merken → überbrückt künftige Aussetzer. Best effort, blockiert die Antwort nicht.
   if (userId != null) void rememberCapabilities(userId, full);
   return full;
 }
 
-/** IDs der Gruppen, in denen der Nutzer AKTIVES Mitglied ist (via `/api/persons/{id}/groups`). */
-export async function getActiveGroupIds(cookie: string, userId: number): Promise<Set<number>> {
+/**
+ * Reine Berechtigungs-Logik (testbar, ohne Netz): Was darf der Nutzer bei globalen Anmerkungen?
+ * Sehen/Verwalten ergeben sich je gewählter Gruppe aus der freigegebenen Rolle. „Verwalten"
+ * schließt „Sehen" ein. Leere/fehlende Rollen-Freigabe einer Gruppe = NIEMAND (kein „alle").
+ */
+export function computeGlobalNotePerms(
+  memberships: Array<{ groupId: number; roleId: number }>,
+  musicianGroupIds: number[],
+  noteRoles: NoteRolePerm[],
+): { canUseGlobalNotes: boolean; canManageGlobalNotes: boolean } {
+  const selected = new Set(musicianGroupIds);
+  const permByGroup = new Map<number, NoteRolePerm>();
+  for (const r of noteRoles) permByGroup.set(r.groupId, r);
+  let canView = false;
+  let canManage = false;
+  for (const m of memberships) {
+    if (!selected.has(m.groupId)) continue;
+    const perm = permByGroup.get(m.groupId);
+    if (!perm) continue; // Gruppe gewählt, aber keine Rolle freigegeben → niemand
+    const inManage = perm.manage.includes(m.roleId);
+    if (inManage) canManage = true;
+    if (inManage || perm.view.includes(m.roleId)) canView = true; // Verwalten schließt Sehen ein
+  }
+  return { canUseGlobalNotes: canView, canManageGlobalNotes: canManage };
+}
+
+/**
+ * Aktive Mitgliedschaften des Nutzers als {Gruppe, Rolle} (via `/api/persons/{id}/groups`).
+ * Die Gruppen-ID steht in `group.domainIdentifier` (String), die Rolle in `groupTypeRoleId`.
+ * Nur aktive, nicht beendete Mitgliedschaften zählen.
+ */
+export async function getActiveMemberships(
+  cookie: string,
+  userId: number,
+): Promise<Array<{ groupId: number; roleId: number }>> {
   interface Membership {
     group?: { domainIdentifier?: string | number };
+    groupTypeRoleId?: number;
     groupMemberStatus?: string;
     memberEndDate?: string | null;
   }
   const rows = await ctGet<Membership[]>(cookie, `/api/persons/${userId}/groups`);
-  const ids = new Set<number>();
+  const out: Array<{ groupId: number; roleId: number }> = [];
   for (const r of rows ?? []) {
-    // Nur aktive, nicht beendete Mitgliedschaften zählen. Die Gruppen-ID steht in
-    // `group.domainIdentifier` (String) – `group.id` ist in dieser Antwort nicht gesetzt.
     if (r.groupMemberStatus !== 'active' || r.memberEndDate) continue;
-    const id = Number(r.group?.domainIdentifier);
-    if (Number.isInteger(id)) ids.add(id);
+    const groupId = Number(r.group?.domainIdentifier);
+    const roleId = Number(r.groupTypeRoleId);
+    if (Number.isInteger(groupId) && Number.isInteger(roleId)) out.push({ groupId, roleId });
   }
-  return ids;
+  return out;
 }
 
-/** Sichtbare ChurchTools-Gruppen (id + name), alphabetisch – für das Admin-Dropdown „Musiker-Gruppe". */
+/** Sichtbare ChurchTools-Gruppen (id + name), alphabetisch – für das Admin-Dropdown „Gruppen-Zuweisung". */
 export async function getGroups(cookie: string): Promise<{ id: number; name: string }[]> {
   interface Group {
     id: number;
@@ -234,6 +262,25 @@ export async function getGroups(cookie: string): Promise<{ id: number; name: str
     .filter((g) => Number.isInteger(g.id) && Boolean(g.name))
     .map((g) => ({ id: g.id, name: g.name }))
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+/**
+ * Rollen einer Gruppe (id = `groupTypeRoleId`, name) für die Rollen-Zuweisung. Versteckte Rollen
+ * (`isHidden`) werden ausgelassen. Quelle: `GET /api/groups/{id}/roles`.
+ */
+export async function getGroupRoles(
+  cookie: string,
+  groupId: number,
+): Promise<{ id: number; name: string }[]> {
+  interface Role {
+    groupTypeRoleId?: number;
+    name?: string;
+    isHidden?: boolean;
+  }
+  const rows = await ctGet<Role[]>(cookie, `/api/groups/${groupId}/roles`);
+  return (rows ?? [])
+    .filter((r) => !r.isHidden && Number.isInteger(r.groupTypeRoleId) && Boolean(r.name))
+    .map((r) => ({ id: r.groupTypeRoleId as number, name: r.name as string }));
 }
 
 /**
@@ -265,8 +312,9 @@ export function parseCapabilities(
     canEditAgendas: isAdmin || has(cs['edit agenda']),
     canEditSongs: isAdmin || has(cs['edit songcategory']),
     isAdmin,
-    // Default; die tatsächliche Musiker-Gruppen-Prüfung ergänzt getCapabilities (braucht Cookie + Config).
+    // Defaults; die tatsächliche Gruppen-/Rollen-Prüfung ergänzt getCapabilities (braucht Cookie + Config).
     canUseGlobalNotes: false,
+    canManageGlobalNotes: false,
   };
 }
 
