@@ -486,6 +486,7 @@ export function ChordChart({
   const {
     pages,
     owners,
+    publishedSettings,
     loading: pagesLoading,
     error: pagesError,
   } = useSetlistPages({
@@ -514,6 +515,16 @@ export function ChordChart({
     if (viewing && song.id !== viewing.songId) stopViewing();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [song.id]);
+  // Darstellung/Version/Quelle DESSELBEN Lieds gewechselt → Anmerkungsmodus beenden: Die Notiz-
+  // Ebene wechselt mit, ein noch aktiver Stift würde sonst im Umbau-Moment in die falsche Ebene
+  // schreiben. (Liedwechsel beim Blättern lässt den Modus bewusst an.)
+  const lastViewSig = useRef<{ songId: number; sig: string } | null>(null);
+  useEffect(() => {
+    const sig = `${set.versionKey}|${set.lyricsOnly ? 1 : 0}|${set.viewSource}`;
+    const prev = lastViewSig.current;
+    if (prev && prev.songId === song.id && prev.sig !== sig) setDrawMode(false);
+    lastViewSig.current = { songId: song.id, sig };
+  }, [song.id, set.versionKey, set.lyricsOnly, set.viewSource]);
   // Personen, die Anmerkungen ZUM AKTIVEN Lied teilen (für den Wähler).
   const songSharers = sharers.filter((p) => p.songs.includes(song.id));
 
@@ -566,8 +577,14 @@ export function ChordChart({
   // Anmerkungs-/Zoom-Schlüssel je Strom-Seite. Akkord-Seiten hängen an Lied+Version UND
   // Darstellungsart: „Nur Text" hat eine EIGENE Notiz-Ebene (`_lyr`-Segment) – Bestandsnotizen
   // ohne Segment sind „Akkorde & Text" (abwärtskompatibel). Dokumente hängen an der Datei-ID.
+  // WICHTIG: Die Darstellungsart kommt aus dem VERÖFFENTLICHTEN Schnappschuss (publishedSettings),
+  // nicht aus den Live-Einstellungen – die Notiz-Ebene wechselt exakt mit den sichtbaren Seiten,
+  // nicht schon während des asynchronen Neuaufbaus (sonst: Notizen „vor dem Text", Stift schreibt
+  // in die falsche Ebene).
   const modeSeg = (songId: number): string =>
-    (effSettings[songId] ?? DEFAULT_SETTINGS).lyricsOnly ? '_lyr' : '';
+    (publishedSettings[songId] ?? effSettings[songId] ?? DEFAULT_SETTINGS).lyricsOnly
+      ? '_lyr'
+      : '';
   const drawKeyFor = (page: number): string | null => {
     const o = owners[page];
     if (!o) return null;
