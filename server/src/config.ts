@@ -34,6 +34,11 @@ export const config = {
   /** Ablageordner der kontobezogenen Anmerkungen (eine JSON-Datei je ChurchTools-Konto). */
   annotationsPath: process.env.ANNOTATIONS_PATH ?? './data/annotations',
   /**
+   * Ablageort des Rechte-Caches (persistentes Docker-Volume). Merkt sich pro Konto die zuletzt
+   * gültigen ChurchTools-Rechte, um sporadische CT-Aussetzer (leere Rechte-Antwort) zu überbrücken.
+   */
+  capabilitiesCachePath: process.env.CAPABILITIES_CACHE_PATH ?? './data/capabilities-cache.json',
+  /**
    * ChurchTools-Recht, das als „Administrator" gilt (steuert Zugriff auf die
    * Branding-Einstellungen). Form `modul:recht`. Default deckt Voll-Admins ab;
    * je nach Instanz ggf. anpassen.

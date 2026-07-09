@@ -29,6 +29,7 @@ ENV npm_config_cache=/tmp/.npm
 # Laufzeit-Branding (White-Label) + kontobezogene Anmerkungen liegen im Volume /app/data – überstehen Updates.
 ENV SITE_CONFIG_PATH=/app/data/site.json
 ENV ANNOTATIONS_PATH=/app/data/annotations
+ENV CAPABILITIES_CACHE_PATH=/app/data/capabilities-cache.json
 EXPOSE 3001
 VOLUME ["/app/data"]
 

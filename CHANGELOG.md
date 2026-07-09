@@ -5,6 +5,19 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [2.8.1] – 2026-07-09
+
+### Behoben
+
+- **Kein fälschliches „keine Berechtigung" mehr bei ChurchTools-Aussetzern:** ChurchTools liefert
+  gelegentlich für ein paar Sekunden leere Rechte zurück (während es die Berechtigungen einer
+  Sitzung neu berechnet), obwohl der Nutzer normal berechtigt ist. Bisher sah man in diesem Moment
+  den Hinweis „keine Berechtigung" bzw. musste die Seite mehrfach neu laden. Der Server merkt sich
+  jetzt pro Konto die zuletzt gültigen Rechte und liefert sie während eines solchen Aussetzers aus –
+  der Nutzer merkt nichts mehr davon. Ein dauerhaftes „keine Berechtigung" wird bewusst nie gemerkt,
+  damit tatsächlich Nicht-Berechtigte weiterhin korrekt den Hinweis sehen. Die Rechte werden auf dem
+  Daten-Volume abgelegt (überstehen Updates) und gelten bis zu 30 Tage als vertrauenswürdig.
+
 ## [2.8.0] – 2026-07-08
 
 ### Hinzugefügt
