@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { SiteConfig } from '@shared/types/index';
+import type { SiteConfig, NoteRolePerm } from '@shared/types/index';
 import type { Theme, ThemePref } from '../types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
@@ -9,7 +9,7 @@ import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
 import { LinksManager } from '../components/LinksManager';
 import { SupportBox } from '../components/SupportBox';
-import { useUpdateSiteConfig, useGroups } from '../hooks/useSiteConfig';
+import { useUpdateSiteConfig, useGroups, useGroupRoles } from '../hooks/useSiteConfig';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { getOfflineStatus } from '../queryClient';
 import { isOfflineAutoEnabled, setOfflineAutoEnabled } from '../services/offlineAuto';
@@ -53,25 +53,51 @@ export function Settings({
 }: SettingsProps) {
   const [showOrg, setShowOrg] = useState(false);
   const [showLinks, setShowLinks] = useState(false);
-  const [showMusicianGroup, setShowMusicianGroup] = useState(false);
-  // Entwurf der Gruppen-Auswahl im Sheet (erst „Speichern" persistiert – Mehrfachauswahl).
+  // Verwaltung → „Anmerkungen": Übersicht (showNotes) mit zwei Unter-Sheets
+  // (Gruppen-Zuweisung + Rollen-Zuweisung).
+  const [showNotes, setShowNotes] = useState(false);
+  const [showGroups, setShowGroups] = useState(false);
+  const [showRoles, setShowRoles] = useState(false);
+  // Entwürfe (erst „Speichern" persistiert).
   const [groupDraft, setGroupDraft] = useState<number[]>([]);
+  const [rolesDraft, setRolesDraft] = useState<NoteRolePerm[]>([]);
   const [orgDraft, setOrgDraft] = useState(site.orgName);
   const update = useUpdateSiteConfig();
-  // Gruppen nur laden, wenn ein Admin im Mehr-Tab ist (für Anzeige + Auswahl der Musiker-Gruppen).
+  // Gruppen nur laden, wenn ein Admin im Mehr-Tab ist (für Anzeige + Auswahl der Gruppen-Zuweisung).
   const groupsQuery = useGroups(isAdmin);
 
-  function openMusicianGroup() {
+  function openGroups() {
     setGroupDraft(site.musicianGroupIds);
-    setShowMusicianGroup(true);
+    setShowGroups(true);
   }
   function toggleGroup(id: number) {
     setGroupDraft((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]));
   }
-  function saveMusicianGroups() {
+  function saveGroups() {
+    // Nicht mehr gewählte Gruppen aus den Rollen-Freigaben entfernen (der Server tut das auch).
+    const kept = (site.noteRoles ?? []).filter((r) => groupDraft.includes(r.groupId));
     update.mutate(
-      { ...site, musicianGroupIds: groupDraft },
-      { onSuccess: () => setShowMusicianGroup(false) },
+      { ...site, musicianGroupIds: groupDraft, noteRoles: kept },
+      { onSuccess: () => setShowGroups(false) },
+    );
+  }
+
+  function openRoles() {
+    setRolesDraft(site.noteRoles ?? []);
+    setShowRoles(true);
+  }
+  /** Rollen-Freigabe einer Gruppe im Entwurf ändern (view/manage), leere Einträge fallen weg. */
+  function setGroupRoles(groupId: number, view: number[], manage: number[]) {
+    setRolesDraft((prev) => {
+      const rest = prev.filter((r) => r.groupId !== groupId);
+      if (view.length === 0 && manage.length === 0) return rest;
+      return [...rest, { groupId, view, manage }];
+    });
+  }
+  function saveRoles() {
+    update.mutate(
+      { ...site, noteRoles: rolesDraft },
+      { onSuccess: () => setShowRoles(false) },
     );
   }
   const updateCheck = useUpdateCheck();
@@ -265,11 +291,14 @@ export function Settings({
                     : `${site.links.length} ${site.links.length === 1 ? 'Link' : 'Links'}`}
                 </span>
               </button>
-              <button className={`${styles.setRow} ${styles.tappable}`} onClick={openMusicianGroup}>
-                <span className={styles.setLabel}>Musiker-Gruppen (Anmerkungen)</span>
+              <button
+                className={`${styles.setRow} ${styles.tappable}`}
+                onClick={() => setShowNotes(true)}
+              >
+                <span className={styles.setLabel}>Anmerkungen</span>
                 <span className={styles.setValue}>
                   {site.musicianGroupIds.length === 0
-                    ? 'keine'
+                    ? 'aus'
                     : `${site.musicianGroupIds.length} ${site.musicianGroupIds.length === 1 ? 'Gruppe' : 'Gruppen'}`}
                 </span>
               </button>
@@ -344,13 +373,44 @@ export function Settings({
         </Sheet>
       )}
 
-      {showMusicianGroup && (
-        <Sheet title="Musiker-Gruppen" onClose={() => setShowMusicianGroup(false)}>
+      {showNotes && (
+        <Sheet title="Anmerkungen" onClose={() => setShowNotes(false)}>
           <p className={styles.sheetHint}>
-            Mitglieder der ausgewählten ChurchTools-Gruppen können Anmerkungen{' '}
-            <strong>für das ganze Team</strong> sichtbar machen und sehen (Mitgliedschaft in{' '}
-            <strong>einer</strong> Gruppe genügt). Alle anderen haben weiterhin nur ihre{' '}
-            <strong>privaten</strong> Anmerkungen. Ohne Auswahl ist die Funktion aus.
+            Team-Anmerkungen sind für alle Musiker sichtbar. Lege zuerst die <strong>Gruppen</strong>{' '}
+            fest, deren Mitglieder infrage kommen, und danach je Gruppe die <strong>Rollen</strong>,
+            die Team-Anmerkungen sehen bzw. verwalten dürfen. Ohne freigegebene Rolle darf niemand –
+            alle behalten dann nur ihre <strong>privaten</strong> Anmerkungen.
+          </p>
+          <div className={styles.cardList}>
+            <button className={`${styles.setRow} ${styles.tappable}`} onClick={openGroups}>
+              <span className={styles.setLabel}>Gruppen-Zuweisung</span>
+              <span className={styles.setValue}>
+                {site.musicianGroupIds.length === 0
+                  ? 'keine'
+                  : `${site.musicianGroupIds.length} ${site.musicianGroupIds.length === 1 ? 'Gruppe' : 'Gruppen'}`}
+              </span>
+            </button>
+            <button
+              className={`${styles.setRow} ${styles.tappable}`}
+              onClick={openRoles}
+              disabled={site.musicianGroupIds.length === 0}
+            >
+              <span className={styles.setLabel}>Rollen-Zuweisung</span>
+              <span className={styles.setValue}>
+                {site.musicianGroupIds.length === 0
+                  ? 'erst Gruppen wählen'
+                  : `${(site.noteRoles ?? []).length} konfiguriert`}
+              </span>
+            </button>
+          </div>
+        </Sheet>
+      )}
+
+      {showGroups && (
+        <Sheet title="Gruppen-Zuweisung" onClose={() => setShowGroups(false)}>
+          <p className={styles.sheetHint}>
+            Welche ChurchTools-Gruppen kommen für Team-Anmerkungen infrage? Die genauen Rechte legst
+            du danach unter <strong>Rollen-Zuweisung</strong> je Gruppe fest.
           </p>
           {groupsQuery.isLoading && <Spinner />}
           {groupsQuery.isError && (
@@ -378,11 +438,7 @@ export function Settings({
                 })}
               </div>
               {update.isError && <div className={styles.orgErr}>Speichern fehlgeschlagen.</div>}
-              <button
-                className={styles.orgSave}
-                onClick={saveMusicianGroups}
-                disabled={update.isPending}
-              >
+              <button className={styles.orgSave} onClick={saveGroups} disabled={update.isPending}>
                 {update.isPending ? (
                   <Spinner />
                 ) : groupDraft.length === 0 ? (
@@ -395,6 +451,103 @@ export function Settings({
           )}
         </Sheet>
       )}
+
+      {showRoles && (
+        <Sheet title="Rollen-Zuweisung" onClose={() => setShowRoles(false)}>
+          <p className={styles.sheetHint}>
+            Hake je Gruppe an, welche Rollen Team-Anmerkungen <strong>sehen</strong> und welche sie{' '}
+            <strong>verwalten</strong> (erstellen/bearbeiten/löschen) dürfen. „Verwalten" schließt
+            „Sehen" ein. Nichts angehakt = niemand.
+          </p>
+          {site.musicianGroupIds.map((gid) => (
+            <NoteRoleGroup
+              key={gid}
+              groupId={gid}
+              groupName={groupsQuery.data?.find((g) => g.id === gid)?.name ?? `Gruppe ${gid}`}
+              enabled={isAdmin}
+              perm={rolesDraft.find((r) => r.groupId === gid)}
+              onChange={(view, manage) => setGroupRoles(gid, view, manage)}
+            />
+          ))}
+          {update.isError && <div className={styles.orgErr}>Speichern fehlgeschlagen.</div>}
+          <button className={styles.orgSave} onClick={saveRoles} disabled={update.isPending}>
+            {update.isPending ? <Spinner /> : 'Speichern'}
+          </button>
+        </Sheet>
+      )}
     </Screen>
+  );
+}
+
+/** Rollen-Matrix einer Gruppe (Sehen/Verwalten je Rolle) für die Rollen-Zuweisung. */
+function NoteRoleGroup({
+  groupId,
+  groupName,
+  enabled,
+  perm,
+  onChange,
+}: {
+  groupId: number;
+  groupName: string;
+  enabled: boolean;
+  perm: NoteRolePerm | undefined;
+  onChange: (view: number[], manage: number[]) => void;
+}) {
+  const rolesQuery = useGroupRoles(groupId, enabled);
+  const view = perm?.view ?? [];
+  const manage = perm?.manage ?? [];
+
+  function toggleView(roleId: number) {
+    // „Sehen" lässt sich nicht abwählen, solange „Verwalten" an ist (Verwalten schließt Sehen ein).
+    if (manage.includes(roleId)) return;
+    const next = view.includes(roleId) ? view.filter((x) => x !== roleId) : [...view, roleId];
+    onChange(next, manage);
+  }
+  function toggleManage(roleId: number) {
+    const nextManage = manage.includes(roleId)
+      ? manage.filter((x) => x !== roleId)
+      : [...manage, roleId];
+    // Beim Aktivieren „Sehen" aus der view-Liste nehmen (ist durch manage impliziert – kein Doppel).
+    const nextView = view.filter((x) => x !== roleId);
+    onChange(nextView, nextManage);
+  }
+
+  return (
+    <div className={styles.roleGroup}>
+      <div className={styles.groupHdr}>{groupName}</div>
+      {rolesQuery.isLoading && <Spinner />}
+      {rolesQuery.isError && <div className={styles.orgErr}>Rollen nicht ladbar.</div>}
+      {rolesQuery.data && (
+        <div className={styles.cardList}>
+          {rolesQuery.data.map((role) => {
+            const canManage = manage.includes(role.id);
+            const canView = canManage || view.includes(role.id);
+            return (
+              <div key={role.id} className={styles.roleRow}>
+                <span className={styles.setLabel}>{role.name}</span>
+                <div className={styles.roleToggles}>
+                  <button
+                    type="button"
+                    className={`${styles.roleToggle}${canView ? ' ' + styles.roleToggleOn : ''}`}
+                    aria-pressed={canView}
+                    onClick={() => toggleView(role.id)}
+                  >
+                    Sehen
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.roleToggle}${canManage ? ' ' + styles.roleToggleOn : ''}`}
+                    aria-pressed={canManage}
+                    onClick={() => toggleManage(role.id)}
+                  >
+                    Verwalten
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

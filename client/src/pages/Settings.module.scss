@@ -243,3 +243,44 @@
   background: var(--blue);
   border-color: var(--blue);
 }
+
+/* Rollen-Zuweisung (globale Anmerkungen): je Gruppe eine Rollen-Matrix. */
+.roleGroup {
+  margin-top: 14px;
+}
+.roleRow {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 10px 14px;
+  color: var(--text);
+
+  & + & {
+    box-shadow: inset 0 1px 0 var(--hair);
+  }
+}
+.roleToggles {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+}
+.roleToggle {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+.roleToggleOn {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}

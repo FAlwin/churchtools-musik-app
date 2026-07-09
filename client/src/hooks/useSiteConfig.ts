@@ -36,6 +36,16 @@ export function useGroups(enabled: boolean) {
   });
 }
 
+/** Lädt die Rollen einer Gruppe (für die Rollen-Zuweisung; nur wenn `enabled`). */
+export function useGroupRoles(groupId: number | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['ct-group-roles', groupId],
+    queryFn: () => api.getGroupRoles(groupId as number),
+    enabled: enabled && groupId != null,
+    staleTime: 1000 * 60 * 10,
+  });
+}
+
 /** Speichert das Branding (nur Admin) und aktualisiert sofort die Anzeige. */
 export function useUpdateSiteConfig() {
   const qc = useQueryClient();
