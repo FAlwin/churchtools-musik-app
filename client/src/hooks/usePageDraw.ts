@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { pushField } from '../services/annotations';
 
+/** Signatur der Sync-Push-Funktion (privat: pushField, global: pushSharedField). */
+type PushFn = (lsKey: string, field: 'strokes' | 'texts', value: unknown) => void;
+
 export type TextAlign = 'left' | 'center' | 'right';
 
 /** Absatz-Formatierung einer Text-Anmerkung (gilt für den ganzen Block). */
@@ -44,7 +47,15 @@ type LayerRef = React.MutableRefObject<HTMLDivElement | null>;
  * pro Seite in localStorage. Die Striche selbst zeichnet der Viewer auf die Canvas; dieser Hook
  * verwaltet Verlauf, Text und Persistenz.
  */
-export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, layerRef: LayerRef, reloadTick = 0) {
+export function usePageDraw(
+  storageKey: string | null,
+  strokesRef: CanvasRef,
+  layerRef: LayerRef,
+  reloadTick = 0,
+  // Sync-Ziel: privat (pushField, Default) ODER global (pushSharedField). Der localStorage-Namensraum
+  // steckt bereits im `storageKey`-Präfix; nur die Push-Funktion unterscheidet sich.
+  push: PushFn = pushField,
+) {
   const [texts, setTexts] = useState<PageTextObj[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [pending, setPending] = useState<{
@@ -117,7 +128,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     else localStorage.removeItem(textKey);
     const norm = JSON.stringify(texts);
     if (norm !== loadedJson.current) {
-      pushField(drawKey, 'texts', texts);
+      push(drawKey, 'texts', texts);
       loadedJson.current = norm;
     }
   }, [texts, textKey, drawKey]);
@@ -137,7 +148,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     } catch {
       /* Speicher voll */
     }
-    pushField(drawKey, 'strokes', data);
+    push(drawKey, 'strokes', data);
   }
   function applySnapshot(s: Snapshot) {
     setSelectedId(null);
@@ -288,7 +299,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     c?.getContext('2d')?.clearRect(0, 0, c.width, c.height);
     if (drawKey) {
       localStorage.removeItem(drawKey);
-      pushField(drawKey, 'strokes', null);
+      push(drawKey, 'strokes', null);
     }
     setTexts([]);
     setSelectedId(null);
