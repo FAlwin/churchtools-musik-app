@@ -889,3 +889,71 @@
   border-color: var(--blue);
   color: #fff;
 }
+
+// Import-Auswahl (Notizen übernehmen): Ebenen (Version + Darstellungsart) mit Seiten-Häkchen.
+.impGroup {
+  border-top: 1px solid var(--hair);
+  padding: 10px 0 8px;
+}
+.impGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 2px 0;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+}
+.impGroupName {
+  font-size: 14px;
+  font-weight: 600;
+}
+.impCheck {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.impCheckOn {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+.impPages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0 30px;
+}
+.impPage {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--text2);
+  font-size: 13px;
+  cursor: pointer;
+}
+.impPageOn {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.importBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+// Stift-Marker im Lied-Menü: diese Version/Darstellung hat eigene Anmerkungen.
+.mmNote {
+  color: var(--text3);
+  margin-left: 6px;
+  vertical-align: -1px;
+}

@@ -26,13 +26,17 @@ const annoSchema = z.object({
   zoom: z.object({ x: z.number(), y: z.number(), scale: z.number() }).nullable().optional(),
 });
 
-// Schlüsselform: song<id>_v<versionKey>_<seite> (+ optional _d<geräteklasse><spalten> beim Zoom,
-// z. B. _dlarge2 im iPad-Querformat). Die Layout-Ziffer muss erlaubt sein (sonst wird der
-// Querformat-Zoom serverseitig abgelehnt und nie gespeichert).
+// Schlüsselform: song<id>_v<versionKey>[_lyr]_<seite> (+ optional _d<geräteklasse><spalten> beim
+// Zoom, z. B. _dlarge2 im iPad-Querformat). `_lyr` = Notiz-Ebene der Darstellungsart „Nur Text".
+// MUSS zur Client-KEY_RE passen (annotations.keys.test.ts) – sonst werden Schlüssel serverseitig
+// abgelehnt und nie gespeichert.
 const keySchema = z
   .string()
   .max(120)
-  .regex(/^song\d+_v[a-z0-9-]+_\d+(?:_d(?:phone|large)\d?)?$/i, 'Ungültiger Anmerkungs-Schlüssel.');
+  .regex(
+    /^song\d+_v[a-z0-9-]+(?:_lyr)?_\d+(?:_d(?:phone|large)\d?)?$/i,
+    'Ungültiger Anmerkungs-Schlüssel.',
+  );
 
 /** GET /api/annotations?songs=1,2,3 – alle Anmerkungen des Kontos zu diesen Liedern. */
 export async function getAnnotations(req: Request, res: Response): Promise<void> {
