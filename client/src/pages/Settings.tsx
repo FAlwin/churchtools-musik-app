@@ -86,6 +86,22 @@ export function Settings({
     setRolesDraft(site.noteRoles ?? []);
     setShowRoles(true);
   }
+  // Ungespeicherte Änderungen? Steuert, ob „Speichern" erscheint und der Fuß-Knopf
+  // „Abbrechen" (verwerfen) oder nur „Schließen" heißt.
+  const sameIds = (a: number[], b: number[]) => {
+    if (a.length !== b.length) return false;
+    const sb = [...b].sort((x, y) => x - y);
+    return [...a].sort((x, y) => x - y).every((v, i) => v === sb[i]);
+  };
+  const groupsDirty = showGroups && !sameIds(groupDraft, site.musicianGroupIds);
+  const normRoles = (rs: NoteRolePerm[]) =>
+    JSON.stringify(
+      [...rs]
+        .filter((r) => r.view.length || r.manage.length)
+        .sort((a, b) => a.groupId - b.groupId)
+        .map((r) => ({ g: r.groupId, v: [...r.view].sort(), m: [...r.manage].sort() })),
+    );
+  const rolesDirty = showRoles && normRoles(rolesDraft) !== normRoles(site.noteRoles ?? []);
   /** Rollen-Freigabe einer Gruppe im Entwurf ändern (view/manage), leere Einträge fallen weg. */
   function setGroupRoles(groupId: number, view: number[], manage: number[]) {
     setRolesDraft((prev) => {
@@ -374,7 +390,7 @@ export function Settings({
       )}
 
       {showNotes && (
-        <Sheet title="Anmerkungen" onClose={() => setShowNotes(false)}>
+        <Sheet title="Anmerkungen" onClose={() => setShowNotes(false)} cancelLabel="Schließen">
           <p className={styles.sheetHint}>
             Team-Anmerkungen sind für alle Musiker sichtbar. Lege zuerst die <strong>Gruppen</strong>{' '}
             fest, deren Mitglieder infrage kommen, und danach je Gruppe die <strong>Rollen</strong>,
@@ -407,7 +423,11 @@ export function Settings({
       )}
 
       {showGroups && (
-        <Sheet title="Gruppen-Zuweisung" onClose={() => setShowGroups(false)}>
+        <Sheet
+          title="Gruppen-Zuweisung"
+          onClose={() => setShowGroups(false)}
+          cancelLabel={groupsDirty ? 'Abbrechen' : 'Schließen'}
+        >
           <p className={styles.sheetHint}>
             Welche ChurchTools-Gruppen kommen für Team-Anmerkungen infrage? Die genauen Rechte legst
             du danach unter <strong>Rollen-Zuweisung</strong> je Gruppe fest.
@@ -438,22 +458,28 @@ export function Settings({
                 })}
               </div>
               {update.isError && <div className={styles.orgErr}>Speichern fehlgeschlagen.</div>}
-              <button className={styles.orgSave} onClick={saveGroups} disabled={update.isPending}>
-                {update.isPending ? (
-                  <Spinner />
-                ) : groupDraft.length === 0 ? (
-                  'Speichern (Funktion aus)'
-                ) : (
-                  `Speichern (${groupDraft.length} ${groupDraft.length === 1 ? 'Gruppe' : 'Gruppen'})`
-                )}
-              </button>
+              {groupsDirty && (
+                <button className={styles.orgSave} onClick={saveGroups} disabled={update.isPending}>
+                  {update.isPending ? (
+                    <Spinner />
+                  ) : groupDraft.length === 0 ? (
+                    'Speichern (Funktion aus)'
+                  ) : (
+                    `Speichern (${groupDraft.length} ${groupDraft.length === 1 ? 'Gruppe' : 'Gruppen'})`
+                  )}
+                </button>
+              )}
             </>
           )}
         </Sheet>
       )}
 
       {showRoles && (
-        <Sheet title="Rollen-Zuweisung" onClose={() => setShowRoles(false)}>
+        <Sheet
+          title="Rollen-Zuweisung"
+          onClose={() => setShowRoles(false)}
+          cancelLabel={rolesDirty ? 'Abbrechen' : 'Schließen'}
+        >
           <p className={styles.sheetHint}>
             Hake je Gruppe an, welche Rollen Team-Anmerkungen <strong>sehen</strong> und welche sie{' '}
             <strong>verwalten</strong> (erstellen/bearbeiten/löschen) dürfen. „Verwalten" schließt
@@ -470,9 +496,11 @@ export function Settings({
             />
           ))}
           {update.isError && <div className={styles.orgErr}>Speichern fehlgeschlagen.</div>}
-          <button className={styles.orgSave} onClick={saveRoles} disabled={update.isPending}>
-            {update.isPending ? <Spinner /> : 'Speichern'}
-          </button>
+          {rolesDirty && (
+            <button className={styles.orgSave} onClick={saveRoles} disabled={update.isPending}>
+              {update.isPending ? <Spinner /> : 'Speichern'}
+            </button>
+          )}
         </Sheet>
       )}
     </Screen>

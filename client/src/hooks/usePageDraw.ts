@@ -77,6 +77,10 @@ export function usePageDraw(
   const textKey = storageKey ? `${storageKey}_text` : null;
   // Zuletzt geladener Text-Stand (JSON) – verhindert das Zurück-Pushen gerade geladener Daten.
   const loadedJson = useRef('[]');
+  // Push-Funktion als Ref: ein Wechsel (privat ↔ global) soll den Speicher-Effekt NICHT erneut
+  // auslösen – gepusht wird immer mit der aktuellen Funktion, wenn sich wirklich Inhalt ändert.
+  const pushRef = useRef(push);
+  pushRef.current = push;
 
   // Beim Seiten-/Schlüsselwechsel die Texte SYNCHRON – noch während des Renderns – auf den neuen
   // Stand bringen. Sonst zeigt die neue Seite einen Frame lang noch die Texte der vorherigen
@@ -128,7 +132,7 @@ export function usePageDraw(
     else localStorage.removeItem(textKey);
     const norm = JSON.stringify(texts);
     if (norm !== loadedJson.current) {
-      push(drawKey, 'texts', texts);
+      pushRef.current(drawKey, 'texts', texts);
       loadedJson.current = norm;
     }
   }, [texts, textKey, drawKey]);
@@ -148,7 +152,7 @@ export function usePageDraw(
     } catch {
       /* Speicher voll */
     }
-    push(drawKey, 'strokes', data);
+    pushRef.current(drawKey, 'strokes', data);
   }
   function applySnapshot(s: Snapshot) {
     setSelectedId(null);
@@ -299,7 +303,7 @@ export function usePageDraw(
     c?.getContext('2d')?.clearRect(0, 0, c.width, c.height);
     if (drawKey) {
       localStorage.removeItem(drawKey);
-      push(drawKey, 'strokes', null);
+      pushRef.current(drawKey, 'strokes', null);
     }
     setTexts([]);
     setSelectedId(null);
