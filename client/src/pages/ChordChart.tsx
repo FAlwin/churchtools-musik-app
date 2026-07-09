@@ -190,7 +190,8 @@ export function ChordChart({
 
   const [drawMode, setDrawMode] = useState(false);
   // ── Team-Notizen (#124, PCO-Modell): „Notizen von …" ansehen + übernehmen ──
-  const [viewing, setViewing] = useState<{ id: number; name: string } | null>(null);
+  // Ansehen gilt PRO LIED (nicht für den ganzen Ablauf) – songId merkt sich, für welches.
+  const [viewing, setViewing] = useState<{ id: number; name: string; songId: number } | null>(null);
   const [viewSettings, setViewSettings] = useState<Record<number, SongSettings> | null>(null);
   const [sharers, setSharers] = useState<Sharer[]>([]);
   const [showSharers, setShowSharers] = useState(false);
@@ -268,28 +269,29 @@ export function ChordChart({
     };
   }, []);
 
-  // ── „Notizen von …": Während des Ansehens gelten für die geteilten Lieder die Einstellungen
+  // ── „Notizen von …": Während des Ansehens gelten NUR für das angesehene Lied die Einstellungen
   // der angesehenen Person (ihre Ansicht – nur so stimmen die Positionen ihrer Anmerkungen).
-  const viewSongIds = viewing ? new Set(sharers.find((x) => x.id === viewing.id)?.songs ?? []) : null;
   const effSettings: Record<number, SongSettings> =
-    viewing && viewSettings && viewSongIds
+    viewing && viewSettings
       ? Object.fromEntries(
           songs.map((s) => [
             s.id,
-            viewSongIds.has(s.id) ? (viewSettings[s.id] ?? settings[s.id]) : settings[s.id],
+            s.id === viewing.songId ? (viewSettings[s.id] ?? settings[s.id]) : settings[s.id],
           ]),
         )
       : settings;
 
-  /** Ansehen starten: fremde Ebene + fremde Lied-Einstellungen laden, Zeichenmodus beenden. */
-  async function startViewing(p: { id: number; name: string }) {
+  /** Ansehen starten – NUR für das übergebene Lied (fremde Ebene + fremde Einstellungen laden). */
+  async function startViewing(p: { id: number; name: string }, songId: number) {
     try {
-      const ids = songs.map((x) => x.id);
-      const [, settingsMap] = await Promise.all([loadViewMirror(p.id, ids), getSettingsOf(p.id, ids)]);
-      const map: Record<number, SongSettings> = {};
-      for (const x of songs) map[x.id] = settingsFromMap(x, settingsMap);
-      setViewSettings(map);
-      setViewing(p);
+      const target = songs.find((x) => x.id === songId);
+      if (!target) return;
+      const [, settingsMap] = await Promise.all([
+        loadViewMirror(p.id, [songId]),
+        getSettingsOf(p.id, [songId]),
+      ]);
+      setViewSettings({ [songId]: settingsFromMap(target, settingsMap) });
+      setViewing({ ...p, songId });
       setDrawMode(false);
       setShowSharers(false);
       setSyncTick((t) => t + 1);
@@ -425,6 +427,13 @@ export function ChordChart({
   const activeSongIdx = owners[activeIdx]?.songIdx ?? 0;
   const song = songs[activeSongIdx] ?? songs[songs.length - 1];
   const set = effSettings[song.id] ?? DEFAULT_SETTINGS;
+  // Ansehen gilt pro Lied: Blättert man zu einem anderen Lied, endet es automatisch.
+  useEffect(() => {
+    if (viewing && song.id !== viewing.songId) stopViewing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [song.id]);
+  // Personen, die Anmerkungen ZUM AKTIVEN Lied teilen (für den Wähler).
+  const songSharers = sharers.filter((p) => p.songs.includes(song.id));
 
   // Aktuell SICHTBARE Lieder (fürs Fußzeilen-Punkte-Highlight): im Querformat 2 Seiten → bis zu
   // 2 Lieder nebeneinander, beide markieren. matchMedia('orientation') ist beim Wechsel stabil.
@@ -485,15 +494,16 @@ export function ChordChart({
   // stabile Identität für PageDeck-Effekte). Die Versions-Schlüssel stammen aus der Ansicht der
   // angesehenen Person (effSettings) und passen daher zu ihren Anmerkungs-Schlüsseln.
   const viewingId = viewing?.id ?? null;
+  const viewingSongId = viewing?.songId ?? null;
   const viewKeyFor = useCallback(
     (page: number): string | null => {
       if (viewingId == null) return null;
       const o = owners[page];
-      return o && o.kind !== 'doc'
+      return o && o.kind !== 'doc' && o.songId === viewingSongId
         ? `${VIEW_NS}song${o.songId}_v${o.versionKey}_${o.localPage}`
         : null;
     },
-    [owners, viewingId],
+    [owners, viewingId, viewingSongId],
   );
   const zoomKeyBaseFor = (page: number): string => {
     const o = owners[page];
@@ -1036,21 +1046,20 @@ export function ChordChart({
         {showSharers && (
           <Sheet title="Notizen von …" onClose={() => setShowSharers(false)} cancelLabel="Schließen">
             <p className={styles.pickHint}>
-              Zeigt die geteilten Anmerkungen einer Person – in ihrer Ansicht, schreibgeschützt.
-              Über „Übernehmen" kannst du sie in deine eigenen Notizen kopieren.
+              Zeigt die geteilten Anmerkungen einer Person zu „{song.title}" – in ihrer Ansicht,
+              schreibgeschützt. Über „Übernehmen" kannst du sie in deine eigenen Notizen kopieren.
             </p>
-            {sharers.length === 0 ? (
-              <p className={styles.pickHint}>
-                Zurzeit teilt niemand Anmerkungen zu den Liedern dieses Ablaufs.
-              </p>
+            {songSharers.length === 0 ? (
+              <p className={styles.pickHint}>Zurzeit teilt niemand Anmerkungen zu diesem Lied.</p>
             ) : (
-              sharers.map((p) => (
-                <button key={p.id} className={styles.pickRow} onClick={() => void startViewing(p)}>
+              songSharers.map((p) => (
+                <button
+                  key={p.id}
+                  className={styles.pickRow}
+                  onClick={() => void startViewing(p, song.id)}
+                >
                   <Icon name="people" size={18} stroke={2} />
                   <span className={styles.pickName}>{p.name}</span>
-                  <span className={styles.pickCount}>
-                    {p.songs.length} {p.songs.length === 1 ? 'Lied' : 'Lieder'}
-                  </span>
                 </button>
               ))
             )}
@@ -1061,9 +1070,8 @@ export function ChordChart({
         {showImport && viewing && (
           <Sheet title="Notizen übernehmen" onClose={() => setShowImport(false)}>
             <p className={styles.pickHint}>
-              Kopiert die Anmerkungen von {viewing.name} in deine eigenen Notizen – zusammen mit
-              seiner Ansicht (Version, Spalten, Schrift) für diese Lieder. Deine Tonart bleibt
-              erhalten.
+              Kopiert die Anmerkungen von {viewing.name} zu diesem Lied in deine eigenen Notizen –
+              zusammen mit seiner Ansicht (Version, Spalten, Schrift). Deine Tonart bleibt erhalten.
             </p>
             <button className={`${styles.importBtn} ${styles.importPrimary}`} onClick={() => void importFrom('merge')}>
               Zusammenführen (zu meinen hinzufügen)
