@@ -151,10 +151,11 @@ export interface UserCapabilities {
   canEditSongs: boolean;
   /** ChurchTools-Administrator? Steuert Zugriff auf die Branding-Einstellungen. */
   isAdmin: boolean;
-  /** Darf „globale" (fürs Team sichtbare) Anmerkungen SEHEN (Mitglied einer Gruppe mit Seh-Rolle). */
+  /**
+   * Darf Team-Notizen nutzen (eigene Anmerkungen teilen + geteilte Anmerkungen anderer ansehen) –
+   * aktives Mitglied einer freigegebenen Gruppe mit freigegebener Rolle.
+   */
   canUseGlobalNotes: boolean;
-  /** Darf globale Anmerkungen VERWALTEN (erstellen/bearbeiten/löschen; Gruppe mit Verwalten-Rolle). */
-  canManageGlobalNotes: boolean;
 }
 
 /** Antwort des Login-Endpunkts. */
@@ -201,22 +202,20 @@ export interface SiteConfig {
    */
   musicianGroupIds: number[];
   /**
-   * Rollen-Freigabe JE Gruppe (aus `musicianGroupIds`). `view`/`manage` enthalten die erlaubten
-   * `groupTypeRoleId`s. WICHTIG: leere Liste bzw. kein Eintrag = NIEMAND (kein „alle"); erst das
-   * Anhaken einer Rolle gewährt das Recht. „Verwalten" schließt „Sehen" ein. Vom Admin im Mehr-Tab
-   * unter „Anmerkungen → Rollen-Zuweisung" gepflegt.
+   * Rollen-Freigabe JE Gruppe (aus `musicianGroupIds`): welche `groupTypeRoleId`s dürfen
+   * Team-Notizen NUTZEN (eigene teilen + geteilte ansehen). WICHTIG: leere Liste bzw. kein
+   * Eintrag = NIEMAND (kein „alle"); erst das Anhaken einer Rolle gewährt das Recht. Vom Admin
+   * im Mehr-Tab unter „Anmerkungen → Rollen-Zuweisung" gepflegt.
    */
   noteRoles?: NoteRolePerm[];
 }
 
-/** Rollen-Freigabe einer Gruppe für globale Anmerkungen (siehe `SiteConfig.noteRoles`). */
+/** Rollen-Freigabe einer Gruppe für Team-Notizen (siehe `SiteConfig.noteRoles`). */
 export interface NoteRolePerm {
   /** ChurchTools-Gruppen-ID (muss in `musicianGroupIds` enthalten sein). */
   groupId: number;
-  /** Erlaubte `groupTypeRoleId`s fürs Sehen. Leer = NIEMAND sieht (in dieser Gruppe). */
-  view: number[];
-  /** Erlaubte `groupTypeRoleId`s fürs Verwalten. Leer = NIEMAND verwaltet (in dieser Gruppe). */
-  manage: number[];
+  /** Erlaubte `groupTypeRoleId`s. Leer = NIEMAND (in dieser Gruppe). */
+  roles: number[];
 }
 
 /** Info zur neuesten veröffentlichten Version – für den dezenten Update-Hinweis in der App. */

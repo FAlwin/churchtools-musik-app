@@ -3,7 +3,7 @@ import {
   fileIdFromUrl,
   extractSessionCookie,
   parseCapabilities,
-  computeGlobalNotePerms,
+  computeTeamNotesAllowed,
 } from './churchtools.js';
 import type { NoteRolePerm } from '@shared/types/index';
 
@@ -88,55 +88,53 @@ describe('parseCapabilities', () => {
   });
 });
 
-describe('computeGlobalNotePerms', () => {
+describe('computeTeamNotesAllowed', () => {
   const MUSIKTEAM = 9;
   // Rollen im Musikteam: 15 Mitarbeiter, 16 Leiter, 19 Organisator.
-  const rolesLeiterManage: NoteRolePerm[] = [{ groupId: MUSIKTEAM, view: [19], manage: [16] }];
+  const freigabe: NoteRolePerm[] = [{ groupId: MUSIKTEAM, roles: [16, 19] }];
 
   it('ohne Rollen-Freigabe darf niemand (leer = niemand, kein „alle")', () => {
-    const r = computeGlobalNotePerms([{ groupId: MUSIKTEAM, roleId: 16 }], [MUSIKTEAM], []);
-    expect(r).toEqual({ canUseGlobalNotes: false, canManageGlobalNotes: false });
+    expect(computeTeamNotesAllowed([{ groupId: MUSIKTEAM, roleId: 16 }], [MUSIKTEAM], [])).toBe(
+      false,
+    );
   });
 
-  it('Seh-Rolle darf sehen, aber nicht verwalten', () => {
-    // Organisator (19) ist in view, nicht in manage.
-    const r = computeGlobalNotePerms([{ groupId: MUSIKTEAM, roleId: 19 }], [MUSIKTEAM], rolesLeiterManage);
-    expect(r).toEqual({ canUseGlobalNotes: true, canManageGlobalNotes: false });
-  });
-
-  it('Verwalten-Rolle darf verwalten UND sehen (Verwalten schließt Sehen ein)', () => {
-    // Leiter (16) ist in manage, NICHT in view – muss trotzdem sehen dürfen.
-    const r = computeGlobalNotePerms([{ groupId: MUSIKTEAM, roleId: 16 }], [MUSIKTEAM], rolesLeiterManage);
-    expect(r).toEqual({ canUseGlobalNotes: true, canManageGlobalNotes: true });
+  it('freigegebene Rolle darf Team-Notizen nutzen', () => {
+    expect(
+      computeTeamNotesAllowed([{ groupId: MUSIKTEAM, roleId: 19 }], [MUSIKTEAM], freigabe),
+    ).toBe(true);
   });
 
   it('nicht freigegebene Rolle darf nichts', () => {
-    // Mitarbeiter (15) ist weder in view noch manage.
-    const r = computeGlobalNotePerms([{ groupId: MUSIKTEAM, roleId: 15 }], [MUSIKTEAM], rolesLeiterManage);
-    expect(r).toEqual({ canUseGlobalNotes: false, canManageGlobalNotes: false });
+    // Mitarbeiter (15) ist nicht freigegeben.
+    expect(
+      computeTeamNotesAllowed([{ groupId: MUSIKTEAM, roleId: 15 }], [MUSIKTEAM], freigabe),
+    ).toBe(false);
   });
 
   it('Mitgliedschaft in NICHT gewählter Gruppe zählt nicht', () => {
-    const r = computeGlobalNotePerms(
-      [{ groupId: 42, roleId: 16 }],
-      [MUSIKTEAM],
-      [{ groupId: 42, view: [16], manage: [16] }],
-    );
-    expect(r).toEqual({ canUseGlobalNotes: false, canManageGlobalNotes: false });
+    expect(
+      computeTeamNotesAllowed(
+        [{ groupId: 42, roleId: 16 }],
+        [MUSIKTEAM],
+        [{ groupId: 42, roles: [16] }],
+      ),
+    ).toBe(false);
   });
 
-  it('mehrere Mitgliedschaften: beste Freigabe gewinnt', () => {
-    const r = computeGlobalNotePerms(
-      [
-        { groupId: MUSIKTEAM, roleId: 15 }, // darf nichts
-        { groupId: 5, roleId: 3 }, // Technik-Leiter darf verwalten
-      ],
-      [MUSIKTEAM, 5],
-      [
-        { groupId: MUSIKTEAM, view: [19], manage: [16] },
-        { groupId: 5, view: [], manage: [3] },
-      ],
-    );
-    expect(r).toEqual({ canUseGlobalNotes: true, canManageGlobalNotes: true });
+  it('mehrere Mitgliedschaften: eine Freigabe genügt', () => {
+    expect(
+      computeTeamNotesAllowed(
+        [
+          { groupId: MUSIKTEAM, roleId: 15 }, // nicht freigegeben
+          { groupId: 5, roleId: 3 }, // Technik-Rolle freigegeben
+        ],
+        [MUSIKTEAM, 5],
+        [
+          { groupId: MUSIKTEAM, roles: [16, 19] },
+          { groupId: 5, roles: [3] },
+        ],
+      ),
+    ).toBe(true);
   });
 });

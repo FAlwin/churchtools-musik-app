@@ -9,9 +9,6 @@ import { apiFetch, ApiError } from './api';
 
 const DRAW = 'worship_docdraw_';
 const ZOOM = 'worship_doczoom_';
-// Globale (Team-)Anmerkungen liegen in einem EIGENEN localStorage-Namensraum, damit sie sich mit den
-// privaten (DRAW) nie überschreiben: `worship_shareddraw_<key>` (Striche) + `…_text` (Texte).
-const SHARED = 'worship_shareddraw_';
 const MIGRATED_FLAG = 'worship_anno_migrated_v1';
 // Gültige Server-Schlüssel: song<id>_v<version>_<seite> (+ optional _d<geräteklasse><spalten> beim
 // Zoom, z. B. _dlarge2 im iPad-Querformat). Andere (z. B. Dokument-fileId-Keys) bleiben lokal.
@@ -119,10 +116,6 @@ export function flushPendingAnnotations(): void {
   for (const t of timers.values()) clearTimeout(t);
   timers.clear();
   for (const key of [...pendingFields.keys()]) void flush(key, true);
-  // Globale Anmerkungen ebenso sofort abschicken.
-  for (const t of sharedTimers.values()) clearTimeout(t);
-  sharedTimers.clear();
-  for (const key of [...sharedPending.keys()]) void flushShared(key, true);
 }
 
 if (typeof document !== 'undefined') {
@@ -143,92 +136,6 @@ export function pushField(lsKey: string, field: keyof PageAnnotation, value: unk
   const t = timers.get(key);
   if (t) clearTimeout(t);
   timers.set(key, setTimeout(() => void flush(key), 600));
-}
-
-// ── Globale (Team-)Anmerkungen: Server ↔ localStorage (eigener Namensraum) ───────────────────
-/** Globaler Text trägt zusätzlich seinen Autor (nur zur Anzeige; der Server stempelt/erhält ihn). */
-export interface SharedAnnotationText extends AnnotationText {
-  author?: { id: number; name: string };
-}
-interface SharedPageAnnotation {
-  strokes?: string | null;
-  texts?: SharedAnnotationText[];
-}
-
-const sharedPending = new Map<string, SharedPageAnnotation>();
-const sharedTimers = new Map<string, ReturnType<typeof setTimeout>>();
-const sharedInflight = new Set<string>();
-
-/** localStorage-Key des globalen Namensraums → Server-Schlüssel. */
-function sharedServerKeyOf(lsKey: string): string {
-  return lsKey.replace(SHARED, '').replace(/_text$/, '');
-}
-
-async function flushShared(key: string, keepalive = false): Promise<void> {
-  const body = sharedPending.get(key);
-  sharedPending.delete(key);
-  sharedTimers.delete(key);
-  if (!body || disabled) return;
-  sharedInflight.add(key);
-  try {
-    await apiFetch(`/api/annotations/shared/${encodeURIComponent(key)}`, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-      ...(keepalive ? { keepalive: true } : {}),
-    });
-  } catch (e) {
-    // 401 = nicht angemeldet (Sync ganz aus); 403 = kein Verwaltungsrecht → globale Uploads still lassen.
-    if (e instanceof ApiError && e.status === 401) disabled = true;
-  } finally {
-    sharedInflight.delete(key);
-  }
-}
-
-/** Holt globale Anmerkungen zu diesen Liedern und spiegelt sie in den globalen localStorage-Namensraum.
- *  Nicht-Berechtigte bekommen serverseitig ein leeres Ergebnis → ihre globale Ebene bleibt leer. */
-export async function pullSharedAnnotations(songIds: number[]): Promise<void> {
-  if (disabled || songIds.length === 0) return;
-  try {
-    const data = await apiFetch<Record<string, SharedPageAnnotation>>(
-      `/api/annotations/shared?songs=${songIds.join(',')}`,
-    );
-    // Erst die betroffenen globalen Schlüssel dieser Lieder leeren (serverseitig gelöschte
-    // verschwinden so auch lokal), dann den Server-Stand setzen – außer bei laufender lokaler Änderung.
-    const wanted = new Set(songIds);
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const lk = localStorage.key(i);
-      if (!lk || !lk.startsWith(SHARED)) continue;
-      const sk = sharedServerKeyOf(lk);
-      const m = sk.match(/^song(\d+)_/);
-      if (!m || !wanted.has(Number(m[1]))) continue;
-      if (sharedPending.has(sk) || sharedInflight.has(sk)) continue;
-      localStorage.removeItem(lk);
-    }
-    for (const [key, a] of Object.entries(data)) {
-      if (sharedPending.has(key) || sharedInflight.has(key)) continue;
-      if (a.strokes) localStorage.setItem(SHARED + key, a.strokes);
-      if (a.texts && a.texts.length) localStorage.setItem(SHARED + key + '_text', JSON.stringify(a.texts));
-    }
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 401) disabled = true;
-  }
-}
-
-/** Eine Feld-Änderung (strokes/texts) einer globalen Seite zum Server schreiben (debounced, Feld-Merge). */
-export function pushSharedField(
-  lsKey: string,
-  field: keyof SharedPageAnnotation,
-  value: unknown,
-): void {
-  if (disabled) return;
-  const key = sharedServerKeyOf(lsKey);
-  if (!KEY_RE.test(key)) return;
-  const cur = sharedPending.get(key) ?? {};
-  (cur as Record<string, unknown>)[field] = value;
-  sharedPending.set(key, cur);
-  const t = sharedTimers.get(key);
-  if (t) clearTimeout(t);
-  sharedTimers.set(key, setTimeout(() => void flushShared(key), 600));
 }
 
 // ── Migration: bestehende Geräte-Anmerkungen einmalig aufs Konto ──

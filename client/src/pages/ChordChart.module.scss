@@ -819,3 +819,77 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+// „Notizen von …" (Team-Notizen): Banner unter dem Header + Personen-Wähler + Import.
+.viewBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 13px;
+}
+.viewBarText {
+  flex: 1;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.viewBarBtn {
+  border: none;
+  background: none;
+  color: var(--blue);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.pickHint {
+  font-size: 13px;
+  color: var(--text2);
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 8px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--hair);
+  text-align: left;
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+}
+.pickName {
+  flex: 1;
+  font-weight: 500;
+}
+.pickCount {
+  color: var(--text2);
+  font-size: 13px;
+}
+.importBtn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--hair);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.importPrimary {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}

@@ -12,7 +12,7 @@ import {
   type TextStyle,
   DEFAULT_TEXT_STYLE,
 } from '../hooks/usePageDraw';
-import { pushField, pushSharedField } from '../services/annotations';
+import { pushField } from '../services/annotations';
 import { deviceClass } from '../utils/deviceClass';
 import { DrawToolbar } from './DrawToolbar';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -39,15 +39,13 @@ export interface PageDeckProps {
   loadingLabel: string;
   /** localStorage-Schlüssel für Anmerkungen (Striche+Text) einer Seite – oder null (nicht speicherbar). */
   drawKeyFor: (page: number) => string | null;
-  /** Schlüssel der TEAM-Anmerkungen (globale Ebene) einer Seite – null = keine (z. B. Dokumente). */
-  sharedKeyFor?: (page: number) => string | null;
-  /** Welchen Bereich bearbeitet der Anmerkungsmodus? (privat = wie bisher; Team nur für Verwalter) */
-  noteScope?: 'private' | 'shared';
   /**
-   * Team-Ebene dieser Seite anzeigen? (Augen-Knopf gilt PRO LIED – im 2-up können zwei Lieder
-   * sichtbar sein.) MUSS eine stabile Identität haben (useCallback) – steckt in Effekt-Abhängigkeiten.
+   * „Notizen von …"-Ansehen (Team-Notizen, PCO-Modell): Schlüssel der GERADE ANGESEHENEN fremden
+   * Ebene einer Seite – null = normale eigene Anzeige. Ist ein Schlüssel gesetzt, zeigt die Seite
+   * die fremde Ebene SCHREIBGESCHÜTZT statt der eigenen Anmerkungen. MUSS eine stabile Identität
+   * haben (useCallback) – steckt in Effekt-Abhängigkeiten.
    */
-  showSharedFor?: (page: number) => boolean;
+  viewKeyFor?: (page: number) => string | null;
   /** Basis-Schlüssel für den gespeicherten Zoom einer Seite (ohne Layout-Suffix – das hängt PageDeck an). */
   zoomKeyBaseFor: (page: number) => string;
   /** Optionaler Seiten-Hinweis unten rechts (z. B. „Seite 1 / 3"). null = nicht anzeigen. */
@@ -103,9 +101,9 @@ function resetRevealScrolls(el: HTMLElement): void {
   }
 }
 
-// Stabiler Default für `showSharedFor` (keine Team-Ebene) – Identität darf sich nie ändern,
+// Stabiler Default für `viewKeyFor` (kein Ansehen) – Identität darf sich nie ändern,
 // weil die Funktion in Effekt-Abhängigkeiten steckt.
-const NO_SHARED = (): boolean => false;
+const NO_VIEW = (): string | null => null;
 
 function isLandscape(): boolean {
   // matchMedia('orientation') ist beim Screen-Wechsel/SPA-Navigation stabiler als innerWidth/Height
@@ -132,9 +130,7 @@ export function PageDeck({
   error,
   loadingLabel,
   drawKeyFor,
-  sharedKeyFor,
-  noteScope = 'private',
-  showSharedFor = NO_SHARED,
+  viewKeyFor = NO_VIEW,
   zoomKeyBaseFor,
   pageLabel,
   onBadgeClick,
@@ -256,29 +252,20 @@ export function PageDeck({
     return null;
   }
 
-  // ── Bereichs-Logik (privat / Team) ──
-  // Die INTERAKTIVE Ebene folgt dem gewählten Bereich; Seiten ohne Team-Schlüssel (Dokumente)
-  // bleiben immer privat. Das OVERLAY zeigt den jeweils anderen Bereich nur lesend.
-  const sharedFor = (p: number): string | null => (sharedKeyFor ? sharedKeyFor(p) : null);
-  const editsShared = (p: number): boolean => noteScope === 'shared' && sharedFor(p) != null;
-  const editKeyFor = (p: number): string | null => (editsShared(p) ? sharedFor(p) : drawKeyFor(p));
-  const overlayKeyFor = (p: number): string | null =>
-    editsShared(p) ? drawKeyFor(p) : showSharedFor(p) ? sharedFor(p) : null;
+  // ── „Notizen von …"-Ansehen (Team-Notizen) ──
+  // Ist für eine Seite ein Ansichts-Schlüssel gesetzt, wird DIE FREMDE Ebene (Overlay, nur lesend)
+  // gezeigt und die eigene ausgeblendet. Bearbeitet wird immer nur die eigene (private) Ebene.
+  const overlayKeyFor = (p: number): string | null => viewKeyFor(p);
+  const viewing = (p: number): boolean => overlayKeyFor(p) != null;
 
   // Ein Anmerkungs-Zustand je sichtbarer Seite (fixe Anzahl Hooks – Regeln der Hooks).
-  const drawA = usePageDraw(
-    editKeyFor(pageIndex),
-    annoRefs[0],
-    layerRefs[0],
-    syncTick,
-    editsShared(pageIndex) ? pushSharedField : pushField,
-  );
+  const drawA = usePageDraw(drawKeyFor(pageIndex), annoRefs[0], layerRefs[0], syncTick, pushField);
   const drawB = usePageDraw(
-    editKeyFor(pageIndex + 1),
+    drawKeyFor(pageIndex + 1),
     annoRefs[1],
     layerRefs[1],
     syncTick,
-    editsShared(pageIndex + 1) ? pushSharedField : pushField,
+    pushField,
   );
   const draws = [drawA, drawB];
   const activeSlot = Math.max(0, Math.min(perView - 1, activePage - pageIndex));
@@ -301,7 +288,7 @@ export function PageDeck({
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, syncTick, noteScope, showSharedFor, loading]);
+  }, [pageIndex, syncTick, viewKeyFor, loading]);
 
   // Anmerkungsmodus verlassen → Text-Auswahl aufheben. Sonst bliebe der gestrichelte Rahmen des
   // zuletzt bearbeiteten Textes stehen (er hängt an selectedId) und verschwände erst beim
@@ -348,7 +335,8 @@ export function PageDeck({
       anno.height = src.height;
       const ctx = anno.getContext('2d')!;
       ctx.clearRect(0, 0, anno.width, anno.height);
-      const key = editKeyFor(pageIndex + j);
+      // Eigene Striche nur, wenn diese Seite NICHT gerade eine fremde Ebene zeigt.
+      const key = viewing(pageIndex + j) ? null : drawKeyFor(pageIndex + j);
       const saved = key ? localStorage.getItem(key) : null;
       if (saved) {
         const img = new Image();
@@ -399,7 +387,7 @@ export function PageDeck({
     const net = window.setTimeout(applySaved, 250);
     return () => window.clearTimeout(net);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, pages, pageIndex, perView, syncTick, noteScope, showSharedFor]);
+  }, [loading, pages, pageIndex, perView, syncTick, viewKeyFor]);
 
   // Strich-Bilder der Nachbarseiten vorab dekodieren → der Slide-Streifen kann sie beim
   // Blättern SOFORT (synchron) mitzeichnen, ohne auf Image-Decode zu warten.
@@ -407,7 +395,7 @@ export function PageDeck({
     if (loading) return;
     for (let p = Math.max(0, pageIndex - 2); p <= Math.min(pageCount - 1, pageIndex + 3); p++) {
       // Beide Ebenen (interaktiv + Overlay) vorhalten, damit der Streifen vollständig aussieht.
-      for (const key of [editKeyFor(p), overlayKeyFor(p)]) {
+      for (const key of [viewing(p) ? null : drawKeyFor(p), overlayKeyFor(p)]) {
         if (!key) continue;
         const data = localStorage.getItem(key);
         if (!data) {
@@ -428,7 +416,7 @@ export function PageDeck({
       strokeImgCache.current.delete(oldest);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, pageCount, syncTick, loading, noteScope, showSharedFor]);
+  }, [pageIndex, pageCount, syncTick, loading, viewKeyFor]);
 
   // Eine Streifen-Hälfte (1–2 Seiten ab `start`) aus offscreen-Seite + Strichen zusammensetzen.
   function composePane(start: number): SlideSlot[] {
@@ -445,7 +433,7 @@ export function PageDeck({
       // Beide Ebenen in den Streifen zeichnen (Overlay zuerst, interaktive Ebene obenauf) –
       // im Slide sieht die Seite damit exakt aus wie in der Live-Ansicht.
       const texts: PageTextObj[] = [];
-      for (const key of [overlayKeyFor(p), editKeyFor(p)]) {
+      for (const key of [overlayKeyFor(p), viewing(p) ? null : drawKeyFor(p)]) {
         if (!key) continue;
         const strokes = strokeImgCache.current.get(key);
         if (strokes && strokes.complete && strokes.naturalWidth > 0) ctx.drawImage(strokes, 0, 0);
@@ -1191,12 +1179,11 @@ export function PageDeck({
                     }}
                   >
                     <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
-                    {/* Overlay-Striche des anderen Bereichs (nur lesend, unter der interaktiven
-                        Ebene); im Anmerkungsmodus abgeschwächt = „gehört nicht zum gewählten Bereich". */}
+                    {/* Striche der gerade ANGESEHENEN fremden Ebene ([]=Notizen von X, nur lesend). */}
                     <canvas
                       ref={overlayRefs[j]}
                       className={styles.annoCanvas}
-                      style={{ pointerEvents: 'none', opacity: drawMode ? 0.35 : 1 }}
+                      style={{ pointerEvents: 'none' }}
                     />
                     <canvas
                       ref={annoRefs[j]}
@@ -1219,8 +1206,7 @@ export function PageDeck({
                       }}
                       onPointerDown={(e) => layerDown(e, j)}
                     >
-                      {/* Texte des anderen Bereichs: nur lesend, im Anmerkungsmodus abgeschwächt.
-                          Autor (nur Team-Texte) erscheint nur im Anmerkungsmodus. */}
+                      {/* Texte der gerade angesehenen fremden Ebene (nur lesend). */}
                       {overlayTexts[j].map((o) => (
                         <div
                           key={`ov-${o.id}`}
@@ -1235,16 +1221,12 @@ export function PageDeck({
                             textDecoration: o.underline ? 'underline' : 'none',
                             textAlign: o.align ?? 'center',
                             pointerEvents: 'none',
-                            opacity: drawMode ? 0.35 : 1,
                           }}
                         >
                           {o.text}
-                          {drawMode && o.author && (
-                            <span className={styles.authorTag}>{o.author.name}</span>
-                          )}
                         </div>
                       ))}
-                      {d.texts
+                      {!viewing(pageIndex + j) && d.texts
                         // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
                         .filter((o) => o.id !== d.pending?.editId)
                         .map((o) => (
@@ -1278,10 +1260,6 @@ export function PageDeck({
                             onPointerCancel={d.endDrag}
                           >
                             {o.text}
-                            {/* Autor einer Team-Anmerkung – nur im Anmerkungsmodus sichtbar. */}
-                            {drawMode && editsShared(pageIndex + j) && o.author && (
-                              <span className={styles.authorTag}>{o.author.name}</span>
-                            )}
                             {/* Zieh-Knopf (Ecke unten rechts) am ausgewählten Text: Größe ändern. */}
                             {o.id === d.selectedId && drawMode && drawTool === 'text' && (
                               <span

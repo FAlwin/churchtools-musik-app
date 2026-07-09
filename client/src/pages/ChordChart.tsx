@@ -10,18 +10,23 @@ import { PageDeck } from '../components/PageDeck';
 import { Coachmarks } from '../components/Coachmarks';
 import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
 import { Icon } from '../components/icons';
+import { migrateLocalAnnotations, pullAnnotations, pushField } from '../services/annotations';
 import {
-  migrateLocalAnnotations,
-  pullAnnotations,
-  pullSharedAnnotations,
-} from '../services/annotations';
+  VIEW_NS,
+  getSharers,
+  getSettingsOf,
+  loadViewMirror,
+  clearViewMirror,
+  type Sharer,
+} from '../services/teamNotes';
+import { Sheet } from '../components/Sheet';
 import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
 import { parseChordPro } from '../utils/chordpro';
 import { availableVersions, versionText, setLsVersion } from '../utils/songVersions';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
-import { type SongSettings, DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
+import { type SongSettings, DEFAULT_SETTINGS, loadSettings, settingsFromMap } from '../utils/chartSettings';
 import { logoTightUrl } from '../utils/logoAsset';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
@@ -36,19 +41,56 @@ interface ChordChartProps {
   onReload?: () => void;
   /** Darf der Nutzer den ChordPro-Text bearbeiten? (blendet Editor-Funktionen aus) */
   canEditSong?: boolean;
-  /** Darf Team-Anmerkungen sehen (Mitglied einer freigegebenen Gruppe/Rolle)? */
+  /** Darf Team-Notizen nutzen (eigene teilen + geteilte anderer ansehen)? */
   canUseGlobalNotes?: boolean;
-  /** Darf Team-Anmerkungen verwalten (erstellen/bearbeiten/löschen)? */
-  canManageGlobalNotes?: boolean;
   theme: Theme;
   fontId: string;
 }
 
-/** Sichtbarkeit der Team-Anmerkungsebene je Lied ('0' = ausgeblendet; fehlend/'1' = an). */
-function readSharedVis(list: SetlistSong[]): Record<number, boolean> {
-  return Object.fromEntries(
-    list.map((s) => [s.id, localStorage.getItem(`worship_shared_${s.id}`) !== '0']),
-  );
+/** Zwei Striche-PNGs (eigene + fremde) zu einem Bild zusammenführen (für den Import). */
+function mergeStrokes(own: string | null, theirs: string | null): Promise<string | null> {
+  if (!own) return Promise.resolve(theirs ?? null);
+  if (!theirs) return Promise.resolve(own);
+  return new Promise((resolve) => {
+    const a = new Image();
+    const b = new Image();
+    let loaded = 0;
+    const done = () => {
+      if (++loaded < 2) return;
+      const c = document.createElement('canvas');
+      c.width = Math.max(a.naturalWidth, b.naturalWidth);
+      c.height = Math.max(a.naturalHeight, b.naturalHeight);
+      const ctx = c.getContext('2d');
+      if (!ctx || !c.width || !c.height) {
+        resolve(own);
+        return;
+      }
+      ctx.drawImage(a, 0, 0);
+      ctx.drawImage(b, 0, 0);
+      resolve(c.toDataURL('image/png', 0.7));
+    };
+    a.onload = done;
+    b.onload = done;
+    a.onerror = done;
+    b.onerror = done;
+    a.src = own;
+    b.src = theirs;
+  });
+}
+
+/** Textobjekt einer Anmerkungs-Seite (Form wird beim Import 1:1 übernommen). */
+interface PageTextObjLike {
+  id: number;
+  [k: string]: unknown;
+}
+
+function safeParse<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -63,7 +105,6 @@ export function ChordChart({
   onReload,
   canEditSong = false,
   canUseGlobalNotes = false,
-  canManageGlobalNotes = false,
 }: ChordChartProps) {
   // Einstellungen aller Lieder (für den durchgehenden Strom). Aus localStorage initialisiert.
   const [settings, setSettings] = useState<Record<number, SongSettings>>(() =>
@@ -80,7 +121,6 @@ export function ChordChart({
     .join(',');
   useEffect(() => {
     setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
-    setSharedVis(readSharedVis(songs));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songIds]);
 
@@ -93,16 +133,16 @@ export function ChordChart({
       const ids = songs.map((s) => s.id);
       // Erst bestehende lokale Daten einmalig hochladen, dann Server-Stand holen.
       await Promise.all([migrateLocalAnnotations(), migrateLocalSettings()]);
-      await Promise.all([
-        pullAnnotations(ids),
-        pullSettings(ids),
-        // Team-Anmerkungen nur für Berechtigte (der Server liefert anderen ohnehin nichts).
-        canUseGlobalNotes ? pullSharedAnnotations(ids) : Promise.resolve(),
-      ]);
+      await Promise.all([pullAnnotations(ids), pullSettings(ids)]);
+      // Team-Notizen: wer teilt Anmerkungen zu diesen Liedern? (nur für Berechtigte)
+      if (canUseGlobalNotes) {
+        getSharers(ids)
+          .then((list) => setSharers(list))
+          .catch(() => {});
+      }
       if (cancelled) return;
       // Einstellungen aus dem (jetzt gespiegelten) localStorage neu übernehmen.
       setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
-      setSharedVis(readSharedVis(songs));
       setSyncTick((t) => t + 1);
     })();
     return () => {
@@ -149,41 +189,14 @@ export function ChordChart({
   const [showSongMenu, setShowSongMenu] = useState(false);
 
   const [drawMode, setDrawMode] = useState(false);
-  // ── Team-Anmerkungen (#124) ──
-  // Bereich, in den der Anmerkungsmodus schreibt: privat (Standard) oder Team („für alle").
-  // Nur Verwaltungs-Berechtigte können umschalten; beim Verlassen des Modus zurück auf privat.
-  const [noteScope, setNoteScope] = useState<'private' | 'shared'>('private');
-  // Team-Ebene je Lied ein-/ausgeblendet (Augen-Knopf in der Kopfleiste).
-  const [sharedVis, setSharedVis] = useState<Record<number, boolean>>(() => readSharedVis(songs));
-  useEffect(() => {
-    if (!drawMode) setNoteScope('private');
-  }, [drawMode]);
-  /** Augen-Knopf: Team-Ebene für DIESES Lied ein-/ausblenden (explizit '1'/'0' – synct sauber). */
-  function toggleSharedVis(songId: number) {
-    setSharedVis((prev) => {
-      const on = !(prev[songId] ?? true);
-      localStorage.setItem(`worship_shared_${songId}`, on ? '1' : '0');
-      pushSetting(`worship_shared_${songId}`, on ? '1' : '0');
-      return { ...prev, [songId]: on };
-    });
-  }
-  /** Bereichs-Knopf: privat ↔ für alle. Beim Wechsel auf „für alle" die Team-Ebene des aktiven
-   *  Lieds einblenden – sonst verschwände die eigene Team-Anmerkung beim Verlassen des Modus. */
-  function toggleNoteScope() {
-    setNoteScope((s) => {
-      const next = s === 'private' ? 'shared' : 'private';
-      if (next === 'shared') {
-        setSharedVis((prev) => {
-          const id = liveRef.current.activeSongId;
-          if (prev[id] ?? true) return prev;
-          localStorage.setItem(`worship_shared_${id}`, '1');
-          pushSetting(`worship_shared_${id}`, '1');
-          return { ...prev, [id]: true };
-        });
-      }
-      return next;
-    });
-  }
+  // ── Team-Notizen (#124, PCO-Modell): „Notizen von …" ansehen + übernehmen ──
+  const [viewing, setViewing] = useState<{ id: number; name: string } | null>(null);
+  const [viewSettings, setViewSettings] = useState<Record<number, SongSettings> | null>(null);
+  const [sharers, setSharers] = useState<Sharer[]>([]);
+  const [showSharers, setShowSharers] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  // Beim Verlassen der Ansicht/Chart-Wechsel den flüchtigen Ansichts-Spiegel räumen.
+  useEffect(() => () => clearViewMirror(), []);
   // Geführte Einführung Chart-Ansicht (#Onboarding, Gruppe 2): startet beim ersten Öffnen, sobald
   // die Seiten gerendert sind (dann existieren die hervorzuhebenden Elemente).
   const [chartTour, setChartTour] = useState(false);
@@ -207,27 +220,15 @@ export function ChordChart({
   const drawColors = ['#bb2946', '#0062ac', '#1bb0a2', '#fb8f00'];
 
   // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
-  const liveRef = useRef({
-    songs,
-    drawMode,
-    onReload,
-    canUseGlobalNotes,
-    lastReturn: 0,
-    activeSongId: 0,
-  });
+  const liveRef = useRef({ songs, drawMode, onReload, lastReturn: 0 });
   liveRef.current.songs = songs;
   liveRef.current.drawMode = drawMode;
   liveRef.current.onReload = onReload;
-  liveRef.current.canUseGlobalNotes = canUseGlobalNotes;
   useEffect(() => {
     // Anmerkungen (pro Konto) regelmäßig vom Server holen – pausiert im Zeichenmodus/Hintergrund.
     async function refreshAnno() {
       if (document.hidden || liveRef.current.drawMode) return;
-      const ids = liveRef.current.songs.map((s) => s.id);
-      await Promise.all([
-        pullAnnotations(ids),
-        liveRef.current.canUseGlobalNotes ? pullSharedAnnotations(ids) : Promise.resolve(),
-      ]);
+      await pullAnnotations(liveRef.current.songs.map((s) => s.id));
       setSyncTick((t) => t + 1);
     }
     // Beim Zurückkehren zur App: Anmerkungen, Einstellungen UND Versionen (Setlist) auffrischen.
@@ -241,12 +242,8 @@ export function ChordChart({
         await Promise.all([
           pullAnnotations(list.map((s) => s.id)),
           pullSettings(list.map((s) => s.id)),
-          liveRef.current.canUseGlobalNotes
-            ? pullSharedAnnotations(list.map((s) => s.id))
-            : Promise.resolve(),
         ]);
         setSettings(Object.fromEntries(list.map((s) => [s.id, loadSettings(s)])));
-        setSharedVis(readSharedVis(list));
         setSyncTick((t) => t + 1);
       }
       liveRef.current.onReload?.();
@@ -271,15 +268,120 @@ export function ChordChart({
     };
   }, []);
 
+  // ── „Notizen von …": Während des Ansehens gelten für die geteilten Lieder die Einstellungen
+  // der angesehenen Person (ihre Ansicht – nur so stimmen die Positionen ihrer Anmerkungen).
+  const viewSongIds = viewing ? new Set(sharers.find((x) => x.id === viewing.id)?.songs ?? []) : null;
+  const effSettings: Record<number, SongSettings> =
+    viewing && viewSettings && viewSongIds
+      ? Object.fromEntries(
+          songs.map((s) => [
+            s.id,
+            viewSongIds.has(s.id) ? (viewSettings[s.id] ?? settings[s.id]) : settings[s.id],
+          ]),
+        )
+      : settings;
+
+  /** Ansehen starten: fremde Ebene + fremde Lied-Einstellungen laden, Zeichenmodus beenden. */
+  async function startViewing(p: { id: number; name: string }) {
+    try {
+      const ids = songs.map((x) => x.id);
+      const [, settingsMap] = await Promise.all([loadViewMirror(p.id, ids), getSettingsOf(p.id, ids)]);
+      const map: Record<number, SongSettings> = {};
+      for (const x of songs) map[x.id] = settingsFromMap(x, settingsMap);
+      setViewSettings(map);
+      setViewing(p);
+      setDrawMode(false);
+      setShowSharers(false);
+      setSyncTick((t) => t + 1);
+    } catch {
+      setShowSharers(false); // Laden gescheitert (offline/Rechte) → still im eigenen Modus bleiben
+    }
+  }
+  function stopViewing() {
+    clearViewMirror();
+    setViewing(null);
+    setViewSettings(null);
+    setSyncTick((t) => t + 1);
+  }
+  /**
+   * Import: Anmerkungen der angesehenen Person in die EIGENEN übernehmen (PCO-Stil).
+   * „Ersetzen" überschreibt die eigenen Seiten, „Zusammenführen" kombiniert (Striche-PNGs
+   * übereinander, Texte angehängt). Die Ansicht (Version/Spalten/Schrift/Nur-Text) der Person
+   * wird für die betroffenen Lieder mit übernommen – nur so stimmen die Positionen. Tonart/Kapo
+   * bleiben bewusst persönlich.
+   */
+  async function importFrom(mode: 'merge' | 'replace') {
+    if (!viewing || !viewSettings) return;
+    setShowImport(false);
+    // Alle gespiegelten Seiten der Person einsammeln (Basis-Schlüssel ohne _text).
+    const bases = new Set<string>();
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(VIEW_NS)) continue;
+      bases.add(k.replace(VIEW_NS, '').replace(/_text$/, ''));
+    }
+    const affected = new Set<number>();
+    for (const base of bases) {
+      const m = base.match(/^song(\d+)_/);
+      if (m) affected.add(Number(m[1]));
+      const theirStrokes = localStorage.getItem(VIEW_NS + base);
+      const theirTexts = safeParse<PageTextObjLike[]>(localStorage.getItem(`${VIEW_NS + base}_text`)) ?? [];
+      const ownKey = `worship_docdraw_${base}`;
+      if (mode === 'replace') {
+        if (theirStrokes) localStorage.setItem(ownKey, theirStrokes);
+        else localStorage.removeItem(ownKey);
+        pushField(ownKey, 'strokes', theirStrokes ?? null);
+        if (theirTexts.length) localStorage.setItem(`${ownKey}_text`, JSON.stringify(theirTexts));
+        else localStorage.removeItem(`${ownKey}_text`);
+        pushField(ownKey, 'texts', theirTexts);
+      } else {
+        const merged = await mergeStrokes(localStorage.getItem(ownKey), theirStrokes);
+        if (merged) {
+          localStorage.setItem(ownKey, merged);
+          pushField(ownKey, 'strokes', merged);
+        }
+        const ownTexts = safeParse<PageTextObjLike[]>(localStorage.getItem(`${ownKey}_text`)) ?? [];
+        const withNewIds = theirTexts.map((t, i) => ({ ...t, id: Date.now() + i }));
+        const mergedTexts = [...ownTexts, ...withNewIds];
+        if (mergedTexts.length) {
+          localStorage.setItem(`${ownKey}_text`, JSON.stringify(mergedTexts));
+          pushField(ownKey, 'texts', mergedTexts);
+        }
+      }
+    }
+    // Ansicht der Person für die betroffenen Lieder übernehmen (Tonart/Kapo bleiben eigene).
+    for (const songId of affected) {
+      const vs = viewSettings[songId];
+      if (!vs) continue;
+      localStorage.setItem(`worship_ver_${songId}`, vs.versionKey);
+      pushSetting(`worship_ver_${songId}`, vs.versionKey);
+      setLsVersion('cols', songId, vs.versionKey, String(vs.cols));
+      setLsVersion('fs', songId, vs.versionKey, String(vs.fontSize));
+      setLsVersion('lyrics', songId, vs.versionKey, vs.lyricsOnly ? '1' : '0');
+      const hasShift = Object.keys(vs.secShift).length > 0;
+      setLsVersion('secshift', songId, vs.versionKey, hasShift ? JSON.stringify(vs.secShift) : null);
+    }
+    setSettings(Object.fromEntries(songs.map((x) => [x.id, loadSettings(x)])));
+    stopViewing();
+  }
+
+  /** „Notizen von …" öffnen (Liste beim Öffnen auffrischen). */
+  function openSharers() {
+    setShowSharers(true);
+    getSharers(songs.map((x) => x.id))
+      .then((list) => setSharers(list))
+      .catch(() => {});
+  }
+
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
   const stream = useMemo(() => {
     if (songs.length === 0) return null;
     const songsForPdf = songs.map((s) => {
-      const st = settings[s.id] ?? loadSettings(s);
+      const st = effSettings[s.id] ?? loadSettings(s);
       return { ...s, chordpro: versionText(s, st.versionKey), versionKey: st.versionKey };
     });
     const { doc, owners } = generateSetlistPdfWithOwners(songsForPdf, (s) => {
-      const st = settings[s.id] ?? loadSettings(s);
+      const st = effSettings[s.id] ?? loadSettings(s);
       const off = getSemitoneOffset(s.originalKey, st.key || s.targetKey) - st.capo;
       return {
         semitones: off,
@@ -293,7 +395,7 @@ export function ChordChart({
     });
     return { data: doc.output('arraybuffer') as ArrayBuffer, owners };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songsSig, settings, logoImg]);
+  }, [songsSig, effSettings, logoImg]);
 
   // Durchgehender Strom: Akkord- UND Dokument-Seiten in Setlist-Reihenfolge zu EINER Seiten-Liste
   // (jedes Lied steuert je nach viewSource seine Akkorde ODER sein hochgeladenes Dokument bei).
@@ -306,7 +408,7 @@ export function ChordChart({
     chordPdfData: stream?.data ?? null,
     chordOwners: stream?.owners ?? [],
     songs,
-    settings,
+    settings: effSettings,
   });
 
   // Einführung Chart-Ansicht beim ersten Mal starten – erst wenn die Seiten fertig gerendert sind.
@@ -322,9 +424,7 @@ export function ChordChart({
 
   const activeSongIdx = owners[activeIdx]?.songIdx ?? 0;
   const song = songs[activeSongIdx] ?? songs[songs.length - 1];
-  const set = settings[song.id] ?? DEFAULT_SETTINGS;
-  // Fürs Bereichs-Umschalten (Team-Ebene des AKTIVEN Lieds einblenden) ohne Closure-Probleme.
-  liveRef.current.activeSongId = song.id;
+  const set = effSettings[song.id] ?? DEFAULT_SETTINGS;
 
   // Aktuell SICHTBARE Lieder (fürs Fußzeilen-Punkte-Highlight): im Querformat 2 Seiten → bis zu
   // 2 Lieder nebeneinander, beide markieren. matchMedia('orientation') ist beim Wechsel stabil.
@@ -381,22 +481,19 @@ export function ChordChart({
       ? `worship_docdraw_${o.fileId}_${o.localPage}`
       : `worship_docdraw_song${o.songId}_v${o.versionKey}_${o.localPage}`;
   };
-  // Team-Anmerkungen gibt es NUR an Akkord-Seiten (Lied+Version), nicht an hochgeladenen
-  // Dokumenten – eigener localStorage-Namensraum, gesynct über /api/annotations/shared.
-  const sharedKeyFor = (page: number): string | null => {
-    const o = owners[page];
-    return o && o.kind !== 'doc'
-      ? `worship_shareddraw_song${o.songId}_v${o.versionKey}_${o.localPage}`
-      : null;
-  };
-  // Team-Ebene dieser Seite sichtbar? (Augen-Knopf gilt pro Lied; stabile Identität für PageDeck.)
-  const showSharedFor = useCallback(
-    (page: number): boolean => {
-      if (!canUseGlobalNotes) return false;
+  // „Notizen von …": Schlüssel der angesehenen fremden Ebene je Seite (nur Akkord-Seiten;
+  // stabile Identität für PageDeck-Effekte). Die Versions-Schlüssel stammen aus der Ansicht der
+  // angesehenen Person (effSettings) und passen daher zu ihren Anmerkungs-Schlüsseln.
+  const viewingId = viewing?.id ?? null;
+  const viewKeyFor = useCallback(
+    (page: number): string | null => {
+      if (viewingId == null) return null;
       const o = owners[page];
-      return o && o.kind !== 'doc' ? (sharedVis[o.songId] ?? true) : false;
+      return o && o.kind !== 'doc'
+        ? `${VIEW_NS}song${o.songId}_v${o.versionKey}_${o.localPage}`
+        : null;
     },
-    [owners, sharedVis, canUseGlobalNotes],
+    [owners, viewingId],
   );
   const zoomKeyBaseFor = (page: number): string => {
     const o = owners[page];
@@ -477,7 +574,7 @@ export function ChordChart({
             <button
               className={styles.menuBtn}
               data-tour="chart-lied"
-              onClick={() => setShowSongMenu((v) => !v)}
+              onClick={() => !viewing && setShowSongMenu((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={showSongMenu}
             >
@@ -500,7 +597,7 @@ export function ChordChart({
             </button>
           </div>
           <div className={styles.right}>
-            {!activeDoc && (
+            {!activeDoc && !viewing && (
               <button
                 className={`${styles.toolBtn}${showAppearance ? ' ' + styles.on : ''}`}
                 data-tour="chart-aussehen"
@@ -520,45 +617,44 @@ export function ChordChart({
                 <Icon name="zoom-reset" size={18} stroke={2} />
               </button>
             )}
-            {/* Team-Anmerkungen dieses Lieds ein-/ausblenden (nur Musiker; nicht bei Dokumenten). */}
+            {/* Team-Notizen: geteilte Anmerkungen anderer ansehen (nur Berechtigte). */}
             {canUseGlobalNotes && !activeDoc && (
               <button
-                className={`${styles.toolBtn}${(sharedVis[song.id] ?? true) ? ' ' + styles.on : ''}`}
+                className={`${styles.toolBtn}${viewing ? ' ' + styles.on : ''}`}
                 data-tour="chart-team"
-                onClick={() => toggleSharedVis(song.id)}
-                title={
-                  (sharedVis[song.id] ?? true)
-                    ? 'Team-Anmerkungen ausblenden'
-                    : 'Team-Anmerkungen anzeigen'
-                }
-                aria-label="Team-Anmerkungen anzeigen/ausblenden"
-              >
-                <Icon name={(sharedVis[song.id] ?? true) ? 'eye' : 'eye-off'} size={18} stroke={2} />
-              </button>
-            )}
-            {/* Bereich des Anmerkungsmodus: privat oder „für alle" (nur Verwalter, nur im Modus). */}
-            {canManageGlobalNotes && drawMode && !activeDoc && (
-              <button
-                className={`${styles.toolBtn}${noteScope === 'shared' ? ' ' + styles.on : ''}`}
-                onClick={() => toggleNoteScope()}
-                title={
-                  noteScope === 'shared' ? 'Anmerken: für alle (Team)' : 'Anmerken: nur privat'
-                }
-                aria-label="Anmerkungs-Bereich wechseln (privat / für alle)"
+                onClick={() => (viewing ? stopViewing() : openSharers())}
+                title="Notizen von …"
+                aria-label="Notizen von anderen ansehen"
               >
                 <Icon name="people" size={18} stroke={2} />
               </button>
             )}
-            <button
-              className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
-              data-tour="chart-anmerken"
-              onClick={() => setDrawMode((d) => !d)}
-              title="Anmerkungen"
-            >
-              <Icon name="pencil" size={18} stroke={2.2} />
-            </button>
+            {!viewing && (
+              <button
+                className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
+                data-tour="chart-anmerken"
+                onClick={() => setDrawMode((d) => !d)}
+                title="Anmerkungen"
+              >
+                <Icon name="pencil" size={18} stroke={2.2} />
+              </button>
+            )}
           </div>
         </div>
+
+        {/* „Notizen von …"-Banner: man sieht gerade die geteilte Ebene einer anderen Person. */}
+        {viewing && (
+          <div className={styles.viewBar}>
+            <Icon name="people" size={15} stroke={2} />
+            <span className={styles.viewBarText}>Notizen von {viewing.name} · in seiner Ansicht</span>
+            <button className={styles.viewBarBtn} onClick={() => setShowImport(true)}>
+              Übernehmen
+            </button>
+            <button className={styles.viewBarBtn} onClick={stopViewing}>
+              Fertig
+            </button>
+          </div>
+        )}
 
         {/* Aussehen-Dropdown (pro aktivem Lied: Schriftgröße, Spalten) */}
         {showAppearance && (
@@ -840,9 +936,7 @@ export function ChordChart({
               error={pagesError}
               loadingLabel="Lieder werden vorbereitet…"
               drawKeyFor={drawKeyFor}
-              sharedKeyFor={sharedKeyFor}
-              noteScope={noteScope}
-              showSharedFor={showSharedFor}
+              viewKeyFor={viewKeyFor}
               zoomKeyBaseFor={zoomKeyBaseFor}
               pageLabel={pageLabel}
               pageIndex={pageIdx}
@@ -937,6 +1031,48 @@ export function ChordChart({
             <Icon name="chev-right" size={22} stroke={2.4} />
           </button>
         </div>
+
+        {/* „Notizen von …": wer teilt Anmerkungen zu den Liedern dieses Ablaufs? */}
+        {showSharers && (
+          <Sheet title="Notizen von …" onClose={() => setShowSharers(false)} cancelLabel="Schließen">
+            <p className={styles.pickHint}>
+              Zeigt die geteilten Anmerkungen einer Person – in ihrer Ansicht, schreibgeschützt.
+              Über „Übernehmen" kannst du sie in deine eigenen Notizen kopieren.
+            </p>
+            {sharers.length === 0 ? (
+              <p className={styles.pickHint}>
+                Zurzeit teilt niemand Anmerkungen zu den Liedern dieses Ablaufs.
+              </p>
+            ) : (
+              sharers.map((p) => (
+                <button key={p.id} className={styles.pickRow} onClick={() => void startViewing(p)}>
+                  <Icon name="people" size={18} stroke={2} />
+                  <span className={styles.pickName}>{p.name}</span>
+                  <span className={styles.pickCount}>
+                    {p.songs.length} {p.songs.length === 1 ? 'Lied' : 'Lieder'}
+                  </span>
+                </button>
+              ))
+            )}
+          </Sheet>
+        )}
+
+        {/* Import-Auswahl: Zusammenführen oder Ersetzen. */}
+        {showImport && viewing && (
+          <Sheet title="Notizen übernehmen" onClose={() => setShowImport(false)}>
+            <p className={styles.pickHint}>
+              Kopiert die Anmerkungen von {viewing.name} in deine eigenen Notizen – zusammen mit
+              seiner Ansicht (Version, Spalten, Schrift) für diese Lieder. Deine Tonart bleibt
+              erhalten.
+            </p>
+            <button className={`${styles.importBtn} ${styles.importPrimary}`} onClick={() => void importFrom('merge')}>
+              Zusammenführen (zu meinen hinzufügen)
+            </button>
+            <button className={styles.importBtn} onClick={() => void importFrom('replace')}>
+              Ersetzen (meine Notizen überschreiben)
+            </button>
+          </Sheet>
+        )}
 
         {chartTour && (
           <Coachmarks

@@ -13,6 +13,7 @@ import { useUpdateSiteConfig, useGroups, useGroupRoles } from '../hooks/useSiteC
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { getOfflineStatus } from '../queryClient';
 import { isOfflineAutoEnabled, setOfflineAutoEnabled } from '../services/offlineAuto';
+import { getSharing as apiGetSharing, setSharing as apiSetSharing } from '../services/teamNotes';
 import { usePwaInstall } from '../hooks/usePwaInstall';
 import { promptInstall } from '../services/pwaInstall';
 import styles from './Settings.module.scss';
@@ -25,6 +26,8 @@ interface SettingsProps {
   wakePref: boolean;
   onToggleWake: () => void;
   isAdmin: boolean;
+  /** Darf Team-Notizen nutzen (teilen + ansehen)? Blendet den Teilen-Schalter ein. */
+  canUseGlobalNotes?: boolean;
   /** Name des angemeldeten ChurchTools-Kontos (für die Profilkarte). */
   userName?: string;
   onLogout: () => void;
@@ -47,6 +50,7 @@ export function Settings({
   wakePref,
   onToggleWake,
   isAdmin,
+  canUseGlobalNotes = false,
   userName,
   onLogout,
   onReplayIntro,
@@ -97,17 +101,17 @@ export function Settings({
   const normRoles = (rs: NoteRolePerm[]) =>
     JSON.stringify(
       [...rs]
-        .filter((r) => r.view.length || r.manage.length)
+        .filter((r) => r.roles.length)
         .sort((a, b) => a.groupId - b.groupId)
-        .map((r) => ({ g: r.groupId, v: [...r.view].sort(), m: [...r.manage].sort() })),
+        .map((r) => ({ g: r.groupId, roles: [...r.roles].sort((x, y) => x - y) })),
     );
   const rolesDirty = showRoles && normRoles(rolesDraft) !== normRoles(site.noteRoles ?? []);
-  /** Rollen-Freigabe einer Gruppe im Entwurf ändern (view/manage), leere Einträge fallen weg. */
-  function setGroupRoles(groupId: number, view: number[], manage: number[]) {
+  /** Rollen-Freigabe einer Gruppe im Entwurf ändern; leere Einträge fallen weg. */
+  function setGroupRoles(groupId: number, roles: number[]) {
     setRolesDraft((prev) => {
       const rest = prev.filter((r) => r.groupId !== groupId);
-      if (view.length === 0 && manage.length === 0) return rest;
-      return [...rest, { groupId, view, manage }];
+      if (roles.length === 0) return rest;
+      return [...rest, { groupId, roles }];
     });
   }
   function saveRoles() {
@@ -131,6 +135,20 @@ export function Settings({
     const v = !autoOffline;
     setAutoOffline(v);
     setOfflineAutoEnabled(v);
+  }
+  // Team-Notizen: eigenes Teilen (PCO-Modell; nur für Berechtigte sichtbar). null = lädt noch.
+  const [sharing, setSharingState] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!canUseGlobalNotes) return;
+    apiGetSharing()
+      .then((r) => setSharingState(r.enabled))
+      .catch(() => setSharingState(false));
+  }, [canUseGlobalNotes]);
+  function toggleSharing() {
+    if (sharing == null) return;
+    const next = !sharing;
+    setSharingState(next); // optimistisch; bei Fehler zurückdrehen
+    apiSetSharing(next).catch(() => setSharingState(!next));
   }
   const logo = theme === 'dark' ? '/logo-rund-dunkel.png' : '/logo-rund-hell.png';
 
@@ -282,6 +300,32 @@ export function Settings({
         )}
 
         {/* Organisation (nur Admin) */}
+        {/* Team-Notizen: eigenes Teilen (nur für berechtigte Teammitglieder sichtbar) */}
+        {canUseGlobalNotes && (
+          <div className={styles.group}>
+            <div className={styles.groupHdr}>Team-Notizen</div>
+            <div className={styles.cardList}>
+              <div className={`${styles.setRow} ${styles.tappable}`} onClick={toggleSharing}>
+                <span className={styles.setLabel}>Meine Anmerkungen teilen</span>
+                <button
+                  className={`${styles.tog}${sharing ? ' ' + styles.togOn : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSharing();
+                  }}
+                  aria-label="Meine Anmerkungen teilen"
+                >
+                  <span className={styles.togThumb} />
+                </button>
+              </div>
+              <p className={styles.installHint}>
+                Berechtigte Teammitglieder können deine Anmerkungen dann im Lied unter
+                „Notizen von …" ansehen und übernehmen.
+              </p>
+            </div>
+          </div>
+        )}
+
         {isAdmin && (
           <div className={styles.group}>
             <div className={styles.groupHdr}>Verwaltung</div>
@@ -481,9 +525,8 @@ export function Settings({
           cancelLabel={rolesDirty ? 'Abbrechen' : 'Schließen'}
         >
           <p className={styles.sheetHint}>
-            Hake je Gruppe an, welche Rollen Team-Anmerkungen <strong>sehen</strong> und welche sie{' '}
-            <strong>verwalten</strong> (erstellen/bearbeiten/löschen) dürfen. „Verwalten" schließt
-            „Sehen" ein. Nichts angehakt = niemand.
+            Hake je Gruppe an, welche Rollen <strong>Team-Notizen</strong> nutzen dürfen (eigene
+            Anmerkungen teilen und geteilte Anmerkungen anderer ansehen). Nichts angehakt = niemand.
           </p>
           {site.musicianGroupIds.map((gid) => (
             <NoteRoleGroup
@@ -492,7 +535,7 @@ export function Settings({
               groupName={groupsQuery.data?.find((g) => g.id === gid)?.name ?? `Gruppe ${gid}`}
               enabled={isAdmin}
               perm={rolesDraft.find((r) => r.groupId === gid)}
-              onChange={(view, manage) => setGroupRoles(gid, view, manage)}
+              onChange={(roles) => setGroupRoles(gid, roles)}
             />
           ))}
           {update.isError && <div className={styles.orgErr}>Speichern fehlgeschlagen.</div>}
@@ -507,7 +550,7 @@ export function Settings({
   );
 }
 
-/** Rollen-Matrix einer Gruppe (Sehen/Verwalten je Rolle) für die Rollen-Zuweisung. */
+/** Rollen-Liste einer Gruppe für die Rollen-Zuweisung (Team-Notizen nutzen: ja/nein je Rolle). */
 function NoteRoleGroup({
   groupId,
   groupName,
@@ -519,25 +562,13 @@ function NoteRoleGroup({
   groupName: string;
   enabled: boolean;
   perm: NoteRolePerm | undefined;
-  onChange: (view: number[], manage: number[]) => void;
+  onChange: (roles: number[]) => void;
 }) {
   const rolesQuery = useGroupRoles(groupId, enabled);
-  const view = perm?.view ?? [];
-  const manage = perm?.manage ?? [];
+  const roles = perm?.roles ?? [];
 
-  function toggleView(roleId: number) {
-    // „Sehen" lässt sich nicht abwählen, solange „Verwalten" an ist (Verwalten schließt Sehen ein).
-    if (manage.includes(roleId)) return;
-    const next = view.includes(roleId) ? view.filter((x) => x !== roleId) : [...view, roleId];
-    onChange(next, manage);
-  }
-  function toggleManage(roleId: number) {
-    const nextManage = manage.includes(roleId)
-      ? manage.filter((x) => x !== roleId)
-      : [...manage, roleId];
-    // Beim Aktivieren „Sehen" aus der view-Liste nehmen (ist durch manage impliziert – kein Doppel).
-    const nextView = view.filter((x) => x !== roleId);
-    onChange(nextView, nextManage);
+  function toggleRole(roleId: number) {
+    onChange(roles.includes(roleId) ? roles.filter((x) => x !== roleId) : [...roles, roleId]);
   }
 
   return (
@@ -548,30 +579,20 @@ function NoteRoleGroup({
       {rolesQuery.data && (
         <div className={styles.cardList}>
           {rolesQuery.data.map((role) => {
-            const canManage = manage.includes(role.id);
-            const canView = canManage || view.includes(role.id);
+            const checked = roles.includes(role.id);
             return (
-              <div key={role.id} className={styles.roleRow}>
+              <button
+                key={role.id}
+                className={`${styles.setRow} ${styles.tappable}`}
+                role="checkbox"
+                aria-checked={checked}
+                onClick={() => toggleRole(role.id)}
+              >
                 <span className={styles.setLabel}>{role.name}</span>
-                <div className={styles.roleToggles}>
-                  <button
-                    type="button"
-                    className={`${styles.roleToggle}${canView ? ' ' + styles.roleToggleOn : ''}`}
-                    aria-pressed={canView}
-                    onClick={() => toggleView(role.id)}
-                  >
-                    Sehen
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.roleToggle}${canManage ? ' ' + styles.roleToggleOn : ''}`}
-                    aria-pressed={canManage}
-                    onClick={() => toggleManage(role.id)}
-                  >
-                    Verwalten
-                  </button>
-                </div>
-              </div>
+                <span className={`${styles.checkbox}${checked ? ' ' + styles.checkboxOn : ''}`}>
+                  {checked && <Icon name="check" size={14} />}
+                </span>
+              </button>
             );
           })}
         </div>

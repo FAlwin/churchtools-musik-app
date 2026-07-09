@@ -179,49 +179,60 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
     console.warn(
       '[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer)',
     );
-    return { ...base, canUseGlobalNotes: false, canManageGlobalNotes: false };
+    return { ...base, canUseGlobalNotes: false };
   }
 
-  // Globale Anmerkungen: kein Admin-Bypass. „Sehen"/„Verwalten" ergeben sich aus der aktiven
-  // Gruppen-Mitgliedschaft + der je Gruppe freigegebenen Rolle (siehe computeGlobalNotePerms).
-  // Ohne freigegebene Rolle darf niemand (leer = niemand).
+  // Team-Notizen: kein Admin-Bypass. Das Nutzungsrecht (teilen + ansehen) ergibt sich aus der
+  // aktiven Gruppen-Mitgliedschaft + der je Gruppe freigegebenen Rolle. Leer = niemand.
   const { musicianGroupIds, noteRoles = [] } = await getSiteConfig();
-  let globalPerms = { canUseGlobalNotes: false, canManageGlobalNotes: false };
+  let canUseGlobalNotes = false;
   if (musicianGroupIds.length > 0 && userId != null) {
     const memberships = await getActiveMemberships(cookie, userId);
-    globalPerms = computeGlobalNotePerms(memberships, musicianGroupIds, noteRoles);
+    canUseGlobalNotes = computeTeamNotesAllowed(memberships, musicianGroupIds, noteRoles);
   }
 
-  const full: UserCapabilities = { ...base, ...globalPerms };
+  const full: UserCapabilities = { ...base, canUseGlobalNotes };
   // Gültige Rechte merken → überbrückt künftige Aussetzer. Best effort, blockiert die Antwort nicht.
   if (userId != null) void rememberCapabilities(userId, full);
   return full;
 }
 
 /**
- * Reine Berechtigungs-Logik (testbar, ohne Netz): Was darf der Nutzer bei globalen Anmerkungen?
- * Sehen/Verwalten ergeben sich je gewählter Gruppe aus der freigegebenen Rolle. „Verwalten"
- * schließt „Sehen" ein. Leere/fehlende Rollen-Freigabe einer Gruppe = NIEMAND (kein „alle").
+ * Reine Berechtigungs-Logik (testbar, ohne Netz): Darf der Nutzer Team-Notizen nutzen
+ * (eigene teilen + geteilte ansehen)? Je gewählter Gruppe zählt die freigegebene Rolle;
+ * leere/fehlende Rollen-Freigabe einer Gruppe = NIEMAND (kein „alle").
  */
-export function computeGlobalNotePerms(
+export function computeTeamNotesAllowed(
   memberships: Array<{ groupId: number; roleId: number }>,
   musicianGroupIds: number[],
   noteRoles: NoteRolePerm[],
-): { canUseGlobalNotes: boolean; canManageGlobalNotes: boolean } {
+): boolean {
   const selected = new Set(musicianGroupIds);
-  const permByGroup = new Map<number, NoteRolePerm>();
-  for (const r of noteRoles) permByGroup.set(r.groupId, r);
-  let canView = false;
-  let canManage = false;
-  for (const m of memberships) {
-    if (!selected.has(m.groupId)) continue;
-    const perm = permByGroup.get(m.groupId);
-    if (!perm) continue; // Gruppe gewählt, aber keine Rolle freigegeben → niemand
-    const inManage = perm.manage.includes(m.roleId);
-    if (inManage) canManage = true;
-    if (inManage || perm.view.includes(m.roleId)) canView = true; // Verwalten schließt Sehen ein
+  const rolesByGroup = new Map<number, number[]>();
+  for (const r of noteRoles) rolesByGroup.set(r.groupId, r.roles);
+  return memberships.some(
+    (m) => selected.has(m.groupId) && (rolesByGroup.get(m.groupId) ?? []).includes(m.roleId),
+  );
+}
+
+// ── Kurzzeit-Memo der Capabilities je Session-Cookie ─────────────────────────────────────────
+// Die Fremd-Lese-Endpunkte (Team-Notizen) prüfen das Nutzungsrecht bei JEDER Anfrage. Ein
+// Live-Gang zu ChurchTools pro Anfrage wäre teuer UND anfällig für CT-Aussetzer (genau so sind
+// in der ersten Team-Notizen-Version sporadisch „alle Notizen weg"-Effekte entstanden).
+const capsMemo = new Map<string, { caps: UserCapabilities; at: number }>();
+const CAPS_MEMO_TTL_MS = 5 * 60_000;
+
+/** Capabilities mit 5-Minuten-Memo je Session – für häufige Rechte-Checks (Team-Notizen). */
+export async function getCapabilitiesCached(cookie: string): Promise<UserCapabilities> {
+  const hit = capsMemo.get(cookie);
+  if (hit && Date.now() - hit.at < CAPS_MEMO_TTL_MS) return hit.caps;
+  // Abgelaufene Fremd-Einträge bei dieser Gelegenheit räumen (Map wächst sonst über Wochen).
+  for (const [k, v] of capsMemo) {
+    if (Date.now() - v.at >= CAPS_MEMO_TTL_MS) capsMemo.delete(k);
   }
-  return { canUseGlobalNotes: canView, canManageGlobalNotes: canManage };
+  const caps = await getCapabilities(cookie);
+  capsMemo.set(cookie, { caps, at: Date.now() });
+  return caps;
 }
 
 /**
@@ -312,9 +323,8 @@ export function parseCapabilities(
     canEditAgendas: isAdmin || has(cs['edit agenda']),
     canEditSongs: isAdmin || has(cs['edit songcategory']),
     isAdmin,
-    // Defaults; die tatsächliche Gruppen-/Rollen-Prüfung ergänzt getCapabilities (braucht Cookie + Config).
+    // Default; die tatsächliche Gruppen-/Rollen-Prüfung ergänzt getCapabilities (braucht Cookie + Config).
     canUseGlobalNotes: false,
-    canManageGlobalNotes: false,
   };
 }
 

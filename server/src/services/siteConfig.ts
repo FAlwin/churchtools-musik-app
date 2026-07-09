@@ -21,12 +21,20 @@ const linkSchema = z.object({
   showOnLogin: z.boolean(),
 });
 
-// Rollen-Freigabe je Gruppe für globale Anmerkungen. Leere Listen = niemand (kein „alle").
-const noteRoleSchema = z.object({
-  groupId: z.number().int().positive(),
-  view: z.array(z.number().int().positive()).max(50).optional().default([]),
-  manage: z.array(z.number().int().positive()).max(50).optional().default([]),
-});
+// Rollen-Freigabe je Gruppe für Team-Notizen. Leere Liste = niemand (kein „alle").
+// `view`/`manage` = kurzlebiges Zwischenformat aus der Entwicklung – wird beim Einlesen in
+// `roles` überführt (Vereinigung), damit eine Staging-Konfiguration nicht verloren geht.
+const noteRoleSchema = z
+  .object({
+    groupId: z.number().int().positive(),
+    roles: z.array(z.number().int().positive()).max(50).optional().default([]),
+    view: z.array(z.number().int().positive()).max(50).optional().default([]),
+    manage: z.array(z.number().int().positive()).max(50).optional().default([]),
+  })
+  .transform((r) => ({
+    groupId: r.groupId,
+    roles: r.roles.length > 0 ? r.roles : [...new Set([...r.view, ...r.manage])],
+  }));
 
 // Tolerant gegenüber Altfeldern (bestehende site.json aus der White-Label-Phase),
 // die nur ignoriert werden. Anpassbar: orgName + links + Anmerkungs-Gruppen/-Rollen.
@@ -61,11 +69,7 @@ function normalize({
   // Nur Rollen-Freigaben für tatsächlich gewählte Gruppen behalten; Rollen-IDs deduplizieren.
   const roles = noteRoles
     .filter((r) => groupSet.has(r.groupId))
-    .map((r) => ({
-      groupId: r.groupId,
-      view: [...new Set(r.view)],
-      manage: [...new Set(r.manage)],
-    }));
+    .map((r) => ({ groupId: r.groupId, roles: [...new Set(r.roles)] }));
   return {
     appName: DEFAULT_SITE_CONFIG.appName,
     description: DEFAULT_SITE_CONFIG.description,

@@ -86,11 +86,11 @@ export const CHART_STEPS: CoachStep[] = [
     title: 'Anmerkungen',
     body: 'Zeichne oder schreibe Notizen direkt auf die Seite – sie werden pro Konto gespeichert.',
   },
-  // Nur für Musiker sichtbar (das Auge existiert sonst nicht → Schritt wird übersprungen).
+  // Nur für Team-Berechtigte sichtbar (sonst existiert der Knopf nicht → Schritt wird übersprungen).
   {
     selector: '[data-tour="chart-team"]',
-    title: 'Team-Anmerkungen',
-    body: 'Das Auge blendet die gemeinsamen Team-Anmerkungen dieses Lieds ein und aus. Wer sie verwalten darf, wechselt im Anmerkungsmodus über den Personen-Knopf zwischen „privat" und „für alle".',
+    title: 'Notizen von anderen',
+    body: 'Sieh dir die geteilten Anmerkungen deiner Team-Mitglieder an – in deren Ansicht – und übernimm sie bei Bedarf in deine eigenen. Deine Anmerkungen teilst du unter „Mehr → Team-Notizen".',
   },
 ];
 

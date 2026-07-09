@@ -5,8 +5,7 @@
  */
 import { apiFetch, ApiError } from './api';
 
-// `shared` = Sichtbarkeit der Team-Anmerkungsebene pro Lied ('0' = ausgeblendet; fehlend = an).
-const SETTINGS_KEY_RE = /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view|shared)_\d+/;
+const SETTINGS_KEY_RE = /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_\d+/;
 const MIGRATED_FLAG = 'worship_settings_migrated_v1';
 
 let disabled = false;

@@ -9,17 +9,17 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Hinzugefügt
 
-- **Team-Anmerkungen (#124):** Anmerkungen (Texte und Zeichnungen) können jetzt wahlweise
-  **privat** (wie bisher) oder **für das ganze Team** angelegt werden. Team-Anmerkungen sehen
-  alle freigegebenen Musiker live auf ihren Geräten; verwaltet (erstellt/bearbeitet/gelöscht)
-  werden sie gemeinsam – jeder Berechtigte darf jede Team-Anmerkung ändern, der Autor eines
-  Textes wird im Anmerkungsmodus angezeigt. Bedienung: Im Anmerkungsmodus wechselt der
-  Personen-Knopf in der Kopfleiste zwischen „privat" und „für alle" (die jeweils andere Ebene
-  ist währenddessen abgeschwächt und gesperrt); das Auge blendet die Team-Ebene pro Lied ein/aus.
-  Wer was sehen bzw. verwalten darf, legt der Admin unter „Mehr → Verwaltung → Anmerkungen"
-  fest: **Gruppen-Zuweisung** (ChurchTools-Gruppen) + **Rollen-Zuweisung** (je Gruppe, getrennt
-  für Sehen und Verwalten; nichts angehakt = niemand). Die geführte Einführung der Chart-Ansicht
-  wurde um den Schritt „Team-Anmerkungen" ergänzt.
+- **Team-Notizen (#124):** Anmerkungen bleiben persönlich – aber wer mag, **teilt** sie mit dem
+  Team („Mehr → Team-Notizen → Meine Anmerkungen teilen"). Berechtigte sehen im Lied über den
+  Personen-Knopf **„Notizen von …"**, wessen geteilte Anmerkungen es gibt, und können sie
+  ansehen – schreibgeschützt und automatisch **in der Ansicht dieser Person** (Spalten, Schrift,
+  Version), damit alles an der richtigen Stelle sitzt. Über **„Übernehmen"** lassen sich die
+  Anmerkungen in die eigenen kopieren (zusammenführen oder ersetzen; die Ansicht der Person wird
+  für diese Lieder mit übernommen, die eigene Tonart bleibt). Wer Team-Notizen nutzen darf, legt
+  der Admin unter „Mehr → Verwaltung → Anmerkungen" fest: **Gruppen-Zuweisung**
+  (ChurchTools-Gruppen) + **Rollen-Zuweisung** (freigegebene Rollen je Gruppe; nichts angehakt =
+  niemand). Die geführte Einführung der Chart-Ansicht wurde um den Schritt „Notizen von anderen"
+  ergänzt.
 
 ## [2.8.1] – 2026-07-09
 

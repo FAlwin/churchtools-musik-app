@@ -217,18 +217,3 @@
   font-size: 18px;
   line-height: 1;
 }
-
-// Autor einer Team-Anmerkung – kleines Etikett unter dem Text, nur im Anmerkungsmodus gerendert.
-.authorTag {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.55em;
-  font-weight: 400;
-  font-style: normal;
-  text-decoration: none;
-  white-space: nowrap;
-  color: var(--text3);
-  pointer-events: none;
-}
