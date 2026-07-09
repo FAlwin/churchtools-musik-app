@@ -109,17 +109,20 @@ function ResponsibleLine({ entries }: { entries: AgendaItem['responsible'] }) {
     <div className={styles.resp}>
       <RespIcon />
       <span className={styles.respList}>
-        {entries.map((e, i) =>
-          e.open ? (
+        {entries.map((e, i) => {
+          // Kommagetrennt; das Komma steht MIT im Namens-Span, damit es beim Umbruch am Namen bleibt.
+          const sep = i < entries.length - 1 ? ',' : '';
+          return e.open ? (
             <span key={i} className={styles.respOpen}>
-              {e.label} ?
+              {e.label} ?{sep}
             </span>
           ) : (
             <span key={i} className={styles.respName}>
               {e.label}
+              {sep}
             </span>
-          ),
-        )}
+          );
+        })}
       </span>
     </div>
   );
