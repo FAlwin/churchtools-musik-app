@@ -1212,9 +1212,7 @@ export function ChordChart({
                 {mirrorGroups().length === 0 && (
                   <p className={styles.pickHint}>Keine Anmerkungen zu diesem Lied vorhanden.</p>
                 )}
-                {mirrorGroups()
-              .filter((g) => viewing && g.versionKey === viewing.versionKey && g.lyr === viewing.lyr)
-              .map((g) => {
+                {mirrorGroups().map((g) => {
                   const vName =
                     availableVersions(song).find((v) => v.key === g.versionKey)?.name ??
                     g.versionKey;
