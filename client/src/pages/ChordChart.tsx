@@ -563,14 +563,17 @@ export function ChordChart({
       ? null
       : (song.documents.find((d) => d.fileId === set.viewSource) ?? null);
 
-  // Anmerkungs-/Zoom-Schlüssel je Strom-Seite – Schema identisch zu vorher (Akkorde an Lied+Version,
-  // Dokumente an Datei-ID), damit bestehende Anmerkungen erhalten bleiben.
+  // Anmerkungs-/Zoom-Schlüssel je Strom-Seite. Akkord-Seiten hängen an Lied+Version UND
+  // Darstellungsart: „Nur Text" hat eine EIGENE Notiz-Ebene (`_lyr`-Segment) – Bestandsnotizen
+  // ohne Segment sind „Akkorde & Text" (abwärtskompatibel). Dokumente hängen an der Datei-ID.
+  const modeSeg = (songId: number): string =>
+    (effSettings[songId] ?? DEFAULT_SETTINGS).lyricsOnly ? '_lyr' : '';
   const drawKeyFor = (page: number): string | null => {
     const o = owners[page];
     if (!o) return null;
     return o.kind === 'doc'
       ? `worship_docdraw_${o.fileId}_${o.localPage}`
-      : `worship_docdraw_song${o.songId}_v${o.versionKey}_${o.localPage}`;
+      : `worship_docdraw_song${o.songId}_v${o.versionKey}${modeSeg(o.songId)}_${o.localPage}`;
   };
   // „Notizen von …": Schlüssel der angesehenen fremden Ebene je Seite (nur Akkord-Seiten;
   // stabile Identität für PageDeck-Effekte). Die Versions-Schlüssel stammen aus der Ansicht der
@@ -593,7 +596,7 @@ export function ChordChart({
     if (!o) return `worship_doczoom_p${page}`;
     return o.kind === 'doc'
       ? `worship_doczoom_${o.fileId}_${o.localPage}`
-      : `worship_doczoom_song${o.songId}_v${o.versionKey}_${o.localPage}`;
+      : `worship_doczoom_song${o.songId}_v${o.versionKey}${modeSeg(o.songId)}_${o.localPage}`;
   };
   // Seiten-Hinweis nur bei mehrseitigen Einheiten (Lied/Dokument): „Seite x / y".
   const pageLabel = (activePg: number, pageIdx: number): string | null => {
