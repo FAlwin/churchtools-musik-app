@@ -10,10 +10,11 @@ import { config } from '../config.js';
 type Store = Record<string, string>;
 
 // Erlaubte Einstellungs-Schlüssel (mit eingebetteter Lied-ID) – begrenzt, was synchronisiert wird.
-export const SETTINGS_KEY_RE = /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_\d+/;
+// `shared` = Sichtbarkeit der Team-Anmerkungsebene pro Lied ('0' = ausgeblendet; fehlend = an).
+export const SETTINGS_KEY_RE = /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view|shared)_\d+/;
 /** Lied-ID aus einem Einstellungs-Schlüssel ziehen. */
 function songIdOf(key: string): number | null {
-  const m = key.match(/^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_(\d+)/);
+  const m = key.match(/^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view|shared)_(\d+)/);
   return m ? Number(m[1]) : null;
 }
 

@@ -5,6 +5,22 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Hinzugefügt
+
+- **Team-Anmerkungen (#124):** Anmerkungen (Texte und Zeichnungen) können jetzt wahlweise
+  **privat** (wie bisher) oder **für das ganze Team** angelegt werden. Team-Anmerkungen sehen
+  alle freigegebenen Musiker live auf ihren Geräten; verwaltet (erstellt/bearbeitet/gelöscht)
+  werden sie gemeinsam – jeder Berechtigte darf jede Team-Anmerkung ändern, der Autor eines
+  Textes wird im Anmerkungsmodus angezeigt. Bedienung: Im Anmerkungsmodus wechselt der
+  Personen-Knopf in der Kopfleiste zwischen „privat" und „für alle" (die jeweils andere Ebene
+  ist währenddessen abgeschwächt und gesperrt); das Auge blendet die Team-Ebene pro Lied ein/aus.
+  Wer was sehen bzw. verwalten darf, legt der Admin unter „Mehr → Verwaltung → Anmerkungen"
+  fest: **Gruppen-Zuweisung** (ChurchTools-Gruppen) + **Rollen-Zuweisung** (je Gruppe, getrennt
+  für Sehen und Verwalten; nichts angehakt = niemand). Die geführte Einführung der Chart-Ansicht
+  wurde um den Schritt „Team-Anmerkungen" ergänzt.
+
 ## [2.8.1] – 2026-07-09
 
 ### Behoben

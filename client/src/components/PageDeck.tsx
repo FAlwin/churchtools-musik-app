@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
   TransformWrapper,
@@ -12,7 +12,7 @@ import {
   type TextStyle,
   DEFAULT_TEXT_STYLE,
 } from '../hooks/usePageDraw';
-import { pushField } from '../services/annotations';
+import { pushField, pushSharedField } from '../services/annotations';
 import { deviceClass } from '../utils/deviceClass';
 import { DrawToolbar } from './DrawToolbar';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -39,6 +39,15 @@ export interface PageDeckProps {
   loadingLabel: string;
   /** localStorage-Schlüssel für Anmerkungen (Striche+Text) einer Seite – oder null (nicht speicherbar). */
   drawKeyFor: (page: number) => string | null;
+  /** Schlüssel der TEAM-Anmerkungen (globale Ebene) einer Seite – null = keine (z. B. Dokumente). */
+  sharedKeyFor?: (page: number) => string | null;
+  /** Welchen Bereich bearbeitet der Anmerkungsmodus? (privat = wie bisher; Team nur für Verwalter) */
+  noteScope?: 'private' | 'shared';
+  /**
+   * Team-Ebene dieser Seite anzeigen? (Augen-Knopf gilt PRO LIED – im 2-up können zwei Lieder
+   * sichtbar sein.) MUSS eine stabile Identität haben (useCallback) – steckt in Effekt-Abhängigkeiten.
+   */
+  showSharedFor?: (page: number) => boolean;
   /** Basis-Schlüssel für den gespeicherten Zoom einer Seite (ohne Layout-Suffix – das hängt PageDeck an). */
   zoomKeyBaseFor: (page: number) => string;
   /** Optionaler Seiten-Hinweis unten rechts (z. B. „Seite 1 / 3"). null = nicht anzeigen. */
@@ -94,6 +103,10 @@ function resetRevealScrolls(el: HTMLElement): void {
   }
 }
 
+// Stabiler Default für `showSharedFor` (keine Team-Ebene) – Identität darf sich nie ändern,
+// weil die Funktion in Effekt-Abhängigkeiten steckt.
+const NO_SHARED = (): boolean => false;
+
 function isLandscape(): boolean {
   // matchMedia('orientation') ist beim Screen-Wechsel/SPA-Navigation stabiler als innerWidth/Height
   // (die kurzzeitig falsch gemeldet werden) → verhindert, dass der Zoom-Schlüssel (perView) kippt
@@ -119,6 +132,9 @@ export function PageDeck({
   error,
   loadingLabel,
   drawKeyFor,
+  sharedKeyFor,
+  noteScope = 'private',
+  showSharedFor = NO_SHARED,
   zoomKeyBaseFor,
   pageLabel,
   onBadgeClick,
@@ -155,6 +171,12 @@ export function PageDeck({
     useRef<HTMLCanvasElement | null>(null),
   ];
   const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
+  // Schreibgeschützte Striche des jeweils ANDEREN Bereichs (Team-Ebene bzw. beim Team-Bearbeiten
+  // die privaten) – eigene Canvas UNTER der interaktiven Anno-Canvas.
+  const overlayRefs = [
+    useRef<HTMLCanvasElement | null>(null),
+    useRef<HTMLCanvasElement | null>(null),
+  ];
   const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
   const transformRefs = [
     useRef<ReactZoomPanPinchRef | null>(null),
@@ -234,12 +256,52 @@ export function PageDeck({
     return null;
   }
 
+  // ── Bereichs-Logik (privat / Team) ──
+  // Die INTERAKTIVE Ebene folgt dem gewählten Bereich; Seiten ohne Team-Schlüssel (Dokumente)
+  // bleiben immer privat. Das OVERLAY zeigt den jeweils anderen Bereich nur lesend.
+  const sharedFor = (p: number): string | null => (sharedKeyFor ? sharedKeyFor(p) : null);
+  const editsShared = (p: number): boolean => noteScope === 'shared' && sharedFor(p) != null;
+  const editKeyFor = (p: number): string | null => (editsShared(p) ? sharedFor(p) : drawKeyFor(p));
+  const overlayKeyFor = (p: number): string | null =>
+    editsShared(p) ? drawKeyFor(p) : showSharedFor(p) ? sharedFor(p) : null;
+
   // Ein Anmerkungs-Zustand je sichtbarer Seite (fixe Anzahl Hooks – Regeln der Hooks).
-  const drawA = usePageDraw(drawKeyFor(pageIndex), annoRefs[0], layerRefs[0], syncTick);
-  const drawB = usePageDraw(drawKeyFor(pageIndex + 1), annoRefs[1], layerRefs[1], syncTick);
+  const drawA = usePageDraw(
+    editKeyFor(pageIndex),
+    annoRefs[0],
+    layerRefs[0],
+    syncTick,
+    editsShared(pageIndex) ? pushSharedField : pushField,
+  );
+  const drawB = usePageDraw(
+    editKeyFor(pageIndex + 1),
+    annoRefs[1],
+    layerRefs[1],
+    syncTick,
+    editsShared(pageIndex + 1) ? pushSharedField : pushField,
+  );
   const draws = [drawA, drawB];
   const activeSlot = Math.max(0, Math.min(perView - 1, activePage - pageIndex));
   const activeDraw = draws[activeSlot];
+
+  // Texte des Overlay-Bereichs (nur lesend) je sichtbarem Slot – direkt aus localStorage.
+  // Ändert sich nur durch Sync (syncTick), Blättern oder Bereichs-/Augen-Wechsel.
+  const overlayTexts: PageTextObj[][] = useMemo(() => {
+    const out: PageTextObj[][] = [[], []];
+    if (loading) return out;
+    for (let j = 0; j < 2; j++) {
+      const key = overlayKeyFor(pageIndex + j);
+      if (!key) continue;
+      try {
+        const t = localStorage.getItem(`${key}_text`);
+        out[j] = t ? (JSON.parse(t) as PageTextObj[]) : [];
+      } catch {
+        out[j] = [];
+      }
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, syncTick, noteScope, showSharedFor, loading]);
 
   // Anmerkungsmodus verlassen → Text-Auswahl aufheben. Sonst bliebe der gestrichelte Rahmen des
   // zuletzt bearbeiteten Textes stehen (er hängt an selectedId) und verschwände erst beim
@@ -286,12 +348,27 @@ export function PageDeck({
       anno.height = src.height;
       const ctx = anno.getContext('2d')!;
       ctx.clearRect(0, 0, anno.width, anno.height);
-      const key = drawKeyFor(pageIndex + j);
+      const key = editKeyFor(pageIndex + j);
       const saved = key ? localStorage.getItem(key) : null;
       if (saved) {
         const img = new Image();
         img.onload = () => ctx.drawImage(img, 0, 0);
         img.src = saved;
+      }
+      // Overlay-Striche (anderer Bereich, nur lesend) auf die Overlay-Canvas.
+      const over = overlayRefs[j].current;
+      if (over) {
+        over.width = src.width;
+        over.height = src.height;
+        const octx = over.getContext('2d')!;
+        octx.clearRect(0, 0, over.width, over.height);
+        const oKey = overlayKeyFor(pageIndex + j);
+        const oSaved = oKey ? localStorage.getItem(oKey) : null;
+        if (oSaved) {
+          const img = new Image();
+          img.onload = () => octx.drawImage(img, 0, 0);
+          img.src = oSaved;
+        }
       }
       nextAspects[j] = `${src.width} / ${src.height}`;
     }
@@ -322,34 +399,36 @@ export function PageDeck({
     const net = window.setTimeout(applySaved, 250);
     return () => window.clearTimeout(net);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, pages, pageIndex, perView, syncTick]);
+  }, [loading, pages, pageIndex, perView, syncTick, noteScope, showSharedFor]);
 
   // Strich-Bilder der Nachbarseiten vorab dekodieren → der Slide-Streifen kann sie beim
   // Blättern SOFORT (synchron) mitzeichnen, ohne auf Image-Decode zu warten.
   useEffect(() => {
     if (loading) return;
     for (let p = Math.max(0, pageIndex - 2); p <= Math.min(pageCount - 1, pageIndex + 3); p++) {
-      const key = drawKeyFor(p);
-      if (!key) continue;
-      const data = localStorage.getItem(key);
-      if (!data) {
-        strokeImgCache.current.delete(key);
-        continue;
+      // Beide Ebenen (interaktiv + Overlay) vorhalten, damit der Streifen vollständig aussieht.
+      for (const key of [editKeyFor(p), overlayKeyFor(p)]) {
+        if (!key) continue;
+        const data = localStorage.getItem(key);
+        if (!data) {
+          strokeImgCache.current.delete(key);
+          continue;
+        }
+        const cached = strokeImgCache.current.get(key);
+        if (cached && cached.src === data) continue;
+        const img = new Image();
+        img.src = data;
+        strokeImgCache.current.set(key, img);
       }
-      const cached = strokeImgCache.current.get(key);
-      if (cached && cached.src === data) continue;
-      const img = new Image();
-      img.src = data;
-      strokeImgCache.current.set(key, img);
     }
     // Cache klein halten (älteste Einträge zuerst raus – Map behält die Einfüge-Reihenfolge).
-    while (strokeImgCache.current.size > 20) {
+    while (strokeImgCache.current.size > 40) {
       const oldest = strokeImgCache.current.keys().next().value;
       if (oldest === undefined) break;
       strokeImgCache.current.delete(oldest);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, pageCount, syncTick, loading]);
+  }, [pageIndex, pageCount, syncTick, loading, noteScope, showSharedFor]);
 
   // Eine Streifen-Hälfte (1–2 Seiten ab `start`) aus offscreen-Seite + Strichen zusammensetzen.
   function composePane(start: number): SlideSlot[] {
@@ -363,15 +442,19 @@ export function PageDeck({
       c.height = src.height;
       const ctx = c.getContext('2d')!;
       ctx.drawImage(src, 0, 0);
-      const key = drawKeyFor(p);
-      const strokes = key ? strokeImgCache.current.get(key) : undefined;
-      if (strokes && strokes.complete && strokes.naturalWidth > 0) ctx.drawImage(strokes, 0, 0);
-      let texts: PageTextObj[] = [];
-      try {
-        const t = key ? localStorage.getItem(`${key}_text`) : null;
-        texts = t ? (JSON.parse(t) as PageTextObj[]) : [];
-      } catch {
-        /* ignorieren */
+      // Beide Ebenen in den Streifen zeichnen (Overlay zuerst, interaktive Ebene obenauf) –
+      // im Slide sieht die Seite damit exakt aus wie in der Live-Ansicht.
+      const texts: PageTextObj[] = [];
+      for (const key of [overlayKeyFor(p), editKeyFor(p)]) {
+        if (!key) continue;
+        const strokes = strokeImgCache.current.get(key);
+        if (strokes && strokes.complete && strokes.naturalWidth > 0) ctx.drawImage(strokes, 0, 0);
+        try {
+          const t = localStorage.getItem(`${key}_text`);
+          if (t) texts.push(...(JSON.parse(t) as PageTextObj[]));
+        } catch {
+          /* ignorieren */
+        }
       }
       out.push({ canvas: c, texts, zoom: loadZoom(p), aspect: `${src.width} / ${src.height}` });
     }
@@ -1108,6 +1191,13 @@ export function PageDeck({
                     }}
                   >
                     <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
+                    {/* Overlay-Striche des anderen Bereichs (nur lesend, unter der interaktiven
+                        Ebene); im Anmerkungsmodus abgeschwächt = „gehört nicht zum gewählten Bereich". */}
+                    <canvas
+                      ref={overlayRefs[j]}
+                      className={styles.annoCanvas}
+                      style={{ pointerEvents: 'none', opacity: drawMode ? 0.35 : 1 }}
+                    />
                     <canvas
                       ref={annoRefs[j]}
                       className={styles.annoCanvas}
@@ -1129,6 +1219,31 @@ export function PageDeck({
                       }}
                       onPointerDown={(e) => layerDown(e, j)}
                     >
+                      {/* Texte des anderen Bereichs: nur lesend, im Anmerkungsmodus abgeschwächt.
+                          Autor (nur Team-Texte) erscheint nur im Anmerkungsmodus. */}
+                      {overlayTexts[j].map((o) => (
+                        <div
+                          key={`ov-${o.id}`}
+                          className={styles.textObj}
+                          style={{
+                            left: `${o.fx * 100}%`,
+                            top: `${o.fy * 100}%`,
+                            fontSize: `${o.sizeCqh}cqh`,
+                            color: o.color,
+                            fontWeight: (o.bold ?? true) ? 700 : 400,
+                            fontStyle: o.italic ? 'italic' : 'normal',
+                            textDecoration: o.underline ? 'underline' : 'none',
+                            textAlign: o.align ?? 'center',
+                            pointerEvents: 'none',
+                            opacity: drawMode ? 0.35 : 1,
+                          }}
+                        >
+                          {o.text}
+                          {drawMode && o.author && (
+                            <span className={styles.authorTag}>{o.author.name}</span>
+                          )}
+                        </div>
+                      ))}
                       {d.texts
                         // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
                         .filter((o) => o.id !== d.pending?.editId)
@@ -1163,6 +1278,10 @@ export function PageDeck({
                             onPointerCancel={d.endDrag}
                           >
                             {o.text}
+                            {/* Autor einer Team-Anmerkung – nur im Anmerkungsmodus sichtbar. */}
+                            {drawMode && editsShared(pageIndex + j) && o.author && (
+                              <span className={styles.authorTag}>{o.author.name}</span>
+                            )}
                             {/* Zieh-Knopf (Ecke unten rechts) am ausgewählten Text: Größe ändern. */}
                             {o.id === d.selectedId && drawMode && drawTool === 'text' && (
                               <span

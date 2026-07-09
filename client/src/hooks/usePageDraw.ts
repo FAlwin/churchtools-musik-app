@@ -31,6 +31,8 @@ export interface PageTextObj {
   italic?: boolean;
   underline?: boolean;
   align?: TextAlign;
+  /** Nur bei Team-Anmerkungen: wer den Text angelegt hat (stempelt der Server; nur Anzeige). */
+  author?: { id: number; name: string };
 }
 
 interface Snapshot {

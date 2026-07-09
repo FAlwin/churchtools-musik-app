@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { SetlistSong } from '@shared/types/index';
 import { Screen } from '../components/Screen';
 import { KeyPicker } from '../components/KeyPicker';
@@ -10,7 +10,11 @@ import { PageDeck } from '../components/PageDeck';
 import { Coachmarks } from '../components/Coachmarks';
 import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
 import { Icon } from '../components/icons';
-import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
+import {
+  migrateLocalAnnotations,
+  pullAnnotations,
+  pullSharedAnnotations,
+} from '../services/annotations';
 import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
 import { parseChordPro } from '../utils/chordpro';
 import { availableVersions, versionText, setLsVersion } from '../utils/songVersions';
@@ -32,8 +36,19 @@ interface ChordChartProps {
   onReload?: () => void;
   /** Darf der Nutzer den ChordPro-Text bearbeiten? (blendet Editor-Funktionen aus) */
   canEditSong?: boolean;
+  /** Darf Team-Anmerkungen sehen (Mitglied einer freigegebenen Gruppe/Rolle)? */
+  canUseGlobalNotes?: boolean;
+  /** Darf Team-Anmerkungen verwalten (erstellen/bearbeiten/löschen)? */
+  canManageGlobalNotes?: boolean;
   theme: Theme;
   fontId: string;
+}
+
+/** Sichtbarkeit der Team-Anmerkungsebene je Lied ('0' = ausgeblendet; fehlend/'1' = an). */
+function readSharedVis(list: SetlistSong[]): Record<number, boolean> {
+  return Object.fromEntries(
+    list.map((s) => [s.id, localStorage.getItem(`worship_shared_${s.id}`) !== '0']),
+  );
 }
 
 /**
@@ -47,6 +62,8 @@ export function ChordChart({
   onBack,
   onReload,
   canEditSong = false,
+  canUseGlobalNotes = false,
+  canManageGlobalNotes = false,
 }: ChordChartProps) {
   // Einstellungen aller Lieder (für den durchgehenden Strom). Aus localStorage initialisiert.
   const [settings, setSettings] = useState<Record<number, SongSettings>>(() =>
@@ -63,6 +80,7 @@ export function ChordChart({
     .join(',');
   useEffect(() => {
     setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
+    setSharedVis(readSharedVis(songs));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songIds]);
 
@@ -75,10 +93,16 @@ export function ChordChart({
       const ids = songs.map((s) => s.id);
       // Erst bestehende lokale Daten einmalig hochladen, dann Server-Stand holen.
       await Promise.all([migrateLocalAnnotations(), migrateLocalSettings()]);
-      await Promise.all([pullAnnotations(ids), pullSettings(ids)]);
+      await Promise.all([
+        pullAnnotations(ids),
+        pullSettings(ids),
+        // Team-Anmerkungen nur für Berechtigte (der Server liefert anderen ohnehin nichts).
+        canUseGlobalNotes ? pullSharedAnnotations(ids) : Promise.resolve(),
+      ]);
       if (cancelled) return;
       // Einstellungen aus dem (jetzt gespiegelten) localStorage neu übernehmen.
       setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
+      setSharedVis(readSharedVis(songs));
       setSyncTick((t) => t + 1);
     })();
     return () => {
@@ -125,6 +149,41 @@ export function ChordChart({
   const [showSongMenu, setShowSongMenu] = useState(false);
 
   const [drawMode, setDrawMode] = useState(false);
+  // ── Team-Anmerkungen (#124) ──
+  // Bereich, in den der Anmerkungsmodus schreibt: privat (Standard) oder Team („für alle").
+  // Nur Verwaltungs-Berechtigte können umschalten; beim Verlassen des Modus zurück auf privat.
+  const [noteScope, setNoteScope] = useState<'private' | 'shared'>('private');
+  // Team-Ebene je Lied ein-/ausgeblendet (Augen-Knopf in der Kopfleiste).
+  const [sharedVis, setSharedVis] = useState<Record<number, boolean>>(() => readSharedVis(songs));
+  useEffect(() => {
+    if (!drawMode) setNoteScope('private');
+  }, [drawMode]);
+  /** Augen-Knopf: Team-Ebene für DIESES Lied ein-/ausblenden (explizit '1'/'0' – synct sauber). */
+  function toggleSharedVis(songId: number) {
+    setSharedVis((prev) => {
+      const on = !(prev[songId] ?? true);
+      localStorage.setItem(`worship_shared_${songId}`, on ? '1' : '0');
+      pushSetting(`worship_shared_${songId}`, on ? '1' : '0');
+      return { ...prev, [songId]: on };
+    });
+  }
+  /** Bereichs-Knopf: privat ↔ für alle. Beim Wechsel auf „für alle" die Team-Ebene des aktiven
+   *  Lieds einblenden – sonst verschwände die eigene Team-Anmerkung beim Verlassen des Modus. */
+  function toggleNoteScope() {
+    setNoteScope((s) => {
+      const next = s === 'private' ? 'shared' : 'private';
+      if (next === 'shared') {
+        setSharedVis((prev) => {
+          const id = liveRef.current.activeSongId;
+          if (prev[id] ?? true) return prev;
+          localStorage.setItem(`worship_shared_${id}`, '1');
+          pushSetting(`worship_shared_${id}`, '1');
+          return { ...prev, [id]: true };
+        });
+      }
+      return next;
+    });
+  }
   // Geführte Einführung Chart-Ansicht (#Onboarding, Gruppe 2): startet beim ersten Öffnen, sobald
   // die Seiten gerendert sind (dann existieren die hervorzuhebenden Elemente).
   const [chartTour, setChartTour] = useState(false);
@@ -148,15 +207,27 @@ export function ChordChart({
   const drawColors = ['#bb2946', '#0062ac', '#1bb0a2', '#fb8f00'];
 
   // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
-  const liveRef = useRef({ songs, drawMode, onReload, lastReturn: 0 });
+  const liveRef = useRef({
+    songs,
+    drawMode,
+    onReload,
+    canUseGlobalNotes,
+    lastReturn: 0,
+    activeSongId: 0,
+  });
   liveRef.current.songs = songs;
   liveRef.current.drawMode = drawMode;
   liveRef.current.onReload = onReload;
+  liveRef.current.canUseGlobalNotes = canUseGlobalNotes;
   useEffect(() => {
     // Anmerkungen (pro Konto) regelmäßig vom Server holen – pausiert im Zeichenmodus/Hintergrund.
     async function refreshAnno() {
       if (document.hidden || liveRef.current.drawMode) return;
-      await pullAnnotations(liveRef.current.songs.map((s) => s.id));
+      const ids = liveRef.current.songs.map((s) => s.id);
+      await Promise.all([
+        pullAnnotations(ids),
+        liveRef.current.canUseGlobalNotes ? pullSharedAnnotations(ids) : Promise.resolve(),
+      ]);
       setSyncTick((t) => t + 1);
     }
     // Beim Zurückkehren zur App: Anmerkungen, Einstellungen UND Versionen (Setlist) auffrischen.
@@ -170,8 +241,12 @@ export function ChordChart({
         await Promise.all([
           pullAnnotations(list.map((s) => s.id)),
           pullSettings(list.map((s) => s.id)),
+          liveRef.current.canUseGlobalNotes
+            ? pullSharedAnnotations(list.map((s) => s.id))
+            : Promise.resolve(),
         ]);
         setSettings(Object.fromEntries(list.map((s) => [s.id, loadSettings(s)])));
+        setSharedVis(readSharedVis(list));
         setSyncTick((t) => t + 1);
       }
       liveRef.current.onReload?.();
@@ -248,6 +323,8 @@ export function ChordChart({
   const activeSongIdx = owners[activeIdx]?.songIdx ?? 0;
   const song = songs[activeSongIdx] ?? songs[songs.length - 1];
   const set = settings[song.id] ?? DEFAULT_SETTINGS;
+  // Fürs Bereichs-Umschalten (Team-Ebene des AKTIVEN Lieds einblenden) ohne Closure-Probleme.
+  liveRef.current.activeSongId = song.id;
 
   // Aktuell SICHTBARE Lieder (fürs Fußzeilen-Punkte-Highlight): im Querformat 2 Seiten → bis zu
   // 2 Lieder nebeneinander, beide markieren. matchMedia('orientation') ist beim Wechsel stabil.
@@ -304,6 +381,23 @@ export function ChordChart({
       ? `worship_docdraw_${o.fileId}_${o.localPage}`
       : `worship_docdraw_song${o.songId}_v${o.versionKey}_${o.localPage}`;
   };
+  // Team-Anmerkungen gibt es NUR an Akkord-Seiten (Lied+Version), nicht an hochgeladenen
+  // Dokumenten – eigener localStorage-Namensraum, gesynct über /api/annotations/shared.
+  const sharedKeyFor = (page: number): string | null => {
+    const o = owners[page];
+    return o && o.kind !== 'doc'
+      ? `worship_shareddraw_song${o.songId}_v${o.versionKey}_${o.localPage}`
+      : null;
+  };
+  // Team-Ebene dieser Seite sichtbar? (Augen-Knopf gilt pro Lied; stabile Identität für PageDeck.)
+  const showSharedFor = useCallback(
+    (page: number): boolean => {
+      if (!canUseGlobalNotes) return false;
+      const o = owners[page];
+      return o && o.kind !== 'doc' ? (sharedVis[o.songId] ?? true) : false;
+    },
+    [owners, sharedVis, canUseGlobalNotes],
+  );
   const zoomKeyBaseFor = (page: number): string => {
     const o = owners[page];
     if (!o) return `worship_doczoom_p${page}`;
@@ -424,6 +518,35 @@ export function ChordChart({
                 aria-label="Zoom zurücksetzen"
               >
                 <Icon name="zoom-reset" size={18} stroke={2} />
+              </button>
+            )}
+            {/* Team-Anmerkungen dieses Lieds ein-/ausblenden (nur Musiker; nicht bei Dokumenten). */}
+            {canUseGlobalNotes && !activeDoc && (
+              <button
+                className={`${styles.toolBtn}${(sharedVis[song.id] ?? true) ? ' ' + styles.on : ''}`}
+                data-tour="chart-team"
+                onClick={() => toggleSharedVis(song.id)}
+                title={
+                  (sharedVis[song.id] ?? true)
+                    ? 'Team-Anmerkungen ausblenden'
+                    : 'Team-Anmerkungen anzeigen'
+                }
+                aria-label="Team-Anmerkungen anzeigen/ausblenden"
+              >
+                <Icon name={(sharedVis[song.id] ?? true) ? 'eye' : 'eye-off'} size={18} stroke={2} />
+              </button>
+            )}
+            {/* Bereich des Anmerkungsmodus: privat oder „für alle" (nur Verwalter, nur im Modus). */}
+            {canManageGlobalNotes && drawMode && !activeDoc && (
+              <button
+                className={`${styles.toolBtn}${noteScope === 'shared' ? ' ' + styles.on : ''}`}
+                onClick={() => toggleNoteScope()}
+                title={
+                  noteScope === 'shared' ? 'Anmerken: für alle (Team)' : 'Anmerken: nur privat'
+                }
+                aria-label="Anmerkungs-Bereich wechseln (privat / für alle)"
+              >
+                <Icon name="people" size={18} stroke={2} />
               </button>
             )}
             <button
@@ -717,6 +840,9 @@ export function ChordChart({
               error={pagesError}
               loadingLabel="Lieder werden vorbereitet…"
               drawKeyFor={drawKeyFor}
+              sharedKeyFor={sharedKeyFor}
+              noteScope={noteScope}
+              showSharedFor={showSharedFor}
               zoomKeyBaseFor={zoomKeyBaseFor}
               pageLabel={pageLabel}
               pageIndex={pageIdx}
