@@ -110,3 +110,28 @@ export function settingsFromMap(song: SetlistSong, map: Record<string, string>):
     viewSource: 'chords',
   };
 }
+
+/**
+ * SongSettings für eine KONKRETE Ebene (Version + Darstellungsart) aus einer gelieferten
+ * Schlüssel-Tabelle – fürs Ansehen einer ausgewählten Ebene einer teilenden Person
+ * (nicht zwingend ihrer aktuell gewählten).
+ */
+export function settingsForLevel(
+  song: SetlistSong,
+  map: Record<string, string>,
+  versionKey: string,
+  lyricsOnly: boolean,
+): SongSettings {
+  const get = (base: string): string | null =>
+    map[`worship_${base}_${song.id}_${versionKey}`] ?? null;
+  return {
+    key: get('key') || null,
+    capo: parseInt(get('capo') || '0', 10),
+    cols: parseInt(get('cols') || '1', 10) === 2 ? 2 : 1,
+    fontSize: parseInt(get('fs') || '20', 10),
+    lyricsOnly,
+    secShift: parseSecShift(get('secshift')),
+    versionKey,
+    viewSource: 'chords',
+  };
+}

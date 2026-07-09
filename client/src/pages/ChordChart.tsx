@@ -27,7 +27,7 @@ import { availableVersions, versionText, setLsVersion } from '../utils/songVersi
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
-import { type SongSettings, DEFAULT_SETTINGS, loadSettings, settingsFromMap } from '../utils/chartSettings';
+import { type SongSettings, DEFAULT_SETTINGS, loadSettings, settingsForLevel } from '../utils/chartSettings';
 import { logoTightUrl } from '../utils/logoAsset';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
@@ -207,7 +207,15 @@ export function ChordChart({
   const [drawMode, setDrawMode] = useState(false);
   // ── Team-Notizen (#124, PCO-Modell): „Notizen von …" ansehen + übernehmen ──
   // Ansehen gilt PRO LIED (nicht für den ganzen Ablauf) – songId merkt sich, für welches.
-  const [viewing, setViewing] = useState<{ id: number; name: string; songId: number } | null>(null);
+  const [viewing, setViewing] = useState<{
+    id: number;
+    name: string;
+    songId: number;
+    versionKey: string;
+    lyr: boolean;
+  } | null>(null);
+  // Wähler-Zwischenschritt: Person angetippt → ihre Ebenen (Version + Darstellung) zur Auswahl.
+  const [pickerPerson, setPickerPerson] = useState<{ id: number; name: string } | null>(null);
   const [viewSettings, setViewSettings] = useState<Record<number, SongSettings> | null>(null);
   // Roh-Einstellungen der angesehenen Person (alle worship_*-Schlüssel des Lieds) – für die
   // Ansichts-Übernahme auch dann, wenn eine ANDERE als ihre aktuelle Version importiert wird.
@@ -303,30 +311,39 @@ export function ChordChart({
         )
       : settings;
 
-  /** Ansehen starten – NUR für das übergebene Lied (fremde Ebene + fremde Einstellungen laden). */
-  async function startViewing(p: { id: number; name: string }, songId: number) {
+  /** Person antippen: ihre geteilten Daten fürs Lied laden, dann ihre Ebenen zur Auswahl zeigen. */
+  async function openPersonLevels(p: { id: number; name: string }, songId: number) {
     try {
-      const target = songs.find((x) => x.id === songId);
-      if (!target) return;
       const [, settingsMap] = await Promise.all([
         loadViewMirror(p.id, [songId]),
         getSettingsOf(p.id, [songId]),
       ]);
-      setViewSettings({ [songId]: settingsFromMap(target, settingsMap) });
       setViewRaw(settingsMap);
-      setViewing({ ...p, songId });
-      setDrawMode(false);
-      setShowSharers(false);
-      setSyncTick((t) => t + 1);
+      setPickerPerson(p);
     } catch {
-      setShowSharers(false); // Laden gescheitert (offline/Rechte) → still im eigenen Modus bleiben
+      /* Laden gescheitert (offline/Rechte) → Auswahl bleibt bei den Personen */
     }
   }
+
+  /** Eine konkrete Ebene (Version + Darstellungsart) der Person ansehen. */
+  function viewLevel(versionKey: string, lyr: boolean) {
+    if (!pickerPerson) return;
+    const songId = song.id;
+    const target = songs.find((x) => x.id === songId);
+    if (!target) return;
+    setViewSettings({ [songId]: settingsForLevel(target, viewRaw ?? {}, versionKey, lyr) });
+    setViewing({ ...pickerPerson, songId, versionKey, lyr });
+    setDrawMode(false);
+    setShowSharers(false);
+    setSyncTick((t) => t + 1);
+  }
+
   function stopViewing() {
     clearViewMirror();
     setViewing(null);
     setViewSettings(null);
     setViewRaw(null);
+    setPickerPerson(null);
     setSyncTick((t) => t + 1);
   }
   /** Ebenen (Version + Darstellungsart) mit Anmerkungen im Ansichts-Spiegel, samt Seiten. */
@@ -349,13 +366,12 @@ export function ChordChart({
   }
   const groupKeyOf = (g: { versionKey: string; lyr: boolean }) => `${g.versionKey}|${g.lyr ? '1' : '0'}`;
 
-  /** Import-Dialog öffnen – vorausgewählt ist die gerade angesehene Ebene (komplett). */
+  /** Import-Dialog öffnen – bezieht sich auf die GERADE ANGESEHENE Ebene (alle Seiten vorausgewählt). */
   function openImport() {
-    if (!viewing || !viewSettings) return;
-    const vs = viewSettings[viewing.songId];
+    if (!viewing) return;
     const sel: Record<string, number[]> = {};
     for (const g of mirrorGroups()) {
-      if (vs && g.versionKey === vs.versionKey && g.lyr === vs.lyricsOnly) sel[groupKeyOf(g)] = g.pages;
+      if (g.versionKey === viewing.versionKey && g.lyr === viewing.lyr) sel[groupKeyOf(g)] = g.pages;
     }
     setImportSel(sel);
     setShowImport(true);
@@ -407,15 +423,10 @@ export function ChordChart({
         }
       }
     }
-    // Ziel-Ebene = die angesehene Ebene, falls angehakt; sonst die Auswahl mit den meisten Seiten.
-    // DIESE Ansicht wird danach angezeigt (Wunsch: was ausgewählt wurde, soll man auch sehen).
+    // Ziel-Ebene = die angesehene Ebene; DIESE Ansicht wird danach angezeigt.
     const vs = viewSettings[songId];
-    const viewedKey = vs ? `${vs.versionKey}|${vs.lyricsOnly ? '1' : '0'}` : null;
-    const primaryKey =
-      viewedKey && importSel[viewedKey]?.length
-        ? viewedKey
-        : [...selected].sort((a, b) => b[1].length - a[1].length)[0][0];
-    const [pVersion, pLyr] = primaryKey.split('|');
+    const pVersion = viewing.versionKey;
+    const pLyr = viewing.lyr ? '1' : '0';
     // Ansicht der Person für die Ziel-Ebene übernehmen (Spalten/Schrift/Abschnitte aus ihren
     // Roh-Einstellungen der ZIEL-Version; Tonart/Kapo bleiben bewusst eigene).
     const raw = viewRaw ?? {};
@@ -439,6 +450,7 @@ export function ChordChart({
 
   /** „Notizen von …" öffnen (Liste beim Öffnen auffrischen). */
   function openSharers() {
+    setPickerPerson(null);
     setShowSharers(true);
     getSharers(songs.map((x) => x.id))
       .then((list) => setSharers(list))
@@ -565,16 +577,16 @@ export function ChordChart({
   // angesehenen Person (effSettings) und passen daher zu ihren Anmerkungs-Schlüsseln.
   const viewingId = viewing?.id ?? null;
   const viewingSongId = viewing?.songId ?? null;
+  const viewingLyr = viewing?.lyr ?? false;
   const viewKeyFor = useCallback(
     (page: number): string | null => {
       if (viewingId == null) return null;
       const o = owners[page];
       if (!o || o.kind === 'doc' || o.songId !== viewingSongId) return null;
-      const lyr = viewSettings?.[o.songId]?.lyricsOnly ? '_lyr' : '';
+      const lyr = viewingLyr ? '_lyr' : '';
       return `${VIEW_NS}song${o.songId}_v${o.versionKey}${lyr}_${o.localPage}`;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [owners, viewingId, viewingSongId, viewSettings],
+    [owners, viewingId, viewingSongId, viewingLyr],
   );
   const zoomKeyBaseFor = (page: number): string => {
     const o = owners[page];
@@ -726,30 +738,26 @@ export function ChordChart({
         {/* „Notizen von …"-Banner: man sieht gerade die geteilte Ebene einer anderen Person. */}
         {viewing &&
           (() => {
-            const vs = viewSettings?.[viewing.songId];
-            const vName = vs
-              ? (availableVersions(song).find((v) => v.key === vs.versionKey)?.name ?? vs.versionKey)
-              : '';
-            const otherVersion = vs && (settings[song.id]?.versionKey ?? 'original') !== vs.versionKey;
+            const vName =
+              availableVersions(song).find((v) => v.key === viewing.versionKey)?.name ??
+              viewing.versionKey;
+            const otherVersion =
+              (settings[song.id]?.versionKey ?? 'original') !== viewing.versionKey;
             return (
               <div className={styles.viewBar}>
                 <Icon name="people" size={15} stroke={2} />
                 <span className={styles.viewBarText}>
                   Notizen von {viewing.name}
-                  {vs && (
-                    <>
-                      {' · '}
-                      {otherVersion ? <strong>Version „{vName}"</strong> : <>Version „{vName}"</>}
-                      {' · '}
-                      {vs.lyricsOnly ? 'Nur Text' : 'Akkorde & Text'}
-                    </>
-                  )}
+                  {' · '}
+                  {otherVersion ? <strong>Version „{vName}"</strong> : <>Version „{vName}"</>}
+                  {' · '}
+                  {viewing.lyr ? 'Nur Text' : 'Akkorde & Text'}
                 </span>
+                <button className={styles.viewBarBtn} onClick={openSharers}>
+                  Auswählen
+                </button>
                 <button className={styles.viewBarBtn} onClick={openImport}>
                   Übernehmen
-                </button>
-                <button className={styles.viewBarBtn} onClick={stopViewing}>
-                  Fertig
                 </button>
               </div>
             );
@@ -1146,26 +1154,70 @@ export function ChordChart({
           </button>
         </div>
 
-        {/* „Notizen von …": wer teilt Anmerkungen zu den Liedern dieses Ablaufs? */}
+        {/* „Notizen von …": Stufe 1 = Person wählen, Stufe 2 = ihre Ebene (Version + Darstellung). */}
         {showSharers && (
-          <Sheet title="Notizen von …" onClose={() => setShowSharers(false)} cancelLabel="Schließen">
-            <p className={styles.pickHint}>
-              Zeigt die geteilten Anmerkungen einer Person zu „{song.title}" – in ihrer Ansicht,
-              schreibgeschützt. Über „Übernehmen" kannst du sie in deine eigenen Notizen kopieren.
-            </p>
-            {songSharers.length === 0 ? (
-              <p className={styles.pickHint}>Zurzeit teilt niemand Anmerkungen zu diesem Lied.</p>
+          <Sheet
+            title={pickerPerson ? `Notizen von ${pickerPerson.name}` : 'Notizen von …'}
+            onClose={() => setShowSharers(false)}
+            cancelLabel="Schließen"
+          >
+            {!pickerPerson ? (
+              <>
+                <p className={styles.pickHint}>
+                  Wähle eine Person, um ihre geteilten Anmerkungen zu „{song.title}" anzusehen –
+                  schreibgeschützt, in ihrer Ansicht. Übernehmen ist danach möglich.
+                </p>
+                {songSharers.length === 0 ? (
+                  <p className={styles.pickHint}>Zurzeit teilt niemand Anmerkungen zu diesem Lied.</p>
+                ) : (
+                  songSharers.map((p) => (
+                    <button
+                      key={p.id}
+                      className={styles.pickRow}
+                      onClick={() => void openPersonLevels(p, song.id)}
+                    >
+                      <Icon name="people" size={18} stroke={2} />
+                      <span className={styles.pickName}>{p.name}</span>
+                      <Icon name="chev-right" size={16} className={styles.pickChev} />
+                    </button>
+                  ))
+                )}
+              </>
             ) : (
-              songSharers.map((p) => (
-                <button
-                  key={p.id}
-                  className={styles.pickRow}
-                  onClick={() => void startViewing(p, song.id)}
-                >
-                  <Icon name="people" size={18} stroke={2} />
-                  <span className={styles.pickName}>{p.name}</span>
+              <>
+                <p className={styles.pickHint}>
+                  Welche Anmerkungen von {pickerPerson.name} möchtest du ansehen? (Nur Ebenen mit
+                  Anmerkungen werden angezeigt.)
+                </p>
+                {mirrorGroups().length === 0 && (
+                  <p className={styles.pickHint}>Keine Anmerkungen zu diesem Lied vorhanden.</p>
+                )}
+                {mirrorGroups()
+              .filter((g) => viewing && g.versionKey === viewing.versionKey && g.lyr === viewing.lyr)
+              .map((g) => {
+                  const vName =
+                    availableVersions(song).find((v) => v.key === g.versionKey)?.name ??
+                    g.versionKey;
+                  return (
+                    <button
+                      key={groupKeyOf(g)}
+                      className={styles.pickRow}
+                      onClick={() => viewLevel(g.versionKey, g.lyr)}
+                    >
+                      <Icon name="pencil" size={16} stroke={2} />
+                      <span className={styles.pickName}>
+                        Version „{vName}" · {g.lyr ? 'Nur Text' : 'Akkorde & Text'}
+                      </span>
+                      <span className={styles.pickPages}>
+                        {g.pages.length} {g.pages.length === 1 ? 'Seite' : 'Seiten'}
+                      </span>
+                    </button>
+                  );
+                })}
+                <button className={styles.pickBack} onClick={() => setPickerPerson(null)}>
+                  Andere Person wählen
                 </button>
-              ))
+              </>
             )}
           </Sheet>
         )}
@@ -1174,12 +1226,14 @@ export function ChordChart({
         {showImport && viewing && (
           <Sheet title="Notizen übernehmen" onClose={() => setShowImport(false)}>
             <p className={styles.pickHint}>
-              Wähle aus, welche Anmerkungen von {viewing.name} du übernehmen willst (angezeigt sind
-              nur Ebenen mit Anmerkungen). Übernommen wird auch die zugehörige Ansicht – sie wird
-              danach angezeigt. Deine eigenen Notizen anderer Versionen/Darstellungen bleiben
-              gespeichert (Stift-Markierung im Lied-Menü). Deine Tonart bleibt erhalten.
+              Übernimmt die gerade angesehene Ebene von {viewing.name} in deine Notizen – wähle bei
+              Bedarf einzelne Seiten ab. Die zugehörige Ansicht wird danach angezeigt; deine eigenen
+              Notizen anderer Versionen/Darstellungen bleiben gespeichert (Stift-Markierung im
+              Lied-Menü). Deine Tonart bleibt erhalten.
             </p>
-            {mirrorGroups().map((g) => {
+            {mirrorGroups()
+              .filter((g) => viewing && g.versionKey === viewing.versionKey && g.lyr === viewing.lyr)
+              .map((g) => {
               const gk = groupKeyOf(g);
               const sel = importSel[gk] ?? [];
               const vName =
