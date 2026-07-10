@@ -286,9 +286,12 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
-- **Aktuell (v2.7.0, 2026-07-07):** Geführte Einführung für neue Nutzer (Termine, Ablauf-Ansicht,
-  Bearbeiten-Modus, Chart-Ansicht) live; Offline-Reserve produktiv (seit v2.6.0, auf iOS-Kaltstart
-  bestätigt). Onboarding-Pflege ist verbindlich → Sektion „Onboarding / Geführte Einführung".
+- **Aktuell (v2.9.0, 2026-07-10):** Team-Notizen (#124) – eigene Anmerkungen teilen und die
+  geteilten anderer ansehen/übernehmen (PCO-Modell: „Notizen von …", Live-Vorschau, keine
+  gemeinsame Live-Ebene); eigene Anmerkungen je Darstellungsart (Akkorde & Text / Nur Text)
+  getrennt; Anmerkungsleiste verschieb-/einklappbar. Rechte über Gruppen- + Rollen-Zuweisung
+  (Mehr → Verwaltung → Anmerkungen). Davor v2.8.1 (Rechte-Cache gegen ChurchTools-Aussetzer).
+  Onboarding-Pflege ist verbindlich → Sektion „Onboarding / Geführte Einführung".
 - **Fertig & produktiv:** App funktional vollständig (Charts + automatisches Transponieren,
   ChordPro-Editor, Dokumenten-Viewer, kompletter Ablauf + Bearbeiten, „Alle Lieder" mit
   Statistik, rechtebewusste UI). Auf dem NAS deployt (Container Manager, `worship-charts`),

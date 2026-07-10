@@ -819,3 +819,233 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+// „Notizen von …" (Team-Notizen): Banner unter dem Header + Personen-Wähler + Import.
+.viewBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 13px;
+}
+.viewBarText {
+  flex: 1;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.viewBarBtn {
+  border: none;
+  background: none;
+  color: var(--blue);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.pickHint {
+  font-size: 13px;
+  color: var(--text2);
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 8px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--hair);
+  text-align: left;
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+}
+.pickName {
+  flex: 1;
+  font-weight: 500;
+}
+.importBtn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--hair);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.importPrimary {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+// Import-Auswahl (Notizen übernehmen): Ebenen (Version + Darstellungsart) mit Seiten-Häkchen.
+.impGroup {
+  border-top: 1px solid var(--hair);
+  padding: 10px 0 8px;
+}
+.impGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 2px 0;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+}
+.impGroupName {
+  font-size: 14px;
+  font-weight: 600;
+}
+.impCheck {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.impCheckOn {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+.impPages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0 30px;
+}
+.impPage {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--text2);
+  font-size: 13px;
+  cursor: pointer;
+}
+.impPageOn {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.importBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+// Stift-Marker im Lied-Menü: diese Version/Darstellung hat eigene Anmerkungen.
+.mmNote {
+  color: var(--text3);
+  margin-left: 6px;
+  vertical-align: -1px;
+}
+
+// Wähler „Notizen von …": Stufe 2 (Ebenen) + Zurück.
+.pickChev {
+  color: var(--text3);
+}
+.pickPages {
+  color: var(--text2);
+  font-size: 13px;
+}
+.pickBack {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: none;
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+// Import-Vorschau: schwebende Leiste unten – Umschalter (Zusammenführen/Ersetzen) + Aktionen.
+// Das Chart darüber zeigt live das Ergebnis der gewählten Variante.
+.previewBar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+.pvSegWrap {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.pvDivider {
+  width: 0.5px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 2px 0;
+}
+.pvIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--text2);
+  cursor: pointer;
+  padding: 4px;
+}
+.pvSeg {
+  border: none;
+  background: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+}
+.pvSegOn {
+  background: var(--blue);
+  color: #fff;
+}
+.pvGo {
+  border: none;
+  background: none;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+.pvCancel {
+  border: none;
+  background: none;
+  color: var(--text2);
+  font-size: 13px;
+  padding: 6px 4px;
+  cursor: pointer;
+}

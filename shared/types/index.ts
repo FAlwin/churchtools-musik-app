@@ -151,6 +151,11 @@ export interface UserCapabilities {
   canEditSongs: boolean;
   /** ChurchTools-Administrator? Steuert Zugriff auf die Branding-Einstellungen. */
   isAdmin: boolean;
+  /**
+   * Darf Team-Notizen nutzen (eigene Anmerkungen teilen + geteilte Anmerkungen anderer ansehen) –
+   * aktives Mitglied einer freigegebenen Gruppe mit freigegebener Rolle.
+   */
+  canUseGlobalNotes: boolean;
 }
 
 /** Antwort des Login-Endpunkts. */
@@ -190,11 +195,27 @@ export interface SiteConfig {
   /** Frei konfigurierbare externe Links (Mehr-Tab; optional auch Login-Seite). */
   links: SiteLink[];
   /**
-   * ChurchTools-Gruppen-IDs, deren AKTIVE Mitglieder „globale" (für das Team sichtbare) Anmerkungen
-   * sehen und setzen dürfen. Leeres Array = Funktion aus (nur private Anmerkungen); Mitgliedschaft
-   * in EINER der Gruppen genügt. Vom Admin im Mehr-Tab gewählt (Mehrfachauswahl aus `GET /api/groups`).
+   * Ausgewählte ChurchTools-Gruppen für globale Anmerkungen (UI-Label „Gruppen-Zuweisung" unter
+   * Verwaltung → Anmerkungen; Mehrfachauswahl aus `GET /api/groups`). Reine Gruppen-Auswahl macht
+   * NOCH KEIN Recht auf – erst die je Gruppe angehakten Rollen in `noteRoles` gewähren Sehen/Verwalten.
+   * Leeres Array = Funktion komplett aus (nur private Anmerkungen).
    */
   musicianGroupIds: number[];
+  /**
+   * Rollen-Freigabe JE Gruppe (aus `musicianGroupIds`): welche `groupTypeRoleId`s dürfen
+   * Team-Notizen NUTZEN (eigene teilen + geteilte ansehen). WICHTIG: leere Liste bzw. kein
+   * Eintrag = NIEMAND (kein „alle"); erst das Anhaken einer Rolle gewährt das Recht. Vom Admin
+   * im Mehr-Tab unter „Anmerkungen → Rollen-Zuweisung" gepflegt.
+   */
+  noteRoles?: NoteRolePerm[];
+}
+
+/** Rollen-Freigabe einer Gruppe für Team-Notizen (siehe `SiteConfig.noteRoles`). */
+export interface NoteRolePerm {
+  /** ChurchTools-Gruppen-ID (muss in `musicianGroupIds` enthalten sein). */
+  groupId: number;
+  /** Erlaubte `groupTypeRoleId`s. Leer = NIEMAND (in dieser Gruppe). */
+  roles: number[];
 }
 
 /** Info zur neuesten veröffentlichten Version – für den dezenten Update-Hinweis in der App. */

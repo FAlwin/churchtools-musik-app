@@ -259,3 +259,48 @@
     background: rgba(178, 34, 71, 0.08);
   }
 }
+
+// ── Verschieben + Einklappen ──
+.grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 20px;
+  color: var(--text3);
+  cursor: grab;
+  touch-action: none; // Ziehen gehört dem Griff – kein Scrollen/Zoomen dabei
+}
+.collapseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 24px;
+  border: none;
+  background: none;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 0;
+}
+// Eingeklappter Zustand: kleiner Halb-Pillen-Knopf direkt am rechten Rand.
+.collapsedTab {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  z-index: 50;
+  width: 32px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-right: none;
+  border-radius: 22px 0 0 22px;
+  background: var(--surface2);
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  padding: 0;
+  animation: fadeIn 0.15s ease both;
+}

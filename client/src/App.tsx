@@ -294,6 +294,7 @@ export default function App() {
           onBack={() => setView({ type: 'setlist' })}
           onReload={() => agendaQuery.refetch()}
           canEditSong={canEditSongs}
+          canUseGlobalNotes={caps.canUseGlobalNotes}
           theme={settings.theme}
           fontId={settings.fontId}
         />
@@ -307,6 +308,7 @@ export default function App() {
           onBack={() => setView(null)}
           onReload={() => songChart.refetch()}
           canEditSong={canEditSongs}
+          canUseGlobalNotes={caps.canUseGlobalNotes}
           theme={settings.theme}
           fontId={settings.fontId}
         />
@@ -384,6 +386,7 @@ export default function App() {
             wakePref={settings.wakePref}
             onToggleWake={settings.toggleWake}
             isAdmin={isAdmin}
+            canUseGlobalNotes={caps.canUseGlobalNotes}
             userName={auth.user ? `${auth.user.firstName} ${auth.user.lastName}`.trim() : undefined}
             onLogout={() => auth.logout()}
             onReplayIntro={() => {

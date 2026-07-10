@@ -13,6 +13,13 @@ describe('KEY_RE (Server-Sync-Filter für Anmerkungen)', () => {
     expect(KEY_RE.test('song7_vakustik-2024_3')).toBe(true);
   });
 
+  it('akzeptiert die Nur-Text-Ebene (_lyr) – eigene Notizen je Darstellungsart', () => {
+    expect(KEY_RE.test('song12_voriginal_lyr_0')).toBe(true);
+    expect(KEY_RE.test('song7_vakustik-2024_lyr_3')).toBe(true);
+    expect(KEY_RE.test('song12_voriginal_lyr_0_dlarge2')).toBe(true); // Zoom der Nur-Text-Ebene
+    expect(KEY_RE.test('song12_lyr_0')).toBe(false); // _lyr ersetzt nicht die Version
+  });
+
   it('akzeptiert Zoom-Schlüssel mit Geräteklasse + Layout-Ziffer (Kernfall Querformat/2-up)', () => {
     expect(KEY_RE.test('song12_voriginal_0_dlarge2')).toBe(true); // iPad Querformat (2-up)
     expect(KEY_RE.test('song12_voriginal_0_dlarge1')).toBe(true); // iPad Hochformat

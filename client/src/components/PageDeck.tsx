@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
   TransformWrapper,
@@ -39,6 +39,18 @@ export interface PageDeckProps {
   loadingLabel: string;
   /** localStorage-Schlüssel für Anmerkungen (Striche+Text) einer Seite – oder null (nicht speicherbar). */
   drawKeyFor: (page: number) => string | null;
+  /**
+   * „Notizen von …"-Ansehen (Team-Notizen, PCO-Modell): Schlüssel der GERADE ANGESEHENEN fremden
+   * Ebene einer Seite – null = normale eigene Anzeige. Ist ein Schlüssel gesetzt, zeigt die Seite
+   * die fremde Ebene SCHREIBGESCHÜTZT statt der eigenen Anmerkungen. MUSS eine stabile Identität
+   * haben (useCallback) – steckt in Effekt-Abhängigkeiten.
+   */
+  viewKeyFor?: (page: number) => string | null;
+  /**
+   * Import-Vorschau „Zusammenführen": Während des Ansehens die EIGENE Ebene zusätzlich zeigen
+   * (fremde Overlay + eigene übereinander = das Ergebnis des Zusammenführens, live).
+   */
+  previewOwn?: boolean;
   /** Basis-Schlüssel für den gespeicherten Zoom einer Seite (ohne Layout-Suffix – das hängt PageDeck an). */
   zoomKeyBaseFor: (page: number) => string;
   /** Optionaler Seiten-Hinweis unten rechts (z. B. „Seite 1 / 3"). null = nicht anzeigen. */
@@ -94,6 +106,10 @@ function resetRevealScrolls(el: HTMLElement): void {
   }
 }
 
+// Stabiler Default für `viewKeyFor` (kein Ansehen) – Identität darf sich nie ändern,
+// weil die Funktion in Effekt-Abhängigkeiten steckt.
+const NO_VIEW = (): string | null => null;
+
 function isLandscape(): boolean {
   // matchMedia('orientation') ist beim Screen-Wechsel/SPA-Navigation stabiler als innerWidth/Height
   // (die kurzzeitig falsch gemeldet werden) → verhindert, dass der Zoom-Schlüssel (perView) kippt
@@ -119,6 +135,8 @@ export function PageDeck({
   error,
   loadingLabel,
   drawKeyFor,
+  viewKeyFor = NO_VIEW,
+  previewOwn = false,
   zoomKeyBaseFor,
   pageLabel,
   onBadgeClick,
@@ -155,6 +173,12 @@ export function PageDeck({
     useRef<HTMLCanvasElement | null>(null),
   ];
   const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
+  // Schreibgeschützte Striche des jeweils ANDEREN Bereichs (Team-Ebene bzw. beim Team-Bearbeiten
+  // die privaten) – eigene Canvas UNTER der interaktiven Anno-Canvas.
+  const overlayRefs = [
+    useRef<HTMLCanvasElement | null>(null),
+    useRef<HTMLCanvasElement | null>(null),
+  ];
   const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
   const transformRefs = [
     useRef<ReactZoomPanPinchRef | null>(null),
@@ -188,6 +212,9 @@ export function PageDeck({
   const gestureEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [landscape, setLandscape] = useState(isLandscape());
+  // Wird bei App-Rückkehr hochgezählt → erzwingt einen sauberen Remount der Zoom-Ebenen (steckt im
+  // TransformWrapper-key), damit ein nach dem Backgrounding veralteter Zoom-Zustand aufgelöst wird.
+  const [remountEpoch, setRemountEpoch] = useState(0);
   // Welche sichtbaren Seiten gerade reingezoomt sind (auch geladener Zoom) → steuert Panning,
   // Wisch-Navigation und den Zoom-Reset-Knopf. Kein „Anpassen-Modus"/„Fertig" mehr nötig – ein
   // Pinch zoomt und speichert automatisch; Verschieben ist möglich, sobald reingezoomt.
@@ -234,12 +261,43 @@ export function PageDeck({
     return null;
   }
 
+  // ── „Notizen von …"-Ansehen (Team-Notizen) ──
+  // Ist für eine Seite ein Ansichts-Schlüssel gesetzt, wird DIE FREMDE Ebene (Overlay, nur lesend)
+  // gezeigt und die eigene ausgeblendet. Bearbeitet wird immer nur die eigene (private) Ebene.
+  const overlayKeyFor = (p: number): string | null => viewKeyFor(p);
+  const viewing = (p: number): boolean => overlayKeyFor(p) != null;
+
   // Ein Anmerkungs-Zustand je sichtbarer Seite (fixe Anzahl Hooks – Regeln der Hooks).
-  const drawA = usePageDraw(drawKeyFor(pageIndex), annoRefs[0], layerRefs[0], syncTick);
-  const drawB = usePageDraw(drawKeyFor(pageIndex + 1), annoRefs[1], layerRefs[1], syncTick);
+  const drawA = usePageDraw(drawKeyFor(pageIndex), annoRefs[0], layerRefs[0], syncTick, pushField);
+  const drawB = usePageDraw(
+    drawKeyFor(pageIndex + 1),
+    annoRefs[1],
+    layerRefs[1],
+    syncTick,
+    pushField,
+  );
   const draws = [drawA, drawB];
   const activeSlot = Math.max(0, Math.min(perView - 1, activePage - pageIndex));
   const activeDraw = draws[activeSlot];
+
+  // Texte des Overlay-Bereichs (nur lesend) je sichtbarem Slot – direkt aus localStorage.
+  // Ändert sich nur durch Sync (syncTick), Blättern oder Bereichs-/Augen-Wechsel.
+  const overlayTexts: PageTextObj[][] = useMemo(() => {
+    const out: PageTextObj[][] = [[], []];
+    if (loading) return out;
+    for (let j = 0; j < 2; j++) {
+      const key = overlayKeyFor(pageIndex + j);
+      if (!key) continue;
+      try {
+        const t = localStorage.getItem(`${key}_text`);
+        out[j] = t ? (JSON.parse(t) as PageTextObj[]) : [];
+      } catch {
+        out[j] = [];
+      }
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, syncTick, viewKeyFor, loading]);
 
   // Anmerkungsmodus verlassen → Text-Auswahl aufheben. Sonst bliebe der gestrichelte Rahmen des
   // zuletzt bearbeiteten Textes stehen (er hängt an selectedId) und verschwände erst beim
@@ -252,20 +310,45 @@ export function PageDeck({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawMode]);
 
+  // Wechselt die AKTIVE Hälfte (2-up), darf auf der nun inaktiven keine Auswahl/Eingabe
+  // zurückbleiben – sonst stehen Auswahlrahmen auf beiden Seiten gleichzeitig. Eine offene
+  // Inline-Eingabe dort wird zuerst übernommen (nichts geht verloren).
+  useEffect(() => {
+    if (perView !== 2) return;
+    const other = activeSlot === 0 ? 1 : 0;
+    if (draws[other].pending) commitInlineText(other);
+    draws[other].setSelectedId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSlot, perView]);
+
   useEffect(() => {
     const onResize = () => setLandscape(isLandscape());
+    // Bei App-Rückkehr (iOS-PWA) kann der Container neu vermessen worden sein, ohne dass sich die
+    // Ausrichtung (perView) ändert → die Zoom-Ebene bliebe mit einem veralteten Transform „stecken".
+    // Ein Epoche-Hochzählen erzwingt einen sauberen Remount der Zoom-Ebenen (onInit stellt den
+    // gespeicherten Zoom des aktuellen Layouts frisch her). Nur im Vordergrund. Committete Striche
+    // liegen in localStorage und werden nach dem Remount neu gezeichnet – kein Datenverlust.
+    const bump = () => {
+      if (document.visibilityState === 'hidden') return;
+      setRemountEpoch((n) => n + 1);
+    };
+    const onVisible = () => {
+      onResize();
+      bump();
+    };
     window.addEventListener('resize', onResize);
     window.addEventListener('orientationchange', onResize);
-    // Nach App-Wechsel/Wiederkehr (iOS-PWA) sind die Maße kurz falsch → Ausrichtung neu prüfen.
-    window.addEventListener('pageshow', onResize);
+    // Ausrichtung auch bei focus neu prüfen (billig), aber den Remount NUR bei echtem
+    // Sichtbarkeitswechsel auslösen – `focus` feuert am Desktop bei jedem Tab-Wechsel.
     window.addEventListener('focus', onResize);
-    document.addEventListener('visibilitychange', onResize);
+    window.addEventListener('pageshow', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('orientationchange', onResize);
-      window.removeEventListener('pageshow', onResize);
       window.removeEventListener('focus', onResize);
-      document.removeEventListener('visibilitychange', onResize);
+      window.removeEventListener('pageshow', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
@@ -286,12 +369,30 @@ export function PageDeck({
       anno.height = src.height;
       const ctx = anno.getContext('2d')!;
       ctx.clearRect(0, 0, anno.width, anno.height);
-      const key = drawKeyFor(pageIndex + j);
+      // Eigene Striche, wenn diese Seite keine fremde Ebene zeigt – ODER in der
+      // Zusammenführen-Vorschau (dann beide Ebenen übereinander).
+      const key =
+        viewing(pageIndex + j) && !previewOwn ? null : drawKeyFor(pageIndex + j);
       const saved = key ? localStorage.getItem(key) : null;
       if (saved) {
         const img = new Image();
         img.onload = () => ctx.drawImage(img, 0, 0);
         img.src = saved;
+      }
+      // Overlay-Striche (anderer Bereich, nur lesend) auf die Overlay-Canvas.
+      const over = overlayRefs[j].current;
+      if (over) {
+        over.width = src.width;
+        over.height = src.height;
+        const octx = over.getContext('2d')!;
+        octx.clearRect(0, 0, over.width, over.height);
+        const oKey = overlayKeyFor(pageIndex + j);
+        const oSaved = oKey ? localStorage.getItem(oKey) : null;
+        if (oSaved) {
+          const img = new Image();
+          img.onload = () => octx.drawImage(img, 0, 0);
+          img.src = oSaved;
+        }
       }
       nextAspects[j] = `${src.width} / ${src.height}`;
     }
@@ -321,35 +422,39 @@ export function PageDeck({
     requestAnimationFrame(() => requestAnimationFrame(applySaved));
     const net = window.setTimeout(applySaved, 250);
     return () => window.clearTimeout(net);
+    // remountEpoch: nach dem erzwungenen Remount (App-Rückkehr) sind die Canvas-Elemente neu →
+    // hier neu zeichnen, sonst blieben sie leer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, pages, pageIndex, perView, syncTick]);
+  }, [loading, pages, pageIndex, perView, syncTick, viewKeyFor, remountEpoch, previewOwn]);
 
   // Strich-Bilder der Nachbarseiten vorab dekodieren → der Slide-Streifen kann sie beim
   // Blättern SOFORT (synchron) mitzeichnen, ohne auf Image-Decode zu warten.
   useEffect(() => {
     if (loading) return;
     for (let p = Math.max(0, pageIndex - 2); p <= Math.min(pageCount - 1, pageIndex + 3); p++) {
-      const key = drawKeyFor(p);
-      if (!key) continue;
-      const data = localStorage.getItem(key);
-      if (!data) {
-        strokeImgCache.current.delete(key);
-        continue;
+      // Beide Ebenen (interaktiv + Overlay) vorhalten, damit der Streifen vollständig aussieht.
+      for (const key of [viewing(p) && !previewOwn ? null : drawKeyFor(p), overlayKeyFor(p)]) {
+        if (!key) continue;
+        const data = localStorage.getItem(key);
+        if (!data) {
+          strokeImgCache.current.delete(key);
+          continue;
+        }
+        const cached = strokeImgCache.current.get(key);
+        if (cached && cached.src === data) continue;
+        const img = new Image();
+        img.src = data;
+        strokeImgCache.current.set(key, img);
       }
-      const cached = strokeImgCache.current.get(key);
-      if (cached && cached.src === data) continue;
-      const img = new Image();
-      img.src = data;
-      strokeImgCache.current.set(key, img);
     }
     // Cache klein halten (älteste Einträge zuerst raus – Map behält die Einfüge-Reihenfolge).
-    while (strokeImgCache.current.size > 20) {
+    while (strokeImgCache.current.size > 40) {
       const oldest = strokeImgCache.current.keys().next().value;
       if (oldest === undefined) break;
       strokeImgCache.current.delete(oldest);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, pageCount, syncTick, loading]);
+  }, [pageIndex, pageCount, syncTick, loading, viewKeyFor, previewOwn]);
 
   // Eine Streifen-Hälfte (1–2 Seiten ab `start`) aus offscreen-Seite + Strichen zusammensetzen.
   function composePane(start: number): SlideSlot[] {
@@ -363,15 +468,19 @@ export function PageDeck({
       c.height = src.height;
       const ctx = c.getContext('2d')!;
       ctx.drawImage(src, 0, 0);
-      const key = drawKeyFor(p);
-      const strokes = key ? strokeImgCache.current.get(key) : undefined;
-      if (strokes && strokes.complete && strokes.naturalWidth > 0) ctx.drawImage(strokes, 0, 0);
-      let texts: PageTextObj[] = [];
-      try {
-        const t = key ? localStorage.getItem(`${key}_text`) : null;
-        texts = t ? (JSON.parse(t) as PageTextObj[]) : [];
-      } catch {
-        /* ignorieren */
+      // Beide Ebenen in den Streifen zeichnen (Overlay zuerst, interaktive Ebene obenauf) –
+      // im Slide sieht die Seite damit exakt aus wie in der Live-Ansicht.
+      const texts: PageTextObj[] = [];
+      for (const key of [overlayKeyFor(p), viewing(p) && !previewOwn ? null : drawKeyFor(p)]) {
+        if (!key) continue;
+        const strokes = strokeImgCache.current.get(key);
+        if (strokes && strokes.complete && strokes.naturalWidth > 0) ctx.drawImage(strokes, 0, 0);
+        try {
+          const t = localStorage.getItem(`${key}_text`);
+          if (t) texts.push(...(JSON.parse(t) as PageTextObj[]));
+        } catch {
+          /* ignorieren */
+        }
       }
       out.push({ canvas: c, texts, zoom: loadZoom(p), aspect: `${src.width} / ${src.height}` });
     }
@@ -1034,13 +1143,14 @@ export function PageDeck({
           const d = draws[j];
           return (
             <div key={j} className={slotClass(j)}>
-              {/* key = SEITE: beim Blättern wird die Zoom-Ebene frisch aufgebaut statt den
-                  Transform-Zustand der vorherigen Seite dieser Hälfte zu erben. Der gespeicherte
-                  Zoom der neuen Seite wird direkt danach vom Wiederherstell-Effekt angewandt →
-                  eine Seite sieht links und rechts identisch aus. Beim Hintergrund-Neuaufbau
-                  (pages-Tausch) bleibt der key gleich → kein Remount, laufende Gesten unberührt. */}
+              {/* key = SEITE + LAYOUT (perView): beim Blättern UND beim Formatwechsel (Hoch↔Quer)
+                  wird die Zoom-Ebene frisch aufgebaut statt den Transform-Zustand des vorherigen
+                  Zustands dieser Hälfte zu erben (sonst blieb die linke Hälfte beim Drehen im Zoom
+                  „stecken"). onInit stellt danach den für DIESES Layout gespeicherten Zoom her (bzw.
+                  passt ein, wenn keiner gespeichert ist). Beim Hintergrund-Neuaufbau (pages-Tausch)
+                  bleibt der key gleich → kein Remount, laufende Gesten unberührt. */}
               <TransformWrapper
-                key={`p${pageIndex + j}`}
+                key={`p${pageIndex + j}_v${perView}_e${remountEpoch}`}
                 ref={transformRefs[j]}
                 minScale={MIN_SCALE}
                 maxScale={MAX_SCALE}
@@ -1108,6 +1218,12 @@ export function PageDeck({
                     }}
                   >
                     <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
+                    {/* Striche der gerade ANGESEHENEN fremden Ebene ([]=Notizen von X, nur lesend). */}
+                    <canvas
+                      ref={overlayRefs[j]}
+                      className={styles.annoCanvas}
+                      style={{ pointerEvents: 'none' }}
+                    />
                     <canvas
                       ref={annoRefs[j]}
                       className={styles.annoCanvas}
@@ -1129,7 +1245,27 @@ export function PageDeck({
                       }}
                       onPointerDown={(e) => layerDown(e, j)}
                     >
-                      {d.texts
+                      {/* Texte der gerade angesehenen fremden Ebene (nur lesend). */}
+                      {overlayTexts[j].map((o) => (
+                        <div
+                          key={`ov-${o.id}`}
+                          className={styles.textObj}
+                          style={{
+                            left: `${o.fx * 100}%`,
+                            top: `${o.fy * 100}%`,
+                            fontSize: `${o.sizeCqh}cqh`,
+                            color: o.color,
+                            fontWeight: (o.bold ?? true) ? 700 : 400,
+                            fontStyle: o.italic ? 'italic' : 'normal',
+                            textDecoration: o.underline ? 'underline' : 'none',
+                            textAlign: o.align ?? 'center',
+                            pointerEvents: 'none',
+                          }}
+                        >
+                          {o.text}
+                        </div>
+                      ))}
+                      {(!viewing(pageIndex + j) || previewOwn) && d.texts
                         // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
                         .filter((o) => o.id !== d.pending?.editId)
                         .map((o) => (
@@ -1149,7 +1285,13 @@ export function PageDeck({
                               textAlign: o.align ?? 'center',
                               // Text nur im Text-Werkzeug interaktiv → mit Stift/Marker kann man
                               // ungehindert DARÜBER zeichnen (sonst „fängt" der Text die Eingabe ab).
-                              pointerEvents: drawMode && drawTool === 'text' ? 'all' : 'none',
+                              // Und NUR auf der aktiven Hälfte (#53): auf der ausgegrauten Seite ist
+                              // der Text durchlässig – der Tipp fällt auf die Ebene durch und
+                              // aktiviert die Seite (layerDown), statt den Text zu wählen/bearbeiten.
+                              pointerEvents:
+                                drawMode && drawTool === 'text' && !(perView === 2 && j !== activeSlot)
+                                  ? 'all'
+                                  : 'none',
                               cursor: 'grab',
                             }}
                             onPointerDown={(e) => d.startDrag(e, o)}

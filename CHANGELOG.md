@@ -5,6 +5,37 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [2.9.0] – 2026-07-10
+
+### Hinzugefügt
+
+- **Team-Notizen (#124):** Anmerkungen bleiben persönlich – aber wer mag, **teilt** sie mit dem
+  Team („Mehr → Team-Notizen → Meine Anmerkungen teilen"). Berechtigte wählen im Lied über den
+  Personen-Knopf **„Notizen von …"** eine Person und dann eine ihrer Ebenen (Version +
+  Darstellungsart, nur solche mit Anmerkungen) und sehen sie **schreibgeschützt in der Ansicht
+  dieser Person** (Spalten, Schrift, Version), damit alles an der richtigen Stelle sitzt. Eine
+  Leiste bietet **Ansehen / Zusammenführen / Ersetzen** mit **Live-Vorschau** direkt im Chart;
+  erst **„Übernehmen"** kopiert die Anmerkungen in die eigenen (bei „Zusammenführen" zusätzlich zu
+  den vorhandenen), zusammen mit der Ansicht dieser Ebene – die eigene Tonart bleibt. Wer
+  Team-Notizen nutzen darf, legt der Admin unter „Mehr → Verwaltung → Anmerkungen" fest:
+  **Gruppen-Zuweisung** (ChurchTools-Gruppen) + **Rollen-Zuweisung** (freigegebene Rollen je
+  Gruppe; nichts angehakt = niemand). Die geführte Einführung der Chart-Ansicht wurde um den
+  Schritt „Notizen von anderen" ergänzt.
+- **Eigene Anmerkungen je Darstellungsart:** „Akkorde & Text" und „Nur Text" haben jetzt getrennte
+  Anmerkungen (und eigenen Zoom) – beim Umschalten verrutscht nichts mehr. Bestehende Anmerkungen
+  gelten als „Akkorde & Text". Im Lied-Menü zeigt ein kleines Stift-Symbol, welche Versionen und
+  Darstellungsarten eigene Anmerkungen haben.
+- **Anmerkungsleiste beweglich:** Die Werkzeugleiste lässt sich am Griff senkrecht verschieben und
+  über den Pfeil zu einem kleinen Rand-Knopf einklappen (Position und Zustand bleiben pro Gerät
+  erhalten).
+
+### Behoben
+
+- **Zoom bleibt nicht mehr in einer Hälfte stecken** beim Wechsel Hochformat ↔ Querformat oder nach
+  dem Zurückkehren aus einer anderen App.
+- **Anmerkungen auf der inaktiven Chart-Hälfte** (Querformat) lassen sich nicht mehr versehentlich
+  auswählen oder bearbeiten – ein Tipp aktiviert dort nur die Seite.
+
 ## [2.8.1] – 2026-07-09
 
 ### Behoben

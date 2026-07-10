@@ -6,7 +6,9 @@ import type { CoachStep } from '../components/Coachmarks';
  */
 const PREFIX = 'worship:onboard-';
 export const TOUR_TERMINE = 'termine-v1';
-export const TOUR_CHART = 'chart-v1';
+// chart-v2: Schritt „Team-Anmerkungen" (#124) ergänzt – Version erhöht, damit Bestandsnutzer
+// den neuen Schritt beim ersten Öffnen nach dem Update sehen.
+export const TOUR_CHART = 'chart-v2';
 export const TOUR_SETLIST = 'setlist-v1';
 export const TOUR_SETLIST_EDIT = 'setlist-edit-v1';
 
@@ -83,6 +85,12 @@ export const CHART_STEPS: CoachStep[] = [
     selector: '[data-tour="chart-anmerken"]',
     title: 'Anmerkungen',
     body: 'Zeichne oder schreibe Notizen direkt auf die Seite – sie werden pro Konto gespeichert.',
+  },
+  // Nur für Team-Berechtigte sichtbar (sonst existiert der Knopf nicht → Schritt wird übersprungen).
+  {
+    selector: '[data-tour="chart-team"]',
+    title: 'Notizen von anderen',
+    body: 'Sieh dir die geteilten Anmerkungen deiner Team-Mitglieder an – in deren Ansicht – und übernimm sie bei Bedarf in deine eigenen. Deine Anmerkungen teilst du unter „Mehr → Team-Notizen".',
   },
 ];
 

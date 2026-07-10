@@ -86,6 +86,11 @@ async function renderImageToCanvas(url: string): Promise<HTMLCanvasElement> {
 export function useSetlistPages({ chordPdfData, chordOwners, songs, settings }: Args) {
   const [pages, setPages] = useState<HTMLCanvasElement[]>([]);
   const [owners, setOwners] = useState<StreamOwner[]>([]);
+  // Einstellungs-Schnappschuss, mit dem die AKTUELL SICHTBAREN Seiten gebaut wurden. Anmerkungs-
+  // Schlüssel (v. a. die Darstellungsart „Nur Text") müssen DARAN hängen, nicht an den Live-
+  // Einstellungen – sonst wechseln die Notiz-Ebenen schon während des asynchronen Neuaufbaus
+  // (Notizen „erscheinen vor dem Text", Stift schreibt in die falsche Ebene).
+  const [publishedSettings, setPublishedSettings] = useState<Record<number, SongSettings>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,6 +106,7 @@ export function useSetlistPages({ chordPdfData, chordOwners, songs, settings }: 
     if (!chordPdfData || songs.length === 0) {
       setPages([]);
       setOwners([]);
+      setPublishedSettings({});
       setLoading(false);
       return;
     }
@@ -170,6 +176,8 @@ export function useSetlistPages({ chordPdfData, chordOwners, songs, settings }: 
       if (cancelled) return;
       setPages(nextPages);
       setOwners(nextOwners);
+      // Schnappschuss GEMEINSAM mit den Seiten veröffentlichen (siehe Kommentar am State).
+      setPublishedSettings(settings);
       firstDone.current = true;
       setLoading(false);
     })().catch((e) => {
@@ -185,5 +193,5 @@ export function useSetlistPages({ chordPdfData, chordOwners, songs, settings }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chordPdfData, viewSig]);
 
-  return { pages, owners, loading, error };
+  return { pages, owners, publishedSettings, loading, error };
 }

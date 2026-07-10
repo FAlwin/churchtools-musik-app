@@ -22,3 +22,14 @@ export interface CtGroup {
 export function getGroups(): Promise<CtGroup[]> {
   return apiFetch<CtGroup[]>('/api/groups');
 }
+
+export interface CtRole {
+  /** groupTypeRoleId – wird in `noteRoles.view/manage` gespeichert. */
+  id: number;
+  name: string;
+}
+
+/** Rollen einer Gruppe für die „Rollen-Zuweisung" (nur Admin). */
+export function getGroupRoles(groupId: number): Promise<CtRole[]> {
+  return apiFetch<CtRole[]>(`/api/groups/${groupId}/roles`);
+}

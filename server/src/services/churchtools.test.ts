@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { fileIdFromUrl, extractSessionCookie, parseCapabilities } from './churchtools.js';
+import {
+  fileIdFromUrl,
+  extractSessionCookie,
+  parseCapabilities,
+  computeTeamNotesAllowed,
+} from './churchtools.js';
+import type { NoteRolePerm } from '@shared/types/index';
 
 describe('fileIdFromUrl', () => {
   it('liest die id aus einer ChurchTools-Download-URL', () => {
@@ -79,5 +85,56 @@ describe('parseCapabilities', () => {
     expect(caps.isAdmin).toBe(true);
     expect(caps.canViewSongs).toBe(true);
     expect(caps.canViewAgendas).toBe(true);
+  });
+});
+
+describe('computeTeamNotesAllowed', () => {
+  const MUSIKTEAM = 9;
+  // Rollen im Musikteam: 15 Mitarbeiter, 16 Leiter, 19 Organisator.
+  const freigabe: NoteRolePerm[] = [{ groupId: MUSIKTEAM, roles: [16, 19] }];
+
+  it('ohne Rollen-Freigabe darf niemand (leer = niemand, kein „alle")', () => {
+    expect(computeTeamNotesAllowed([{ groupId: MUSIKTEAM, roleId: 16 }], [MUSIKTEAM], [])).toBe(
+      false,
+    );
+  });
+
+  it('freigegebene Rolle darf Team-Notizen nutzen', () => {
+    expect(
+      computeTeamNotesAllowed([{ groupId: MUSIKTEAM, roleId: 19 }], [MUSIKTEAM], freigabe),
+    ).toBe(true);
+  });
+
+  it('nicht freigegebene Rolle darf nichts', () => {
+    // Mitarbeiter (15) ist nicht freigegeben.
+    expect(
+      computeTeamNotesAllowed([{ groupId: MUSIKTEAM, roleId: 15 }], [MUSIKTEAM], freigabe),
+    ).toBe(false);
+  });
+
+  it('Mitgliedschaft in NICHT gewählter Gruppe zählt nicht', () => {
+    expect(
+      computeTeamNotesAllowed(
+        [{ groupId: 42, roleId: 16 }],
+        [MUSIKTEAM],
+        [{ groupId: 42, roles: [16] }],
+      ),
+    ).toBe(false);
+  });
+
+  it('mehrere Mitgliedschaften: eine Freigabe genügt', () => {
+    expect(
+      computeTeamNotesAllowed(
+        [
+          { groupId: MUSIKTEAM, roleId: 15 }, // nicht freigegeben
+          { groupId: 5, roleId: 3 }, // Technik-Rolle freigegeben
+        ],
+        [MUSIKTEAM, 5],
+        [
+          { groupId: MUSIKTEAM, roles: [16, 19] },
+          { groupId: 5, roles: [3] },
+        ],
+      ),
+    ).toBe(true);
   });
 });

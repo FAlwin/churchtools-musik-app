@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { pushField } from '../services/annotations';
 
+/** Signatur der Sync-Push-Funktion (privat: pushField, global: pushSharedField). */
+type PushFn = (lsKey: string, field: 'strokes' | 'texts', value: unknown) => void;
+
 export type TextAlign = 'left' | 'center' | 'right';
 
 /** Absatz-Formatierung einer Text-Anmerkung (gilt für den ganzen Block). */
@@ -28,6 +31,8 @@ export interface PageTextObj {
   italic?: boolean;
   underline?: boolean;
   align?: TextAlign;
+  /** Nur bei Team-Anmerkungen: wer den Text angelegt hat (stempelt der Server; nur Anzeige). */
+  author?: { id: number; name: string };
 }
 
 interface Snapshot {
@@ -44,7 +49,15 @@ type LayerRef = React.MutableRefObject<HTMLDivElement | null>;
  * pro Seite in localStorage. Die Striche selbst zeichnet der Viewer auf die Canvas; dieser Hook
  * verwaltet Verlauf, Text und Persistenz.
  */
-export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, layerRef: LayerRef, reloadTick = 0) {
+export function usePageDraw(
+  storageKey: string | null,
+  strokesRef: CanvasRef,
+  layerRef: LayerRef,
+  reloadTick = 0,
+  // Sync-Ziel: privat (pushField, Default) ODER global (pushSharedField). Der localStorage-Namensraum
+  // steckt bereits im `storageKey`-Präfix; nur die Push-Funktion unterscheidet sich.
+  push: PushFn = pushField,
+) {
   const [texts, setTexts] = useState<PageTextObj[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [pending, setPending] = useState<{
@@ -66,6 +79,10 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
   const textKey = storageKey ? `${storageKey}_text` : null;
   // Zuletzt geladener Text-Stand (JSON) – verhindert das Zurück-Pushen gerade geladener Daten.
   const loadedJson = useRef('[]');
+  // Push-Funktion als Ref: ein Wechsel (privat ↔ global) soll den Speicher-Effekt NICHT erneut
+  // auslösen – gepusht wird immer mit der aktuellen Funktion, wenn sich wirklich Inhalt ändert.
+  const pushRef = useRef(push);
+  pushRef.current = push;
 
   // Beim Seiten-/Schlüsselwechsel die Texte SYNCHRON – noch während des Renderns – auf den neuen
   // Stand bringen. Sonst zeigt die neue Seite einen Frame lang noch die Texte der vorherigen
@@ -117,7 +134,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     else localStorage.removeItem(textKey);
     const norm = JSON.stringify(texts);
     if (norm !== loadedJson.current) {
-      pushField(drawKey, 'texts', texts);
+      pushRef.current(drawKey, 'texts', texts);
       loadedJson.current = norm;
     }
   }, [texts, textKey, drawKey]);
@@ -137,7 +154,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     } catch {
       /* Speicher voll */
     }
-    pushField(drawKey, 'strokes', data);
+    pushRef.current(drawKey, 'strokes', data);
   }
   function applySnapshot(s: Snapshot) {
     setSelectedId(null);
@@ -288,7 +305,7 @@ export function usePageDraw(storageKey: string | null, strokesRef: CanvasRef, la
     c?.getContext('2d')?.clearRect(0, 0, c.width, c.height);
     if (drawKey) {
       localStorage.removeItem(drawKey);
-      pushField(drawKey, 'strokes', null);
+      pushRef.current(drawKey, 'strokes', null);
     }
     setTexts([]);
     setSelectedId(null);
