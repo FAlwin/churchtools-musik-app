@@ -162,7 +162,11 @@ export function useCapabilities(enabled: boolean) {
     queryKey: ['capabilities'],
     queryFn: () => api.getCapabilities(),
     enabled,
-    staleTime: 1000 * 60 * 30,
+    // Persistierter Stand wird sofort angezeigt (kein Flackern), aber bei jedem App-Start neu
+    // geholt: So greifen vom Admin geänderte Rechte (z. B. Team-Notizen freigeben) schon beim
+    // nächsten Neuladen – ohne Ab-/Neuanmelden. Kurzer staleTime bremst Navigations-Refetches.
+    staleTime: 1000 * 60,
+    refetchOnMount: 'always',
     // Eine abgelaufene/ungültige ChurchTools-Sitzung (401) lässt sich nicht „wegwiederholen" –
     // sofort aufgeben (App.tsx führt dann zum Login). Nur echte Aussetzer (502) 3× erneut versuchen.
     retry: (failureCount, error) =>
