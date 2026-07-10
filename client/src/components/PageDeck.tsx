@@ -206,6 +206,9 @@ export function PageDeck({
   const gestureEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [landscape, setLandscape] = useState(isLandscape());
+  // Wird bei App-Rückkehr hochgezählt → erzwingt einen sauberen Remount der Zoom-Ebenen (steckt im
+  // TransformWrapper-key), damit ein nach dem Backgrounding veralteter Zoom-Zustand aufgelöst wird.
+  const [remountEpoch, setRemountEpoch] = useState(0);
   // Welche sichtbaren Seiten gerade reingezoomt sind (auch geladener Zoom) → steuert Panning,
   // Wisch-Navigation und den Zoom-Reset-Knopf. Kein „Anpassen-Modus"/„Fertig" mehr nötig – ein
   // Pinch zoomt und speichert automatisch; Verschieben ist möglich, sobald reingezoomt.
@@ -303,18 +306,32 @@ export function PageDeck({
 
   useEffect(() => {
     const onResize = () => setLandscape(isLandscape());
+    // Bei App-Rückkehr (iOS-PWA) kann der Container neu vermessen worden sein, ohne dass sich die
+    // Ausrichtung (perView) ändert → die Zoom-Ebene bliebe mit einem veralteten Transform „stecken".
+    // Ein Epoche-Hochzählen erzwingt einen sauberen Remount der Zoom-Ebenen (onInit stellt den
+    // gespeicherten Zoom des aktuellen Layouts frisch her). Nur im Vordergrund. Committete Striche
+    // liegen in localStorage und werden nach dem Remount neu gezeichnet – kein Datenverlust.
+    const bump = () => {
+      if (document.visibilityState === 'hidden') return;
+      setRemountEpoch((n) => n + 1);
+    };
+    const onVisible = () => {
+      onResize();
+      bump();
+    };
     window.addEventListener('resize', onResize);
     window.addEventListener('orientationchange', onResize);
-    // Nach App-Wechsel/Wiederkehr (iOS-PWA) sind die Maße kurz falsch → Ausrichtung neu prüfen.
-    window.addEventListener('pageshow', onResize);
+    // Ausrichtung auch bei focus neu prüfen (billig), aber den Remount NUR bei echtem
+    // Sichtbarkeitswechsel auslösen – `focus` feuert am Desktop bei jedem Tab-Wechsel.
     window.addEventListener('focus', onResize);
-    document.addEventListener('visibilitychange', onResize);
+    window.addEventListener('pageshow', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('orientationchange', onResize);
-      window.removeEventListener('pageshow', onResize);
       window.removeEventListener('focus', onResize);
-      document.removeEventListener('visibilitychange', onResize);
+      window.removeEventListener('pageshow', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
@@ -386,8 +403,10 @@ export function PageDeck({
     requestAnimationFrame(() => requestAnimationFrame(applySaved));
     const net = window.setTimeout(applySaved, 250);
     return () => window.clearTimeout(net);
+    // remountEpoch: nach dem erzwungenen Remount (App-Rückkehr) sind die Canvas-Elemente neu →
+    // hier neu zeichnen, sonst blieben sie leer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, pages, pageIndex, perView, syncTick, viewKeyFor]);
+  }, [loading, pages, pageIndex, perView, syncTick, viewKeyFor, remountEpoch]);
 
   // Strich-Bilder der Nachbarseiten vorab dekodieren → der Slide-Streifen kann sie beim
   // Blättern SOFORT (synchron) mitzeichnen, ohne auf Image-Decode zu warten.
@@ -1105,13 +1124,14 @@ export function PageDeck({
           const d = draws[j];
           return (
             <div key={j} className={slotClass(j)}>
-              {/* key = SEITE: beim Blättern wird die Zoom-Ebene frisch aufgebaut statt den
-                  Transform-Zustand der vorherigen Seite dieser Hälfte zu erben. Der gespeicherte
-                  Zoom der neuen Seite wird direkt danach vom Wiederherstell-Effekt angewandt →
-                  eine Seite sieht links und rechts identisch aus. Beim Hintergrund-Neuaufbau
-                  (pages-Tausch) bleibt der key gleich → kein Remount, laufende Gesten unberührt. */}
+              {/* key = SEITE + LAYOUT (perView): beim Blättern UND beim Formatwechsel (Hoch↔Quer)
+                  wird die Zoom-Ebene frisch aufgebaut statt den Transform-Zustand des vorherigen
+                  Zustands dieser Hälfte zu erben (sonst blieb die linke Hälfte beim Drehen im Zoom
+                  „stecken"). onInit stellt danach den für DIESES Layout gespeicherten Zoom her (bzw.
+                  passt ein, wenn keiner gespeichert ist). Beim Hintergrund-Neuaufbau (pages-Tausch)
+                  bleibt der key gleich → kein Remount, laufende Gesten unberührt. */}
               <TransformWrapper
-                key={`p${pageIndex + j}`}
+                key={`p${pageIndex + j}_v${perView}_e${remountEpoch}`}
                 ref={transformRefs[j]}
                 minScale={MIN_SCALE}
                 maxScale={MAX_SCALE}
