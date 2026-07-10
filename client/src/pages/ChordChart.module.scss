@@ -979,3 +979,57 @@
   font-weight: 500;
   cursor: pointer;
 }
+
+// Import-Vorschau: schwebende Leiste unten – Umschalter (Zusammenführen/Ersetzen) + Aktionen.
+// Das Chart darüber zeigt live das Ergebnis der gewählten Variante.
+.previewBar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+.pvSegWrap {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.pvSeg {
+  border: none;
+  background: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+}
+.pvSegOn {
+  background: var(--blue);
+  color: #fff;
+}
+.pvGo {
+  border: none;
+  background: none;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+.pvCancel {
+  border: none;
+  background: none;
+  color: var(--text2);
+  font-size: 13px;
+  padding: 6px 4px;
+  cursor: pointer;
+}

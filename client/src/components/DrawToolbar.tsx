@@ -90,6 +90,58 @@ export function DrawToolbar({
 }: DrawToolbarProps) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const colorWrapRef = useRef<HTMLDivElement>(null);
+
+  // ── Verschieben + Einklappen (Geräte-Präferenz im worship:*-Namensraum, überlebt Abmelden) ──
+  // Griff oben: senkrecht ziehen verschiebt die Leiste (falls sie genau dort sitzt, wo man
+  // anmerken will); Pfeil unten klappt sie zu einem kleinen Rand-Knopf zusammen.
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem('worship:drawbar-collapsed') === '1',
+  );
+  const [offsetY, setOffsetY] = useState(() => {
+    const v = Number(localStorage.getItem('worship:drawbar-y'));
+    return Number.isFinite(v) ? v : 0;
+  });
+  const dragRef = useRef<{ startY: number; startOffset: number } | null>(null);
+  function setCollapsedPersist(v: boolean) {
+    setCollapsed(v);
+    try {
+      localStorage.setItem('worship:drawbar-collapsed', v ? '1' : '0');
+    } catch {
+      /* Speicher voll/gesperrt → Zustand gilt eben nur für diese Sitzung */
+    }
+  }
+  /** Leiste im Sichtbereich halten (halbe Elternhöhe minus halbe Leistenhöhe + Rand). */
+  function clampOffset(off: number): number {
+    const el = toolbarRef.current;
+    const parent = el?.offsetParent as HTMLElement | null;
+    if (!el || !parent) return off;
+    const max = Math.max(0, parent.clientHeight / 2 - el.offsetHeight / 2 - 8);
+    return Math.max(-max, Math.min(max, off));
+  }
+  function gripDown(e: React.PointerEvent) {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    dragRef.current = { startY: e.clientY, startOffset: offsetY };
+  }
+  function gripMove(e: React.PointerEvent) {
+    const d = dragRef.current;
+    if (!d) return;
+    setOffsetY(clampOffset(d.startOffset + (e.clientY - d.startY)));
+  }
+  function gripUp() {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    setOffsetY((v) => {
+      try {
+        localStorage.setItem('worship:drawbar-y', String(v));
+      } catch {
+        /* s. o. */
+      }
+      return v;
+    });
+  }
+  const shiftStyle = { transform: `translateY(calc(-50% + ${offsetY}px))` };
   // Aktuell „ausgeklapptes" Werkzeug (erneuter Tipp auf das aktive Werkzeug): bei Stift/Marker/
   // Radierer die Strichstärke, beim Text der Einstellungs-Balken.
   const [expandedTool, setExpandedTool] = useState<DrawTool | null>(null);
@@ -161,8 +213,34 @@ export function DrawToolbar({
     return () => document.removeEventListener('pointerdown', onDown);
   }, [expandedTool]);
 
+  // Eingeklappt: nur ein kleiner Knopf am rechten Rand (gleiche Höhe wie die Leiste).
+  if (collapsed) {
+    return (
+      <button
+        className={styles.collapsedTab}
+        style={shiftStyle}
+        onClick={() => setCollapsedPersist(false)}
+        aria-label="Werkzeugleiste ausklappen"
+      >
+        <Icon name="chev-left" size={16} stroke={2.2} />
+      </button>
+    );
+  }
+
   return (
-    <div className={styles.toolbar}>
+    <div className={styles.toolbar} ref={toolbarRef} style={shiftStyle}>
+      {/* Griff: senkrecht ziehen verschiebt die Leiste. */}
+      <div
+        className={styles.grip}
+        onPointerDown={gripDown}
+        onPointerMove={gripMove}
+        onPointerUp={gripUp}
+        onPointerCancel={gripUp}
+        role="button"
+        aria-label="Werkzeugleiste verschieben"
+      >
+        <Icon name="grip" size={15} stroke={2} />
+      </div>
       {/* Farbe: ein Knopf zeigt die aktuelle Farbe, Tippen öffnet die Palette. */}
       <div className={styles.colorWrap} ref={colorWrapRef}>
         <button
@@ -348,6 +426,17 @@ export function DrawToolbar({
       )}
       <button className={styles.clear} onClick={onClear} title="Alles löschen" aria-label="Alles löschen">
         <Icon name="trash" size={19} stroke={2} />
+      </button>
+
+      {/* Einklappen: Leiste wird zum kleinen Rand-Knopf (Tipp darauf öffnet sie wieder). */}
+      <div className={styles.sep} />
+      <button
+        className={styles.collapseBtn}
+        onClick={() => setCollapsedPersist(true)}
+        title="Leiste einklappen"
+        aria-label="Werkzeugleiste einklappen"
+      >
+        <Icon name="chev-right" size={16} stroke={2.2} />
       </button>
     </div>
   );

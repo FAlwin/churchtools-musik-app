@@ -220,12 +220,12 @@ export function ChordChart({
   // Roh-Einstellungen der angesehenen Person (alle worship_*-Schlüssel des Lieds) – für die
   // Ansichts-Übernahme auch dann, wenn eine ANDERE als ihre aktuelle Version importiert wird.
   const [viewRaw, setViewRaw] = useState<Record<string, string> | null>(null);
-  // Import-Auswahl: je Ebene (Version+Darstellungsart) die angehakten Seiten.
-  const [importSel, setImportSel] = useState<Record<string, number[]>>({});
   const { toast, showToast } = useToast();
   const [sharers, setSharers] = useState<Sharer[]>([]);
   const [showSharers, setShowSharers] = useState(false);
-  const [showImport, setShowImport] = useState(false);
+  // Import-Vorschau: das Chart zeigt LIVE das Ergebnis (merge = eigene + fremde Ebene übereinander,
+  // replace = nur die fremde); unten schwebt die Vorschau-Leiste mit Umschalter + Übernehmen.
+  const [importPreview, setImportPreview] = useState<'merge' | 'replace' | null>(null);
   // Beim Verlassen der Ansicht/Chart-Wechsel den flüchtigen Ansichts-Spiegel räumen.
   useEffect(() => () => clearViewMirror(), []);
   // Geführte Einführung Chart-Ansicht (#Onboarding, Gruppe 2): startet beim ersten Öffnen, sobald
@@ -340,6 +340,7 @@ export function ChordChart({
 
   function stopViewing() {
     clearViewMirror();
+    setImportPreview(null);
     setViewing(null);
     setViewSettings(null);
     setViewRaw(null);
@@ -366,17 +367,6 @@ export function ChordChart({
   }
   const groupKeyOf = (g: { versionKey: string; lyr: boolean }) => `${g.versionKey}|${g.lyr ? '1' : '0'}`;
 
-  /** Import-Dialog öffnen – bezieht sich auf die GERADE ANGESEHENE Ebene (alle Seiten vorausgewählt). */
-  function openImport() {
-    if (!viewing) return;
-    const sel: Record<string, number[]> = {};
-    for (const g of mirrorGroups()) {
-      if (g.versionKey === viewing.versionKey && g.lyr === viewing.lyr) sel[groupKeyOf(g)] = g.pages;
-    }
-    setImportSel(sel);
-    setShowImport(true);
-  }
-
   /**
    * Import: Anmerkungen der angesehenen Person in die EIGENEN übernehmen (PCO-Stil).
    * „Ersetzen" überschreibt die eigenen Seiten, „Zusammenführen" kombiniert (Striche-PNGs
@@ -386,15 +376,17 @@ export function ChordChart({
    */
   async function importFrom(mode: 'merge' | 'replace') {
     if (!viewing || !viewSettings) return;
-    setShowImport(false);
+    setImportPreview(null);
     const songId = viewing.songId;
-    // Nur die ANGEHAKTEN Ebenen/Seiten übernehmen („man importiert, was man auswählt").
-    const selected = Object.entries(importSel).filter(([, pages]) => pages.length > 0);
-    if (selected.length === 0) return;
-    for (const [gk, pages] of selected) {
-      const [versionKey, lyrFlag] = gk.split('|');
-      const seg = lyrFlag === '1' ? '_lyr' : '';
-      for (const page of pages) {
+    // Übernommen wird die GERADE ANGESEHENE Ebene (= das, was die Vorschau zeigt).
+    const level = mirrorGroups().find(
+      (g) => g.versionKey === viewing.versionKey && g.lyr === viewing.lyr,
+    );
+    if (!level) return;
+    {
+      const { versionKey } = level;
+      const seg = level.lyr ? '_lyr' : '';
+      for (const page of level.pages) {
         const base = `song${songId}_v${versionKey}${seg}_${page}`;
         const theirStrokes = localStorage.getItem(VIEW_NS + base);
         const theirTexts =
@@ -773,12 +765,16 @@ export function ChordChart({
                   {' · '}
                   {viewing.lyr ? 'Nur Text' : 'Akkorde & Text'}
                 </span>
-                <button className={styles.viewBarBtn} onClick={openSharers}>
-                  Auswählen
-                </button>
-                <button className={styles.viewBarBtn} onClick={openImport}>
-                  Übernehmen
-                </button>
+                {!importPreview && (
+                  <>
+                    <button className={styles.viewBarBtn} onClick={openSharers}>
+                      Auswählen
+                    </button>
+                    <button className={styles.viewBarBtn} onClick={() => setImportPreview('merge')}>
+                      Übernehmen
+                    </button>
+                  </>
+                )}
               </div>
             );
           })()}
@@ -1079,6 +1075,7 @@ export function ChordChart({
               loadingLabel="Lieder werden vorbereitet…"
               drawKeyFor={drawKeyFor}
               viewKeyFor={viewKeyFor}
+              previewOwn={importPreview === 'merge'}
               zoomKeyBaseFor={zoomKeyBaseFor}
               pageLabel={pageLabel}
               pageIndex={pageIdx}
@@ -1174,6 +1171,32 @@ export function ChordChart({
           </button>
         </div>
 
+        {/* Import-Vorschau: Umschalter + Übernehmen/Abbrechen; das Chart zeigt live das Ergebnis. */}
+        {importPreview && viewing && (
+          <div className={styles.previewBar}>
+            <span className={styles.pvSegWrap}>
+              <button
+                className={`${styles.pvSeg}${importPreview === 'merge' ? ' ' + styles.pvSegOn : ''}`}
+                onClick={() => setImportPreview('merge')}
+              >
+                Zusammenführen
+              </button>
+              <button
+                className={`${styles.pvSeg}${importPreview === 'replace' ? ' ' + styles.pvSegOn : ''}`}
+                onClick={() => setImportPreview('replace')}
+              >
+                Ersetzen
+              </button>
+            </span>
+            <button className={styles.pvGo} onClick={() => void importFrom(importPreview)}>
+              Übernehmen
+            </button>
+            <button className={styles.pvCancel} onClick={() => setImportPreview(null)}>
+              Abbrechen
+            </button>
+          </div>
+        )}
+
         {/* „Notizen von …": Stufe 1 = Person wählen, Stufe 2 = ihre Ebene (Version + Darstellung). */}
         {showSharers && (
           <Sheet
@@ -1237,81 +1260,6 @@ export function ChordChart({
                 </button>
               </>
             )}
-          </Sheet>
-        )}
-
-        {/* Import-Auswahl: welche Ebenen/Seiten übernehmen, dann Zusammenführen oder Ersetzen. */}
-        {showImport && viewing && (
-          <Sheet title="Notizen übernehmen" onClose={() => setShowImport(false)}>
-            <p className={styles.pickHint}>
-              Übernimmt die gerade angesehene Ebene von {viewing.name} in deine Notizen – wähle bei
-              Bedarf einzelne Seiten ab. Die zugehörige Ansicht wird danach angezeigt; deine eigenen
-              Notizen anderer Versionen/Darstellungen bleiben gespeichert (Stift-Markierung im
-              Lied-Menü). Deine Tonart bleibt erhalten.
-            </p>
-            {mirrorGroups()
-              .filter((g) => viewing && g.versionKey === viewing.versionKey && g.lyr === viewing.lyr)
-              .map((g) => {
-              const gk = groupKeyOf(g);
-              const sel = importSel[gk] ?? [];
-              const vName =
-                availableVersions(song).find((v) => v.key === g.versionKey)?.name ?? g.versionKey;
-              const allOn = sel.length === g.pages.length;
-              return (
-                <div key={gk} className={styles.impGroup}>
-                  <button
-                    className={styles.impGroupHead}
-                    role="checkbox"
-                    aria-checked={allOn}
-                    onClick={() =>
-                      setImportSel((prev) => ({ ...prev, [gk]: allOn ? [] : g.pages }))
-                    }
-                  >
-                    <span className={`${styles.impCheck}${allOn ? ' ' + styles.impCheckOn : ''}`}>
-                      {allOn && <Icon name="check" size={12} />}
-                    </span>
-                    <span className={styles.impGroupName}>
-                      Version „{vName}" · {g.lyr ? 'Nur Text' : 'Akkorde & Text'}
-                    </span>
-                  </button>
-                  <div className={styles.impPages}>
-                    {g.pages.map((pg) => {
-                      const on = sel.includes(pg);
-                      return (
-                        <button
-                          key={pg}
-                          className={`${styles.impPage}${on ? ' ' + styles.impPageOn : ''}`}
-                          role="checkbox"
-                          aria-checked={on}
-                          onClick={() =>
-                            setImportSel((prev) => ({
-                              ...prev,
-                              [gk]: on ? sel.filter((x) => x !== pg) : [...sel, pg].sort((a, b) => a - b),
-                            }))
-                          }
-                        >
-                          Seite {pg + 1}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-            <button
-              className={`${styles.importBtn} ${styles.importPrimary}`}
-              disabled={Object.values(importSel).every((p) => p.length === 0)}
-              onClick={() => void importFrom('merge')}
-            >
-              Zusammenführen (zu meinen hinzufügen)
-            </button>
-            <button
-              className={styles.importBtn}
-              disabled={Object.values(importSel).every((p) => p.length === 0)}
-              onClick={() => void importFrom('replace')}
-            >
-              Ersetzen (Auswahl überschreibt meine)
-            </button>
           </Sheet>
         )}
 

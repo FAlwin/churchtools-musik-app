@@ -46,6 +46,11 @@ export interface PageDeckProps {
    * haben (useCallback) – steckt in Effekt-Abhängigkeiten.
    */
   viewKeyFor?: (page: number) => string | null;
+  /**
+   * Import-Vorschau „Zusammenführen": Während des Ansehens die EIGENE Ebene zusätzlich zeigen
+   * (fremde Overlay + eigene übereinander = das Ergebnis des Zusammenführens, live).
+   */
+  previewOwn?: boolean;
   /** Basis-Schlüssel für den gespeicherten Zoom einer Seite (ohne Layout-Suffix – das hängt PageDeck an). */
   zoomKeyBaseFor: (page: number) => string;
   /** Optionaler Seiten-Hinweis unten rechts (z. B. „Seite 1 / 3"). null = nicht anzeigen. */
@@ -131,6 +136,7 @@ export function PageDeck({
   loadingLabel,
   drawKeyFor,
   viewKeyFor = NO_VIEW,
+  previewOwn = false,
   zoomKeyBaseFor,
   pageLabel,
   onBadgeClick,
@@ -363,8 +369,10 @@ export function PageDeck({
       anno.height = src.height;
       const ctx = anno.getContext('2d')!;
       ctx.clearRect(0, 0, anno.width, anno.height);
-      // Eigene Striche nur, wenn diese Seite NICHT gerade eine fremde Ebene zeigt.
-      const key = viewing(pageIndex + j) ? null : drawKeyFor(pageIndex + j);
+      // Eigene Striche, wenn diese Seite keine fremde Ebene zeigt – ODER in der
+      // Zusammenführen-Vorschau (dann beide Ebenen übereinander).
+      const key =
+        viewing(pageIndex + j) && !previewOwn ? null : drawKeyFor(pageIndex + j);
       const saved = key ? localStorage.getItem(key) : null;
       if (saved) {
         const img = new Image();
@@ -417,7 +425,7 @@ export function PageDeck({
     // remountEpoch: nach dem erzwungenen Remount (App-Rückkehr) sind die Canvas-Elemente neu →
     // hier neu zeichnen, sonst blieben sie leer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, pages, pageIndex, perView, syncTick, viewKeyFor, remountEpoch]);
+  }, [loading, pages, pageIndex, perView, syncTick, viewKeyFor, remountEpoch, previewOwn]);
 
   // Strich-Bilder der Nachbarseiten vorab dekodieren → der Slide-Streifen kann sie beim
   // Blättern SOFORT (synchron) mitzeichnen, ohne auf Image-Decode zu warten.
@@ -425,7 +433,7 @@ export function PageDeck({
     if (loading) return;
     for (let p = Math.max(0, pageIndex - 2); p <= Math.min(pageCount - 1, pageIndex + 3); p++) {
       // Beide Ebenen (interaktiv + Overlay) vorhalten, damit der Streifen vollständig aussieht.
-      for (const key of [viewing(p) ? null : drawKeyFor(p), overlayKeyFor(p)]) {
+      for (const key of [viewing(p) && !previewOwn ? null : drawKeyFor(p), overlayKeyFor(p)]) {
         if (!key) continue;
         const data = localStorage.getItem(key);
         if (!data) {
@@ -446,7 +454,7 @@ export function PageDeck({
       strokeImgCache.current.delete(oldest);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, pageCount, syncTick, loading, viewKeyFor]);
+  }, [pageIndex, pageCount, syncTick, loading, viewKeyFor, previewOwn]);
 
   // Eine Streifen-Hälfte (1–2 Seiten ab `start`) aus offscreen-Seite + Strichen zusammensetzen.
   function composePane(start: number): SlideSlot[] {
@@ -463,7 +471,7 @@ export function PageDeck({
       // Beide Ebenen in den Streifen zeichnen (Overlay zuerst, interaktive Ebene obenauf) –
       // im Slide sieht die Seite damit exakt aus wie in der Live-Ansicht.
       const texts: PageTextObj[] = [];
-      for (const key of [overlayKeyFor(p), viewing(p) ? null : drawKeyFor(p)]) {
+      for (const key of [overlayKeyFor(p), viewing(p) && !previewOwn ? null : drawKeyFor(p)]) {
         if (!key) continue;
         const strokes = strokeImgCache.current.get(key);
         if (strokes && strokes.complete && strokes.naturalWidth > 0) ctx.drawImage(strokes, 0, 0);
@@ -1257,7 +1265,7 @@ export function PageDeck({
                           {o.text}
                         </div>
                       ))}
-                      {!viewing(pageIndex + j) && d.texts
+                      {(!viewing(pageIndex + j) || previewOwn) && d.texts
                         // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
                         .filter((o) => o.id !== d.pending?.editId)
                         .map((o) => (
