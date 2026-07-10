@@ -304,6 +304,17 @@ export function PageDeck({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawMode]);
 
+  // Wechselt die AKTIVE Hälfte (2-up), darf auf der nun inaktiven keine Auswahl/Eingabe
+  // zurückbleiben – sonst stehen Auswahlrahmen auf beiden Seiten gleichzeitig. Eine offene
+  // Inline-Eingabe dort wird zuerst übernommen (nichts geht verloren).
+  useEffect(() => {
+    if (perView !== 2) return;
+    const other = activeSlot === 0 ? 1 : 0;
+    if (draws[other].pending) commitInlineText(other);
+    draws[other].setSelectedId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSlot, perView]);
+
   useEffect(() => {
     const onResize = () => setLandscape(isLandscape());
     // Bei App-Rückkehr (iOS-PWA) kann der Container neu vermessen worden sein, ohne dass sich die
@@ -1266,7 +1277,13 @@ export function PageDeck({
                               textAlign: o.align ?? 'center',
                               // Text nur im Text-Werkzeug interaktiv → mit Stift/Marker kann man
                               // ungehindert DARÜBER zeichnen (sonst „fängt" der Text die Eingabe ab).
-                              pointerEvents: drawMode && drawTool === 'text' ? 'all' : 'none',
+                              // Und NUR auf der aktiven Hälfte (#53): auf der ausgegrauten Seite ist
+                              // der Text durchlässig – der Tipp fällt auf die Ebene durch und
+                              // aktiviert die Seite (layerDown), statt den Text zu wählen/bearbeiten.
+                              pointerEvents:
+                                drawMode && drawTool === 'text' && !(perView === 2 && j !== activeSlot)
+                                  ? 'all'
+                                  : 'none',
                               cursor: 'grab',
                             }}
                             onPointerDown={(e) => d.startDrag(e, o)}
