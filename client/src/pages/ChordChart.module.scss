@@ -1004,6 +1004,22 @@
   border-radius: 999px;
   overflow: hidden;
 }
+.pvDivider {
+  width: 0.5px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 2px 0;
+}
+.pvIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--text2);
+  cursor: pointer;
+  padding: 4px;
+}
 .pvSeg {
   border: none;
   background: none;

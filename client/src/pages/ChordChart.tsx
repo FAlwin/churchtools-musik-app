@@ -225,7 +225,8 @@ export function ChordChart({
   const [showSharers, setShowSharers] = useState(false);
   // Import-Vorschau: das Chart zeigt LIVE das Ergebnis (merge = eigene + fremde Ebene übereinander,
   // replace = nur die fremde); unten schwebt die Vorschau-Leiste mit Umschalter + Übernehmen.
-  const [importPreview, setImportPreview] = useState<'merge' | 'replace' | null>(null);
+  // Modus beim Ansehen einer geteilten Ebene: nur ansehen, oder Vorschau auf Zusammenführen/Ersetzen.
+  const [viewMode, setViewMode] = useState<'view' | 'merge' | 'replace'>('view');
   // Beim Verlassen der Ansicht/Chart-Wechsel den flüchtigen Ansichts-Spiegel räumen.
   useEffect(() => () => clearViewMirror(), []);
   // Geführte Einführung Chart-Ansicht (#Onboarding, Gruppe 2): startet beim ersten Öffnen, sobald
@@ -333,6 +334,7 @@ export function ChordChart({
     if (!target) return;
     setViewSettings({ [songId]: settingsForLevel(target, viewRaw ?? {}, versionKey, lyr) });
     setViewing({ ...pickerPerson, songId, versionKey, lyr });
+    setViewMode('view');
     setDrawMode(false);
     setShowSharers(false);
     setSyncTick((t) => t + 1);
@@ -340,7 +342,7 @@ export function ChordChart({
 
   function stopViewing() {
     clearViewMirror();
-    setImportPreview(null);
+    setViewMode('view');
     setViewing(null);
     setViewSettings(null);
     setViewRaw(null);
@@ -376,7 +378,7 @@ export function ChordChart({
    */
   async function importFrom(mode: 'merge' | 'replace') {
     if (!viewing || !viewSettings) return;
-    setImportPreview(null);
+    setViewMode('view');
     const songId = viewing.songId;
     // Übernommen wird die GERADE ANGESEHENE Ebene (= das, was die Vorschau zeigt).
     const level = mirrorGroups().find(
@@ -765,16 +767,6 @@ export function ChordChart({
                   {' · '}
                   {viewing.lyr ? 'Nur Text' : 'Akkorde & Text'}
                 </span>
-                {!importPreview && (
-                  <>
-                    <button className={styles.viewBarBtn} onClick={openSharers}>
-                      Auswählen
-                    </button>
-                    <button className={styles.viewBarBtn} onClick={() => setImportPreview('merge')}>
-                      Übernehmen
-                    </button>
-                  </>
-                )}
               </div>
             );
           })()}
@@ -1075,7 +1067,7 @@ export function ChordChart({
               loadingLabel="Lieder werden vorbereitet…"
               drawKeyFor={drawKeyFor}
               viewKeyFor={viewKeyFor}
-              previewOwn={importPreview === 'merge'}
+              previewOwn={viewMode === 'merge'}
               zoomKeyBaseFor={zoomKeyBaseFor}
               pageLabel={pageLabel}
               pageIndex={pageIdx}
@@ -1171,28 +1163,48 @@ export function ChordChart({
           </button>
         </div>
 
-        {/* Import-Vorschau: Umschalter + Übernehmen/Abbrechen; das Chart zeigt live das Ergebnis. */}
-        {importPreview && viewing && (
+        {/* Team-Notizen: EINE Leiste steuert das Ansehen. „Ansehen" = nur seine Ebene lesend;
+            „Zusammenführen"/„Ersetzen" zeigen live die Vorschau, „Übernehmen" schreibt dann wirklich. */}
+        {viewing && (
           <div className={styles.previewBar}>
             <span className={styles.pvSegWrap}>
               <button
-                className={`${styles.pvSeg}${importPreview === 'merge' ? ' ' + styles.pvSegOn : ''}`}
-                onClick={() => setImportPreview('merge')}
+                className={`${styles.pvSeg}${viewMode === 'view' ? ' ' + styles.pvSegOn : ''}`}
+                onClick={() => setViewMode('view')}
+              >
+                Ansehen
+              </button>
+              <button
+                className={`${styles.pvSeg}${viewMode === 'merge' ? ' ' + styles.pvSegOn : ''}`}
+                onClick={() => setViewMode('merge')}
               >
                 Zusammenführen
               </button>
               <button
-                className={`${styles.pvSeg}${importPreview === 'replace' ? ' ' + styles.pvSegOn : ''}`}
-                onClick={() => setImportPreview('replace')}
+                className={`${styles.pvSeg}${viewMode === 'replace' ? ' ' + styles.pvSegOn : ''}`}
+                onClick={() => setViewMode('replace')}
               >
                 Ersetzen
               </button>
             </span>
-            <button className={styles.pvGo} onClick={() => void importFrom(importPreview)}>
-              Übernehmen
+            {viewMode !== 'view' && (
+              <>
+                <span className={styles.pvDivider} />
+                <button className={styles.pvGo} onClick={() => void importFrom(viewMode)}>
+                  Übernehmen
+                </button>
+              </>
+            )}
+            <button
+              className={styles.pvIcon}
+              onClick={openSharers}
+              title="Andere Person / Ebene"
+              aria-label="Andere Person oder Ebene wählen"
+            >
+              <Icon name="people" size={18} stroke={2} />
             </button>
-            <button className={styles.pvCancel} onClick={() => setImportPreview(null)}>
-              Abbrechen
+            <button className={styles.pvCancel} onClick={stopViewing}>
+              Fertig
             </button>
           </div>
         )}
