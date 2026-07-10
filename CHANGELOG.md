@@ -5,6 +5,16 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Behoben
+
+- **Rechte-Änderungen greifen ohne Ab-/Neuanmelden:** Die Berechtigungen wurden auf dem Gerät bis
+  zu 30 Minuten zwischengespeichert. Gab der Admin z. B. die Team-Notizen frei, sahen die anderen
+  das erst nach langem Warten oder erst nach Abmelden/Neuanmelden. Jetzt wird der gespeicherte Stand
+  zwar sofort angezeigt (kein Flackern), aber bei jedem App-Start frisch geprüft – geänderte Rechte
+  erscheinen damit schon beim nächsten Neuladen.
+
 ## [2.9.0] – 2026-07-10
 
 ### Hinzugefügt
