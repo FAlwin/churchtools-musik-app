@@ -228,6 +228,40 @@ export interface UpdateInfo {
   url: string | null;
 }
 
+// ── Anmerkungen (Striche + Textfelder + Zoom) ─────────────────────────────────
+// EINZIGE Quelle dieser Typen: Client (services/annotations.ts, teamNotes.ts) und
+// Server (services/annotations.ts) importieren von hier. Das Zod-Schema in
+// annotationsController.ts wird per Compile-Wächter gegen diese Typen geprüft, damit
+// beim Speichern kein Feld stillschweigend weggeschnitten wird (s. #115).
+
+/** Ein frei platziertes Textfeld einer Anmerkung auf dem Chart. */
+export interface AnnotationText {
+  id: number;
+  fx: number;
+  fy: number;
+  text: string;
+  color: string;
+  sizeCqh: number;
+  // Absatz-Format (optional; ältere Anmerkungen kennen es nicht). MUSS end-to-end mitlaufen,
+  // sonst geht es beim Server-Roundtrip verloren → normaler Text würde wieder fett (#115).
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  align?: 'left' | 'center' | 'right';
+}
+
+/** Anmerkungen einer Seite, pro Konto gespeichert: Striche (PNG-DataURL) + Texte + Zoom. */
+export interface PageAnnotation {
+  /** Striche als PNG-DataURL (oder null = keine). */
+  strokes?: string | null;
+  texts?: AnnotationText[];
+  /** Gespeicherter Zoom der Seite. */
+  zoom?: { x: number; y: number; scale: number } | null;
+}
+
+/** Geteilte (fremde) Anmerkungsebene beim Ansehen – wie PageAnnotation, aber ohne Zoom. */
+export type SharedPage = Pick<PageAnnotation, 'strokes' | 'texts'>;
+
 /** Standardwerte. `appName`/`description` sind fest; `orgName`/`links` sind anpassbar. */
 export const DEFAULT_SITE_CONFIG: SiteConfig = {
   appName: 'Churchtools Musik App',

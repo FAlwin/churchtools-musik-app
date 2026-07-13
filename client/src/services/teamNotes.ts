@@ -4,27 +4,13 @@
  * Anmerkungen selbst bleiben strikt pro Konto (services/annotations.ts).
  */
 import { apiFetch } from './api';
+// SharedPage (fremde Anmerkungsebene) kommt aus @shared/types – re-exportiert für Bestandsimporte.
+import type { SharedPage } from '@shared/types/index';
+
+export type { SharedPage };
 
 /** localStorage-Namensraum für die gerade ANGESEHENE fremde Ebene (flüchtiger Spiegel). */
 export const VIEW_NS = 'worship_teamview_';
-
-export interface SharedText {
-  id: number;
-  fx: number;
-  fy: number;
-  text: string;
-  color: string;
-  sizeCqh: number;
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  align?: 'left' | 'center' | 'right';
-}
-
-export interface SharedPage {
-  strokes?: string | null;
-  texts?: SharedText[];
-}
 
 export interface Sharer {
   id: number;
