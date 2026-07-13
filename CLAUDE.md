@@ -228,7 +228,10 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
   **Volume-Keys (`worship-data`/`worship-data-test`) bleiben bewusst** → kein Datenverlust.
 - **Stand ECG-Prod (seit v2.8.0-Deploy 08.07.2026):** Läuft als Container-Manager-Projekt
   **`worship-charts`** (Container `worship-charts`, Volume `worship-charts_worship-data`), Compose mit
-  fixem **`name: worship-charts`** + **`COOKIE_SECURE: true`** (Secure-Cookie über HTTPS bestätigt);
+  fixem **`name: worship-charts`** + **`COOKIE_SECURE: true`** (real erst am **2026-07-13** auf
+  Prod aktiviert + verifiziert – zuvor lief der Container trotz gegenteiliger Doku ohne die Variable,
+  also mit Default `false`; Container-Env `docker inspect … | grep cookie` = `COOKIE_SECURE=true`,
+  Login live gegengeprüft: `/api/auth/login`+Folge-Calls alle `200`);
   NAS-Compose unter `/volume1/docker/churchtools-musik-app/docker-compose.yml`. Der `name:`-Eintrag
   fixiert den Volume-Präfix unabhängig vom CM-Projektnamen (Lehre aus dem Volume-Vorfall, s. u.).
 - **Frontend-Update auf den Geräten (Service Worker, seit v2.5.0):** Nach dem Server-Update holt sich
@@ -264,8 +267,12 @@ den Skill `/festhalten`, der genau das automatisiert.
 7. **Memory aktualisieren:** Projekt-Memory + `MEMORY.md`-Index auf den neuen Stand bringen.
 
 **⚠️ Prod-Deploy & Daten-Volume (Lehre aus dem Vorfall 2026-07-08):** Beim Aktualisieren im
-Container Manager IMMER das **bestehende** Projekt „Zurücksetzen"/neu aufbauen – **nie ein neues
-Projekt anlegen**. Der interne Volume-Name ist `<projektname>_<volume-key>`; ein abweichender
+Container Manager IMMER das **bestehende** Projekt neu aufbauen – **nie ein neues Projekt anlegen**.
+Konkreter Ablauf im Synology Container Manager (es gibt KEINEN Knopf „Zurücksetzen"): das Projekt
+öffnen → **Stopp** → **Aktion › Löschen** (dabei **KEINE** Volumes/Daten mitlöschen anhaken) →
+**Projekt › Erstellen**. Nur so wird eine geänderte Compose (z. B. neue Env wie `COOKIE_SECURE`)
+wirklich übernommen; ein reiner **Neustart** übernimmt Env-Änderungen NICHT. Das benannte Volume
+überlebt das Löschen und wird beim Erstellen dank fixem `name:` wieder eingehängt. Der interne Volume-Name ist `<projektname>_<volume-key>`; ein abweichender
 Projektname hängt den Container an ein **neues, leeres** Volume (Gemeindename/Links/Anmerkungen
 wirken „weg", liegen aber unversehrt im alten Volume). Absicherung: Die Compose-Dateien setzen
 `name:` fest (Prod `worship-charts`, Test `worship-charts-test`) → der Volume-Präfix ist damit
