@@ -127,20 +127,33 @@ export async function logout(cookie: string): Promise<void> {
   }
 }
 
-/** Ermittelt aus den ChurchTools-Rechten (Modul churchservice), was der Nutzer darf. */
-export async function getCapabilities(cookie: string): Promise<UserCapabilities> {
+/**
+ * Ermittelt aus den ChurchTools-Rechten (Modul churchservice), was der Nutzer darf.
+ * `knownUserId` kommt aus dem Session-Cookie (seit #149) – damit funktioniert die Cache-
+ * Überbrückung auch, wenn `whoami` während eines ChurchTools-Aussetzers nicht antwortet.
+ */
+export async function getCapabilities(
+  cookie: string,
+  knownUserId: number | null = null,
+): Promise<UserCapabilities> {
   const data = await ctGet<Record<string, Record<string, unknown>>>(
     cookie,
     '/api/permissions/global',
   );
 
-  // Konto-ID für den Rechte-Cache – best effort: schlägt whoami aus (eigener Aussetzer), arbeiten
-  // wir eben ohne Cache-Fallback weiter. `getUserId` ist 12 h gecacht, kostet also selten einen Call.
-  let userId: number | null = null;
-  try {
-    userId = await getUserId(cookie);
-  } catch {
-    /* whoami nicht erreichbar → ohne Cache fortfahren */
+  // Konto-ID für den Rechte-Cache: bevorzugt aus dem Session-Cookie (kein Netz nötig); sonst
+  // best effort via whoami (12 h gecacht). Ein 401 von whoami wird gemerkt: Er heißt, die
+  // CT-Session ist (halb) tot – kann dann auch der Cache nicht überbrücken, führen wir den
+  // Nutzer per 401 zum Login statt in die „Erneut versuchen"-Sackgasse (#149, Bezug #104).
+  let userId: number | null = knownUserId;
+  let whoamiUnauthorized = false;
+  if (userId == null) {
+    try {
+      userId = await getUserId(cookie);
+    } catch (err) {
+      if (err instanceof HttpError && err.status === 401) whoamiUnauthorized = true;
+      /* whoami nicht erreichbar → ohne Cache fortfahren */
+    }
   }
 
   // ChurchTools liefert bei einem Aussetzer entweder eine komplett leere Antwort (parseCapabilities
@@ -176,9 +189,22 @@ export async function getCapabilities(cookie: string): Promise<UserCapabilities>
     // bewusst NIE gecacht, daher sperrt der Cache echte Nicht-Berechtigte nie fälschlich ein.
     const cached = await bridgeFromCache();
     if (cached) return cached;
+    // Diagnose (#149): WARUM konnte nicht überbrückt werden? Ohne diesen Grund war der reale
+    // Vorfall vom 13.07.2026 (12× keine Überbrückung) im Log nicht aufklärbar.
+    const grund =
+      userId == null
+        ? whoamiUnauthorized
+          ? 'whoami lieferte 401 – CT-Session (halb) tot'
+          : 'Konto-ID unbekannt (whoami fehlgeschlagen, keine ID im Cookie)'
+        : `kein frischer Cache-Eintrag für Konto ${userId}`;
     console.warn(
-      '[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer)',
+      `[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer); nicht überbrückt: ${grund}`,
     );
+    // Halb tote CT-Session (Rechte leer + whoami 401) und kein Cache: „Erneut versuchen" ist
+    // zwecklos, nur ein Re-Login (neue CT-Session) hilft → 401 führt den Client zum Login (#104).
+    if (whoamiUnauthorized) {
+      throw new HttpError(401, 'Session abgelaufen. Bitte neu anmelden.');
+    }
     return { ...base, canUseGlobalNotes: false };
   }
 
@@ -223,14 +249,17 @@ const capsMemo = new Map<string, { caps: UserCapabilities; at: number }>();
 const CAPS_MEMO_TTL_MS = 5 * 60_000;
 
 /** Capabilities mit 5-Minuten-Memo je Session – für häufige Rechte-Checks (Team-Notizen). */
-export async function getCapabilitiesCached(cookie: string): Promise<UserCapabilities> {
+export async function getCapabilitiesCached(
+  cookie: string,
+  knownUserId: number | null = null,
+): Promise<UserCapabilities> {
   const hit = capsMemo.get(cookie);
   if (hit && Date.now() - hit.at < CAPS_MEMO_TTL_MS) return hit.caps;
   // Abgelaufene Fremd-Einträge bei dieser Gelegenheit räumen (Map wächst sonst über Wochen).
   for (const [k, v] of capsMemo) {
     if (Date.now() - v.at >= CAPS_MEMO_TTL_MS) capsMemo.delete(k);
   }
-  const caps = await getCapabilities(cookie);
+  const caps = await getCapabilities(cookie, knownUserId);
   capsMemo.set(cookie, { caps, at: Date.now() });
   return caps;
 }
