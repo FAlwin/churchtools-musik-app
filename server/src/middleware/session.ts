@@ -13,29 +13,35 @@ const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 Tage
 // regelmäßiger Nutzung beliebig lange gültig.
 const SESSION_ABSOLUTE_MAX_MS = 1000 * 60 * 60 * 24 * 90; // 90 Tage
 
-/** Express-Request um das ChurchTools-Session-Cookie erweitern. */
+/** Express-Request um das ChurchTools-Session-Cookie (+ Konto-ID) erweitern. */
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       ctCookie?: string;
+      /** ChurchTools-Person-ID aus dem Session-Cookie (seit #149); null bei Alt-Cookies. */
+      ctUserId?: number | null;
     }
   }
 }
 
 /**
- * Cookie-Wert = `<Login-Zeitstempel-ms>|<ChurchTools-Cookie>`. Der Zeitstempel entsteht beim
- * Login und wird beim Rollieren UNVERÄNDERT weitergetragen → die absolute Obergrenze bleibt
- * prüfbar. Alte Cookies (reines CT-Cookie, vor diesem Update gesetzt) werden akzeptiert und
- * beim nächsten Rollieren mit „jetzt" gestempelt – niemand wird durch das Update ausgeloggt.
+ * Cookie-Wert = `<Login-Zeitstempel-ms>|u<userId>|<ChurchTools-Cookie>`. Der Zeitstempel entsteht
+ * beim Login und wird beim Rollieren UNVERÄNDERT weitergetragen → die absolute Obergrenze bleibt
+ * prüfbar. Die Konto-ID wandert seit #149 mit in den signierten Wert: Der Rechte-Cache kann damit
+ * auch überbrücken, wenn ChurchTools' `whoami` während eines Aussetzers nicht antwortet. Ältere
+ * Formate (`<ts>|<ct-cookie>` bzw. reines CT-Cookie) werden weiter akzeptiert – niemand wird durch
+ * ein Update ausgeloggt; die Konto-ID ist dann bis zum nächsten Login unbekannt (null).
  */
 export function parseSessionValue(
   raw: string,
   now = Date.now(),
-): { ctCookie: string; issuedAt: number } {
+): { ctCookie: string; issuedAt: number; userId: number | null } {
+  const withId = raw.match(/^(\d{10,})\|u(\d+)\|([\s\S]+)$/);
+  if (withId) return { ctCookie: withId[3], issuedAt: Number(withId[1]), userId: Number(withId[2]) };
   const m = raw.match(/^(\d{10,})\|([\s\S]+)$/);
-  if (m) return { ctCookie: m[2], issuedAt: Number(m[1]) };
-  return { ctCookie: raw, issuedAt: now }; // Altformat → Lebensdauer zählt ab jetzt
+  if (m) return { ctCookie: m[2], issuedAt: Number(m[1]), userId: null };
+  return { ctCookie: raw, issuedAt: now, userId: null }; // Altformat → Lebensdauer zählt ab jetzt
 }
 
 /** True, wenn die Session ihre absolute Lebensdauer (90 Tage seit Login) überschritten hat. */
@@ -44,7 +50,9 @@ export function isSessionExpired(issuedAt: number, now = Date.now()): boolean {
 }
 
 /** Liest das signierte Session-Cookie aus dem Request (oder null, wenn keins/ungültig). */
-export function readSession(req: Request): { ctCookie: string; issuedAt: number } | null {
+export function readSession(
+  req: Request,
+): { ctCookie: string; issuedAt: number; userId: number | null } | null {
   const raw = req.signedCookies?.[COOKIE_NAME];
   if (!raw || typeof raw !== 'string') return null;
   return parseSessionValue(raw);
@@ -56,8 +64,14 @@ export function readSession(req: Request): { ctCookie: string; issuedAt: number 
  * nicht). Wer ausschließlich über HTTPS läuft (Reverse Proxy/Cloudflare), setzt `COOKIE_SECURE=true`
  * und erhält damit die strengere Variante. httpOnly + signiert + SameSite=Lax bleiben immer aktiv.
  */
-export function setSession(res: Response, churchToolsCookie: string, issuedAt = Date.now()): void {
-  res.cookie(COOKIE_NAME, `${issuedAt}|${churchToolsCookie}`, {
+export function setSession(
+  res: Response,
+  churchToolsCookie: string,
+  issuedAt = Date.now(),
+  userId: number | null = null,
+): void {
+  const idPart = userId != null ? `u${userId}|` : '';
+  res.cookie(COOKIE_NAME, `${issuedAt}|${idPart}${churchToolsCookie}`, {
     httpOnly: true,
     secure: config.cookieSecure,
     sameSite: 'lax',
@@ -86,7 +100,9 @@ export function requireSession(req: Request, res: Response, next: NextFunction):
     throw new HttpError(401, 'Sitzung abgelaufen. Bitte neu anmelden.');
   }
   req.ctCookie = session.ctCookie;
-  setSession(res, session.ctCookie, session.issuedAt); // rollierend, Zeitstempel bleibt
+  req.ctUserId = session.userId;
+  // rollierend; Zeitstempel UND Konto-ID bleiben erhalten
+  setSession(res, session.ctCookie, session.issuedAt, session.userId);
   next();
 }
 
@@ -99,7 +115,7 @@ export async function requireAdmin(
   _res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const caps = await getCapabilities(req.ctCookie as string);
+  const caps = await getCapabilities(req.ctCookie as string, req.ctUserId ?? null);
   if (!caps.isAdmin) {
     throw new HttpError(403, 'Nur Administratoren dürfen die Einstellungen ändern.');
   }

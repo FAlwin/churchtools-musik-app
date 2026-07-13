@@ -13,7 +13,7 @@ import { getSettings } from '../services/userSettings.js';
 import { HttpError } from '../middleware/errorHandler.js';
 
 async function requireTeamNotes(req: Request): Promise<void> {
-  const caps = await getCapabilitiesCached(req.ctCookie as string);
+  const caps = await getCapabilitiesCached(req.ctCookie as string, req.ctUserId ?? null);
   if (!caps.canUseGlobalNotes) {
     throw new HttpError(403, 'Keine Berechtigung für Team-Notizen.');
   }

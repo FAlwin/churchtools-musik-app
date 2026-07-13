@@ -4,16 +4,36 @@ import { parseSessionValue, isSessionExpired } from './session.js';
 const TAG = 90 * 24 * 3_600_000; // absolute Obergrenze (90 Tage) in ms
 
 describe('Session-Cookie: Zeitstempel + absolute Obergrenze', () => {
-  it('neues Format: Zeitstempel und CT-Cookie werden getrennt', () => {
+  it('aktuelles Format (#149): Zeitstempel, Konto-ID und CT-Cookie werden getrennt', () => {
     const issued = 1_750_000_000_000;
-    const parsed = parseSessionValue(`${issued}|ChurchTools_abc=xyz123`);
+    const parsed = parseSessionValue(`${issued}|u42|ChurchTools_abc=xyz123`);
     expect(parsed.issuedAt).toBe(issued);
+    expect(parsed.userId).toBe(42);
     expect(parsed.ctCookie).toBe('ChurchTools_abc=xyz123');
   });
 
-  it('CT-Cookie darf selbst | und = enthalten (nur der ERSTE Trenner zählt)', () => {
+  it('Format v2 (ohne Konto-ID): Zeitstempel und CT-Cookie werden getrennt, userId null', () => {
+    const issued = 1_750_000_000_000;
+    const parsed = parseSessionValue(`${issued}|ChurchTools_abc=xyz123`);
+    expect(parsed.issuedAt).toBe(issued);
+    expect(parsed.userId).toBeNull();
+    expect(parsed.ctCookie).toBe('ChurchTools_abc=xyz123');
+  });
+
+  it('CT-Cookie darf selbst | und = enthalten (nur die Präfix-Trenner zählen)', () => {
     const parsed = parseSessionValue(`1750000000000|ChurchTools_a=b|c=d`);
     expect(parsed.ctCookie).toBe('ChurchTools_a=b|c=d');
+    const withId = parseSessionValue(`1750000000000|u7|ChurchTools_a=b|c=d`);
+    expect(withId.userId).toBe(7);
+    expect(withId.ctCookie).toBe('ChurchTools_a=b|c=d');
+  });
+
+  it('v2-Cookie, dessen CT-Teil zufällig mit u<Ziffern>| beginnt, bleibt unangetastet', () => {
+    // Theoretischer Grenzfall: `u123|…` NACH dem Zeitstempel ist laut Format eine Konto-ID –
+    // echte CT-Cookies beginnen mit `ChurchTools_`, daher ist das eindeutig.
+    const parsed = parseSessionValue(`1750000000000|uABC|ChurchTools_a=b`);
+    expect(parsed.userId).toBeNull();
+    expect(parsed.ctCookie).toBe('uABC|ChurchTools_a=b');
   });
 
   it('Altformat (ohne Zeitstempel): Cookie bleibt erhalten, Lebensdauer zählt ab jetzt', () => {

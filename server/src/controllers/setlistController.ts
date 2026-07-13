@@ -203,7 +203,7 @@ export async function getSongLibraryCtrl(req: Request, res: Response): Promise<v
 
 /** GET /api/capabilities – was der angemeldete Nutzer laut ChurchTools darf. */
 export async function getCapabilitiesCtrl(req: Request, res: Response): Promise<void> {
-  const caps = await getCapabilities(req.ctCookie as string);
+  const caps = await getCapabilities(req.ctCookie as string, req.ctUserId ?? null);
   res.json(caps);
 }
 

@@ -15,7 +15,9 @@ const loginSchema = z.object({
 export async function postLogin(req: Request, res: Response): Promise<void> {
   const { email, password } = loginSchema.parse(req.body);
   const { cookie, user } = await ct.login(email, password);
-  setSession(res, cookie);
+  // Konto-ID wandert mit ins signierte Cookie (#149): Der Rechte-Cache kann damit auch
+  // überbrücken, wenn `whoami` während eines ChurchTools-Aussetzers nicht antwortet.
+  setSession(res, cookie, Date.now(), user.id);
   const status: AuthStatus = { authenticated: true, user };
   res.json(status);
 }
