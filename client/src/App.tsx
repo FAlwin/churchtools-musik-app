@@ -1,10 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense, type ComponentProps } from 'react';
 import { Login } from './pages/Login';
 import { Agenda } from './pages/Agenda';
-import { Setlist } from './pages/Setlist';
-import { ChordChart } from './pages/ChordChart';
-import { AllSongs } from './pages/AllSongs';
-import { Settings } from './pages/Settings';
 import { useSettings } from './hooks/useSettings';
 import { useWakeLock } from './hooks/useWakeLock';
 import { useAuth } from './hooks/useAuth';
@@ -44,6 +40,47 @@ import {
 } from './utils/onboarding';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { ApiError } from './services/api';
+
+/** Lade-Anzeige, während ein per Code-Splitting nachgeladener Seiten-Chunk eintrifft (#142). */
+const PAGE_FALLBACK = (
+  <Screen>
+    <CenterMessage loading text="Einen Moment…" />
+  </Screen>
+);
+
+// Code-Splitting (#142): nur Login + Agenda (Erststart) werden sofort geladen. Die schweren, erst
+// nach einer Aktion nötigen Seiten kommen als eigene Chunks nach – v. a. ChordChart, das pdf.js
+// (~1 MB) über useSetlistPages hineinzieht. Der Service Worker precacht alle Chunks (globPatterns
+// js/mjs) → offline bleiben sie verfügbar (#32); es blitzt nur beim allerersten Nachladen kurz der
+// Lade-Screen. Jede Seite bekommt einen dünnen Wrapper mit Suspense, damit die Verwendungsstellen
+// unten unverändert bleiben (`<Setlist … />`).
+const SetlistLazy = lazy(() => import('./pages/Setlist').then((m) => ({ default: m.Setlist })));
+const ChordChartLazy = lazy(() =>
+  import('./pages/ChordChart').then((m) => ({ default: m.ChordChart })),
+);
+const AllSongsLazy = lazy(() => import('./pages/AllSongs').then((m) => ({ default: m.AllSongs })));
+const SettingsLazy = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })));
+
+const Setlist = (props: ComponentProps<typeof SetlistLazy>) => (
+  <Suspense fallback={PAGE_FALLBACK}>
+    <SetlistLazy {...props} />
+  </Suspense>
+);
+const ChordChart = (props: ComponentProps<typeof ChordChartLazy>) => (
+  <Suspense fallback={PAGE_FALLBACK}>
+    <ChordChartLazy {...props} />
+  </Suspense>
+);
+const AllSongs = (props: ComponentProps<typeof AllSongsLazy>) => (
+  <Suspense fallback={PAGE_FALLBACK}>
+    <AllSongsLazy {...props} />
+  </Suspense>
+);
+const Settings = (props: ComponentProps<typeof SettingsLazy>) => (
+  <Suspense fallback={PAGE_FALLBACK}>
+    <SettingsLazy {...props} />
+  </Suspense>
+);
 
 /** Wurzel-Komponente: Auth + Tab-Navigation (Termine/Lieder/Mehr) mit echten ChurchTools-Daten. */
 export default function App() {
