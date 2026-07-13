@@ -5,16 +5,37 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
-## [Unreleased]
+## [2.10.0] – 2026-07-13
 
 ### Geändert
 
+- **Deutlich schnellerer Erststart (#142):** Die App lädt beim Start nur noch das Nötigste
+  (Anmeldung + Terminliste, ~69 kB statt ~863 kB komprimiert). Die schweren Teile – v. a. die
+  Chart-Anzeige mit dem PDF-Renderer – kommen erst beim ersten Öffnen nach (kurzer Lade-Moment,
+  einmalig). Alle nachgeladenen Teile stecken weiter im Offline-Vorrat der installierten App:
+  Einmal online geöffnet, funktioniert alles wie gehabt auch ohne Netz. Spürbar vor allem im
+  langsamen Kirchen-WLAN.
 - **Intern: Anmerkungs-Typen zu einer Quelle zusammengeführt (#137):** Die Datenform der
   Anmerkungen (Striche/Texte/Zoom) war an vier Stellen getrennt definiert und auf dem Server
   bereits veraltet (Format-Felder fehlten). Jetzt gibt es genau eine Definition in `shared/types`,
   und ein Compile-Wächter bricht den Build, falls Server-Prüfung und Typ je wieder
   auseinanderlaufen – Anmerkungsfelder können damit nicht mehr stillschweigend beim Speichern
   verloren gehen (die Bug-Klasse hinter #115). Keine sichtbare Änderung in der App.
+
+### Behoben
+
+- **Hängende ChurchTools-Anmeldung führt nicht mehr in die „Erneut versuchen"-Sackgasse (#149):**
+  Liefert ChurchTools minutenlang leere Berechtigungen (realer Vorfall am 13.07.), überbrückt der
+  Rechte-Speicher das jetzt zuverlässig – er kennt das Konto neuerdings direkt aus der Anmeldung
+  und ist nicht mehr auf eine zweite ChurchTools-Abfrage angewiesen. Ist die ChurchTools-Sitzung
+  wirklich unbrauchbar, führt die App automatisch zur Anmeldung, statt vergebliche „Erneut
+  versuchen"-Knöpfe zu zeigen. Greift vollständig ab der ersten Neuanmeldung nach dem Update.
+
+### Sicherheit
+
+- **Feinschliff (#146, Teil 1):** Anmeldefelder längenbegrenzt; die öffentliche Konfigurations-
+  Abfrage (Login-Screen) verrät keine internen Gruppen-/Rollen-Zuordnungen mehr; die
+  Update-Prüfung fragt GitHub bei Netzwerkfehlern nicht mehr ungebremst an.
 
 ## [2.9.1] – 2026-07-10
 
