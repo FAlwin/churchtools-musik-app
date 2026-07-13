@@ -230,12 +230,14 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
   `docker compose pull && up -d` (SSH) bzw. im Container Manager (Volume `worship-data` behalten).
 - **Repo-Vorlagen (seit #35):** generische Container-Namen (`musik-app`/`-test`) für andere Gemeinden;
   **Volume-Keys (`worship-data`/`worship-data-test`) bleiben bewusst** → kein Datenverlust.
-- **Stand ECG-Prod (seit v2.8.0-Deploy 08.07.2026):** Läuft als Container-Manager-Projekt
+- **Stand ECG-Prod (seit v2.10.0-Deploy 13.07.2026):** Läuft als Container-Manager-Projekt
   **`worship-charts`** (Container `worship-charts`, Volume `worship-charts_worship-data`), Compose mit
   fixem **`name: worship-charts`** + **`COOKIE_SECURE: true`** (real erst am **2026-07-13** auf
   Prod aktiviert + verifiziert – zuvor lief der Container trotz gegenteiliger Doku ohne die Variable,
   also mit Default `false`; Container-Env `docker inspect … | grep cookie` = `COOKIE_SECURE=true`,
-  Login live gegengeprüft: `/api/auth/login`+Folge-Calls alle `200`);
+  Login live gegengeprüft: `/api/auth/login`+Folge-Calls alle `200`) + **Port nur lokal gebunden**
+  (`127.0.0.1:3001:3001`, seit v2.10.0-Deploy: kein direkter LAN-Zugriff mehr, nur via Reverse
+  Proxy/HTTPS; der Synology-RP erreicht `localhost` – verifiziert);
   NAS-Compose unter `/volume1/docker/churchtools-musik-app/docker-compose.yml`. Der `name:`-Eintrag
   fixiert den Volume-Präfix unabhängig vom CM-Projektnamen (Lehre aus dem Volume-Vorfall, s. u.).
 - **Frontend-Update auf den Geräten (Service Worker, seit v2.5.0):** Nach dem Server-Update holt sich
