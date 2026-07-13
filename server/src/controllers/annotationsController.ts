@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { getUserId } from '../services/churchtools.js';
 import * as store from '../services/annotations.js';
+import type { PageAnnotation } from '@shared/types/index';
 
 const textSchema = z.object({
   id: z.number(),
@@ -25,6 +26,15 @@ const annoSchema = z.object({
   texts: z.array(textSchema).max(500).optional(),
   zoom: z.object({ x: z.number(), y: z.number(), scale: z.number() }).nullable().optional(),
 });
+
+// Compile-Wächter: Zod-Schema und geteilter Typ PageAnnotation müssen deckungsgleich sein.
+// Fehlt hier ein Feld, das der Typ (Client/Server) kennt, schneidet Zod es beim Speichern
+// stillschweigend weg (Ursache von #115); umgekehrt fiele ein Zod-Feld auf, das der Typ nicht
+// kennt. Divergiert eines, bricht dieser Build – zur Laufzeit kostet der Wächter nichts.
+const _annoZodSubsetOfType = (a: z.infer<typeof annoSchema>): PageAnnotation => a;
+const _annoTypeSubsetOfZod = (p: PageAnnotation): z.infer<typeof annoSchema> => p;
+void _annoZodSubsetOfType;
+void _annoTypeSubsetOfZod;
 
 // Schlüsselform: song<id>_v<versionKey>[_lyr]_<seite> (+ optional _d<geräteklasse><spalten> beim
 // Zoom, z. B. _dlarge2 im iPad-Querformat). `_lyr` = Notiz-Ebene der Darstellungsart „Nur Text".

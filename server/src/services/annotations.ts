@@ -6,24 +6,11 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { config } from '../config.js';
+// Anmerkungs-Typen kommen aus @shared/types – EINZIGE Quelle für Client + Server. Re-Export,
+// damit Bestandsimporte aus diesem Modul weiter funktionieren.
+import type { AnnotationText, PageAnnotation } from '@shared/types/index';
 
-export interface AnnotationText {
-  id: number;
-  fx: number;
-  fy: number;
-  text: string;
-  color: string;
-  sizeCqh: number;
-}
-
-export interface PageAnnotation {
-  /** Striche als PNG-DataURL (oder null = keine). */
-  strokes?: string | null;
-  /** Textfelder der Seite. */
-  texts?: AnnotationText[];
-  /** Gespeicherter Zoom der Seite. */
-  zoom?: { x: number; y: number; scale: number } | null;
-}
+export type { AnnotationText, PageAnnotation };
 
 type Store = Record<string, PageAnnotation>;
 

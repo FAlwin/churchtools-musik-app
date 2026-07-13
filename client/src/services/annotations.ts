@@ -6,6 +6,7 @@
  *  - migrateLocalAnnotations(): einmalig bestehende Geräte-Anmerkungen aufs Konto hochladen
  */
 import { apiFetch, ApiError } from './api';
+import type { AnnotationText, PageAnnotation } from '@shared/types/index';
 
 const DRAW = 'worship_docdraw_';
 const ZOOM = 'worship_doczoom_';
@@ -17,25 +18,8 @@ const MIGRATED_FLAG = 'worship_anno_migrated_v1';
 // 2 = Querformat/2-up) MUSS erlaubt sein, sonst wird der Querformat-Zoom nie zum Server gepusht.
 export const KEY_RE = /^song\d+_v[a-z0-9-]+(?:_lyr)?_\d+(?:_d(?:phone|large)\d?)?$/i;
 
-interface AnnotationText {
-  id: number;
-  fx: number;
-  fy: number;
-  text: string;
-  color: string;
-  sizeCqh: number;
-  // Absatz-Format (optional) – muss mitgespeichert/-übertragen werden, sonst geht es beim
-  // Server-Roundtrip verloren (normaler Text würde wieder fett).
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  align?: 'left' | 'center' | 'right';
-}
-interface PageAnnotation {
-  strokes?: string | null;
-  texts?: AnnotationText[];
-  zoom?: { x: number; y: number; scale: number } | null;
-}
+// Anmerkungs-Typen (AnnotationText, PageAnnotation) kommen aus @shared/types – einzige Quelle
+// für Client + Server, damit beim Server-Roundtrip kein Feld verloren geht.
 
 // Sync abschalten, wenn nicht angemeldet (Demo / 401) – dann bleibt alles rein lokal.
 let disabled = false;
