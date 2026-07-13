@@ -155,7 +155,11 @@ Textgröße `fs`) werden geräteübergreifend synchronisiert** (kein Geräte-Suf
 bleibt pro Geräteklasse getrennt**. **Schlüssel** je Eintrag: `song<id>_v<versionKey>_<seite>` (Zoom zusätzlich
 `_d<geräteklasse><spalten>`, z. B. `_dlarge2`; **`KEY_RE` in `annotations.ts` UND die Server-Zod-Regel
 müssen diese Layout-Ziffer erlauben** – sonst wird der Querformat-Zoom nicht gesynct; Regressionstest
-`annotations.keys.test.ts`). Dokument-Anmerkungen nutzen `worship_docdraw_<fileId>_<seite>`.
+`annotations.keys.test.ts`). Die **Anmerkungs-Typen** (`AnnotationText`, `PageAnnotation`,
+`SharedPage`) leben EINZIG in `shared/types/index.ts` (seit #137); Client und Server importieren von
+dort, und ein **Compile-Wächter** in `annotationsController.ts` bricht den Build, wenn das Zod-Schema
+vom Typ abweicht – neue Felder also IMMER an beiden Stellen ergänzen (Zod würde sie sonst beim
+Speichern still wegschneiden, Ursache von #115). Dokument-Anmerkungen nutzen `worship_docdraw_<fileId>_<seite>`.
 Geräteklasse `phone` vs `large` via `utils/deviceClass.ts`. Versions-Helfer: `utils/songVersions.ts`.
 
 ## Domänen-Besonderheiten

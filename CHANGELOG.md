@@ -5,6 +5,17 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Geändert
+
+- **Intern: Anmerkungs-Typen zu einer Quelle zusammengeführt (#137):** Die Datenform der
+  Anmerkungen (Striche/Texte/Zoom) war an vier Stellen getrennt definiert und auf dem Server
+  bereits veraltet (Format-Felder fehlten). Jetzt gibt es genau eine Definition in `shared/types`,
+  und ein Compile-Wächter bricht den Build, falls Server-Prüfung und Typ je wieder
+  auseinanderlaufen – Anmerkungsfelder können damit nicht mehr stillschweigend beim Speichern
+  verloren gehen (die Bug-Klasse hinter #115). Keine sichtbare Änderung in der App.
+
 ## [2.9.1] – 2026-07-10
 
 ### Behoben
