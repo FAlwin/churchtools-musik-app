@@ -7,9 +7,31 @@ import type { Request, Response } from 'express';
 import { HttpError } from '../middleware/errorHandler.js';
 import { getSiteConfig, saveSiteConfig, siteConfigSchema } from '../services/siteConfig.js';
 import { getGroups, getGroupRoles } from '../services/churchtools.js';
+import { readSession, isSessionExpired } from '../middleware/session.js';
 
-export async function getSiteConfigCtrl(_req: Request, res: Response): Promise<void> {
-  res.json(await getSiteConfig());
+/**
+ * GET /api/site-config – öffentlich (der Login-Screen braucht Name/Logo/Links, bevor man
+ * angemeldet ist). Für NICHT angemeldete Aufrufe werden nur die Anzeige-Felder geliefert; die
+ * internen Gruppen-/Rollen-IDs (`musicianGroupIds`/`noteRoles`) bleiben leer, damit sie nicht
+ * unauthentifiziert nach außen gelangen. Angemeldete (u. a. die Admin-Einstellungen) erhalten
+ * die vollständige Konfiguration.
+ */
+export async function getSiteConfigCtrl(req: Request, res: Response): Promise<void> {
+  const cfg = await getSiteConfig();
+  const session = readSession(req);
+  const authed = !!session && !isSessionExpired(session.issuedAt);
+  if (authed) {
+    res.json(cfg);
+    return;
+  }
+  res.json({
+    appName: cfg.appName,
+    description: cfg.description,
+    orgName: cfg.orgName,
+    links: cfg.links,
+    musicianGroupIds: [],
+    noteRoles: [],
+  });
 }
 
 export async function putSiteConfigCtrl(req: Request, res: Response): Promise<void> {

@@ -5,8 +5,10 @@ import { setSession, clearSession, readSession, isSessionExpired } from '../midd
 import type { AuthStatus } from '@shared/types/index';
 
 const loginSchema = z.object({
-  email: z.string().min(1, 'E-Mail fehlt'),
-  password: z.string().min(1, 'Passwort fehlt'),
+  // Längen deckeln: verhindert, dass über das 8-MB-Body-Limit riesige Strings an ChurchTools
+  // weitergereicht werden. Reale E-Mails/Passwörter liegen weit darunter.
+  email: z.string().min(1, 'E-Mail fehlt').max(200, 'E-Mail zu lang'),
+  password: z.string().min(1, 'Passwort fehlt').max(200, 'Passwort zu lang'),
 });
 
 /** POST /api/auth/login – meldet bei ChurchTools an und setzt das Session-Cookie. */
