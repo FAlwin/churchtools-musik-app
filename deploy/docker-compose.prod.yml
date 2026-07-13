@@ -7,7 +7,10 @@
 #     In-App-Banner hin. (Eine Test-Instanz mit Auto-Update gibt es in docker-compose.staging.yml.)
 #   - Aktualisieren bewusst (nicht während der Gottesdienstzeit), per SSH im Projekt-Ordner:
 #         docker compose pull && docker compose up -d && docker image prune -f
-#     oder im Container Manager das Projekt neu aufbauen lassen. Daten-Volume behalten!
+#     oder im Synology Container Manager. Dort gibt es KEINEN Knopf „Zurücksetzen"; das bestehende
+#     Projekt neu aufbauen = Projekt öffnen → Stopp → Aktion › Löschen (dabei KEINE Volumes/Daten
+#     mitlöschen anhaken!) → Projekt › Erstellen. Ein reiner „Neustart" übernimmt geänderte
+#     Umgebungsvariablen (z. B. COOKIE_SECURE) NICHT. Daten-Volume immer behalten!
 #
 # Einrichtung im Synology Container-Manager (oder per docker compose):
 #   1. Neues Projekt aus DIESER Datei + einer Prod-.env erstellen (siehe .env.example:
