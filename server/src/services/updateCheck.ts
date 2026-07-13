@@ -41,7 +41,9 @@ export async function getLatestRelease(): Promise<UpdateInfo> {
     cache = { until: Date.now() + CACHE_MS, data };
     return data;
   } catch {
-    // Offline / Timeout: nicht cachen, beim nächsten Aufruf erneut versuchen.
+    // Offline / Timeout: kurz cachen (wie bei !res.ok), damit nicht jeder Aufruf einen neuen
+    // ausgehenden GitHub-Request auslöst. Nach ERROR_CACHE_MS wird wieder versucht.
+    cache = { until: Date.now() + ERROR_CACHE_MS, data: EMPTY };
     return EMPTY;
   }
 }

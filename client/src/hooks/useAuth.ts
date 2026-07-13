@@ -16,7 +16,13 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       api.login(email, password),
-    onSuccess: (status) => qc.setQueryData(['me'], status),
+    onSuccess: (status) => {
+      qc.setQueryData(['me'], status);
+      // site-config wird schon auf dem Login-Screen geladen, dort aber nur mit den öffentlichen
+      // Anzeige-Feldern (ohne Gruppen-/Rollen-IDs). Nach dem Login neu holen, damit die Admin-
+      // Einstellungen die vollständige Konfiguration bekommen.
+      void qc.invalidateQueries({ queryKey: ['site-config'] });
+    },
   });
 
   const logoutMutation = useMutation({
