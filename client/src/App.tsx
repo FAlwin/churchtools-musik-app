@@ -40,44 +40,68 @@ import {
 } from './utils/onboarding';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { ApiError } from './services/api';
+import { withChunkReload } from './utils/chunkReload';
 
-/** Lade-Anzeige, während ein per Code-Splitting nachgeladener Seiten-Chunk eintrifft (#142). */
-const PAGE_FALLBACK = (
-  <Screen>
-    <CenterMessage loading text="Einen Moment…" />
-  </Screen>
-);
+/**
+ * Lade-Anzeige, während ein per Code-Splitting nachgeladener Seiten-Chunk eintrifft (#142).
+ * Hängt der Chunk-Load ungewöhnlich lange (lahmes Netz, Cache-Miss), erscheint nach einigen
+ * Sekunden ein „Neu laden"-Knopf als Rückweg – statt eines endlosen Spinners ohne Ausweg (#151).
+ */
+function PageFallback() {
+  const [showReload, setShowReload] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowReload(true), 8000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <Screen>
+      <CenterMessage
+        loading
+        text="Einen Moment…"
+        actionLabel={showReload ? 'Neu laden' : undefined}
+        onAction={showReload ? () => window.location.reload() : undefined}
+      />
+    </Screen>
+  );
+}
 
 // Code-Splitting (#142): nur Login + Agenda (Erststart) werden sofort geladen. Die schweren, erst
 // nach einer Aktion nötigen Seiten kommen als eigene Chunks nach – v. a. ChordChart, das pdf.js
 // (~1 MB) über useSetlistPages hineinzieht. Der Service Worker precacht alle Chunks (globPatterns
 // js/mjs) → offline bleiben sie verfügbar (#32); es blitzt nur beim allerersten Nachladen kurz der
 // Lade-Screen. Jede Seite bekommt einen dünnen Wrapper mit Suspense, damit die Verwendungsstellen
-// unten unverändert bleiben (`<Setlist … />`).
-const SetlistLazy = lazy(() => import('./pages/Setlist').then((m) => ({ default: m.Setlist })));
-const ChordChartLazy = lazy(() =>
-  import('./pages/ChordChart').then((m) => ({ default: m.ChordChart })),
+// unten unverändert bleiben (`<Setlist … />`). `withChunkReload` fängt veraltete Chunks nach
+// einem Deploy ab (#151).
+const SetlistLazy = lazy(
+  withChunkReload(() => import('./pages/Setlist').then((m) => ({ default: m.Setlist }))),
 );
-const AllSongsLazy = lazy(() => import('./pages/AllSongs').then((m) => ({ default: m.AllSongs })));
-const SettingsLazy = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })));
+const ChordChartLazy = lazy(
+  withChunkReload(() => import('./pages/ChordChart').then((m) => ({ default: m.ChordChart }))),
+);
+const AllSongsLazy = lazy(
+  withChunkReload(() => import('./pages/AllSongs').then((m) => ({ default: m.AllSongs }))),
+);
+const SettingsLazy = lazy(
+  withChunkReload(() => import('./pages/Settings').then((m) => ({ default: m.Settings }))),
+);
 
 const Setlist = (props: ComponentProps<typeof SetlistLazy>) => (
-  <Suspense fallback={PAGE_FALLBACK}>
+  <Suspense fallback={<PageFallback />}>
     <SetlistLazy {...props} />
   </Suspense>
 );
 const ChordChart = (props: ComponentProps<typeof ChordChartLazy>) => (
-  <Suspense fallback={PAGE_FALLBACK}>
+  <Suspense fallback={<PageFallback />}>
     <ChordChartLazy {...props} />
   </Suspense>
 );
 const AllSongs = (props: ComponentProps<typeof AllSongsLazy>) => (
-  <Suspense fallback={PAGE_FALLBACK}>
+  <Suspense fallback={<PageFallback />}>
     <AllSongsLazy {...props} />
   </Suspense>
 );
 const Settings = (props: ComponentProps<typeof SettingsLazy>) => (
-  <Suspense fallback={PAGE_FALLBACK}>
+  <Suspense fallback={<PageFallback />}>
     <SettingsLazy {...props} />
   </Suspense>
 );
