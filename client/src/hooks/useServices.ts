@@ -18,6 +18,10 @@ export function useServices(enabled: boolean) {
     staleTime: ACTIVE_STALE_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    // Sanftes Polling, solange die Liste sichtbar ist (Hintergrund-Tabs pollen nicht): So
+    // erscheint der „Ablauf geändert"-Punkt auch auf einem unberührt daliegenden Gerät von
+    // selbst (#143). 60 s = guter Kompromiss; jede Runde kostet ~2 CT-Abrufe je Termin im Fenster.
+    refetchInterval: 60_000,
   });
 }
 
@@ -35,6 +39,23 @@ export function useMarkSetlistSeen() {
     onSuccess: (_data, v) => {
       if (v.refresh) void qc.invalidateQueries({ queryKey: ['services'] });
     },
+  });
+}
+
+/**
+ * Live-Abgleich für einen geöffneten Ablauf: pollt alle ~8 s den billigen Ablauf-Fingerabdruck
+ * (kein ChordPro-Download; der Server bündelt Abfragen mehrerer Geräte in einem Kurz-Memo).
+ * Die Auswertung (Ablauf neu laden / Hinweis im Liederheft) übernimmt App.tsx.
+ */
+export function useSetlistVersion(eventId: number | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['setlist-version', eventId],
+    queryFn: () => api.getSetlistVersion(eventId as number),
+    enabled: enabled && eventId !== null,
+    refetchInterval: 8_000,
+    staleTime: 0,
+    // Kein Retry-Getrommel: schlägt ein Poll fehl (Netz-Aussetzer), kommt in 8 s der nächste.
+    retry: false,
   });
 }
 

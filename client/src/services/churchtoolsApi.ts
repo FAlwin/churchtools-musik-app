@@ -60,6 +60,11 @@ export function markSetlistSeen(eventId: number): Promise<{ ok: boolean }> {
   return apiFetch<{ ok: boolean }>(`/api/services/${eventId}/seen`, { method: 'POST' });
 }
 
+/** Aktueller Ablauf-Fingerabdruck (Live-Abgleich: billig, ohne ChordPro-Downloads). */
+export function getSetlistVersion(eventId: number): Promise<{ hash: string }> {
+  return apiFetch<{ hash: string }>(`/api/services/${eventId}/setlist/version`);
+}
+
 /** Speichert die neue Reihenfolge der Ablaufpunkte (Liste der Item-IDs in Wunschreihenfolge). */
 export function reorderAgenda(eventId: number, order: number[]): Promise<{ ok: boolean }> {
   return apiFetch(`/api/services/${eventId}/agenda/order`, {

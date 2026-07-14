@@ -1,4 +1,5 @@
-import { useEffect, useState, lazy, Suspense, type ComponentProps } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense, type ComponentProps } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Login } from './pages/Login';
 import { Agenda } from './pages/Agenda';
 import { useSettings } from './hooks/useSettings';
@@ -26,12 +27,14 @@ import {
   useSongChart,
   useCapabilities,
   useMarkSetlistSeen,
+  useSetlistVersion,
 } from './hooks/useServices';
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
 import { TabBar, type TabId } from './components/TabBar';
 import { Toast, useToast } from './components/Toast';
 import { Coachmarks } from './components/Coachmarks';
+import { AblaufChangedBanner } from './components/AblaufChangedBanner';
 import {
   TERMINE_STEPS,
   TOUR_TERMINE,
@@ -114,6 +117,7 @@ export default function App() {
   const auth = useAuth();
   const site = useSiteConfig().data;
   const markSetlistSeen = useMarkSetlistSeen();
+  const queryClient = useQueryClient();
 
   const capsQuery = useCapabilities(auth.isAuthenticated);
   const caps = capsQuery.data;
@@ -185,6 +189,49 @@ export default function App() {
   );
   const items = agendaQuery.data ?? [];
   const songs = items.flatMap((i) => (i.song ? [i.song] : []));
+
+  // ── Live-Abgleich des geöffneten Ablaufs ────────────────────────────────────────────────────
+  // Solange Ablauf oder Liederheft (aus dem Ablauf) offen sind, wird alle ~8 s der billige
+  // Fingerabdruck gepollt. Ändert er sich: Ablauf-Ansicht lädt sofort nach (dort stört das nie);
+  // im Liederheft erscheint stattdessen ein Hinweis-Balken – NIE automatisch umsortieren, sonst
+  // springen mitten im Spielen die Seiten unter den Fingern.
+  const inSetlistView = view?.type === 'setlist' && !!service;
+  const inSetlistChart = view?.type === 'chart' && view.source === 'setlist' && !!service;
+  const liveVersion = useSetlistVersion(
+    service?.id ?? null,
+    online && (inSetlistView || inSetlistChart),
+  );
+  const [chartOutdated, setChartOutdated] = useState(false);
+  const lastLiveHash = useRef<{ eventId: number; hash: string } | null>(null);
+  const reloadAblauf = (eventId: number) => {
+    void queryClient.invalidateQueries({ queryKey: ['agenda', eventId] });
+    // Der Nutzer sieht den neuen Stand → Basislinie mitziehen, sonst zeigte die Terminliste
+    // später fälschlich den „geändert"-Punkt für etwas, das er längst gesehen hat.
+    markSetlistSeen.mutate({ eventId, refresh: false });
+    setChartOutdated(false);
+  };
+  useEffect(() => {
+    const hash = liveVersion.data?.hash;
+    const eventId = service?.id;
+    if (hash === undefined || eventId === undefined) return;
+    const prev = lastLiveHash.current;
+    lastLiveHash.current = { eventId, hash };
+    // Erster Poll für diesen Termin = Referenz, noch keine Änderung.
+    if (!prev || prev.eventId !== eventId || prev.hash === hash) return;
+    if (inSetlistView) reloadAblauf(eventId);
+    else if (inSetlistChart) setChartOutdated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveVersion.data?.hash]);
+  // Beim Termin-/Ansichts-Wechsel: Hinweis zurücksetzen; verlässt man das Liederheft mit
+  // offenem Hinweis Richtung Ablauf, den neuen Stand direkt übernehmen.
+  useEffect(() => {
+    if (chartOutdated && inSetlistView && service) reloadAblauf(service.id);
+    if (!inSetlistView && !inSetlistChart) {
+      setChartOutdated(false);
+      lastLiveHash.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, service?.id]);
 
   // Wer keine Abläufe sehen darf, startet im Lieder-Tab
   useEffect(() => {
@@ -351,16 +398,26 @@ export default function App() {
   if (view?.type === 'chart') {
     if (view.source === 'setlist' && service && songs.length > 0) {
       return (
-        <ChordChart
-          songs={songs}
-          startIndex={songIndex}
-          onBack={() => setView({ type: 'setlist' })}
-          onReload={() => agendaQuery.refetch()}
-          canEditSong={canEditSongs}
-          canUseGlobalNotes={caps.canUseGlobalNotes}
-          theme={settings.theme}
-          fontId={settings.fontId}
-        />
+        <>
+          <ChordChart
+            songs={songs}
+            startIndex={songIndex}
+            onBack={() => setView({ type: 'setlist' })}
+            onReload={() => agendaQuery.refetch()}
+            canEditSong={canEditSongs}
+            canUseGlobalNotes={caps.canUseGlobalNotes}
+            theme={settings.theme}
+            fontId={settings.fontId}
+          />
+          {/* Live-Abgleich: Ablauf wurde währenddessen geändert → Hinweis statt Auto-Umsortieren
+              (Seiten dürfen mitten im Spielen nicht springen). */}
+          {chartOutdated && (
+            <AblaufChangedBanner
+              onReload={() => reloadAblauf(service.id)}
+              onDismiss={() => setChartOutdated(false)}
+            />
+          )}
+        </>
       );
     }
     if (view.source === 'lieder') {
