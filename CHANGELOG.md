@@ -5,6 +5,17 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Hinzugefügt
+
+- **Live-Aktualisierung:** Änderungen am Ablauf erscheinen jetzt fast sofort bei allen – egal ob
+  sie in ChurchTools oder in der App gemacht wurden. Die sichtbare Terminliste aktualisiert sich
+  jede Minute von selbst (der „geändert"-Punkt taucht ohne Zutun auf), ein geöffneter Ablauf
+  gleicht sich alle paar Sekunden ab und sortiert sich bei Änderungen sofort um. Im geöffneten
+  Liederheft springt dagegen nichts von selbst: Dort erscheint ein dezenter Hinweis „Ablauf wurde
+  geändert" mit „Neu laden"-Knopf – mitten im Spielen bewegen sich die Seiten nie ungefragt.
+
 ## [2.11.0] – 2026-07-14
 
 ### Hinzugefügt
