@@ -5,6 +5,18 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Behoben
+
+- **Update während geöffneter App führt nicht mehr zum Fehler-Bildschirm (#151):** Wird ein neues
+  Release eingespielt, während die App gerade offen ist, konnte das erste Öffnen einer noch nicht
+  geladenen Seite fehlschlagen (die alte Version verwies auf inzwischen ersetzte Dateien) – es
+  erschien die Meldung „Die App konnte nicht richtig starten". Jetzt lädt die App in diesem Fall
+  einmal automatisch neu und holt sich die aktuelle Version; ein zweites Fehlschlagen führt weiter
+  zur verständlichen Meldung (kein endloses Neuladen). Dauert ein Nachladen ungewöhnlich lange,
+  erscheint zusätzlich nach einigen Sekunden ein „Neu laden"-Knopf.
+
 ## [2.10.0] – 2026-07-13
 
 ### Geändert
