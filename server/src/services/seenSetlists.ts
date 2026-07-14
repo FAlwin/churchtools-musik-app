@@ -18,6 +18,9 @@ interface SeenEntry {
   hash: string;
   /** Zeitpunkt des letzten Ansehens (ms) – für die Alters-Bereinigung. */
   seenAt: number;
+  /** Signatur je Punkt beim letzten Ansehen (#161) – Basis für „was hat sich geändert". Optional
+   *  (ältere Einträge haben es nicht → beim nächsten Ansehen ergänzt). */
+  items?: { id: number; sig: string }[];
 }
 /** eventId → gesehener Stand. */
 type EventMap = Record<string, SeenEntry>;
@@ -54,6 +57,7 @@ export async function markSeenSetlist(
   userId: number,
   eventId: number,
   hash: string,
+  items?: { id: number; sig: string }[],
   now: number = Date.now(),
 ): Promise<void> {
   const s = await load();
@@ -63,7 +67,7 @@ export async function markSeenSetlist(
   for (const [id, entry] of Object.entries(events)) {
     if (now - entry.seenAt > MAX_AGE_MS) delete events[id];
   }
-  events[String(eventId)] = { hash, seenAt: now };
+  events[String(eventId)] = { hash, seenAt: now, items };
   s[uid] = events;
   const write = async (): Promise<void> => {
     await fs.mkdir(path.dirname(config.seenSetlistsPath), { recursive: true });

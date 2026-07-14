@@ -203,11 +203,11 @@ export default function App() {
   );
   const [chartOutdated, setChartOutdated] = useState(false);
   const lastLiveHash = useRef<{ eventId: number; hash: string } | null>(null);
+  // Ablauf neu laden (Live-Update): Der Server markiert die geänderten Punkte anhand des zuletzt
+  // GESEHENEN Stands – dieser wird bewusst NICHT hier aktualisiert, sondern erst beim Verlassen
+  // des Termins (#161). So leuchten auch live eingetroffene Änderungen auf.
   const reloadAblauf = (eventId: number) => {
     void queryClient.invalidateQueries({ queryKey: ['agenda', eventId] });
-    // Der Nutzer sieht den neuen Stand → Basislinie mitziehen, sonst zeigte die Terminliste
-    // später fälschlich den „geändert"-Punkt für etwas, das er längst gesehen hat.
-    markSetlistSeen.mutate({ eventId, refresh: false });
     setChartOutdated(false);
   };
   useEffect(() => {
@@ -222,9 +222,8 @@ export default function App() {
     else if (inSetlistChart) setChartOutdated(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveVersion.data?.hash]);
-  // Beim Termin-/Ansichts-Wechsel: Hinweis zurücksetzen; verlässt man das Liederheft mit
-  // offenem Hinweis Richtung Ablauf, den neuen Stand direkt übernehmen.
   useEffect(() => {
+    // Vom Liederheft mit offenem „geändert"-Hinweis zurück in den Ablauf → dort direkt neu laden.
     if (chartOutdated && inSetlistView && service) reloadAblauf(service.id);
     if (!inSetlistView && !inSetlistChart) {
       setChartOutdated(false);
@@ -232,6 +231,21 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, service?.id]);
+
+  // „Gesehen" gilt beim VERLASSEN eines Termins (#143/#161): Erst dann wird der aktuelle Stand als
+  // Basislinie gemerkt – so bleiben die aufleuchtenden Markierungen sichtbar, solange man drin ist,
+  // und der „geändert"-Punkt in der Terminliste verschwindet nach dem Reinschauen. Ein Wechsel
+  // zwischen Ablauf und Liederheft desselben Termins zählt NICHT als Verlassen.
+  const openTerminId = inSetlistView || inSetlistChart ? (service?.id ?? null) : null;
+  const prevOpenTerminId = useRef<number | null>(null);
+  useEffect(() => {
+    const prev = prevOpenTerminId.current;
+    prevOpenTerminId.current = openTerminId;
+    if (prev != null && prev !== openTerminId) {
+      markSetlistSeen.mutate({ eventId: prev, refresh: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openTerminId]);
 
   // Wer keine Abläufe sehen darf, startet im Lieder-Tab
   useEffect(() => {
@@ -466,15 +480,13 @@ export default function App() {
             onSelect={(s) => {
               setService(s);
               setView({ type: 'setlist' });
-              // Immer merken (setzt beim 1. Öffnen die Basislinie); Liste nur neu laden, wenn
-              // gerade ein Badge quittiert wurde (#143).
-              markSetlistSeen.mutate({ eventId: s.id, refresh: s.setlistChanged });
+              // „Gesehen" wird beim Verlassen gemerkt (Effekt oben, #161) – nicht hier, sonst
+              // wären die geänderten Punkte beim Öffnen schon wieder als gesehen markiert.
             }}
             onOpenSongs={(s) => {
               setService(s);
               setSongIndex(0);
               setView({ type: 'chart', source: 'setlist' });
-              markSetlistSeen.mutate({ eventId: s.id, refresh: s.setlistChanged });
             }}
           />
         )}

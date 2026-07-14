@@ -145,9 +145,11 @@ function AgendaFullView({
     <div className={styles.flowList}>
       {items.map((item) => {
         const showTime = !!item.time;
+        // Geänderter/neuer/verschobener Punkt (#161) leuchtet beim Öffnen kurz auf.
+        const chg = item.changed ? ` ${styles.changed}` : '';
         if (item.isHeader) {
           return (
-            <div key={item.id} className={styles.sectionBand}>
+            <div key={item.id} className={`${styles.sectionBand}${chg}`}>
               {showTime && <span className={styles.bandTime}>{item.time}</span>}
               {item.title}
             </div>
@@ -171,7 +173,7 @@ function AgendaFullView({
           return (
             <button
               key={item.id}
-              className={`${styles.flowRowBtn} ${styles.songRow}`}
+              className={`${styles.flowRowBtn} ${styles.songRow}${chg}`}
               data-tour={idx === 0 ? 'setlist-song' : undefined}
               onClick={() => onSelect(idx)}
             >
@@ -181,7 +183,7 @@ function AgendaFullView({
           );
         }
         return (
-          <div key={item.id} className={styles.flowRow}>
+          <div key={item.id} className={`${styles.flowRow}${chg}`}>
             {timeCol}
             {body}
           </div>

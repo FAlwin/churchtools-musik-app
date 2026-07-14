@@ -98,23 +98,92 @@ export function metaValue(chordpro: string, key: string): string | null {
  * ändert sich der Fingerabdruck. Nicht-Lieder (Überschriften, Begrüßung …) zählen bewusst nicht.
  * Rein & testbar; muss auf denselben Roh-Agenda-Daten laufen wie beim „gesehen"-Merken.
  */
+/**
+ * Inhalts-Signatur EINES Ablaufpunkts (#143/#161) – OHNE die id (die ist der Schlüssel). Erfasst
+ * Titel, Typ, Lied+Arrangement+Tonart, Verantwortliche, Dauer, Notiz. Änderungen daran = Punkt
+ * inhaltlich geändert.
+ */
+export function agendaItemSignature(i: CtAgendaItem): string {
+  const song = i.song ? `${i.song.songId}:${i.song.arrangementId}:${i.song.key ?? ''}` : '';
+  const resp = i.responsible?.text ?? '';
+  return `${i.title}#${i.type ?? ''}#${song}#${resp}#${i.duration ?? ''}#${i.note ?? ''}`;
+}
+
 export function setlistFingerprint(items: CtAgendaItem[]): string {
   // „Struktur + Details" (#143): jede Ablaufänderung schlägt an – Reihenfolge (Array-Position),
-  // Punkte hinzu/raus/umbenannt (id+title), Lied+Arrangement+Tonart, Verantwortliche, Dauer und
-  // Notiz. So löst auch ein verschobener Nicht-Lied-Punkt das Badge aus.
-  return items
-    .map((i) => {
-      const song = i.song ? `${i.song.songId}:${i.song.arrangementId}:${i.song.key ?? ''}` : '';
-      const resp = i.responsible?.text ?? '';
-      return `${i.id}#${i.title}#${i.type ?? ''}#${song}#${resp}#${i.duration ?? ''}#${i.note ?? ''}`;
-    })
-    .join('|');
+  // Punkte hinzu/raus/umbenannt, Lied/Tonart, Verantwortliche, Dauer, Notiz.
+  return items.map((i) => `${i.id}#${agendaItemSignature(i)}`).join('|');
+}
+
+/** Geordnete Liste (id + Inhalts-Signatur) je Punkt – Basis für den „gesehen"-Vergleich (#161). */
+export function agendaSignatureList(items: CtAgendaItem[]): { id: number; sig: string }[] {
+  return items.map((i) => ({ id: i.id, sig: agendaItemSignature(i) }));
+}
+
+/** Längste aufsteigende Teilsequenz (Positionen). Die NICHT enthaltenen Punkte gelten als verschoben. */
+function lisPositions(arr: number[]): Set<number> {
+  const n = arr.length;
+  const keep = new Set<number>();
+  if (n === 0) return keep;
+  const len = new Array<number>(n).fill(1);
+  const prev = new Array<number>(n).fill(-1);
+  let best = 0;
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[j] < arr[i] && len[j] + 1 > len[i]) {
+        len[i] = len[j] + 1;
+        prev[i] = j;
+      }
+    }
+    if (len[i] > len[best]) best = i;
+  }
+  for (let i = best; i !== -1; i = prev[i]) keep.add(i);
+  return keep;
+}
+
+/**
+ * Vergleicht den zuletzt gesehenen Ablauf-Stand (`prev`) mit dem aktuellen (`current`) und liefert,
+ * welche Punkte sich verändert haben (#161). Rein & testbar.
+ * - `changedIds`: neu, inhaltlich geändert ODER verschoben (relative Reihenfolge über LIS).
+ * - `removedIds`: im vorigen Stand vorhanden, jetzt weg (für die „auflösen"-Animation, Etappe B).
+ * Ist `prev` leer (nie gesehen), gilt NICHTS als geändert (kein Fehlalarm bei Erstnutzung).
+ */
+export function diffAgendaItems(
+  prev: { id: number; sig: string }[],
+  current: { id: number; sig: string }[],
+): { changedIds: number[]; removedIds: number[] } {
+  if (prev.length === 0) return { changedIds: [], removedIds: [] };
+  const prevById = new Map(prev.map((p, index) => [p.id, { sig: p.sig, index }]));
+  const changed = new Set<number>();
+  for (const it of current) {
+    const p = prevById.get(it.id);
+    if (!p || p.sig !== it.sig) changed.add(it.id); // neu oder inhaltlich geändert
+  }
+  // Verschoben: gemeinsame Punkte (unabhängig von Inhaltsänderung) auf Reihenfolge prüfen.
+  const common = current.filter((it) => prevById.has(it.id));
+  const keep = lisPositions(common.map((it) => prevById.get(it.id)!.index));
+  common.forEach((it, k) => {
+    if (!keep.has(k)) changed.add(it.id);
+  });
+  const currentIds = new Set(current.map((it) => it.id));
+  const removedIds = prev.filter((p) => !currentIds.has(p.id)).map((p) => p.id);
+  return { changedIds: [...changed], removedIds };
 }
 
 /** Fingerabdruck der aktuellen Setlist eines Termins (leichter Abruf, ohne ChordPro zu laden). */
 export async function getSetlistFingerprint(cookie: string, eventId: number): Promise<string> {
   const agenda = await getAgenda(cookie, eventId);
   return setlistFingerprint(agenda.items ?? []);
+}
+
+/** Fingerabdruck + Signatur je Punkt in einem Abruf – für das „gesehen"-Merken (#143/#161). */
+export async function getSetlistState(
+  cookie: string,
+  eventId: number,
+): Promise<{ hash: string; items: { id: number; sig: string }[] }> {
+  const agenda = await getAgenda(cookie, eventId);
+  const items = agenda.items ?? [];
+  return { hash: setlistFingerprint(items), items: agendaSignatureList(items) };
 }
 
 /**
@@ -486,10 +555,21 @@ export async function getSongChart(
   );
 }
 
-/** Alle Punkte eines Ablaufplans in Reihenfolge – Lieder aufgelöst, übrige nur als Eintrag. */
-export async function getAgendaItems(cookie: string, eventId: number): Promise<AgendaItem[]> {
+/**
+ * Alle Punkte eines Ablaufplans in Reihenfolge – Lieder aufgelöst, übrige nur als Eintrag.
+ * `prevSigs` (zuletzt gesehener Stand, #161): ist es gesetzt, bekommt jeder geänderte/neue/
+ * verschobene Punkt `changed: true` – die Grundlage fürs Aufleuchten im Client.
+ */
+export async function getAgendaItems(
+  cookie: string,
+  eventId: number,
+  prevSigs?: { id: number; sig: string }[],
+): Promise<AgendaItem[]> {
   const agenda = await getAgenda(cookie, eventId);
   const items = agenda.items ?? [];
+  const changedIds = prevSigs
+    ? new Set(diffAgendaItems(prevSigs, agendaSignatureList(items)).changedIds)
+    : null;
   return Promise.all(
     items.map(async (item): Promise<AgendaItem> => {
       const song = item.song ? await buildSong(cookie, item.song) : null;
@@ -510,6 +590,7 @@ export async function getAgendaItems(cookie: string, eventId: number): Promise<A
         time: formatBerlinTime(timeSource),
         durationMin: durationSec > 0 ? Math.round(durationSec / 60) : null,
         note: item.note ?? '',
+        changed: changedIds ? changedIds.has(item.id) : undefined,
       };
     }),
   );

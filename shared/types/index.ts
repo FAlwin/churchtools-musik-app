@@ -126,6 +126,12 @@ export interface AgendaItem {
   durationMin: number | null;
   /** Notiz/Beschreibung des Punkts (frei, kann leer sein). */
   note: string;
+  /**
+   * true, wenn dieser Punkt neu/geändert/verschoben ist gegenüber dem Stand, den das Konto zuletzt
+   * gesehen hat (#161) – der Client lässt ihn dann kurz aufleuchten. `undefined`, wenn kein
+   * Vergleichsstand existiert (nie geöffnet) oder der Abruf ohne Diff lief.
+   */
+  changed?: boolean;
 }
 
 /** Ein Eintrag der Zuständigen-Anzeige: Personenname (besetzt) oder offener Dienst-Platz. */

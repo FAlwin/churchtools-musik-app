@@ -11,7 +11,52 @@ import {
   cleanServiceName,
   responsibleEntries,
   setlistFingerprint,
+  diffAgendaItems,
 } from './setlistBuilder.js';
+
+describe('diffAgendaItems (#161 – was hat sich im Ablauf geändert)', () => {
+  const s = (id: number, sig: string) => ({ id, sig });
+  const base = [s(1, 'a'), s(2, 'b'), s(3, 'c'), s(4, 'd')];
+
+  it('kein voriger Stand → nichts geändert (kein Fehlalarm bei Erstnutzung)', () => {
+    expect(diffAgendaItems([], base)).toEqual({ changedIds: [], removedIds: [] });
+  });
+
+  it('identisch → nichts geändert', () => {
+    expect(diffAgendaItems(base, base)).toEqual({ changedIds: [], removedIds: [] });
+  });
+
+  it('neuer Punkt → als geändert markiert', () => {
+    const now = [...base, s(5, 'e')];
+    expect(diffAgendaItems(base, now).changedIds).toEqual([5]);
+  });
+
+  it('inhaltlich geänderter Punkt (gleiche id, andere Signatur)', () => {
+    const now = [s(1, 'a'), s(2, 'B!'), s(3, 'c'), s(4, 'd')];
+    expect(diffAgendaItems(base, now).changedIds).toEqual([2]);
+  });
+
+  it('entfernter Punkt → removedIds', () => {
+    const now = [s(1, 'a'), s(2, 'b'), s(4, 'd')];
+    const r = diffAgendaItems(base, now);
+    expect(r.changedIds).toEqual([]);
+    expect(r.removedIds).toEqual([3]);
+  });
+
+  it('EIN verschobener Punkt → nur dieser gilt als geändert (LIS lässt die anderen in Ruhe)', () => {
+    // 4 von hinten nach vorne: [4,1,2,3]. Stehen geblieben: 1,2,3 → nur 4 verschoben.
+    const now = [s(4, 'd'), s(1, 'a'), s(2, 'b'), s(3, 'c')];
+    expect(diffAgendaItems(base, now).changedIds).toEqual([4]);
+  });
+
+  it('Inhaltsänderung ohne Positionswechsel + neu + entfernt', () => {
+    // 3 raus; 5 neu ans Ende; 2 inhaltlich geändert – Reihenfolge der bleibenden 1,2,4 unverändert.
+    const now = [s(1, 'a'), s(2, 'B!'), s(4, 'd'), s(5, 'e')];
+    const r = diffAgendaItems(base, now);
+    expect(new Set(r.changedIds)).toEqual(new Set([2, 5]));
+    expect(r.removedIds).toEqual([3]);
+  });
+});
 
 /** Minimaler Agenda-Eintrag (nur die für den Fingerabdruck relevanten Felder). */
 function item(id: number, song?: { songId: number; arrangementId: number; key: string | null }): CtAgendaItem {
