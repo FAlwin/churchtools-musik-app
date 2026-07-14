@@ -19,11 +19,11 @@ describe('diffAgendaItems (#161 – was hat sich im Ablauf geändert)', () => {
   const base = [s(1, 'a'), s(2, 'b'), s(3, 'c'), s(4, 'd')];
 
   it('kein voriger Stand → nichts geändert (kein Fehlalarm bei Erstnutzung)', () => {
-    expect(diffAgendaItems([], base)).toEqual({ changedIds: [], removedIds: [] });
+    expect(diffAgendaItems([], base)).toEqual({ changedIds: [], removed: [] });
   });
 
   it('identisch → nichts geändert', () => {
-    expect(diffAgendaItems(base, base)).toEqual({ changedIds: [], removedIds: [] });
+    expect(diffAgendaItems(base, base)).toEqual({ changedIds: [], removed: [] });
   });
 
   it('neuer Punkt → als geändert markiert', () => {
@@ -36,11 +36,11 @@ describe('diffAgendaItems (#161 – was hat sich im Ablauf geändert)', () => {
     expect(diffAgendaItems(base, now).changedIds).toEqual([2]);
   });
 
-  it('entfernter Punkt → removedIds', () => {
+  it('entfernter Punkt → removed mit Position (nach dem Vorgänger)', () => {
     const now = [s(1, 'a'), s(2, 'b'), s(4, 'd')];
     const r = diffAgendaItems(base, now);
     expect(r.changedIds).toEqual([]);
-    expect(r.removedIds).toEqual([3]);
+    expect(r.removed).toEqual([{ id: 3, title: 'Entfernter Punkt', afterId: 2 }]);
   });
 
   it('EIN verschobener Punkt → nur dieser gilt als geändert (LIS lässt die anderen in Ruhe)', () => {
@@ -54,7 +54,7 @@ describe('diffAgendaItems (#161 – was hat sich im Ablauf geändert)', () => {
     const now = [s(1, 'a'), s(2, 'B!'), s(4, 'd'), s(5, 'e')];
     const r = diffAgendaItems(base, now);
     expect(new Set(r.changedIds)).toEqual(new Set([2, 5]));
-    expect(r.removedIds).toEqual([3]);
+    expect(r.removed.map((x) => x.id)).toEqual([3]);
   });
 });
 

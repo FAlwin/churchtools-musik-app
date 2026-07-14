@@ -265,3 +265,49 @@
     box-shadow: 0 0 0 2px var(--blue), var(--shadow);
   }
 }
+
+// Entfernter Punkt (#161 Etappe B): kurz durchgestrichen sichtbar; dann übernimmt der Partikel-
+// Zerfall (utils/disintegrate) das Bild, und die echte Zeile fällt zusammen (removedGone).
+.removedRow {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  overflow: hidden;
+  max-height: 60px;
+  background: var(--surface2);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+  // opacity bewusst OHNE Transition → beim „poof" sofort unsichtbar (die Partikel zeigen das Bild),
+  // während der Platz smooth zusammenfällt. Kein Doppelbild.
+  transition:
+    max-height 0.35s ease,
+    padding 0.35s ease,
+    margin 0.35s ease;
+}
+.removedGone {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: -6px; // den 6px-Listen-Gap mit einziehen, damit keine Lücke bleibt
+  box-shadow: none;
+}
+.removedTitle {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text3);
+  text-decoration: line-through;
+}
+.removedTag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .removedRow {
+    transition: none; // sofort zusammenfalten, kein Effekt
+  }
+}
