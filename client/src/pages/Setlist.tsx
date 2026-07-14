@@ -144,6 +144,20 @@ function AgendaFullView({
   return (
     <div className={styles.flowList}>
       {items.map((item) => {
+        // Platzhalter für einen entfernten Punkt (#161 Etappe B): kurz einblenden, dann auflösen.
+        if (item.removed) {
+          return (
+            <div key={item.id} className={styles.removedRow} aria-label={`Entfernt: ${item.title}`}>
+              <div className={styles.flowTime} />
+              <div className={styles.flowBody}>
+                <div className={styles.flowHead}>
+                  <span className={styles.removedTitle}>{item.title}</span>
+                  <span className={styles.removedTag}>entfernt</span>
+                </div>
+              </div>
+            </div>
+          );
+        }
         const showTime = !!item.time;
         // Geänderter/neuer/verschobener Punkt (#161) leuchtet beim Öffnen kurz auf.
         const chg = item.changed ? ` ${styles.changed}` : '';
@@ -303,7 +317,9 @@ export function Setlist({
   // Modus beim ersten Wechsel dorthin. Startet erst, wenn die Ziel-Elemente gerendert sind.
   const [setlistTour, setSetlistTour] = useState(false);
   const [editTour, setEditTour] = useState(false);
-  const [localItems, setLocalItems] = useState<AgendaItem[]>(items);
+  // Bearbeiten-Modus/Drag arbeitet nur mit echten Punkten – die „entfernt"-Platzhalter (#161
+  // Etappe B) gehören ausschließlich in die read-only Ansicht.
+  const [localItems, setLocalItems] = useState<AgendaItem[]>(items.filter((i) => !i.removed));
   const [err, setErr] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AgendaItem | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -314,9 +330,9 @@ export function Setlist({
   const [awaitNewSong, setAwaitNewSong] = useState(false);
   const idsBeforeAddRef = useRef<Set<number>>(new Set());
 
-  // Server-Stand (auch nach dem Speichern) übernehmen.
+  // Server-Stand (auch nach dem Speichern) übernehmen – ohne „entfernt"-Platzhalter.
   useEffect(() => {
-    setLocalItems(items);
+    setLocalItems(items.filter((i) => !i.removed));
   }, [items]);
 
   // Einführung Ablauf-Ansicht beim ersten Öffnen (Daten geladen, Ansicht-Modus).

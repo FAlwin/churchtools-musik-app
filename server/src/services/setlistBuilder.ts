@@ -115,9 +115,14 @@ export function setlistFingerprint(items: CtAgendaItem[]): string {
   return items.map((i) => `${i.id}#${agendaItemSignature(i)}`).join('|');
 }
 
-/** Geordnete Liste (id + Inhalts-Signatur) je Punkt – Basis für den „gesehen"-Vergleich (#161). */
-export function agendaSignatureList(items: CtAgendaItem[]): { id: number; sig: string }[] {
-  return items.map((i) => ({ id: i.id, sig: agendaItemSignature(i) }));
+/**
+ * Geordnete Liste je Punkt (id + Inhalts-Signatur + Titel) – Basis für den „gesehen"-Vergleich
+ * (#161). Der Titel wird für die „aufgelöst"-Anzeige entfernter Punkte mitgeführt (Etappe B).
+ */
+export function agendaSignatureList(
+  items: CtAgendaItem[],
+): { id: number; sig: string; title: string }[] {
+  return items.map((i) => ({ id: i.id, sig: agendaItemSignature(i), title: i.title }));
 }
 
 /** Längste aufsteigende Teilsequenz (Positionen). Die NICHT enthaltenen Punkte gelten als verschoben. */
@@ -149,10 +154,15 @@ function lisPositions(arr: number[]): Set<number> {
  * Ist `prev` leer (nie gesehen), gilt NICHTS als geändert (kein Fehlalarm bei Erstnutzung).
  */
 export function diffAgendaItems(
-  prev: { id: number; sig: string }[],
+  prev: { id: number; sig: string; title?: string }[],
   current: { id: number; sig: string }[],
-): { changedIds: number[]; removedIds: number[] } {
-  if (prev.length === 0) return { changedIds: [], removedIds: [] };
+): {
+  changedIds: number[];
+  /** Entfernte Punkte samt Titel und „stand hinter welchem noch vorhandenen Punkt" (afterId,
+   *  null = ganz vorne) – der Client blendet sie dort kurz ein und lässt sie auflösen (Etappe B). */
+  removed: { id: number; title: string; afterId: number | null }[];
+} {
+  if (prev.length === 0) return { changedIds: [], removed: [] };
   const prevById = new Map(prev.map((p, index) => [p.id, { sig: p.sig, index }]));
   const changed = new Set<number>();
   for (const it of current) {
@@ -165,9 +175,22 @@ export function diffAgendaItems(
   common.forEach((it, k) => {
     if (!keep.has(k)) changed.add(it.id);
   });
+  // Entfernt: im vorigen Stand, jetzt weg. Für die Position den letzten noch vorhandenen Vorgänger
+  // im vorigen Stand suchen (afterId) – dort blendet der Client den „aufgelöst"-Platzhalter ein.
   const currentIds = new Set(current.map((it) => it.id));
-  const removedIds = prev.filter((p) => !currentIds.has(p.id)).map((p) => p.id);
-  return { changedIds: [...changed], removedIds };
+  const removed: { id: number; title: string; afterId: number | null }[] = [];
+  prev.forEach((p, i) => {
+    if (currentIds.has(p.id)) return;
+    let afterId: number | null = null;
+    for (let j = i - 1; j >= 0; j--) {
+      if (currentIds.has(prev[j].id)) {
+        afterId = prev[j].id;
+        break;
+      }
+    }
+    removed.push({ id: p.id, title: p.title ?? 'Entfernter Punkt', afterId });
+  });
+  return { changedIds: [...changed], removed };
 }
 
 /** Fingerabdruck der aktuellen Setlist eines Termins (leichter Abruf, ohne ChordPro zu laden). */
@@ -563,14 +586,13 @@ export async function getSongChart(
 export async function getAgendaItems(
   cookie: string,
   eventId: number,
-  prevSigs?: { id: number; sig: string }[],
+  prevSigs?: { id: number; sig: string; title?: string }[],
 ): Promise<AgendaItem[]> {
   const agenda = await getAgenda(cookie, eventId);
   const items = agenda.items ?? [];
-  const changedIds = prevSigs
-    ? new Set(diffAgendaItems(prevSigs, agendaSignatureList(items)).changedIds)
-    : null;
-  return Promise.all(
+  const diff = prevSigs ? diffAgendaItems(prevSigs, agendaSignatureList(items)) : null;
+  const changedIds = diff ? new Set(diff.changedIds) : null;
+  const built = await Promise.all(
     items.map(async (item): Promise<AgendaItem> => {
       const song = item.song ? await buildSong(cookie, item.song) : null;
       const durationSec = item.duration ?? 0;
@@ -594,4 +616,26 @@ export async function getAgendaItems(
       };
     }),
   );
+  // Entfernte Punkte (Etappe B) als Platzhalter an ihrer alten Position einblenden – der Client
+  // lässt sie auflösen. Ohne Diff (nie gesehen) gibt es keine.
+  if (!diff || diff.removed.length === 0) return built;
+  const result = [...built];
+  for (const r of diff.removed) {
+    const placeholder: AgendaItem = {
+      id: r.id,
+      title: r.title,
+      type: null,
+      isHeader: false,
+      responsible: [],
+      responsibleText: '',
+      song: null,
+      time: null,
+      durationMin: null,
+      note: '',
+      removed: true,
+    };
+    const at = r.afterId == null ? 0 : result.findIndex((it) => it.id === r.afterId) + 1;
+    result.splice(at, 0, placeholder);
+  }
+  return result;
 }

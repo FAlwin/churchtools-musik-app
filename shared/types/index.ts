@@ -132,6 +132,12 @@ export interface AgendaItem {
    * Vergleichsstand existiert (nie geöffnet) oder der Abruf ohne Diff lief.
    */
   changed?: boolean;
+  /**
+   * true bei einem PLATZHALTER für einen seit dem letzten Ansehen ENTFERNTEN Punkt (#161 Etappe B):
+   * steht an der alten Position, der Client blendet ihn kurz ein und lässt ihn auflösen. Solche
+   * Einträge sind nicht mehr Teil des echten Ablaufs (kein Lied, nicht anklickbar).
+   */
+  removed?: boolean;
 }
 
 /** Ein Eintrag der Zuständigen-Anzeige: Personenname (besetzt) oder offener Dienst-Platz. */

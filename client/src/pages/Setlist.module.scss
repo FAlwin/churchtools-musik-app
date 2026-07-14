@@ -265,3 +265,56 @@
     box-shadow: 0 0 0 2px var(--blue), var(--shadow);
   }
 }
+
+// Entfernter Punkt (#161 Etappe B): kurz durchgestrichen sichtbar, dann auflösen + zusammenfalten.
+@keyframes dissolveRow {
+  0% {
+    opacity: 0;
+    max-height: 0;
+  }
+  15% {
+    opacity: 0.85;
+    max-height: 60px;
+  }
+  55% {
+    opacity: 0.85;
+    max-height: 60px;
+  }
+  100% {
+    opacity: 0;
+    max-height: 0;
+    margin-top: -6px; // den 6px-Listen-Gap mit einziehen, damit keine Lücke bleibt
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+.removedRow {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  overflow: hidden;
+  background: var(--surface2);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+  animation: dissolveRow 2.2s ease-in-out forwards;
+}
+.removedTitle {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text3);
+  text-decoration: line-through;
+}
+.removedTag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+// Reduzierte Bewegung: nicht animieren, gar nicht erst anzeigen (kein Geflacker).
+@media (prefers-reduced-motion: reduce) {
+  .removedRow {
+    display: none;
+  }
+}
