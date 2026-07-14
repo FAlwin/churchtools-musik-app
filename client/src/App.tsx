@@ -482,11 +482,16 @@ export default function App() {
               setView({ type: 'setlist' });
               // „Gesehen" wird beim Verlassen gemerkt (Effekt oben, #161) – nicht hier, sonst
               // wären die geänderten Punkte beim Öffnen schon wieder als gesehen markiert.
+              // Ablauf frisch holen: Der Cache wird sofort angezeigt, aber nur ein frischer
+              // Abruf bringt die aktuellen „geändert"-Markierungen mit (sonst blinkt beim
+              // schnellen Wieder-Öffnen nichts, weil der 30-s-Cache noch als frisch gilt).
+              void queryClient.invalidateQueries({ queryKey: ['agenda', s.id] });
             }}
             onOpenSongs={(s) => {
               setService(s);
               setSongIndex(0);
               setView({ type: 'chart', source: 'setlist' });
+              void queryClient.invalidateQueries({ queryKey: ['agenda', s.id] });
             }}
           />
         )}
