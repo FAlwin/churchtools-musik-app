@@ -18,6 +18,10 @@ export function useServices(enabled: boolean) {
     staleTime: ACTIVE_STALE_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    // Sanftes Polling, solange die Liste sichtbar ist (Hintergrund-Tabs pollen nicht): So
+    // erscheint der „Ablauf geändert"-Punkt auch auf einem unberührt daliegenden Gerät von
+    // selbst (#143). 60 s = guter Kompromiss; jede Runde kostet ~2 CT-Abrufe je Termin im Fenster.
+    refetchInterval: 60_000,
   });
 }
 
