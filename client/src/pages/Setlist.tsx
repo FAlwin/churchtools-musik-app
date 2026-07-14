@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AgendaItem, AgendaServiceOption, Service } from '@shared/types/index';
+import { disintegrate } from '../utils/disintegrate';
 import {
   DndContext,
   closestCenter,
@@ -133,6 +134,58 @@ function ResponsibleLine({ entries }: { entries: AgendaItem['responsible'] }) {
  * aber aufgeräumt). Lieder sind antippbar (→ Charts). Die Uhrzeit (`item.time`) ist bereits
  * serverseitig korrekt: in ChurchTools ausgeblendete Punkte (Auge) liefern keine Zeit.
  */
+/**
+ * Zeile eines entfernten Ablaufpunkts (#161 Etappe B): kurz durchgestrichen sichtbar, dann
+ * „poof"-Zerfall à la iOS – die Zeile wird abfotografiert, in Partikel zerlegt (utils/disintegrate)
+ * und die echte Zeile fällt zusammen. Fällt html2canvas aus, wird einfach ausgeblendet.
+ */
+function DisintegratingRow({ title }: { title: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [gone, setGone] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let cancelled = false;
+    // Reduzierte Bewegung: kein Effekt, direkt zusammenfalten.
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setGone(true);
+      return;
+    }
+    const t = setTimeout(async () => {
+      const rect = el.getBoundingClientRect();
+      try {
+        const html2canvas = (await import('html2canvas')).default;
+        if (cancelled) return;
+        const snap = await html2canvas(el, { backgroundColor: null, scale: 1, logging: false });
+        if (cancelled) return;
+        setGone(true); // echte Zeile verschwindet + fällt zusammen …
+        disintegrate(snap, rect); // … während die Partikel verwehen
+      } catch {
+        if (!cancelled) setGone(true);
+      }
+    }, 450); // kurz lesbar, bevor es zerfällt
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className={`${styles.removedRow}${gone ? ` ${styles.removedGone}` : ''}`}
+      aria-label={`Entfernt: ${title}`}
+    >
+      <div className={styles.flowTime} />
+      <div className={styles.flowBody}>
+        <div className={styles.flowHead}>
+          <span className={styles.removedTitle}>{title}</span>
+          <span className={styles.removedTag}>entfernt</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AgendaFullView({
   items,
   onSelect,
@@ -144,19 +197,9 @@ function AgendaFullView({
   return (
     <div className={styles.flowList}>
       {items.map((item) => {
-        // Platzhalter für einen entfernten Punkt (#161 Etappe B): kurz einblenden, dann auflösen.
+        // Entfernter Punkt (#161 Etappe B): kurz sichtbar, dann „poof"-Zerfall.
         if (item.removed) {
-          return (
-            <div key={item.id} className={styles.removedRow} aria-label={`Entfernt: ${item.title}`}>
-              <div className={styles.flowTime} />
-              <div className={styles.flowBody}>
-                <div className={styles.flowHead}>
-                  <span className={styles.removedTitle}>{item.title}</span>
-                  <span className={styles.removedTag}>entfernt</span>
-                </div>
-              </div>
-            </div>
-          );
+          return <DisintegratingRow key={item.id} title={item.title} />;
         }
         const showTime = !!item.time;
         // Geänderter/neuer/verschobener Punkt (#161) leuchtet beim Öffnen kurz auf.
