@@ -67,10 +67,6 @@ export async function getServices(req: Request, res: Response): Promise<void> {
     const prev = seen[String(service.id)];
     return { ...service, setlistChanged: prev != null && prev.hash !== hash };
   });
-  // TEMP-DIAGNOSE (#143): entfernen, sobald das Badge verifiziert ist.
-  console.log(
-    `[DIAG services] seenKeys=${Object.keys(seen).join(',') || '-'} changed=${services.filter((s) => s.setlistChanged).length}/${services.length}`,
-  );
   res.json(services);
 }
 
@@ -78,11 +74,9 @@ export async function getServices(req: Request, res: Response): Promise<void> {
 export async function markSetlistSeen(req: Request, res: Response): Promise<void> {
   const cookie = req.ctCookie as string;
   const eventId = idSchema.parse(req.params.eventId);
-  console.log(`[DIAG seen] Handler betreten, eventId=${eventId}, ctUserId=${req.ctUserId ?? 'null'}`);
   const userId = req.ctUserId ?? (await getUserId(cookie));
   const hash = await getSetlistFingerprint(cookie, eventId);
   await markSeenSetlist(userId, eventId, hash);
-  console.log(`[DIAG seen] gespeichert userId=${userId} eventId=${eventId} hash=${hash.slice(0, 40)}`);
   res.json({ ok: true });
 }
 
