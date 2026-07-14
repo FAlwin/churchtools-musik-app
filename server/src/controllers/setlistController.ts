@@ -70,6 +70,32 @@ export async function getServices(req: Request, res: Response): Promise<void> {
   res.json(services);
 }
 
+// Kurz-Memo je Termin für den Live-Abgleich: Viele offene Geräte pollen alle ~8 s – ChurchTools
+// soll dafür höchstens alle paar Sekunden EINMAL gefragt werden, egal wie viele Geräte schauen.
+const versionMemo = new Map<number, { hash: string; at: number }>();
+const VERSION_MEMO_TTL_MS = 5_000;
+
+/**
+ * GET /api/services/:eventId/setlist/version – aktueller Ablauf-Fingerabdruck (Live-Abgleich).
+ * Bewusst leichtgewichtig: nur die Roh-Agenda (KEINE ChordPro-Downloads). Der Client pollt das,
+ * solange ein Ablauf offen ist, und lädt bei Änderung den vollen Ablauf nach.
+ */
+export async function getSetlistVersion(req: Request, res: Response): Promise<void> {
+  const eventId = idSchema.parse(req.params.eventId);
+  const hit = versionMemo.get(eventId);
+  if (hit && Date.now() - hit.at < VERSION_MEMO_TTL_MS) {
+    res.json({ hash: hit.hash });
+    return;
+  }
+  // Abgelaufene Fremd-Einträge räumen (Map wächst sonst über Wochen mit alten Terminen).
+  for (const [id, v] of versionMemo) {
+    if (Date.now() - v.at >= VERSION_MEMO_TTL_MS) versionMemo.delete(id);
+  }
+  const hash = await getSetlistFingerprint(req.ctCookie as string, eventId);
+  versionMemo.set(eventId, { hash, at: Date.now() });
+  res.json({ hash });
+}
+
 /** POST /api/services/:eventId/seen – merkt den aktuellen Setlist-Stand als „gesehen" (#143). */
 export async function markSetlistSeen(req: Request, res: Response): Promise<void> {
   const cookie = req.ctCookie as string;

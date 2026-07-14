@@ -42,6 +42,23 @@ export function useMarkSetlistSeen() {
   });
 }
 
+/**
+ * Live-Abgleich für einen geöffneten Ablauf: pollt alle ~8 s den billigen Ablauf-Fingerabdruck
+ * (kein ChordPro-Download; der Server bündelt Abfragen mehrerer Geräte in einem Kurz-Memo).
+ * Die Auswertung (Ablauf neu laden / Hinweis im Liederheft) übernimmt App.tsx.
+ */
+export function useSetlistVersion(eventId: number | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['setlist-version', eventId],
+    queryFn: () => api.getSetlistVersion(eventId as number),
+    enabled: enabled && eventId !== null,
+    refetchInterval: 8_000,
+    staleTime: 0,
+    // Kein Retry-Getrommel: schlägt ein Poll fehl (Netz-Aussetzer), kommt in 8 s der nächste.
+    retry: false,
+  });
+}
+
 /** Datum vor `monthsBack` Monaten als ISO-Datum (YYYY-MM-DD). */
 function monthsAgoIso(monthsBack: number): string {
   const d = new Date();

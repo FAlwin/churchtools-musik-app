@@ -1,0 +1,53 @@
+// Schwebender Hinweis-Balken im Liederheft (Stil wie UpdateBanner). Sitzt oben statt unten:
+// unten liegen im Chart die Blätter-Zonen/Werkzeuge, oben stört er das Spielen am wenigsten.
+.banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: calc(env(safe-area-inset-top) + 54px); // unter der Chart-Kopfleiste
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.later {
+  background: none;
+  border: none;
+  padding: 8px 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+
+  &:active {
+    opacity: 0.6;
+  }
+}
+
+.load {
+  background: var(--blue);
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
