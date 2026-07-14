@@ -129,6 +129,18 @@
   color: var(--text3);
   font-weight: 400;
 }
+// „Setlist geändert"-Hinweis (#143): kleines Akzent-Pill in der Meta-Zeile.
+.changedBadge {
+  flex-shrink: 0;
+  margin-left: 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--blue-ink);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
 .chev {
   color: var(--text3);
   display: flex;

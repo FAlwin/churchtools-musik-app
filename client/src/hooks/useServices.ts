@@ -12,6 +12,19 @@ export function useServices(enabled: boolean) {
   });
 }
 
+/**
+ * Merkt den aktuellen Setlist-Stand eines Termins als „gesehen" (#143) und frischt danach die
+ * Terminliste auf, damit das „geändert"-Badge verschwindet. Fehler werden bewusst geschluckt –
+ * das Badge ist ein Komfort-Hinweis, kein kritischer Zustand.
+ */
+export function useMarkSetlistSeen() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (eventId: number) => api.markSetlistSeen(eventId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['services'] }),
+  });
+}
+
 /** Datum vor `monthsBack` Monaten als ISO-Datum (YYYY-MM-DD). */
 function monthsAgoIso(monthsBack: number): string {
   const d = new Date();

@@ -4,6 +4,7 @@ import { requireSession } from '../middleware/session.js';
 import {
   getServices,
   getSetlist,
+  markSetlistSeen,
   postVersion,
   putVersion,
   deleteVersionCtrl,
@@ -28,6 +29,7 @@ const router = Router();
 router.use(requireSession);
 router.get('/services', asyncHandler(getServices));
 router.get('/services/:eventId/setlist', asyncHandler(getSetlist));
+router.post('/services/:eventId/seen', asyncHandler(markSetlistSeen));
 router.get('/songs', asyncHandler(getSongs));
 router.get('/song-library', asyncHandler(getSongLibraryCtrl));
 router.get('/song-usage', asyncHandler(getSongUsageCtrl));

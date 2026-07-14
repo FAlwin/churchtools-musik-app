@@ -28,5 +28,7 @@ export function mapEventToService(ev: CtEvent, songCount: number, subtitle: stri
     time: p.time,
     location: ev.calendar?.title ?? '',
     songCount,
+    // Default; der Controller setzt es je Konto anhand des gemerkten Setlist-Stands (#143).
+    setlistChanged: false,
   };
 }

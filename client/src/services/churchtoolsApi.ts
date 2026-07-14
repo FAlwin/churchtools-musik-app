@@ -55,6 +55,11 @@ export function getAgenda(eventId: number): Promise<AgendaItem[]> {
   return apiFetch<AgendaItem[]>(`/api/services/${eventId}/setlist`);
 }
 
+/** Merkt den aktuellen Setlist-Stand als „gesehen" → entfernt das „geändert"-Badge (#143). */
+export function markSetlistSeen(eventId: number): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>(`/api/services/${eventId}/seen`, { method: 'POST' });
+}
+
 /** Speichert die neue Reihenfolge der Ablaufpunkte (Liste der Item-IDs in Wunschreihenfolge). */
 export function reorderAgenda(eventId: number, order: number[]): Promise<{ ok: boolean }> {
   return apiFetch(`/api/services/${eventId}/agenda/order`, {

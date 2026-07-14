@@ -25,6 +25,7 @@ import {
   useSongUsage,
   useSongChart,
   useCapabilities,
+  useMarkSetlistSeen,
 } from './hooks/useServices';
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
@@ -112,6 +113,7 @@ export default function App() {
   useWakeLock(settings.wakePref);
   const auth = useAuth();
   const site = useSiteConfig().data;
+  const markSetlistSeen = useMarkSetlistSeen();
 
   const capsQuery = useCapabilities(auth.isAuthenticated);
   const caps = capsQuery.data;
@@ -407,11 +409,13 @@ export default function App() {
             onSelect={(s) => {
               setService(s);
               setView({ type: 'setlist' });
+              if (s.setlistChanged) markSetlistSeen.mutate(s.id); // Badge quittieren (#143)
             }}
             onOpenSongs={(s) => {
               setService(s);
               setSongIndex(0);
               setView({ type: 'chart', source: 'setlist' });
+              if (s.setlistChanged) markSetlistSeen.mutate(s.id); // Badge quittieren (#143)
             }}
           />
         )}
