@@ -22,15 +22,19 @@ export function useServices(enabled: boolean) {
 }
 
 /**
- * Merkt den aktuellen Setlist-Stand eines Termins als „gesehen" (#143) und frischt danach die
- * Terminliste auf, damit das „geändert"-Badge verschwindet. Fehler werden bewusst geschluckt –
- * das Badge ist ein Komfort-Hinweis, kein kritischer Zustand.
+ * Merkt den aktuellen Setlist-Stand eines Termins als „gesehen" (#143). MUSS bei JEDEM Öffnen
+ * laufen – auch (gerade!) beim ersten Mal, denn erst dieser gemerkte Stand ist die Basislinie,
+ * gegen die spätere Änderungen das Badge auslösen. `refresh` steuert nur, ob danach die (teure)
+ * Terminliste neu geladen wird: nötig, wenn gerade ein Badge quittiert wurde, damit es
+ * verschwindet – beim reinen Basislinie-Setzen unnötig. Fehler werden geschluckt (Komfort-Hinweis).
  */
 export function useMarkSetlistSeen() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (eventId: number) => api.markSetlistSeen(eventId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['services'] }),
+    mutationFn: (v: { eventId: number; refresh: boolean }) => api.markSetlistSeen(v.eventId),
+    onSuccess: (_data, v) => {
+      if (v.refresh) void qc.invalidateQueries({ queryKey: ['services'] });
+    },
   });
 }
 

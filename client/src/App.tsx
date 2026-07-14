@@ -409,13 +409,15 @@ export default function App() {
             onSelect={(s) => {
               setService(s);
               setView({ type: 'setlist' });
-              if (s.setlistChanged) markSetlistSeen.mutate(s.id); // Badge quittieren (#143)
+              // Immer merken (setzt beim 1. Öffnen die Basislinie); Liste nur neu laden, wenn
+              // gerade ein Badge quittiert wurde (#143).
+              markSetlistSeen.mutate({ eventId: s.id, refresh: s.setlistChanged });
             }}
             onOpenSongs={(s) => {
               setService(s);
               setSongIndex(0);
               setView({ type: 'chart', source: 'setlist' });
-              if (s.setlistChanged) markSetlistSeen.mutate(s.id); // Badge quittieren (#143)
+              markSetlistSeen.mutate({ eventId: s.id, refresh: s.setlistChanged });
             }}
           />
         )}
