@@ -2,13 +2,22 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 
+// Kurze Frische für die aktuellen (aktiven) Daten: So erscheinen ChurchTools-Änderungen
+// (verschobene Punkte, geänderte Setlist) zeitnah – die Query gilt schon nach 30 s als veraltet
+// und wird beim nächsten App-Fokus / Wiederverbinden neu geladen (#159). Vorher waren es 5 min,
+// wodurch Änderungen sehr lange unsichtbar blieben. Die Offline-Reserve hängt an `gcTime`
+// (7 Tage, queryClient.ts) und bleibt davon unberührt.
+const ACTIVE_STALE_MS = 1000 * 30;
+
 /** Lädt die Gottesdienste mit Setlist (Standardfenster: ~1 Woche zurück bis 6 Wochen voraus). */
 export function useServices(enabled: boolean) {
   return useQuery({
     queryKey: ['services'],
     queryFn: () => api.getServices(),
     enabled,
-    staleTime: 1000 * 60 * 5,
+    staleTime: ACTIVE_STALE_MS,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
 
@@ -53,7 +62,11 @@ export function useAgenda(eventId: number | null) {
     queryKey: ['agenda', eventId],
     queryFn: () => api.getAgenda(eventId as number),
     enabled: eventId !== null,
-    staleTime: 1000 * 60 * 5,
+    // Kurze Frische (#159): verschobene/geänderte Ablaufpunkte erscheinen zeitnah beim
+    // nächsten Fokus/Wiederverbinden statt erst nach 5 min.
+    staleTime: ACTIVE_STALE_MS,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
 
