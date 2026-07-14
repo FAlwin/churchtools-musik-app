@@ -57,7 +57,7 @@ export const TERMINE_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="setlist-geaendert"]',
     title: 'Was sich geändert hat',
-    body: 'Das „geändert“-Zeichen erscheint, wenn sich die Setlist geändert hat, seit du den Termin zuletzt geöffnet hast. Es verschwindet, sobald du wieder reingeschaut hast.',
+    body: 'Der blaue Punkt erscheint, wenn sich der Ablauf geändert hat, seit du den Termin zuletzt geöffnet hast – wie bei ungelesenen Nachrichten. Er verschwindet, sobald du wieder reingeschaut hast.',
   },
   {
     selector: '[data-tour="offline"]',

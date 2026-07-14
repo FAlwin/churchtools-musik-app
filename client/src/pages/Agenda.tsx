@@ -125,6 +125,16 @@ export function Agenda({
           </div>
           <div className={styles.info}>
             <div className={styles.svcName}>
+              {/* Dezenter Punkt (#143, wie „ungelesen"): Ablauf hat sich seit dem letzten
+                  Reinschauen geändert; verschwindet beim Öffnen. */}
+              {s.setlistChanged && (
+                <span
+                  className={styles.changedDot}
+                  data-tour="setlist-geaendert"
+                  title="Der Ablauf hat sich geändert, seit du diesen Termin zuletzt geöffnet hast"
+                  aria-label="Ablauf geändert"
+                />
+              )}
               {s.name}
               {s.subtitle && <span className={styles.subtitlePart}> · {s.subtitle}</span>}
             </div>
@@ -132,16 +142,6 @@ export function Agenda({
               <span>{s.weekday}</span>
               <span className={styles.dotSep}>·</span>
               <span>{s.time}</span>
-              {/* „Geändert"-Hinweis (#143): Setlist hat sich seit dem letzten Ansehen geändert. */}
-              {s.setlistChanged && (
-                <span
-                  className={styles.changedBadge}
-                  data-tour="setlist-geaendert"
-                  title="Die Setlist hat sich geändert, seit du diesen Termin zuletzt geöffnet hast"
-                >
-                  geändert
-                </span>
-              )}
             </div>
           </div>
           {held && (

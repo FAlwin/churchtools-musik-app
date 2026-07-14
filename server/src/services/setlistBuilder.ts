@@ -99,11 +99,16 @@ export function metaValue(chordpro: string, key: string): string | null {
  * Rein & testbar; muss auf denselben Roh-Agenda-Daten laufen wie beim „gesehen"-Merken.
  */
 export function setlistFingerprint(items: CtAgendaItem[]): string {
-  const parts: string[] = [];
-  for (const i of items) {
-    if (i.song) parts.push(`${i.song.songId}:${i.song.arrangementId}:${i.song.key ?? ''}`);
-  }
-  return parts.join('|');
+  // „Struktur + Details" (#143): jede Ablaufänderung schlägt an – Reihenfolge (Array-Position),
+  // Punkte hinzu/raus/umbenannt (id+title), Lied+Arrangement+Tonart, Verantwortliche, Dauer und
+  // Notiz. So löst auch ein verschobener Nicht-Lied-Punkt das Badge aus.
+  return items
+    .map((i) => {
+      const song = i.song ? `${i.song.songId}:${i.song.arrangementId}:${i.song.key ?? ''}` : '';
+      const resp = i.responsible?.text ?? '';
+      return `${i.id}#${i.title}#${i.type ?? ''}#${song}#${resp}#${i.duration ?? ''}#${i.note ?? ''}`;
+    })
+    .join('|');
 }
 
 /** Fingerabdruck der aktuellen Setlist eines Termins (leichter Abruf, ohne ChordPro zu laden). */
