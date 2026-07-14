@@ -269,14 +269,48 @@ export async function putVersion(req: Request, res: Response): Promise<void> {
   res.json(version);
 }
 
+/**
+ * Nur diese MIME-Typen werden 1:1 (inline) ausgeliefert. Alles andere reicht der Proxy als
+ * `application/octet-stream` mit `Content-Disposition: attachment` durch. Hintergrund (#138):
+ * Die Bytes kommen aus ChurchTools, wo jeder mit Upload-Recht (Musiker) eine Datei an ein
+ * Arrangement hängen kann. Würde der Content-Type ungefiltert übernommen, könnte eine HTML-/JS-
+ * Datei auf UNSERER Origin ausgeführt werden (Stored-XSS, umgeht die CSP über `'self'`). Die
+ * App braucht nur PDF + Rasterbilder + Klartext. **SVG bewusst NICHT gelistet** – es kann
+ * Skripte enthalten und würde als Bild auf der eigenen Origin rendern.
+ */
+const INLINE_SAFE_MIME = new Set([
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp',
+  'text/plain',
+]);
+
+/** Rein & testbar: entscheidet über Content-Type + ob als Download (attachment) ausgeliefert wird. */
+export function sanitizeFileContentType(raw: string): {
+  contentType: string;
+  attachment: boolean;
+} {
+  const mime = raw.split(';')[0]?.trim().toLowerCase() ?? '';
+  if (INLINE_SAFE_MIME.has(mime)) return { contentType: raw, attachment: false };
+  return { contentType: 'application/octet-stream', attachment: true };
+}
+
 /** GET /api/songs/:songId/files/:fileId – Datei (PDF/Bild) aus ChurchTools durchreichen. */
 export async function getFile(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
   const fileId = idSchema.parse(req.params.fileId);
   const cookie = req.ctCookie as string;
   const fileUrl = await resolveFileUrl(cookie, songId, fileId);
-  const { buffer, contentType } = await fetchFileBytes(cookie, fileUrl);
+  const { buffer, contentType: raw } = await fetchFileBytes(cookie, fileUrl);
+  const { contentType, attachment } = sanitizeFileContentType(raw);
   res.setHeader('Content-Type', contentType);
+  // nosniff ist global (Helmet) gesetzt; hier zusätzlich, damit ein durchgereichter octet-stream
+  // NIE per Content-Sniffing doch als HTML interpretiert wird.
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  if (attachment) res.setHeader('Content-Disposition', 'attachment');
   res.setHeader('Cache-Control', 'private, max-age=300');
   res.send(buffer);
 }
