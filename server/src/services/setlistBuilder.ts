@@ -24,7 +24,7 @@ import {
   fileIdFromUrl,
   type CtAgendaSong,
 } from './churchtools.js';
-import type { CtArrangementFile, CtSong } from './churchtools.js';
+import type { CtArrangementFile, CtSong, CtAgendaItem } from './churchtools.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
 
@@ -92,16 +92,40 @@ export function metaValue(chordpro: string, key: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-/** Gottesdienste im Zeitfenster, die einen Ablaufplan haben (mit Song-Anzahl). */
+/**
+ * Fingerabdruck einer Setlist (#143): stabile Signatur aus Lied, Arrangement, Tonart UND
+ * Reihenfolge der Lied-Punkte. Ändert sich eines davon (Lied neu/raus, umsortiert, Tonart),
+ * ändert sich der Fingerabdruck. Nicht-Lieder (Überschriften, Begrüßung …) zählen bewusst nicht.
+ * Rein & testbar; muss auf denselben Roh-Agenda-Daten laufen wie beim „gesehen"-Merken.
+ */
+export function setlistFingerprint(items: CtAgendaItem[]): string {
+  const parts: string[] = [];
+  for (const i of items) {
+    if (i.song) parts.push(`${i.song.songId}:${i.song.arrangementId}:${i.song.key ?? ''}`);
+  }
+  return parts.join('|');
+}
+
+/** Fingerabdruck der aktuellen Setlist eines Termins (leichter Abruf, ohne ChordPro zu laden). */
+export async function getSetlistFingerprint(cookie: string, eventId: number): Promise<string> {
+  const agenda = await getAgenda(cookie, eventId);
+  return setlistFingerprint(agenda.items ?? []);
+}
+
+/**
+ * Gottesdienste im Zeitfenster, die einen Ablaufplan haben (mit Song-Anzahl). Liefert je Termin
+ * zusätzlich den Setlist-Fingerabdruck (#143), damit der Controller das „geändert"-Badge je Konto
+ * bestimmen kann.
+ */
 export async function getServicesWithSetlists(
   cookie: string,
   from: string,
   to: string,
-): Promise<Service[]> {
+): Promise<{ service: Service; hash: string }[]> {
   const events = await getEvents(cookie, from, to);
   // mapLimit liefert in Fertigstellungs-Reihenfolge → Start-Zeitpunkt (ISO inkl. Uhrzeit)
   // mitführen und am Ende danach sortieren (sonst stehen gleich-tägige Events falsch).
-  const rows: { service: Service; start: string }[] = [];
+  const rows: { service: Service; hash: string; start: string }[] = [];
   // Max. 8 Events gleichzeitig (je 2 CT-Abrufe) – schont die ChurchTools-API.
   await mapLimit(events, 8, async (ev) => {
     try {
@@ -113,14 +137,21 @@ export async function getServicesWithSetlists(
           ? getAppointmentSubtitle(cookie, calId, ev.appointmentId)
           : Promise.resolve(null),
       ]);
-      const songCount = (agenda.items ?? []).filter((i) => i.song).length;
+      const items = agenda.items ?? [];
+      const songCount = items.filter((i) => i.song).length;
       // Sichtbar, sobald ein Ablaufplan existiert – auch ohne Lieder.
-      rows.push({ service: mapEventToService(ev, songCount, subtitle), start: ev.startDate });
+      rows.push({
+        service: mapEventToService(ev, songCount, subtitle),
+        hash: setlistFingerprint(items),
+        start: ev.startDate,
+      });
     } catch {
       /* 404 = kein Ablaufplan */
     }
   });
-  return rows.sort((a, b) => a.start.localeCompare(b.start)).map((r) => r.service);
+  return rows
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .map((r) => ({ service: r.service, hash: r.hash }));
 }
 
 /**

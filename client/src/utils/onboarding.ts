@@ -5,7 +5,9 @@ import type { CoachStep } from '../components/Coachmarks';
  * in localStorage (pro Gerät); „Einführung nochmal ansehen" im Mehr-Tab setzt ihn zurück.
  */
 const PREFIX = 'worship:onboard-';
-export const TOUR_TERMINE = 'termine-v1';
+// termine-v2: Schritt „geändert"-Hinweis (#143) ergänzt – Version erhöht, damit Bestandsnutzer
+// den neuen Schritt beim ersten Öffnen nach dem Update sehen.
+export const TOUR_TERMINE = 'termine-v2';
 // chart-v2: Schritt „Team-Anmerkungen" (#124) ergänzt – Version erhöht, damit Bestandsnutzer
 // den neuen Schritt beim ersten Öffnen nach dem Update sehen.
 export const TOUR_CHART = 'chart-v2';
@@ -51,6 +53,11 @@ export const TERMINE_STEPS: CoachStep[] = [
     selector: '[data-tour="songbook"]',
     title: 'Liedblätter öffnen',
     body: 'Tippe auf das Notensymbol, um direkt alle Lieder als Akkord-Blätter zu öffnen. Die kleine Zahl zeigt, wie viele es sind.',
+  },
+  {
+    selector: '[data-tour="setlist-geaendert"]',
+    title: 'Was sich geändert hat',
+    body: 'Das „geändert“-Zeichen erscheint, wenn sich die Setlist geändert hat, seit du den Termin zuletzt geöffnet hast. Es verschwindet, sobald du wieder reingeschaut hast.',
   },
   {
     selector: '[data-tour="offline"]',

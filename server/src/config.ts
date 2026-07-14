@@ -39,6 +39,11 @@ export const config = {
    */
   capabilitiesCachePath: process.env.CAPABILITIES_CACHE_PATH ?? './data/capabilities-cache.json',
   /**
+   * Ablageort der „zuletzt gesehenen Setlist-Stände" je Konto (#143, persistentes Volume). Merkt
+   * pro Konto+Termin den zuletzt angeschauten Setlist-Fingerabdruck → „geändert"-Badge.
+   */
+  seenSetlistsPath: process.env.SEEN_SETLISTS_PATH ?? './data/seen-setlists.json',
+  /**
    * ChurchTools-Recht, das als „Administrator" gilt (steuert Zugriff auf die
    * Branding-Einstellungen). Form `modul:recht`. Default deckt Voll-Admins ab;
    * je nach Instanz ggf. anpassen.

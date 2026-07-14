@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   getServicesWithSetlists,
   getAgendaItems,
+  getSetlistFingerprint,
   createVersion,
   updateVersion,
   deleteVersion,
@@ -22,8 +23,10 @@ import {
   searchSongs,
   getSong,
   getCapabilities,
+  getUserId,
   getCtServices,
 } from '../services/churchtools.js';
+import { getSeenSetlists, markSeenSetlist } from '../services/seenSetlists.js';
 import type {
   AgendaServiceOption,
   SongArrangementOption,
@@ -45,11 +48,36 @@ const dateSchema = z
 
 /** GET /api/services – Gottesdienste mit Setlist. */
 export async function getServices(req: Request, res: Response): Promise<void> {
+  const cookie = req.ctCookie as string;
   const def = defaultWindow();
   const from = dateSchema.parse(req.query.from) ?? def.from;
   const to = dateSchema.parse(req.query.to) ?? def.to;
-  const services = await getServicesWithSetlists(req.ctCookie as string, from, to);
+  const withHashes = await getServicesWithSetlists(cookie, from, to);
+  // „Geändert"-Badge je Konto (#143): mit dem zuletzt gesehenen Fingerabdruck vergleichen. Ohne
+  // gemerkten Stand (nie geöffnet) gilt NICHT als geändert. userId best effort aus dem Cookie
+  // (seit #149) – fehlt sie, wird ohne Badge ausgeliefert (Komfort-Feature, kein harter Fehler).
+  let seen: Awaited<ReturnType<typeof getSeenSetlists>> = {};
+  try {
+    const userId = req.ctUserId ?? (await getUserId(cookie));
+    seen = await getSeenSetlists(userId);
+  } catch {
+    /* Konto-ID/Datei nicht verfügbar → ohne Badge ausliefern */
+  }
+  const services = withHashes.map(({ service, hash }) => {
+    const prev = seen[String(service.id)];
+    return { ...service, setlistChanged: prev != null && prev.hash !== hash };
+  });
   res.json(services);
+}
+
+/** POST /api/services/:eventId/seen – merkt den aktuellen Setlist-Stand als „gesehen" (#143). */
+export async function markSetlistSeen(req: Request, res: Response): Promise<void> {
+  const cookie = req.ctCookie as string;
+  const eventId = idSchema.parse(req.params.eventId);
+  const userId = req.ctUserId ?? (await getUserId(cookie));
+  const hash = await getSetlistFingerprint(cookie, eventId);
+  await markSeenSetlist(userId, eventId, hash);
+  res.json({ ok: true });
 }
 
 const idSchema = z.coerce.number().int().positive();

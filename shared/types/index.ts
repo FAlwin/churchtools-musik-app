@@ -23,6 +23,12 @@ export interface Service {
   location: string;
   /** Anzahl Songs in der Setlist */
   songCount: number;
+  /**
+   * true, wenn sich die Setlist (Lieder/Reihenfolge/Tonart) geändert hat, seit dieses Konto den
+   * Termin zuletzt geöffnet hat (#143). Konto-bezogen, serverseitig ermittelt. Nie geöffnete
+   * Termine sind `false` (kein Fehlalarm bei Erstnutzung).
+   */
+  setlistChanged: boolean;
 }
 
 /** Ein Song innerhalb einer Setlist (aufgelöstes Arrangement). */

@@ -132,6 +132,16 @@ export function Agenda({
               <span>{s.weekday}</span>
               <span className={styles.dotSep}>·</span>
               <span>{s.time}</span>
+              {/* „Geändert"-Hinweis (#143): Setlist hat sich seit dem letzten Ansehen geändert. */}
+              {s.setlistChanged && (
+                <span
+                  className={styles.changedBadge}
+                  data-tour="setlist-geaendert"
+                  title="Die Setlist hat sich geändert, seit du diesen Termin zuletzt geöffnet hast"
+                >
+                  geändert
+                </span>
+              )}
             </div>
           </div>
           {held && (

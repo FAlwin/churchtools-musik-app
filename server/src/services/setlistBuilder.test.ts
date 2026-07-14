@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { CtArrangementFile } from './churchtools.js';
+import type { CtArrangementFile, CtAgendaItem } from './churchtools.js';
 import {
   versionSlug,
   versionNameOf,
@@ -10,7 +10,54 @@ import {
   formatBerlinTime,
   cleanServiceName,
   responsibleEntries,
+  setlistFingerprint,
 } from './setlistBuilder.js';
+
+/** Minimaler Agenda-Eintrag (nur die für den Fingerabdruck relevanten Felder). */
+function item(id: number, song?: { songId: number; arrangementId: number; key: string | null }): CtAgendaItem {
+  return {
+    id,
+    title: song ? 'Lied' : 'Punkt',
+    ...(song
+      ? { song: { songId: song.songId, arrangementId: song.arrangementId, title: 'x', arrangement: 'y', key: song.key, bpm: null } }
+      : {}),
+  };
+}
+
+describe('setlistFingerprint (#143 – Setlist-Änderung erkennen)', () => {
+  const base: CtAgendaItem[] = [
+    item(1), // Begrüßung (kein Lied → zählt nicht)
+    item(2, { songId: 10, arrangementId: 100, key: 'G' }),
+    item(3, { songId: 11, arrangementId: 110, key: 'D' }),
+  ];
+
+  it('gleiche Setlist → gleicher Fingerabdruck; Nicht-Lieder werden ignoriert', () => {
+    const withMoreHeaders = [item(9), ...base, item(8)];
+    expect(setlistFingerprint(withMoreHeaders)).toBe(setlistFingerprint(base));
+  });
+
+  it('Lied hinzugefügt / entfernt → anderer Fingerabdruck', () => {
+    const added = [...base, item(4, { songId: 12, arrangementId: 120, key: 'A' })];
+    expect(setlistFingerprint(added)).not.toBe(setlistFingerprint(base));
+    const removed = [base[0], base[1]];
+    expect(setlistFingerprint(removed)).not.toBe(setlistFingerprint(base));
+  });
+
+  it('Reihenfolge der Lieder getauscht → anderer Fingerabdruck', () => {
+    const swapped = [base[0], base[2], base[1]];
+    expect(setlistFingerprint(swapped)).not.toBe(setlistFingerprint(base));
+  });
+
+  it('Tonart geändert → anderer Fingerabdruck', () => {
+    const rekeyed = [base[0], item(2, { songId: 10, arrangementId: 100, key: 'A' }), base[2]];
+    expect(setlistFingerprint(rekeyed)).not.toBe(setlistFingerprint(base));
+  });
+
+  it('leere Agenda → leerer Fingerabdruck', () => {
+    expect(setlistFingerprint([])).toBe('');
+    expect(setlistFingerprint([item(1), item(2)])).toBe('');
+  });
+});
 
 /** Baut eine Test-Datei (nur die für die Logik relevanten Felder). */
 const file = (name: string, id?: number): CtArrangementFile =>
