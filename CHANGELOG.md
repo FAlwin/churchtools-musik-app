@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.12.0] – 2026-07-14
+
 ### Hinzugefügt
 
 - **Live-Aktualisierung:** Änderungen am Ablauf erscheinen jetzt fast sofort bei allen – egal ob
@@ -15,6 +17,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   gleicht sich alle paar Sekunden ab und sortiert sich bei Änderungen sofort um. Im geöffneten
   Liederheft springt dagegen nichts von selbst: Dort erscheint ein dezenter Hinweis „Ablauf wurde
   geändert" mit „Neu laden"-Knopf – mitten im Spielen bewegen sich die Seiten nie ungefragt.
+- **Im Ablauf sichtbar, was sich geändert hat (#161):** Öffnest du einen Ablauf, in dem sich seit
+  deinem letzten Blick etwas getan hat, leuchten die betroffenen Punkte kurz auf – neue, inhaltlich
+  geänderte (Tonart, Verantwortliche, Dauer, Notiz) und verschobene Punkte pulsen dreimal in der
+  Akzentfarbe. Entfernte Punkte erscheinen noch einen Moment durchgestrichen und lösen sich dann in
+  vielen kleinen Teilchen auf („poof", wie beim Löschen einer Nachricht auf dem iPhone). So siehst
+  du auf einen Blick, was passiert ist. Wer im Gerät „Bewegung reduzieren" aktiviert hat, bekommt
+  eine ruhige, bleibende Hervorhebung statt der Animation.
 
 ## [2.11.0] – 2026-07-14
 
