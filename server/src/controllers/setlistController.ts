@@ -4,6 +4,7 @@ import {
   getServicesWithSetlists,
   getAgendaItems,
   getSetlistFingerprint,
+  getSetlistState,
   createVersion,
   updateVersion,
   deleteVersion,
@@ -101,8 +102,8 @@ export async function markSetlistSeen(req: Request, res: Response): Promise<void
   const cookie = req.ctCookie as string;
   const eventId = idSchema.parse(req.params.eventId);
   const userId = req.ctUserId ?? (await getUserId(cookie));
-  const hash = await getSetlistFingerprint(cookie, eventId);
-  await markSeenSetlist(userId, eventId, hash);
+  const { hash, items } = await getSetlistState(cookie, eventId);
+  await markSeenSetlist(userId, eventId, hash, items);
   res.json({ ok: true });
 }
 
@@ -286,8 +287,18 @@ export async function getSongChartCtrl(req: Request, res: Response): Promise<voi
 
 /** GET /api/services/:eventId/setlist – alle Ablaufpunkte (Lieder inkl. ChordPro). */
 export async function getSetlist(req: Request, res: Response): Promise<void> {
+  const cookie = req.ctCookie as string;
   const eventId = idSchema.parse(req.params.eventId);
-  const items = await getAgendaItems(req.ctCookie as string, eventId);
+  // Zuletzt gesehenen Stand des Kontos laden → geänderte Punkte markieren (#161). Best effort:
+  // ohne Konto-ID/Stand liefern wir ohne Markierungen (kein Fehlalarm bei Erstnutzung).
+  let prevSigs: { id: number; sig: string }[] | undefined;
+  try {
+    const userId = req.ctUserId ?? (await getUserId(cookie));
+    prevSigs = (await getSeenSetlists(userId))[String(eventId)]?.items;
+  } catch {
+    /* Konto-ID/Datei nicht verfügbar → ohne Diff */
+  }
+  const items = await getAgendaItems(cookie, eventId, prevSigs);
   res.json(items);
 }
 

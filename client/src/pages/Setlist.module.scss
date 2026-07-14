@@ -242,3 +242,26 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+// „Geändert"-Aufleuchten (#161): neuer/geänderter/verschobener Ablaufpunkt pulst beim Öffnen 3×
+// in der Akzentfarbe – deutlich sichtbarer als ein Pünktchen, danach wieder normal.
+@keyframes changedPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent, var(--shadow);
+  }
+  50% {
+    box-shadow: 0 0 0 2px var(--blue), var(--shadow);
+  }
+}
+.changed {
+  animation: changedPulse 0.8s ease-in-out 3;
+  border-radius: 9px;
+}
+// Barrierefrei: wer reduzierte Bewegung wünscht, bekommt eine ruhige, bleibende Hervorhebung.
+@media (prefers-reduced-motion: reduce) {
+  .changed {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--blue), var(--shadow);
+  }
+}
