@@ -24,38 +24,48 @@ function item(id: number, song?: { songId: number; arrangementId: number; key: s
   };
 }
 
-describe('setlistFingerprint (#143 – Setlist-Änderung erkennen)', () => {
+describe('setlistFingerprint (#143 – ganze Ablauf-Struktur, Struktur + Details)', () => {
   const base: CtAgendaItem[] = [
-    item(1), // Begrüßung (kein Lied → zählt nicht)
+    item(1), // Begrüßung (Nicht-Lied)
     item(2, { songId: 10, arrangementId: 100, key: 'G' }),
     item(3, { songId: 11, arrangementId: 110, key: 'D' }),
   ];
 
-  it('gleiche Setlist → gleicher Fingerabdruck; Nicht-Lieder werden ignoriert', () => {
-    const withMoreHeaders = [item(9), ...base, item(8)];
-    expect(setlistFingerprint(withMoreHeaders)).toBe(setlistFingerprint(base));
+  it('identischer Ablauf → gleicher Fingerabdruck', () => {
+    expect(setlistFingerprint([...base])).toBe(setlistFingerprint(base));
   });
 
-  it('Lied hinzugefügt / entfernt → anderer Fingerabdruck', () => {
-    const added = [...base, item(4, { songId: 12, arrangementId: 120, key: 'A' })];
-    expect(setlistFingerprint(added)).not.toBe(setlistFingerprint(base));
-    const removed = [base[0], base[1]];
-    expect(setlistFingerprint(removed)).not.toBe(setlistFingerprint(base));
-  });
-
-  it('Reihenfolge der Lieder getauscht → anderer Fingerabdruck', () => {
-    const swapped = [base[0], base[2], base[1]];
+  it('Nicht-Lied-Punkt verschoben → anderer Fingerabdruck (der eigentliche Bedarf)', () => {
+    const swapped = [base[1], base[0], base[2]]; // Begrüßung nach hinten
     expect(setlistFingerprint(swapped)).not.toBe(setlistFingerprint(base));
   });
 
-  it('Tonart geändert → anderer Fingerabdruck', () => {
+  it('Punkt hinzugefügt / entfernt → anderer Fingerabdruck', () => {
+    expect(setlistFingerprint([...base, item(4)])).not.toBe(setlistFingerprint(base));
+    expect(setlistFingerprint([base[0], base[1]])).not.toBe(setlistFingerprint(base));
+  });
+
+  it('Lied getauscht / Tonart geändert → anderer Fingerabdruck', () => {
     const rekeyed = [base[0], item(2, { songId: 10, arrangementId: 100, key: 'A' }), base[2]];
     expect(setlistFingerprint(rekeyed)).not.toBe(setlistFingerprint(base));
   });
 
+  it('Punkt umbenannt → anderer Fingerabdruck', () => {
+    const renamed = [{ ...base[0], title: 'Anderer Titel' }, base[1], base[2]];
+    expect(setlistFingerprint(renamed)).not.toBe(setlistFingerprint(base));
+  });
+
+  it('Detail geändert (Verantwortlicher / Dauer / Notiz) → anderer Fingerabdruck', () => {
+    const resp = [{ ...base[0], responsible: { text: 'Max' } }, base[1], base[2]];
+    expect(setlistFingerprint(resp)).not.toBe(setlistFingerprint(base));
+    const dur = [{ ...base[0], duration: 300 }, base[1], base[2]];
+    expect(setlistFingerprint(dur)).not.toBe(setlistFingerprint(base));
+    const note = [{ ...base[0], note: 'Hinweis' }, base[1], base[2]];
+    expect(setlistFingerprint(note)).not.toBe(setlistFingerprint(base));
+  });
+
   it('leere Agenda → leerer Fingerabdruck', () => {
     expect(setlistFingerprint([])).toBe('');
-    expect(setlistFingerprint([item(1), item(2)])).toBe('');
   });
 });
 
