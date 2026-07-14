@@ -5,7 +5,22 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
-## [Unreleased]
+## [2.11.0] – 2026-07-14
+
+### Hinzugefügt
+
+- **Hinweis, wenn sich ein Ablauf geändert hat (#143):** An der Termin-Karte erscheint ein
+  dezenter blauer Punkt, sobald sich der Ablauf geändert hat, seit du den Termin zuletzt geöffnet
+  hast – ähnlich wie bei ungelesenen Nachrichten. Er verschwindet, sobald du wieder reinschaust.
+  Erfasst wird die ganze Ablauf-Struktur (Lieder, Reihenfolge, Tonart, aber auch verschobene oder
+  umbenannte Punkte, Verantwortliche, Dauer, Notiz). Der Hinweis ist persönlich und gilt
+  geräteübergreifend (einmal angeschaut, überall weg).
+
+### Geändert
+
+- **ChurchTools-Änderungen erscheinen zeitnah (#159):** Verschobene Ablaufpunkte oder geänderte
+  Setlists waren bis zu 5 Minuten lang nicht sichtbar. Jetzt lädt die App die aktuellen Daten beim
+  nächsten Öffnen / Zurückkehren nach; die Offline-Verfügbarkeit bleibt unverändert.
 
 ### Behoben
 
@@ -16,6 +31,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   einmal automatisch neu und holt sich die aktuelle Version; ein zweites Fehlschlagen führt weiter
   zur verständlichen Meldung (kein endloses Neuladen). Dauert ein Nachladen ungewöhnlich lange,
   erscheint zusätzlich nach einigen Sekunden ein „Neu laden"-Knopf.
+
+### Sicherheit
+
+- **Datei-Proxy gehärtet (#138):** Aus ChurchTools durchgereichte Dateien werden nur noch als
+  sichere Typen (PDF, Bilder, Klartext) direkt angezeigt; alles andere wird heruntergeladen statt
+  ausgeführt. Verhindert, dass eine hochgeladene HTML-/Skript-Datei im App-Kontext läuft.
+- **Speicher-Obergrenzen für Anmerkungen (#139):** Pro Konto gelten jetzt großzügige Höchstgrenzen
+  (Anzahl + Gesamtgröße), und der Server-Zwischenspeicher ist gedeckelt – schützt Server-Speicher
+  vor Missbrauch. Im Alltag nicht spürbar.
 
 ## [2.10.0] – 2026-07-13
 
