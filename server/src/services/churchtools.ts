@@ -80,7 +80,9 @@ async function ctGet<T = unknown>(cookie: string, path: string): Promise<T> {
     throw new HttpError(401, 'Session abgelaufen. Bitte neu anmelden.');
   }
   if (!res.ok) {
-    throw new HttpError(502, `ChurchTools-Fehler (${res.status}) bei ${path}`);
+    // 404 durchreichen (z. B. „Termin hat keinen Ablaufplan") – Aufrufer wie die Statistik
+    // unterscheiden das von echten Fehlern (500/Netz), die geloggt werden. Rest bleibt 502.
+    throw new HttpError(res.status === 404 ? 404 : 502, `ChurchTools-Fehler (${res.status}) bei ${path}`);
   }
   const json = (await res.json()) as { data?: T };
   return (json.data ?? json) as T;
@@ -467,8 +469,20 @@ export async function getCtServices(cookie: string): Promise<CtService[]> {
   );
 }
 
+/**
+ * Wächter: Datei-URLs kommen aus ChurchTools-DATEN (Arrangements können auch freie Link-Einträge
+ * enthalten). Das Session-Cookie darf nur an die eigene CT-Instanz gehen – sonst könnte ein
+ * präparierter Link-Eintrag die Cookies der App-Nutzer an einen Fremdhost leiten.
+ */
+function assertCtFileUrl(fileUrl: string): void {
+  if (!fileUrl.startsWith(`${BASE}/`)) {
+    throw new HttpError(502, 'Datei-Download abgelehnt: URL gehört nicht zur ChurchTools-Instanz.');
+  }
+}
+
 /** Lädt eine Arrangement-Datei (z.B. .chordpro) als Text – mit Session-Cookie. */
 export async function downloadFileText(cookie: string, fileUrl: string): Promise<string> {
+  assertCtFileUrl(fileUrl);
   const res = await fetch(fileUrl, { headers: { Cookie: cookie } });
   if (!res.ok) {
     throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
@@ -487,6 +501,7 @@ export async function fetchFileBytes(
   cookie: string,
   fileUrl: string,
 ): Promise<{ buffer: Buffer; contentType: string }> {
+  assertCtFileUrl(fileUrl);
   const res = await fetch(fileUrl, { headers: { Cookie: cookie } });
   if (!res.ok) throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
   const buffer = Buffer.from(await res.arrayBuffer());

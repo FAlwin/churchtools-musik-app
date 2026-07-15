@@ -194,8 +194,9 @@ export async function putAgendaItem(req: Request, res: Response): Promise<void> 
   );
   await updateAgendaItem(req.ctCookie as string, eventId, itemId, {
     // Beim Aufheben der Lied-Verknüpfung den Titel leeren (der Liedtitel soll nicht als Text
-    // zurückbleiben); sonst den ggf. übergebenen neuen Titel verwenden.
-    title: unlink ? '' : title,
+    // zurückbleiben) – es sei denn, im selben Request kommt ein neuer Titel mit (Kombi-Speichern
+    // aus dem Bearbeiten-Dialog: aufheben + umbenennen in EINEM Schreibvorgang).
+    title: unlink ? (title ?? '') : title,
     arrangementId,
     unlink,
     responsible,

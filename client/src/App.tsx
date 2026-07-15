@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, lazy, Suspense, type ComponentProps } from 'react';
+import { useEffect, useState, lazy, Suspense, type ComponentProps } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Login } from './pages/Login';
 import { Agenda } from './pages/Agenda';
@@ -13,22 +13,16 @@ import {
   useAgenda,
   useReorderAgenda,
   useDeleteAgendaItem,
-  useRenameAgendaItem,
-  useLinkSongToAgendaItem,
-  useUnlinkSongFromAgendaItem,
-  useSetAgendaItemResponsible,
-  useSetAgendaItemDuration,
+  useUpdateAgendaItem,
   useSetAgendaItemHidden,
-  useSetAgendaItemNote,
   useAgendaServices,
   useCreateAgendaItem,
   useSongLibrary,
   useSongUsage,
   useSongChart,
   useCapabilities,
-  useMarkSetlistSeen,
-  useSetlistVersion,
 } from './hooks/useServices';
+import { useSetlistLiveSync, useMarkSeenOnLeave } from './hooks/useSetlistLiveSync';
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
 import { TabBar, type TabId } from './components/TabBar';
@@ -116,7 +110,6 @@ export default function App() {
   useWakeLock(settings.wakePref);
   const auth = useAuth();
   const site = useSiteConfig().data;
-  const markSetlistSeen = useMarkSetlistSeen();
   const queryClient = useQueryClient();
 
   const capsQuery = useCapabilities(auth.isAuthenticated);
@@ -168,13 +161,8 @@ export default function App() {
   const agendaQuery = useAgenda(service?.id ?? null);
   const reorderAgenda = useReorderAgenda(service?.id ?? null);
   const deleteAgendaItem = useDeleteAgendaItem(service?.id ?? null);
-  const renameAgendaItem = useRenameAgendaItem(service?.id ?? null);
-  const linkSongToAgendaItem = useLinkSongToAgendaItem(service?.id ?? null);
-  const unlinkSongFromAgendaItem = useUnlinkSongFromAgendaItem(service?.id ?? null);
-  const setAgendaItemResponsible = useSetAgendaItemResponsible(service?.id ?? null);
-  const setAgendaItemDuration = useSetAgendaItemDuration(service?.id ?? null);
+  const updateAgendaItem = useUpdateAgendaItem(service?.id ?? null);
   const setAgendaItemHidden = useSetAgendaItemHidden(service?.id ?? null);
-  const setAgendaItemNote = useSetAgendaItemNote(service?.id ?? null);
   const agendaServices = useAgendaServices(
     auth.isAuthenticated && canEditAgendas && view?.type === 'setlist',
   );
@@ -190,62 +178,17 @@ export default function App() {
   const items = agendaQuery.data ?? [];
   const songs = items.flatMap((i) => (i.song ? [i.song] : []));
 
-  // ── Live-Abgleich des geöffneten Ablaufs ────────────────────────────────────────────────────
-  // Solange Ablauf oder Liederheft (aus dem Ablauf) offen sind, wird alle ~8 s der billige
-  // Fingerabdruck gepollt. Ändert er sich: Ablauf-Ansicht lädt sofort nach (dort stört das nie);
-  // im Liederheft erscheint stattdessen ein Hinweis-Balken – NIE automatisch umsortieren, sonst
-  // springen mitten im Spielen die Seiten unter den Fingern.
+  // Live-Abgleich des geöffneten Ablaufs + „gesehen"-Basislinie beim Verlassen –
+  // Details in hooks/useSetlistLiveSync.ts.
   const inSetlistView = view?.type === 'setlist' && !!service;
   const inSetlistChart = view?.type === 'chart' && view.source === 'setlist' && !!service;
-  const liveVersion = useSetlistVersion(
-    service?.id ?? null,
-    online && (inSetlistView || inSetlistChart),
-  );
-  const [chartOutdated, setChartOutdated] = useState(false);
-  const lastLiveHash = useRef<{ eventId: number; hash: string } | null>(null);
-  // Ablauf neu laden (Live-Update): Der Server markiert die geänderten Punkte anhand des zuletzt
-  // GESEHENEN Stands – dieser wird bewusst NICHT hier aktualisiert, sondern erst beim Verlassen
-  // des Termins (#161). So leuchten auch live eingetroffene Änderungen auf.
-  const reloadAblauf = (eventId: number) => {
-    void queryClient.invalidateQueries({ queryKey: ['agenda', eventId] });
-    setChartOutdated(false);
-  };
-  useEffect(() => {
-    const hash = liveVersion.data?.hash;
-    const eventId = service?.id;
-    if (hash === undefined || eventId === undefined) return;
-    const prev = lastLiveHash.current;
-    lastLiveHash.current = { eventId, hash };
-    // Erster Poll für diesen Termin = Referenz, noch keine Änderung.
-    if (!prev || prev.eventId !== eventId || prev.hash === hash) return;
-    if (inSetlistView) reloadAblauf(eventId);
-    else if (inSetlistChart) setChartOutdated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveVersion.data?.hash]);
-  useEffect(() => {
-    // Vom Liederheft mit offenem „geändert"-Hinweis zurück in den Ablauf → dort direkt neu laden.
-    if (chartOutdated && inSetlistView && service) reloadAblauf(service.id);
-    if (!inSetlistView && !inSetlistChart) {
-      setChartOutdated(false);
-      lastLiveHash.current = null;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, service?.id]);
-
-  // „Gesehen" gilt beim VERLASSEN eines Termins (#143/#161): Erst dann wird der aktuelle Stand als
-  // Basislinie gemerkt – so bleiben die aufleuchtenden Markierungen sichtbar, solange man drin ist,
-  // und der „geändert"-Punkt in der Terminliste verschwindet nach dem Reinschauen. Ein Wechsel
-  // zwischen Ablauf und Liederheft desselben Termins zählt NICHT als Verlassen.
-  const openTerminId = inSetlistView || inSetlistChart ? (service?.id ?? null) : null;
-  const prevOpenTerminId = useRef<number | null>(null);
-  useEffect(() => {
-    const prev = prevOpenTerminId.current;
-    prevOpenTerminId.current = openTerminId;
-    if (prev != null && prev !== openTerminId) {
-      markSetlistSeen.mutate({ eventId: prev, refresh: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openTerminId]);
+  const { chartOutdated, reloadAblauf, dismissChartOutdated } = useSetlistLiveSync({
+    eventId: service?.id ?? null,
+    inSetlistView,
+    inSetlistChart,
+    online,
+  });
+  useMarkSeenOnLeave(inSetlistView || inSetlistChart ? (service?.id ?? null) : null);
 
   // Wer keine Abläufe sehen darf, startet im Lieder-Tab
   useEffect(() => {
@@ -378,31 +321,16 @@ export default function App() {
           setView({ type: 'chart', source: 'setlist' });
         }}
         onBack={() => setView(null)}
-        onReorder={(order) => reorderAgenda.mutateAsync(order).then(() => undefined)}
         isReordering={reorderAgenda.isPending}
-        onDelete={(itemId) => deleteAgendaItem.mutateAsync(itemId).then(() => undefined)}
-        onRename={(itemId, title) =>
-          renameAgendaItem.mutateAsync({ itemId, title }).then(() => undefined)
-        }
-        onLinkSong={(itemId, arrangementId) =>
-          linkSongToAgendaItem.mutateAsync({ itemId, arrangementId }).then(() => undefined)
-        }
-        onUnlinkSong={(itemId) =>
-          unlinkSongFromAgendaItem.mutateAsync({ itemId }).then(() => undefined)
-        }
-        onSetResponsible={(itemId, responsible) =>
-          setAgendaItemResponsible.mutateAsync({ itemId, responsible }).then(() => undefined)
-        }
-        onSetDuration={(itemId, durationMin) =>
-          setAgendaItemDuration.mutateAsync({ itemId, durationMin }).then(() => undefined)
-        }
-        onToggleHidden={(itemId, hidden) =>
-          setAgendaItemHidden.mutateAsync({ itemId, hidden }).then(() => undefined)
-        }
-        onSetNote={(itemId, note) =>
-          setAgendaItemNote.mutateAsync({ itemId, note }).then(() => undefined)
-        }
-        onAdd={(data) => createAgendaItem.mutateAsync(data).then(() => undefined)}
+        actions={{
+          reorder: (order) => reorderAgenda.mutateAsync(order).then(() => undefined),
+          remove: (itemId) => deleteAgendaItem.mutateAsync(itemId).then(() => undefined),
+          update: (itemId, fields) =>
+            updateAgendaItem.mutateAsync({ itemId, fields }).then(() => undefined),
+          setHidden: (itemId, hidden) =>
+            setAgendaItemHidden.mutateAsync({ itemId, hidden }).then(() => undefined),
+          add: (data) => createAgendaItem.mutateAsync(data).then(() => undefined),
+        }}
         services={agendaServices.data ?? []}
         canEdit={canEditAgendas}
       />
@@ -428,7 +356,7 @@ export default function App() {
           {chartOutdated && (
             <AblaufChangedBanner
               onReload={() => reloadAblauf(service.id)}
-              onDismiss={() => setChartOutdated(false)}
+              onDismiss={dismissChartOutdated}
             />
           )}
         </>

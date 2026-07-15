@@ -32,6 +32,8 @@ const MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000; // 180 Tage
 
 let store: Store | null = null;
 let writeChain: Promise<unknown> = Promise.resolve();
+/** Nur EINMAL warnen, wenn Schreiben dauerhaft scheitert (z. B. Pfad nicht beschreibbar). */
+let warnedWriteError = false;
 
 async function load(): Promise<Store> {
   if (store) return store;
@@ -78,7 +80,18 @@ export async function markSeenSetlist(
   writeChain = writeChain.then(write, write);
   return writeChain.then(
     () => {},
-    () => {},
+    (e: unknown) => {
+      // Best effort bleibt: Fehler bricht nichts ab. Aber ein dauerhaft scheiterndes Schreiben
+      // (fehlendes/unbeschreibbares Volume) soll sichtbar sein – sonst leben die Stände nur im
+      // RAM und sind nach jedem Neustart weg.
+      if (!warnedWriteError) {
+        warnedWriteError = true;
+        console.warn(
+          `Seen-Setlists: Schreiben nach ${config.seenSetlistsPath} fehlgeschlagen – Stände gehen bei Neustart verloren:`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+    },
   );
 }
 
@@ -86,4 +99,5 @@ export async function markSeenSetlist(
 export function __resetForTests(): void {
   store = null;
   writeChain = Promise.resolve();
+  warnedWriteError = false;
 }

@@ -8,6 +8,7 @@ import { NoteTile } from '../components/NoteTile';
 import { AddToAgendaSheet } from '../components/AddToAgendaSheet';
 import { SongStatsBar } from '../components/SongStatsBar';
 import { useSongFilter } from '../hooks/useSongFilter';
+import { fmtPlayDate } from '../utils/songFilter';
 import type { SongUsageMap } from '../services/churchtoolsApi';
 import styles from './AllSongs.module.scss';
 
@@ -24,12 +25,6 @@ interface AllSongsProps {
   canAddToAgenda?: boolean;
   /** Termine zur Auswahl beim Hinzufügen (kommende + vergangene). */
   services?: Service[];
-}
-
-function fmtDate(iso: string | null): string {
-  if (!iso) return 'noch nie';
-  const [y, m, d] = iso.split('-');
-  return `${d}.${m}.${y}`;
 }
 
 /** Durchsuchbare Liste aller Lieder, sortierbar nach Name/Häufigkeit/zuletzt (+ Zeitfilter). */
@@ -100,7 +95,7 @@ export function AllSongs({
                               ? 'Statistik lädt…'
                               : f.sort === 'count'
                                 ? `${st?.count ?? 0}× gespielt`
-                                : `zuletzt ${fmtDate(st?.last ?? null)}`}
+                                : `zuletzt ${fmtPlayDate(st?.last ?? null)}`}
                           </span>
                         )}
                       </div>

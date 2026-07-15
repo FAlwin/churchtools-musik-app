@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { AgendaItem, AgendaServiceOption } from '@shared/types/index';
+import type { AgendaItemUpdate } from '../services/churchtoolsApi';
 import { SongPicker } from './SongPicker';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
@@ -8,22 +9,12 @@ import styles from './ItemActionSheet.module.scss';
 interface ItemActionSheetProps {
   item: AgendaItem;
   onClose: () => void;
-  /** Punkt umbenennen (nur Nicht-Lieder). Wirft bei Fehler. */
-  onRename: (title: string) => Promise<void>;
-  /** Bestehenden Punkt mit einem Lied verknüpfen. Wirft bei Fehler. */
-  onLinkSong: (arrangementId: number) => Promise<void>;
-  /** Lied-Verknüpfung wieder aufheben (nur Lieder). Wirft bei Fehler. */
-  onUnlinkSong: () => Promise<void>;
-  /** Setzt das Verantwortlich-Textfeld (z.B. „[Musik]"). Wirft bei Fehler. */
-  onSetResponsible: (responsible: string) => Promise<void>;
-  /** Setzt die Dauer des Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
-  onSetDuration: (durationMin: number) => Promise<void>;
+  /** Schreibt die geänderten Felder gesammelt (EIN Request). Wirft bei Fehler. */
+  onUpdate: (fields: AgendaItemUpdate) => Promise<void>;
   /** Ist die Uhrzeit dieses Punkts in ChurchTools ausgeblendet? */
   timeHidden: boolean;
   /** Blendet die Uhrzeit dieses Punkts in ChurchTools aus (true) oder ein (false). Wirft bei Fehler. */
-  onToggleHidden: (hidden: boolean) => Promise<void>;
-  /** Setzt die Bemerkung/Notiz des Punkts. Wirft bei Fehler. */
-  onSetNote: (note: string) => Promise<void>;
+  onSetHidden: (hidden: boolean) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
   services: AgendaServiceOption[];
   /** Löschen anstoßen (Bestätigung erfolgt im Eltern-Screen). */
@@ -41,14 +32,9 @@ interface ItemActionSheetProps {
 export function ItemActionSheet({
   item,
   onClose,
-  onRename,
-  onLinkSong,
-  onUnlinkSong,
-  onSetResponsible,
-  onSetDuration,
+  onUpdate,
   timeHidden,
-  onToggleHidden,
-  onSetNote,
+  onSetHidden,
   services,
   onRequestDelete,
 }: ItemActionSheetProps) {
@@ -92,44 +78,45 @@ export function ItemActionSheet({
 
   const durationNum = duration.trim() === '' ? null : Number(duration);
   const durationValid = durationNum === null || (Number.isInteger(durationNum) && durationNum >= 0);
+  // Geänderte Dauer: neuer Wert ODER geleertes Feld bei vorhandener Dauer („Dauer entfernen" = 0;
+  // ChurchTools kennt kein „keine Dauer", 0 Minuten blendet sie faktisch aus).
+  const durationTarget =
+    durationNum !== null
+      ? durationNum !== item.durationMin
+        ? durationNum
+        : undefined
+      : item.durationMin != null && item.durationMin !== 0
+        ? 0
+        : undefined;
 
-  const dirty =
-    linkState.kind !== 'keep' ||
-    hidden !== timeHidden ||
-    (durationNum !== null && durationNum !== item.durationMin) ||
-    responsible !== item.responsibleText ||
-    note !== item.note ||
-    (!willBeSong && title.trim() !== item.title);
+  /** Sammelt ALLE vorgemerkten Änderungen als ein Update-Objekt (leer = nichts geändert). */
+  function pendingFields(): AgendaItemUpdate {
+    const fields: AgendaItemUpdate = {};
+    if (linkState.kind === 'link') fields.arrangementId = linkState.arrangementId;
+    if (linkState.kind === 'unlink') fields.unlink = true;
+    // Titel nur, wenn der Punkt am Ende KEIN Lied ist (Lied-Titel kommt aus ChurchTools).
+    if (!willBeSong) {
+      const t = title.trim();
+      const changed = linkState.kind === 'unlink' ? !!t : !!t && t !== item.title;
+      if (changed) fields.title = t;
+    }
+    if (durationTarget !== undefined) fields.durationMin = durationTarget;
+    if (responsible !== item.responsibleText) fields.responsible = responsible.trim();
+    if (note !== item.note) fields.note = note.trim();
+    return fields;
+  }
+
+  const dirty = Object.keys(pendingFields()).length > 0 || hidden !== timeHidden;
 
   async function saveAll() {
     setBusy(true);
     setErr(null);
     try {
-      // 1) Struktur zuerst: Verknüpfung anlegen/aufheben.
-      if (linkState.kind === 'link') {
-        await onLinkSong(linkState.arrangementId);
-      } else if (linkState.kind === 'unlink') {
-        await onUnlinkSong();
-      }
-      // 2) Titel – nur wenn der Punkt am Ende KEIN Lied ist (Lied-Titel kommt aus ChurchTools).
-      if (!willBeSong) {
-        const t = title.trim();
-        const changed = linkState.kind === 'unlink' ? !!t : !!t && t !== item.title;
-        if (changed) await onRename(t);
-      }
-      // 3) Weitere Felder – nur bei tatsächlicher Änderung.
-      if (durationNum !== null && durationNum !== item.durationMin) {
-        await onSetDuration(durationNum);
-      }
-      if (responsible !== item.responsibleText) {
-        await onSetResponsible(responsible.trim());
-      }
-      if (note !== item.note) {
-        await onSetNote(note.trim());
-      }
-      if (hidden !== timeHidden) {
-        await onToggleHidden(hidden);
-      }
+      // Alle Feld-Änderungen in EINEM Request (kein Teilzustand bei Fehlern); nur der
+      // Uhrzeit-Schalter ist in ChurchTools ein eigener Endpunkt.
+      const fields = pendingFields();
+      if (Object.keys(fields).length > 0) await onUpdate(fields);
+      if (hidden !== timeHidden) await onSetHidden(hidden);
       onClose();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Speichern fehlgeschlagen.');
@@ -137,10 +124,17 @@ export function ItemActionSheet({
     }
   }
 
+  // Klick auf den Hintergrund: nur schließen, wenn nichts vorgemerkt ist – sonst würde ein
+  // versehentlicher Tipp daneben alle ungespeicherten Änderungen verwerfen. Mit Änderungen
+  // führt der Weg raus bewusst über „Abbrechen" (verwerfen) oder „Speichern".
+  function onOverlayClick() {
+    if (!dirty) onClose();
+  }
+
   // Unterdialog: Lied suchen + verknüpfen.
   if (songMode) {
     return (
-      <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.overlay} onClick={onOverlayClick}>
         <div className={styles.card} onClick={(e) => e.stopPropagation()}>
           <div className={styles.title}>Lied verknüpfen</div>
           {err && <div className={styles.err}>{err}</div>}
@@ -162,7 +156,7 @@ export function ItemActionSheet({
   }
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={styles.overlay} onClick={onOverlayClick}>
       <div className={styles.card} onClick={(e) => e.stopPropagation()}>
         <div className={styles.title}>Eintrag bearbeiten</div>
         {err && <div className={styles.err}>{err}</div>}

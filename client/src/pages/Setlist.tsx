@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AgendaItem, AgendaServiceOption, Service } from '@shared/types/index';
+import type { AgendaItemUpdate } from '../services/churchtoolsApi';
 import { disintegrate } from '../utils/disintegrate';
 import {
   DndContext,
@@ -41,6 +42,33 @@ import { selectedVersionKey, versionText } from '../utils/songVersions';
 import { innerScrollOnly, resetViewportAfterDrag } from '../utils/dndAutoScroll';
 import styles from './Setlist.module.scss';
 
+/** Neuer Ablaufpunkt (Payload von `AgendaActions.add`). */
+export interface NewAgendaItem {
+  type: 'header' | 'text' | 'song';
+  title?: string;
+  arrangementId?: number;
+  responsible?: string;
+  note?: string;
+  durationMin?: number;
+}
+
+/**
+ * Gebündelte Bearbeiten-Aktionen des Ablaufs – EIN Objekt statt einzelner Callback-Props durch
+ * alle Ebenen. Alle Aktionen werfen bei Fehler (z. B. fehlende Rechte); die UI zeigt die Meldung.
+ */
+export interface AgendaActions {
+  /** Speichert die neue Reihenfolge (Item-IDs). */
+  reorder: (order: number[]) => Promise<void>;
+  /** Löscht einen Ablaufpunkt. */
+  remove: (itemId: number) => Promise<void>;
+  /** Schreibt geänderte Felder eines Punkts gesammelt (ein Request). */
+  update: (itemId: number, fields: AgendaItemUpdate) => Promise<void>;
+  /** Blendet die Uhrzeit eines Punkts in ChurchTools aus (true) oder ein (false). */
+  setHidden: (itemId: number, hidden: boolean) => Promise<void>;
+  /** Legt einen neuen Punkt an. */
+  add: (data: NewAgendaItem) => Promise<void>;
+}
+
 interface SetlistProps {
   service: Service;
   items: AgendaItem[];
@@ -50,34 +78,9 @@ interface SetlistProps {
   /** Wird mit dem Index des Lieds (nur Lieder gezählt) aufgerufen. */
   onSelect: (songIndex: number) => void;
   onBack: () => void;
-  /** Speichert die neue Reihenfolge (Item-IDs). Wirft bei Fehler (z.B. fehlende Rechte). */
-  onReorder: (order: number[]) => Promise<void>;
+  /** Bearbeiten-Aktionen (Reihenfolge, Löschen, Feld-Änderungen, Anlegen). */
+  actions: AgendaActions;
   isReordering?: boolean;
-  /** Löscht einen Ablaufpunkt. Wirft bei Fehler (z.B. fehlende Rechte). */
-  onDelete: (itemId: number) => Promise<void>;
-  /** Benennt einen Punkt um (nur Text/Überschrift). Wirft bei Fehler. */
-  onRename: (itemId: number, title: string) => Promise<void>;
-  /** Verknüpft einen bestehenden Punkt mit einem Lied. Wirft bei Fehler. */
-  onLinkSong: (itemId: number, arrangementId: number) => Promise<void>;
-  /** Hebt die Lied-Verknüpfung eines Punkts wieder auf. Wirft bei Fehler. */
-  onUnlinkSong: (itemId: number) => Promise<void>;
-  /** Setzt das Verantwortlich-Textfeld eines Punkts. Wirft bei Fehler. */
-  onSetResponsible: (itemId: number, responsible: string) => Promise<void>;
-  /** Setzt die Dauer eines Punkts in Minuten (CT berechnet die Uhrzeiten neu). Wirft bei Fehler. */
-  onSetDuration: (itemId: number, durationMin: number) => Promise<void>;
-  /** Blendet die Uhrzeit eines Punkts in ChurchTools aus (true) oder ein (false). Wirft bei Fehler. */
-  onToggleHidden: (itemId: number, hidden: boolean) => Promise<void>;
-  /** Setzt die Bemerkung/Notiz eines Punkts. Wirft bei Fehler. */
-  onSetNote: (itemId: number, note: string) => Promise<void>;
-  /** Legt einen neuen Punkt an. Wirft bei Fehler. */
-  onAdd: (data: {
-    type: 'header' | 'text' | 'song';
-    title?: string;
-    arrangementId?: number;
-    responsible?: string;
-    note?: string;
-    durationMin?: number;
-  }) => Promise<void>;
   /** Verfügbare ChurchTools-Dienste (Chips im Verantwortlich-Editor). */
   services: AgendaServiceOption[];
   /** Darf der Nutzer den Ablauf bearbeiten? (blendet die Bearbeiten-UI aus) */
@@ -341,17 +344,8 @@ export function Setlist({
   onRetry,
   onSelect,
   onBack,
-  onReorder,
+  actions,
   isReordering,
-  onDelete,
-  onRename,
-  onLinkSong,
-  onUnlinkSong,
-  onSetResponsible,
-  onSetDuration,
-  onToggleHidden,
-  onSetNote,
-  onAdd,
   services,
   canEdit = false,
 }: SetlistProps) {
@@ -401,10 +395,10 @@ export function Setlist({
   }, [items, awaitNewSong]);
 
   /** Legt einen Punkt an; bei Liedern anschließend das Bearbeiten-Modal öffnen. */
-  async function handleAdd(data: Parameters<typeof onAdd>[0]): Promise<void> {
+  async function handleAdd(data: NewAgendaItem): Promise<void> {
     const isSong = data.type === 'song';
     if (isSong) idsBeforeAddRef.current = new Set(items.map((i) => i.id));
-    await onAdd(data); // wirft bei Fehler → AddItemSheet zeigt die Meldung, schließt nicht
+    await actions.add(data); // wirft bei Fehler → AddItemSheet zeigt die Meldung, schließt nicht
     if (isSong) setAwaitNewSong(true);
   }
 
@@ -423,18 +417,22 @@ export function Setlist({
     const next = arrayMove(localItems, oldIndex, newIndex);
     setLocalItems(next); // optimistisch
     setErr(null);
-    onReorder(next.map((i) => i.id)).catch((e: unknown) => {
+    actions.reorder(next.map((i) => i.id)).catch((e: unknown) => {
       setLocalItems(items); // zurückrollen
       setErr(e instanceof Error ? e.message : 'Reihenfolge konnte nicht gespeichert werden.');
     });
   }
 
-  function handleRename(itemId: number, title: string): Promise<void> {
+  /** Schreibt Feld-Änderungen (ein Request); Titel optimistisch lokal spiegeln. */
+  function handleUpdate(itemId: number, fields: AgendaItemUpdate): Promise<void> {
     setErr(null);
-    setLocalItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, title } : i)));
+    if (fields.title !== undefined) {
+      const title = fields.title;
+      setLocalItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, title } : i)));
+    }
     // Fehler wird vom Aktionsmenü angezeigt – hier nur lokal zurückrollen und weiterwerfen.
-    return onRename(itemId, title).catch((e: unknown) => {
-      setLocalItems(items);
+    return actions.update(itemId, fields).catch((e: unknown) => {
+      setLocalItems(items.filter((i) => !i.removed));
       throw e;
     });
   }
@@ -445,7 +443,7 @@ export function Setlist({
     setPendingDelete(null);
     setErr(null);
     setLocalItems((prev) => prev.filter((i) => i.id !== target.id)); // optimistisch
-    onDelete(target.id).catch((e: unknown) => {
+    actions.remove(target.id).catch((e: unknown) => {
       setLocalItems(items); // zurückrollen
       setErr(e instanceof Error ? e.message : 'Punkt konnte nicht gelöscht werden.');
     });
@@ -578,14 +576,9 @@ export function Setlist({
           item={actionItem}
           services={services}
           onClose={() => setActionItem(null)}
-          onRename={(title) => handleRename(actionItem.id, title)}
-          onLinkSong={(arrangementId) => onLinkSong(actionItem.id, arrangementId)}
-          onUnlinkSong={() => onUnlinkSong(actionItem.id)}
-          onSetResponsible={(responsible) => onSetResponsible(actionItem.id, responsible)}
-          onSetDuration={(durationMin) => onSetDuration(actionItem.id, durationMin)}
+          onUpdate={(fields) => handleUpdate(actionItem.id, fields)}
           timeHidden={actionItem.time === null}
-          onToggleHidden={(hidden) => onToggleHidden(actionItem.id, hidden)}
-          onSetNote={(note) => onSetNote(actionItem.id, note)}
+          onSetHidden={(hidden) => actions.setHidden(actionItem.id, hidden)}
           onRequestDelete={() => setPendingDelete(actionItem)}
         />
       )}

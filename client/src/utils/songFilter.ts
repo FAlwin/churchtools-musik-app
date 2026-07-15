@@ -3,6 +3,13 @@ import type { SongUsageMap } from '../services/churchtoolsApi';
 
 export type SongSort = 'name' | 'count' | 'recent';
 
+/** Formatiert ein ISO-Datum (YYYY-MM-DD) als TT.MM.JJJJ; null → „noch nie". */
+export function fmtPlayDate(iso: string | null): string {
+  if (!iso) return 'noch nie';
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
 export interface SongFilterOpts {
   /** Freitext (Name/Autor). */
   query: string;

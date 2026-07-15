@@ -30,6 +30,7 @@ ENV npm_config_cache=/tmp/.npm
 ENV SITE_CONFIG_PATH=/app/data/site.json
 ENV ANNOTATIONS_PATH=/app/data/annotations
 ENV CAPABILITIES_CACHE_PATH=/app/data/capabilities-cache.json
+ENV SEEN_SETLISTS_PATH=/app/data/seen-setlists.json
 EXPOSE 3001
 VOLUME ["/app/data"]
 

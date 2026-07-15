@@ -23,9 +23,28 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Geändert
 
+- **Eintrag bearbeiten – alles in einem Schwung:** Änderungen an einem Ablaufpunkt (Titel, Dauer,
+  Zuständige, Bemerkung, Lied verknüpfen/aufheben) werden jetzt in einem einzigen Speichervorgang
+  geschrieben statt Schritt für Schritt – schneller und ohne halb gespeicherte Zwischenstände.
+  Ein geleertes Dauer-Feld entfernt die Dauer; ein versehentlicher Tipp neben den Dialog verwirft
+  vorgemerkte Änderungen nicht mehr.
 - **Intern:** Die Nutzungsstatistik liefert je Lied die vergangenen Spieltermine (bis zu 4 Jahre
   zurück); Häufigkeit und „zuletzt" für den gewählten Zeitraum rechnet die App daraus direkt aus –
   ohne erneute Server-Abfrage beim Verstellen des Zeitraums.
+
+### Behoben
+
+- **„Geändert"-Markierungen bleiben nach Updates erhalten:** Der zuletzt gesehene Ablauf-Stand
+  wurde in der produktiven Installation nicht dauerhaft gespeichert und ging nach jedem Update
+  verloren (der „geändert"-Punkt wäre danach fälschlich überall erschienen). Jetzt liegt er
+  zuverlässig auf dem Daten-Volume.
+
+### Sicherheit
+
+- **Ablauf-Abgleich ohne Klartext:** Der Live-Abgleich des Ablaufs überträgt nur noch eine
+  Prüfsumme statt der eigentlichen Inhalte (Titel/Notizen/Verantwortliche).
+- **Dateien nur von der eigenen ChurchTools-Instanz:** Beim Laden von Datei-Anhängen wird die
+  Anmelde-Sitzung ausschließlich an die eigene ChurchTools-Adresse gesendet, nie an fremde Ziele.
 
 ## [2.12.0] – 2026-07-14
 
