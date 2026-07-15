@@ -9,6 +9,10 @@
   gap: 6px;
   padding: 8px 10px;
   padding-top: max(10px, env(safe-area-inset-top));
+  // Browser-Tab (nicht installiert): env-top = 0 + viewport-fit=cover → sonst oben angeschnitten.
+  @media (display-mode: browser) {
+    padding-top: 20px;
+  }
   background: var(--nav-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);

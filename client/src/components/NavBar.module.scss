@@ -5,6 +5,12 @@
   min-height: 52px;
   padding: 8px;
   padding-top: max(10px, env(safe-area-inset-top));
+  // Im normalen Safari-Tab (nicht installiert) ist env(safe-area-inset-top) = 0 → nur 10px, und
+  // mit viewport-fit=cover rückt der Titel bis unter Safaris Adressleiste (oben angeschnitten).
+  // Deshalb im Browser denselben komfortablen Abstand wie im installierten Modus (~Safe-Area).
+  @media (display-mode: browser) {
+    padding-top: 20px;
+  }
   background: var(--nav-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
