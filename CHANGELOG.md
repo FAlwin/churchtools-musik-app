@@ -7,6 +7,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **Offline-Anzeige verständlicher:** Statt der technischen Zählung („X Datensätze · Y Dateien")
+  zeigt der Mehr-Tab jetzt schlicht „Offline bereit ✓ · zuletzt gespeichert am <Datum, Uhrzeit>".
+
 ## [2.13.1] – 2026-07-15
 
 ### Behoben
