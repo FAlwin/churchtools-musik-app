@@ -7,6 +7,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.13.1] – 2026-07-15
+
+### Behoben
+
+- **Obere Leiste im Browser nicht mehr abgeschnitten:** Im Safari-Tab (nicht installiert) wurde der
+  Titel oben von der Adress-/Statusleiste angeschnitten. Die Kopfleisten (Termine/Lieder-Titel,
+  Chart-Ansicht, Akkord-Editor) halten jetzt einen ausreichenden Mindestabstand nach oben – im
+  installierten Modus unverändert.
+
 ## [2.13.0] – 2026-07-15
 
 ### Hinzugefügt
