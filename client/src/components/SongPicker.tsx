@@ -3,6 +3,7 @@ import { Icon } from './icons';
 import { CenterMessage } from './CenterMessage';
 import { SongStatsBar } from './SongStatsBar';
 import { useSongFilter } from '../hooks/useSongFilter';
+import { fmtPlayDate } from '../utils/songFilter';
 import { useCapabilities, useSongLibrary, useSongUsage } from '../hooks/useServices';
 import styles from './SongPicker.module.scss';
 
@@ -12,12 +13,6 @@ interface SongPickerProps {
   /** Deaktiviert die Treffer (z. B. während ein Vorgang läuft). */
   busy?: boolean;
   autoFocus?: boolean;
-}
-
-function fmtDate(iso: string | null): string {
-  if (!iso) return 'noch nie';
-  const [y, m, d] = iso.split('-');
-  return `${d}.${m}.${y}`;
 }
 
 /**
@@ -78,7 +73,7 @@ export function SongPicker({ onPick, busy, autoFocus }: SongPickerProps) {
                         ? 'Statistik lädt…'
                         : f.sort === 'count'
                           ? `${st?.count ?? 0}× gespielt`
-                          : `zuletzt ${fmtDate(st?.last ?? null)}`}
+                          : `zuletzt ${fmtPlayDate(st?.last ?? null)}`}
                     </span>
                   )}
                 </div>

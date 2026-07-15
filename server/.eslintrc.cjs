@@ -11,7 +11,8 @@ module.exports = {
   ],
   env: { node: true, es2022: true },
   rules: {
-    '@typescript-eslint/no-explicit-any': 'warn',
+    // Der Code kommt ohne `any` aus – als Fehler festschreiben, damit das so bleibt.
+    '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
   },
 };

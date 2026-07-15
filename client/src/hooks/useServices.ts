@@ -117,60 +117,23 @@ export function useDeleteAgendaItem(eventId: number | null) {
   });
 }
 
-/** Benennt einen Ablaufpunkt um und lädt den Ablauf danach neu. */
-export function useRenameAgendaItem(eventId: number | null) {
+/**
+ * Schreibt geänderte Felder eines Ablaufpunkts gesammelt (EIN PUT) und lädt den Ablauf EINMAL
+ * neu – statt Request + Refetch pro Feld. Ändert sich die Lied-Verknüpfung, werden zusätzlich
+ * Terminliste (Lied-Anzahl) und Statistik aktualisiert.
+ */
+export function useUpdateAgendaItem(eventId: number | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { itemId: number; title: string }) =>
-      api.renameAgendaItem(eventId as number, v.itemId, v.title),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
-  });
-}
-
-/** Verknüpft einen bestehenden Ablaufpunkt mit einem Lied und lädt Ablauf + Übersicht neu. */
-export function useLinkSongToAgendaItem(eventId: number | null) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (v: { itemId: number; arrangementId: number }) =>
-      api.linkSongToAgendaItem(eventId as number, v.itemId, v.arrangementId),
-    onSuccess: () => {
+    mutationFn: (v: { itemId: number; fields: api.AgendaItemUpdate }) =>
+      api.updateAgendaItem(eventId as number, v.itemId, v.fields),
+    onSuccess: (_data, v) => {
       qc.invalidateQueries({ queryKey: ['agenda', eventId] });
-      qc.invalidateQueries({ queryKey: ['services'] });
-      qc.invalidateQueries({ queryKey: ['song-usage'] });
+      if (v.fields.arrangementId !== undefined || v.fields.unlink) {
+        qc.invalidateQueries({ queryKey: ['services'] });
+        qc.invalidateQueries({ queryKey: ['song-usage'] });
+      }
     },
-  });
-}
-
-/** Hebt die Lied-Verknüpfung eines Punkts auf und lädt Ablauf + Übersicht neu. */
-export function useUnlinkSongFromAgendaItem(eventId: number | null) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (v: { itemId: number }) => api.unlinkSongFromAgendaItem(eventId as number, v.itemId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['agenda', eventId] });
-      qc.invalidateQueries({ queryKey: ['services'] });
-      qc.invalidateQueries({ queryKey: ['song-usage'] });
-    },
-  });
-}
-
-/** Setzt das Verantwortlich-Textfeld eines Punkts und lädt den Ablauf neu. */
-export function useSetAgendaItemResponsible(eventId: number | null) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (v: { itemId: number; responsible: string }) =>
-      api.setAgendaItemResponsible(eventId as number, v.itemId, v.responsible),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
-  });
-}
-
-/** Setzt die Dauer eines Punkts (Minuten) und lädt den Ablauf neu (Uhrzeiten ändern sich). */
-export function useSetAgendaItemDuration(eventId: number | null) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (v: { itemId: number; durationMin: number }) =>
-      api.setAgendaItemDuration(eventId as number, v.itemId, v.durationMin),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
   });
 }
 
@@ -180,16 +143,6 @@ export function useSetAgendaItemHidden(eventId: number | null) {
   return useMutation({
     mutationFn: (v: { itemId: number; hidden: boolean }) =>
       api.setAgendaItemHidden(eventId as number, v.itemId, v.hidden),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
-  });
-}
-
-/** Setzt die Bemerkung/Notiz eines Punkts und lädt den Ablauf neu. */
-export function useSetAgendaItemNote(eventId: number | null) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (v: { itemId: number; note: string }) =>
-      api.setAgendaItemNote(eventId as number, v.itemId, v.note),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
   });
 }

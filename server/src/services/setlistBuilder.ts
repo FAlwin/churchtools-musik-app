@@ -3,6 +3,7 @@
  *  - Liste der Gottesdienste, die tatsächlich eine Setlist (Agenda mit Songs) haben
  *  - die Songs einer Setlist inkl. heruntergeladenem ChordPro-Inhalt
  */
+import { createHash } from 'node:crypto';
 import type {
   AgendaItem,
   ResponsibleEntry,
@@ -27,6 +28,16 @@ import {
 import type { CtArrangementFile, CtSong, CtAgendaItem } from './churchtools.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
+
+/**
+ * Beim Sammeln über viele Termine ist ein fehlender Ablaufplan (404) normal und wird still
+ * übersprungen. Ein anderer Fehler (CT-500, Netz-Aussetzer) darf NICHT unbemerkt Termine aus der
+ * Liste/Statistik fallen lassen – daher einmal pro Vorkommen warnen.
+ */
+function skipMissingAgenda(context: string, e: unknown): void {
+  if (e instanceof HttpError && e.status === 404) return; // kein Ablaufplan – erwartet
+  console.warn(`${context}: Ablauf-Abruf fehlgeschlagen (Termin übersprungen):`, e);
+}
 
 /**
  * Marker für von uns verwaltete, benannte Versionen: „<Titel> — <Name> (App).chordpro".
@@ -112,7 +123,12 @@ export function agendaItemSignature(i: CtAgendaItem): string {
 export function setlistFingerprint(items: CtAgendaItem[]): string {
   // „Struktur + Details" (#143): jede Ablaufänderung schlägt an – Reihenfolge (Array-Position),
   // Punkte hinzu/raus/umbenannt, Lied/Tonart, Verantwortliche, Dauer, Notiz.
-  return items.map((i) => `${i.id}#${agendaItemSignature(i)}`).join('|');
+  // Als sha256-Digest, NICHT als Klartext: der Wert geht per /setlist/version an jeden Client
+  // (inkl. 5-s-Memo über Konten hinweg) – Titel/Notizen/Verantwortliche dürfen darin nicht
+  // ablesbar sein. Verglichen wird ohnehin nur auf Gleichheit.
+  if (items.length === 0) return '';
+  const raw = items.map((i) => `${i.id}#${agendaItemSignature(i)}`).join('|');
+  return createHash('sha256').update(raw).digest('hex');
 }
 
 /**
@@ -242,8 +258,8 @@ export async function getServicesWithSetlists(
         hash: setlistFingerprint(items),
         start: ev.startDate,
       });
-    } catch {
-      /* 404 = kein Ablaufplan */
+    } catch (e) {
+      skipMissingAgenda('getServicesWithSetlist', e);
     }
   });
   return rows
@@ -470,6 +486,9 @@ interface SongUsage {
 }
 
 // Org-weite Song-Nutzung (gleich für alle) – im Speicher gecacht (TTL 1 h).
+// Bewusst mit dem Cookie des ERSTEN Anfragenden im TTL-Fenster aufgebaut: Die Statistik ist
+// organisationsweit identisch, und der Inhalt (nur Lied-Spieldaten, keine Titel/Notizen) ist
+// unkritisch. CT-Sichtbarkeitsunterschiede zwischen Konten werden hier bewusst eingeebnet.
 let usageCache: { at: number; data: Record<number, SongUsage> } | null = null;
 
 /** Leert den Statistik-Cache – nach Ablauf-Änderungen aufrufen, damit Zahlen/Daten frisch sind. */
@@ -522,8 +541,8 @@ export async function getSongUsageMap(cookie: string): Promise<Record<number, So
         if (!id) continue;
         (usage[id] ??= { dates: [] }).dates.push(date);
       }
-    } catch {
-      /* 404 = kein Ablauf */
+    } catch (e) {
+      skipMissingAgenda('getSongUsageMap', e);
     }
   });
   // Termine je Lied absteigend sortieren (neuester zuerst) → Client nimmt [0] als „zuletzt".

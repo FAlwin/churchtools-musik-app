@@ -95,39 +95,29 @@ export function getAgendaServices(): Promise<AgendaServiceOption[]> {
   return apiFetch<AgendaServiceOption[]>('/api/agenda-services');
 }
 
-/** Setzt das Verantwortlich-Textfeld eines Punkts (z.B. „[Musik]"); CT löst Dienste auf. */
-export function setAgendaItemResponsible(
-  eventId: number,
-  itemId: number,
-  responsible: string,
-): Promise<{ ok: boolean }> {
-  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ responsible }),
-  });
+/**
+ * Änderbare Felder eines Ablaufpunkts – gesammelt in EINEM Request (der Server akzeptiert alle
+ * zusammen). `arrangementId` verknüpft ein Lied, `unlink` hebt die Verknüpfung auf (beides
+ * schließt sich aus); `unlink` + `title` zusammen = aufheben und direkt umbenennen.
+ */
+export interface AgendaItemUpdate {
+  title?: string;
+  arrangementId?: number;
+  unlink?: boolean;
+  responsible?: string;
+  durationMin?: number;
+  note?: string;
 }
 
-/** Setzt die Dauer eines Punkts (in Minuten); CT berechnet die Uhrzeiten daraus neu. */
-export function setAgendaItemDuration(
+/** Schreibt die geänderten Felder eines Ablaufpunkts gesammelt (ein PUT statt Request pro Feld). */
+export function updateAgendaItem(
   eventId: number,
   itemId: number,
-  durationMin: number,
+  fields: AgendaItemUpdate,
 ): Promise<{ ok: boolean }> {
   return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
     method: 'PUT',
-    body: JSON.stringify({ durationMin }),
-  });
-}
-
-/** Setzt die Bemerkung/Notiz eines Punkts (leerer String löscht sie). */
-export function setAgendaItemNote(
-  eventId: number,
-  itemId: number,
-  note: string,
-): Promise<{ ok: boolean }> {
-  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ note }),
+    body: JSON.stringify(fields),
   });
 }
 
@@ -166,39 +156,6 @@ export function getSongArrangements(songId: number): Promise<SongArrangementOpti
 export function getSongChart(songId: number, arrangementId?: number): Promise<SetlistSong> {
   const qs = arrangementId ? `?arrangementId=${arrangementId}` : '';
   return apiFetch<SetlistSong>(`/api/songs/${songId}/chart${qs}`);
-}
-
-/** Benennt einen Ablaufpunkt um (Titel). */
-export function renameAgendaItem(
-  eventId: number,
-  itemId: number,
-  title: string,
-): Promise<{ ok: boolean }> {
-  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ title }),
-  });
-}
-
-/** Verknüpft einen bestehenden Ablaufpunkt mit einem Lied (wandelt ihn in ein Lied um). */
-export function linkSongToAgendaItem(
-  eventId: number,
-  itemId: number,
-  arrangementId: number,
-): Promise<{ ok: boolean }> {
-  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ arrangementId }),
-  });
-}
-
-/** Hebt die Lied-Verknüpfung eines Punkts auf (Punkt bleibt als leerer Text-Eintrag; der Server
- *  leert den Titel, damit der Liedtitel nicht zurückbleibt). */
-export function unlinkSongFromAgendaItem(eventId: number, itemId: number): Promise<{ ok: boolean }> {
-  return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ unlink: true }),
-  });
 }
 
 /** Löscht einen Ablaufpunkt. */

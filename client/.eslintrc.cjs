@@ -13,7 +13,8 @@ module.exports = {
   env: { browser: true, es2022: true },
   settings: { react: { version: '18.3' } },
   rules: {
-    '@typescript-eslint/no-explicit-any': 'warn',
+    // Der Code kommt ohne `any` aus – als Fehler festschreiben, damit das so bleibt.
+    '@typescript-eslint/no-explicit-any': 'error',
     'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
   },
 };
