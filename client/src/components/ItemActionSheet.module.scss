@@ -131,6 +131,41 @@
   color: var(--blue-ink);
   flex-shrink: 0;
 }
+// Hinweis, dass eine vorgemerkte Verknüpfungs-Änderung erst beim Speichern greift.
+.pendingHint {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+}
+
+// „Zurück" aus der Lied-Auswahl: klarer, abgesetzter Sekundär-Button (nicht als Listenzeile
+// verkleidet) – hebt sich deutlich von der darüberliegenden Liederliste ab.
+.backBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 46px;
+  margin-top: 14px;
+  border: none;
+  border-radius: 11px;
+  background: var(--surface3);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:active {
+    opacity: 0.85;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
 
 // Uhrzeit-ausblenden als Schalter-Zeile.
 .toggleRow {

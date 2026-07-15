@@ -21,18 +21,13 @@ import {
   updateAgendaItem,
   setAgendaItemHidden,
   createAgendaItem,
-  searchSongs,
   getSong,
   getCapabilities,
   getUserId,
   getCtServices,
 } from '../services/churchtools.js';
 import { getSeenSetlists, markSeenSetlist } from '../services/seenSetlists.js';
-import type {
-  AgendaServiceOption,
-  SongArrangementOption,
-  SongSearchResult,
-} from '@shared/types/index';
+import type { AgendaServiceOption, SongArrangementOption } from '@shared/types/index';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -176,25 +171,6 @@ export async function postAgendaItem(req: Request, res: Response): Promise<void>
   });
   invalidateSongUsageCache(); // Liederzahl/„zuletzt" können sich geändert haben
   res.json({ ok: true });
-}
-
-const searchSchema = z.string().trim().min(1).max(100);
-
-/** GET /api/songs?query=… – Songsuche für „Lied hinzufügen". */
-export async function getSongs(req: Request, res: Response): Promise<void> {
-  const query = searchSchema.parse(req.query.query);
-  const songs = await searchSongs(req.ctCookie as string, query);
-  const result: SongSearchResult[] = songs.map((s) => ({
-    songId: s.id,
-    name: s.name,
-    author: s.author ?? null,
-    arrangements: (s.arrangements ?? []).map((a) => ({
-      arrangementId: a.id,
-      arrangementName: a.name,
-      key: a.keyOfArrangement ?? a.key ?? null,
-    })),
-  }));
-  res.json(result);
 }
 
 /** GET /api/songs/:songId/arrangements – Arrangements eines bekannten Lieds (für „Zu Ablauf hinzufügen"). */

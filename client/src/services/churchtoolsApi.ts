@@ -9,7 +9,6 @@ import type {
   SetlistSong,
   SongArrangementOption,
   SongLibraryEntry,
-  SongSearchResult,
   SongVersion,
   UserCapabilities,
 } from '@shared/types/index';
@@ -142,11 +141,6 @@ export function setAgendaItemHidden(
     method: 'PUT',
     body: JSON.stringify({ hidden }),
   });
-}
-
-/** Sucht Songs in ChurchTools (für „Lied hinzufügen"). */
-export function searchSongs(query: string): Promise<SongSearchResult[]> {
-  return apiFetch<SongSearchResult[]>(`/api/songs?query=${encodeURIComponent(query)}`);
 }
 
 /** Alle Lieder (für die „Alle Lieder"-Ansicht) – ohne Statistik (lädt schnell). */

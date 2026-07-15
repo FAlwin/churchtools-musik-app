@@ -1,0 +1,111 @@
+@use '../styles/mixins' as m;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+// Suchfeld mit Lupe (wie in der Bibliothek).
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface3);
+  border-radius: 8px;
+  padding: 9px 12px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    color: var(--text);
+    font-family: var(--ui);
+
+    &::placeholder {
+      color: var(--text3);
+    }
+  }
+}
+.searchIcon {
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 46vh;
+  overflow-y: auto;
+  margin-top: 2px;
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--surface2);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+
+  &:active {
+    background: var(--surface3);
+  }
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.songName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sub {
+  font-size: 12.5px;
+  color: var(--text2);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+// Statistik-Pille (Häufigkeit bzw. Zuletzt) – wie in der Bibliothek.
+.stat {
+  align-self: flex-start;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue-ink);
+  background: var(--blue-soft);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.keyPill {
+  @include m.key-pill;
+}
+
+.empty {
+  padding: 16px 12px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 14px;
+}

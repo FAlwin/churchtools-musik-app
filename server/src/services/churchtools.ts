@@ -655,12 +655,6 @@ export interface CtSongListEntry {
   }[];
 }
 
-/** Sucht Songs in ChurchTools (Name) und liefert sie mit ihren Arrangements zurück. */
-export async function searchSongs(cookie: string, query: string): Promise<CtSongListEntry[]> {
-  const q = encodeURIComponent(query);
-  return ctGet<CtSongListEntry[]>(cookie, `/api/songs?query=${q}&limit=25`);
-}
-
 /** Lädt alle Songs (paginiert) für die „Alle Lieder"-Ansicht. */
 export async function getAllSongs(cookie: string): Promise<CtSongListEntry[]> {
   const all: CtSongListEntry[] = [];
