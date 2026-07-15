@@ -18,11 +18,8 @@
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
-  padding-top: max(12px, env(safe-area-inset-top));
-  // Browser-Tab (nicht installiert): env-top = 0 + viewport-fit=cover → sonst oben angeschnitten.
-  @media (display-mode: browser) {
-    padding-top: 20px;
-  }
+  // Min. 20px oben (siehe NavBar): fängt Safari-Tab (env=0) + kurzzeitiges Safe-Area-Zurücksetzen ab.
+  padding-top: max(20px, env(safe-area-inset-top));
   background: var(--blue);
   flex-shrink: 0;
 }
