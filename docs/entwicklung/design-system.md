@@ -25,8 +25,9 @@ Einzige Quelle: `client/src/styles/_variables.scss` (Light = `:root`, Dark = `ht
 Wer eine „auffällige" Farbe braucht: `--blue` (Aktion) oder `--red` (Warnung/Destruktiv).
 
 Akkorde/Anmerkungen: Akkorde im Chart sind **schwarz/fett** (SongSelect-Stil). Die
-Anmerkungs-Standardfarben (`DRAW_COLORS` in `utils/constants.ts`) sind Schwarz/Weiß-adaptiv,
-Rot, Gelb – plus freier Farbwähler.
+Anmerkungs-Stiftfarben (Palette inline in `pages/ChordChart.tsx`) sind
+**Rot `#bb2946`, Blau `#0062ac`, Türkis `#1bb0a2`, Orange `#fb8f00`** – Standard Blau,
+plus freier Farbwähler.
 
 ## Schrift
 System-Font über `var(--ui)`. Kein Google-Font-Import. Ausnahme: der ChordPro-**Editor**

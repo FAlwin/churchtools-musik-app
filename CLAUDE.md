@@ -248,9 +248,11 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
   (`useUpdateCheck`) verlinkt nur die GitHub-Release-Notes. `registerType: 'prompt'` lädt nie
   ungefragt mitten in der Nutzung neu.
 - **Gemeinden:** `deploy/docker-compose.yml` ist auf `:2` gepinnt; Update per `update.command`/`update.bat`.
-- **Env (Volume `/app/data`):** `SITE_CONFIG_PATH=/app/data/site.json`,
-  `ANNOTATIONS_PATH=/app/data/annotations` (kontobezogene Anmerkungen/Einstellungen) – beim Re-Deploy
-  Volume behalten.
+- **Env (Volume `/app/data`, alle im Dockerfile gesetzt):** `SITE_CONFIG_PATH=/app/data/site.json`,
+  `ANNOTATIONS_PATH=/app/data/annotations` (kontobezogene Anmerkungen/Einstellungen),
+  `CAPABILITIES_CACHE_PATH=/app/data/capabilities-cache.json` (Rechte-Cache, überbrückt CT-Aussetzer),
+  `SEEN_SETLISTS_PATH=/app/data/seen-setlists.json` (Basislinien für den „geändert"-Hinweis #143/#161)
+  – beim Re-Deploy **Volume behalten**.
 
 ## Release-Routine (JEDES Mal vor einem Tag durchgehen)
 Diese Checkliste wird **bei jedem Release** abgearbeitet – nichts überspringen. Am bequemsten über
@@ -299,12 +301,13 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
-- **Aktuell (v2.9.0, 2026-07-10):** Team-Notizen (#124) – eigene Anmerkungen teilen und die
-  geteilten anderer ansehen/übernehmen (PCO-Modell: „Notizen von …", Live-Vorschau, keine
-  gemeinsame Live-Ebene); eigene Anmerkungen je Darstellungsart (Akkorde & Text / Nur Text)
-  getrennt; Anmerkungsleiste verschieb-/einklappbar. Rechte über Gruppen- + Rollen-Zuweisung
-  (Mehr → Verwaltung → Anmerkungen). Davor v2.8.1 (Rechte-Cache gegen ChurchTools-Aussetzer).
-  Onboarding-Pflege ist verbindlich → Sektion „Onboarding / Geführte Einführung".
+- **Aktuell (v2.13.3, 2026-07-15, produktiv live):** Live-Aktualisierung (Terminliste + offener
+  Ablauf gleichen sich selbst ab), Ablauf-Änderungs-Markierung (#143/#161: geänderte Punkte leuchten
+  auf, entfernte lösen sich im „poof"-Partikel-Effekt auf), Lied-Statistik mit Zeitfilter (#158) +
+  volle sortierbare Lied-Auswahl beim Hinzufügen/Verknüpfen (#157), Bearbeiten-Dialog „alles erst mit
+  Speichern", Code-Check-Härtungen (u.a. sha256-Fingerprint, seen-setlists aufs Volume, Datei-Proxy),
+  Kopfleisten-Fix im Browser. Davor: Team-Notizen (#124, v2.9.0, PCO-Modell), Rechte-Cache (v2.8.1),
+  Code-Splitting (#142). Onboarding-Pflege ist verbindlich → Sektion „Onboarding / Geführte Einführung".
 - **Fertig & produktiv:** App funktional vollständig (Charts + automatisches Transponieren,
   ChordPro-Editor, Dokumenten-Viewer, kompletter Ablauf + Bearbeiten, „Alle Lieder" mit
   Statistik, rechtebewusste UI). Auf dem NAS deployt (Container Manager, `worship-charts`),
@@ -315,15 +318,18 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
 - **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
   mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
-- **Offen / optional:** Musik-Abwesenheitsplaner nachbauen (separates Projekt); globale/private
-  Notizen (Issue #124); Security-Hygiene #45/#46/#47. Offline-Reserve (#32) ist umgesetzt & live.
+- **Offen / optional:** Musik-Abwesenheitsplaner nachbauen (separates Projekt); UI-Monolithen
+  aufteilen (#140), E2E-Smoke (#141), Push-Benachrichtigung (#144), BPM-Puls (#145), IPv6-Rate-Limit
+  (#146 N4), Objektradierer/Vektor-Striche (#134). #124/#32/#45/#46/#47 erledigt.
 
 ## Deployment-Stand (NAS) – wichtige Lernpunkte
 - Prod läuft image-basiert (GHCR) im Container Manager (Projekt `worship-charts`, Port 3001).
   **Updates kommen automatisch** (kein manuelles Code-Kopieren / Rebuild mehr) – siehe „Auto-Deploy" oben.
 - Prod-`.env` auf dem NAS: `CHURCHTOOLS_BASE_URL` + `SESSION_SECRET` (**kein** Login-Token!).
-- **Cookie bewusst ohne `secure`-Flag:** LAN läuft über HTTP; mit `secure` speichert der Browser
-  das Session-Cookie nicht → „nicht angemeldet" nach Login. `trust proxy` ist in Prod gesetzt.
+- **Cookie `secure` per Env `COOKIE_SECURE`:** In Prod **`true`** (seit 13.07.2026; Zugang nur über
+  HTTPS via Synology-Reverse-Proxy, Prod-Port an `127.0.0.1:3001` gebunden). `trust proxy` ist in Prod
+  gesetzt. Bei reinen HTTP-Instanzen (z. B. andere Gemeinden im LAN) `COOKIE_SECURE` weglassen/`false`,
+  sonst speichert der Browser das Session-Cookie nicht → „nicht angemeldet" nach Login.
 - **Daten-Volume behalten:** `worship-data:/app/data` hält `site.json` (Gemeindename) + Anmerkungen.
   Beim Neu-Erstellen des Projekts das Volume behalten – sonst fallen die Werte auf Defaults zurück.
 - **Bekannte Datenlücke:** Nicht alle Arrangements haben eine `.chordpro`-Datei (manche nur

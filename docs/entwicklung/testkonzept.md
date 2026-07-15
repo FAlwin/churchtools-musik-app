@@ -1,21 +1,30 @@
 # Testkonzept
 
-Bewusst **schlank** gehalten: Die App hat keine eigene DB, und der größte Teil
-(UI, Express-Proxy) ist schnell manuell prüfbar. Automatisiert getestet wird gezielt
-die **reine Logik, die man von Hand kaum vollständig durchprüfen kann** – Transponieren
-über alle Tonarten und der ChordPro-Parser mit seinen zwei Dialekten.
+Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
+vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand v2.13.x: **27 Testdateien**
+(17 Client, 10 Server), ausgeführt mit Vitest.
 
 ## Umfang
-| Ebene        | Status | Tool    | Ort |
-|--------------|--------|---------|-----|
-| Unit (Logik) | aktiv  | Vitest  | `client/src/utils/*.test.ts` |
-| Integration/API | bewusst nicht | – | Proxy manuell + über echte Daten geprüft |
-| E2E          | bewusst nicht | – | Kern-Flow manuell im Gottesdienst-Betrieb |
+| Ebene | Status | Tool | Ort |
+|-------|--------|------|-----|
+| Unit (Client-Logik) | aktiv | Vitest | `client/src/**/*.test.ts(x)` |
+| Server-Services/-Controller/-Middleware | aktiv | Vitest (ChurchTools gemockt) | `server/src/**/*.test.ts` |
+| E2E (voller Browser-Flow) | bewusst nicht | – | Kern-Flow manuell/Staging im Gottesdienst-Betrieb (Issue #141 offen) |
 
 **Befehle:** `npm test` (alle), `npm run test:cov` (mit Coverage),
 `npm run test:watch` (Watch-Modus, im Client).
 
-## Getestete Logik
+## Server-Tests (ChurchTools gemockt)
+- `services/setlistBuilder` + `getAgendaItems` – Ablauf-Mapping, Uhrzeiten/Dauer, Diff (LIS), Fingerabdruck
+- `services/songUsage` – Spieltermine je Lied, Zukunft ausgeschlossen, Caching
+- `services/seenSetlists` – „gesehen"-Basislinien-Store (atomar, Cleanup)
+- `services/capabilitiesCache` + `churchtools(.capabilities)` – Rechte-Cache, CT-Aussetzer überbrücken
+- `services/annotations` – Anmerkungen pro Konto inkl. Obergrenzen (#139)
+- `controllers/setlistController.filetype` – Datei-Proxy Content-Type-Whitelist (#138)
+- `middleware/session` – signiertes Session-Cookie, Ablauf/Format
+
+## Getestete Client-Logik
 
 ### `transpose.ts` – Transponieren
 - Einfache Dur-/Moll-Akkorde, Suffix-Erhalt (m7, sus4)
@@ -35,6 +44,12 @@ die **reine Logik, die man von Hand kaum vollständig durchprüfen kann** – Tr
 - Sonderfälle: impliziter Vers, Metadaten überspringen, leere Abschnitte verwerfen,
   nachlaufende Leerzeilen entfernen
 - `parseMetadata`: bekannte Felder lesen, unbekannte ignorieren
+
+### Weitere Client-Logik
+`songFilter` (Sortierung/Zeitfilter Lieder), `chartSettings`, `color`, `canvas`,
+`chunkReload` (Reload-Schleifenschutz nach Deploy), `clearDeviceData` (Abmelde-Aufräumen),
+`reachability`/`api.reachability`, `offline.registry`, `navStorage`, `dndAutoScroll`,
+`annotations.keys`, `queryClient` sowie die Komponenten `Section`/`Segment`.
 
 ## Regel für neue Fehler
 Jeder gefundene Bug bekommt **(a)** ein GitHub-Issue (Vorlage „Fehlerbericht") und,

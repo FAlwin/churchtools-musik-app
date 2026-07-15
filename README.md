@@ -13,14 +13,20 @@ Datenquelle – die App hat keine eigene Datenbank.
 - **Ablaufpläne & Setlists** aus ChurchTools anzeigen (kompletter Ablauf, nicht nur Lieder)
 - **Chord Charts als PDF** (SongSelect-Look) mit automatischer Transponierung, Kapo, Spalten- und
   Schrift-Optionen; im Querformat zwei Seiten nebeneinander, als PDF teil-/druckbar
-- **Alle Lieder** durchsuchbar inkl. Nutzungs-Statistik
+- **Alle Lieder** durchsuchbar inkl. Nutzungs-Statistik (Häufigkeit / zuletzt gespielt, mit
+  wählbarem Zeitraum) – dieselbe Auswahl auch beim Lied-Hinzufügen/Verknüpfen im Ablauf
+- **Live-Aktualisierung**: Änderungen am Ablauf erscheinen zeitnah bei allen; geänderte Punkte
+  werden beim Öffnen hervorgehoben, entfernte lösen sich sichtbar auf
 - **Mehrere benannte Lied-Versionen** (z. B. „Akustik", „Jugend") – team-weit in ChurchTools,
   Original bleibt erhalten
 - **Anmerkungen, Zoom & Einstellungen pro ChurchTools-Konto** – geräteübergreifend synchronisiert
-  (Stift/Marker/Text auf den Seiten, Rückgängig/Wiederholen)
+  (Stift/Marker/Text auf den Seiten, Rückgängig/Wiederholen); optional **mit dem Team teilen**
+- **Offline-Reserve**: einmal geladene Abläufe/Charts sind ohne Netz im Saal verfügbar; als App
+  installierbar (Home-Bildschirm)
 - **Hochgeladene PDFs/Bilder** je Lied – direkt im durchgehenden Ablauf (mitwischen, im Querformat
   neben dem Nachbarlied) und ebenfalls mit Anmerkungen
 - **Rechtebewusste Oberfläche** – jede Person sieht nur, wozu ihre ChurchTools-Rechte passen
+- **Geführte Einführung** (Onboarding-Touren) beim ersten Öffnen
 - **Frei konfigurierbare Links** (z. B. zu weiteren Gemeinde-Angeboten) im „Mehr"-Tab und optional
   auf der Login-Seite
 

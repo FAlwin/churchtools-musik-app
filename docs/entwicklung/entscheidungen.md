@@ -10,10 +10,12 @@ Entscheidungen unten anhängen (Datum + Kontext + Entscheidung + Begründung).
 Datenquelle; das Backend ist ein reiner Proxy.
 **Begründung:** Doppelte Datenhaltung (Lieder, Setlisten, Tonarten) wäre fehleranfällig
 und müsste synchron gehalten werden. ChurchTools ist ohnehin das führende System der
-Gemeinde. Lokale Notizen/Anmerkungen liegen pro Gerät im `localStorage` – sie sind
-gerätegebunden und unkritisch, daher kein Server-Speicher nötig.
-**Folge:** Kein ORM, keine Migrationen, keine Test-DB. Die Blueprint-Punkte rund um
-Datenbanken entfallen für dieses Projekt.
+Gemeinde. **App-eigene Daten** (Anmerkungen, Lied-Einstellungen, Rechte-/„gesehen"-Caches,
+Teilen-Status) liegen **pro Konto als JSON-Dateien auf einem Docker-Volume** (Env-Pfade
+`ANNOTATIONS_PATH`, `SEEN_SETLISTS_PATH`, `CAPABILITIES_CACHE_PATH`, `SITE_CONFIG_PATH`);
+`localStorage` ist nur Client-Cache.
+**Folge:** Kein ORM, keine Migrationen, keine Test-DB – aber Persistenz übers Volume statt
+klassischer Datenbank. Die Blueprint-Punkte rund um Datenbanken entfallen für dieses Projekt.
 
 ## Auth über ChurchTools-Session
 **Entscheidung:** Login mit persönlichem ChurchTools-Konto; das Backend hält die
@@ -28,9 +30,10 @@ wer sieht nur das Liederbuch) kommen direkt aus ChurchTools (`/api/capabilities`
 Router leitet nur 443/80 weiter. Eine zusätzliche Cloudflare-Abhängigkeit ist
 nicht nötig. DSM-Ports (5000/5001) bleiben geschlossen.
 
-## ChordPro-Bearbeitung als separate ECG-Version
+## ChordPro-Bearbeitung als separate App-Version
 **Entscheidung:** Der Editor speichert Änderungen als eigene Datei
-`"<Titel> — ECG.chordpro"`, das Original-Arrangement bleibt unangetastet.
+`"<Titel> — <Name> (App).chordpro"` (Marker `(App)`; Alt-Bestand `(ECG)` bleibt
+abwärtskompatibel erkannt), das Original-Arrangement bleibt unangetastet.
 **Begründung:** Kein Risiko, von SongSelect bezogene Originale zu überschreiben;
 jederzeit auf das Original zurückführbar.
 
