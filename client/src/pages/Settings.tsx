@@ -404,7 +404,15 @@ export function Settings({
           )}
           {offline && (offline.records > 0 || offline.files > 0) && (
             <div className={styles.offlineStat}>
-              Offline verfügbar: {offline.records} Datensätze · {offline.files} Dateien
+              Offline bereit ✓
+              {offline.savedAt != null &&
+                ` · zuletzt gespeichert ${new Date(offline.savedAt).toLocaleString('de-DE', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}`}
             </div>
           )}
         </div>
