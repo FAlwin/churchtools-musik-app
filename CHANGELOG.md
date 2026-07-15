@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.13.0] – 2026-07-15
+
 ### Hinzugefügt
 
 - **Zeitfilter für Lied-Statistik (#158):** In der Lieder-Bibliothek lässt sich bei den
