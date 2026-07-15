@@ -4,7 +4,9 @@
   position: fixed;
   left: 12px;
   right: 12px;
-  top: calc(env(safe-area-inset-top) + 54px); // unter der Chart-Kopfleiste
+  // Unter der Chart-Kopfleiste. max(20px, env) = derselbe Mindestabstand wie die Kopfleisten
+  // selbst (siehe NavBar) – sonst überlappt der Banner im Browser-Tab (env=0) den Header.
+  top: calc(max(20px, env(safe-area-inset-top, 0px)) + 54px);
   z-index: 30;
   display: flex;
   align-items: center;

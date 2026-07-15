@@ -181,7 +181,8 @@
 // ── Aussehen-Dropdown ──
 .appMenu {
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 58px);
+  // max(20px, env): unter dem Header bleiben, auch im Browser-Tab (env=0) – wie Kopfleisten-Boden.
+  top: calc(max(20px, env(safe-area-inset-top, 0px)) + 58px);
   right: 12px;
   z-index: 99;
   background: var(--surface2);
@@ -375,7 +376,8 @@
 
 .modeMenu {
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 60px);
+  // max(20px, env): unter dem Header bleiben, auch im Browser-Tab (env=0) – wie Kopfleisten-Boden.
+  top: calc(max(20px, env(safe-area-inset-top, 0px)) + 60px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 99;
