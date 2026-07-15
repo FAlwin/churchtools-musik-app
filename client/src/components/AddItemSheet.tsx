@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { AgendaServiceOption } from '@shared/types/index';
 import { Sheet } from './Sheet';
-import { SongSearch } from './SongSearch';
+import { SongPicker } from './SongPicker';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
 import styles from './AddItemSheet.module.scss';
@@ -145,7 +145,7 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
       )}
 
       {mode === 'song' && (
-        <SongSearch
+        <SongPicker
           autoFocus
           busy={busy}
           onPick={(arrangementId, songName) =>

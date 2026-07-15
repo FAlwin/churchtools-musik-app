@@ -31,56 +31,6 @@
   flex-shrink: 0;
 }
 
-.segWrap {
-  margin-top: 10px;
-}
-
-// Zeitfilter-Leiste (nur bei Häufigkeit/Zuletzt): Von–Bis-Datum + „Alle"-Umschalter.
-.rangeBar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-}
-.dateInput {
-  flex: 1;
-  min-width: 0;
-  background: var(--surface3);
-  border: none;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13px;
-  font-family: var(--ui);
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-  outline: none;
-
-  &::-webkit-calendar-picker-indicator {
-    opacity: 0.55;
-    cursor: pointer;
-  }
-}
-.rangeDash {
-  color: var(--text3);
-  flex-shrink: 0;
-}
-.allBtn {
-  flex-shrink: 0;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--ui);
-  background: var(--surface3);
-  color: var(--text2);
-  cursor: pointer;
-}
-.allActive {
-  background: var(--blue-soft);
-  color: var(--blue-ink);
-}
-
 .group {
   margin: 18px 16px 0;
 }

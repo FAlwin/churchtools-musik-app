@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { AgendaItem, AgendaServiceOption } from '@shared/types/index';
-import { SongSearch } from './SongSearch';
+import { SongPicker } from './SongPicker';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
 import styles from './ItemActionSheet.module.scss';
@@ -107,7 +107,7 @@ export function ItemActionSheet({
         <div className={styles.card} onClick={(e) => e.stopPropagation()}>
           <div className={styles.title}>Lied verknüpfen</div>
           {err && <div className={styles.err}>{err}</div>}
-          <SongSearch
+          <SongPicker
             autoFocus
             busy={busy}
             onPick={(arrangementId) => {

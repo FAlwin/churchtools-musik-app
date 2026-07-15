@@ -15,7 +15,6 @@ import {
   putAgendaItem,
   putAgendaItemHidden,
   postAgendaItem,
-  getSongs,
   getSongArrangementsCtrl,
   getSongLibraryCtrl,
   getSongChartCtrl,
@@ -32,7 +31,6 @@ router.get('/services', asyncHandler(getServices));
 router.get('/services/:eventId/setlist', asyncHandler(getSetlist));
 router.get('/services/:eventId/setlist/version', asyncHandler(getSetlistVersion));
 router.post('/services/:eventId/seen', asyncHandler(markSetlistSeen));
-router.get('/songs', asyncHandler(getSongs));
 router.get('/song-library', asyncHandler(getSongLibraryCtrl));
 router.get('/song-usage', asyncHandler(getSongUsageCtrl));
 router.get('/capabilities', asyncHandler(getCapabilitiesCtrl));

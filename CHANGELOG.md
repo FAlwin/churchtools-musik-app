@@ -15,6 +15,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   siehst du z. B. „was lief in den letzten 3 Monaten am häufigsten". Die Sortierung „A–Z" bleibt
   davon unberührt und zeigt weiter alle Lieder. Nebenbei: „Zuletzt" bezieht sich jetzt auf das
   letzte tatsächlich gespielte Datum (geplante Zukunftstermine zählen nicht mehr als „gespielt").
+- **Volle Lied-Auswahl beim Hinzufügen & Verknüpfen (#157):** Beim „Lied hinzufügen" und beim
+  Verknüpfen eines Lieds an einen Ablaufpunkt werden jetzt sofort alle Lieder gezeigt (statt einer
+  leeren Suche) – mit denselben Möglichkeiten wie in der Bibliothek: durchsuchen, sortieren nach
+  A–Z / Häufigkeit / Zuletzt und Zeitfilter. So sieht man beim Planen direkt, was lange nicht dran
+  war oder oft läuft. Ein Lied = eine Zeile (Standard-Arrangement); Start alphabetisch.
 
 ### Geändert
 

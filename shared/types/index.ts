@@ -84,14 +84,6 @@ export interface SongLibraryEntry {
   arrangementId: number;
 }
 
-/** Ein Songsuche-Treffer mit seinen Arrangements. */
-export interface SongSearchResult {
-  songId: number;
-  name: string;
-  author: string | null;
-  arrangements: SongArrangementOption[];
-}
-
 /** Ein anzeigbares Dokument (PDF oder Bild) eines Arrangements. */
 export interface SongDocument {
   fileId: number;

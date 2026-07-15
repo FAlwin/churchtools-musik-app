@@ -3,10 +3,11 @@ import type { Service, SongLibraryEntry } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
-import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
 import { AddToAgendaSheet } from '../components/AddToAgendaSheet';
+import { SongStatsBar } from '../components/SongStatsBar';
+import { useSongFilter } from '../hooks/useSongFilter';
 import type { SongUsageMap } from '../services/churchtoolsApi';
 import styles from './AllSongs.module.scss';
 
@@ -25,15 +26,13 @@ interface AllSongsProps {
   services?: Service[];
 }
 
-type Sort = 'name' | 'count' | 'recent';
-
 function fmtDate(iso: string | null): string {
   if (!iso) return 'noch nie';
   const [y, m, d] = iso.split('-');
   return `${d}.${m}.${y}`;
 }
 
-/** Durchsuchbare Liste aller Lieder, sortierbar nach Name/Häufigkeit/zuletzt. */
+/** Durchsuchbare Liste aller Lieder, sortierbar nach Name/Häufigkeit/zuletzt (+ Zeitfilter). */
 export function AllSongs({
   songs,
   usage,
@@ -46,43 +45,9 @@ export function AllSongs({
   canAddToAgenda = false,
   services = [],
 }: AllSongsProps) {
-  const [q, setQ] = useState('');
-  const [sort, setSort] = useState<Sort>('name');
   const [addSong, setAddSong] = useState<SongLibraryEntry | null>(null);
-  // Zeitfilter (nur für Häufigkeit/Zuletzt). Leere Felder = „Alle" (kein Limit).
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const query = q.trim().toLowerCase();
-
-  // Statistik-Modus = eine der beiden zeitbezogenen Sortierungen ist aktiv.
-  const statMode = showStats && sort !== 'name';
-  const allRange = !from && !to;
-
-  const inRange = (d: string) => (!from || d >= from) && (!to || d <= to);
-  const rangedDates = (s: SongLibraryEntry) => (usage?.[s.songId]?.dates ?? []).filter(inRange);
-  const countOf = (s: SongLibraryEntry) => rangedDates(s).length;
-  // Termine kommen absteigend sortiert → das erste ist das jüngste im Zeitraum.
-  const lastOf = (s: SongLibraryEntry) => rangedDates(s)[0] ?? null;
-
-  const searched = query
-    ? songs.filter(
-        (s) => s.name.toLowerCase().includes(query) || (s.author ?? '').toLowerCase().includes(query),
-      )
-    : [...songs];
-
-  // Bei Häufigkeit/Zuletzt nur Lieder zeigen, die im gewählten Zeitraum gespielt wurden.
-  const filtered = (statMode ? searched.filter((s) => countOf(s) > 0) : searched).sort((a, b) => {
-    if (sort === 'count') return countOf(b) - countOf(a) || a.name.localeCompare(b.name, 'de');
-    if (sort === 'recent')
-      return (lastOf(b) ?? '').localeCompare(lastOf(a) ?? '') || a.name.localeCompare(b.name, 'de');
-    return a.name.localeCompare(b.name, 'de');
-  });
-
-  const SORTS: { id: Sort; label: string }[] = [
-    { id: 'name', label: 'A–Z' },
-    { id: 'count', label: 'Häufigkeit' },
-    { id: 'recent', label: 'Zuletzt' },
-  ];
+  const f = useSongFilter(songs, usage, showStats);
+  const query = f.q.trim();
 
   return (
     <Screen>
@@ -91,47 +56,13 @@ export function AllSongs({
       <div className={styles.searchWrap}>
         <div className={styles.search}>
           <Icon name="search" size={18} stroke={2} className={styles.searchIcon} />
-          <input placeholder="Lied oder Autor suchen…" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
-        {showStats && (
-          <Segment
-            className={styles.segWrap}
-            value={sort}
-            options={SORTS.map((s) => ({ value: s.id, label: s.label }))}
-            onChange={setSort}
+          <input
+            placeholder="Lied oder Autor suchen…"
+            value={f.q}
+            onChange={(e) => f.setQ(e.target.value)}
           />
-        )}
-        {statMode && (
-          <div className={styles.rangeBar}>
-            <input
-              className={styles.dateInput}
-              type="date"
-              aria-label="Zeitraum von"
-              value={from}
-              max={to || undefined}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-            <span className={styles.rangeDash}>–</span>
-            <input
-              className={styles.dateInput}
-              type="date"
-              aria-label="Zeitraum bis"
-              value={to}
-              min={from || undefined}
-              onChange={(e) => setTo(e.target.value)}
-            />
-            <button
-              type="button"
-              className={`${styles.allBtn} ${allRange ? styles.allActive : ''}`}
-              onClick={() => {
-                setFrom('');
-                setTo('');
-              }}
-            >
-              Alle
-            </button>
-          </div>
-        )}
+        </div>
+        {showStats && <SongStatsBar {...f} />}
       </div>
 
       <Scroll onRefresh={onRetry}>
@@ -139,53 +70,56 @@ export function AllSongs({
           <CenterMessage loading text="Lieder werden geladen…" />
         ) : isError ? (
           <CenterMessage icon="⚠️" text="Lieder konnten nicht geladen werden." onRetry={onRetry} />
-        ) : filtered.length === 0 ? (
+        ) : f.list.length === 0 ? (
           <CenterMessage
             icon="🎵"
             text={
               query
-                ? `Keine Treffer für „${q}"`
-                : statMode && !allRange
+                ? `Keine Treffer für „${query}"`
+                : f.statMode && !f.allRange
                   ? 'In diesem Zeitraum wurde kein Lied gespielt.'
                   : 'Keine Lieder gefunden.'
             }
           />
         ) : (
           <div className={styles.group}>
-            <div className={styles.groupHdr}>{filtered.length} Lieder</div>
+            <div className={styles.groupHdr}>{f.list.length} Lieder</div>
             <div className={styles.cardList}>
-              {filtered.map((s) => (
-                <div key={s.songId} className={styles.rowWrap}>
-                  <button className={styles.row} onClick={() => onSelect(s)}>
-                    <NoteTile />
-                    <div className={styles.info}>
-                      <div className={styles.name}>{s.name}</div>
-                      {s.author && <div className={styles.sub}>{s.author}</div>}
-                      {showStats && sort !== 'name' && (
-                        <span className={styles.stat}>
-                          {usageLoading
-                            ? 'Statistik lädt…'
-                            : sort === 'count'
-                              ? `${countOf(s)}× gespielt`
-                              : `zuletzt ${fmtDate(lastOf(s))}`}
-                        </span>
-                      )}
-                    </div>
-                    {s.key && <span className={styles.keyPill}>{s.key}</span>}
-                    <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-                  </button>
-                  {canAddToAgenda && (
-                    <button
-                      className={styles.addBtn}
-                      onClick={() => setAddSong(s)}
-                      aria-label={`„${s.name}" zu einem Ablauf hinzufügen`}
-                      title="Zu Ablauf hinzufügen"
-                    >
-                      <Icon name="plus" size={20} stroke={2.4} />
+              {f.list.map((s) => {
+                const st = f.stats.get(s.songId);
+                return (
+                  <div key={s.songId} className={styles.rowWrap}>
+                    <button className={styles.row} onClick={() => onSelect(s)}>
+                      <NoteTile />
+                      <div className={styles.info}>
+                        <div className={styles.name}>{s.name}</div>
+                        {s.author && <div className={styles.sub}>{s.author}</div>}
+                        {showStats && f.sort !== 'name' && (
+                          <span className={styles.stat}>
+                            {usageLoading
+                              ? 'Statistik lädt…'
+                              : f.sort === 'count'
+                                ? `${st?.count ?? 0}× gespielt`
+                                : `zuletzt ${fmtDate(st?.last ?? null)}`}
+                          </span>
+                        )}
+                      </div>
+                      {s.key && <span className={styles.keyPill}>{s.key}</span>}
+                      <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
                     </button>
-                  )}
-                </div>
-              ))}
+                    {canAddToAgenda && (
+                      <button
+                        className={styles.addBtn}
+                        onClick={() => setAddSong(s)}
+                        aria-label={`„${s.name}" zu einem Ablauf hinzufügen`}
+                        title="Zu Ablauf hinzufügen"
+                      >
+                        <Icon name="plus" size={20} stroke={2.4} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
