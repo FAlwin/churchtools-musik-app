@@ -1,8 +1,8 @@
 # Plan: Offline-Reserve (Charts ohne Netz im Saal)
 
-**Status:** Phase 1 umgesetzt (01.07.2026), auf Staging/Gerät im Flugmodus zu verifizieren. Phase 2
-(expliziter „Für offline speichern"-Button) weiterhin optional/offen. Rein clientseitig – keine
-Server-Änderung nötig.
+**Status:** ✅ Umgesetzt & produktiv live (Issue #32, seit v2.6.0). Beide Phasen sind erledigt –
+inkl. explizitem „Für offline speichern"-Knopf und dem „Kommende Gottesdienste offline halten"-Schalter
+(Mehr-Tab). Rein clientseitig – keine Server-Änderung nötig. Dokument bleibt als Hintergrund/Referenz.
 
 **Umgesetzt (Phase 1):** React-Query-Cache wird in IndexedDB persistiert
 (`client/src/queryClient.ts` + `PersistQueryClientProvider` in `main.tsx`; `gcTime`/`maxAge` 7 Tage;

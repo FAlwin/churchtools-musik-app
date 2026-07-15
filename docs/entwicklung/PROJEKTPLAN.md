@@ -17,7 +17,7 @@ Datenquelle. Details: `CLAUDE.md`.
 | Externer Zugang  | Synology Reverse Proxy + Let's Encrypt (KEIN Cloudflare) |
 | Deployment       | Docker auf Synology NAS (Container Manager) |
 
-Begründungen: `docs/entscheidungen.md`.
+Begründungen: `docs/entwicklung/entscheidungen.md`.
 
 ## Doku-Pflicht je Session
 Checkbox hier aktualisieren **und** Release-Notes in `CHANGELOG.md`. Architektur-
@@ -39,7 +39,7 @@ Entscheidungen → `docs/entwicklung/entscheidungen.md`.
 ### Phase 5 – Qualitätssicherung (laufend)
 - [x] 5.1 Unit-Tests für die kniffligste reine Logik (`transpose.ts`, `chordpro.ts`)
 - [x] 5.2 CI (GitHub Actions): lint + build + test je PR
-- [x] 5.3 Testkonzept dokumentiert (`docs/testkonzept.md`)
+- [x] 5.3 Testkonzept dokumentiert (`docs/entwicklung/testkonzept.md`)
 - [x] 5.4 Tests zum Redesign: `hasOpaquePixel` + Render-Tests `<Segment>`/`<Section>` (44 Tests grün);
       Barrierefreiheit (Fokusring, `prefers-reduced-motion`, aria-labels)
 
@@ -52,7 +52,7 @@ Entscheidungen → `docs/entwicklung/entscheidungen.md`.
 - [x] 6.2 ~~White-Label~~ **verworfen** → **Redesign zur festen ChurchTools-Version** ✅ live
       (ChurchTools-Look, Tab-Bar, neues Logo, Design-Tokens/Bausteine; nur `orgName` admin-anpassbar).
       Nach `main` gemerged (PR #14) + **produktiv deployt** (musik.ecg-donrath.de, 19.06.2026, verifiziert)
-      inkl. Chart-Lesbarkeits-Politur (Akkord-Abstände + Akkorde in Blau). Siehe `docs/design-system.md`.
+      inkl. Chart-Lesbarkeits-Politur (Akkord-Abstände + Akkorde in Blau). Siehe `docs/entwicklung/design-system.md`.
 - [x] 6.3 ~~vite@8-Upgrade~~ ✅ **erledigt** (22.06.2026, PR #22): Vite 5→8, Vitest 2→3, Node 22;
       npm-audit von 7 (high/critical) auf 1 low (Windows-only Dev-Server). Kein App-Verhalten geändert.
 - [x] 6.4 **Verteilung an andere Gemeinden (Selbst-Hosting)** ✅ **abgeschlossen** (22.06.2026):
