@@ -121,7 +121,8 @@ export function ItemActionSheet({
                 });
             }}
           />
-          <button className={styles.linkRow} onClick={() => setSongMode(false)} disabled={busy}>
+          <button className={styles.backBtn} onClick={() => setSongMode(false)} disabled={busy}>
+            <Icon name="chev-left" size={18} stroke={2.2} />
             Zurück
           </button>
         </div>
