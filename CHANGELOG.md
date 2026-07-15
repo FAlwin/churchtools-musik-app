@@ -7,6 +7,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.13.3] – 2026-07-15
+
+### Behoben
+
+- **Hinweis-Balken und Menüs sitzen im Browser wieder unter der Kopfleiste:** Nach dem
+  Kopfleisten-Fix (2.13.1) konnten der „Ablauf wurde geändert"-Balken und die beiden
+  Chart-Menüs (Aussehen/Modus) im Safari-Tab leicht in die höhere Kopfleiste hineinragen –
+  sie halten jetzt denselben Mindestabstand. Installiert unverändert.
+
 ## [2.13.2] – 2026-07-15
 
 ### Geändert
