@@ -8,7 +8,8 @@
   align-items: center;
   gap: 6px;
   padding: 8px 10px;
-  padding-top: max(10px, env(safe-area-inset-top));
+  // Min. 20px oben (siehe NavBar): fängt Safari-Tab (env=0) + kurzzeitiges Safe-Area-Zurücksetzen ab.
+  padding-top: max(20px, env(safe-area-inset-top));
   background: var(--nav-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);

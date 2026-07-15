@@ -4,7 +4,11 @@
   gap: 8px;
   min-height: 52px;
   padding: 8px;
-  padding-top: max(10px, env(safe-area-inset-top));
+  // Mindestens 20px oben: Im Safari-Tab ist env(safe-area-inset-top)=0, und mit viewport-fit=cover
+  // rückt der Titel sonst bis unter Safaris Leiste/Statusleiste (oben angeschnitten). Der 20px-Boden
+  // fängt das ab – im installierten Modus liefert die Safe-Area meist ≥20px, dann bleibt alles wie
+  // gehabt (max gewinnt). Fängt auch den iOS-Fall ab, dass die Safe-Area kurz auf 0 zurückspringt.
+  padding-top: max(20px, env(safe-area-inset-top));
   background: var(--nav-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
