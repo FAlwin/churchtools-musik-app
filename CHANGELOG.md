@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.13.2] – 2026-07-15
+
 ### Geändert
 
 - **Offline-Anzeige verständlicher:** Statt der technischen Zählung („X Datensätze · Y Dateien")
