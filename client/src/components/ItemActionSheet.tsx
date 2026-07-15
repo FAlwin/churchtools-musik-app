@@ -33,8 +33,10 @@ interface ItemActionSheetProps {
 /**
  * „Eintrag bearbeiten"-Dialog: ein zentriertes Modal mit allen Einstellungen auf einen Blick
  * (Titel, Lied, Dauer, Zuständig, Uhrzeit ausblenden, Löschen) – angelehnt an den
- * „Position bearbeiten"-Dialog in ChurchTools. „Speichern" schreibt die geänderten Felder
- * gesammelt nach ChurchTools.
+ * „Position bearbeiten"-Dialog in ChurchTools. NICHTS wird sofort geschrieben: auch Lied
+ * verknüpfen/aufheben und der Uhrzeit-Schalter werden nur vorgemerkt. Erst „Speichern" schreibt
+ * alle Änderungen gesammelt nach ChurchTools; „Abbrechen" verwirft sie. (Löschen ist bewusst
+ * separat und hat eine eigene Rückfrage.)
  */
 export function ItemActionSheet({
   item,
@@ -58,32 +60,64 @@ export function ItemActionSheet({
   const [duration, setDuration] = useState(
     item.durationMin != null ? String(item.durationMin) : '',
   );
-  // Uhrzeit-ausgeblendet: optimistisch lokal umschalten, bei Fehler zurückrollen.
+  // Uhrzeit-ausgeblendet: lokal – wird wie alles andere erst beim Speichern übernommen.
   const [hidden, setHidden] = useState(timeHidden);
+  // Verknüpfung wird vorgemerkt und erst beim Speichern nach ChurchTools geschrieben:
+  // 'keep' = unverändert, 'unlink' = Lied entfernen, 'link' = neues Arrangement verknüpfen.
+  type LinkState =
+    | { kind: 'keep' }
+    | { kind: 'unlink' }
+    | { kind: 'link'; arrangementId: number; name: string };
+  const [linkState, setLinkState] = useState<LinkState>({ kind: 'keep' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  // Das Lied, das der Punkt nach dem Speichern hätte (steuert Titel-/Lied-Anzeige).
+  const effSong =
+    linkState.kind === 'link'
+      ? { title: linkState.name }
+      : linkState.kind === 'keep'
+        ? item.song
+        : null;
+  const willBeSong = !!effSong;
+
   function toggleHidden() {
-    const next = !hidden;
-    setHidden(next);
-    setErr(null);
-    void onToggleHidden(next).catch((e: unknown) => {
-      setHidden(!next);
-      setErr(e instanceof Error ? e.message : 'Uhrzeit ändern fehlgeschlagen.');
-    });
+    setHidden((h) => !h);
+  }
+
+  /** Merkt das Entfernen der Verknüpfung vor – bzw. verwirft eine nur vorgemerkte Verknüpfung. */
+  function clearLink() {
+    setLinkState(isSong ? { kind: 'unlink' } : { kind: 'keep' });
   }
 
   const durationNum = duration.trim() === '' ? null : Number(duration);
   const durationValid = durationNum === null || (Number.isInteger(durationNum) && durationNum >= 0);
 
+  const dirty =
+    linkState.kind !== 'keep' ||
+    hidden !== timeHidden ||
+    (durationNum !== null && durationNum !== item.durationMin) ||
+    responsible !== item.responsibleText ||
+    note !== item.note ||
+    (!willBeSong && title.trim() !== item.title);
+
   async function saveAll() {
     setBusy(true);
     setErr(null);
     try {
-      // Nur tatsächlich geänderte Felder schreiben.
-      if (!isSong && title.trim() && title.trim() !== item.title) {
-        await onRename(title.trim());
+      // 1) Struktur zuerst: Verknüpfung anlegen/aufheben.
+      if (linkState.kind === 'link') {
+        await onLinkSong(linkState.arrangementId);
+      } else if (linkState.kind === 'unlink') {
+        await onUnlinkSong();
       }
+      // 2) Titel – nur wenn der Punkt am Ende KEIN Lied ist (Lied-Titel kommt aus ChurchTools).
+      if (!willBeSong) {
+        const t = title.trim();
+        const changed = linkState.kind === 'unlink' ? !!t : !!t && t !== item.title;
+        if (changed) await onRename(t);
+      }
+      // 3) Weitere Felder – nur bei tatsächlicher Änderung.
       if (durationNum !== null && durationNum !== item.durationMin) {
         await onSetDuration(durationNum);
       }
@@ -92,6 +126,9 @@ export function ItemActionSheet({
       }
       if (note !== item.note) {
         await onSetNote(note.trim());
+      }
+      if (hidden !== timeHidden) {
+        await onToggleHidden(hidden);
       }
       onClose();
     } catch (e) {
@@ -109,16 +146,10 @@ export function ItemActionSheet({
           {err && <div className={styles.err}>{err}</div>}
           <SongPicker
             autoFocus
-            busy={busy}
-            onPick={(arrangementId) => {
-              setBusy(true);
+            onPick={(arrangementId, songName) => {
+              setLinkState({ kind: 'link', arrangementId, name: songName });
               setErr(null);
-              onLinkSong(arrangementId)
-                .then(onClose)
-                .catch((e: unknown) => {
-                  setErr(e instanceof Error ? e.message : 'Verknüpfen fehlgeschlagen.');
-                  setBusy(false);
-                });
+              setSongMode(false);
             }}
           />
           <button className={styles.backBtn} onClick={() => setSongMode(false)} disabled={busy}>
@@ -139,8 +170,8 @@ export function ItemActionSheet({
         <div className={styles.fields}>
           <div className={styles.field}>
             <span className={styles.label}>Titel</span>
-            {isSong ? (
-              <div className={styles.readonly}>{item.song?.title}</div>
+            {effSong ? (
+              <div className={styles.readonly}>{effSong.title}</div>
             ) : (
               <input
                 className={styles.input}
@@ -156,30 +187,27 @@ export function ItemActionSheet({
             <>
               <div className={styles.field}>
                 <span className={styles.label}>Lied</span>
-                {isSong ? (
-                  <button
-                    className={styles.linkRow}
-                    disabled={busy}
-                    onClick={() => {
-                      setBusy(true);
-                      setErr(null);
-                      // Dialog bleibt offen: nach dem Aufheben aktualisiert die Elternebene den
-                      // Punkt (kein Lied mehr, Titel leer) und mountet den Dialog neu (key) →
-                      // frisches Titelfeld zum sofortigen Umbenennen.
-                      onUnlinkSong().catch((e: unknown) => {
-                        setErr(e instanceof Error ? e.message : 'Aufheben fehlgeschlagen.');
-                        setBusy(false);
-                      });
-                    }}
-                  >
+                {effSong ? (
+                  <button className={styles.linkRow} disabled={busy} onClick={clearLink}>
                     <Icon name="link" size={17} className={styles.linkIcon} />
                     Verknüpfung aufheben
                   </button>
                 ) : (
-                  <button className={styles.linkRow} onClick={() => setSongMode(true)}>
+                  <button
+                    className={styles.linkRow}
+                    disabled={busy}
+                    onClick={() => setSongMode(true)}
+                  >
                     <Icon name="music" size={17} className={styles.linkIcon} />
                     Lied verknüpfen
                   </button>
+                )}
+                {linkState.kind !== 'keep' && (
+                  <span className={styles.pendingHint}>
+                    {linkState.kind === 'unlink'
+                      ? 'Wird beim Speichern entfernt.'
+                      : 'Wird beim Speichern verknüpft.'}
+                  </span>
                 )}
               </div>
 
@@ -230,7 +258,11 @@ export function ItemActionSheet({
           <button className={styles.cancelBtn} onClick={onClose} disabled={busy}>
             Abbrechen
           </button>
-          <button className={styles.saveBtn} onClick={saveAll} disabled={busy || !durationValid}>
+          <button
+            className={styles.saveBtn}
+            onClick={saveAll}
+            disabled={busy || !durationValid || !dirty}
+          >
             {busy ? 'Speichere…' : 'Speichern'}
           </button>
         </div>

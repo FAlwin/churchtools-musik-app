@@ -131,6 +131,13 @@
   color: var(--blue-ink);
   flex-shrink: 0;
 }
+// Hinweis, dass eine vorgemerkte Verknüpfungs-Änderung erst beim Speichern greift.
+.pendingHint {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+}
 
 // „Zurück" aus der Lied-Auswahl: klarer, abgesetzter Sekundär-Button (nicht als Listenzeile
 // verkleidet) – hebt sich deutlich von der darüberliegenden Liederliste ab.
