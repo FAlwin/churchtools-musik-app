@@ -154,8 +154,11 @@ export function getSongLibrary(): Promise<SongLibraryEntry[]> {
   return apiFetch<SongLibraryEntry[]>('/api/song-library');
 }
 
-/** Nutzungsdaten je Song (Häufigkeit + zuletzt) – separat, gecacht. */
-export type SongUsageMap = Record<string, { count: number; lastUsed: string }>;
+/**
+ * Nutzungsdaten je Song: die vergangenen Spieltermine (YYYY-MM-DD, absteigend). Häufigkeit und
+ * „zuletzt" für einen gewählten Zeitraum rechnet die Ansicht daraus selbst aus – separat, gecacht.
+ */
+export type SongUsageMap = Record<string, { dates: string[] }>;
 export function getSongUsage(): Promise<SongUsageMap> {
   return apiFetch<SongUsageMap>('/api/song-usage');
 }

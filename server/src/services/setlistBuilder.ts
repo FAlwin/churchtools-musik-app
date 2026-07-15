@@ -465,8 +465,8 @@ export function responsibleEntries(item: {
 }
 
 interface SongUsage {
-  count: number;
-  lastUsed: string;
+  /** Vergangene Spieltermine (YYYY-MM-DD), absteigend sortiert (neuester zuerst). */
+  dates: string[];
 }
 
 // Org-weite Song-Nutzung (gleich für alle) – im Speicher gecacht (TTL 1 h).
@@ -493,41 +493,41 @@ async function mapLimit<T>(
   await Promise.all(workers);
 }
 
+/** Wie viele Jahre zurück Spieltermine gesammelt werden – deckt den „Alle"-Zeitfilter ab. */
+const USAGE_LOOKBACK_YEARS = 4;
+
 /**
- * Zählt Song-Vorkommen in den Abläufen der letzten 12 Monate UND der kommenden 3 Monate
- * (gecacht). So zählen eingeplante Lieder mit; `lastUsed` ist das jeweils späteste Datum –
- * liegt also in der Zukunft, wenn das Lied demnächst eingeplant ist.
+ * Sammelt je Lied die vergangenen Spieltermine aus den Abläufen der letzten
+ * `USAGE_LOOKBACK_YEARS` Jahre – bis heute (geplante Zukunftstermine zählen NICHT als „gespielt").
+ * Org-weit gleich, 1 h gecacht. Häufigkeit und „zuletzt gespielt" für einen frei gewählten Zeitraum
+ * rechnet der Client selbst aus dieser Terminliste – ohne erneuten Server-Roundtrip.
  */
 export async function getSongUsageMap(cookie: string): Promise<Record<number, SongUsage>> {
   if (usageCache && Date.now() - usageCache.at < 3_600_000) return usageCache.data;
   const today = new Date();
-  const toD = new Date(today);
-  toD.setMonth(toD.getMonth() + 3);
-  const to = toD.toISOString().slice(0, 10);
+  const to = today.toISOString().slice(0, 10);
   const fromD = new Date(today);
-  fromD.setFullYear(fromD.getFullYear() - 1);
+  fromD.setFullYear(fromD.getFullYear() - USAGE_LOOKBACK_YEARS);
   const from = fromD.toISOString().slice(0, 10);
 
   const events = await getEvents(cookie, from, to);
   const usage: Record<number, SongUsage> = {};
   await mapLimit(events, 8, async (ev) => {
     try {
-      const agenda = await getAgenda(cookie, ev.id);
       const date = ev.startDate.slice(0, 10);
+      if (date > to) return; // Sicherheitsnetz: keine Zukunftstermine mitzählen
+      const agenda = await getAgenda(cookie, ev.id);
       for (const it of agenda.items ?? []) {
         const id = it.song?.songId;
         if (!id) continue;
-        const cur = usage[id];
-        if (!cur) usage[id] = { count: 1, lastUsed: date };
-        else {
-          cur.count += 1;
-          if (date > cur.lastUsed) cur.lastUsed = date;
-        }
+        (usage[id] ??= { dates: [] }).dates.push(date);
       }
     } catch {
       /* 404 = kein Ablauf */
     }
   });
+  // Termine je Lied absteigend sortieren (neuester zuerst) → Client nimmt [0] als „zuletzt".
+  for (const u of Object.values(usage)) u.dates.sort((a, b) => b.localeCompare(a));
   usageCache = { at: Date.now(), data: usage };
   return usage;
 }
