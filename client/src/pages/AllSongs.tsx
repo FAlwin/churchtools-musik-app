@@ -49,18 +49,29 @@ export function AllSongs({
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<Sort>('name');
   const [addSong, setAddSong] = useState<SongLibraryEntry | null>(null);
+  // Zeitfilter (nur für Häufigkeit/Zuletzt). Leere Felder = „Alle" (kein Limit).
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const query = q.trim().toLowerCase();
 
-  const countOf = (s: SongLibraryEntry) => usage?.[s.songId]?.count ?? 0;
-  const lastOf = (s: SongLibraryEntry) => usage?.[s.songId]?.lastUsed ?? null;
+  // Statistik-Modus = eine der beiden zeitbezogenen Sortierungen ist aktiv.
+  const statMode = showStats && sort !== 'name';
+  const allRange = !from && !to;
 
-  const filtered = (
-    query
-      ? songs.filter(
-          (s) => s.name.toLowerCase().includes(query) || (s.author ?? '').toLowerCase().includes(query),
-        )
-      : [...songs]
-  ).sort((a, b) => {
+  const inRange = (d: string) => (!from || d >= from) && (!to || d <= to);
+  const rangedDates = (s: SongLibraryEntry) => (usage?.[s.songId]?.dates ?? []).filter(inRange);
+  const countOf = (s: SongLibraryEntry) => rangedDates(s).length;
+  // Termine kommen absteigend sortiert → das erste ist das jüngste im Zeitraum.
+  const lastOf = (s: SongLibraryEntry) => rangedDates(s)[0] ?? null;
+
+  const searched = query
+    ? songs.filter(
+        (s) => s.name.toLowerCase().includes(query) || (s.author ?? '').toLowerCase().includes(query),
+      )
+    : [...songs];
+
+  // Bei Häufigkeit/Zuletzt nur Lieder zeigen, die im gewählten Zeitraum gespielt wurden.
+  const filtered = (statMode ? searched.filter((s) => countOf(s) > 0) : searched).sort((a, b) => {
     if (sort === 'count') return countOf(b) - countOf(a) || a.name.localeCompare(b.name, 'de');
     if (sort === 'recent')
       return (lastOf(b) ?? '').localeCompare(lastOf(a) ?? '') || a.name.localeCompare(b.name, 'de');
@@ -90,6 +101,37 @@ export function AllSongs({
             onChange={setSort}
           />
         )}
+        {statMode && (
+          <div className={styles.rangeBar}>
+            <input
+              className={styles.dateInput}
+              type="date"
+              aria-label="Zeitraum von"
+              value={from}
+              max={to || undefined}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+            <span className={styles.rangeDash}>–</span>
+            <input
+              className={styles.dateInput}
+              type="date"
+              aria-label="Zeitraum bis"
+              value={to}
+              min={from || undefined}
+              onChange={(e) => setTo(e.target.value)}
+            />
+            <button
+              type="button"
+              className={`${styles.allBtn} ${allRange ? styles.allActive : ''}`}
+              onClick={() => {
+                setFrom('');
+                setTo('');
+              }}
+            >
+              Alle
+            </button>
+          </div>
+        )}
       </div>
 
       <Scroll onRefresh={onRetry}>
@@ -98,7 +140,16 @@ export function AllSongs({
         ) : isError ? (
           <CenterMessage icon="⚠️" text="Lieder konnten nicht geladen werden." onRetry={onRetry} />
         ) : filtered.length === 0 ? (
-          <CenterMessage icon="🎵" text={query ? `Keine Treffer für „${q}"` : 'Keine Lieder gefunden.'} />
+          <CenterMessage
+            icon="🎵"
+            text={
+              query
+                ? `Keine Treffer für „${q}"`
+                : statMode && !allRange
+                  ? 'In diesem Zeitraum wurde kein Lied gespielt.'
+                  : 'Keine Lieder gefunden.'
+            }
+          />
         ) : (
           <div className={styles.group}>
             <div className={styles.groupHdr}>{filtered.length} Lieder</div>

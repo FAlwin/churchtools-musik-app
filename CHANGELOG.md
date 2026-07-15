@@ -7,6 +7,21 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Zeitfilter für Lied-Statistik (#158):** In der Lieder-Bibliothek lässt sich bei den
+  Sortierungen „Häufigkeit" und „Zuletzt" jetzt ein Zeitraum wählen (Von–Bis oder „Alle"). Dann
+  zählen und erscheinen nur die Lieder, die in diesem Zeitraum tatsächlich gespielt wurden – so
+  siehst du z. B. „was lief in den letzten 3 Monaten am häufigsten". Die Sortierung „A–Z" bleibt
+  davon unberührt und zeigt weiter alle Lieder. Nebenbei: „Zuletzt" bezieht sich jetzt auf das
+  letzte tatsächlich gespielte Datum (geplante Zukunftstermine zählen nicht mehr als „gespielt").
+
+### Geändert
+
+- **Intern:** Die Nutzungsstatistik liefert je Lied die vergangenen Spieltermine (bis zu 4 Jahre
+  zurück); Häufigkeit und „zuletzt" für den gewählten Zeitraum rechnet die App daraus direkt aus –
+  ohne erneute Server-Abfrage beim Verstellen des Zeitraums.
+
 ## [2.12.0] – 2026-07-14
 
 ### Hinzugefügt
