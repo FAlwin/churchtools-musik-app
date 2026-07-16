@@ -7,6 +7,14 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Intern
+
+- **Code-Check-Nachschliff (Note 1, 0 Sicherheitsfunde):** Zoom-Wiederherstellung in PageDeck
+  entdupliziert (`restoreVisibleZoom`), localStorage-Schlüssel-Grammatik zentralisiert
+  (`utils/annotationKeys` + Tests), Zeichen-Engine in `usePointerStrokes` ausgelagert
+  (PageDeck 1355→1161 Z.), Redraw-Effekt entschärft, alle react-refresh-Lint-Warnungen beseitigt
+  (Lint 0). Kein Verhaltensunterschied.
+
 ## [2.13.4] – 2026-07-16
 
 ### Behoben

@@ -127,8 +127,9 @@ eigener Zoom. `StreamView`/`DocumentView` gibt es nicht mehr (durch PageDeck ers
 Blättern schiebt horizontal ein (Slide-Übergang). *(Live-Chart-Reste `useDrawing.ts`/
 `usePagedColumns.ts`/`constants.ts` wurden früher entfernt.)* PageDeck delegiert (seit #140) die
 querschneidenden Belange an eigene Hooks: `useZoomPersistence` (Zoom je Seite+Geräteklasse laden/
-speichern), `useKeyboardInsets` (iOS-Tastatur-Hub) und `useSlideTransition` (Blätter-Animation);
-`composePane` bleibt bewusst in PageDeck.
+speichern + `restoreVisibleZoom`), `useKeyboardInsets` (iOS-Tastatur-Hub), `useSlideTransition`
+(Blätter-Animation) und `usePointerStrokes` (Zeichen-Engine Stift/Marker/Radierer inkl. aller
+Touch-Regeln); `composePane` bleibt bewusst in PageDeck.
 
 **Gesten:** **ein Finger blättert, zwei Finger zoomen + verschieben** (auch im Zeichenmodus – ein
 begonnener Strich wird bei Zweitfinger verworfen; Apple Pencil zeichnet, Finger zoomen). Pinch zoomt
@@ -215,8 +216,8 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
 - [x] Öffentliches Repo unter MIT-Lizenz (`FAlwin/churchtools-musik-app`); keine Secrets im Code/in der Historie (`.env` nie eingecheckt)
 - [x] Authentifizierung: persönlicher ChurchTools-Login, Session in signiertem httpOnly-Cookie
 - [x] HTTPS extern via Synology Reverse Proxy + Let's Encrypt (`musik.ecg-donrath.de`)
-- [x] npm audit: zuletzt geprüft am 11.06.2026 – 3 moderate (esbuild/vite,
-      nur Dev-Server, kein Prod-Risiko; Fix = vite@8 Breaking Change, zurückgestellt)
+- [x] npm audit: zuletzt geprüft am 16.07.2026 – **0 Schwachstellen** (die früheren 3 moderaten
+      esbuild/vite-Funde sind mit den aktuellen Dev-Deps nicht mehr vorhanden)
 
 ## Deployment
 - **Synology NAS via Docker** (Container Manager, Projekt `worship-charts`) → **umgesetzt & live**.
