@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
   TransformWrapper,
@@ -13,7 +13,9 @@ import {
   DEFAULT_TEXT_STYLE,
 } from '../hooks/usePageDraw';
 import { pushField } from '../services/annotations';
-import { deviceClass } from '../utils/deviceClass';
+import { useZoomPersistence } from '../hooks/useZoomPersistence';
+import { useKeyboardInsets } from '../hooks/useKeyboardInsets';
+import { useSlideTransition, type SlideSlot } from '../hooks/useSlideTransition';
 import { DrawToolbar } from './DrawToolbar';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Spinner } from './Spinner';
@@ -21,14 +23,6 @@ import styles from './PageDeck.module.scss';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 6;
-
-/** Eine fertig zusammengesetzte Seite (Inhalt + Striche) für den Slide-Übergangs-Streifen. */
-interface SlideSlot {
-  canvas: HTMLCanvasElement;
-  texts: PageTextObj[];
-  zoom: { x: number; y: number; scale: number } | null;
-  aspect: string;
-}
 
 export interface PageDeckProps {
   /** Fertig gerenderte Seiten (offscreen-Canvas). Der aufrufende Loader liefert sie. */
@@ -79,31 +73,6 @@ export interface PageDeckProps {
   onZoomedChange?: (zoomed: boolean) => void;
   /** Erhöht sich, wenn der Reset-Knopf der Kopfleiste gedrückt wird → sichtbaren Zoom zurücksetzen. */
   resetZoomSignal?: number;
-}
-
-// Gelernte Höhe der iOS-Bildschirmtastatur (px). Damit heben wir den Chart-Bereich schon BEIM
-// Fokussieren an – ist der Cursor beim Öffnen der Tastatur bereits sichtbar, verschiebt iOS die
-// App gar nicht erst. Persistiert, damit auch der erste Text nach einem Neustart sauber läuft.
-let lastKbHeight = Number(localStorage.getItem('musikapp:kbHeight')) || 0;
-function learnKbHeight(kb: number): void {
-  if (kb === lastKbHeight) return;
-  lastKbHeight = kb;
-  try {
-    localStorage.setItem('musikapp:kbHeight', String(kb));
-  } catch {
-    /* voll/gesperrt → nur In-Memory */
-  }
-}
-
-// iOS scrollt beim Öffnen der Tastatur nicht nur das Fenster, sondern notfalls auch GECLIPPTE
-// Vorfahren (trotz overflow:hidden), um den Cursor freizustellen → alles zurückdrehen; das
-// Freistellen übernimmt unser gezielter transform-Hub auf dem Chart-Bereich.
-function resetRevealScrolls(el: HTMLElement): void {
-  if (window.scrollY !== 0) window.scrollTo(0, 0);
-  for (let n = el.parentElement; n; n = n.parentElement) {
-    if (n.scrollTop !== 0) n.scrollTop = 0;
-    if (n.scrollLeft !== 0) n.scrollLeft = 0;
-  }
 }
 
 // Stabiler Default für `viewKeyFor` (kein Ansehen) – Identität darf sich nie ändern,
@@ -219,16 +188,6 @@ export function PageDeck({
   // Wisch-Navigation und den Zoom-Reset-Knopf. Kein „Anpassen-Modus"/„Fertig" mehr nötig – ein
   // Pinch zoomt und speichert automatisch; Verschieben ist möglich, sobald reingezoomt.
   const [zoomedSlots, setZoomedSlots] = useState<[boolean, boolean]>([false, false]);
-  // ── Slide-Übergang beim Blättern (horizontales Schieben wie im Foto-Viewer) ──
-  // Der Übergangs-Streifen wird aus den offscreen-Seiten + gespeicherten Anmerkungen/Zooms
-  // zusammengesetzt (kein DOM-Abgriff nötig) → funktioniert für ALLE Blätter-Wege (Wischen,
-  // Tippen, Fußzeile, Tastatur) und kaschiert das harte Umschalten beim Seitenwechsel.
-  const [slide, setSlide] = useState<{ dir: 1 | -1; tick: number } | null>(null);
-  const slidePanes = useRef<{ old: SlideSlot[]; neu: SlideSlot[] } | null>(null);
-  const slideOverlayRef = useRef<HTMLDivElement | null>(null);
-  const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevPageIndex = useRef<number | null>(null);
-  const slideGuard = useRef<{ perView: number; pages: HTMLCanvasElement[] } | null>(null);
   // Vorab dekodierte Strich-Bilder der Nachbarseiten (localStorage-PNGs) für den Streifen.
   const strokeImgCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const [aspects, setAspects] = useState<string[]>(['210 / 297', '210 / 297']);
@@ -243,23 +202,17 @@ export function PageDeck({
   const pageCount = pages.length;
   const perView = landscape ? 2 : 1;
 
-  // Zoom hängt an der Bildschirm-Geometrie → Geräteklasse UND Layout (1-spaltig Hochformat /
-  // 2-spaltig Querformat) im Schlüssel. Sonst würde ein im Hochformat gespeicherter Pixel-
-  // Ausschnitt im Querformat (halbe Breite, 2 Seiten) angewendet und die Seite „einfrieren" (#33).
-  const zoomKeyFor = (page: number): string =>
-    `${zoomKeyBaseFor(page)}_d${deviceClass()}${perView}`;
-  function loadZoom(page: number): { x: number; y: number; scale: number } | null {
-    try {
-      const s = localStorage.getItem(zoomKeyFor(page));
-      if (s) {
-        const parsed = JSON.parse(s);
-        if (parsed && typeof parsed.scale === 'number') return parsed;
-      }
-    } catch {
-      /* ignorieren */
-    }
-    return null;
-  }
+  // Dauerhaftes Speichern/Laden des Pinch-Zooms pro Seite (Geräteklasse + Layout im Schlüssel) –
+  // ausgelagert in useZoomPersistence. Die Apply-Effekte (Wiederherstellen) bleiben unten in PageDeck.
+  const { loadZoom, persistZoom, resetVisibleZoom } = useZoomPersistence({
+    zoomKeyBaseFor,
+    perView,
+    pageIndex,
+    transformRefs,
+    lastScale,
+    gestureSlot,
+    zoomedSlots,
+  });
 
   // ── „Notizen von …"-Ansehen (Team-Notizen) ──
   // Ist für eine Seite ein Ansichts-Schlüssel gesetzt, wird DIE FREMDE Ebene (Overlay, nur lesend)
@@ -371,8 +324,7 @@ export function PageDeck({
       ctx.clearRect(0, 0, anno.width, anno.height);
       // Eigene Striche, wenn diese Seite keine fremde Ebene zeigt – ODER in der
       // Zusammenführen-Vorschau (dann beide Ebenen übereinander).
-      const key =
-        viewing(pageIndex + j) && !previewOwn ? null : drawKeyFor(pageIndex + j);
+      const key = viewing(pageIndex + j) && !previewOwn ? null : drawKeyFor(pageIndex + j);
       const saved = key ? localStorage.getItem(key) : null;
       if (saved) {
         const img = new Image();
@@ -487,70 +439,15 @@ export function PageDeck({
     return out;
   }
 
-  // Slide auslösen, wenn sich NUR die Seite um ±1 ändert (Blättern). Layout-/Strom-Wechsel
-  // (Drehen, Neuaufbau, Sprung übers Lied-Menü) schalten weiterhin hart um.
-  // useLayoutEffect (nicht useEffect): Die Abdeckung MUSS gesetzt sein, BEVOR der Browser den
-  // ersten Frame nach dem Seitenwechsel zeichnet – sonst blitzt kurz der noch veraltete
-  // Anmerkungs-Stand der vorherigen Seite auf der neuen Seite auf (#113).
-  useLayoutEffect(() => {
-    const prev = prevPageIndex.current;
-    prevPageIndex.current = pageIndex;
-    const guard = slideGuard.current;
-    slideGuard.current = { perView, pages };
-    if (prev === null || loading) return;
-    if (!guard || guard.perView !== perView || guard.pages !== pages) return;
-    const delta = pageIndex - prev;
-    if (Math.abs(delta) !== 1) return;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    const old = composePane(prev);
-    const neu = composePane(pageIndex);
-    if (!old.length || !neu.length) return;
-    slidePanes.current = { old, neu };
-    setSlide({ dir: delta > 0 ? 1 : -1, tick: Date.now() });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, perView, pages, loading]);
-
-  // Slide abspielen: alte und neue Ebene (je bildschirmbreit) GLEICHZEITIG horizontal schieben.
-  // useLayoutEffect: Text-Ebenen-Größen und Startpositionen stehen garantiert VOR dem ersten
-  // gezeichneten Frame (Safari flusht passive Effekte nicht zuverlässig vor dem Paint, #113).
-  useLayoutEffect(() => {
-    if (!slide) return;
-    const overlay = slideOverlayRef.current;
-    const oldPane = overlay?.querySelector<HTMLElement>('[data-pane="old"]');
-    const neuPane = overlay?.querySelector<HTMLElement>('[data-pane="neu"]');
-    if (!overlay || !oldPane || !neuPane) {
-      setSlide(null);
-      return;
-    }
-    // Text-Ebenen exakt auf die (unskalierte) Layout-Größe ihrer Seiten-Canvas bringen –
-    // container-type:size macht die cqh-Schriftgrößen dann seitenrelativ wie in der Live-Ansicht.
-    overlay.querySelectorAll<HTMLElement>('[data-slide-textlayer]').forEach((tl) => {
-      const cv = tl.previousElementSibling as HTMLElement | null;
-      if (cv) {
-        tl.style.width = `${cv.offsetWidth}px`;
-        tl.style.height = `${cv.offsetHeight}px`;
-      }
-    });
-    // Startpositionen: alte Ebene deckt den Bildschirm, neue steht daneben (vorwärts rechts,
-    // rückwärts links). Beide Richtungen ENDEN bei translateX(0) – pixelgenau wie die Live-Ansicht.
-    oldPane.style.transition = 'none';
-    neuPane.style.transition = 'none';
-    oldPane.style.transform = 'translateX(0)';
-    neuPane.style.transform = `translateX(${slide.dir === 1 ? '100%' : '-100%'})`;
-    void overlay.offsetWidth; // Reflow → Startpositionen stehen, bevor die Transition beginnt
-    const tr = 'transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)';
-    oldPane.style.transition = tr;
-    neuPane.style.transition = tr;
-    oldPane.style.transform = `translateX(${slide.dir === 1 ? '-100%' : '100%'})`;
-    neuPane.style.transform = 'translateX(0)';
-    slideTimer.current = setTimeout(() => {
-      slidePanes.current = null;
-      setSlide(null);
-    }, 300);
-    return () => {
-      if (slideTimer.current) clearTimeout(slideTimer.current);
-    };
-  }, [slide]);
+  // Slide-Übergang beim Blättern (Auslösen ±1 + Abspielen) – ausgelagert in useSlideTransition.
+  // composePane bleibt hier, weil es tief in die Zeichen-/Overlay-Interna greift.
+  const { slide, slidePanes, slideOverlayRef } = useSlideTransition({
+    pageIndex,
+    perView,
+    pages,
+    loading,
+    composePane,
+  });
 
   // Text-Ebene exakt auf die dargestellte Seiten-Canvas legen (ein leeres div mit nur aspect-ratio
   // kollabiert im Grid auf 0×0 → Text ließe sich nicht platzieren). Per ResizeObserver mitführen.
@@ -838,69 +735,23 @@ export function PageDeck({
     textCommitLock.current[1] = false;
   }, [drawB.pending]);
 
-  // Beim Text-Bearbeiten die iOS-Tastatur „vermeiden": statt die GANZE Seite hochzuschieben
-  // (iOS-Verhalten) heben wir NUR den Chart-Bereich so weit an, dass der Cursor knapp über der
-  // Tastatur sitzt – und setzen den Fenster-Scroll zurück, damit App-Kopf/-Fuß stehen bleiben.
+  // Beim Text-Bearbeiten die iOS-Tastatur „vermeiden" (nur den Chart-Bereich anheben) – ausgelagert
+  // in useKeyboardInsets. preLiftForEditor wird synchron in der Tipp-Geste (focusEditor) genutzt.
   const anyPending = !!(drawA.pending || drawB.pending);
-  useEffect(() => {
-    const vv = window.visualViewport;
-    const root = rootRef.current;
-    if (!anyPending || !vv || !root) return;
-    const slot = drawA.pending ? 0 : 1;
-    // Merkt sich, ob die Tastatur in dieser Edit-Session schon offen war → unterscheidet den
-    // initialen Aufruf (Vorab-Hub aus focusEditor NICHT anfassen) vom Schließen der Tastatur
-    // (Hub zurücknehmen, sonst bleibt im Querformat ein grauer Balken hängen).
-    let kbWasOpen = false;
-    const adjust = () => {
-      const el = editRefs.current[slot];
-      if (!el) return;
-      resetRevealScrolls(el);
-      // Tastaturhöhe gegen die EINGEFRORENE App-Höhe messen (main.tsx pausiert --app-h beim
-      // Tippen) → funktioniert egal, ob iOS die Tastatur überlagert oder das Fenster verkleinert.
-      const kb = Math.round(document.documentElement.clientHeight - vv.height - vv.offsetTop);
-      if (kb <= 60) {
-        // Tastatur (wieder) zu: Vorab-Hub nur zurücknehmen, wenn sie zwischendurch offen war –
-        // sonst würde der initiale Aufruf den Hub aus focusEditor sofort löschen.
-        if (kbWasOpen) root.style.transform = '';
-        return;
-      }
-      kbWasOpen = true;
-      learnKbHeight(kb);
-      root.style.transform = ''; // erst zurücksetzen → natürliche Position messen
-      const overlap = el.getBoundingClientRect().bottom + 12 - (vv.offsetTop + vv.height);
-      if (overlap > 0) root.style.transform = `translateY(${-Math.ceil(overlap)}px)`;
-    };
-    adjust();
-    vv.addEventListener('resize', adjust);
-    vv.addEventListener('scroll', adjust);
-    // capture:true fängt auch Scrolls der Vorfahren-Container (die kein window-Scroll sind).
-    document.addEventListener('scroll', adjust, true);
-    return () => {
-      vv.removeEventListener('resize', adjust);
-      vv.removeEventListener('scroll', adjust);
-      document.removeEventListener('scroll', adjust, true);
-      root.style.transform = '';
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anyPending, drawA.pending, drawB.pending]);
+  const { preLiftForEditor } = useKeyboardInsets({
+    rootRef,
+    editRefs,
+    anyPending,
+    pendingSlot: drawA.pending ? 0 : 1,
+  });
 
   // Inline-Eingabe fokussieren + Cursor ans Ende. MUSS synchron in der Tipp-Geste passieren,
   // damit iOS die Tastatur öffnet (asynchroner Fokus per setTimeout wird von iOS ignoriert).
   function focusEditor(slot: number) {
     const el = editRefs.current[slot];
     if (!el) return;
-    // VOR dem Fokus anheben (gelernte Tastaturhöhe): ist der Cursor beim Aufklappen der Tastatur
-    // schon frei, verschiebt iOS Fenster/Container gar nicht erst. Ohne gelernte Höhe (z. B.
-    // Hardware-Tastatur) passiert hier nichts – dann korrigiert notfalls adjust() oben.
-    const root = rootRef.current;
-    if (root && lastKbHeight > 0) {
-      root.style.transform = '';
-      const overlap =
-        el.getBoundingClientRect().bottom +
-        12 -
-        (document.documentElement.clientHeight - lastKbHeight);
-      if (overlap > 0) root.style.transform = `translateY(${-Math.ceil(overlap)}px)`;
-    }
+    // VOR dem Fokus den Chart-Bereich anheben (gelernte Tastaturhöhe) – Details im Hook.
+    preLiftForEditor(slot);
     el.focus();
     const range = document.createRange();
     range.selectNodeContents(el);
@@ -1034,57 +885,6 @@ export function PageDeck({
       return;
     }
     tapAt(e.clientX, e.currentTarget as HTMLElement);
-  }
-
-  // Zoom/Ausschnitt einer sichtbaren Seite automatisch sichern, sobald eine Geste endet (#33).
-  // So bleibt ein freier Pinch-Zoom auch ohne „Fertig" erhalten – über die Sitzung und nach
-  // Neuöffnen. Bei Rückkehr auf Fit (scale ≈ 1) wird der gespeicherte Zoom wieder entfernt.
-  function persistZoom(slot: number) {
-    // Nur echte Nutzer-Gesten sichern (beim Pinch/Pan hält gestureSlot diesen Slot) – NICHT das
-    // programmatische Wiederherstellen, sonst wird der gerade geladene Wert quer über Lieder
-    // zurückgeschrieben („bei allen Liedern gleich"). gestureSlot ist eine Ref → schon das ERSTE
-    // onTransformed der Geste sieht den korrekten Slot (kein State-Timing-Loch).
-    if (gestureSlot.current !== slot) return;
-    const t = transformRefs[slot].current?.instance?.transformState;
-    if (!t) return;
-    const page = pageIndex + slot;
-    if (t.scale > 1.01) {
-      const zoom = { x: t.positionX, y: t.positionY, scale: t.scale };
-      const zk = zoomKeyFor(page);
-      try {
-        localStorage.setItem(zk, JSON.stringify(zoom));
-      } catch {
-        /* Speicher voll */
-      }
-      pushField(zk, 'zoom', zoom);
-    } else if (lastScale.current[slot] > 1.01) {
-      // Nur löschen, wenn der Nutzer AKTIV wieder auf Fit herausgezoomt hat – nicht beim
-      // programmatischen Zurücksetzen/Mounten (das würde einen gespeicherten Zoom fälschlich wipen).
-      clearStoredZoom(page);
-    }
-    lastScale.current[slot] = t.scale;
-  }
-
-  // Gespeicherten Zoom einer Seite dauerhaft löschen (aktueller Layout-Schlüssel + Basis als Fallback).
-  function clearStoredZoom(page: number) {
-    for (const k of [zoomKeyFor(page), zoomKeyBaseFor(page)]) {
-      try {
-        localStorage.removeItem(k);
-      } catch {
-        /* ignorieren */
-      }
-    }
-    pushField(zoomKeyFor(page), 'zoom', null);
-  }
-
-  // Notausgang: sichtbare reingezoomte Seiten auf Normalgröße zurücksetzen UND ihren Speicher löschen.
-  function resetVisibleZoom() {
-    for (let j = 0; j < perView; j++) {
-      if (!zoomedSlots[j]) continue;
-      transformRefs[j].current?.resetTransform(150);
-      clearStoredZoom(pageIndex + j);
-    }
-    gestureSlot.current = null;
   }
 
   // „Ist reingezoomt?" nach oben melden – steuert den Reset-Knopf in der Kopfleiste (ChordChart).
@@ -1265,59 +1065,62 @@ export function PageDeck({
                           {o.text}
                         </div>
                       ))}
-                      {(!viewing(pageIndex + j) || previewOwn) && d.texts
-                        // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
-                        .filter((o) => o.id !== d.pending?.editId)
-                        .map((o) => (
-                          <div
-                            key={o.id}
-                            className={`${styles.textObj}${o.id === d.selectedId ? ' ' + styles.textSel : ''}`}
-                            style={{
-                              left: `${o.fx * 100}%`,
-                              top: `${o.fy * 100}%`,
-                              fontSize: `${o.sizeCqh}cqh`,
-                              color: o.color,
-                              // Format je Block. Bestandstexte (ohne bold-Feld) waren immer fett →
-                              // Fallback true, damit sie unverändert aussehen; neue Texte sind normal.
-                              fontWeight: (o.bold ?? true) ? 700 : 400,
-                              fontStyle: o.italic ? 'italic' : 'normal',
-                              textDecoration: o.underline ? 'underline' : 'none',
-                              textAlign: o.align ?? 'center',
-                              // Text nur im Text-Werkzeug interaktiv → mit Stift/Marker kann man
-                              // ungehindert DARÜBER zeichnen (sonst „fängt" der Text die Eingabe ab).
-                              // Und NUR auf der aktiven Hälfte (#53): auf der ausgegrauten Seite ist
-                              // der Text durchlässig – der Tipp fällt auf die Ebene durch und
-                              // aktiviert die Seite (layerDown), statt den Text zu wählen/bearbeiten.
-                              pointerEvents:
-                                drawMode && drawTool === 'text' && !(perView === 2 && j !== activeSlot)
-                                  ? 'all'
-                                  : 'none',
-                              cursor: 'grab',
-                            }}
-                            onPointerDown={(e) => d.startDrag(e, o)}
-                            onPointerMove={(e) => d.moveDrag(e, o.id)}
-                            onPointerUp={() => {
-                              // endDrag entscheidet: Tipp auf ausgewählten Text → bearbeiten. flushSync
-                              // hängt die Eingabe sofort ein, danach synchron fokussieren → iOS-Tastatur.
-                              flushSync(() => d.endDrag());
-                              focusEditor(j);
-                            }}
-                            onPointerCancel={d.endDrag}
-                          >
-                            {o.text}
-                            {/* Zieh-Knopf (Ecke unten rechts) am ausgewählten Text: Größe ändern. */}
-                            {o.id === d.selectedId && drawMode && drawTool === 'text' && (
-                              <span
-                                className={styles.textHandle}
-                                onPointerDown={(e) => handleResizeDown(e, j, o.id, o.sizeCqh)}
-                                onPointerMove={handleResizeMove}
-                                onPointerUp={handleResizeUp}
-                                onPointerCancel={handleResizeUp}
-                                aria-label="Textgröße ändern"
-                              />
-                            )}
-                          </div>
-                        ))}
+                      {(!viewing(pageIndex + j) || previewOwn) &&
+                        d.texts
+                          // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
+                          .filter((o) => o.id !== d.pending?.editId)
+                          .map((o) => (
+                            <div
+                              key={o.id}
+                              className={`${styles.textObj}${o.id === d.selectedId ? ' ' + styles.textSel : ''}`}
+                              style={{
+                                left: `${o.fx * 100}%`,
+                                top: `${o.fy * 100}%`,
+                                fontSize: `${o.sizeCqh}cqh`,
+                                color: o.color,
+                                // Format je Block. Bestandstexte (ohne bold-Feld) waren immer fett →
+                                // Fallback true, damit sie unverändert aussehen; neue Texte sind normal.
+                                fontWeight: (o.bold ?? true) ? 700 : 400,
+                                fontStyle: o.italic ? 'italic' : 'normal',
+                                textDecoration: o.underline ? 'underline' : 'none',
+                                textAlign: o.align ?? 'center',
+                                // Text nur im Text-Werkzeug interaktiv → mit Stift/Marker kann man
+                                // ungehindert DARÜBER zeichnen (sonst „fängt" der Text die Eingabe ab).
+                                // Und NUR auf der aktiven Hälfte (#53): auf der ausgegrauten Seite ist
+                                // der Text durchlässig – der Tipp fällt auf die Ebene durch und
+                                // aktiviert die Seite (layerDown), statt den Text zu wählen/bearbeiten.
+                                pointerEvents:
+                                  drawMode &&
+                                  drawTool === 'text' &&
+                                  !(perView === 2 && j !== activeSlot)
+                                    ? 'all'
+                                    : 'none',
+                                cursor: 'grab',
+                              }}
+                              onPointerDown={(e) => d.startDrag(e, o)}
+                              onPointerMove={(e) => d.moveDrag(e, o.id)}
+                              onPointerUp={() => {
+                                // endDrag entscheidet: Tipp auf ausgewählten Text → bearbeiten. flushSync
+                                // hängt die Eingabe sofort ein, danach synchron fokussieren → iOS-Tastatur.
+                                flushSync(() => d.endDrag());
+                                focusEditor(j);
+                              }}
+                              onPointerCancel={d.endDrag}
+                            >
+                              {o.text}
+                              {/* Zieh-Knopf (Ecke unten rechts) am ausgewählten Text: Größe ändern. */}
+                              {o.id === d.selectedId && drawMode && drawTool === 'text' && (
+                                <span
+                                  className={styles.textHandle}
+                                  onPointerDown={(e) => handleResizeDown(e, j, o.id, o.sizeCqh)}
+                                  onPointerMove={handleResizeMove}
+                                  onPointerUp={handleResizeUp}
+                                  onPointerCancel={handleResizeUp}
+                                  aria-label="Textgröße ändern"
+                                />
+                              )}
+                            </div>
+                          ))}
                       {/* Inline-Eingabe: blinkender Cursor direkt an der Tipp-Stelle. */}
                       {d.pending &&
                         (() => {
