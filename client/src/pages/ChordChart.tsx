@@ -29,6 +29,7 @@ import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPd
 import { sharePdf } from '../utils/sharePdf';
 import { type SongSettings, DEFAULT_SETTINGS, loadSettings, settingsForLevel } from '../utils/chartSettings';
 import { logoTightUrl } from '../utils/logoAsset';
+import { mergeStrokes } from '../utils/strokes';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
 import { useSetlistPages } from '../hooks/useSetlistPages';
@@ -46,37 +47,6 @@ interface ChordChartProps {
   canUseGlobalNotes?: boolean;
   theme: Theme;
   fontId: string;
-}
-
-/** Zwei Striche-PNGs (eigene + fremde) zu einem Bild zusammenführen (für den Import). */
-function mergeStrokes(own: string | null, theirs: string | null): Promise<string | null> {
-  if (!own) return Promise.resolve(theirs ?? null);
-  if (!theirs) return Promise.resolve(own);
-  return new Promise((resolve) => {
-    const a = new Image();
-    const b = new Image();
-    let loaded = 0;
-    const done = () => {
-      if (++loaded < 2) return;
-      const c = document.createElement('canvas');
-      c.width = Math.max(a.naturalWidth, b.naturalWidth);
-      c.height = Math.max(a.naturalHeight, b.naturalHeight);
-      const ctx = c.getContext('2d');
-      if (!ctx || !c.width || !c.height) {
-        resolve(own);
-        return;
-      }
-      ctx.drawImage(a, 0, 0);
-      ctx.drawImage(b, 0, 0);
-      resolve(c.toDataURL('image/png', 0.7));
-    };
-    a.onload = done;
-    b.onload = done;
-    a.onerror = done;
-    b.onerror = done;
-    a.src = own;
-    b.src = theirs;
-  });
 }
 
 /** Textobjekt einer Anmerkungs-Seite (Form wird beim Import 1:1 übernommen). */
