@@ -204,7 +204,7 @@ export function PageDeck({
 
   // Dauerhaftes Speichern/Laden des Pinch-Zooms pro Seite (Geräteklasse + Layout im Schlüssel) –
   // ausgelagert in useZoomPersistence. Die Apply-Effekte (Wiederherstellen) bleiben unten in PageDeck.
-  const { loadZoom, persistZoom, resetVisibleZoom } = useZoomPersistence({
+  const { loadZoom, persistZoom, resetVisibleZoom, restoreVisibleZoom } = useZoomPersistence({
     zoomKeyBaseFor,
     perView,
     pageIndex,
@@ -354,23 +354,7 @@ export function PageDeck({
     // die den in onInit gesetzten Zoom überschreiben kann. Doppel-rAF liegt sicher NACH dieser
     // Neuausrichtung; das 250-ms-Netz fängt Nachzügler (z. B. Ausricht-Animationen). Ohne das
     // sprang die Seite nach dem Blättern zurück in die Mitte, bis der nächste Sync sie rettete.
-    const applySaved = () => {
-      for (let j = 0; j < perView; j++) {
-        if (gestureSlot.current === j) continue; // laufende Geste nie überschreiben
-        const ref = transformRefs[j].current;
-        if (!ref) continue;
-        const saved = loadZoom(pageIndex + j);
-        if (saved) {
-          ref.setTransform(saved.x, saved.y, saved.scale, 0);
-        } else {
-          // Kein gespeicherter Zoom für DIESES Layout (z. B. nach Hochformat→Querformat-Wechsel:
-          // anderer Layout-Schlüssel) → hängengebliebenen Transform auf Fit zurücksetzen, sonst
-          // bleibt der Hochformat-Zoom in der Hälfte „stecken".
-          const st = ref.instance?.transformState;
-          if (st && st.scale > 1.01) ref.resetTransform(0);
-        }
-      }
-    };
+    const applySaved = () => restoreVisibleZoom({ fitUnsaved: true });
     requestAnimationFrame(() => requestAnimationFrame(applySaved));
     const net = window.setTimeout(applySaved, 250);
     return () => window.clearTimeout(net);
@@ -497,22 +481,7 @@ export function PageDeck({
     gestureSlot.current = null;
     lastScale.current = [1, 1]; // Merker der Vorseite verwerfen (sonst löscht ein Mini-Pinch fälschlich)
     if (loading) return;
-    requestAnimationFrame(() => {
-      for (let j = 0; j < perView; j++) {
-        if (gestureSlot.current === j) continue; // laufende Geste nie überschreiben
-        const ref = transformRefs[j].current;
-        if (!ref) continue;
-        const saved = loadZoom(pageIndex + j);
-        if (saved) {
-          ref.setTransform(saved.x, saved.y, saved.scale, 0);
-        } else {
-          // Kein Zoom für dieses Layout gespeichert (z. B. nach Formatwechsel) → Fit statt
-          // hängengebliebenem Transform des vorherigen Layouts.
-          const st = ref.instance?.transformState;
-          if (st && st.scale > 1.01) ref.resetTransform(0);
-        }
-      }
-    });
+    requestAnimationFrame(() => restoreVisibleZoom({ fitUnsaved: true }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, perView, loading]);
 
@@ -533,13 +502,8 @@ export function PageDeck({
     if (pages === pagesSeen.current) return;
     pagesSeen.current = pages;
     if (loading) return;
-    requestAnimationFrame(() => {
-      for (let j = 0; j < perView; j++) {
-        if (gestureSlot.current === j) continue;
-        const saved = loadZoom(pageIndex + j);
-        if (saved) transformRefs[j].current?.setTransform(saved.x, saved.y, saved.scale, 0);
-      }
-    });
+    // Hintergrund-Neuaufbau desselben Layouts → NIE auf Fit zurücksetzen (fitUnsaved:false).
+    requestAnimationFrame(() => restoreVisibleZoom({ fitUnsaved: false }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pages]);
 
@@ -551,20 +515,7 @@ export function PageDeck({
   useEffect(() => {
     if (syncTick === syncSeen.current) return;
     syncSeen.current = syncTick;
-    requestAnimationFrame(() => {
-      for (let j = 0; j < perView; j++) {
-        if (gestureSlot.current === j) continue;
-        const ref = transformRefs[j].current;
-        if (!ref) continue;
-        const saved = loadZoom(pageIndex + j);
-        if (saved) {
-          ref.setTransform(saved.x, saved.y, saved.scale, 0);
-        } else {
-          const st = ref.instance?.transformState;
-          if (st && st.scale > 1.01) ref.resetTransform(0);
-        }
-      }
-    });
+    requestAnimationFrame(() => restoreVisibleZoom({ fitUnsaved: true }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syncTick]);
 
