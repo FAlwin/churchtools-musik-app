@@ -88,8 +88,8 @@ export function useKeyboardInsets({
       document.removeEventListener('scroll', adjust, true);
       root.style.transform = '';
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anyPending, pendingSlot]);
+    // editRefs/rootRef sind stabile Ref-Objekte (Identität ändert sich nie) – als Deps unschädlich.
+  }, [anyPending, pendingSlot, editRefs, rootRef]);
 
   // VOR dem Fokus anheben (gelernte Tastaturhöhe): ist der Cursor beim Aufklappen der Tastatur
   // schon frei, verschiebt iOS Fenster/Container gar nicht erst. Ohne gelernte Höhe (z. B.

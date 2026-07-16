@@ -43,6 +43,10 @@ export function useSlideTransition({
   const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevPageIndex = useRef<number | null>(null);
   const slideGuard = useRef<{ perView: number; pages: HTMLCanvasElement[] } | null>(null);
+  // composePane wird je Render neu erzeugt → in einer Ref halten, damit der Auslöse-Effekt es
+  // aufrufen kann, OHNE bei jedem Render neu zu feuern (er soll nur auf echten Seitenwechsel laufen).
+  const composePaneRef = useRef(composePane);
+  composePaneRef.current = composePane;
 
   // Slide auslösen, wenn sich NUR die Seite um ±1 ändert (Blättern).
   useLayoutEffect(() => {
@@ -55,12 +59,11 @@ export function useSlideTransition({
     const delta = pageIndex - prev;
     if (Math.abs(delta) !== 1) return;
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    const old = composePane(prev);
-    const neu = composePane(pageIndex);
+    const old = composePaneRef.current(prev);
+    const neu = composePaneRef.current(pageIndex);
     if (!old.length || !neu.length) return;
     slidePanes.current = { old, neu };
     setSlide({ dir: delta > 0 ? 1 : -1, tick: Date.now() });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, perView, pages, loading]);
 
   // Slide abspielen: alte und neue Ebene (je bildschirmbreit) GLEICHZEITIG horizontal schieben.
