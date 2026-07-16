@@ -24,6 +24,12 @@ npm-debug.log*
 # Test / Coverage
 coverage/
 
+# Playwright (E2E)
+test-results/
+playwright-report/
+blob-report/
+.last-run.json
+
 # Laufzeit-Branding (White-Label) – pro Instanz, nicht committen
 data/
 server/data/
