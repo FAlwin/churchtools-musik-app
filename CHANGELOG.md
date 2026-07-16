@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.13.5] – 2026-07-16
+
 ### Intern
 
 - **Code-Check-Nachschliff (Note 1, 0 Sicherheitsfunde):** Zoom-Wiederherstellung in PageDeck
