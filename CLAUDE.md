@@ -30,7 +30,7 @@
 | Validierung    | Zod (serverseitig)                 |
 | Deployment     | Docker auf Synology NAS (Container Manager) |
 | Externer Zugang| Synology Reverse Proxy + DDNS + Let's Encrypt (KEIN Cloudflare) |
-| Tests          | Vitest (Unit, nur reine Logik in `client/src/utils`) |
+| Tests          | Vitest (Client-Logik/Hooks/Komponenten + Server, CT gemockt); Playwright-Render-Smoke (E2E) |
 | CI             | GitHub Actions: lint + build + test je PR |
 
 ## Ordnerstruktur
@@ -125,7 +125,10 @@ durchgehenden Strom** zusammen: je Lied steuert – nach `viewSource` – entwed
 Bild → Canvas): Hochformat 1 Seite, **Querformat 2 Seiten nebeneinander** über Liedgrenzen, je Seite
 eigener Zoom. `StreamView`/`DocumentView` gibt es nicht mehr (durch PageDeck ersetzt).
 Blättern schiebt horizontal ein (Slide-Übergang). *(Live-Chart-Reste `useDrawing.ts`/
-`usePagedColumns.ts`/`constants.ts` wurden früher entfernt.)*
+`usePagedColumns.ts`/`constants.ts` wurden früher entfernt.)* PageDeck delegiert (seit #140) die
+querschneidenden Belange an eigene Hooks: `useZoomPersistence` (Zoom je Seite+Geräteklasse laden/
+speichern), `useKeyboardInsets` (iOS-Tastatur-Hub) und `useSlideTransition` (Blätter-Animation);
+`composePane` bleibt bewusst in PageDeck.
 
 **Gesten:** **ein Finger blättert, zwei Finger zoomen + verschieben** (auch im Zeichenmodus – ein
 begonnener Strich wird bei Zweitfinger verworfen; Apple Pencil zeichnet, Finger zoomen). Pinch zoomt
@@ -189,13 +192,18 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
    Ziel-Elemente gerendert sind).
 
 ## Tests & CI
-- **Befehle:** `npm test` (alle), `npm run test:cov` (Coverage), im Client
-  `npm run test:watch`.
-- **Umfang (bewusst schlank):** Vitest-Unit-Tests nur für die kniffligste reine Logik –
-  `client/src/utils/transpose.ts` (Transponieren) und `chordpro.ts` (zwei Dialekte).
-  Kein API/E2E: UI + Proxy werden manuell geprüft (Begründung: `docs/entwicklung/testkonzept.md`).
-- **CI:** `.github/workflows/ci.yml` läuft `lint` + `build` + `test` bei jedem PR
-  und Push auf `main`. Kein DB-Service nötig.
+- **Befehle:** `npm test` (alle Unit-/Server-Tests), `npm run test:cov` (Coverage), im Client
+  `npm run test:watch`; `npm run test:e2e` (Playwright).
+- **Umfang:** Vitest für reine Logik (`utils/transpose.ts`, `chordpro.ts`, …), den
+  Interaktionskern (`hooks/usePageDraw` Undo/Redo/Push-Dedup/Key-Wechsel), Basis-Komponenten
+  (`Coachmarks`) und alle Server-Services/-Controller/-Middleware (ChurchTools gemockt).
+  Coverage schließt `utils/`, `components/`, `hooks/`, `services/` ein.
+- **E2E (Playwright):** ein **Render-Smoke** gegen `?demo=chart` (mountet die Chart-Ansicht ohne
+  Login/Backend → prüft, dass die PDF-Seiten rendern, ohne unbehandelte JS-Fehler). Läuft im
+  CI-Job selbst (Dev-Server hochgefahren), nicht gegen die LAN-Staging-Instanz. Der **volle
+  Auth-Flow** (Login→Agenda→Anmerkung→Sync) braucht einen ChurchTools-Stub → offen als #174.
+- **CI:** `.github/workflows/ci.yml` – Job `build-and-test` (`lint` + `build` + `test`) **und**
+  Job `e2e` (Playwright-Smoke, Chromium) bei jedem PR und Push auf `main`. Kein DB-Service nötig.
 - **Regel:** Jeder Bug → Issue (Vorlage „Fehlerbericht"); betrifft er reine Logik,
   zusätzlich ein Regressionstest.
 
@@ -318,9 +326,15 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
 - **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
   mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
-- **Offen / optional:** Musik-Abwesenheitsplaner nachbauen (separates Projekt); UI-Monolithen
-  aufteilen (#140), E2E-Smoke (#141), Push-Benachrichtigung (#144), BPM-Puls (#145), IPv6-Rate-Limit
-  (#146 N4), Objektradierer/Vektor-Striche (#134). #124/#32/#45/#46/#47 erledigt.
+- **Zuletzt erledigt (16.07.2026, auf `main`, noch nicht getaggt → Release-Kandidat v2.13.4):**
+  UI-Monolithen aufgeteilt (#140: PageDeck/ChordChart → eigene Hooks), Interaktionskern getestet +
+  Playwright-Render-Smoke im CI (#141), ErrorBoundary heilt Chunk-Fehler + zeigt Fehlertext (#176),
+  gelöschte Ablaufpunkte lösen sich immer sichtbar auf (#178, lokale Auflöse-Platzhalter).
+- **Offen / optional:** Musik-Verfügbarkeit/Abwesenheiten als App-Modul (#177, Plan in
+  `docs/entwicklung/plan-verfuegbarkeit-phase1.md`); voller Auth-Flow-E2E mit CT-Stub (#174);
+  OAuth-2.0-Machbarkeits-Spike (#175); Push-Benachrichtigung (#144), BPM-Puls (#145),
+  IPv6-Rate-Limit (#146 N4), Objektradierer/Vektor-Striche (#134); Rest von #152.
+  #140/#141/#161/#124/#32/#45/#46/#47 erledigt.
 
 ## Deployment-Stand (NAS) – wichtige Lernpunkte
 - Prod läuft image-basiert (GHCR) im Container Manager (Projekt `worship-charts`, Port 3001).

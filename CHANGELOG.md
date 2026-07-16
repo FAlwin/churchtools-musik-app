@@ -13,7 +13,21 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Öffnen des Ablaufs hinzukam und dann wieder gelöscht wurde, verschwand bisher kommentarlos
   (er stand noch in keiner „gesehen"-Basislinie, daher kam kein Auflöse-Platzhalter vom Server).
   Die Ablauf-Ansicht erkennt solche Löschungen jetzt selbst und zeigt auch dafür die
-  durchgestrichene Zeile mit Zerfalls-Effekt – nahtlos, ohne Aufblitzen.
+  durchgestrichene Zeile mit Zerfalls-Effekt – nahtlos, ohne Aufblitzen. (#178)
+- **Start-Fehlerschirm heilt sich selbst und ist diagnostizierbar:** Der Auffang-Schirm „Die App
+  konnte nicht richtig starten" lädt bei einem Chunk-Ladefehler (typisch direkt nach einem Deploy)
+  jetzt einmalig still neu, statt stehen zu bleiben; bei echten Fehlern zeigt er zusätzlich die
+  Fehlermeldung an (ein Screenshot reicht zur Ferndiagnose). (#176)
+
+### Intern
+
+- **UI-Monolithen aufgeteilt (#140):** `PageDeck.tsx` (1552→1355 Z.) und `ChordChart.tsx`
+  (1292→1093 Z.) – Zoom-Persistenz, iOS-Tastatur, Slide-Übergang und Team-Notizen-Import in eigene
+  Hooks (`useZoomPersistence`/`useKeyboardInsets`/`useSlideTransition`/`useTeamNotesImport`),
+  `mergeStrokes` nach `utils/strokes.ts`. Kein Verhaltensunterschied.
+- **Interaktionskern getestet (#141):** Tests für `usePageDraw` (Undo/Redo, Push-Dedup, Key-Wechsel)
+  und `Coachmarks`; Playwright-Render-Smoke (`?demo=chart`) als eigener CI-Job `e2e`; Coverage auch
+  über `hooks/` + `services/`. Voller Auth-Flow-E2E bleibt offen (#174).
 
 ## [2.13.3] – 2026-07-15
 
