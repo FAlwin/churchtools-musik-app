@@ -204,33 +204,37 @@ function AgendaFullView({
   // wieder gelöscht wurden, stehen nicht in der „gesehen"-Basislinie → der Server liefert für sie
   // KEINEN removed-Platzhalter. Die Ansicht merkt sich deshalb selbst, was sie zuletzt gezeigt
   // hat, und lässt auch solche Punkte sichtbar zerfallen statt sie kommentarlos zu entfernen.
-  const prevShown = useRef<{ eventId: number; rows: ShownRow[] } | null>(null);
+  const prevShown = useRef<{ eventId: number; items: AgendaItem[]; rows: ShownRow[] } | null>(null);
   const [localRemoved, setLocalRemoved] = useState<
     { id: number; title: string; afterId: number | null; at: number }[]
   >([]);
-  useEffect(() => {
-    const prev = prevShown.current;
+  // SYNCHRON während des Renderns abgleichen (NICHT useEffect): sonst rendert erst ein Frame OHNE
+  // die gelöschte Zeile (Layout springt), dann fügt der Effekt den Platzhalter wieder ein
+  // („blinkt"). Bedingtes setState im Render ist das dokumentierte „State an geänderte Props
+  // anpassen"-Muster – gleiche #113-Lektion wie in usePageDraw.
+  const prev = prevShown.current;
+  if (!prev || prev.eventId !== eventId || prev.items !== items) {
     const shown: ShownRow[] = items
       .filter((i) => !i.removed)
       .map((i) => ({ id: i.id, title: i.song ? i.song.title : i.title }));
-    prevShown.current = { eventId, rows: shown };
-    // Terminwechsel/Erstaufbau: nichts auflösen, nur Merkstand setzen.
+    prevShown.current = { eventId, items, rows: shown };
     if (!prev || prev.eventId !== eventId) {
-      setLocalRemoved([]);
-      return;
+      // Terminwechsel/Erstaufbau: nichts auflösen, nur Merkstand setzen.
+      if (localRemoved.length) setLocalRemoved([]);
+    } else {
+      const presentIds = new Set(items.map((i) => i.id));
+      const vanished = vanishedRows(prev.rows, presentIds);
+      const now = Date.now();
+      setLocalRemoved((cur) => {
+        // Wieder aufgetauchte IDs (rückgängig gemacht) und alte, längst zerfallene Einträge räumen.
+        const kept = cur.filter((c) => !presentIds.has(c.id) && now - c.at < 60_000);
+        const fresh = vanished
+          .filter((v) => !kept.some((c) => c.id === v.id))
+          .map((v) => ({ ...v, at: now }));
+        return fresh.length || kept.length !== cur.length ? [...kept, ...fresh] : cur;
+      });
     }
-    const presentIds = new Set(items.map((i) => i.id));
-    const vanished = vanishedRows(prev.rows, presentIds);
-    const now = Date.now();
-    setLocalRemoved((cur) => {
-      // Wieder aufgetauchte IDs (rückgängig gemacht) und alte, längst zerfallene Einträge räumen.
-      const kept = cur.filter((c) => !presentIds.has(c.id) && now - c.at < 60_000);
-      const fresh = vanished
-        .filter((v) => !kept.some((c) => c.id === v.id))
-        .map((v) => ({ ...v, at: now }));
-      return fresh.length || kept.length !== cur.length ? [...kept, ...fresh] : cur;
-    });
-  }, [items, eventId]);
+  }
   // TEMP [DIAG-178]: sichtbare Diagnose – liefert der Server die Markierungen? NIE mergen.
   const diagChanged = items.filter((i) => i.changed).length;
   const diagRemoved = items.filter((i) => i.removed).length;
