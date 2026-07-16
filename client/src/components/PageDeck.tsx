@@ -308,7 +308,7 @@ export function PageDeck({
   // Sichtbare Seiten malen + Striche laden + Seitenverhältnis setzen
   useEffect(() => {
     if (loading) return;
-    const nextAspects = [...aspects];
+    const nextAspects: string[] = [];
     for (let j = 0; j < perView; j++) {
       const content = contentRefs[j].current;
       const anno = annoRefs[j].current;
@@ -348,7 +348,9 @@ export function PageDeck({
       }
       nextAspects[j] = `${src.width} / ${src.height}`;
     }
-    setAspects(nextAspects);
+    // Funktionales Update: der vorige `aspects`-Stand wird NICHT gelesen → keine implizite
+    // Abhängigkeit (fehlende Indizes bleiben unverändert, damit nur die sichtbaren Slots wechseln).
+    setAspects((prev) => prev.map((a, j) => nextAspects[j] ?? a));
     // Gespeicherten Zoom NACH dem Neuzeichnen erneut anwenden: das Setzen der Canvas-Maße löst in
     // der Zoom-Bibliothek eine Neuvermessung aus (ResizeObserver → Neuausrichtung Richtung Mitte),
     // die den in onInit gesetzten Zoom überschreiben kann. Doppel-rAF liegt sicher NACH dieser
@@ -358,8 +360,10 @@ export function PageDeck({
     requestAnimationFrame(() => requestAnimationFrame(applySaved));
     const net = window.setTimeout(applySaved, 250);
     return () => window.clearTimeout(net);
-    // remountEpoch: nach dem erzwungenen Remount (App-Rückkehr) sind die Canvas-Elemente neu →
-    // hier neu zeichnen, sonst blieben sie leer.
+    // Disable bewusst beibehalten: `drawKeyFor`/`overlayKeyFor`/`viewing`/`restoreVisibleZoom`
+    // sind je Render neu erzeugte Funktionen – als Deps würden sie den (teuren) Neuaufbau bei jedem
+    // Render auslösen. Effekt läuft absichtlich nur bei echtem Seiten-/Layout-/Sync-Wechsel.
+    // remountEpoch: nach dem erzwungenen Remount (App-Rückkehr) sind die Canvas-Elemente neu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, pages, pageIndex, perView, syncTick, viewKeyFor, remountEpoch, previewOwn]);
 
