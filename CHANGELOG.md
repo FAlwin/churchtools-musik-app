@@ -7,6 +7,14 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **Gelöschte Ablaufpunkte lösen sich jetzt immer sichtbar auf:** Ein Punkt, der erst nach dem
+  Öffnen des Ablaufs hinzukam und dann wieder gelöscht wurde, verschwand bisher kommentarlos
+  (er stand noch in keiner „gesehen"-Basislinie, daher kam kein Auflöse-Platzhalter vom Server).
+  Die Ablauf-Ansicht erkennt solche Löschungen jetzt selbst und zeigt auch dafür die
+  durchgestrichene Zeile mit Zerfalls-Effekt – nahtlos, ohne Aufblitzen.
+
 ## [2.13.3] – 2026-07-15
 
 ### Behoben

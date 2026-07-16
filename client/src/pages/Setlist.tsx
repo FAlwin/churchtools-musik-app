@@ -235,9 +235,6 @@ function AgendaFullView({
       });
     }
   }
-  // TEMP [DIAG-178]: sichtbare Diagnose – liefert der Server die Markierungen? NIE mergen.
-  const diagChanged = items.filter((i) => i.changed).length;
-  const diagRemoved = items.filter((i) => i.removed).length;
   // Lokale Platzhalter an ihrer alten Position einfügen (gleiches Muster wie serverseitig).
   const rendered: (AgendaItem | { id: number; title: string; removed: true })[] = [];
   for (const lr of localRemoved) {
@@ -251,10 +248,6 @@ function AgendaFullView({
   }
   return (
     <div className={styles.flowList}>
-      <div style={{ fontSize: 11, opacity: 0.6, padding: '2px 8px' }}>
-        [DIAG] Punkte: {items.length} · geändert: {diagChanged} · entfernt: {diagRemoved} · lokal:{' '}
-        {localRemoved.length} · {new Date().toLocaleTimeString('de-DE')}
-      </div>
       {rendered.map((item) => {
         // Entfernter Punkt (#161 Etappe B): kurz sichtbar, dann „poof"-Zerfall.
         if (item.removed) {
