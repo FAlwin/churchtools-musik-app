@@ -16,6 +16,7 @@ import { pushField } from '../services/annotations';
 import { useZoomPersistence } from '../hooks/useZoomPersistence';
 import { useKeyboardInsets } from '../hooks/useKeyboardInsets';
 import { useSlideTransition, type SlideSlot } from '../hooks/useSlideTransition';
+import { usePointerStrokes } from '../hooks/usePointerStrokes';
 import { DrawToolbar } from './DrawToolbar';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Spinner } from './Spinner';
@@ -155,19 +156,7 @@ export function PageDeck({
   ];
   // Letzter Zoom-Faktor je Slot – um „aktives Herauszoomen" von programmatischem Reset zu unterscheiden.
   const lastScale = useRef<[number, number]>([1, 1]);
-  // Marker glatt: aktiver Strich wird als EINE Linie aus allen Punkten neu gezeichnet (auf einem
-  // Schnappschuss der Seite vor dem Strich) → keine pro-Segment-Überlagerung mehr (kein „Gepunktel").
-  const markerBase = useRef<HTMLCanvasElement | null>(null);
-  const markerPts = useRef<{ x: number; y: number }[]>([]);
-  const stroke = useRef(false);
-  const strokePointer = useRef(-1);
-  const strokePointerType = useRef<string>('');
-  const strokeCanvas = useRef<HTMLCanvasElement | null>(null);
-  const strokeSlot = useRef(0);
-  // Schnappschuss der Anno-Canvas VOR dem Strich → um einen begonnenen Strich zu verwerfen, wenn
-  // ein zweiter Finger dazukommt (dann war es eine Zoom-/Verschiebe-Geste, kein Zeichnen).
-  const strokeSnapshot = useRef<HTMLCanvasElement | null>(null);
-  const lastPt = useRef<{ x: number; y: number } | null>(null);
+  // Zeichen-Engine (Stift/Marker/Radierer) inkl. aller Touch-Regeln in usePointerStrokes (s. u.).
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressClick = useRef(false); // verhindert doppelte Navigation (Touch löst auch click aus)
   // Slot, den der Nutzer GERADE per Geste anpasst. Synchron (Ref, nicht State) → das erste
@@ -204,7 +193,7 @@ export function PageDeck({
 
   // Dauerhaftes Speichern/Laden des Pinch-Zooms pro Seite (Geräteklasse + Layout im Schlüssel) –
   // ausgelagert in useZoomPersistence. Die Apply-Effekte (Wiederherstellen) bleiben unten in PageDeck.
-  const { loadZoom, persistZoom, resetVisibleZoom } = useZoomPersistence({
+  const { loadZoom, persistZoom, resetVisibleZoom, restoreVisibleZoom } = useZoomPersistence({
     zoomKeyBaseFor,
     perView,
     pageIndex,
@@ -308,7 +297,7 @@ export function PageDeck({
   // Sichtbare Seiten malen + Striche laden + Seitenverhältnis setzen
   useEffect(() => {
     if (loading) return;
-    const nextAspects = [...aspects];
+    const nextAspects: string[] = [];
     for (let j = 0; j < perView; j++) {
       const content = contentRefs[j].current;
       const anno = annoRefs[j].current;
@@ -348,34 +337,22 @@ export function PageDeck({
       }
       nextAspects[j] = `${src.width} / ${src.height}`;
     }
-    setAspects(nextAspects);
+    // Funktionales Update: der vorige `aspects`-Stand wird NICHT gelesen → keine implizite
+    // Abhängigkeit (fehlende Indizes bleiben unverändert, damit nur die sichtbaren Slots wechseln).
+    setAspects((prev) => prev.map((a, j) => nextAspects[j] ?? a));
     // Gespeicherten Zoom NACH dem Neuzeichnen erneut anwenden: das Setzen der Canvas-Maße löst in
     // der Zoom-Bibliothek eine Neuvermessung aus (ResizeObserver → Neuausrichtung Richtung Mitte),
     // die den in onInit gesetzten Zoom überschreiben kann. Doppel-rAF liegt sicher NACH dieser
     // Neuausrichtung; das 250-ms-Netz fängt Nachzügler (z. B. Ausricht-Animationen). Ohne das
     // sprang die Seite nach dem Blättern zurück in die Mitte, bis der nächste Sync sie rettete.
-    const applySaved = () => {
-      for (let j = 0; j < perView; j++) {
-        if (gestureSlot.current === j) continue; // laufende Geste nie überschreiben
-        const ref = transformRefs[j].current;
-        if (!ref) continue;
-        const saved = loadZoom(pageIndex + j);
-        if (saved) {
-          ref.setTransform(saved.x, saved.y, saved.scale, 0);
-        } else {
-          // Kein gespeicherter Zoom für DIESES Layout (z. B. nach Hochformat→Querformat-Wechsel:
-          // anderer Layout-Schlüssel) → hängengebliebenen Transform auf Fit zurücksetzen, sonst
-          // bleibt der Hochformat-Zoom in der Hälfte „stecken".
-          const st = ref.instance?.transformState;
-          if (st && st.scale > 1.01) ref.resetTransform(0);
-        }
-      }
-    };
+    const applySaved = () => restoreVisibleZoom({ fitUnsaved: true });
     requestAnimationFrame(() => requestAnimationFrame(applySaved));
     const net = window.setTimeout(applySaved, 250);
     return () => window.clearTimeout(net);
-    // remountEpoch: nach dem erzwungenen Remount (App-Rückkehr) sind die Canvas-Elemente neu →
-    // hier neu zeichnen, sonst blieben sie leer.
+    // Disable bewusst beibehalten: `drawKeyFor`/`overlayKeyFor`/`viewing`/`restoreVisibleZoom`
+    // sind je Render neu erzeugte Funktionen – als Deps würden sie den (teuren) Neuaufbau bei jedem
+    // Render auslösen. Effekt läuft absichtlich nur bei echtem Seiten-/Layout-/Sync-Wechsel.
+    // remountEpoch: nach dem erzwungenen Remount (App-Rückkehr) sind die Canvas-Elemente neu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, pages, pageIndex, perView, syncTick, viewKeyFor, remountEpoch, previewOwn]);
 
@@ -479,15 +456,6 @@ export function PageDeck({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [perView, pageIndex, activePage]);
 
-  // Sicherheit gegen hängengebliebene Striche: beim Verlassen des Zeichenmodus/Seitenwechsel
-  // den Zeichen-Zustand zurücksetzen.
-  useEffect(() => {
-    stroke.current = false;
-    strokePointer.current = -1;
-    strokeCanvas.current = null;
-    lastPt.current = null;
-  }, [drawMode, pageIndex, perView]);
-
   // Beim Blättern/Drehen den Gesten-Zustand zurücksetzen. Das eigentliche Wiederherstellen des
   // gespeicherten Zooms passiert VERZÖGERUNGSFREI in onInit jeder Zoom-Ebene (die per Seiten-key
   // beim Blättern neu aufgebaut wird) – onInit feuert genau dann, wenn die Ebene vermessen ist.
@@ -497,22 +465,7 @@ export function PageDeck({
     gestureSlot.current = null;
     lastScale.current = [1, 1]; // Merker der Vorseite verwerfen (sonst löscht ein Mini-Pinch fälschlich)
     if (loading) return;
-    requestAnimationFrame(() => {
-      for (let j = 0; j < perView; j++) {
-        if (gestureSlot.current === j) continue; // laufende Geste nie überschreiben
-        const ref = transformRefs[j].current;
-        if (!ref) continue;
-        const saved = loadZoom(pageIndex + j);
-        if (saved) {
-          ref.setTransform(saved.x, saved.y, saved.scale, 0);
-        } else {
-          // Kein Zoom für dieses Layout gespeichert (z. B. nach Formatwechsel) → Fit statt
-          // hängengebliebenem Transform des vorherigen Layouts.
-          const st = ref.instance?.transformState;
-          if (st && st.scale > 1.01) ref.resetTransform(0);
-        }
-      }
-    });
+    requestAnimationFrame(() => restoreVisibleZoom({ fitUnsaved: true }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, perView, loading]);
 
@@ -533,13 +486,8 @@ export function PageDeck({
     if (pages === pagesSeen.current) return;
     pagesSeen.current = pages;
     if (loading) return;
-    requestAnimationFrame(() => {
-      for (let j = 0; j < perView; j++) {
-        if (gestureSlot.current === j) continue;
-        const saved = loadZoom(pageIndex + j);
-        if (saved) transformRefs[j].current?.setTransform(saved.x, saved.y, saved.scale, 0);
-      }
-    });
+    // Hintergrund-Neuaufbau desselben Layouts → NIE auf Fit zurücksetzen (fitUnsaved:false).
+    requestAnimationFrame(() => restoreVisibleZoom({ fitUnsaved: false }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pages]);
 
@@ -551,165 +499,23 @@ export function PageDeck({
   useEffect(() => {
     if (syncTick === syncSeen.current) return;
     syncSeen.current = syncTick;
-    requestAnimationFrame(() => {
-      for (let j = 0; j < perView; j++) {
-        if (gestureSlot.current === j) continue;
-        const ref = transformRefs[j].current;
-        if (!ref) continue;
-        const saved = loadZoom(pageIndex + j);
-        if (saved) {
-          ref.setTransform(saved.x, saved.y, saved.scale, 0);
-        } else {
-          const st = ref.instance?.transformState;
-          if (st && st.scale > 1.01) ref.resetTransform(0);
-        }
-      }
-    });
+    requestAnimationFrame(() => restoreVisibleZoom({ fitUnsaved: true }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syncTick]);
 
-  // ── Striche zeichnen (auf der Anno-Canvas der jeweiligen Seite) ──
-  function ptOf(e: React.PointerEvent, canvas: HTMLCanvasElement) {
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: ((e.clientX - rect.left) / rect.width) * canvas.width,
-      y: ((e.clientY - rect.top) / rect.height) * canvas.height,
-    };
-  }
-  // Laufenden Strich verwerfen (zweiter Finger = Zoom/Verschieben, kein Zeichnen): Canvas auf den
-  // Schnappschshot vor dem Strich zurücksetzen und den Verlaufseintrag entfernen.
-  function cancelStroke() {
-    if (!stroke.current) return;
-    const canvas = strokeCanvas.current;
-    const snap = strokeSnapshot.current;
-    if (canvas && snap) {
-      const ctx = canvas.getContext('2d')!;
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(snap, 0, 0);
-    }
-    try {
-      canvas?.releasePointerCapture(strokePointer.current);
-    } catch {
-      /* ignorieren */
-    }
-    draws[strokeSlot.current].dropHistory();
-    stroke.current = false;
-    strokePointer.current = -1;
-    strokePointerType.current = '';
-    lastPt.current = null;
-    markerBase.current = null;
-    markerPts.current = [];
-    strokeCanvas.current = null;
-    strokeSnapshot.current = null;
-  }
-  function strokeDown(e: React.PointerEvent, slot: number) {
-    if (!drawMode || drawTool === 'text') return;
-    // Zweiter Zeiger während eines laufenden Strichs:
-    if (stroke.current && e.pointerId !== strokePointer.current) {
-      // Stift zeichnet + Finger dazu → Handballen ignorieren (Strich läuft weiter).
-      if (strokePointerType.current === 'pen' && e.pointerType === 'touch') return;
-      // Finger zeichnete + zweiter Zeiger dazu → das war eine Zoom-/Verschiebe-Geste: verwerfen.
-      cancelStroke();
-      return;
-    }
-    // Nur der primäre Finger startet einen Strich (zweiter Finger beim Multitouch ignorieren) →
-    // so bleibt die Zwei-Finger-Geste dem Zoom/Verschieben vorbehalten, auch im Zeichenmodus.
-    if (e.pointerType === 'touch' && !e.isPrimary) return;
-    // #53: Auf der inaktiven Seite wird NICHT gezeichnet – der Tipp aktiviert sie nur.
-    if (perView === 2 && slot !== activeSlot) {
-      e.stopPropagation();
-      onActivePage(pageIndex + slot);
-      return;
-    }
-    const canvas = annoRefs[slot].current;
-    if (!canvas) return;
-    e.stopPropagation();
-    // Pointer einfangen → Move/Up kommen GARANTIERT an, auch wenn der Finger die Fläche verlässt
-    // (verhindert hängengebliebene, nicht beendete Striche).
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {
-      /* ignorieren */
-    }
-    // Schnappschuss vor dem Strich (für Marker-Glättung UND zum Verwerfen bei Zwei-Finger-Geste).
-    const snap = document.createElement('canvas');
-    snap.width = canvas.width;
-    snap.height = canvas.height;
-    snap.getContext('2d')!.drawImage(canvas, 0, 0);
-    strokeSnapshot.current = snap;
-    draws[slot].setSelectedId(null);
-    draws[slot].pushHistory();
-    stroke.current = true;
-    strokePointer.current = e.pointerId;
-    strokePointerType.current = e.pointerType;
-    strokeCanvas.current = canvas;
-    strokeSlot.current = slot;
-    lastPt.current = ptOf(e, canvas);
-    if (drawTool === 'marker') {
-      markerBase.current = snap; // gleicher Schnappschuss = Basis für den Leuchtmarker-Strich
-      markerPts.current = [lastPt.current];
-    }
-  }
-  function strokeMove(e: React.PointerEvent) {
-    if (!stroke.current || strokePointer.current !== e.pointerId || !strokeCanvas.current) return;
-    const canvas = strokeCanvas.current;
-    const ctx = canvas.getContext('2d')!;
-    const p = ptOf(e, canvas);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    if (drawTool === 'marker' && markerBase.current) {
-      // Den ganzen bisherigen Marker-Strich als EINE halbtransparente Linie neu zeichnen
-      // (auf dem Schnappschuss) → gleichmäßiger Leuchtmarker statt Punktreihe.
-      markerPts.current.push(p);
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(markerBase.current, 0, 0);
-      ctx.globalAlpha = 0.3;
-      ctx.lineWidth = toolSizes.marker;
-      ctx.strokeStyle = drawColor;
-      const pts = markerPts.current;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-      lastPt.current = p;
-      return;
-    }
-    if (drawTool === 'eraser') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.globalAlpha = 1;
-      ctx.lineWidth = toolSizes.eraser;
-      ctx.strokeStyle = 'rgba(0,0,0,1)';
-    } else {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1;
-      ctx.lineWidth = toolSizes.pen;
-      ctx.strokeStyle = drawColor;
-    }
-    ctx.beginPath();
-    ctx.moveTo(lastPt.current!.x, lastPt.current!.y);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    lastPt.current = p;
-  }
-  function strokeUp(e?: React.PointerEvent) {
-    if (!stroke.current) return;
-    if (e && strokePointer.current !== e.pointerId) return;
-    stroke.current = false;
-    strokePointer.current = -1;
-    strokePointerType.current = '';
-    lastPt.current = null;
-    markerBase.current = null;
-    markerPts.current = [];
-    strokeSnapshot.current = null;
-    draws[strokeSlot.current].saveStrokes();
-    strokeCanvas.current = null;
-  }
+  // ── Striche zeichnen (Stift/Marker/Radierer) – Engine ausgelagert in usePointerStrokes ──
+  const { strokeDown, strokeMove, strokeUp } = usePointerStrokes({
+    annoRefs,
+    draws,
+    drawMode,
+    drawTool,
+    drawColor,
+    toolSizes,
+    perView,
+    activeSlot,
+    pageIndex,
+    onActivePage,
+  });
 
   // Offene Inline-Eingabe eines Slots übernehmen (leerer Text = verwerfen). Lock verhindert
   // Doppel-Commit, wenn Blur UND Außen-Tipp im selben Moment feuern.

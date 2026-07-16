@@ -26,7 +26,8 @@ import { useSetlistLiveSync, useMarkSeenOnLeave } from './hooks/useSetlistLiveSy
 import { Screen } from './components/Screen';
 import { CenterMessage } from './components/CenterMessage';
 import { TabBar, type TabId } from './components/TabBar';
-import { Toast, useToast } from './components/Toast';
+import { Toast } from './components/Toast';
+import { useToast } from './hooks/useToast';
 import { Coachmarks } from './components/Coachmarks';
 import { AblaufChangedBanner } from './components/AblaufChangedBanner';
 import {

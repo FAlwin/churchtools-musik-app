@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand v2.13.x: **31 Testdateien**
-(21 Client, 10 Server) mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand v2.13.x: **32 Testdateien**
+(22 Client, 10 Server) mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 | Ebene | Status | Tool | Ort |
@@ -55,8 +55,9 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
   jeweilige Seite. Bewusst ohne echtes Canvas (Strich-Persistenz bleibt manuell/Staging).
 - `components/Coachmarks`: Schritte durchlaufen (Fertig → onClose), Überspringen, Auto-Ende ohne
   Ziel-Element, Auto-Skip fehlender Schritte.
-- `utils/strokes` (`mergeStrokes`, reine null-Zweige) und `utils/vanishedRows` (lokale
-  Auflöse-Platzhalter #178) rein getestet.
+- `utils/strokes` (`mergeStrokes`, reine null-Zweige), `utils/vanishedRows` (lokale
+  Auflöse-Platzhalter #178) und `utils/annotationKeys` (Schlüssel-Grammatik: Ebenen-Präfix,
+  nicht-leere Notizen je Ebene, Ebenen-Gruppierung unter Namensraum) rein getestet.
 
 ### Weitere Client-Logik
 `songFilter` (Sortierung/Zeitfilter Lieder), `chartSettings`, `color`, `canvas`,

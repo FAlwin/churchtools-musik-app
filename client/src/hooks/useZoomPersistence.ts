@@ -114,5 +114,35 @@ export function useZoomPersistence({
     gestureSlot.current = null;
   }
 
-  return { zoomKeyFor, loadZoom, persistZoom, clearStoredZoom, resetVisibleZoom };
+  /**
+   * Gespeicherten Zoom auf die aktuell sichtbaren Slots (erneut) anwenden. Ein gerade aktiv
+   * bewegter Slot (`gestureSlot`) bleibt IMMER unberührt (kein laufender Pinch abbrechen, #33).
+   * `fitUnsaved`: Slots ohne gespeicherten Zoom, die aber „hängengeblieben" reingezoomt sind
+   * (z. B. nach Hoch-/Querformat-Wechsel = anderer Layout-Schlüssel), auf Fit zurücksetzen.
+   * Ohne `fitUnsaved` (Hintergrund-Neuaufbau desselben Layouts) wird NIE auf Fit gesetzt.
+   */
+  function restoreVisibleZoom(opts?: { fitUnsaved?: boolean }) {
+    const fitUnsaved = opts?.fitUnsaved ?? false;
+    for (let j = 0; j < perView; j++) {
+      if (gestureSlot.current === j) continue;
+      const ref = transformRefs[j].current;
+      if (!ref) continue;
+      const saved = loadZoom(pageIndex + j);
+      if (saved) {
+        ref.setTransform(saved.x, saved.y, saved.scale, 0);
+      } else if (fitUnsaved) {
+        const st = ref.instance?.transformState;
+        if (st && st.scale > 1.01) ref.resetTransform(0);
+      }
+    }
+  }
+
+  return {
+    zoomKeyFor,
+    loadZoom,
+    persistZoom,
+    clearStoredZoom,
+    resetVisibleZoom,
+    restoreVisibleZoom,
+  };
 }
