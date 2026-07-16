@@ -31,6 +31,23 @@ export function shouldReloadAfterChunkError(
 }
 
 /**
+ * Erkennt einen fehlgeschlagenen dynamischen Chunk-Import. Die Meldung unterscheidet sich je
+ * Browser/Bundler („Failed to fetch dynamically imported module", „Importing a module script
+ * failed", „ChunkLoadError", „Loading chunk … failed") → wir prüfen auf die gängigen Fragmente.
+ */
+export function isChunkLoadError(error: unknown): boolean {
+  const e = error as { name?: string; message?: string } | null;
+  const s = `${e?.name ?? ''} ${e?.message ?? ''}`.toLowerCase();
+  return (
+    s.includes('dynamically imported module') ||
+    s.includes('importing a module script failed') ||
+    s.includes('chunkloaderror') ||
+    s.includes('loading chunk') ||
+    (s.includes('failed to fetch') && s.includes('module'))
+  );
+}
+
+/**
  * Umschließt die dynamische Import-Funktion einer Lazy-Seite. Bei einem Chunk-Ladefehler wird
  * die App einmalig neu geladen (siehe {@link shouldReloadAfterChunkError}); schlägt es auch nach
  * dem Reload fehl, wird der Fehler durchgereicht → die ErrorBoundary zeigt eine Meldung.
