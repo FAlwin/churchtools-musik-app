@@ -10,15 +10,8 @@ import { PageDeck } from '../components/PageDeck';
 import { Coachmarks } from '../components/Coachmarks';
 import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
 import { Icon } from '../components/icons';
-import { migrateLocalAnnotations, pullAnnotations, pushField } from '../services/annotations';
-import {
-  VIEW_NS,
-  getSharers,
-  getSettingsOf,
-  loadViewMirror,
-  clearViewMirror,
-  type Sharer,
-} from '../services/teamNotes';
+import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
+import { VIEW_NS } from '../services/teamNotes';
 import { Sheet } from '../components/Sheet';
 import { Toast, useToast } from '../components/Toast';
 import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
@@ -27,9 +20,9 @@ import { availableVersions, versionText, setLsVersion } from '../utils/songVersi
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import { sharePdf } from '../utils/sharePdf';
-import { type SongSettings, DEFAULT_SETTINGS, loadSettings, settingsForLevel } from '../utils/chartSettings';
+import { type SongSettings, DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
 import { logoTightUrl } from '../utils/logoAsset';
-import { mergeStrokes } from '../utils/strokes';
+import { useTeamNotesImport } from '../hooks/useTeamNotesImport';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
 import { useSetlistPages } from '../hooks/useSetlistPages';
@@ -49,12 +42,6 @@ interface ChordChartProps {
   fontId: string;
 }
 
-/** Textobjekt einer Anmerkungs-Seite (Form wird beim Import 1:1 übernommen). */
-interface PageTextObjLike {
-  id: number;
-  [k: string]: unknown;
-}
-
 /** Hat das Konto eigene Anmerkungen auf dieser Ebene (Version + Darstellungsart)? */
 function hasOwnNotes(songId: number, versionKey: string, lyr: boolean): boolean {
   const prefix = `worship_docdraw_song${songId}_v${versionKey}${lyr ? '_lyr' : ''}_`;
@@ -68,15 +55,6 @@ function hasOwnNotes(songId: number, versionKey: string, lyr: boolean): boolean 
     if (v && v !== '[]') return true;
   }
   return false;
-}
-
-function safeParse<T>(raw: string | null): T | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -121,11 +99,7 @@ export function ChordChart({
       await Promise.all([migrateLocalAnnotations(), migrateLocalSettings()]);
       await Promise.all([pullAnnotations(ids), pullSettings(ids)]);
       // Team-Notizen: wer teilt Anmerkungen zu diesen Liedern? (nur für Berechtigte)
-      if (canUseGlobalNotes) {
-        getSharers(ids)
-          .then((list) => setSharers(list))
-          .catch(() => {});
-      }
+      if (canUseGlobalNotes) refreshSharers();
       if (cancelled) return;
       // Einstellungen aus dem (jetzt gespiegelten) localStorage neu übernehmen.
       setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
@@ -175,30 +149,37 @@ export function ChordChart({
   const [showSongMenu, setShowSongMenu] = useState(false);
 
   const [drawMode, setDrawMode] = useState(false);
-  // ── Team-Notizen (#124, PCO-Modell): „Notizen von …" ansehen + übernehmen ──
-  // Ansehen gilt PRO LIED (nicht für den ganzen Ablauf) – songId merkt sich, für welches.
-  const [viewing, setViewing] = useState<{
-    id: number;
-    name: string;
-    songId: number;
-    versionKey: string;
-    lyr: boolean;
-  } | null>(null);
-  // Wähler-Zwischenschritt: Person angetippt → ihre Ebenen (Version + Darstellung) zur Auswahl.
-  const [pickerPerson, setPickerPerson] = useState<{ id: number; name: string } | null>(null);
-  const [viewSettings, setViewSettings] = useState<Record<number, SongSettings> | null>(null);
-  // Roh-Einstellungen der angesehenen Person (alle worship_*-Schlüssel des Lieds) – für die
-  // Ansichts-Übernahme auch dann, wenn eine ANDERE als ihre aktuelle Version importiert wird.
-  const [viewRaw, setViewRaw] = useState<Record<string, string> | null>(null);
   const { toast, showToast } = useToast();
-  const [sharers, setSharers] = useState<Sharer[]>([]);
-  const [showSharers, setShowSharers] = useState(false);
+  // ── Team-Notizen (#124, PCO-Modell): „Notizen von …" ansehen + übernehmen ──
+  // Ganzer Ansehen-/Import-Zustand samt abgeleiteter effSettings gekapselt in useTeamNotesImport.
   // Import-Vorschau: das Chart zeigt LIVE das Ergebnis (merge = eigene + fremde Ebene übereinander,
   // replace = nur die fremde); unten schwebt die Vorschau-Leiste mit Umschalter + Übernehmen.
-  // Modus beim Ansehen einer geteilten Ebene: nur ansehen, oder Vorschau auf Zusammenführen/Ersetzen.
-  const [viewMode, setViewMode] = useState<'view' | 'merge' | 'replace'>('view');
-  // Beim Verlassen der Ansicht/Chart-Wechsel den flüchtigen Ansichts-Spiegel räumen.
-  useEffect(() => () => clearViewMirror(), []);
+  const {
+    viewing,
+    pickerPerson,
+    setPickerPerson,
+    sharers,
+    showSharers,
+    setShowSharers,
+    viewMode,
+    setViewMode,
+    effSettings,
+    refreshSharers,
+    openPersonLevels,
+    viewLevel,
+    stopViewing,
+    mirrorGroups,
+    groupKeyOf,
+    importFrom,
+    openSharers,
+  } = useTeamNotesImport({
+    songs,
+    settings,
+    setSettings,
+    setSyncTick,
+    setDrawMode,
+    showToast,
+  });
   // Geführte Einführung Chart-Ansicht (#Onboarding, Gruppe 2): startet beim ersten Öffnen, sobald
   // die Seiten gerendert sind (dann existieren die hervorzuhebenden Elemente).
   const [chartTour, setChartTour] = useState(false);
@@ -269,157 +250,6 @@ export function ChordChart({
       document.removeEventListener('visibilitychange', onReturn);
     };
   }, []);
-
-  // ── „Notizen von …": Während des Ansehens gelten NUR für das angesehene Lied die Einstellungen
-  // der angesehenen Person (ihre Ansicht – nur so stimmen die Positionen ihrer Anmerkungen).
-  const effSettings: Record<number, SongSettings> =
-    viewing && viewSettings
-      ? Object.fromEntries(
-          songs.map((s) => [
-            s.id,
-            s.id === viewing.songId ? (viewSettings[s.id] ?? settings[s.id]) : settings[s.id],
-          ]),
-        )
-      : settings;
-
-  /** Person antippen: ihre geteilten Daten fürs Lied laden, dann ihre Ebenen zur Auswahl zeigen. */
-  async function openPersonLevels(p: { id: number; name: string }, songId: number) {
-    try {
-      const [, settingsMap] = await Promise.all([
-        loadViewMirror(p.id, [songId]),
-        getSettingsOf(p.id, [songId]),
-      ]);
-      setViewRaw(settingsMap);
-      setPickerPerson(p);
-    } catch {
-      /* Laden gescheitert (offline/Rechte) → Auswahl bleibt bei den Personen */
-    }
-  }
-
-  /** Eine konkrete Ebene (Version + Darstellungsart) der Person ansehen. */
-  function viewLevel(versionKey: string, lyr: boolean) {
-    if (!pickerPerson) return;
-    const songId = song.id;
-    const target = songs.find((x) => x.id === songId);
-    if (!target) return;
-    setViewSettings({ [songId]: settingsForLevel(target, viewRaw ?? {}, versionKey, lyr) });
-    setViewing({ ...pickerPerson, songId, versionKey, lyr });
-    setViewMode('view');
-    setDrawMode(false);
-    setShowSharers(false);
-    setSyncTick((t) => t + 1);
-  }
-
-  function stopViewing() {
-    clearViewMirror();
-    setViewMode('view');
-    setViewing(null);
-    setViewSettings(null);
-    setViewRaw(null);
-    setPickerPerson(null);
-    setSyncTick((t) => t + 1);
-  }
-  /** Ebenen (Version + Darstellungsart) mit Anmerkungen im Ansichts-Spiegel, samt Seiten. */
-  function mirrorGroups(): Array<{ versionKey: string; lyr: boolean; pages: number[] }> {
-    const map = new Map<string, Set<number>>();
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (!k || !k.startsWith(VIEW_NS)) continue;
-      const base = k.replace(VIEW_NS, '').replace(/_text$/, '');
-      const m = base.match(/^song\d+_v([a-z0-9-]+)(_lyr)?_(\d+)$/i);
-      if (!m) continue;
-      const gk = `${m[1]}|${m[2] ? '1' : '0'}`;
-      if (!map.has(gk)) map.set(gk, new Set());
-      map.get(gk)!.add(Number(m[3]));
-    }
-    return [...map.entries()].map(([gk, pages]) => {
-      const [versionKey, lyr] = gk.split('|');
-      return { versionKey, lyr: lyr === '1', pages: [...pages].sort((a, b) => a - b) };
-    });
-  }
-  const groupKeyOf = (g: { versionKey: string; lyr: boolean }) => `${g.versionKey}|${g.lyr ? '1' : '0'}`;
-
-  /**
-   * Import: Anmerkungen der angesehenen Person in die EIGENEN übernehmen (PCO-Stil).
-   * „Ersetzen" überschreibt die eigenen Seiten, „Zusammenführen" kombiniert (Striche-PNGs
-   * übereinander, Texte angehängt). Die Ansicht (Version/Spalten/Schrift/Nur-Text) der Person
-   * wird für die betroffenen Lieder mit übernommen – nur so stimmen die Positionen. Tonart/Kapo
-   * bleiben bewusst persönlich.
-   */
-  async function importFrom(mode: 'merge' | 'replace') {
-    if (!viewing || !viewSettings) return;
-    setViewMode('view');
-    const songId = viewing.songId;
-    // Übernommen wird die GERADE ANGESEHENE Ebene (= das, was die Vorschau zeigt).
-    const level = mirrorGroups().find(
-      (g) => g.versionKey === viewing.versionKey && g.lyr === viewing.lyr,
-    );
-    if (!level) return;
-    {
-      const { versionKey } = level;
-      const seg = level.lyr ? '_lyr' : '';
-      for (const page of level.pages) {
-        const base = `song${songId}_v${versionKey}${seg}_${page}`;
-        const theirStrokes = localStorage.getItem(VIEW_NS + base);
-        const theirTexts =
-          safeParse<PageTextObjLike[]>(localStorage.getItem(`${VIEW_NS + base}_text`)) ?? [];
-        const ownKey = `worship_docdraw_${base}`;
-        if (mode === 'replace') {
-          if (theirStrokes) localStorage.setItem(ownKey, theirStrokes);
-          else localStorage.removeItem(ownKey);
-          pushField(ownKey, 'strokes', theirStrokes ?? null);
-          if (theirTexts.length) localStorage.setItem(`${ownKey}_text`, JSON.stringify(theirTexts));
-          else localStorage.removeItem(`${ownKey}_text`);
-          pushField(ownKey, 'texts', theirTexts);
-        } else {
-          const merged = await mergeStrokes(localStorage.getItem(ownKey), theirStrokes);
-          if (merged) {
-            localStorage.setItem(ownKey, merged);
-            pushField(ownKey, 'strokes', merged);
-          }
-          const ownTexts = safeParse<PageTextObjLike[]>(localStorage.getItem(`${ownKey}_text`)) ?? [];
-          const withNewIds = theirTexts.map((t, i) => ({ ...t, id: Date.now() + i }));
-          const mergedTexts = [...ownTexts, ...withNewIds];
-          if (mergedTexts.length) {
-            localStorage.setItem(`${ownKey}_text`, JSON.stringify(mergedTexts));
-            pushField(ownKey, 'texts', mergedTexts);
-          }
-        }
-      }
-    }
-    // Ziel-Ebene = die angesehene Ebene; DIESE Ansicht wird danach angezeigt.
-    const vs = viewSettings[songId];
-    const pVersion = viewing.versionKey;
-    const pLyr = viewing.lyr ? '1' : '0';
-    // Ansicht der Person für die Ziel-Ebene übernehmen (Spalten/Schrift/Abschnitte aus ihren
-    // Roh-Einstellungen der ZIEL-Version; Tonart/Kapo bleiben bewusst eigene).
-    const raw = viewRaw ?? {};
-    const rawGet = (b: string): string | null => raw[`worship_${b}_${songId}_${pVersion}`] ?? null;
-    localStorage.setItem(`worship_ver_${songId}`, pVersion);
-    pushSetting(`worship_ver_${songId}`, pVersion);
-    setLsVersion('lyrics', songId, pVersion, pLyr === '1' ? '1' : '0');
-    setLsVersion('cols', songId, pVersion, rawGet('cols') ?? String(vs?.cols ?? 1));
-    setLsVersion('fs', songId, pVersion, rawGet('fs') ?? String(vs?.fontSize ?? 20));
-    const rawShift = rawGet('secshift');
-    if (rawShift) setLsVersion('secshift', songId, pVersion, rawShift);
-    setSettings(Object.fromEntries(songs.map((x) => [x.id, loadSettings(x)])));
-    const target = songs.find((x) => x.id === songId);
-    const vName =
-      (target && availableVersions(target).find((v) => v.key === pVersion)?.name) ?? pVersion;
-    stopViewing();
-    showToast(
-      `Übernommen – Ansicht: Version „${vName}"${pLyr === '1' ? ' · Nur Text' : ''}. Eigene Notizen: siehe Stift-Markierung im Lied-Menü.`,
-    );
-  }
-
-  /** „Notizen von …" öffnen (Liste beim Öffnen auffrischen). */
-  function openSharers() {
-    setPickerPerson(null);
-    setShowSharers(true);
-    getSharers(songs.map((x) => x.id))
-      .then((list) => setSharers(list))
-      .catch(() => {});
-  }
 
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
   const stream = useMemo(() => {
@@ -546,9 +376,7 @@ export function ChordChart({
   // nicht schon während des asynchronen Neuaufbaus (sonst: Notizen „vor dem Text", Stift schreibt
   // in die falsche Ebene).
   const modeSeg = (songId: number): string =>
-    (publishedSettings[songId] ?? effSettings[songId] ?? DEFAULT_SETTINGS).lyricsOnly
-      ? '_lyr'
-      : '';
+    (publishedSettings[songId] ?? effSettings[songId] ?? DEFAULT_SETTINGS).lyricsOnly ? '_lyr' : '';
   const drawKeyFor = (page: number): string | null => {
     const o = owners[page];
     if (!o) return null;
@@ -943,7 +771,8 @@ export function ChordChart({
                     >
                       <span>
                         {v.name}
-                        {(hasOwnNotes(song.id, v.key, false) || hasOwnNotes(song.id, v.key, true)) && (
+                        {(hasOwnNotes(song.id, v.key, false) ||
+                          hasOwnNotes(song.id, v.key, true)) && (
                           <Icon name="pencil" size={12} className={styles.mmNote} />
                         )}
                       </span>
@@ -1193,7 +1022,9 @@ export function ChordChart({
                   schreibgeschützt, in ihrer Ansicht. Übernehmen ist danach möglich.
                 </p>
                 {songSharers.length === 0 ? (
-                  <p className={styles.pickHint}>Zurzeit teilt niemand Anmerkungen zu diesem Lied.</p>
+                  <p className={styles.pickHint}>
+                    Zurzeit teilt niemand Anmerkungen zu diesem Lied.
+                  </p>
                 ) : (
                   songSharers.map((p) => (
                     <button
@@ -1225,7 +1056,7 @@ export function ChordChart({
                     <button
                       key={groupKeyOf(g)}
                       className={styles.pickRow}
-                      onClick={() => viewLevel(g.versionKey, g.lyr)}
+                      onClick={() => viewLevel(song.id, g.versionKey, g.lyr)}
                     >
                       <Icon name="pencil" size={16} stroke={2} />
                       <span className={styles.pickName}>
