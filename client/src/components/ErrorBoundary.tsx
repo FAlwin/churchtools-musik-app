@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react';
+import { isChunkLoadError, shouldReloadAfterChunkError } from '../utils/chunkReload';
 
 /**
  * Fängt Render-/Start-Fehler ab, damit ein einzelner Fehler nie die GANZE App weiß macht (#32).
@@ -24,6 +25,13 @@ export class ErrorBoundary extends Component<
   componentDidCatch(error: unknown): void {
     // Für die Fehlersuche in der Konsole (kein externes Logging).
     console.error('App-Startfehler abgefangen:', error);
+    // Nach einem Deploy zeigt die noch laufende (alte) index.html auf entfernte Chunk-Dateien →
+    // ein dynamischer Import scheitert. Solche Chunk-Fehler EINMAL still per Neuladen selbst heilen
+    // (Cooldown gegen Endlosschleife), statt dem Nutzer den Schirm zuzumuten. Ergänzt withChunkReload
+    // für Fälle, die dessen Lazy-Grenze entkommen. Andere Fehler bleiben sichtbar.
+    if (isChunkLoadError(error) && shouldReloadAfterChunkError()) {
+      window.location.reload();
+    }
   }
 
   render(): ReactNode {
