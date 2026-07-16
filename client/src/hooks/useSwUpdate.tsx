@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components --
+   Context + Provider + zugehöriger useSwUpdate-Hook sind bewusst kolokiert (Standard-Muster);
+   nur relevant für Fast-Refresh-DX, kein Laufzeitbelang. */
 import { createContext, useContext, type ReactNode } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 

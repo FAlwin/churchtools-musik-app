@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components --
+   Reines Entwicklungs-Werkzeug (nicht im Prod-Build), mischt bewusst Helfer + Komponenten. */
 /**
  * Entwicklungs-Harness für PageDeck (#113): mountet die Seiten-Engine mit künstlichen Seiten und
  * vorbereiteten Text-Anmerkungen und zeichnet JEDEN Browser-Frame auf (Overlay-Zustand, Streifen-

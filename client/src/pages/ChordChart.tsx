@@ -14,7 +14,8 @@ import { migrateLocalAnnotations, pullAnnotations } from '../services/annotation
 import { VIEW_NS } from '../services/teamNotes';
 import { hasStoredNotesForLevel as hasOwnNotes } from '../utils/annotationKeys';
 import { Sheet } from '../components/Sheet';
-import { Toast, useToast } from '../components/Toast';
+import { Toast } from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
 import { parseChordPro } from '../utils/chordpro';
 import { availableVersions, versionText, setLsVersion } from '../utils/songVersions';
