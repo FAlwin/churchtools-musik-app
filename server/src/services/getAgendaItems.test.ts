@@ -5,8 +5,8 @@ vi.mock('./churchtools.js', () => ({
   getAgenda: vi.fn(),
 }));
 
-import { getAgendaItems } from './setlistBuilder.js';
-import { getAgenda } from './churchtools.js';
+import { getAgendaItems, agendaItemSignature } from './setlistBuilder.js';
+import { getAgenda, type CtAgendaItem } from './churchtools.js';
 
 const mockedGetAgenda = vi.mocked(getAgenda);
 const EVENT = 1500;
@@ -62,5 +62,48 @@ describe('getAgendaItems – Uhrzeit & Ablauf-Mapping', () => {
     const items = await getAgendaItems('cookie', EVENT);
     expect(items[0].isHeader).toBe(true);
     expect(items[0].time).toBe('12:00');
+  });
+});
+
+describe('getAgendaItems – Änderungs-Diff (#161/#178)', () => {
+  // Roh-Punkt wie aus ChurchTools (ohne Lied → buildSong wird nicht angefasst).
+  const raw = (id: number, title: string): CtAgendaItem =>
+    ({ id, title, type: 'normal', duration: 0, startTimes: { '1500': null } }) as CtAgendaItem;
+  const sigOf = (id: number, title: string) => ({
+    id,
+    sig: agendaItemSignature(raw(id, title)),
+    title,
+  });
+
+  it('liefert für einen gelöschten Punkt einen removed-Platzhalter an der alten Position', async () => {
+    // Basislinie: A(1), B(2), C(3) – aktuell wurde B gelöscht.
+    mockedGetAgenda.mockResolvedValue({
+      items: [raw(1, 'A'), raw(3, 'C')],
+    } as unknown as AgendaResult);
+
+    const items = await getAgendaItems('cookie', EVENT, [
+      sigOf(1, 'A'),
+      sigOf(2, 'B'),
+      sigOf(3, 'C'),
+    ]);
+
+    expect(items.map((i) => i.id)).toEqual([1, 2, 3]); // Platzhalter B zwischen A und C
+    const placeholder = items[1];
+    expect(placeholder.removed).toBe(true);
+    expect(placeholder.title).toBe('B');
+    // Unveränderte Punkte werden nicht markiert.
+    expect(items[0].changed).toBeFalsy();
+    expect(items[2].changed).toBeFalsy();
+  });
+
+  it('markiert einen inhaltlich geänderten Punkt als changed', async () => {
+    mockedGetAgenda.mockResolvedValue({
+      items: [raw(1, 'A neu'), raw(2, 'B')],
+    } as unknown as AgendaResult);
+
+    const items = await getAgendaItems('cookie', EVENT, [sigOf(1, 'A'), sigOf(2, 'B')]);
+    expect(items[0].changed).toBe(true);
+    expect(items[1].changed).toBeFalsy();
+    expect(items.some((i) => i.removed)).toBe(false);
   });
 });

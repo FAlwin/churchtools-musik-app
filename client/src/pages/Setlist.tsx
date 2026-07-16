@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { AgendaItem, AgendaServiceOption, Service } from '@shared/types/index';
 import type { AgendaItemUpdate } from '../services/churchtoolsApi';
 import { disintegrate } from '../utils/disintegrate';
+import { vanishedRows, type ShownRow } from '../utils/vanishedRows';
 import {
   DndContext,
   closestCenter,
@@ -191,15 +192,63 @@ function DisintegratingRow({ title }: { title: string }) {
 
 function AgendaFullView({
   items,
+  eventId,
   onSelect,
 }: {
   items: AgendaItem[];
+  eventId: number;
   onSelect: (songIndex: number) => void;
 }) {
   let songIndex = -1;
+  // Lokal erzeugte „aufgelöst"-Platzhalter (#178): Punkte, die seit dem Betreten hinzukamen und
+  // wieder gelöscht wurden, stehen nicht in der „gesehen"-Basislinie → der Server liefert für sie
+  // KEINEN removed-Platzhalter. Die Ansicht merkt sich deshalb selbst, was sie zuletzt gezeigt
+  // hat, und lässt auch solche Punkte sichtbar zerfallen statt sie kommentarlos zu entfernen.
+  const prevShown = useRef<{ eventId: number; items: AgendaItem[]; rows: ShownRow[] } | null>(null);
+  const [localRemoved, setLocalRemoved] = useState<
+    { id: number; title: string; afterId: number | null; at: number }[]
+  >([]);
+  // SYNCHRON während des Renderns abgleichen (NICHT useEffect): sonst rendert erst ein Frame OHNE
+  // die gelöschte Zeile (Layout springt), dann fügt der Effekt den Platzhalter wieder ein
+  // („blinkt"). Bedingtes setState im Render ist das dokumentierte „State an geänderte Props
+  // anpassen"-Muster – gleiche #113-Lektion wie in usePageDraw.
+  const prev = prevShown.current;
+  if (!prev || prev.eventId !== eventId || prev.items !== items) {
+    const shown: ShownRow[] = items
+      .filter((i) => !i.removed)
+      .map((i) => ({ id: i.id, title: i.song ? i.song.title : i.title }));
+    prevShown.current = { eventId, items, rows: shown };
+    if (!prev || prev.eventId !== eventId) {
+      // Terminwechsel/Erstaufbau: nichts auflösen, nur Merkstand setzen.
+      if (localRemoved.length) setLocalRemoved([]);
+    } else {
+      const presentIds = new Set(items.map((i) => i.id));
+      const vanished = vanishedRows(prev.rows, presentIds);
+      const now = Date.now();
+      setLocalRemoved((cur) => {
+        // Wieder aufgetauchte IDs (rückgängig gemacht) und alte, längst zerfallene Einträge räumen.
+        const kept = cur.filter((c) => !presentIds.has(c.id) && now - c.at < 60_000);
+        const fresh = vanished
+          .filter((v) => !kept.some((c) => c.id === v.id))
+          .map((v) => ({ ...v, at: now }));
+        return fresh.length || kept.length !== cur.length ? [...kept, ...fresh] : cur;
+      });
+    }
+  }
+  // Lokale Platzhalter an ihrer alten Position einfügen (gleiches Muster wie serverseitig).
+  const rendered: (AgendaItem | { id: number; title: string; removed: true })[] = [];
+  for (const lr of localRemoved) {
+    if (lr.afterId == null) rendered.push({ id: lr.id, title: lr.title, removed: true });
+  }
+  for (const item of items) {
+    rendered.push(item);
+    for (const lr of localRemoved) {
+      if (lr.afterId === item.id) rendered.push({ id: lr.id, title: lr.title, removed: true });
+    }
+  }
   return (
     <div className={styles.flowList}>
-      {items.map((item) => {
+      {rendered.map((item) => {
         // Entfernter Punkt (#161 Etappe B): kurz sichtbar, dann „poof"-Zerfall.
         if (item.removed) {
           return <DisintegratingRow key={item.id} title={item.title} />;
@@ -550,7 +599,7 @@ export function Setlist({
             </button>
           </>
         ) : (
-          <AgendaFullView items={items} onSelect={onSelect} />
+          <AgendaFullView items={items} eventId={service.id} onSelect={onSelect} />
         )}
         <div style={{ height: 20 }} />
       </Scroll>
