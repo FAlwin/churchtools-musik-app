@@ -13,6 +13,7 @@ import { pushSetting } from '../services/userSettings';
 import { availableVersions, setLsVersion } from '../utils/songVersions';
 import { type SongSettings, loadSettings, settingsForLevel } from '../utils/chartSettings';
 import { mergeStrokes } from '../utils/strokes';
+import { levelsUnderNamespace, levelKeyOf } from '../utils/annotationKeys';
 
 /** Textobjekt einer Anmerkungs-Seite (Form wird beim Import 1:1 übernommen). */
 interface PageTextObjLike {
@@ -123,25 +124,8 @@ export function useTeamNotesImport({
   }
 
   /** Ebenen (Version + Darstellungsart) mit Anmerkungen im Ansichts-Spiegel, samt Seiten. */
-  function mirrorGroups(): Array<{ versionKey: string; lyr: boolean; pages: number[] }> {
-    const map = new Map<string, Set<number>>();
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (!k || !k.startsWith(VIEW_NS)) continue;
-      const base = k.replace(VIEW_NS, '').replace(/_text$/, '');
-      const m = base.match(/^song\d+_v([a-z0-9-]+)(_lyr)?_(\d+)$/i);
-      if (!m) continue;
-      const gk = `${m[1]}|${m[2] ? '1' : '0'}`;
-      if (!map.has(gk)) map.set(gk, new Set());
-      map.get(gk)!.add(Number(m[3]));
-    }
-    return [...map.entries()].map(([gk, pages]) => {
-      const [versionKey, lyr] = gk.split('|');
-      return { versionKey, lyr: lyr === '1', pages: [...pages].sort((a, b) => a - b) };
-    });
-  }
-  const groupKeyOf = (g: { versionKey: string; lyr: boolean }) =>
-    `${g.versionKey}|${g.lyr ? '1' : '0'}`;
+  const mirrorGroups = () => levelsUnderNamespace(VIEW_NS);
+  const groupKeyOf = levelKeyOf;
 
   /**
    * Import: Anmerkungen der angesehenen Person in die EIGENEN übernehmen (PCO-Stil).

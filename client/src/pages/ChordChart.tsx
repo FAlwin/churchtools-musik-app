@@ -12,6 +12,7 @@ import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onbo
 import { Icon } from '../components/icons';
 import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
 import { VIEW_NS } from '../services/teamNotes';
+import { hasStoredNotesForLevel as hasOwnNotes } from '../utils/annotationKeys';
 import { Sheet } from '../components/Sheet';
 import { Toast, useToast } from '../components/Toast';
 import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
@@ -40,21 +41,6 @@ interface ChordChartProps {
   canUseGlobalNotes?: boolean;
   theme: Theme;
   fontId: string;
-}
-
-/** Hat das Konto eigene Anmerkungen auf dieser Ebene (Version + Darstellungsart)? */
-function hasOwnNotes(songId: number, versionKey: string, lyr: boolean): boolean {
-  const prefix = `worship_docdraw_song${songId}_v${versionKey}${lyr ? '_lyr' : ''}_`;
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (!k || !k.startsWith(prefix)) continue;
-    // Nur Seiten-Schlüssel (Striche) bzw. deren _text zählen – keine Fremd-Ebenen-Präfixe.
-    const rest = k.slice(prefix.length);
-    if (!/^\d+(_text)?$/.test(rest)) continue;
-    const v = localStorage.getItem(k);
-    if (v && v !== '[]') return true;
-  }
-  return false;
 }
 
 /**
