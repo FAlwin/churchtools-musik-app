@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.13.4] – 2026-07-16
+
 ### Behoben
 
 - **Gelöschte Ablaufpunkte lösen sich jetzt immer sichtbar auf:** Ein Punkt, der erst nach dem
