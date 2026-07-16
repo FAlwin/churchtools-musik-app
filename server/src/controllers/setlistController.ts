@@ -269,13 +269,23 @@ export async function getSetlist(req: Request, res: Response): Promise<void> {
   // Zuletzt gesehenen Stand des Kontos laden → geänderte Punkte markieren (#161). Best effort:
   // ohne Konto-ID/Stand liefern wir ohne Markierungen (kein Fehlalarm bei Erstnutzung).
   let prevSigs: { id: number; sig: string }[] | undefined;
+  // TEMP [DIAG-178]: nachvollziehen, ob/warum die Änderungs-Markierungen fehlen. NIE mergen.
+  let diagUser: string = '?';
   try {
     const userId = req.ctUserId ?? (await getUserId(cookie));
+    diagUser = `${userId}${req.ctUserId ? ' (cookie)' : ' (whoami)'}`;
     prevSigs = (await getSeenSetlists(userId))[String(eventId)]?.items;
-  } catch {
-    /* Konto-ID/Datei nicht verfügbar → ohne Diff */
+  } catch (e) {
+    console.warn(
+      `[DIAG-178] event=${eventId}: Konto-ID/Basislinie nicht verfügbar → ohne Diff:`,
+      e instanceof Error ? e.message : e,
+    );
   }
   const items = await getAgendaItems(cookie, eventId, prevSigs);
+  console.log(
+    `[DIAG-178] event=${eventId} user=${diagUser} prevSigs=${prevSigs ? prevSigs.length : 'FEHLT'} ` +
+      `changed=${items.filter((i) => i.changed).length} removed=${items.filter((i) => i.removed).length}`,
+  );
   res.json(items);
 }
 

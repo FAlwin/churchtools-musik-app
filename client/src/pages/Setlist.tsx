@@ -197,8 +197,15 @@ function AgendaFullView({
   onSelect: (songIndex: number) => void;
 }) {
   let songIndex = -1;
+  // TEMP [DIAG-178]: sichtbare Diagnose – liefert der Server die Markierungen? NIE mergen.
+  const diagChanged = items.filter((i) => i.changed).length;
+  const diagRemoved = items.filter((i) => i.removed).length;
   return (
     <div className={styles.flowList}>
+      <div style={{ fontSize: 11, opacity: 0.6, padding: '2px 8px' }}>
+        [DIAG] Punkte: {items.length} · geändert: {diagChanged} · entfernt: {diagRemoved} ·{' '}
+        {new Date().toLocaleTimeString('de-DE')}
+      </div>
       {items.map((item) => {
         // Entfernter Punkt (#161 Etappe B): kurz sichtbar, dann „poof"-Zerfall.
         if (item.removed) {
