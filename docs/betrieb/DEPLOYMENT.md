@@ -28,7 +28,10 @@ Ein Container (`app`) liefert sowohl die Web-App als auch die API aus.
 1. In DSM die **File Station** öffnen.
 2. Im freigegebenen Ordner `docker` einen Unterordner anlegen (z. B. `churchtools-musik-app`).
 3. Den **Projektordner** dorthin kopieren (ohne `node_modules`/`.git`). Mindestens nötig:
-   `Dockerfile`, `docker-compose.yml`, `package.json`, `package-lock.json`, `client/`, `server/`, `shared/`.
+   `Dockerfile`, eine Compose-Datei aus `deploy/` (für Produktion: `deploy/docker-compose.prod.yml`,
+   im Container Manager als `docker-compose.yml` ablegen), `package.json`, `package-lock.json`,
+   `client/`, `server/`, `shared/`. **Im Projektstamm liegt KEINE `docker-compose.yml`** – dort gibt es
+   nur `docker-compose.dev.yml` (Entwicklung); die produktiven Vorlagen liegen in `deploy/`.
 
 ## 2. .env-Datei für die Produktion anlegen
 Im Projektordner auf dem NAS eine `.env` erstellen (Vorlage: `.env.example`):
@@ -66,7 +69,9 @@ So wird `https://musik.deine-gemeinde.de` erreichbar. Reihenfolge wichtig:
 
 ## 4. In Container Manager starten
 1. Container Manager → **Projekt** → **Erstellen**.
-2. Projektname + Pfad = der hochgeladene Ordner; die `docker-compose.yml` wird erkannt.
+2. Projektname + Pfad = der hochgeladene Ordner; die dort als `docker-compose.yml` abgelegte
+   Compose-Datei (Kopie aus `deploy/`) wird erkannt. **Projektname exakt `worship-charts`** – der
+   Volume-Name ist `<projektname>_<volume-key>`, ein abweichender Name hängt ein neues, LEERES Volume ein.
 3. **Erstellen/Starten**. Beim ersten Mal baut er das Image (dauert ein paar Minuten).
 4. Logs prüfen: Der `app`-Container sollte „Server läuft …" zeigen.
 
@@ -87,6 +92,8 @@ sicheren Weg gehen:
 
 ## Hinweise / Troubleshooting
 - **„Nach Login: nicht angemeldet"** → Session-Cookie kam nicht an. Schnelltest:
-  `http://<NAS-IP>:3001/api/auth/me` → `{"authenticated":true,…}` = ok. Das Cookie ist bewusst
-  ohne `secure`-Flag gesetzt, damit es auch über HTTP (LAN) gespeichert wird; extern via HTTPS unkritisch.
+  `http://<NAS-IP>:3001/api/auth/me` → `{"authenticated":true,…}` = ok. Das `secure`-Flag des Cookies
+  steuert die Env **`COOKIE_SECURE`** (Default `false`): bei reinem HTTP-Betrieb im LAN aus lassen (sonst
+  speichert der Browser das Cookie nicht), bei HTTPS-only auf `true` setzen. **ECG-Prod läuft seit
+  13.07.2026 mit `COOKIE_SECURE: true`** (Zugang nur über den Synology-Reverse-Proxy).
 - `.env` enthält das `SESSION_SECRET` – nicht teilen, nicht einchecken.

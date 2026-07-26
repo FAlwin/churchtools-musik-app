@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand v2.13.x: **32 Testdateien**
-(22 Client, 10 Server) mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand v2.13.6: **36 Testdateien** –
+**23 Client (115 Tests)** + **13 Server (116 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 | Ebene | Status | Tool | Ort |
@@ -27,6 +27,12 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
 - `services/annotations` – Anmerkungen pro Konto inkl. Obergrenzen (#139)
 - `controllers/setlistController.filetype` – Datei-Proxy Content-Type-Whitelist (#138)
 - `middleware/session` – signiertes Session-Cookie, Ablauf/Format
+- `middleware/session.rolling` – rollierende Verlängerung trägt Login-Zeitstempel **und** Konto-ID
+  weiter (#152); Altformat ohne ID bleibt nutzbar
+- `controllers/siteConfigController.trim` – `GET /api/site-config` liefert unauthentifiziert **keine**
+  `musicianGroupIds`/`noteRoles` (auch nicht bei abgelaufener Session), angemeldet die volle Konfig (#152)
+- `services/updateCheck` – Cache-Fenster: Erfolg lang (6 h), Fehler/Offline nur kurz
+  (`ERROR_CACHE_MS` 15 min) und danach erneuter Versuch → schützt das GitHub-Rate-Limit (#152)
 
 ## Getestete Client-Logik
 
@@ -64,7 +70,8 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
 `chunkReload` (Reload-Schleifenschutz nach Deploy, inkl. `isChunkLoadError` #176),
 `clearDeviceData` (Abmelde-Aufräumen), `reachability`/`api.reachability`, `offline.registry`,
 `navStorage`, `dndAutoScroll`, `annotations.keys`, `queryClient` sowie die Komponenten
-`Section`/`Segment`.
+`Section`/`Segment`. Dazu `queryClient.session401` – der **globale 401-Fänger** (#186): ein 401 aus
+einer Query **oder** Mutation löst den Sitzung-abgelaufen-Pfad aus, ein 502 (offline) bewusst nicht.
 
 ## Regel für neue Fehler
 Jeder gefundene Bug bekommt **(a)** ein GitHub-Issue (Vorlage „Fehlerbericht") und,

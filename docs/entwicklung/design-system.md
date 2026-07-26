@@ -5,6 +5,8 @@ damit nichts „durchsickert" (z. B. früher Orange).
 
 ## Farben – nur über Tokens
 Einzige Quelle: `client/src/styles/_variables.scss` (Light = `:root`, Dark = `html[data-theme='dark']`).
+**Einzige Ausnahme: `--sat`** (Safe-Area oben) wird in JS gemessen – siehe Tabelle unten und die Regel
+am Ende dieses Dokuments.
 **Keine rohen Hex-/rgba-Werte in Komponenten** (Ausnahmen: reine Schatten, Overlays, `#fff` auf farbigen Flächen).
 
 | Token | Zweck |
@@ -20,6 +22,7 @@ Einzige Quelle: `client/src/styles/_variables.scss` (Light = `:root`, Dark = `ht
 | `--scrim` | Overlay hinter Sheets/Dialogen |
 | `--nav-bg` / `--shadow` | Leisten (Blur) / Karten-Schatten |
 | `--ui` | System-Schriftfamilie (kein Web-Font) |
+| `--sat` | **stabile iOS-Safe-Area oben** – Ausnahme: wird in `client/src/main.tsx` per verstecktem Probe-Element **in JS gemessen**, steht NICHT in `_variables.scss` |
 
 **Es gibt bewusst KEIN `--orange`, `--teal`, `--chord`.** Akzent = Blau, Destruktiv = Rot.
 Wer eine „auffällige" Farbe braucht: `--blue` (Aktion) oder `--red` (Warnung/Destruktiv).
@@ -44,3 +47,24 @@ nutzt bewusst Monospace (`'JetBrains Mono', monospace`) für die Roh-Bearbeitung
 Hell/Dunkel/Auto über `useSettings` → `data-theme` auf `<html>`. Komponenten dürfen sich
 **nicht** selbst um Dark Mode kümmern – die Tokens schalten um. Falls doch nötig:
 `:global(html[data-theme='dark'])` nur als letzte Option.
+
+## Abstand nach oben (Safe Area) – verbindlich
+Kopfleisten und alles, was direkt unter der Statusleiste sitzt (Banner, Dropdowns), verwenden
+**immer**:
+
+```scss
+padding-top: max(20px, var(--sat, env(safe-area-inset-top, 0px)));
+// bzw. bei absolut positionierten Elementen:
+top: calc(max(20px, var(--sat, env(safe-area-inset-top, 0px))) + Npx);
+```
+
+**Nie `env(safe-area-inset-top)` direkt** (#187): iOS setzt den Wert beim Schließen eines modalen
+Dialogs kurz auf `0` zurück – mit `env()` schrumpft die Leiste im Transient von ~59px auf 20px und
+die ganze Kopfleiste springt sichtbar. `client/src/main.tsx` misst den echten Wert über ein
+verstecktes Probe-Element und hält ihn stabil in `--sat`; nur eine echte Orientierungsänderung darf
+ihn senken (im Querformat gibt es oben oft keine Safe Area). Der `20px`-Boden fängt zusätzlich den
+Safari-Tab-Fall ab (`env()` ist dort immer `0`), `env()` bleibt Fallback, solange `--sat` noch nicht
+gemessen wurde → keine Regression auf Geräten ohne Safe Area.
+
+Betroffene Module: `components/NavBar.module.scss`, `components/AblaufChangedBanner.module.scss`,
+`components/ChordEditor.module.scss`, `pages/ChordChart.module.scss` (Header + beide Dropdowns).

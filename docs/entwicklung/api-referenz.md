@@ -2,8 +2,14 @@
 
 > Referenz der Endpunkte, die das Express-Backend dem Client anbietet (ausgelagert aus `CLAUDE.md`).
 > ChurchTools-spezifische Schreib-/Lese-Eigenheiten stehen weiterhin in `CLAUDE.md`.
-> Stand: v2.13.x. Alle `/api/...`-Routen außer `health`, `site-config` (GET), `update-check` und
-> `auth/login` erfordern eine gültige Session.
+> Stand: v2.13.6. Alle `/api/...`-Routen erfordern eine gültige Session – **außer** `health`,
+> `site-config` (GET), `update-check` und dem kompletten `auth/`-Router (`login`, `logout`, `me`;
+> `me` antwortet ohne Session bewusst mit `{authenticated:false}`).
+>
+> **401/403-Vertrag (wichtig für den Client):** `ctGet` reicht nur echte **401** als 401 weiter
+> („Session abgelaufen"), ein **403** von ChurchTools bleibt **403** – denn jeder 401 löst im Client
+> einen Zwangs-Logout aus (#152/#186). `getCsrfToken` mappt eine tote CT-Session dagegen bewusst auf
+> **401** (nicht 502), damit auch ein Aussetzer beim Speichern sauber zum Re-Login führt.
 
 ## System / Auth / Konfiguration
 - `GET  /api/health` → `{status, env}` (öffentlich, für Reverse-Proxy/Monitoring)

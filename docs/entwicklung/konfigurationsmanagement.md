@@ -6,7 +6,8 @@ ChurchTools ist Datenquelle).
 ## Konfigurationselemente
 - Code (`client/`, `server/`, `shared/`)
 - Doku (`README.md`, `INSTALL.md`, `UPDATE.md`, `CHANGELOG.md`, `CLAUDE.md`, `docs/`)
-- Tests (`client/src/utils/*.test.ts`) + Testkonzept (`docs/entwicklung/testkonzept.md`)
+- Tests (`client/src/**/*.test.ts(x)`, `server/src/**/*.test.ts`, `e2e/`) + Testkonzept
+  (`docs/entwicklung/testkonzept.md`)
 - `.env.example`, Deploy-Dateien (`Dockerfile`, `docker-compose.dev.yml`, `deploy/`)
 - CI/CD (`.github/workflows/`: `ci.yml`, `staging.yml`, `release.yml`), Issue-Vorlagen (`.github/ISSUE_TEMPLATE/`)
 - Laufzeit-Konfiguration der Instanz (`site.json` auf dem Volume: Gemeindename + Links)
@@ -26,7 +27,7 @@ ChurchTools ist Datenquelle).
 |----------|-------------|-------|
 | Dev       | ChurchTools (über persönlichen Login) | lokale Entwicklung (`npm run dev`) |
 | Unit-Test | keine – reine Logik | automatisierte Unit-Tests (`npm test`) |
-| Staging   | ChurchTools | NAS-Test-Instanz `:3002` (`:staging`-Image, Auto-Deploy bei Push auf `main`) |
+| Staging   | ChurchTools | NAS-Test-Instanz `:3002` (`:staging`-Image, Auto-Deploy bei Push auf `main` **und** `feature/**`; es gibt nur EINE Instanz – jeder Push überschreibt sie) |
 | Prod      | ChurchTools | NAS, intern `:3001` + extern `musik.ecg-donrath.de` (`:latest`/`:2`, Deploy bei Tag) |
 
 Vor einem Tag lokal `npm run build` + `npm test` grün, dann auf der Staging-Instanz abnehmen

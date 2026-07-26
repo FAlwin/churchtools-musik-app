@@ -15,7 +15,7 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 13.06.2026).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 26.07.2026, v2.13.6).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -46,7 +46,7 @@ churchtools-musik-app/
 │       ├── services/        # API-Kommunikation (alle fetch-Aufrufe + TanStack Query)
 │       ├── utils/           # reine Hilfsfunktionen: chordpro.ts, transpose.ts
 │       ├── types/           # client-spezifische Typen
-│       ├── styles/          # _variables.scss, main.scss
+│       ├── styles/          # _variables.scss, _mixins.scss, main.scss
 │       └── assets/          # Bilder, Icons, Fonts
 ├── server/                  # Express-Proxy zu ChurchTools
 │   └── src/
@@ -72,7 +72,17 @@ churchtools-musik-app/
 - Hooks: camelCase mit use-Prefix (`useSetlist.ts`)
 - Services: camelCase (`churchtoolsApi.ts`)
 - Styles: `Component.module.scss` – eine Datei pro Komponente
-- Globale Variablen nur aus `src/styles/_variables.scss`
+- Globale Variablen nur aus `src/styles/_variables.scss`. **Einzige Ausnahme: `--sat`** – die
+  iOS-Safe-Area oben wird in `main.tsx` gemessen (siehe unten), kommt also aus JS, nicht aus SCSS.
+- **Abstand nach oben immer `max(20px, var(--sat, env(safe-area-inset-top, 0px)))`, NIE `env()` direkt**
+  (#187): iOS setzt `env(safe-area-inset-top)` beim Schließen eines Modals kurz auf 0 → mit `env()`
+  schrumpft die Kopfleiste im Transient und die ganze Leiste springt sichtbar. `main.tsx` misst den
+  echten Wert über ein verstecktes Probe-Element und hält ihn stabil in `--sat`; nur eine echte
+  Orientierungsänderung darf ihn senken. `env()` bleibt Fallback → keine Regression ohne JS-Messung.
+- **Ein 401 aus JEDER Query/Mutation heißt „Sitzung abgelaufen" und führt zum Login** (#186): Der
+  globale Fänger sitzt in `queryClient.ts` (`QueryCache`/`MutationCache` `onError` →
+  `setSessionExpiredHandler`), registriert in `App.tsx`. Kein Screen darf 401 selbst als „Erneut
+  versuchen" anbieten – das war die alte Sackgasse, aus der nur Ab-/Neuanmelden half.
 - API-Calls ausschließlich über `services/` + TanStack Query
 - Keine Geschäftslogik in Komponenten (→ in `hooks/`)
 - Keine Inline-Styles, außer für dynamische Laufzeitwerte
@@ -83,6 +93,12 @@ churchtools-musik-app/
 - Geschäftslogik gehört ausschließlich in `services/`
 - Jede Route validiert Input mit Zod vor der Verarbeitung
 - Fehlerbehandlung zentral in `middleware/errorHandler.ts`
+- **401 vs. 403 streng trennen (#152):** `ctGet` gibt nur echte **401** als 401 weiter („Session
+  abgelaufen"); ein **403** von ChurchTools bleibt **403**. Grund: Seit #186 löst jeder 401 einen
+  Zwangs-Logout samt Geräte-Aufräumen aus – ein transienter Proxy-/Rechte-403 würde den Nutzer sonst
+  grundlos abmelden. Umgekehrt mappt `getCsrfToken` eine tote CT-Session bewusst auf **401** (nicht
+  502), damit ein Aussetzer beim Speichern ebenfalls sauber zum Re-Login führt statt als „offline"
+  zu erscheinen.
 - ChurchTools-Login-Daten verlassen den Browser nicht dauerhaft –
   Session läuft serverseitig, Client bekommt signiertes httpOnly-Cookie
 
@@ -216,7 +232,9 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
 - [x] Öffentliches Repo unter MIT-Lizenz (`FAlwin/churchtools-musik-app`); keine Secrets im Code/in der Historie (`.env` nie eingecheckt)
 - [x] Authentifizierung: persönlicher ChurchTools-Login, Session in signiertem httpOnly-Cookie
 - [x] HTTPS extern via Synology Reverse Proxy + Let's Encrypt (`musik.ecg-donrath.de`)
-- [x] npm audit: zuletzt geprüft am 16.07.2026 – **0 Schwachstellen** (die früheren 3 moderaten
+- [x] npm audit: zuletzt geprüft am 26.07.2026 – Funde betreffen **ausschließlich Build-/Lint-/
+  Test-Werkzeuge** (sass, eslint, vitest), zur Laufzeit nicht erreichbar; Prod-Pfad unbetroffen
+  (Details in Issue #199). Frühere Prüfung 16.07.2026 – **0 Schwachstellen** (die früheren 3 moderaten
       esbuild/vite-Funde sind mit den aktuellen Dev-Deps nicht mehr vorhanden)
 
 ## Deployment
@@ -310,32 +328,43 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
-- **Aktuell (v2.13.3, 2026-07-15, produktiv live):** Live-Aktualisierung (Terminliste + offener
-  Ablauf gleichen sich selbst ab), Ablauf-Änderungs-Markierung (#143/#161: geänderte Punkte leuchten
-  auf, entfernte lösen sich im „poof"-Partikel-Effekt auf), Lied-Statistik mit Zeitfilter (#158) +
-  volle sortierbare Lied-Auswahl beim Hinzufügen/Verknüpfen (#157), Bearbeiten-Dialog „alles erst mit
-  Speichern", Code-Check-Härtungen (u.a. sha256-Fingerprint, seen-setlists aufs Volume, Datei-Proxy),
-  Kopfleisten-Fix im Browser. Davor: Team-Notizen (#124, v2.9.0, PCO-Modell), Rechte-Cache (v2.8.1),
-  Code-Splitting (#142). Onboarding-Pflege ist verbindlich → Sektion „Onboarding / Geführte Einführung".
+- **Aktuell (v2.13.6, 2026-07-26, produktiv live):** Abgelaufene Anmeldung führt überall sauber zum
+  Login statt in eine „Erneut versuchen"-Sackgasse (#186, globaler 401-Fänger), Kopfleiste springt
+  nicht mehr beim Schließen eines Dialogs (#187, stabile Safe-Area `--sat`), Delta-Nachschliff (#152).
+  Davor: gelöschte Ablaufpunkte lösen sich immer sichtbar auf (#178), ErrorBoundary heilt Chunk-Fehler
+  (#176), UI-Monolithen aufgeteilt + Interaktionskern getestet (#140/#141, v2.13.4/.5).
+  Live-Aktualisierung (Terminliste + offener Ablauf gleichen sich selbst ab), Ablauf-Änderungs-
+  Markierung (#143/#161: geänderte Punkte leuchten auf, entfernte lösen sich im „poof"-Partikel-Effekt
+  auf), Lied-Statistik mit Zeitfilter (#158) + volle sortierbare Lied-Auswahl beim Hinzufügen/
+  Verknüpfen (#157), Bearbeiten-Dialog „alles erst mit Speichern", Code-Check-Härtungen (u.a.
+  sha256-Fingerprint, seen-setlists aufs Volume, Datei-Proxy). Davor: Team-Notizen (#124, v2.9.0,
+  PCO-Modell), Rechte-Cache (v2.8.1), Code-Splitting (#142). Onboarding-Pflege ist verbindlich →
+  Sektion „Onboarding / Geführte Einführung".
 - **Fertig & produktiv:** App funktional vollständig (Charts + automatisches Transponieren,
   ChordPro-Editor, Dokumenten-Viewer, kompletter Ablauf + Bearbeiten, „Alle Lieder" mit
   Statistik, rechtebewusste UI). Auf dem NAS deployt (Container Manager, `worship-charts`),
   **intern** `http://<NAS-IP>:3001` und **extern** `https://musik.ecg-donrath.de` live.
-- **Redesign live (19.06.2026):** ChurchTools-Look ist auf `main`, getestet (44 Tests) und
-  **produktiv** unter `https://musik.ecg-donrath.de`.
+- **Redesign live (19.06.2026):** ChurchTools-Look ist auf `main` und **produktiv** unter
+  `https://musik.ecg-donrath.de`. (Aktuelle Testzahlen stehen NUR in `docs/entwicklung/testkonzept.md` –
+  hier bewusst keine Zahl, damit sie nicht doppelt gepflegt werden muss.)
 - **Test-Instanz dauerhaft (seit 25.06.2026):** `worship-charts-test` (`:3002`) läuft image-basiert
   mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
 - **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
   mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
-- **Zuletzt erledigt (16.07.2026, auf `main`, noch nicht getaggt → Release-Kandidat v2.13.4):**
-  UI-Monolithen aufgeteilt (#140: PageDeck/ChordChart → eigene Hooks), Interaktionskern getestet +
-  Playwright-Render-Smoke im CI (#141), ErrorBoundary heilt Chunk-Fehler + zeigt Fehlertext (#176),
-  gelöschte Ablaufpunkte lösen sich immer sichtbar auf (#178, lokale Auflöse-Platzhalter).
-- **Offen / optional:** Musik-Verfügbarkeit/Abwesenheiten als App-Modul (#177, Plan in
-  `docs/entwicklung/plan-verfuegbarkeit-phase1.md`); voller Auth-Flow-E2E mit CT-Stub (#174);
-  OAuth-2.0-Machbarkeits-Spike (#175); Push-Benachrichtigung (#144), BPM-Puls (#145),
-  IPv6-Rate-Limit (#146 N4), Objektradierer/Vektor-Striche (#134); Rest von #152.
-  #140/#141/#161/#124/#32/#45/#46/#47 erledigt.
+- **Zuletzt erledigt (26.07.2026, v2.13.6 getaggt + produktiv live):** globaler 401-Fänger – ein 401
+  aus JEDER Query/Mutation führt zum Login (#186), stabile iOS-Safe-Area `--sat` gegen die springende
+  Kopfleiste (#187), Delta-Nachschliff inkl. „403 nicht als 401 werten" + 10 Wachtests (#152).
+- **Offen / optional:** Titel bei Lied-Punkten änderbar + immer anzeigen (#200); Code-Check-Funde
+  vom 26.07.2026: Testabdeckung der Hotspots `chordPdf`/`annotations` (#192, hoch), `PageDeck`
+  aufteilen (#193, hoch), CT-Cookie nicht mehr im App-Cookie (#194), Konto-Limit für Lied-
+  Einstellungen (#195), Staging härten (#196), PDF-Aufbau raus aus dem Render (#197),
+  Qualitäts-Nachschliff (#198), Kleinkram (#199). Dazu: Musik-Verfügbarkeit/Abwesenheiten als
+  App-Modul (#177, Plan in `docs/entwicklung/plan-verfuegbarkeit-phase1.md`); voller Auth-Flow-E2E
+  mit CT-Stub (#174); Push-Benachrichtigung (#144), BPM-Puls (#145), IPv6-Rate-Limit (#146 N4),
+  Objektradierer/Vektor-Striche (#134).
+  Erledigt: #186/#187/#152/#178/#176/#140/#141/#161/#124/#32/#45/#46/#47.
+  **#175 (OAuth-Spike) ist faktisch überholt:** In einer ChurchTools-Extension (`/ccm/`) läuft die
+  Anmeldung automatisch über die CT-Session im gleichen Context – dort braucht es kein OAuth.
 
 ## Deployment-Stand (NAS) – wichtige Lernpunkte
 - Prod läuft image-basiert (GHCR) im Container Manager (Projekt `worship-charts`, Port 3001).
@@ -379,15 +408,17 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   (`server/src/services/churchtools.ts`) leitet ab: `canViewSongs`/`canViewAgendas`/`canEditSongs`/
   `canEditAgendas` (aus `view/edit songcategory|agenda`) + `isAdmin` (aus `ADMIN_PERMISSION`, Default
   `churchcore:administer persons`; **Admin ⇒ alles**). Die Fähigkeiten steuern die Client-UI (`App.tsx`,
-  Tabs/Knöpfe); serverseitig erzwungen wird nur `requireSession` (alle Datenrouten) + `requireAdmin`
-  (nur `PUT /api/site-config`, `GET /api/groups`).
+  Tabs/Knöpfe); serverseitig erzwungen wird `requireSession` (alle Datenrouten) + `requireAdmin`
+  (`PUT /api/site-config`, `GET /api/groups`, `GET /api/groups/:id/roles`). Fachliche Schreibrechte
+  setzt ChurchTools selbst durch (die App reicht das Nutzer-Cookie durch und gibt 403 weiter).
 - **Musiker-Gruppen (v2.8.0, Fundament für #124):** `canUseGlobalNotes` = aktives Mitglied **einer** der
   in `site.json` konfigurierten **`musicianGroupIds`** (Admin wählt sie im Mehr-Tab per Mehrfachauswahl,
   Dropdown aus `GET /api/groups`). Check: `getActiveGroupIds(cookie,userId)` → `/api/persons/{id}/groups`
   (Filter `groupMemberStatus==="active"` + kein `memberEndDate`; Gruppen-ID steckt in
   `group.domainIdentifier`). ECG-Musikteam = Gruppe 9. **Kein Admin-Bypass** („nur Musiker"). Die
-  eigentlichen globalen Anmerkungen (serverseitige Nur-Musiker-Auslieferung, Rendering, UI) = **Etappe 2**
-  (Issue #124); dann Chart-Onboarding-Tour um einen Schritt ergänzen (+ Tour-Version erhöhen).
+  eigentlichen Team-Notizen sind **seit v2.9.0 fertig** (#124 geschlossen, PCO-Modell: Anmerkungen
+  bleiben pro Konto, wer mag teilt sie, Berechtigte sehen/importieren sie – `teamNotesController.ts`).
+  Die früher geplante gemeinsame „Team-Ebene" (`_shared.json`) wurde bewusst verworfen.
 
 ## Schreibzugriff (Editor) – ChurchTools-Eigenheiten
 - Schreibende Calls brauchen ein CSRF-Token (`GET /api/csrftoken`) + Session-Cookie.
@@ -426,5 +457,8 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
 - [x] Test-Service-Konto/Token #1012 in ChurchTools gelöscht (14.06.2026)
 - [x] White-Label (Farb-Anpassung) verworfen → feste CT-Version (Redesign live, 19.06.2026)
 - [x] Verteilung an andere Gemeinden (Selbst-Hosting) – abgeschlossen (öffentlich, MIT, `INSTALL.md`)
-- [ ] Offline-Reserve (Issue #32, Plan `docs/entwicklung/plan-offline-reserve.md`)
-- [ ] Musik-Abwesenheitsplaner (separate Flask-App) in diese App nachbauen
+- [x] Offline-Reserve (Issue #32) – umgesetzt & produktiv seit v2.6.0; Plan bleibt als Referenz:
+  `docs/entwicklung/plan-offline-reserve.md`
+- [ ] Musik-Verfügbarkeit/Abwesenheiten als App-Modul – **optional**, aus dem Kern-Projekt
+  herausgenommen (22.06.2026, siehe `docs/entwicklung/PROJEKTPLAN.md`); lebt als Issue #177 mit Plan
+  in `docs/entwicklung/plan-verfuegbarkeit-phase1.md`
