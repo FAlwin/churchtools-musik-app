@@ -38,6 +38,33 @@ window.addEventListener('pageshow', syncAppHeight);
 requestAnimationFrame(syncAppHeight);
 setTimeout(syncAppHeight, 250);
 
+// iOS-Safe-Area stabil halten (#187): iOS setzt `env(safe-area-inset-top)` beim Schließen eines
+// modalen Dialogs kurz auf 0 zurück → Kopfleisten mit `max(20px, env(...))` schrumpfen im Transient
+// und die ganze Leiste springt sichtbar. Wir messen den echten Wert über ein Probe-Element und
+// halten ihn in der CSS-Variable `--sat` fest. Der gemerkte Wert kollabiert NICHT mit dem Transient;
+// nur eine echte Orientierungsänderung darf ihn verkleinern (Querformat hat oben oft keine Safe-Area).
+const satProbe = document.createElement('div');
+satProbe.style.cssText =
+  'position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);';
+document.body.appendChild(satProbe);
+let satPx = 0;
+function syncSafeAreaTop(allowDecrease = false): void {
+  const v = parseFloat(getComputedStyle(satProbe).paddingTop) || 0;
+  // Transiente Verkleinerungen (Modal-Schließen) ignorieren; nur bei echter Orientierungsänderung
+  // (allowDecrease) den Wert senken.
+  if (allowDecrease ? v !== satPx : v > satPx) {
+    satPx = v;
+    document.documentElement.style.setProperty('--sat', `${satPx}px`);
+  }
+}
+syncSafeAreaTop();
+window.addEventListener('load', () => syncSafeAreaTop());
+window.addEventListener('pageshow', () => syncSafeAreaTop());
+requestAnimationFrame(() => syncSafeAreaTop());
+setTimeout(() => syncSafeAreaTop(), 300);
+setTimeout(() => syncSafeAreaTop(), 1000);
+window.addEventListener('orientationchange', () => setTimeout(() => syncSafeAreaTop(true), 350));
+
 // NUR Entwicklung: Demos zum Prüfen (?demo=pdf für den ChordPro→PDF-Export). Im Produktiv-Build
 // (import.meta.env.DEV === false) nie geladen.
 const demo = import.meta.env.DEV && new URLSearchParams(window.location.search).get('demo');
