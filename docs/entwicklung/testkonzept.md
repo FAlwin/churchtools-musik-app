@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand v2.13.6: **36 Testdateien** –
-**23 Client (115 Tests)** + **13 Server (116 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand v2.14.1: **40 Testdateien** –
+**25 Client (129 Tests)** + **15 Server (133 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 | Ebene | Status | Tool | Ort |
@@ -27,6 +27,11 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
 - `services/annotations` – Anmerkungen pro Konto inkl. Obergrenzen (#139)
 - `controllers/setlistController.filetype` – Datei-Proxy Content-Type-Whitelist (#138)
 - `middleware/session` – signiertes Session-Cookie, Ablauf/Format
+- `services/userSettings` – Konto-Obergrenzen der Lied-Einstellungen (#195): Grenzlogik, Eintrags-
+  und Byte-Grenze, Wert-Kappung, Schlüssel-Filter. ⚠️ Lücke bekannt: der Fall „Store liegt schon ÜBER
+  der Grenze, Löschen muss trotzdem gehen" ist NICHT abgedeckt (#213)
+- `utils/ipKey` – Rate-Limit-Schlüssel (#146): gleiches /64 ⇒ gleicher Schlüssel, verschiedene /64
+  getrennt, IPv4-mapped wie IPv4, Zone-Index, Normalisierung, unparsebar, leer
 - `middleware/session.rolling` – rollierende Verlängerung trägt Login-Zeitstempel **und** Konto-ID
   weiter (#152); Altformat ohne ID bleibt nutzbar
 - `controllers/siteConfigController.trim` – `GET /api/site-config` liefert unauthentifiziert **keine**
@@ -72,6 +77,14 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
 `navStorage`, `dndAutoScroll`, `annotations.keys`, `queryClient` sowie die Komponenten
 `Section`/`Segment`. Dazu `queryClient.session401` – der **globale 401-Fänger** (#186): ein 401 aus
 einer Query **oder** Mutation löst den Sitzung-abgelaufen-Pfad aus, ein 502 (offline) bewusst nicht.
+Neu seit v2.14.x: `utils/agendaItemTitle` (Anzeige-Regeln für Lied-Punkte, #200 – inkl. „keine
+Dopplung" und Groß-/Kleinschreibung) und `hooks/useKeyboardInset` (Tastatur-Aussparung #207, jsdom:
+Höhe korrekt, nie negativ, Listener an/ab, Scroll-Reset, kein Absturz ohne `visualViewport`).
+
+**Bekannte Test-Lücken (bewusst als Issues geführt, nicht vergessen):** `utils/chordPdf.ts` 0 %
+und `services/annotations.ts` 13 % (#192) sowie `agendaItemWritePayload` – der laut CLAUDE.md
+kritische Schreibpfad, der einen Lied-Punkt unwiderruflich auf „Text" herabstufen kann – **ohne
+jeden Test** (#212).
 
 ## Regel für neue Fehler
 Jeder gefundene Bug bekommt **(a)** ein GitHub-Issue (Vorlage „Fehlerbericht") und,

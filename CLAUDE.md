@@ -15,7 +15,8 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 26.07.2026, v2.13.6).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 26.07.2026; getaggt **v2.14.1**, in Prod
+  ausgeliefert ist **v2.14.0** – Deploy von v2.14.1 steht noch aus).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -79,10 +80,19 @@ churchtools-musik-app/
   schrumpft die Kopfleiste im Transient und die ganze Leiste springt sichtbar. `main.tsx` misst den
   echten Wert über ein verstecktes Probe-Element und hält ihn stabil in `--sat`; nur eine echte
   Orientierungsänderung darf ihn senken. `env()` bleibt Fallback → keine Regression ohne JS-Messung.
+- **Dialoge müssen die iOS-Tastatur aussparen** (#207): Jedes Vollbild-Overlay mit Eingabefeldern ist
+  `position: fixed` (NIE `absolute` – sonst scrollt es mit dem Dokument mit) und nutzt den Hook
+  `hooks/useKeyboardInset` + `padding-bottom: calc(… + var(--kb, 0px))`. Der Hook misst die
+  Tastaturhöhe am `visualViewport` und holt den von iOS hinterlassenen Dokument-Scroll zurück; ohne
+  ihn liegen Trefferlisten/Knöpfe unter der Tastatur und die Kopfleiste bleibt verrutscht. Gilt für
+  `Sheet` (alle Dialoge), `ItemActionSheet` und den `ChordEditor`.
 - **Ein 401 aus JEDER Query/Mutation heißt „Sitzung abgelaufen" und führt zum Login** (#186): Der
   globale Fänger sitzt in `queryClient.ts` (`QueryCache`/`MutationCache` `onError` →
   `setSessionExpiredHandler`), registriert in `App.tsx`. Kein Screen darf 401 selbst als „Erneut
   versuchen" anbieten – das war die alte Sackgasse, aus der nur Ab-/Neuanmelden half.
+  ⚠️ **Diese Regel gilt derzeit NICHT vollständig:** `services/annotations.ts` und
+  `services/userSettings.ts` gehen direkt über `apiFetch` (nicht über TanStack Query) – ihre 401er
+  erreichen den Fänger nicht, und der Login-401 löst ihn fälschlich aus. Offen als #211 und #210.
 - API-Calls ausschließlich über `services/` + TanStack Query
 - Keine Geschäftslogik in Komponenten (→ in `hooks/`)
 - Keine Inline-Styles, außer für dynamische Laufzeitwerte
@@ -330,7 +340,12 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
-- **Aktuell (v2.13.6, 2026-07-26, produktiv live):** Abgelaufene Anmeldung führt überall sauber zum
+- **Aktuell (v2.14.1 getaggt am 26.07.2026; in Prod läuft v2.14.0):** Titel eines Lied-Punkts ist
+  änderbar und wird zusammen mit dem Liednamen angezeigt – wie in ChurchTools (Lied – Du großer Gott)
+  (#200); Konto-Obergrenze für Lied-Einstellungen (#195); Login-Bremse wirkt auch bei IPv6 (#146);
+  Datei-Abrufe folgen keinen Weiterleitungen (#199); iOS-Tastatur in Dialogen sperrt die Trefferliste
+  nicht mehr aus und die Kopfleiste bleibt sitzen (#207, v2.14.1).
+  Davor (v2.13.6): Abgelaufene Anmeldung führt überall sauber zum
   Login statt in eine „Erneut versuchen"-Sackgasse (#186, globaler 401-Fänger), Kopfleiste springt
   nicht mehr beim Schließen eines Dialogs (#187, stabile Safe-Area `--sat`), Delta-Nachschliff (#152).
   Davor: gelöschte Ablaufpunkte lösen sich immer sichtbar auf (#178), ErrorBoundary heilt Chunk-Fehler
@@ -353,24 +368,56 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
 - **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
   mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
-- **Zuletzt erledigt (26.07.2026, v2.13.6 getaggt + produktiv live):** globaler 401-Fänger – ein 401
-  aus JEDER Query/Mutation führt zum Login (#186), stabile iOS-Safe-Area `--sat` gegen die springende
-  Kopfleiste (#187), Delta-Nachschliff inkl. „403 nicht als 401 werten" + 10 Wachtests (#152).
-- **Offen / optional:** Titel bei Lied-Punkten änderbar + immer anzeigen (#200); Code-Check-Funde
-  vom 26.07.2026: Testabdeckung der Hotspots `chordPdf`/`annotations` (#192, hoch), `PageDeck`
-  aufteilen (#193, hoch), CT-Cookie nicht mehr im App-Cookie (#194), Konto-Limit für Lied-
-  Einstellungen (#195), Staging härten (#196), PDF-Aufbau raus aus dem Render (#197),
-  Qualitäts-Nachschliff (#198), Kleinkram (#199). Dazu: Musik-Verfügbarkeit/Abwesenheiten als
-  App-Modul (#177, Plan in `docs/entwicklung/plan-verfuegbarkeit-phase1.md`); voller Auth-Flow-E2E
-  mit CT-Stub (#174); Push-Benachrichtigung (#144), BPM-Puls (#145), IPv6-Rate-Limit (#146 N4),
-  Objektradierer/Vektor-Striche (#134).
-  Erledigt: #186/#187/#152/#178/#176/#140/#141/#161/#124/#32/#45/#46/#47.
+- **Zuletzt erledigt (26.07.2026):** v2.14.0 (#200 Titel bei Lied-Punkten, #195 Konto-Limit,
+  #146 IPv6-Rate-Limit **komplett geschlossen**, #199-Teil) und v2.14.1 (#207 iOS-Tastatur in
+  Dialogen). Davor v2.13.6: globaler 401-Fänger (#186), Safe-Area `--sat` (#187), Nachschliff (#152).
+- **Bestätigte ChurchTools-Eigenheit (26.07.2026, am Gerät verifiziert):** Ein Lied-Punkt hat in CT
+  einen **eigenen Titel UND** ein verknüpftes Lied. CT **behält** einen selbst gesetzten Titel und
+  zeigt beides an; der Titel ist unabhängig vom Lied schreibbar (`title` + `arrangementId` in EINEM
+  PUT). Bei der ECG heißen die Lied-Punkte per Vorgabe schlicht `Lied`.
+- **Onboarding bewusst NICHT angepasst** (Release-Routine Schritt 2): #200 brachte kein neues
+  Bedienelement (das Titelfeld gab es schon, es war nur gesperrt) und der Tour-Text „…um Titel,
+  Dauer, Zuständige zu ändern…" stimmt jetzt sogar erst; #207 ist ein reiner Layout-Fix.
+- **Offen – ZUERST (Code-Check v2.14.1; alle drei gehen auf #186 zurück und sind in Prod):**
+  **#210** ein falsch getipptes Passwort löscht die Offline-Reserve (der Login-401 löst den
+  Sitzung-abgelaufen-Pfad samt `clearDeviceData()` aus); **#211** der „globale" 401-Fänger sieht
+  `services/annotations.ts` + `services/userSettings.ts` NICHT (die gehen direkt über `apiFetch`), und
+  ihr `disabled`-Schalter wird beim Neu-Anmelden nie zurückgesetzt → Anmerkungen/Einstellungen
+  speichern danach nur noch lokal; **#212** `agendaItemWritePayload` – der laut dieser Doku
+  „kritische" Schreibpfad – hat null Tests, obwohl seit #200 jedes Speichern eines Lied-Punkts
+  darüber läuft.
+- **Offen / optional:** Konto-Limit blockiert Aufräumen + 413 im Client unbehandelt (#213);
+  `trust proxy: 1` unverifiziert (#214 – davon hängt die Wirksamkeit von #146 ab); Nachschliff-Sammel
+  (#215). Aus dem Check v2.13.6 weiter offen: Testabdeckung `chordPdf`/`annotations` (#192, hoch),
+  `PageDeck` aufteilen (#193, hoch), CT-Cookie nicht mehr im App-Cookie (#194), Staging härten (#196),
+  PDF-Aufbau raus aus dem Render (#197), Qualitäts-Nachschliff (#198), Kleinkram-Rest (#199).
+  Dazu: Musik-Verfügbarkeit/Abwesenheiten als App-Modul (#177, Plan in
+  `docs/entwicklung/plan-verfuegbarkeit-phase1.md`); voller Auth-Flow-E2E mit CT-Stub (#174);
+  Push-Benachrichtigung (#144), BPM-Puls (#145), Objektradierer/Vektor-Striche (#134).
+  Erledigt: #200/#195/#146(komplett)/#207/#186/#187/#152/#178/#176/#140/#141/#161/#124/#32/#45/#46/#47.
   **#175 (OAuth-Spike) ist faktisch überholt:** In einer ChurchTools-Extension (`/ccm/`) läuft die
   Anmeldung automatisch über die CT-Session im gleichen Context – dort braucht es kein OAuth.
 
 ## Deployment-Stand (NAS) – wichtige Lernpunkte
 - Prod läuft image-basiert (GHCR) im Container Manager (Projekt `worship-charts`, Port 3001).
-  **Updates kommen automatisch** (kein manuelles Code-Kopieren / Rebuild mehr) – siehe „Auto-Deploy" oben.
+- **⚠️ Reihenfolge beim Prod-Update (zwei Vorfälle am 26.07.2026):**
+  **1. `sudo docker pull ghcr.io/falwin/churchtools-musik-app:2`** ausführen und den Erfolg prüfen,
+  **2. erst dann** Stopp → Aktion › Löschen (Volumes NICHT) → Projekt › Erstellen.
+  Gründe – beide real passiert:
+  - **Der Pull IST der Update-Schritt.** Compose/Container Manager ziehen bei vorhandenem Tag **nicht**
+    neu, sondern nehmen das lokal liegende `:2`-Image. Ohne Pull läuft nach dem „Erstellen" die ALTE
+    Version weiter (so blieb v2.14.1 unbemerkt auf v2.14.0 stehen). Gegenprobe:
+    `sudo docker images --digests | grep churchtools-musik-app` → Digest muss zum Release passen.
+  - **Erst löschen, dann pullen = Ausfall.** Scheitert der Pull, steht Prod ohne Container da (HTTP 502).
+    Genau das passierte, weil ein **veralteter `ghcr.io`-Login auf dem NAS** jeden Pull mit
+    `denied: denied` abwies – obwohl das Image öffentlich ist: Docker nutzte die kaputten
+    gespeicherten Zugangsdaten statt anonym zu ziehen. **Fix: `sudo docker logout ghcr.io`.**
+    Die Meldung führt auf die falsche Spur (klingt nach fehlenden Rechten bei GitHub).
+- **Verifikation nach dem Deploy** (nicht nur `/api/health`, das sagt nur „irgendeine Version läuft"):
+  ausgeliefertes Bundle prüfen – `curl -s https://musik.ecg-donrath.de/ | grep -o '/assets/index-[^"]*\.js'`,
+  dann in dieser Datei die Versionsnummer suchen. Bei Änderungen in nachgeladenen Seiten (Setlist,
+  ChordChart) zusätzlich die Chunks aus `/sw.js` prüfen – Code-Splitting heißt, dass ein neuer
+  Setlist-Fix NICHT im Haupt-Bundle steckt.
 - Prod-`.env` auf dem NAS: `CHURCHTOOLS_BASE_URL` + `SESSION_SECRET` (**kein** Login-Token!).
 - **Cookie `secure` per Env `COOKIE_SECURE`:** In Prod **`true`** (seit 13.07.2026; Zugang nur über
   HTTPS via Synology-Reverse-Proxy, Prod-Port an `127.0.0.1:3001` gebunden). `trust proxy` ist in Prod
