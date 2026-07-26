@@ -7,6 +7,39 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.14.0] – 2026-07-26
+
+### Neu
+
+- **Titel eines Lied-Punkts ist änderbar und wird immer angezeigt:** In ChurchTools hat ein
+  Lied-Punkt im Ablauf einen eigenen Titel (bei uns meist schlicht „Lied") **und** ein verknüpftes
+  Lied – und CT zeigt beides: „Lied – Du großer Gott". Die App zeigte bisher nur den Liednamen, und
+  das Titelfeld war bei Liedern gesperrt. Jetzt lässt sich der Titel auch bei Liedern bearbeiten
+  (z. B. „Lobpreis 1"), und der Ablauf zeigt Titel und Liedname gemeinsam. Fügt der Titel nichts
+  hinzu (leer oder gleich dem Liednamen), bleibt es bei einer Angabe – keine Dopplung. (#200)
+
+### Sicherheit
+
+- **Lied-Einstellungen haben jetzt eine Obergrenze pro Konto** (20.000 Einträge / 5 MB, wie die
+  Anmerkungen seit v2.11.0). Ohne Grenze hätte ein angemeldetes Gemeindeglied den Speicher des
+  Servers mit beliebig vielen Einstellungen füllen können. Aufräumen bleibt immer möglich, auch
+  wenn die Grenze erreicht ist. (#195)
+- **Der Schutz gegen Passwort-Rateversuche greift jetzt auch bei IPv6.** Die Bremse am Login zählte
+  pro IP-Adresse – bei IPv6 hat ein Anschluss aber Milliarden Adressen, sodass sie umgangen werden
+  konnte. Gezählt wird jetzt pro Anschluss (IPv6-/64-Netz). (#146)
+- **Datei-Abrufe folgen keinen Weiterleitungen mehr,** damit die ChurchTools-Anmeldung die eigene
+  Instanz nicht verlassen kann. (Geprüft: ChurchTools liefert Dateien direkt aus – die
+  Dokumenten-Anzeige bleibt unverändert.) (#199)
+
+### Intern
+
+- **Kleinkram aus dem Code-Check (#199):** Anmerkungen ermitteln die Konto-ID aus der eigenen
+  Sitzung statt sie bei jedem Speichern erneut bei ChurchTools zu erfragen; der kurze Zwischen-
+  speicher des Ablauf-Fingerabdrucks ist kontobezogen (vorher konnte ein Nicht-Berechtigter statt
+  einer Absage einen Prüfwert erhalten); Fehlermeldungen verraten keine internen ChurchTools-Pfade
+  mehr; `clearSession` spiegelt die Cookie-Attribute.
+- Tests: Client 115 → 123, Server 116 → 133 (+25).
+
 ## [2.13.6] – 2026-07-26
 
 ### Behoben
