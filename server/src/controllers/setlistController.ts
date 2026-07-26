@@ -68,7 +68,9 @@ export async function getServices(req: Request, res: Response): Promise<void> {
 
 // Kurz-Memo je Termin für den Live-Abgleich: Viele offene Geräte pollen alle ~8 s – ChurchTools
 // soll dafür höchstens alle paar Sekunden EINMAL gefragt werden, egal wie viele Geräte schauen.
-const versionMemo = new Map<number, { hash: string; at: number }>();
+// Schlüssel = `<eventId>|<Konto-ID bzw. Cookie>`: Das Memo darf NICHT kontoübergreifend teilen –
+// sonst erhielte ein Nutzer ohne Zugriff auf den Termin statt 403 einen Hash (#199).
+const versionMemo = new Map<string, { hash: string; at: number }>();
 const VERSION_MEMO_TTL_MS = 5_000;
 
 /**
@@ -78,7 +80,8 @@ const VERSION_MEMO_TTL_MS = 5_000;
  */
 export async function getSetlistVersion(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
-  const hit = versionMemo.get(eventId);
+  const memoKey = `${eventId}|${req.ctUserId ?? (req.ctCookie as string)}`;
+  const hit = versionMemo.get(memoKey);
   if (hit && Date.now() - hit.at < VERSION_MEMO_TTL_MS) {
     res.json({ hash: hit.hash });
     return;
@@ -88,7 +91,7 @@ export async function getSetlistVersion(req: Request, res: Response): Promise<vo
     if (Date.now() - v.at >= VERSION_MEMO_TTL_MS) versionMemo.delete(id);
   }
   const hash = await getSetlistFingerprint(req.ctCookie as string, eventId);
-  versionMemo.set(eventId, { hash, at: Date.now() });
+  versionMemo.set(memoKey, { hash, at: Date.now() });
   res.json({ hash });
 }
 
