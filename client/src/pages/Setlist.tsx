@@ -27,6 +27,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddItemSheet } from '../components/AddItemSheet';
 import { ItemActionSheet } from '../components/ItemActionSheet';
 import { Icon } from '../components/icons';
+import { itemTitleParts, itemLabel } from '../utils/agendaItemTitle';
 import { Coachmarks } from '../components/Coachmarks';
 import {
   SETLIST_STEPS,
@@ -86,6 +87,20 @@ interface SetlistProps {
   services: AgendaServiceOption[];
   /** Darf der Nutzer den Ablauf bearbeiten? (blendet die Bearbeiten-UI aus) */
   canEdit?: boolean;
+}
+
+/**
+ * Bezeichnung eines Ablaufpunkts wie in ChurchTools (#200): eigener Titel, dahinter – falls er
+ * etwas hinzufügt – der Liedname. Die Regeln stecken in `utils/agendaItemTitle`.
+ */
+function ItemTitle({ item }: { item: AgendaItem }) {
+  const { title, songName } = itemTitleParts(item);
+  return (
+    <span className={styles.flowTitle}>
+      {title}
+      {songName && <span className={styles.flowSongName}>{songName}</span>}
+    </span>
+  );
 }
 
 /** Dezentes Linien-Icon für die Zuständigen (statt Emoji). */
@@ -268,7 +283,7 @@ function AgendaFullView({
         const body = (
           <div className={styles.flowBody}>
             <div className={styles.flowHead}>
-              <span className={styles.flowTitle}>{item.song ? item.song.title : item.title}</span>
+              <ItemTitle item={item} />
               {item.song && <span className={styles.flowSongTag}>🎵</span>}
               {item.durationMin && <span className={styles.flowDur}>{item.durationMin} Min</span>}
             </div>
@@ -366,7 +381,7 @@ function SortableRow({
       </button>
       <button className={styles.editBody} data-tour="edit-item" onClick={() => onOpenActions(item)}>
         <div className={styles.flowHead}>
-          <span className={styles.flowTitle}>{item.song ? item.song.title : item.title}</span>
+          <ItemTitle item={item} />
           {item.song && <span className={styles.flowSongTag}>🎵</span>}
           {item.durationMin && <span className={styles.flowDur}>{item.durationMin} Min</span>}
         </div>
@@ -607,7 +622,7 @@ export function Setlist({
       {pendingDelete && (
         <ConfirmDialog
           title="Eintrag löschen?"
-          message={`„${pendingDelete.song ? pendingDelete.song.title : pendingDelete.title}" wird aus dem Ablauf in ChurchTools entfernt.`}
+          message={`„${itemLabel(pendingDelete)}" wird aus dem Ablauf in ChurchTools entfernt.`}
           confirmLabel="Löschen"
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}
