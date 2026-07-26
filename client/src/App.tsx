@@ -245,7 +245,14 @@ export default function App() {
       <Screen>
         {sessionExpired ? (
           // Sitzung abgelaufen: Der Effekt oben meldet gerade ab → gleich erscheint der Login.
-          <CenterMessage loading text="Sitzung abgelaufen – bitte neu anmelden…" />
+          // Der „Abmelden"-Knopf ist der Rückweg, falls das automatische Abmelden scheitert
+          // (z. B. Server kurz weg): ohne ihn bliebe hier ein Dauer-Spinner stehen (#152).
+          <CenterMessage
+            loading
+            text="Sitzung abgelaufen – bitte neu anmelden…"
+            actionLabel="Abmelden"
+            onAction={() => auth.logout()}
+          />
         ) : !online ? (
           // Offline und keine gespeicherten Berechtigungen (z. B. nach einem App-Update) → kein
           // Endlos-Warten, sondern klare Meldung + Rückweg (statt Sackgasse).

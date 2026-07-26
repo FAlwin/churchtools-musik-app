@@ -76,8 +76,14 @@ async function ctGet<T = unknown>(cookie: string, path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { Cookie: cookie, Accept: 'application/json' },
   });
-  if (res.status === 401 || res.status === 403) {
+  if (res.status === 401) {
     throw new HttpError(401, 'Session abgelaufen. Bitte neu anmelden.');
+  }
+  // 403 NICHT als 401 werten (#152): Ein transienter Proxy-/Rechte-403 (z. B. Alt-Cookie, kein
+  // Cache) darf keinen 401 erzeugen – sonst löst der globale „Session abgelaufen"-Fänger (#186)
+  // einen Zwangs-Logout samt Geräte-Wipe aus. Als 403 durchreichen (kein Re-Login).
+  if (res.status === 403) {
+    throw new HttpError(403, `Kein Zugriff (ChurchTools) bei ${path}`);
   }
   if (!res.ok) {
     // 404 durchreichen (z. B. „Termin hat keinen Ablaufplan") – Aufrufer wie die Statistik

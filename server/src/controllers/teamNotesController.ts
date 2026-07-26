@@ -32,9 +32,18 @@ function personIdOf(req: Request): number {
   return id;
 }
 
+/**
+ * Eigene Konto-ID – bevorzugt aus dem Session-Cookie (#149/#152), sonst per whoami. Ohne diese
+ * Bevorzugung fielen die Team-Notiz-Endpunkte bei einem ChurchTools-Aussetzer unnötig aus, obwohl
+ * die ID längst im signierten Cookie steht (kein Netz nötig).
+ */
+async function myUserId(req: Request): Promise<number> {
+  return req.ctUserId ?? (await getUserId(req.ctCookie as string));
+}
+
 /** GET /api/annotations/sharing – teilt DIESES Konto gerade? (für den Schalter im Mehr-Tab) */
 export async function getSharing(req: Request, res: Response): Promise<void> {
-  const userId = await getUserId(req.ctCookie as string);
+  const userId = await myUserId(req);
   res.json({ enabled: await isSharing(userId) });
 }
 
@@ -44,6 +53,8 @@ const sharingSchema = z.object({ enabled: z.boolean() });
 export async function putSharing(req: Request, res: Response): Promise<void> {
   await requireTeamNotes(req);
   const { enabled } = sharingSchema.parse(req.body);
+  // Hier ist whoami nötig (nicht nur die Cookie-ID): der Anzeigename landet in sharing.json,
+  // damit andere „Notizen von <Name>" sehen. Betrifft nur diese eine Schreibaktion.
   const me = await whoami(req.ctCookie as string);
   await setSharing(me.id, `${me.firstName} ${me.lastName}`.trim(), enabled);
   res.json({ enabled });
@@ -55,7 +66,7 @@ export async function putSharing(req: Request, res: Response): Promise<void> {
  */
 export async function getSharers(req: Request, res: Response): Promise<void> {
   await requireTeamNotes(req);
-  const myId = await getUserId(req.ctCookie as string);
+  const myId = await myUserId(req);
   const songs = songIdsOf(req);
   const out: Array<{ id: number; name: string; songs: number[] }> = [];
   for (const sharer of await listSharers()) {
