@@ -323,7 +323,9 @@ Release-Notes & Versionshistorie: siehe `CHANGELOG.md` (Single Source – hier n
 ```
 cd ~/ecg-donrath/churchtools-musik-app
 npm install        # einmalig
-npm run dev:client # Frontend (Mock-Daten) -> http://localhost:5173
+npm run dev:client # Frontend -> http://localhost:5173 (braucht das laufende Backend + echten
+                   # ChurchTools-Login; es gibt KEINE Mock-Daten. Für UI-Prüfungen ohne Login:
+                   # ?demo=chart / ?demo=pdf / ?demo=editor, siehe client/src/dev/)
 npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 

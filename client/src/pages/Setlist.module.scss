@@ -105,6 +105,19 @@
   font-weight: 600;
   color: var(--text);
 }
+// Liedname hinter dem eigenen Titel – wie in ChurchTools („Lied - Du großer Gott", #200).
+// Der Gedankenstrich steckt im ::before, damit im Markup kein Extra-Element nötig ist.
+.flowSongName {
+  font-weight: 500;
+  font-style: italic;
+  color: var(--text2);
+
+  &::before {
+    content: ' – ';
+    font-style: normal;
+    color: var(--text3);
+  }
+}
 .flowSongTag {
   font-size: 12px;
   flex-shrink: 0;

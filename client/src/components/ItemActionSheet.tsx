@@ -94,12 +94,11 @@ export function ItemActionSheet({
     const fields: AgendaItemUpdate = {};
     if (linkState.kind === 'link') fields.arrangementId = linkState.arrangementId;
     if (linkState.kind === 'unlink') fields.unlink = true;
-    // Titel nur, wenn der Punkt am Ende KEIN Lied ist (Lied-Titel kommt aus ChurchTools).
-    if (!willBeSong) {
-      const t = title.trim();
-      const changed = linkState.kind === 'unlink' ? !!t : !!t && t !== item.title;
-      if (changed) fields.title = t;
-    }
+    // Titel gilt für ALLE Punkte – auch für Lieder (#200): ChurchTools führt den Titel des
+    // Ablaufpunkts unabhängig vom verknüpften Lied und zeigt beides an. Ein leerer Titel wird
+    // nicht geschrieben (ChurchTools braucht eine Bezeichnung).
+    const t = title.trim();
+    if (t && t !== item.title) fields.title = t;
     if (durationTarget !== undefined) fields.durationMin = durationTarget;
     if (responsible !== item.responsibleText) fields.responsible = responsible.trim();
     if (note !== item.note) fields.note = note.trim();
@@ -164,16 +163,14 @@ export function ItemActionSheet({
         <div className={styles.fields}>
           <div className={styles.field}>
             <span className={styles.label}>Titel</span>
-            {effSong ? (
-              <div className={styles.readonly}>{effSong.title}</div>
-            ) : (
-              <input
-                className={styles.input}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Titel"
-              />
-            )}
+            {/* Auch bei Liedern änderbar (#200): ChurchTools führt Titel und Lied getrennt und
+                zeigt beides. Der Liedname steht darunter im Feld „Lied". */}
+            <input
+              className={styles.input}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={willBeSong ? 'z. B. Lied' : 'Titel'}
+            />
           </div>
 
           {/* Überschriften haben nur einen Titel – keine weiteren Felder. */}
@@ -182,10 +179,14 @@ export function ItemActionSheet({
               <div className={styles.field}>
                 <span className={styles.label}>Lied</span>
                 {effSong ? (
-                  <button className={styles.linkRow} disabled={busy} onClick={clearLink}>
-                    <Icon name="link" size={17} className={styles.linkIcon} />
-                    Verknüpfung aufheben
-                  </button>
+                  <>
+                    {/* Liedname sichtbar halten – er kommt aus ChurchTools und ist hier nicht änderbar. */}
+                    <div className={styles.readonly}>{effSong.title}</div>
+                    <button className={styles.linkRow} disabled={busy} onClick={clearLink}>
+                      <Icon name="link" size={17} className={styles.linkIcon} />
+                      Verknüpfung aufheben
+                    </button>
+                  </>
                 ) : (
                   <button
                     className={styles.linkRow}
