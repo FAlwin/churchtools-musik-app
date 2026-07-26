@@ -7,6 +7,30 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.13.6] – 2026-07-26
+
+### Behoben
+
+- **Abgelaufene Anmeldung führt jetzt sauber zum Login statt in eine Sackgasse:** Wenn die
+  ChurchTools-Sitzung im Hintergrund ablief, ließ sich der Ablauf nicht mehr laden („Ablauf konnte
+  nicht geladen werden") bzw. das Speichern schlug mit einer technischen Meldung fehl
+  („CSRF-Token konnte nicht geholt werden") – und „Erneut versuchen" half nicht weiter, nur
+  Abmelden und neu Anmelden. Die App erkennt eine abgelaufene Sitzung jetzt an **jeder** Stelle
+  und führt automatisch zur Anmeldung; danach ist alles wieder da. (#186)
+- **Die Kopfleiste springt nicht mehr:** Auf iPhones mit Notch/Dynamic Island ruckte die obere
+  Leiste kurz nach oben und zurück, wenn ein Dialog geschlossen wurde – etwa nach dem Verknüpfen
+  eines Lieds und Speichern. Der Abstand nach oben bleibt jetzt stabil. (#187)
+
+### Intern
+
+- **Nachschliff aus dem Delta-Check zu v2.10.0 (#152):** Ein vorübergehendes „Kein Zugriff" von
+  ChurchTools (403) löst keine Zwangs-Abmeldung mehr aus (wichtig zusammen mit #186); der
+  Hinweis „Sitzung abgelaufen" bietet einen „Abmelden"-Knopf, falls das automatische Abmelden
+  scheitert; die Team-Notiz-Endpunkte nutzen die Konto-ID aus der eigenen Sitzung statt sie jedes
+  Mal bei ChurchTools zu erfragen (fallen bei einem CT-Aussetzer nicht mehr unnötig aus).
+  Dazu 10 neue Wachtests (Beschneidung der öffentlichen Konfiguration, Update-Check-Cache,
+  Weitertragen der Konto-ID) – Server-Tests 106 → 116.
+
 ## [2.13.5] – 2026-07-16
 
 ### Intern
