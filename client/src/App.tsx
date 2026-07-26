@@ -1,5 +1,6 @@
-import { useEffect, useState, lazy, Suspense, type ComponentProps } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense, type ComponentProps } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { setSessionExpiredHandler } from './queryClient';
 import { Login } from './pages/Login';
 import { Agenda } from './pages/Agenda';
 import { useSettings } from './hooks/useSettings';
@@ -204,6 +205,24 @@ export default function App() {
     if (sessionExpired) void auth.logout();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionExpired]);
+
+  // Globaler „Session abgelaufen"-Fänger (#186): Ein 401 aus JEDER Query/Mutation (nicht nur der
+  // Rechte-Abfrage oben) führt sauber zum Login, statt in eine „Erneut versuchen"-Sackgasse.
+  // logout via Ref, damit der Handler nur einmal registriert wird; ein Guard verhindert, dass
+  // mehrere gleichzeitige 401er das Abmelden mehrfach anstoßen.
+  const logoutRef = useRef(auth.logout);
+  logoutRef.current = auth.logout;
+  const loggingOutRef = useRef(false);
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      if (loggingOutRef.current) return;
+      loggingOutRef.current = true;
+      void logoutRef.current().finally(() => {
+        loggingOutRef.current = false;
+      });
+    });
+    return () => setSessionExpiredHandler(null);
+  }, []);
 
   // Einführung beim ersten Mal automatisch starten – erst wenn die Termine da sind (dann existieren
   // die hervorzuhebenden Elemente) und keine Vollansicht offen ist.

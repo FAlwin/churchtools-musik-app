@@ -513,6 +513,11 @@ async function getCsrfToken(cookie: string): Promise<string> {
   const res = await fetch(`${BASE}/api/csrftoken`, {
     headers: { Cookie: cookie, Accept: 'application/json' },
   });
+  // Tote CT-Session als 401 durchreichen (nicht 502): Sonst wertet der Client das als „offline"
+  // und der globale Re-Login greift nicht → „CSRF-Token konnte nicht geholt werden"-Sackgasse (#186).
+  if (res.status === 401 || res.status === 403) {
+    throw new HttpError(401, 'Session abgelaufen. Bitte neu anmelden.');
+  }
   if (!res.ok) throw new HttpError(502, 'CSRF-Token konnte nicht geholt werden.');
   const json = (await res.json()) as { data?: string };
   return json.data ?? '';
