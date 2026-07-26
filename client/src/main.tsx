@@ -29,8 +29,16 @@ syncAppHeight();
 window.addEventListener('resize', syncAppHeight);
 window.addEventListener('orientationchange', syncAppHeight);
 window.visualViewport?.addEventListener('resize', syncAppHeight);
-// Nach dem Schließen der Tastatur (Blur) die ggf. übersprungene Höhen-Nachführung nachholen.
-window.addEventListener('focusout', () => setTimeout(syncAppHeight, 50));
+// Nach dem Schließen der Tastatur (Blur) die ggf. übersprungene Höhen-Nachführung nachholen – und
+// einen von iOS hinterlassenen Dokument-Scroll zurückholen (#207): iOS schiebt die SEITE hoch, um
+// das fokussierte Feld über die Tastatur zu heben, scrollt danach aber nicht zurück. Da die App eine
+// feste Höhe hat und nur innere Container scrollen, ist ein Dokument-Scroll immer ein Artefakt.
+window.addEventListener('focusout', () =>
+  setTimeout(() => {
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
+    syncAppHeight();
+  }, 50),
+);
 // Beim Start/Wiederöffnen ist `window.innerHeight` teils noch transient (iOS-PWA) und es folgt
 // kein Resize → Höhe bliebe falsch (dunkler Streifen unten). Daher mehrfach nachsetzen.
 window.addEventListener('load', syncAppHeight);

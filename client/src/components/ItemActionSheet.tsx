@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { AgendaItem, AgendaServiceOption } from '@shared/types/index';
 import type { AgendaItemUpdate } from '../services/churchtoolsApi';
 import { SongPicker } from './SongPicker';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
+import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import styles from './ItemActionSheet.module.scss';
 
 interface ItemActionSheetProps {
@@ -57,6 +58,9 @@ export function ItemActionSheet({
   const [linkState, setLinkState] = useState<LinkState>({ kind: 'keep' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Dialog über der iOS-Tastatur freihalten; verhindert auch die verrutschte Kopfleiste (#207).
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useKeyboardInset(overlayRef);
 
   // Das Lied, das der Punkt nach dem Speichern hätte (steuert Titel-/Lied-Anzeige).
   const effSong =
@@ -133,7 +137,7 @@ export function ItemActionSheet({
   // Unterdialog: Lied suchen + verknüpfen.
   if (songMode) {
     return (
-      <div className={styles.overlay} onClick={onOverlayClick}>
+      <div ref={overlayRef} className={styles.overlay} onClick={onOverlayClick}>
         <div className={styles.card} onClick={(e) => e.stopPropagation()}>
           <div className={styles.title}>Lied verknüpfen</div>
           {err && <div className={styles.err}>{err}</div>}
@@ -155,7 +159,7 @@ export function ItemActionSheet({
   }
 
   return (
-    <div className={styles.overlay} onClick={onOverlayClick}>
+    <div ref={overlayRef} className={styles.overlay} onClick={onOverlayClick}>
       <div className={styles.card} onClick={(e) => e.stopPropagation()}>
         <div className={styles.title}>Eintrag bearbeiten</div>
         {err && <div className={styles.err}>{err}</div>}

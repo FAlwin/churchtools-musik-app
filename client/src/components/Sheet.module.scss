@@ -1,6 +1,8 @@
 // Zentriertes Dialog-Fenster (Modal) – einheitlich mit dem „Eintrag bearbeiten"-Dialog.
 .overlay {
-  position: absolute;
+  // `fixed` (nicht `absolute`): sonst scrollt der Dialog mit dem Dokument mit, wenn iOS beim
+  // Fokussieren eines Feldes die Seite hochschiebt (#207).
+  position: fixed;
   inset: 0;
   z-index: 100;
   background: var(--scrim);
@@ -9,6 +11,8 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
+  // Tastatur aussparen (--kb kommt aus useKeyboardInset) → Inhalt bleibt sichtbar, ohne zu wischen.
+  padding-bottom: calc(16px + var(--kb, 0px));
   animation: fadeIn 0.15s ease both;
 }
 

@@ -3,6 +3,7 @@ import { ChordProInput, type ChordProHandle } from './ChordProInput';
 import { PdfPreview } from './PdfPreview';
 import { Icon } from './icons';
 import { Spinner } from './Spinner';
+import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import styles from './ChordEditor.module.scss';
 
 interface ChordEditorProps {
@@ -102,27 +103,10 @@ export function ChordEditor({
   // iOS-Tastatur: Der Overlay bleibt VOLLBILD (fixed, inset 0) – so schimmert hinter der
   // halbtransparenten Tastatur nichts von der dahinterliegenden Ansicht durch. Statt den Overlay
   // zu verschieben (das „sprang" sichtbar), bekommt er unten einen Innenabstand in Höhe der
-  // Tastatur (--kb aus dem visualViewport) → Kopf-/Werkzeugleiste bleiben stehen, nur der intern
-  // scrollende Editor-Bereich wird kürzer. Das automatische Hochschieben der SEITE durch iOS wird
-  // mit scrollTo(0,0) neutralisiert.
-  useEffect(() => {
-    const vv = window.visualViewport;
-    const el = overlayRef.current;
-    if (!vv || !el) return;
-    const apply = () => {
-      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      el.style.setProperty('--kb', `${kb}px`);
-      if (window.scrollY !== 0 || vv.offsetTop !== 0) window.scrollTo(0, 0);
-    };
-    apply();
-    vv.addEventListener('resize', apply);
-    vv.addEventListener('scroll', apply);
-    return () => {
-      vv.removeEventListener('resize', apply);
-      vv.removeEventListener('scroll', apply);
-      el.style.removeProperty('--kb');
-    };
-  }, []);
+  // Tastatur (--kb) → Kopf-/Werkzeugleiste bleiben stehen, nur der intern scrollende
+  // Editor-Bereich wird kürzer. Die Mechanik liegt in `useKeyboardInset` (seit #207 gemeinsam mit
+  // den Dialogen genutzt, damit die Kopien nicht auseinanderlaufen).
+  useKeyboardInset(overlayRef);
 
   // Menüs bei Klick außerhalb schließen
   useEffect(() => {

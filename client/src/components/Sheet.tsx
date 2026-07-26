@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
+import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import styles from './Sheet.module.scss';
 
 interface SheetProps {
@@ -11,8 +12,11 @@ interface SheetProps {
 
 /** Zentriertes Dialog-Fenster (Modal) mit Titel und Abbrechen-Button. */
 export function Sheet({ title, onClose, children, cancelLabel = 'Abbrechen' }: SheetProps) {
+  // Hält den Dialog über der iOS-Tastatur frei und verhindert, dass die Seite verrutscht (#207).
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useKeyboardInset(overlayRef);
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div ref={overlayRef} className={styles.overlay} onClick={onClose}>
       <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
         <div className={styles.title}>{title}</div>
         {children}
