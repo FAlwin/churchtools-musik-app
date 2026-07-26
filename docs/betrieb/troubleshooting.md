@@ -56,6 +56,14 @@ Das in `.env` hinterlegte Admin-Recht passt nicht zur ChurchTools-Instanz.
 → `ADMIN_PERMISSION` in der `.env` anpassen (Standard: `churchcore:administer persons`) und
 die App neu starten (`update.command`/`update.bat` oder `docker compose up -d`).
 
+### Plötzlich wieder auf dem Anmeldebildschirm („Sitzung abgelaufen")
+**Das ist normal und gewollt** (seit v2.13.6, #186) – kein Fehler. ChurchTools beendet die Sitzung
+nach einer Weile selbst. Früher lud die App dann nichts mehr und „Erneut versuchen" half nicht; nur
+Abmelden und neu Anmelden brachte alles zurück. Jetzt erkennt die App das an jeder Stelle und führt
+direkt zur Anmeldung.
+→ Einfach neu anmelden. Anmerkungen und Einstellungen sind sicher (sie liegen pro Konto auf dem
+Server) und sind nach dem Anmelden wieder da.
+
 ---
 
 ## Updates & Daten

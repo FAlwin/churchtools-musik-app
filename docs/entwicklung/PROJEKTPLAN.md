@@ -40,8 +40,9 @@ Entscheidungen → `docs/entwicklung/entscheidungen.md`.
 - [x] 5.1 Unit-Tests für die kniffligste reine Logik (`transpose.ts`, `chordpro.ts`)
 - [x] 5.2 CI (GitHub Actions): lint + build + test je PR
 - [x] 5.3 Testkonzept dokumentiert (`docs/entwicklung/testkonzept.md`)
-- [x] 5.4 Tests zum Redesign: `hasOpaquePixel` + Render-Tests `<Segment>`/`<Section>` (44 Tests grün);
-      Barrierefreiheit (Fokusring, `prefers-reduced-motion`, aria-labels)
+- [x] 5.4 Tests zum Redesign: `hasOpaquePixel` + Render-Tests `<Segment>`/`<Section>`;
+      Barrierefreiheit (Fokusring, `prefers-reduced-motion`, aria-labels).
+      *(Aktuelle Testzahlen stehen nur in `docs/entwicklung/testkonzept.md` – hier bewusst keine Zahl.)*
 
 **Definition of Done:** Kernlogik durch grüne Tests abgesichert, CI bei jedem PR grün.
 

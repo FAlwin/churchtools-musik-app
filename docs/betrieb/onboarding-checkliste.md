@@ -30,7 +30,9 @@ betreiben aber **nichts** für sie (kein zentraler Server, kein geteilter Zugang
 - **ChurchTools-Rechte:** „Nichts sichtbar" liegt fast immer an fehlenden CT-Lese-Rechten
   (Veranstaltungen / Song-Kategorien), nicht an der App.
 - **Admin-Recht passt nicht:** `ADMIN_PERMISSION` an das Rechtekonzept der Instanz anpassen.
-- **Update löscht Einstellungen:** Daten-Volume `musik-data` muss erhalten bleiben.
+- **Update löscht Einstellungen:** Das Daten-Volume muss erhalten bleiben. Der Volume-Key heißt je
+  verwendeter Compose-Datei anders (`deploy/docker-compose.yml`: `musik-data`, `…prod.yml`:
+  `worship-data`, Staging: `worship-data-test`) – siehe `INSTALL.md`.
 
 ## Datenschutz / Verantwortung
 
