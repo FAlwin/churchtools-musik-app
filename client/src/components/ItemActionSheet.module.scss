@@ -1,6 +1,8 @@
 // Zentriertes „Punkt bearbeiten"-Modal (wie der ChurchTools-Dialog), kein Drawer.
 .overlay {
-  position: absolute;
+  // `fixed` (nicht `absolute`): sonst scrollt der Dialog mit dem Dokument mit, wenn iOS beim
+  // Fokussieren eines Feldes die Seite hochschiebt (#207).
+  position: fixed;
   inset: 0;
   z-index: 110;
   background: var(--scrim);
@@ -9,6 +11,8 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
+  // Tastatur aussparen (--kb kommt aus useKeyboardInset) → Trefferliste bleibt erreichbar.
+  padding-bottom: calc(16px + var(--kb, 0px));
   animation: fadeIn 0.12s ease both;
 }
 
