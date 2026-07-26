@@ -7,6 +7,17 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.14.1] – 2026-07-26
+
+### Behoben
+
+- **Die Ansicht verrutscht nicht mehr, wenn die Tastatur aufgeht:** Beim Verknüpfen eines Lieds lagen
+  die Suchtreffer hinter der Tastatur – man musste erst hochwischen, um das gefundene Lied antippen zu
+  können. Und nach dem Speichern blieb die obere Leiste verschoben („Termine" und das Häkchen klebten
+  oben, darunter eine Lücke). Die Dialoge sparen die Tastatur jetzt aus, und die Ansicht sitzt nach dem
+  Schließen wieder normal. Betrifft alle Dialoge mit Eingabefeldern (Hinzufügen, Bearbeiten,
+  Einstellungen). (#207)
+
 ## [2.14.0] – 2026-07-26
 
 ### Neu
