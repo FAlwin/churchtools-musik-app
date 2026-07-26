@@ -1,6 +1,15 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { getUserId } from '../services/churchtools.js';
+
+/**
+ * Eigene Konto-ID – bevorzugt aus dem signierten Session-Cookie (#149), sonst per whoami (#199).
+ * Ohne die Bevorzugung entstand pro Anmerkungs-PUT ein zusätzlicher ChurchTools-Roundtrip, sobald
+ * der whoami-Cache kalt war – und die PUTs laufen debounced im Sekundentakt.
+ */
+async function myUserId(req: Request): Promise<number> {
+  return req.ctUserId ?? (await getUserId(req.ctCookie as string));
+}
 import * as store from '../services/annotations.js';
 import type { PageAnnotation } from '@shared/types/index';
 
@@ -50,7 +59,7 @@ const keySchema = z
 
 /** GET /api/annotations?songs=1,2,3 – alle Anmerkungen des Kontos zu diesen Liedern. */
 export async function getAnnotations(req: Request, res: Response): Promise<void> {
-  const userId = await getUserId(req.ctCookie as string);
+  const userId = await myUserId(req);
   const songs = String(req.query.songs ?? '')
     .split(',')
     .map((s) => Number(s))
@@ -60,7 +69,7 @@ export async function getAnnotations(req: Request, res: Response): Promise<void>
 
 /** PUT /api/annotations/:key – Anmerkungen einer Seite aktualisieren (Feld-Merge). */
 export async function putAnnotation(req: Request, res: Response): Promise<void> {
-  const userId = await getUserId(req.ctCookie as string);
+  const userId = await myUserId(req);
   const key = keySchema.parse(req.params.key);
   const partial = annoSchema.parse(req.body);
   await store.putAnnotation(userId, key, partial);
@@ -69,7 +78,7 @@ export async function putAnnotation(req: Request, res: Response): Promise<void> 
 
 /** DELETE /api/annotations/:key – Anmerkungen einer Seite löschen. */
 export async function deleteAnnotation(req: Request, res: Response): Promise<void> {
-  const userId = await getUserId(req.ctCookie as string);
+  const userId = await myUserId(req);
   const key = keySchema.parse(req.params.key);
   await store.deleteAnnotation(userId, key);
   res.json({ ok: true });

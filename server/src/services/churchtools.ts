@@ -83,12 +83,19 @@ async function ctGet<T = unknown>(cookie: string, path: string): Promise<T> {
   // Cache) darf keinen 401 erzeugen – sonst löst der globale „Session abgelaufen"-Fänger (#186)
   // einen Zwangs-Logout samt Geräte-Wipe aus. Als 403 durchreichen (kein Re-Login).
   if (res.status === 403) {
-    throw new HttpError(403, `Kein Zugriff (ChurchTools) bei ${path}`);
+    // Pfad NICHT nach außen geben (#199) – er verrät interne API-Struktur inkl. Personen-IDs.
+    console.warn(`[churchtools] 403 bei ${path}`);
+    throw new HttpError(403, 'Kein Zugriff auf diese ChurchTools-Daten.');
   }
   if (!res.ok) {
     // 404 durchreichen (z. B. „Termin hat keinen Ablaufplan") – Aufrufer wie die Statistik
     // unterscheiden das von echten Fehlern (500/Netz), die geloggt werden. Rest bleibt 502.
-    throw new HttpError(res.status === 404 ? 404 : 502, `ChurchTools-Fehler (${res.status}) bei ${path}`);
+    // Pfad nur ins Log (#199), nach außen generisch.
+    console.warn(`[churchtools] Fehler ${res.status} bei ${path}`);
+    throw new HttpError(
+      res.status === 404 ? 404 : 502,
+      `ChurchTools-Fehler (${res.status}).`,
+    );
   }
   const json = (await res.json()) as { data?: T };
   return (json.data ?? json) as T;
@@ -489,7 +496,10 @@ function assertCtFileUrl(fileUrl: string): void {
 /** Lädt eine Arrangement-Datei (z.B. .chordpro) als Text – mit Session-Cookie. */
 export async function downloadFileText(cookie: string, fileUrl: string): Promise<string> {
   assertCtFileUrl(fileUrl);
-  const res = await fetch(fileUrl, { headers: { Cookie: cookie } });
+  // `redirect: 'manual'` (#199): assertCtFileUrl prüft den Host der ANGEFRAGTEN URL – ohne diese
+  // Zeile würde fetch einer Weiterleitung folgen und das CT-Cookie mitnehmen. Ein Open Redirect in
+  // der eigenen CT-Instanz könnte es so abfließen lassen.
+  const res = await fetch(fileUrl, { headers: { Cookie: cookie }, redirect: 'manual' });
   if (!res.ok) {
     throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
   }
@@ -508,7 +518,9 @@ export async function fetchFileBytes(
   fileUrl: string,
 ): Promise<{ buffer: Buffer; contentType: string }> {
   assertCtFileUrl(fileUrl);
-  const res = await fetch(fileUrl, { headers: { Cookie: cookie } });
+  // Wie in downloadFileText: keinen Weiterleitungen folgen, damit das CT-Cookie die geprüfte
+  // Instanz nicht verlässt (#199). Verifiziert: ChurchTools liefert Dateien direkt mit 200 aus.
+  const res = await fetch(fileUrl, { headers: { Cookie: cookie }, redirect: 'manual' });
   if (!res.ok) throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
   const buffer = Buffer.from(await res.arrayBuffer());
   return { buffer, contentType: res.headers.get('content-type') ?? 'application/octet-stream' };

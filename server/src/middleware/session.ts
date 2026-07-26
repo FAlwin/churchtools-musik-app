@@ -82,7 +82,14 @@ export function setSession(
 }
 
 export function clearSession(res: Response): void {
-  res.clearCookie(COOKIE_NAME, { path: '/' });
+  // Attribute des Setzens spiegeln (#199): Browser matchen zwar auf Name+Path, aber so bleibt
+  // Setzen/Löschen deckungsgleich, falls sich die Regeln je verschärfen.
+  res.clearCookie(COOKIE_NAME, {
+    path: '/',
+    httpOnly: true,
+    secure: config.cookieSecure,
+    sameSite: 'lax',
+  });
 }
 
 /**
