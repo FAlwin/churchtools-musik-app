@@ -69,6 +69,19 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
 - `utils/strokes` (`mergeStrokes`, reine null-Zweige), `utils/vanishedRows` (lokale
   Auflöse-Platzhalter #178) und `utils/annotationKeys` (Schlüssel-Grammatik: Ebenen-Präfix,
   nicht-leere Notizen je Ebene, Ebenen-Gruppierung unter Namensraum) rein getestet.
+- **Seiten-Engine, seit der Aufteilung von `PageDeck` (#193):**
+  - `hooks/usePageCanvases` (jsdom, `getContext` gestubbt): Maße + Seitenverhältnis der Quellseite,
+    Striche der sichtbaren Seiten laden, fremde Ebene aufs Overlay, Querformat bedient beide Seiten,
+    Zoom-Wiederherstellung nach dem Malen. Vor allem: **ein geänderter Schlüssel zeichnet neu**
+    (das war die stille Lücke der abgeschalteten Hook-Prüfungen), ein Render ohne Änderung dagegen
+    NICHT. Dazu der Bild-Vorrat der Nachbarseiten inkl. 40er-Deckel und Aufräumen gelöschter Striche.
+  - `components/PageTextLayer`: was gezeigt wird (eigene/fremde Texte, Zusammenführen-Vorschau, der
+    bearbeitete Text steht genau EINMAL da) und **wann Text anfassbar ist** – mit dem Stift nie
+    (man muss darüber zeichnen können), auf der inaktiven Hälfte nie (#53).
+  - `utils/pageKeys` (Signaturen: gleiche Schlüssel → gleiche Signatur, jede Änderung schlägt durch,
+    kein Verschmelzen) und `utils/textObjStyle` (u. a. Bestandstexte ohne `bold`-Feld bleiben fett).
+  ⚠️ **Nicht durch Tests abgedeckt und weiterhin nur am Gerät prüfbar:** Stift/Finger/Marker/
+  Radierer, Zwei-Finger-Abbruch, Handballen, Pinch-Zoom und der Slide-Übergang.
 
 ### Weitere Client-Logik
 `songFilter` (Sortierung/Zeitfilter Lieder), `chartSettings`, `color`, `canvas`,
@@ -81,10 +94,10 @@ Neu seit v2.14.x: `utils/agendaItemTitle` (Anzeige-Regeln für Lied-Punkte, #200
 Dopplung" und Groß-/Kleinschreibung) und `hooks/useKeyboardInset` (Tastatur-Aussparung #207, jsdom:
 Höhe korrekt, nie negativ, Listener an/ab, Scroll-Reset, kein Absturz ohne `visualViewport`).
 
-**Bekannte Test-Lücken (bewusst als Issues geführt, nicht vergessen):** `utils/chordPdf.ts` 0 %
-und `services/annotations.ts` 13 % (#192) sowie `agendaItemWritePayload` – der laut CLAUDE.md
-kritische Schreibpfad, der einen Lied-Punkt unwiderruflich auf „Text" herabstufen kann – **ohne
-jeden Test** (#212).
+**Bekannte Test-Lücken (bewusst als Issues geführt, nicht vergessen):** `migrateLocalAnnotations`
+(einmalige Übernahme lokaler Anmerkungen ins Konto) ist weiterhin ungetestet – Rest von #192.
+Erledigt: `utils/chordPdf.ts` 0 → 87,7 % und `services/annotations.ts` 13 → 53,6 % (#192),
+`agendaItemWritePayload` mit 11 Tests (#212).
 
 ## Regel für neue Fehler
 Jeder gefundene Bug bekommt **(a)** ein GitHub-Issue (Vorlage „Fehlerbericht") und,
