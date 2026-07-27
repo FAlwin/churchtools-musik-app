@@ -5,7 +5,8 @@ vi.mock('./churchtools.js', () => ({
   getAgenda: vi.fn(),
 }));
 
-import { getAgendaItems, agendaItemSignature } from './setlistBuilder.js';
+import { getAgendaItems } from './setlistBuilder.js';
+import { agendaItemSignature } from './agendaDiff.js';
 import { getAgenda, type CtAgendaItem } from './churchtools.js';
 
 const mockedGetAgenda = vi.mocked(getAgenda);

@@ -108,3 +108,26 @@ am 08.07.2026 im Log). Ohne Überbrückung stünden mitten im Gottesdienst alle 
 wiegt schwerer als ein Rechteentzug, der ein paar Minuten später greift. Es geht zudem um
 Anmerkungen des eigenen Teams, nicht um Personen- oder Finanzdaten. Wer den Entzug sofort
 durchsetzen muss, startet den Container neu.
+
+## Ein Prozess, ein Zustand – die App skaliert nicht horizontal *(27.07.2026, #198)*
+Vier Caches leben **im Arbeitsspeicher des Server-Prozesses**, alle in `services/`:
+
+| Wo | Was | Lebensdauer |
+|---|---|---|
+| `versionMemo.ts` | Ablauf-Fingerabdruck je Termin **und Konto** | 5 s |
+| `churchtools.ts` (`userIdCache`) | Konto-ID zum Session-Cookie | Sitzung |
+| `churchtools.ts` (`capsMemo`) | Rechte eines Kontos | 5 min |
+| `setlistBuilder.ts` (`usageCache`) | org-weite Lied-Statistik | 1 h |
+
+**Bewusst so.** Die App läuft als **eine** Container-Instanz auf dem NAS; ein geteilter Speicher
+(Redis o. ä.) wäre ein zusätzlicher Dienst, der ausfallen kann – für Caches, deren Verlust nichts
+kostet außer ein paar Abfragen mehr.
+
+⚠️ **Die Einschränkung, die daraus folgt:** Mit einer zweiten Instanz hinter einem Lastverteiler
+wären diese Caches nicht mehr konsistent. Konkret: Der Fingerabdruck-Poll träfe je nach Instanz
+unterschiedliche Stände (der Ablauf „flackerte" zwischen geändert und unverändert), und ein
+Rechteentzug würde je nach Instanz unterschiedlich schnell greifen. Wer skalieren will, muss diese
+vier Stellen zuerst gemeinsam lösen – nicht einzeln.
+
+Alle vier liegen deshalb in `services/`, nicht in Controllern: So sind sie an einer Stelle
+auffindbar, statt zwischen Routing-Code versteckt.
