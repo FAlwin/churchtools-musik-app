@@ -42,50 +42,59 @@ stehen: **was wurde wann auf welcher Version geprüft**.
 
 ## Einen Testfall schreiben
 
-Eine Datei je Bereich, darin je Testfall ein `###`-Abschnitt. Der Kopf ist maschinenlesbar –
-Reihenfolge und Schreibweise der vier Felder bitte genau so:
+Eine Datei je Bereich, darin je Testfall ein `###`-Abschnitt. Der Testfall selbst ist eine
+**Klickanleitung** – jemand ohne technisches Vorwissen soll ihn abarbeiten können, ohne zu fragen,
+was gemeint ist. Die technischen Angaben stehen zugeklappt darunter; sie sind für das Auswahl-Skript
+da, nicht zum Lesen.
 
 ```markdown
-### TF-CHART-05 · Zoom bleibt erhalten
+### TF-CHART-04 · Vergrößerung bleibt beim Blättern erhalten
 
-- **Priorität:** kritisch
+**Das brauchst du:** Ein Lied mit mehreren Seiten.
+
+**Das muss passieren:** Die Seite ist noch genauso vergrößert wie vorher und zeigt denselben
+Ausschnitt. Sie darf nicht wieder klein sein.
+
+1. Unten auf **Termine** tippen, einen Gottesdienst öffnen.
+2. Ein mehrseitiges Lied antippen.
+3. Mit zwei Fingern die Seite aufziehen.
+4. Nach links wischen und wieder zurück.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
 - **Betrifft:** `client/src/hooks/useZoomOrchestration.ts`, `client/src/components/PageDeck.tsx`
-- **Automatisiert:** nein – Pinch-Geste, nur am Gerät
+- **Automatisiert:** nein – Zwei-Finger-Geste, nur am Gerät
 - **Historie:** #33
 
-**Voraussetzung:** Ein mehrseitiges Lied, iPad im Querformat.
-
-1. Auf der linken Seite mit zwei Fingern hineinzoomen.
-2. Eine Seite weiterblättern.
-3. Zurückblättern.
-
-**Erwartet:** Der Zoom der linken Seite ist unverändert. Die zweite Seite war nie gezoomt.
+</details>
 ```
 
-**Priorität**
+**Die vier Felder** im zugeklappten Block liest das Skript – Schreibweise bitte genau so:
 
-- `kritisch` – läuft bei jedem Testlauf mit. Sparsam vergeben: Nur was einen Gottesdienst
-  tatsächlich stören würde. Aktuell sind es zehn.
-- `hoch` / `normal` – nur, wenn die Änderung den Bereich berührt.
-
-**Betrifft** – Pfade oder Muster mit `*`, kommagetrennt. Lieber ein Verzeichnis zu viel als eines zu
-wenig: Ein Fall, der zu oft vorgeschlagen wird, kostet Minuten – einer, der übersehen wird, kostet
-einen Gottesdienst.
-
-**Automatisiert** – `nein – <Grund>` oder der Pfad des Tests, der das inzwischen abdeckt. Wird ein
-Fall automatisiert, bleibt er hier stehen mit dem Verweis; so schrumpft die manuelle Liste sichtbar,
-statt ewig zu wachsen.
-
-**Historie** – die Issue-Nummern, bei denen das schon einmal kaputt war. Der wichtigste Teil: Er
-sagt, warum dieser Schritt in der Liste steht, und verhindert, dass jemand ihn als überflüssig
-streicht.
+- **Priorität** – `kritisch` läuft bei jedem Testlauf mit. Sparsam vergeben: nur, was einen
+  Gottesdienst tatsächlich stören würde. Aktuell sind es zwölf. Sonst `hoch` oder `normal`.
+- **Betrifft** – Pfade oder Muster mit `*`, kommagetrennt. Lieber ein Verzeichnis zu viel als eines
+  zu wenig: Ein Fall, der zu oft vorgeschlagen wird, kostet Minuten – einer, der übersehen wird,
+  kostet einen Gottesdienst.
+- **Automatisiert** – `nein – <Grund>` oder der Test, der das inzwischen abdeckt. Wird ein Fall
+  automatisiert, bleibt er hier stehen mit dem Verweis; so schrumpft die manuelle Liste sichtbar,
+  statt ewig zu wachsen.
+- **Historie** – die Issue-Nummern, bei denen das schon einmal kaputt war. Der wichtigste Teil: Er
+  sagt, warum dieser Schritt dasteht, und verhindert, dass jemand ihn als überflüssig streicht.
 
 ## Schritte formulieren
 
-- **Eine Handlung je Schritt**, in der Reihenfolge des Tuns. Nicht „Tonart und Kapo ändern", sondern
-  zwei Schritte.
-- **Erwartet gehört ans Ende**, nicht in jeden Schritt – sonst liest man beim Abhaken doppelt.
-- **Konkret statt allgemein**: „Kapo auf 2" statt „Kapo ändern". Beim Nachstellen eines Fehlers zählt
-  der genaue Wert.
-- **Die Voraussetzung ehrlich nennen**: Braucht der Fall zwei Geräte, ein Lied mit PDF oder ein
-  zweites Konto, steht das oben. Sonst bricht man mittendrin ab.
+- **Beim Nullpunkt anfangen.** Erster Schritt ist, was man tippt, um überhaupt hinzukommen („Unten
+  auf **Termine** tippen"). Niemand soll raten müssen, wo er startet.
+- **Eine Handlung je Schritt**, in der Reihenfolge des Tuns.
+- **Die Beschriftung nennen, die wirklich dasteht** – **Aa**, **Bearbeiten**, **Lied verknüpfen**,
+  „das Personen-Symbol oben rechts". Keine internen Begriffe wie „Anmerkungsmodus umschalten".
+- **„Das muss passieren" gehört nach oben**, direkt vor die Schritte: Man liest erst, worauf man
+  achten soll, und tippt dann – nicht umgekehrt.
+- **Konkret statt allgemein**: „Kapo auf 2" statt „Kapo ändern". Beim Nachstellen zählt der genaue
+  Wert.
+- **Ehrlich sagen, was man braucht**: zwei Geräte, ein Lied mit PDF, ein zweites Konto, ein
+  Test-Termin. Sonst bricht man mittendrin ab.
+- **Warnen, wo es wehtut**: Alles, was nach ChurchTools schreibt, beginnt mit einem Hinweis auf den
+  Test-Termin.

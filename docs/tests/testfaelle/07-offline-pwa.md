@@ -1,84 +1,112 @@
-# Offline & PWA
+# Ohne Internet
 
-Der Ernstfall: Saal ohne Netz, Gottesdienst läuft. Diese Fälle bitte **wirklich im Flugmodus**
-prüfen, nicht mit gedrosseltem Netz – die Fehler treten sonst nicht auf.
+Der Ernstfall: Saal ohne Netz, der Gottesdienst läuft. Bitte **wirklich den Flugmodus** einschalten –
+mit schlechtem WLAN treten diese Fehler nicht auf.
 
-### TF-OFFLINE-01 · Offline-Reserve laden
+### TF-OFFLINE-01 · Lieder für unterwegs speichern
+
+**Das muss passieren:** Beim Termin erscheint ein **Wolken-Symbol**: Er ist auch ohne Internet
+verfügbar.
+
+1. Mit Internet unten auf **Termine** tippen.
+2. Den nächsten Gottesdienst öffnen.
+3. Jedes Lied einmal antippen und durchblättern.
+4. Zurück zur Termin-Liste und auf das Symbol beim Termin schauen.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/services/offline.ts`, `client/src/services/offlineAuto.ts`, `client/src/hooks/useOfflineReserve.ts`, `client/vite.config.ts`
 - **Automatisiert:** teilweise – `client/src/services/offline.registry.test.ts`
 - **Historie:** #32
 
-1. Mit Netz den Ablauf des nächsten Gottesdienstes öffnen.
-2. Alle Lieder einmal durchblättern.
-3. Unter „Mehr" prüfen, ob die Offline-Reserve als geladen angezeigt wird.
-
-**Erwartet:** Die Reserve meldet den Ablauf als verfügbar.
+</details>
 
 ### TF-OFFLINE-02 · Im Flugmodus arbeiten
+
+**Das brauchst du:** TF-OFFLINE-01 muss vorher gelaufen sein.
+
+**Das muss passieren:** Ablauf und alle Lieder sind ohne Internet da – auch nach dem Neustart der
+App. Die Notiz lässt sich offline malen und ist nach Schritt 7 auf dem zweiten Gerät angekommen.
+
+1. **Flugmodus einschalten.**
+2. Die App ganz schließen (aus dem App-Umschalter wischen) und neu öffnen.
+3. Den Termin öffnen.
+4. Alle Lieder nacheinander aufrufen und durchblättern.
+5. Bei einem Lied den Anmerkungsmodus einschalten und etwas malen.
+6. **Flugmodus ausschalten.**
+7. Eine Minute warten, dann auf einem zweiten Gerät dasselbe Lied ansehen.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
 - **Betrifft:** `client/src/services/offline.ts`, `client/src/services/reachability.ts`, `client/src/services/annotations.ts`, `client/src/hooks/useSetlistPages.ts`
 - **Automatisiert:** nein – braucht echte Netztrennung
 - **Historie:** #32
 
-**Voraussetzung:** TF-OFFLINE-01 durchgeführt.
+</details>
 
-1. **Flugmodus einschalten.**
-2. Die App schließen und neu öffnen.
-3. Den Ablauf öffnen, durch alle Lieder blättern.
-4. Eine Anmerkung zeichnen.
-5. Flugmodus aus, eine Minute warten.
-6. Auf einem zweiten Gerät nachsehen.
+### TF-OFFLINE-03 · Nach dem Offline-Sein geht es von selbst weiter
 
-**Erwartet:** Ablauf und alle Charts sind ohne Netz da – auch nach dem Neustart. Die Anmerkung
-lässt sich offline setzen und ist nach Schritt 5 auf dem zweiten Gerät angekommen.
+**Das muss passieren:** Der Offline-Hinweis verschwindet **von allein**, spätestens wenn du zur App
+zurückkommst. Falls die App dich abgemeldet hat, funktioniert die Anmeldung normal – sie darf
+**nicht** fälschlich „Passwort falsch" melden. Du sollst die App **nicht** schließen müssen.
 
-### TF-OFFLINE-03 · Rückkehr online ohne Neustart
+1. **Flugmodus einschalten** und warten, bis der Offline-Hinweis erscheint.
+2. **Flugmodus ausschalten** – die App dabei **offen lassen**.
+3. Eine halbe Minute warten und auf den Hinweis schauen.
+4. Zu einer anderen App wechseln und zurückkommen.
+5. Unten auf **Termine** tippen und die Liste nach unten ziehen (aktualisieren).
+6. Falls eine Anmeldemaske kommt: normal anmelden.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
 - **Betrifft:** `client/src/services/reachability.ts`, `client/src/utils/loginError.ts`, `client/src/pages/Login.tsx`, `client/src/components/UpdateBanner.tsx`
 - **Automatisiert:** teilweise – `client/src/services/reachability.test.ts`, `client/src/services/reachability.probe.test.ts`
 - **Historie:** #218
 
-1. Flugmodus ein, warten, bis der Offline-Hinweis erscheint.
-2. Flugmodus aus, **ohne** die App zu schließen.
-3. Kurz warten, dann etwas antippen, das Netz braucht (z. B. Termin-Liste aktualisieren).
-4. Falls die App abgemeldet hat: anmelden.
+</details>
 
-**Erwartet:** Der Offline-Hinweis verschwindet von selbst, spätestens beim Zurückkehren in die App.
-Die Anmeldung meldet **nicht** fälschlich „falsches Passwort". Ein kompletter Neustart der App darf
-nicht nötig sein.
+### TF-OFFLINE-04 · App-Wechsel behält alles bei
 
-### TF-OFFLINE-04 · App-Wechsel behält den Zustand
+**Das brauchst du:** Die App muss **vom Startbildschirm** aus geöffnet sein (das Symbol, nicht der
+Browser).
+
+**Das muss passieren:** Dasselbe Lied, dieselbe Seite, dieselbe Vergrößerung. Die App darf nicht von
+vorn laden und nicht zur Termin-Liste zurückspringen.
+
+1. Ein Lied öffnen und auf Seite 3 blättern.
+2. Mit zwei Fingern hineinzoomen.
+3. Zu einer anderen App wechseln und dort ein paar Minuten etwas tun.
+4. Zur Musik-App zurückkommen.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/main.tsx`, `client/src/utils/navStorage.ts`, `client/src/components/RestoreGate.tsx`, `client/src/utils/appHeight.ts`
 - **Automatisiert:** nein – App-Wechsel nur am Gerät
 - **Historie:** #24
 
-**Voraussetzung:** Installierte PWA (Symbol auf dem Startbildschirm), nicht der Browser-Tab.
+</details>
 
-1. Ein Lied öffnen, auf Seite 3 blättern, hineinzoomen.
-2. Zu einer anderen App wechseln, dort etwas tun.
-3. Nach ein paar Minuten zurückkehren.
+### TF-OFFLINE-05 · Nach einer neuen Version kein roter Fehlerbildschirm
 
-**Erwartet:** Dasselbe Lied, dieselbe Seite, derselbe Zoom. Kein Neuladen von vorn, kein Sprung
-zurück zur Termin-Liste.
+**Das brauchst du:** Absprache – die App bleibt offen, während eine neue Version veröffentlicht wird.
 
-### TF-OFFLINE-05 · Nach einem Deploy kein Startfehler
+**Das muss passieren:** Entweder erscheint der Hinweis „Neue Version verfügbar", oder die App lädt
+sich still neu. Es darf **kein roter Fehlerbildschirm** kommen.
+
+1. Die App offen lassen (Termin-Liste).
+2. Neue Version deployen lassen.
+3. In der App unten auf **Lieder** tippen – also einen Bereich öffnen, der noch nicht geladen war.
+4. Hinschauen.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/utils/chunkReload.ts`, `client/src/components/ErrorBoundary.tsx`, `client/src/components/UpdateBanner.tsx`, `client/src/hooks/useUpdateCheck.ts`
 - **Automatisiert:** teilweise – `client/src/utils/chunkReload.test.ts`
 - **Historie:** #151, #179
 
-**Voraussetzung:** Die App auf dem Gerät **geöffnet lassen**, während eine neue Version deployt wird.
-
-1. App geöffnet lassen, neue Version deployen.
-2. Am Gerät zu einem Bereich wechseln, der noch nicht geladen war (z. B. Lieder-Bibliothek).
-
-**Erwartet:** Entweder erscheint der Aktualisierungs-Hinweis, oder die App lädt sich still neu. Es
-darf **kein** roter Startfehler-Vollbildschirm kommen – der alte Fehler war ein nicht mehr
-vorhandenes Nachlade-Paket.
+</details>

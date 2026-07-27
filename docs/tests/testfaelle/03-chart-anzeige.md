@@ -1,127 +1,175 @@
-# Chart-Anzeige & Blättern
+# Liedblätter anzeigen und blättern
 
-Die Seiten-Engine (`PageDeck` und ihre Hooks) ist der Teil mit den meisten Reparatur-Runden. Fast
-nichts davon lässt sich automatisch prüfen – Gesten brauchen echte Finger.
+Der Bereich mit den meisten Reparaturen. Fast nichts davon lässt sich vom Rechner aus prüfen – das
+braucht echte Finger auf einem echten Gerät.
 
-### TF-CHART-01 · Chart wird angezeigt
+### TF-CHART-01 · Das Liedblatt erscheint
+
+**Das muss passieren:** Die Akkorde stehen genau über den richtigen Silben. Vers und Refrain sind
+voneinander abgesetzt. Oben stehen Titel, Tonart und Tempo.
+
+1. Unten auf **Termine** tippen, einen Gottesdienst öffnen.
+2. Ein Lied antippen.
+3. Das Blatt ansehen.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
 - **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chordPdf.ts`, `client/src/hooks/useSetlistPages.ts`, `client/src/components/PageDeck.tsx`
-- **Automatisiert:** teilweise – `e2e/chart-smoke.spec.ts` (rendert überhaupt), `client/src/utils/chordPdf.test.ts` (Seitenaufteilung)
+- **Automatisiert:** teilweise – `e2e/chart-smoke.spec.ts`, `client/src/utils/chordPdf.test.ts`
 - **Historie:** –
 
-1. Ein Lied aus dem Ablauf öffnen.
+</details>
 
-**Erwartet:** Akkorde stehen über den zugehörigen Silben, Abschnitte (Vers/Refrain) sind erkennbar,
-Kopfzeile zeigt Titel, Tonart und Tempo.
+### TF-CHART-02 · Blättern per Wischen und Tippen
 
-### TF-CHART-02 · Blättern per Wisch und Tipp
+**Das brauchst du:** Ein Lied mit mehreren Seiten, in einem Ablauf mit mehreren Liedern.
+
+**Das muss passieren:** Jeder Schritt blättert **genau eine** Seite – nie zwei auf einmal. Schritt 5
+wechselt zum nächsten Lied.
+
+1. Ein mehrseitiges Lied öffnen.
+2. Nach links wischen.
+3. Ganz am **rechten Rand** einmal tippen.
+4. Ganz am **linken Rand** einmal tippen.
+5. So oft weiterblättern, bis du über die letzte Seite hinaus bist.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
 - **Betrifft:** `client/src/hooks/usePageNavigation.ts`, `client/src/components/PageDeck.tsx`, `client/src/hooks/useChartNavigation.ts`
 - **Automatisiert:** nein – Wischgesten nur am Gerät
 - **Historie:** –
 
-**Voraussetzung:** Ein mehrseitiges Lied, danach ein Ablauf mit mehreren Liedern.
-
-1. Nach links wischen.
-2. An den **rechten Rand** tippen.
-3. An den **linken Rand** tippen.
-4. Über die letzte Seite des Liedes hinausblättern.
-
-**Erwartet:** 1–3 blättern je eine Seite. Schritt 4 springt ins **nächste Lied**. Kein Schritt
-überspringt eine Seite – iOS schickt nach einer Berührung zusätzlich einen Klick hinterher, der
-unterdrückt werden muss.
+</details>
 
 ### TF-CHART-03 · Querformat zeigt zwei Seiten
 
+**Das brauchst du:** Ein iPad. Ein mehrseitiges Lied und ein Lied, bei dem in ChurchTools ein PDF
+hochgeladen ist.
+
+**Das muss passieren:** Im Querformat liegen immer **zwei** Seiten nebeneinander – auch beim PDF. Es
+darf nie eine Seite allein rechts stehen. Im Hochformat wieder eine. Nach dem Drehen darf keine
+Seite vergrößert hängen bleiben.
+
+1. Ein mehrseitiges Lied öffnen.
+2. Das iPad ins **Querformat** drehen.
+3. Einmal weiterblättern.
+4. Zum Lied mit dem PDF wechseln.
+5. Zurück ins **Hochformat** drehen.
+
+<details><summary>Technisches</summary>
+
 - **Priorität:** hoch
 - **Betrifft:** `client/src/hooks/useLandscape.ts`, `client/src/components/PageDeck.tsx`, `client/src/hooks/usePageCanvases.ts`
-- **Automatisiert:** teilweise – `client/src/hooks/usePageCanvases.test.tsx` (beide Slots), Drehen nicht
+- **Automatisiert:** teilweise – `client/src/hooks/usePageCanvases.test.tsx`, Drehen nicht
 - **Historie:** #20, #52
 
-**Voraussetzung:** iPad, ein mehrseitiges Lied **und** ein Lied mit hochgeladenem PDF.
+</details>
 
-1. Ins Querformat drehen.
-2. Blättern.
-3. Zum PDF-Lied wechseln.
-4. Zurück ins Hochformat drehen.
+### TF-CHART-04 · Vergrößerung bleibt beim Blättern erhalten
 
-**Erwartet:** Im Querformat stehen immer zwei Seiten nebeneinander – auch beim PDF. Nie bleibt eine
-Seite allein rechts stehen. Im Hochformat wieder eine Seite. Nach dem Drehen bleibt kein Zoom hängen.
+**Das brauchst du:** Ein Lied mit mehreren Seiten.
 
-### TF-CHART-04 · Zoom bleibt erhalten
+**Das muss passieren:** Nach Schritt 5 und nach Schritt 6 ist die Seite **noch genauso vergrößert**
+und zeigt denselben Ausschnitt. Nach Schritt 7 ist die Vergrößerung dauerhaft weg – sie darf beim
+Blättern nicht zurückkommen.
+
+1. Ein mehrseitiges Lied öffnen.
+2. Mit zwei Fingern die Seite aufziehen, bis sie deutlich größer ist.
+3. Mit zwei Fingern den Ausschnitt nach unten schieben.
+4. Nach links wischen (eine Seite weiter).
+5. Zurückwischen und hinschauen.
+6. Zu einer anderen App wechseln und wieder zurückkommen.
+7. Mit zwei Fingern ganz herauszoomen, dann zweimal hin- und herblättern.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/hooks/useZoomOrchestration.ts`, `client/src/hooks/useZoomPersistence.ts`, `client/src/components/PageDeck.tsx`
-- **Automatisiert:** nein – Pinch-Geste, nur am Gerät
+- **Automatisiert:** nein – Zwei-Finger-Geste, nur am Gerät
 - **Historie:** #33
 
-**Voraussetzung:** Mehrseitiges Lied.
+</details>
 
-1. Mit zwei Fingern in eine Seite hineinzoomen und den Ausschnitt verschieben.
-2. Eine Seite weiter und wieder zurückblättern.
-3. Die App verlassen und zurückkehren.
-4. Vollständig wieder herauszoomen.
-5. Erneut hin- und herblättern.
+### TF-CHART-05 · Die obere Leiste bleibt, wo sie ist
 
-**Erwartet:** Nach 2 und 3 ist der Zoom samt Ausschnitt unverändert. Nach 4 ist er dauerhaft weg –
-er darf nach dem Blättern nicht zurückkommen.
+**Das brauchst du:** iPhone oder iPad, die App vom **Startbildschirm** aus geöffnet (nicht im
+Browser).
 
-### TF-CHART-05 · Kopfleiste bleibt an ihrem Platz
+**Das muss passieren:** Die obere Leiste sitzt nach jedem Schritt an derselben Stelle. Keine Lücke
+darüber, keine verschobenen Symbole, nichts rutscht aus dem Bild.
+
+1. Einen Termin öffnen, oben rechts auf **Bearbeiten** tippen.
+2. Einen Eintrag antippen, **Lied verknüpfen**, etwas eintippen, einen Treffer wählen.
+3. **Speichern** tippen und auf die obere Leiste schauen.
+4. Zu einer anderen App wechseln und zurückkommen.
+5. Das Gerät drehen und wieder zurückdrehen.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/main.tsx`, `client/src/utils/appHeight.ts`, `client/src/hooks/useOverlayKeyboardInset.ts`, `client/src/components/Screen.tsx`
 - **Automatisiert:** teilweise – `client/src/hooks/useOverlayKeyboardInset.test.tsx`
 - **Historie:** #56, #187, #207
 
-**Voraussetzung:** iPhone oder iPad als installierte PWA (nicht im Browser-Tab).
+</details>
 
-1. Ein Lied verknüpfen (Dialog mit Tastatur öffnen) und speichern.
-2. Die Kopfleiste ansehen.
-3. Die App verlassen und zurückkehren.
-4. Drehen und zurückdrehen.
+### TF-CHART-06 · Beim Blättern blitzt nichts auf
 
-**Erwartet:** Die Kopfleiste sitzt jederzeit an derselben Stelle. Keine Lücke darüber, keine
-verrutschten Symbole, nichts wandert aus dem Bild.
+**Das brauchst du:** Ein Lied, auf dessen Seiten du schon gemalt und Text gesetzt hast.
 
-### TF-CHART-06 · Blätter-Animation ohne Aufblitzen
+**Das muss passieren:** Die Notizen wandern **mit der Seite mit**. Es darf nichts von der vorigen
+Seite kurz aufblitzen und die Textgröße darf im Moment des Umblätterns nicht springen.
+
+1. Das Lied öffnen.
+2. Fünfmal zügig hin- und herblättern.
+3. Dabei nur auf deine Notizen achten.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/hooks/useSlideTransition.ts`, `client/src/components/SlidePanes.tsx`, `client/src/utils/textObjStyle.ts`
-- **Automatisiert:** teilweise – `client/src/utils/textObjStyle.test.ts` (gleicher Stil in beiden Ansichten)
+- **Automatisiert:** teilweise – `client/src/utils/textObjStyle.test.ts`
 - **Historie:** #113, #26
 
-**Voraussetzung:** Seiten mit **Anmerkungen** (Striche und Textfelder).
+</details>
 
-1. Zügig mehrmals vor- und zurückblättern.
-2. Genau auf die Anmerkungen achten.
+### TF-CHART-07 · Die Fußzeile springt nicht
 
-**Erwartet:** Die Anmerkungen wandern mit der Seite mit. Kein Aufblitzen der Vorseite, kein Springen
-der Textgröße im Moment des Übergangs.
+**Das muss passieren:** Punkte-Anzeige und der Text „Nächstes Lied: …" wechseln ruhig mit. Sie
+dürfen nicht kurz etwas Falsches anzeigen.
 
-### TF-CHART-07 · Fußzeile springt nicht
+1. Ein Lied öffnen.
+2. Durch drei bis vier Lieder durchblättern.
+3. Dabei unten auf die Punkte und den Text schauen.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** normal
 - **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/hooks/useChartNavigation.ts`
 - **Automatisiert:** nein
 - **Historie:** #21
 
-1. Durch mehrere Lieder blättern und die Fußzeile beobachten.
+</details>
 
-**Erwartet:** Punkte-Anzeige und „Nächstes Lied"-Text wechseln ruhig, ohne zwischendurch auf einen
-falschen Wert zu springen.
+### TF-CHART-08 · Schriftgröße ändern blockiert die App nicht
 
-### TF-CHART-08 · Einstellungen ändern blockiert die Bedienung nicht
+**Das brauchst du:** Einen Ablauf mit **vielen** Liedern. Wenn vorhanden, ein älteres iPad – dort
+zeigt sich das Problem am deutlichsten.
+
+**Das muss passieren:** Das Menü reagiert **sofort** auf jeden Tipp. Die alten Seiten bleiben
+sichtbar, bis die neuen fertig sind. Die App darf nicht mehrere Sekunden stehen.
+
+1. Ein Lied öffnen.
+2. Oben rechts auf **Aa** tippen.
+3. Fünfmal zügig hintereinander auf **A+** tippen.
+
+<details><summary>Technisches</summary>
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chordPdf.ts`, `client/src/utils/chartPdfOptions.ts`
 - **Automatisiert:** teilweise – `client/src/utils/chartPdfOptions.test.ts`
 - **Historie:** #197
 
-**Voraussetzung:** Ein Ablauf mit **vielen** Liedern; wenn möglich ein älteres iPad.
-
-1. Das Aussehen-Menü öffnen und die Schriftgröße mehrfach zügig ändern.
-
-**Erwartet:** Das Menü reagiert sofort, die bisherigen Seiten bleiben sichtbar, bis die neuen fertig
-sind. Die App darf nicht für Sekunden stehen.
+</details>
