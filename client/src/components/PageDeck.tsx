@@ -13,12 +13,19 @@ import {
   DEFAULT_TEXT_STYLE,
 } from '../hooks/usePageDraw';
 import { pushField } from '../services/annotations';
-import { useZoomPersistence } from '../hooks/useZoomPersistence';
 import { useKeyboardInsets } from '../hooks/useKeyboardInsets';
 import { useSlideTransition, type SlideSlot } from '../hooks/useSlideTransition';
 import { usePointerStrokes } from '../hooks/usePointerStrokes';
-import { DrawToolbar } from './DrawToolbar';
+import { usePageNavigation } from '../hooks/usePageNavigation';
+import { usePageCanvases } from '../hooks/usePageCanvases';
+import { useZoomOrchestration } from '../hooks/useZoomOrchestration';
+import { useLatestRef } from '../hooks/useLatestRef';
+import { useRefPair } from '../hooks/useRefPair';
+import { joinKeys, splitKeys } from '../utils/pageKeys';
 import { ConfirmDialog } from './ConfirmDialog';
+import { PageDrawToolbar } from './PageDrawToolbar';
+import { PageTextLayer } from './PageTextLayer';
+import { SlidePanes } from './SlidePanes';
 import { Spinner } from './Spinner';
 import styles from './PageDeck.module.scss';
 
@@ -37,8 +44,7 @@ export interface PageDeckProps {
   /**
    * „Notizen von …"-Ansehen (Team-Notizen, PCO-Modell): Schlüssel der GERADE ANGESEHENEN fremden
    * Ebene einer Seite – null = normale eigene Anzeige. Ist ein Schlüssel gesetzt, zeigt die Seite
-   * die fremde Ebene SCHREIBGESCHÜTZT statt der eigenen Anmerkungen. MUSS eine stabile Identität
-   * haben (useCallback) – steckt in Effekt-Abhängigkeiten.
+   * die fremde Ebene SCHREIBGESCHÜTZT statt der eigenen Anmerkungen.
    */
   viewKeyFor?: (page: number) => string | null;
   /**
@@ -76,8 +82,7 @@ export interface PageDeckProps {
   resetZoomSignal?: number;
 }
 
-// Stabiler Default für `viewKeyFor` (kein Ansehen) – Identität darf sich nie ändern,
-// weil die Funktion in Effekt-Abhängigkeiten steckt.
+// Stabiler Default für `viewKeyFor` (kein Ansehen).
 const NO_VIEW = (): string | null => null;
 
 function isLandscape(): boolean {
@@ -98,6 +103,12 @@ function isLandscape(): boolean {
  * Anmerken im 2-up (#53): Nur die AKTIVE Seite ist beschreibbar und dezent hervorgehoben; die
  * inaktive Seite ist ausgegraut und gegen Anmerkungen gesperrt. Ein Tipp auf die inaktive Seite
  * macht sie aktiv (setzt dabei keinen Strich).
+ *
+ * Aufgeteilt (#193): Zeichnen der Seiten → `usePageCanvases`, Text-Ebene → `PageTextLayer`,
+ * Blätter-Streifen → `SlidePanes`. Hier bleiben Gesten, Blättern, Zoom-Orchestrierung und die
+ * Verdrahtung der Werkzeugleiste. **Alle Hook-Prüfungen sind wieder eingeschaltet** – möglich
+ * wurde das dadurch, dass die Effekte an den *Schlüsseln* der Seiten hängen statt an den je Render
+ * neu erzeugten Schlüssel-Funktionen (siehe `utils/pageKeys.ts`).
  */
 export function PageDeck({
   pages,
@@ -138,48 +149,17 @@ export function PageDeck({
     startSize: number;
     layerH: number;
   } | null>(null);
-  const contentRefs = [
-    useRef<HTMLCanvasElement | null>(null),
-    useRef<HTMLCanvasElement | null>(null),
-  ];
-  const annoRefs = [useRef<HTMLCanvasElement | null>(null), useRef<HTMLCanvasElement | null>(null)];
+  const contentRefs = useRefPair<HTMLCanvasElement>();
+  const annoRefs = useRefPair<HTMLCanvasElement>();
   // Schreibgeschützte Striche des jeweils ANDEREN Bereichs (Team-Ebene bzw. beim Team-Bearbeiten
   // die privaten) – eigene Canvas UNTER der interaktiven Anno-Canvas.
-  const overlayRefs = [
-    useRef<HTMLCanvasElement | null>(null),
-    useRef<HTMLCanvasElement | null>(null),
-  ];
-  const layerRefs = [useRef<HTMLDivElement | null>(null), useRef<HTMLDivElement | null>(null)];
-  const transformRefs = [
-    useRef<ReactZoomPanPinchRef | null>(null),
-    useRef<ReactZoomPanPinchRef | null>(null),
-  ];
-  // Letzter Zoom-Faktor je Slot – um „aktives Herauszoomen" von programmatischem Reset zu unterscheiden.
-  const lastScale = useRef<[number, number]>([1, 1]);
-  // Zeichen-Engine (Stift/Marker/Radierer) inkl. aller Touch-Regeln in usePointerStrokes (s. u.).
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const suppressClick = useRef(false); // verhindert doppelte Navigation (Touch löst auch click aus)
-  // Slot, den der Nutzer GERADE per Geste anpasst. Synchron (Ref, nicht State) → das erste
-  // onTransformed einer Geste sieht den korrekten Slot, und programmatisches Wiederherstellen
-  // (setTransform/resetTransform) schreibt NICHT fälschlich zurück.
-  // WICHTIG: wird am GESTEN-ENDE (onZoomStop, leicht verzögert) wieder freigegeben. Bliebe er
-  // stehen, würden (a) spätere programmatische Neuausrichtungen (z. B. nach dem 30-Sekunden-Sync)
-  // den Speicher-Guard passieren und den gespeicherten Zoom fälschlich LÖSCHEN und (b) die
-  // Wiederherstell-Effekte genau diesen Slot dauerhaft überspringen → „Zoom bleibt nicht".
-  const gestureSlot = useRef<number | null>(null);
-  const gestureEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+  const overlayRefs = useRefPair<HTMLCanvasElement>();
+  const layerRefs = useRefPair<HTMLDivElement>();
+  const transformRefs = useRefPair<ReactZoomPanPinchRef>();
   const [landscape, setLandscape] = useState(isLandscape());
   // Wird bei App-Rückkehr hochgezählt → erzwingt einen sauberen Remount der Zoom-Ebenen (steckt im
   // TransformWrapper-key), damit ein nach dem Backgrounding veralteter Zoom-Zustand aufgelöst wird.
   const [remountEpoch, setRemountEpoch] = useState(0);
-  // Welche sichtbaren Seiten gerade reingezoomt sind (auch geladener Zoom) → steuert Panning,
-  // Wisch-Navigation und den Zoom-Reset-Knopf. Kein „Anpassen-Modus"/„Fertig" mehr nötig – ein
-  // Pinch zoomt und speichert automatisch; Verschieben ist möglich, sobald reingezoomt.
-  const [zoomedSlots, setZoomedSlots] = useState<[boolean, boolean]>([false, false]);
-  // Vorab dekodierte Strich-Bilder der Nachbarseiten (localStorage-PNGs) für den Streifen.
-  const strokeImgCache = useRef<Map<string, HTMLImageElement>>(new Map());
-  const [aspects, setAspects] = useState<string[]>(['210 / 297', '210 / 297']);
   const [textSize, setTextSize] = useState(1.5); // cqh = % der Seitenhöhe (~13 pt, nahe der Liedtext-Größe)
   // Aktueller „Pinsel"-Stil für NEU platzierten Text (bei ausgewähltem Text wirken die Format-
   // Knöpfe direkt auf das Objekt via dr_.setStyle). Startet normal & mittig (DEFAULT_TEXT_STYLE).
@@ -191,25 +171,44 @@ export function PageDeck({
   const pageCount = pages.length;
   const perView = landscape ? 2 : 1;
 
-  // Dauerhaftes Speichern/Laden des Pinch-Zooms pro Seite (Geräteklasse + Layout im Schlüssel) –
-  // ausgelagert in useZoomPersistence. Die Apply-Effekte (Wiederherstellen) bleiben unten in PageDeck.
-  const { loadZoom, persistZoom, resetVisibleZoom, restoreVisibleZoom } = useZoomPersistence({
+  // Pinch-Zoom: Speichern, Wiederherstellen und der komplette Lebenslauf einer Geste.
+  const { paneProps, loadZoom, restoreAfterPaint } = useZoomOrchestration({
     zoomKeyBaseFor,
-    perView,
     pageIndex,
+    perView,
+    pages,
+    loading,
+    syncTick,
     transformRefs,
-    lastScale,
-    gestureSlot,
-    zoomedSlots,
+    onZoomedChange,
+    resetZoomSignal,
   });
 
-  // ── „Notizen von …"-Ansehen (Team-Notizen) ──
+  // ── Schlüssel der beteiligten Seiten ──
   // Ist für eine Seite ein Ansichts-Schlüssel gesetzt, wird DIE FREMDE Ebene (Overlay, nur lesend)
   // gezeigt und die eigene ausgeblendet. Bearbeitet wird immer nur die eigene (private) Ebene.
   const overlayKeyFor = (p: number): string | null => viewKeyFor(p);
   const viewing = (p: number): boolean => overlayKeyFor(p) != null;
+  /** WIRKSAMER eigener Schlüssel: beim Ansehen ohne Vorschau wird die eigene Ebene nicht gezeigt. */
+  const ownKeyFor = (p: number): string | null =>
+    viewing(p) && !previewOwn ? null : drawKeyFor(p);
 
-  // Ein Anmerkungs-Zustand je sichtbarer Seite (fixe Anzahl Hooks – Regeln der Hooks).
+  // Die Schlüssel selbst sind die Abhängigkeit – nicht die Funktionen, die sie liefern. Über die
+  // Signatur bekommen die Arrays eine stabile Identität (Begründung in `utils/pageKeys.ts`).
+  const ownSig = joinKeys([ownKeyFor(pageIndex), ownKeyFor(pageIndex + 1)]);
+  const overSig = joinKeys([overlayKeyFor(pageIndex), overlayKeyFor(pageIndex + 1)]);
+  const neighbourSig = joinKeys(
+    Array.from({ length: Math.max(0, Math.min(pageCount - 1, pageIndex + 3) - Math.max(0, pageIndex - 2) + 1) })
+      .map((_, i) => Math.max(0, pageIndex - 2) + i)
+      .flatMap((p) => [ownKeyFor(p), overlayKeyFor(p)]),
+  );
+  const ownKeys = useMemo(() => splitKeys(ownSig), [ownSig]);
+  const overKeys = useMemo(() => splitKeys(overSig), [overSig]);
+  const neighbourKeys = useMemo(() => splitKeys(neighbourSig), [neighbourSig]);
+
+  // Ein Anmerkungs-Zustand je sichtbarer Seite (fixe Anzahl Hooks – Regeln der Hooks). Bewusst am
+  // EIGENEN Schlüssel (nicht am wirksamen): Beim Ansehen einer fremden Ebene bleibt die eigene
+  // Ebene der Bearbeitungs-Gegenstand, sie wird nur nicht angezeigt.
   const drawA = usePageDraw(drawKeyFor(pageIndex), annoRefs[0], layerRefs[0], syncTick, pushField);
   const drawB = usePageDraw(
     drawKeyFor(pageIndex + 1),
@@ -221,14 +220,21 @@ export function PageDeck({
   const draws = [drawA, drawB];
   const activeSlot = Math.max(0, Math.min(perView - 1, activePage - pageIndex));
   const activeDraw = draws[activeSlot];
+  const drawsRef = useLatestRef(draws);
 
   // Texte des Overlay-Bereichs (nur lesend) je sichtbarem Slot – direkt aus localStorage.
-  // Ändert sich nur durch Sync (syncTick), Blättern oder Bereichs-/Augen-Wechsel.
+  //
+  // Einziges verbliebenes Disable in dieser Datei (#193, vorher 11). Grund: `syncTick` wird im
+  // Rumpf nicht gelesen – er IST das Signal, dass sich der localStorage geändert hat, und genau den
+  // liest der Rumpf. ESLint kann das nicht sehen und hält die Abhängigkeit für überflüssig; ohne sie
+  // bliebe nach einem Server-Sync der alte Text-Stand stehen. Bewusst KEIN `useState`+`useEffect`:
+  // das ergäbe einen Render mit noch altem Stand → beim Blättern blitzt der Text der Vorseite auf
+  // (dieselbe Klasse Fehler wie #113).
   const overlayTexts: PageTextObj[][] = useMemo(() => {
     const out: PageTextObj[][] = [[], []];
     if (loading) return out;
     for (let j = 0; j < 2; j++) {
-      const key = overlayKeyFor(pageIndex + j);
+      const key = overKeys[j];
       if (!key) continue;
       try {
         const t = localStorage.getItem(`${key}_text`);
@@ -239,269 +245,7 @@ export function PageDeck({
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, syncTick, viewKeyFor, loading]);
-
-  // Anmerkungsmodus verlassen → Text-Auswahl aufheben. Sonst bliebe der gestrichelte Rahmen des
-  // zuletzt bearbeiteten Textes stehen (er hängt an selectedId) und verschwände erst beim
-  // nächsten Seitenwechsel.
-  useEffect(() => {
-    if (!drawMode) {
-      drawA.setSelectedId(null);
-      drawB.setSelectedId(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawMode]);
-
-  // Wechselt die AKTIVE Hälfte (2-up), darf auf der nun inaktiven keine Auswahl/Eingabe
-  // zurückbleiben – sonst stehen Auswahlrahmen auf beiden Seiten gleichzeitig. Eine offene
-  // Inline-Eingabe dort wird zuerst übernommen (nichts geht verloren).
-  useEffect(() => {
-    if (perView !== 2) return;
-    const other = activeSlot === 0 ? 1 : 0;
-    if (draws[other].pending) commitInlineText(other);
-    draws[other].setSelectedId(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSlot, perView]);
-
-  useEffect(() => {
-    const onResize = () => setLandscape(isLandscape());
-    // Bei App-Rückkehr (iOS-PWA) kann der Container neu vermessen worden sein, ohne dass sich die
-    // Ausrichtung (perView) ändert → die Zoom-Ebene bliebe mit einem veralteten Transform „stecken".
-    // Ein Epoche-Hochzählen erzwingt einen sauberen Remount der Zoom-Ebenen (onInit stellt den
-    // gespeicherten Zoom des aktuellen Layouts frisch her). Nur im Vordergrund. Committete Striche
-    // liegen in localStorage und werden nach dem Remount neu gezeichnet – kein Datenverlust.
-    const bump = () => {
-      if (document.visibilityState === 'hidden') return;
-      setRemountEpoch((n) => n + 1);
-    };
-    const onVisible = () => {
-      onResize();
-      bump();
-    };
-    window.addEventListener('resize', onResize);
-    window.addEventListener('orientationchange', onResize);
-    // Ausrichtung auch bei focus neu prüfen (billig), aber den Remount NUR bei echtem
-    // Sichtbarkeitswechsel auslösen – `focus` feuert am Desktop bei jedem Tab-Wechsel.
-    window.addEventListener('focus', onResize);
-    window.addEventListener('pageshow', onVisible);
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('orientationchange', onResize);
-      window.removeEventListener('focus', onResize);
-      window.removeEventListener('pageshow', onVisible);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, []);
-
-  // Sichtbare Seiten malen + Striche laden + Seitenverhältnis setzen
-  useEffect(() => {
-    if (loading) return;
-    const nextAspects: string[] = [];
-    for (let j = 0; j < perView; j++) {
-      const content = contentRefs[j].current;
-      const anno = annoRefs[j].current;
-      if (!content || !anno) continue;
-      const src = pages[pageIndex + j];
-      if (!src) continue;
-      content.width = src.width;
-      content.height = src.height;
-      content.getContext('2d')!.drawImage(src, 0, 0);
-      anno.width = src.width;
-      anno.height = src.height;
-      const ctx = anno.getContext('2d')!;
-      ctx.clearRect(0, 0, anno.width, anno.height);
-      // Eigene Striche, wenn diese Seite keine fremde Ebene zeigt – ODER in der
-      // Zusammenführen-Vorschau (dann beide Ebenen übereinander).
-      const key = viewing(pageIndex + j) && !previewOwn ? null : drawKeyFor(pageIndex + j);
-      const saved = key ? localStorage.getItem(key) : null;
-      if (saved) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 0, 0);
-        img.src = saved;
-      }
-      // Overlay-Striche (anderer Bereich, nur lesend) auf die Overlay-Canvas.
-      const over = overlayRefs[j].current;
-      if (over) {
-        over.width = src.width;
-        over.height = src.height;
-        const octx = over.getContext('2d')!;
-        octx.clearRect(0, 0, over.width, over.height);
-        const oKey = overlayKeyFor(pageIndex + j);
-        const oSaved = oKey ? localStorage.getItem(oKey) : null;
-        if (oSaved) {
-          const img = new Image();
-          img.onload = () => octx.drawImage(img, 0, 0);
-          img.src = oSaved;
-        }
-      }
-      nextAspects[j] = `${src.width} / ${src.height}`;
-    }
-    // Funktionales Update: der vorige `aspects`-Stand wird NICHT gelesen → keine implizite
-    // Abhängigkeit (fehlende Indizes bleiben unverändert, damit nur die sichtbaren Slots wechseln).
-    setAspects((prev) => prev.map((a, j) => nextAspects[j] ?? a));
-    // Gespeicherten Zoom NACH dem Neuzeichnen erneut anwenden: das Setzen der Canvas-Maße löst in
-    // der Zoom-Bibliothek eine Neuvermessung aus (ResizeObserver → Neuausrichtung Richtung Mitte),
-    // die den in onInit gesetzten Zoom überschreiben kann. Doppel-rAF liegt sicher NACH dieser
-    // Neuausrichtung; das 250-ms-Netz fängt Nachzügler (z. B. Ausricht-Animationen). Ohne das
-    // sprang die Seite nach dem Blättern zurück in die Mitte, bis der nächste Sync sie rettete.
-    const applySaved = () => restoreVisibleZoom({ fitUnsaved: true });
-    requestAnimationFrame(() => requestAnimationFrame(applySaved));
-    const net = window.setTimeout(applySaved, 250);
-    return () => window.clearTimeout(net);
-    // Disable bewusst beibehalten: `drawKeyFor`/`overlayKeyFor`/`viewing`/`restoreVisibleZoom`
-    // sind je Render neu erzeugte Funktionen – als Deps würden sie den (teuren) Neuaufbau bei jedem
-    // Render auslösen. Effekt läuft absichtlich nur bei echtem Seiten-/Layout-/Sync-Wechsel.
-    // remountEpoch: nach dem erzwungenen Remount (App-Rückkehr) sind die Canvas-Elemente neu.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, pages, pageIndex, perView, syncTick, viewKeyFor, remountEpoch, previewOwn]);
-
-  // Strich-Bilder der Nachbarseiten vorab dekodieren → der Slide-Streifen kann sie beim
-  // Blättern SOFORT (synchron) mitzeichnen, ohne auf Image-Decode zu warten.
-  useEffect(() => {
-    if (loading) return;
-    for (let p = Math.max(0, pageIndex - 2); p <= Math.min(pageCount - 1, pageIndex + 3); p++) {
-      // Beide Ebenen (interaktiv + Overlay) vorhalten, damit der Streifen vollständig aussieht.
-      for (const key of [viewing(p) && !previewOwn ? null : drawKeyFor(p), overlayKeyFor(p)]) {
-        if (!key) continue;
-        const data = localStorage.getItem(key);
-        if (!data) {
-          strokeImgCache.current.delete(key);
-          continue;
-        }
-        const cached = strokeImgCache.current.get(key);
-        if (cached && cached.src === data) continue;
-        const img = new Image();
-        img.src = data;
-        strokeImgCache.current.set(key, img);
-      }
-    }
-    // Cache klein halten (älteste Einträge zuerst raus – Map behält die Einfüge-Reihenfolge).
-    while (strokeImgCache.current.size > 40) {
-      const oldest = strokeImgCache.current.keys().next().value;
-      if (oldest === undefined) break;
-      strokeImgCache.current.delete(oldest);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, pageCount, syncTick, loading, viewKeyFor, previewOwn]);
-
-  // Eine Streifen-Hälfte (1–2 Seiten ab `start`) aus offscreen-Seite + Strichen zusammensetzen.
-  function composePane(start: number): SlideSlot[] {
-    const out: SlideSlot[] = [];
-    for (let j = 0; j < perView; j++) {
-      const p = start + j;
-      const src = pages[p];
-      if (!src) break;
-      const c = document.createElement('canvas');
-      c.width = src.width;
-      c.height = src.height;
-      const ctx = c.getContext('2d')!;
-      ctx.drawImage(src, 0, 0);
-      // Beide Ebenen in den Streifen zeichnen (Overlay zuerst, interaktive Ebene obenauf) –
-      // im Slide sieht die Seite damit exakt aus wie in der Live-Ansicht.
-      const texts: PageTextObj[] = [];
-      for (const key of [overlayKeyFor(p), viewing(p) && !previewOwn ? null : drawKeyFor(p)]) {
-        if (!key) continue;
-        const strokes = strokeImgCache.current.get(key);
-        if (strokes && strokes.complete && strokes.naturalWidth > 0) ctx.drawImage(strokes, 0, 0);
-        try {
-          const t = localStorage.getItem(`${key}_text`);
-          if (t) texts.push(...(JSON.parse(t) as PageTextObj[]));
-        } catch {
-          /* ignorieren */
-        }
-      }
-      out.push({ canvas: c, texts, zoom: loadZoom(p), aspect: `${src.width} / ${src.height}` });
-    }
-    return out;
-  }
-
-  // Slide-Übergang beim Blättern (Auslösen ±1 + Abspielen) – ausgelagert in useSlideTransition.
-  // composePane bleibt hier, weil es tief in die Zeichen-/Overlay-Interna greift.
-  const { slide, slidePanes, slideOverlayRef } = useSlideTransition({
-    pageIndex,
-    perView,
-    pages,
-    loading,
-    composePane,
-  });
-
-  // Text-Ebene exakt auf die dargestellte Seiten-Canvas legen (ein leeres div mit nur aspect-ratio
-  // kollabiert im Grid auf 0×0 → Text ließe sich nicht platzieren). Per ResizeObserver mitführen.
-  useEffect(() => {
-    function sync() {
-      for (let j = 0; j < perView; j++) {
-        const a = annoRefs[j].current;
-        const l = layerRefs[j].current;
-        if (a && l) {
-          l.style.width = `${a.clientWidth}px`;
-          l.style.height = `${a.clientHeight}px`;
-        }
-      }
-    }
-    sync();
-    const ro = new ResizeObserver(sync);
-    for (let j = 0; j < perView; j++) {
-      const a = annoRefs[j].current;
-      if (a) ro.observe(a);
-    }
-    return () => ro.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [perView, loading, pages, pageIndex]);
-
-  // Aktive Seite im sichtbaren Fenster halten
-  useEffect(() => {
-    const maxVisible = pageIndex + perView - 1;
-    if (activePage < pageIndex || activePage > maxVisible) onActivePage(pageIndex);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [perView, pageIndex, activePage]);
-
-  // Beim Blättern/Drehen den Gesten-Zustand zurücksetzen. Das eigentliche Wiederherstellen des
-  // gespeicherten Zooms passiert VERZÖGERUNGSFREI in onInit jeder Zoom-Ebene (die per Seiten-key
-  // beim Blättern neu aufgebaut wird) – onInit feuert genau dann, wenn die Ebene vermessen ist.
-  // Dieser Effekt ist nur noch Absicherung (falls kein Remount stattfand).
-  useEffect(() => {
-    if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
-    gestureSlot.current = null;
-    lastScale.current = [1, 1]; // Merker der Vorseite verwerfen (sonst löscht ein Mini-Pinch fälschlich)
-    if (loading) return;
-    requestAnimationFrame(() => restoreVisibleZoom({ fitUnsaved: true }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, perView, loading]);
-
-  // Gesten-Ende-Timer beim Unmount aufräumen.
-  useEffect(
-    () => () => {
-      if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
-    },
-    [],
-  );
-
-  // Nach einem HINTERGRUND-Neuaufbau der Seiten (neues pages-Array, z. B. Transponieren/Spalten/
-  // Version oder 30-Sekunden-Sync) den gespeicherten Zoom je sichtbarer Seite ERNEUT anwenden.
-  // Sonst geht ein per Pinch gesetzter Zoom beim Neu-Zeichnen der Canvas verloren, obwohl er im
-  // Speicher steht. Setzt NIE auf Fit zurück und lässt einen gerade aktiven Slot unangetastet (#33).
-  const pagesSeen = useRef(pages);
-  useEffect(() => {
-    if (pages === pagesSeen.current) return;
-    pagesSeen.current = pages;
-    if (loading) return;
-    // Hintergrund-Neuaufbau desselben Layouts → NIE auf Fit zurücksetzen (fitUnsaved:false).
-    requestAnimationFrame(() => restoreVisibleZoom({ fitUnsaved: false }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pages]);
-
-  // Nach App-Rückkehr / Anmerkungs-Sync / Editor-Schließen (syncTick) die sichtbaren Seiten neu
-  // AUSRICHTEN: gespeicherter Zoom → anwenden; kein gespeicherter, aber hängengebliebener Zoom →
-  // auf Fit. So löst sich auch eine „steckende" Seite nach Editor-Rückkehr. Ein gerade aktiv
-  // gezoomter Slot bleibt unberührt (kein laufender Pinch abbrechen, #33).
-  const syncSeen = useRef(syncTick);
-  useEffect(() => {
-    if (syncTick === syncSeen.current) return;
-    syncSeen.current = syncTick;
-    requestAnimationFrame(() => restoreVisibleZoom({ fitUnsaved: true }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncTick]);
+  }, [overKeys, syncTick, loading]);
 
   // ── Striche zeichnen (Stift/Marker/Radierer) – Engine ausgelagert in usePointerStrokes ──
   const { strokeDown, strokeMove, strokeUp } = usePointerStrokes({
@@ -533,13 +277,7 @@ export function PageDeck({
       .trim();
     d.confirmText(value, drawColor, textSize, textStyle);
   }
-  // Lock wieder freigeben, sobald die jeweilige Eingabe geschlossen/geöffnet wurde.
-  useEffect(() => {
-    textCommitLock.current[0] = false;
-  }, [drawA.pending]);
-  useEffect(() => {
-    textCommitLock.current[1] = false;
-  }, [drawB.pending]);
+  const commitRef = useLatestRef(commitInlineText);
 
   // Beim Text-Bearbeiten die iOS-Tastatur „vermeiden" (nur den Chart-Bereich anheben) – ausgelagert
   // in useKeyboardInsets. preLiftForEditor wird synchron in der Tipp-Geste (focusEditor) genutzt.
@@ -606,13 +344,7 @@ export function PageDeck({
     const layer = layerRefs[slot].current;
     if (!layer) return;
     draws[slot].pushHistory();
-    resizeDrag.current = {
-      slot,
-      id,
-      startY: e.clientY,
-      startSize: size,
-      layerH: layer.clientHeight,
-    };
+    resizeDrag.current = { slot, id, startY: e.clientY, startSize: size, layerH: layer.clientHeight };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function handleResizeMove(e: React.PointerEvent) {
@@ -629,84 +361,167 @@ export function PageDeck({
     resizeDrag.current = null;
   }
 
-  // ── Blättern / aktive Hälfte ──
-  // Max. linke Seite: im 2-up so, dass NIE eine Seite allein rechts steht (immer 2 sichtbar);
-  // nur bei genau 1 Seite gesamt bleibt eine einzelne (linksbündige) Seite.
-  const maxLeft = perView === 2 && pageCount > 1 ? pageCount - 2 : Math.max(0, pageCount - 1);
-  function go(delta: number) {
-    const target = pageIndex + delta;
-    if (target < 0) {
-      onBeforeFirst?.(); // über die erste Seite hinaus (z. B. voriges Lied)
-      return;
+  // ── Effekte ──
+
+  // Anmerkungsmodus verlassen → Text-Auswahl aufheben. Sonst bliebe der gestrichelte Rahmen des
+  // zuletzt bearbeiteten Textes stehen (er hängt an selectedId) und verschwände erst beim
+  // nächsten Seitenwechsel.
+  const setSelectedA = drawA.setSelectedId;
+  const setSelectedB = drawB.setSelectedId;
+  useEffect(() => {
+    if (!drawMode) {
+      setSelectedA(null);
+      setSelectedB(null);
     }
-    if (target > maxLeft) {
-      onAfterLast?.(); // über die letzte Seite hinaus (z. B. nächstes Lied)
-      return;
+  }, [drawMode, setSelectedA, setSelectedB]);
+
+  // Wechselt die AKTIVE Hälfte (2-up), darf auf der nun inaktiven keine Auswahl/Eingabe
+  // zurückbleiben – sonst stehen Auswahlrahmen auf beiden Seiten gleichzeitig. Eine offene
+  // Inline-Eingabe dort wird zuerst übernommen (nichts geht verloren).
+  useEffect(() => {
+    if (perView !== 2) return;
+    const other = activeSlot === 0 ? 1 : 0;
+    if (drawsRef.current[other].pending) commitRef.current(other);
+    drawsRef.current[other].setSelectedId(null);
+  }, [activeSlot, perView, drawsRef, commitRef]);
+
+  useEffect(() => {
+    const onResize = () => setLandscape(isLandscape());
+    // Bei App-Rückkehr (iOS-PWA) kann der Container neu vermessen worden sein, ohne dass sich die
+    // Ausrichtung (perView) ändert → die Zoom-Ebene bliebe mit einem veralteten Transform „stecken".
+    // Ein Epoche-Hochzählen erzwingt einen sauberen Remount der Zoom-Ebenen (onInit stellt den
+    // gespeicherten Zoom des aktuellen Layouts frisch her). Nur im Vordergrund. Committete Striche
+    // liegen in localStorage und werden nach dem Remount neu gezeichnet – kein Datenverlust.
+    const bump = () => {
+      if (document.visibilityState === 'hidden') return;
+      setRemountEpoch((n) => n + 1);
+    };
+    const onVisible = () => {
+      onResize();
+      bump();
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    // Ausrichtung auch bei focus neu prüfen (billig), aber den Remount NUR bei echtem
+    // Sichtbarkeitswechsel auslösen – `focus` feuert am Desktop bei jedem Tab-Wechsel.
+    window.addEventListener('focus', onResize);
+    window.addEventListener('pageshow', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+      window.removeEventListener('focus', onResize);
+      window.removeEventListener('pageshow', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
+
+  // Sichtbare Seiten malen + Striche laden + Seitenverhältnis setzen; dazu der Bild-Vorrat der
+  // Nachbarseiten für den Blätter-Streifen.
+  const { aspects, strokeImgCache } = usePageCanvases({
+    pages,
+    pageIndex,
+    perView,
+    loading,
+    syncTick,
+    remountEpoch,
+    ownKeys,
+    overKeys,
+    neighbourKeys,
+    contentRefs,
+    annoRefs,
+    overlayRefs,
+    onAfterPaint: restoreAfterPaint,
+  });
+
+  // Eine Streifen-Hälfte (1–2 Seiten ab `start`) aus offscreen-Seite + Strichen zusammensetzen.
+  function composePane(start: number): SlideSlot[] {
+    const out: SlideSlot[] = [];
+    for (let j = 0; j < perView; j++) {
+      const p = start + j;
+      const src = pages[p];
+      if (!src) break;
+      const c = document.createElement('canvas');
+      c.width = src.width;
+      c.height = src.height;
+      const ctx = c.getContext('2d')!;
+      ctx.drawImage(src, 0, 0);
+      // Beide Ebenen in den Streifen zeichnen (Overlay zuerst, interaktive Ebene obenauf) –
+      // im Slide sieht die Seite damit exakt aus wie in der Live-Ansicht.
+      const texts: PageTextObj[] = [];
+      for (const key of [overlayKeyFor(p), ownKeyFor(p)]) {
+        if (!key) continue;
+        const strokes = strokeImgCache.current.get(key);
+        if (strokes && strokes.complete && strokes.naturalWidth > 0) ctx.drawImage(strokes, 0, 0);
+        try {
+          const t = localStorage.getItem(`${key}_text`);
+          if (t) texts.push(...(JSON.parse(t) as PageTextObj[]));
+        } catch {
+          /* ignorieren */
+        }
+      }
+      out.push({ canvas: c, texts, zoom: loadZoom(p), aspect: `${src.width} / ${src.height}` });
     }
-    if (target !== pageIndex) {
-      onPageIndex(target);
-      onActivePage(target);
-    }
-  }
-  function onTouchStart(e: React.TouchEvent) {
-    // Ein Finger = blättern (hier). Zwei+ Finger gehören der Zoom-Bibliothek (Zoom + Verschieben).
-    if (drawMode || e.touches.length > 1) {
-      touchStart.current = null;
-      return;
-    }
-    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  }
-  function onTouchEnd(e: React.TouchEvent) {
-    if (drawMode || !touchStart.current) return;
-    const dx = touchStart.current.x - e.changedTouches[0].clientX;
-    const dy = touchStart.current.y - e.changedTouches[0].clientY;
-    const startX = touchStart.current.x;
-    touchStart.current = null;
-    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) go(dx > 0 ? 1 : -1);
-    else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) tapAt(startX, e.currentTarget as HTMLElement);
-    // den von iOS nachgereichten Klick unterdrücken (sonst doppelte Navigation = Seite übersprungen)
-    suppressClick.current = true;
-    window.setTimeout(() => (suppressClick.current = false), 500);
-  }
-  function tapAt(clientX: number, root: HTMLElement) {
-    const r = root.getBoundingClientRect();
-    const fx = (clientX - r.left) / r.width;
-    if (fx < 0.18) {
-      go(-1); // linker Rand → zurück
-      return;
-    }
-    if (fx > 0.82) {
-      go(1); // rechter Rand → weiter
-      return;
-    }
-    if (perView < 2) return;
-    const slot = fx < 0.5 ? 0 : 1; // Mitte: angetippte Hälfte wird aktiv
-    const target = pageIndex + slot;
-    if (target < pageCount) onActivePage(target);
-  }
-  function onClick(e: React.MouseEvent) {
-    if (drawMode) return;
-    if (suppressClick.current) {
-      suppressClick.current = false; // war ein Touch-Tap (schon behandelt) → Klick ignorieren
-      return;
-    }
-    tapAt(e.clientX, e.currentTarget as HTMLElement);
+    return out;
   }
 
-  // „Ist reingezoomt?" nach oben melden – steuert den Reset-Knopf in der Kopfleiste (ChordChart).
-  const anyZoomed = zoomedSlots.slice(0, perView).some(Boolean);
-  useEffect(() => {
-    onZoomedChange?.(anyZoomed);
-  }, [anyZoomed, onZoomedChange]);
+  // Slide-Übergang beim Blättern (Auslösen ±1 + Abspielen) – ausgelagert in useSlideTransition.
+  // composePane bleibt hier, weil es tief in die Zeichen-/Overlay-Interna greift.
+  const { slide, slidePanes, slideOverlayRef } = useSlideTransition({
+    pageIndex,
+    perView,
+    pages,
+    loading,
+    composePane,
+  });
 
-  // Reset-Knopf der Kopfleiste gedrückt (Signal erhöht) → sichtbaren Zoom zurücksetzen.
-  const lastResetSignal = useRef(resetZoomSignal);
+  // Text-Ebene exakt auf die dargestellte Seiten-Canvas legen (ein leeres div mit nur aspect-ratio
+  // kollabiert im Grid auf 0×0 → Text ließe sich nicht platzieren). Per ResizeObserver mitführen.
   useEffect(() => {
-    if (resetZoomSignal === lastResetSignal.current) return;
-    lastResetSignal.current = resetZoomSignal;
-    resetVisibleZoom();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetZoomSignal]);
+    function sync() {
+      for (let j = 0; j < perView; j++) {
+        const a = annoRefs[j].current;
+        const l = layerRefs[j].current;
+        if (a && l) {
+          l.style.width = `${a.clientWidth}px`;
+          l.style.height = `${a.clientHeight}px`;
+        }
+      }
+    }
+    sync();
+    const ro = new ResizeObserver(sync);
+    for (let j = 0; j < perView; j++) {
+      const a = annoRefs[j].current;
+      if (a) ro.observe(a);
+    }
+    return () => ro.disconnect();
+  }, [perView, loading, pages, pageIndex, annoRefs, layerRefs]);
+
+  // Aktive Seite im sichtbaren Fenster halten
+  useEffect(() => {
+    const maxVisible = pageIndex + perView - 1;
+    if (activePage < pageIndex || activePage > maxVisible) onActivePage(pageIndex);
+  }, [perView, pageIndex, activePage, onActivePage]);
+
+  // Lock wieder freigeben, sobald die jeweilige Eingabe geschlossen/geöffnet wurde.
+  useEffect(() => {
+    textCommitLock.current[0] = false;
+  }, [drawA.pending]);
+  useEffect(() => {
+    textCommitLock.current[1] = false;
+  }, [drawB.pending]);
+
+  // Blättern per Wisch/Tipp (drei Zonen) – ausgelagert in usePageNavigation.
+  const { onTouchStart, onTouchEnd, onClick } = usePageNavigation({
+    pageIndex,
+    pageCount,
+    perView,
+    drawMode,
+    onPageIndex,
+    onActivePage,
+    onBeforeFirst,
+    onAfterLast,
+  });
 
   const slots: number[] = [];
   for (let j = 0; j < perView; j++) {
@@ -714,7 +529,6 @@ export function PageDeck({
     slots.push(j);
   }
 
-  const selectedText = activeDraw.texts.find((o) => o.id === activeDraw.selectedId) ?? null;
   // #53: im 2-up Zeichenmodus wird die inaktive Seite ausgegraut/zurückgestellt (und ist gesperrt –
   // das erledigen strokeDown/layerDown). Die aktive Seite bleibt in voller Deckkraft = hervorgehoben.
   function slotClass(j: number): string {
@@ -745,386 +559,124 @@ export function PageDeck({
       {!loading && slots.length === 2 && <div className={styles.divider} />}
 
       <div className={styles.row} style={{ visibility: loading ? 'hidden' : 'visible' }}>
-        {slots.map((j) => {
-          const d = draws[j];
-          return (
-            <div key={j} className={slotClass(j)}>
-              {/* key = SEITE + LAYOUT (perView): beim Blättern UND beim Formatwechsel (Hoch↔Quer)
-                  wird die Zoom-Ebene frisch aufgebaut statt den Transform-Zustand des vorherigen
-                  Zustands dieser Hälfte zu erben (sonst blieb die linke Hälfte beim Drehen im Zoom
-                  „stecken"). onInit stellt danach den für DIESES Layout gespeicherten Zoom her (bzw.
-                  passt ein, wenn keiner gespeichert ist). Beim Hintergrund-Neuaufbau (pages-Tausch)
-                  bleibt der key gleich → kein Remount, laufende Gesten unberührt. */}
-              <TransformWrapper
-                key={`p${pageIndex + j}_v${perView}_e${remountEpoch}`}
-                ref={transformRefs[j]}
-                minScale={MIN_SCALE}
-                maxScale={MAX_SCALE}
-                centerOnInit
-                centerZoomedOut
-                initialScale={1}
-                limitToBounds
-                doubleClick={{ disabled: true }}
-                // Gespeicherten Zoom SOFORT anwenden, sobald die Ebene vermessen ist (kein Warten
-                // auf einen späteren Effekt → keine sichtbare Verzögerung nach dem Blättern).
-                onInit={(ref) => {
-                  if (gestureSlot.current === j) return;
-                  const saved = loadZoom(pageIndex + j);
-                  if (saved) ref.setTransform(saved.x, saved.y, saved.scale, 0);
-                }}
-                // Ein-Finger-Panning IMMER aus: ein Finger blättert (bzw. zeichnet im Zeichenmodus).
-                // Zwei Finger gehören der Zoom-Geste – die zoomt UND verschiebt (Mittelpunkt-Bewegung),
-                // AUCH im Zeichenmodus: so kann man beim Anmerken kurz zoomen/verschieben, ohne den
-                // Modus zu verlassen (ein begonnener Strich wird bei Zweitfinger verworfen).
-                panning={{ disabled: true }}
-                pinch={{ disabled: false }}
-                wheel={{ disabled: false, step: 0.08 }}
-                // gestureSlot synchron am Gesten-Start setzen (Pinch löst onZoomStart aus, auch beim
-                // reinen Zwei-Finger-Verschieben) → schon das erste onTransformed sichert korrekt und
-                // programmatisches Wiederherstellen schreibt nicht zurück.
-                onZoomStart={() => {
-                  if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
-                  gestureSlot.current = j;
-                }}
-                // Gesten-Ende: gestureSlot leicht verzögert freigeben – die Ausricht-Animation der
-                // Bibliothek läuft nach dem Loslassen noch ~200 ms und soll den ENDWERT speichern.
-                // Danach können programmatische Transformen weder speichern noch löschen, und die
-                // Wiederherstell-Effekte dürfen diesen Slot wieder bedienen.
-                onZoomStop={() => {
-                  if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
-                  gestureEndTimer.current = setTimeout(() => {
-                    gestureSlot.current = null;
-                  }, 350);
-                }}
-                onTransformed={(_ref, state) => {
-                  persistZoom(j);
-                  const z = state.scale > 1.01;
-                  setZoomedSlots((prev) => {
-                    if (prev[j] === z) return prev;
-                    const next: [boolean, boolean] = [prev[0], prev[1]];
-                    next[j] = z;
-                    return next;
-                  });
-                }}
+        {slots.map((j) => (
+          <div key={j} className={slotClass(j)}>
+            {/* key = SEITE + LAYOUT (perView): beim Blättern UND beim Formatwechsel (Hoch↔Quer)
+                wird die Zoom-Ebene frisch aufgebaut statt den Transform-Zustand des vorherigen
+                Zustands dieser Hälfte zu erben (sonst blieb die linke Hälfte beim Drehen im Zoom
+                „stecken"). onInit stellt danach den für DIESES Layout gespeicherten Zoom her (bzw.
+                passt ein, wenn keiner gespeichert ist). Beim Hintergrund-Neuaufbau (pages-Tausch)
+                bleibt der key gleich → kein Remount, laufende Gesten unberührt. */}
+            <TransformWrapper
+              key={`p${pageIndex + j}_v${perView}_e${remountEpoch}`}
+              ref={transformRefs[j]}
+              minScale={MIN_SCALE}
+              maxScale={MAX_SCALE}
+              centerOnInit
+              centerZoomedOut
+              initialScale={1}
+              limitToBounds
+              doubleClick={{ disabled: true }}
+              // Ein-Finger-Panning IMMER aus: ein Finger blättert (bzw. zeichnet im Zeichenmodus).
+              // Zwei Finger gehören der Zoom-Geste – die zoomt UND verschiebt (Mittelpunkt-Bewegung),
+              // AUCH im Zeichenmodus: so kann man beim Anmerken kurz zoomen/verschieben, ohne den
+              // Modus zu verlassen (ein begonnener Strich wird bei Zweitfinger verworfen).
+              panning={{ disabled: true }}
+              pinch={{ disabled: false }}
+              wheel={{ disabled: false, step: 0.08 }}
+              // Wiederherstellen, Sichern und der Lebenslauf einer Geste: useZoomOrchestration.
+              {...paneProps(j)}
+            >
+              <TransformComponent
+                wrapperStyle={{ width: '100%', height: '100%' }}
+                contentStyle={{ width: '100%', height: '100%' }}
               >
-                <TransformComponent
-                  wrapperStyle={{ width: '100%', height: '100%' }}
-                  contentStyle={{ width: '100%', height: '100%' }}
+                <div
+                  className={styles.pageBox}
+                  // Im 2-up (2 Seiten sichtbar) sitzt jede Seite mittig in IHRER Hälfte. Eine
+                  // allein stehende LETZTE Seite eines mehrseitigen Charts bleibt LINKS wie ein
+                  // normales linkes Blatt (springt so beim Blättern nicht in die Mitte). Ein
+                  // Chart mit NUR EINER Seite (pageCount === 1) wird dagegen über die volle Breite
+                  // zentriert – sonst klebte es unmotiviert links neben einer leeren Hälfte.
+                  style={{
+                    justifyItems:
+                      perView === 2 && slots.length === 1 && pageCount > 1 ? 'start' : 'center',
+                  }}
                 >
-                  <div
-                    className={styles.pageBox}
-                    // Im 2-up (2 Seiten sichtbar) sitzt jede Seite mittig in IHRER Hälfte. Eine
-                    // allein stehende LETZTE Seite eines mehrseitigen Charts bleibt LINKS wie ein
-                    // normales linkes Blatt (springt so beim Blättern nicht in die Mitte). Ein
-                    // Chart mit NUR EINER Seite (pageCount === 1) wird dagegen über die volle Breite
-                    // zentriert – sonst klebte es unmotiviert links neben einer leeren Hälfte.
+                  <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
+                  {/* Striche der gerade ANGESEHENEN fremden Ebene (nur lesend). */}
+                  <canvas
+                    ref={overlayRefs[j]}
+                    className={styles.annoCanvas}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                  <canvas
+                    ref={annoRefs[j]}
+                    className={styles.annoCanvas}
                     style={{
-                      justifyItems:
-                        perView === 2 && slots.length === 1 && pageCount > 1 ? 'start' : 'center',
+                      pointerEvents: drawMode && drawTool !== 'text' ? 'all' : 'none',
+                      cursor: drawMode ? 'crosshair' : 'default',
                     }}
-                  >
-                    <canvas ref={contentRefs[j]} className={styles.contentCanvas} />
-                    {/* Striche der gerade ANGESEHENEN fremden Ebene ([]=Notizen von X, nur lesend). */}
-                    <canvas
-                      ref={overlayRefs[j]}
-                      className={styles.annoCanvas}
-                      style={{ pointerEvents: 'none' }}
-                    />
-                    <canvas
-                      ref={annoRefs[j]}
-                      className={styles.annoCanvas}
-                      style={{
-                        pointerEvents: drawMode && drawTool !== 'text' ? 'all' : 'none',
-                        cursor: drawMode ? 'crosshair' : 'default',
-                      }}
-                      onPointerDown={(e) => strokeDown(e, j)}
-                      onPointerMove={strokeMove}
-                      onPointerUp={strokeUp}
-                      onPointerCancel={strokeUp}
-                    />
-                    <div
-                      ref={layerRefs[j]}
-                      className={styles.textLayer}
-                      style={{
-                        aspectRatio: aspects[j],
-                        pointerEvents: drawMode && drawTool === 'text' ? 'all' : 'none',
-                      }}
-                      onPointerDown={(e) => layerDown(e, j)}
-                    >
-                      {/* Texte der gerade angesehenen fremden Ebene (nur lesend). */}
-                      {overlayTexts[j].map((o) => (
-                        <div
-                          key={`ov-${o.id}`}
-                          className={styles.textObj}
-                          style={{
-                            left: `${o.fx * 100}%`,
-                            top: `${o.fy * 100}%`,
-                            fontSize: `${o.sizeCqh}cqh`,
-                            color: o.color,
-                            fontWeight: (o.bold ?? true) ? 700 : 400,
-                            fontStyle: o.italic ? 'italic' : 'normal',
-                            textDecoration: o.underline ? 'underline' : 'none',
-                            textAlign: o.align ?? 'center',
-                            pointerEvents: 'none',
-                          }}
-                        >
-                          {o.text}
-                        </div>
-                      ))}
-                      {(!viewing(pageIndex + j) || previewOwn) &&
-                        d.texts
-                          // Gerade bearbeiteter Text wird durch die Inline-Eingabe ersetzt.
-                          .filter((o) => o.id !== d.pending?.editId)
-                          .map((o) => (
-                            <div
-                              key={o.id}
-                              className={`${styles.textObj}${o.id === d.selectedId ? ' ' + styles.textSel : ''}`}
-                              style={{
-                                left: `${o.fx * 100}%`,
-                                top: `${o.fy * 100}%`,
-                                fontSize: `${o.sizeCqh}cqh`,
-                                color: o.color,
-                                // Format je Block. Bestandstexte (ohne bold-Feld) waren immer fett →
-                                // Fallback true, damit sie unverändert aussehen; neue Texte sind normal.
-                                fontWeight: (o.bold ?? true) ? 700 : 400,
-                                fontStyle: o.italic ? 'italic' : 'normal',
-                                textDecoration: o.underline ? 'underline' : 'none',
-                                textAlign: o.align ?? 'center',
-                                // Text nur im Text-Werkzeug interaktiv → mit Stift/Marker kann man
-                                // ungehindert DARÜBER zeichnen (sonst „fängt" der Text die Eingabe ab).
-                                // Und NUR auf der aktiven Hälfte (#53): auf der ausgegrauten Seite ist
-                                // der Text durchlässig – der Tipp fällt auf die Ebene durch und
-                                // aktiviert die Seite (layerDown), statt den Text zu wählen/bearbeiten.
-                                pointerEvents:
-                                  drawMode &&
-                                  drawTool === 'text' &&
-                                  !(perView === 2 && j !== activeSlot)
-                                    ? 'all'
-                                    : 'none',
-                                cursor: 'grab',
-                              }}
-                              onPointerDown={(e) => d.startDrag(e, o)}
-                              onPointerMove={(e) => d.moveDrag(e, o.id)}
-                              onPointerUp={() => {
-                                // endDrag entscheidet: Tipp auf ausgewählten Text → bearbeiten. flushSync
-                                // hängt die Eingabe sofort ein, danach synchron fokussieren → iOS-Tastatur.
-                                flushSync(() => d.endDrag());
-                                focusEditor(j);
-                              }}
-                              onPointerCancel={d.endDrag}
-                            >
-                              {o.text}
-                              {/* Zieh-Knopf (Ecke unten rechts) am ausgewählten Text: Größe ändern. */}
-                              {o.id === d.selectedId && drawMode && drawTool === 'text' && (
-                                <span
-                                  className={styles.textHandle}
-                                  onPointerDown={(e) => handleResizeDown(e, j, o.id, o.sizeCqh)}
-                                  onPointerMove={handleResizeMove}
-                                  onPointerUp={handleResizeUp}
-                                  onPointerCancel={handleResizeUp}
-                                  aria-label="Textgröße ändern"
-                                />
-                              )}
-                            </div>
-                          ))}
-                      {/* Inline-Eingabe: blinkender Cursor direkt an der Tipp-Stelle. */}
-                      {d.pending &&
-                        (() => {
-                          const p = d.pending;
-                          const editing =
-                            p.editId != null ? d.texts.find((t) => t.id === p.editId) : null;
-                          // Beim Bearbeiten den Stil des Textes, sonst den aktuellen Pinsel-Stil.
-                          const st: TextStyle = editing
-                            ? {
-                                bold: editing.bold ?? true,
-                                italic: !!editing.italic,
-                                underline: !!editing.underline,
-                                align: editing.align ?? 'center',
-                              }
-                            : textStyle;
-                          return (
-                            <span
-                              key={`edit-${d.pending.editId ?? 'new'}`}
-                              ref={(n) => {
-                                editRefs.current[j] = n;
-                                // Nur den Startinhalt setzen; der Fokus passiert synchron in der
-                                // Tipp-Geste (focusEditor nach flushSync) → nötig für die iOS-Tastatur.
-                                if (n && !n.dataset.init) {
-                                  n.dataset.init = '1';
-                                  n.textContent = p.initial ?? '';
-                                }
-                              }}
-                              contentEditable
-                              suppressContentEditableWarning
-                              className={`${styles.textObj} ${styles.textEditing}`}
-                              style={{
-                                left: `${(editing?.fx ?? p.fx) * 100}%`,
-                                top: `${(editing?.fy ?? p.fy) * 100}%`,
-                                fontSize: `${editing?.sizeCqh ?? textSize}cqh`,
-                                color: editing?.color ?? drawColor,
-                                fontWeight: st.bold ? 700 : 400,
-                                fontStyle: st.italic ? 'italic' : 'normal',
-                                textDecoration: st.underline ? 'underline' : 'none',
-                                textAlign: st.align,
-                                pointerEvents: 'all',
-                              }}
-                              onPointerDown={(e) => e.stopPropagation()}
-                              onBlur={() => commitInlineText(j)}
-                              onKeyDown={(e) => {
-                                // Enter = Zeilenumbruch (Standard-Verhalten); Fertigstellen durch
-                                // Tippen daneben. Escape bricht ab.
-                                if (e.key === 'Escape') {
-                                  e.preventDefault();
-                                  d.cancelText();
-                                }
-                              }}
-                            />
-                          );
-                        })()}
-                    </div>
-                  </div>
-                </TransformComponent>
-              </TransformWrapper>
-            </div>
-          );
-        })}
+                    onPointerDown={(e) => strokeDown(e, j)}
+                    onPointerMove={strokeMove}
+                    onPointerUp={strokeUp}
+                    onPointerCancel={strokeUp}
+                  />
+                  <PageTextLayer
+                    draw={draws[j]}
+                    layerRef={layerRefs[j]}
+                    editRef={(n) => {
+                      editRefs.current[j] = n;
+                    }}
+                    aspect={aspects[j]}
+                    overlayTexts={overlayTexts[j]}
+                    showOwn={!viewing(pageIndex + j) || previewOwn}
+                    drawMode={drawMode}
+                    drawTool={drawTool}
+                    interactive={!(perView === 2 && j !== activeSlot)}
+                    drawColor={drawColor}
+                    textSize={textSize}
+                    textStyle={textStyle}
+                    onLayerDown={(e) => layerDown(e, j)}
+                    onCommit={() => commitInlineText(j)}
+                    onFocusEditor={() => focusEditor(j)}
+                    onResizeDown={(e, id, size) => handleResizeDown(e, j, id, size)}
+                    onResizeMove={handleResizeMove}
+                    onResizeUp={handleResizeUp}
+                  />
+                </div>
+              </TransformComponent>
+            </TransformWrapper>
+          </div>
+        ))}
       </div>
 
-      {/* Slide-Übergang: deckt die Live-Ansicht während des Blätterns ab und schiebt alte und
-          neue Seiten horizontal (wie im Foto-Viewer). Nicht interaktiv (pointer-events: none). */}
       {slide && slidePanes.current && (
-        <div ref={slideOverlayRef} className={styles.slideOverlay} aria-hidden="true">
-          {[
-            { pk: 'old', pane: slidePanes.current.old },
-            { pk: 'neu', pane: slidePanes.current.neu },
-          ].map(({ pk, pane }) => (
-            // key mit tick: Startet ein neuer Übergang, WÄHREND der alte noch läuft (schnelles
-            // Tastatur-Blättern), werden die Ebenen frisch aufgebaut statt wiederverwendet.
-            // Sonst bliebe die alte Seiten-Grafik im DOM liegen (der Einfüge-Ref entfernt sie
-            // nicht) und deckte als späteres Geschwister die neue ab → altes Lied blitzte auf.
-            <div key={`${pk}${slide.tick}`} data-pane={pk} className={styles.slidePane}>
-              {pane.length === 2 && <div className={styles.divider} />}
-              <div className={styles.row}>
-                {pane.map((s, j) => (
-                  <div key={j} className={styles.slot}>
-                    <div
-                      className={styles.slideContent}
-                      style={
-                        s.zoom
-                          ? {
-                              transform: `translate3d(${s.zoom.x}px, ${s.zoom.y}px, 0) scale(${s.zoom.scale})`,
-                              transformOrigin: '0 0',
-                            }
-                          : undefined
-                      }
-                    >
-                      <div
-                        className={styles.pageBox}
-                        style={{
-                          justifyItems: perView === 2 && pane.length === 1 ? 'start' : 'center',
-                        }}
-                        ref={(n) => {
-                          if (n && s.canvas.parentElement !== n) {
-                            s.canvas.className = styles.contentCanvas;
-                            n.insertBefore(s.canvas, n.firstChild);
-                          }
-                        }}
-                      >
-                        <div
-                          data-slide-textlayer
-                          className={styles.textLayer}
-                          style={{ aspectRatio: s.aspect }}
-                        >
-                          {s.texts.map((o) => (
-                            <div
-                              key={o.id}
-                              className={styles.textObj}
-                              style={{
-                                left: `${o.fx * 100}%`,
-                                top: `${o.fy * 100}%`,
-                                fontSize: `${o.sizeCqh}cqh`,
-                                color: o.color,
-                                // Exakt wie in der Live-Ansicht formatieren, sonst springt der Text
-                                // beim Übergang Slide→Live (CSS-Default 700 vs. echtes Gewicht) und
-                                // blinkt (#113, v. a. normaler Text = 400).
-                                fontWeight: (o.bold ?? true) ? 700 : 400,
-                                fontStyle: o.italic ? 'italic' : 'normal',
-                                textDecoration: o.underline ? 'underline' : 'none',
-                                textAlign: o.align ?? 'center',
-                              }}
-                            >
-                              {o.text}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <SlidePanes
+          slide={slide}
+          panes={slidePanes.current}
+          perView={perView}
+          overlayRef={slideOverlayRef}
+        />
       )}
 
       {/* Werkzeugleiste (volle Anmerkungen für die aktive Seite) */}
       {drawMode && (
-        <DrawToolbar
-          colors={drawColors}
+        <PageDrawToolbar
+          activeDraw={activeDraw}
+          draws={draws}
+          drawColors={drawColors}
           drawColor={drawColor}
           setDrawColor={setDrawColor}
           drawTool={drawTool}
-          setDrawTool={(t) => {
-            // Werkzeugwechsel (z. B. auf den Stift) beendet eine offene Textbearbeitung und
-            // hebt die Auswahl auf – auf allen Seiten, damit keine UI hängen bleibt (#39).
-            for (const d of draws) {
-              d.cancelText();
-              d.setSelectedId(null);
-            }
-            setDrawTool(t);
-          }}
+          setDrawTool={setDrawTool}
           toolSizes={toolSizes}
-          onToolSize={(tool, size) => setToolSizes((s) => ({ ...s, [tool]: size }))}
+          setToolSizes={setToolSizes}
           textSize={textSize}
           setTextSize={setTextSize}
-          sizeStep={0.25}
-          sizeMin={1}
-          sizeMax={10}
-          // Anzeige als vertraute „pt"-Zahl (A4-Höhe ≈ 842 pt → pt ≈ cqh × 8,42), gerundet.
-          sizeLabel={(v) => `${Math.round(v * 8.42)}`}
-          allowText
-          onClear={() => setConfirmClear(true)}
-          isTextSelected={activeDraw.selectedId !== null}
-          selectedColor={selectedText?.color}
-          selectedSize={selectedText?.sizeCqh}
-          onSelectedColor={(c) =>
-            activeDraw.selectedId !== null && activeDraw.setColor(activeDraw.selectedId, c)
-          }
-          onSelectedResize={(delta) =>
-            activeDraw.selectedId !== null && activeDraw.resize(activeDraw.selectedId, delta)
-          }
           textStyle={textStyle}
           setTextStyle={setTextStyle}
-          selectedStyle={
-            selectedText
-              ? {
-                  bold: selectedText.bold ?? true,
-                  italic: !!selectedText.italic,
-                  underline: !!selectedText.underline,
-                  align: selectedText.align ?? 'center',
-                }
-              : undefined
-          }
-          onSelectedStyle={(patch) =>
-            activeDraw.selectedId !== null && activeDraw.setStyle(activeDraw.selectedId, patch)
-          }
-          onUndo={activeDraw.undo}
-          canUndo={activeDraw.canUndo}
-          onRedo={activeDraw.redo}
-          canRedo={activeDraw.canRedo}
-          onDeleteSelected={() =>
-            activeDraw.selectedId !== null && activeDraw.deleteText(activeDraw.selectedId)
-          }
+          onClear={() => setConfirmClear(true)}
         />
       )}
 
