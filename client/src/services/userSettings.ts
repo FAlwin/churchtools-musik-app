@@ -10,6 +10,11 @@ const MIGRATED_FLAG = 'worship_settings_migrated_v1';
 
 let disabled = false;
 
+/** Sync nach erfolgreicher Anmeldung wieder einschalten – siehe `annotations.resetSync` (#211). */
+export function resetSync(): void {
+  disabled = false;
+}
+
 /** Server → localStorage: vorhandene Einstellungen dieser Lieder spiegeln (setzt nur vorhandene Werte). */
 export async function pullSettings(songIds: number[]): Promise<void> {
   if (disabled || songIds.length === 0) return;

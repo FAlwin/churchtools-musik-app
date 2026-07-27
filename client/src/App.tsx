@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, lazy, Suspense, type ComponentProps } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { setSessionExpiredHandler } from './queryClient';
+import { setSessionExpiredHandler } from './services/api';
 import { Login } from './pages/Login';
 import { Agenda } from './pages/Agenda';
 import { useSettings } from './hooks/useSettings';
@@ -212,9 +212,14 @@ export default function App() {
   // mehrere gleichzeitige 401er das Abmelden mehrfach anstoßen.
   const logoutRef = useRef(auth.logout);
   logoutRef.current = auth.logout;
+  const authedRef = useRef(auth.isAuthenticated);
+  authedRef.current = auth.isAuthenticated;
   const loggingOutRef = useRef(false);
   useEffect(() => {
     setSessionExpiredHandler(() => {
+      // Nur abmelden, wenn wir uns überhaupt für angemeldet halten: Ein 401 auf dem Login-Screen
+      // (oder kurz nach dem Abmelden) darf nicht das Geräte-Aufräumen auslösen (#210).
+      if (!authedRef.current) return;
       if (loggingOutRef.current) return;
       loggingOutRef.current = true;
       void logoutRef.current().finally(() => {
