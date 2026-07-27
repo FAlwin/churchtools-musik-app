@@ -45,7 +45,7 @@ import { innerScrollOnly, resetViewportAfterDrag } from '../utils/dndAutoScroll'
 import styles from './Setlist.module.scss';
 
 /** Neuer Ablaufpunkt (Payload von `AgendaActions.add`). */
-export interface NewAgendaItem {
+interface NewAgendaItem {
   type: 'header' | 'text' | 'song';
   title?: string;
   arrangementId?: number;
@@ -58,7 +58,7 @@ export interface NewAgendaItem {
  * Gebündelte Bearbeiten-Aktionen des Ablaufs – EIN Objekt statt einzelner Callback-Props durch
  * alle Ebenen. Alle Aktionen werfen bei Fehler (z. B. fehlende Rechte); die UI zeigt die Meldung.
  */
-export interface AgendaActions {
+interface AgendaActions {
   /** Speichert die neue Reihenfolge (Item-IDs). */
   reorder: (order: number[]) => Promise<void>;
   /** Löscht einen Ablaufpunkt. */

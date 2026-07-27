@@ -2,7 +2,7 @@ import type { MutableRefObject, PointerEvent as ReactPointerEvent } from 'react'
 import { flushSync } from 'react-dom';
 import type { DrawTool } from '../types/index';
 import type { usePageDraw, PageTextObj, TextStyle } from '../hooks/usePageDraw';
-import { textObjStyle } from '../utils/textObjStyle';
+import { textObjStyle, textStyleOf } from '../utils/textObjStyle';
 import styles from './PageDeck.module.scss';
 
 /** Anmerkungs-Zustand einer Seite, wie ihn `usePageDraw` liefert. */
@@ -134,14 +134,7 @@ export function PageTextLayer({
           const p = d.pending;
           const editing = p.editId != null ? d.texts.find((t) => t.id === p.editId) : null;
           // Beim Bearbeiten den Stil des Textes, sonst den aktuellen Pinsel-Stil.
-          const st: TextStyle = editing
-            ? {
-                bold: editing.bold ?? true,
-                italic: !!editing.italic,
-                underline: !!editing.underline,
-                align: editing.align ?? 'center',
-              }
-            : textStyle;
+          const st: TextStyle = editing ? textStyleOf(editing) : textStyle;
           return (
             <span
               key={`edit-${p.editId ?? 'new'}`}

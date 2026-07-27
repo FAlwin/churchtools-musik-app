@@ -18,7 +18,7 @@ function isNewer(latest: string, current: string): boolean {
   return false;
 }
 
-export interface UpdateState {
+interface UpdateState {
   /** true, wenn eine neuere Version verfügbar ist als die laufende. */
   available: boolean;
   /** Neueste Versionsnummer (ohne „v"), falls bekannt. */

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import type { PageTextObj } from '../hooks/usePageDraw';
+import type { PageTextObj, TextStyle } from '../hooks/usePageDraw';
 
 /**
  * Darstellung eines Textobjekts auf einer Seite (#193).
@@ -22,5 +22,21 @@ export function textObjStyle(o: PageTextObj): CSSProperties {
     fontStyle: o.italic ? 'italic' : 'normal',
     textDecoration: o.underline ? 'underline' : 'none',
     textAlign: o.align ?? 'center',
+  };
+}
+
+/**
+ * Der Format-Zustand eines vorhandenen Textes (#199).
+ *
+ * Zweiter Abnehmer derselben `bold ?? true`-Regel: Die Werkzeugleiste zeigt damit an, wie der
+ * AUSGEWÄHLTE Text formatiert ist, und die Inline-Eingabe übernimmt beim Bearbeiten seinen Stil.
+ * Liefe das auseinander, sprängen Knöpfe und Darstellung auseinander.
+ */
+export function textStyleOf(o: PageTextObj): TextStyle {
+  return {
+    bold: o.bold ?? true,
+    italic: !!o.italic,
+    underline: !!o.underline,
+    align: o.align ?? 'center',
   };
 }

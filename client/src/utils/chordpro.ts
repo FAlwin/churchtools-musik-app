@@ -9,7 +9,7 @@
 import type { ChordProSection } from '@shared/types/index';
 
 /** Ein Akkord-/Text-Paar einer Zeile. */
-export interface ChordPair {
+interface ChordPair {
   chord: string | null;
   text: string;
 }

@@ -84,7 +84,6 @@ export function ChordEditor({
   );
   const editorRef = useRef<ChordProHandle>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
 
   const canSave = name.trim().length > 0 && text.trim().length > 0;
   const transposeLabel = semitones === 0 ? '±0' : semitones > 0 ? `+${semitones}` : `${semitones}`;
@@ -106,7 +105,7 @@ export function ChordEditor({
   // Tastatur (--kb) → Kopf-/Werkzeugleiste bleiben stehen, nur der intern scrollende
   // Editor-Bereich wird kürzer. Die Mechanik liegt in `useOverlayKeyboardInset` (seit #207 gemeinsam mit
   // den Dialogen genutzt, damit die Kopien nicht auseinanderlaufen).
-  useOverlayKeyboardInset(overlayRef);
+  const overlayRef = useOverlayKeyboardInset();
 
   // Menüs bei Klick außerhalb schließen
   useEffect(() => {

@@ -4,6 +4,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import '../pdfSetup';
 import type { SetlistSong } from '@shared/types/index';
 import type { SetlistPageOwner } from '../utils/chordPdf';
+import { fetchFileBytes } from '../services/fileDownload';
 import type { SongSettings } from '../utils/chartSettings';
 
 /**
@@ -11,7 +12,7 @@ import type { SongSettings } from '../utils/chartSettings';
  * Erweitert {@link SetlistPageOwner} um die Quelle, damit Anmerkungs-/Zoom-Schlüssel und der
  * Seiten-Hinweis pro Seite passend gebildet werden.
  */
-export interface StreamOwner {
+interface StreamOwner {
   songIdx: number;
   songId: number;
   localPage: number;
@@ -35,18 +36,9 @@ interface Args {
 const RENDER_SCALE = 2;
 
 async function renderPdfToCanvases(source: { data: ArrayBuffer } | { url: string }): Promise<HTMLCanvasElement[]> {
-  // Dokumente IMMER komplett per fetch laden statt pdf.js selbst streamen zu lassen: pdf.js nutzt
-  // sonst Range-Requests (Teilstücke), die den Service-Worker-Datei-Cache verfehlen/verwirren –
-  // offline hing der Aufbau dadurch ~10 s, bis der Fallback griff (#32). Ein normaler GET trifft
-  // den CacheFirst-Eintrag sauber; die Lied-PDFs sind klein, Volllast auch online unkritisch.
-  let data: ArrayBuffer;
-  if ('data' in source) {
-    data = source.data;
-  } else {
-    const res = await fetch(source.url, { credentials: 'include' });
-    if (!res.ok) throw new Error(`Dokument konnte nicht geladen werden (${res.status})`);
-    data = await res.arrayBuffer();
-  }
+  // Dokumente IMMER komplett laden statt pdf.js selbst streamen zu lassen – Begründung in
+  // `services/fileDownload.ts` (#32).
+  const data = 'data' in source ? source.data : await fetchFileBytes(source.url);
   const pdf = await pdfjsLib.getDocument({ data }).promise;
   const out: HTMLCanvasElement[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {

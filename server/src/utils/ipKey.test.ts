@@ -56,3 +56,45 @@ describe('ipRateKey', () => {
     expect(ipRateKey('2001:db8::1::2')).toBe('2001:db8::1::2');
   });
 });
+
+/**
+ * Randfälle aus dem Code-Check v2.14.1 (#215). Praktisch selten – Node liefert die Kurzform –,
+ * aber der Schlüssel darf nicht davon abhängen, WIE eine Adresse geschrieben ist.
+ */
+describe('ipRateKey – Schreibweisen und Müll', () => {
+  it('IPv4-mapped in JEDER Schreibweise ergibt dieselbe IPv4', () => {
+    // Vorher bekam die ausgeschriebene Form einen eigenen Schlüssel – ein Client hätte damit
+    // zwei Kontingente gehabt, je nachdem wie der Vorschalt-Server die Adresse schreibt.
+    for (const form of [
+      '::ffff:203.0.113.7',
+      '0:0:0:0:0:ffff:203.0.113.7',
+      '0000:0000:0000:0000:0000:ffff:203.0.113.7',
+      '::ffff:cb00:7107',
+    ]) {
+      expect(ipRateKey(form)).toBe('203.0.113.7');
+    }
+  });
+
+  it('ungültige Hex-Gruppen bekommen keinen Adress-Schlüssel untergeschoben', () => {
+    // `zzzz::1` lief vorher durch und wurde wie ein echtes /64 behandelt.
+    expect(ipRateKey('zzzz::1')).toBe('zzzz::1');
+    expect(ipRateKey('12345::1')).toBe('12345::1');
+  });
+
+  it('Oktette über 255 sind keine gültige eingebettete IPv4', () => {
+    expect(ipRateKey('::ffff:999.1.2.3')).toBe('::ffff:999.1.2.3');
+  });
+
+  it('`::` muss mindestens eine Gruppe ersetzen', () => {
+    expect(ipRateKey('1:2:3:4:5:6:7::8')).toBe('1:2:3:4:5:6:7::8');
+  });
+
+  it('zu kurze ausgeschriebene Adresse wird nicht als /64 gedeutet', () => {
+    expect(ipRateKey('2001:db8:1:2:3')).toBe('2001:db8:1:2:3');
+  });
+
+  it('echte IPv6 mit eingebetteter IPv4 bleibt ein /64 (nicht IPv4)', () => {
+    // Nur die mapped-Form (fünf Null-Gruppen + ffff) zählt als IPv4.
+    expect(ipRateKey('2001:db8::1.2.3.4')).toBe('2001:db8:0:0::/64');
+  });
+});

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MutableRefObject } from 'react';
 import type { SetlistPageOwner } from '../utils/chordPdf';
+import { useLandscape } from './useLandscape';
 
 interface UseChartNavigationArgs {
   /** Seiten-Besitzer des durchgehenden Stroms (ein Eintrag je PDF-Seite). */
@@ -21,21 +22,7 @@ export function useChartNavigation({ owners, startIndex, blockedRef }: UseChartN
   const [activePage, setActivePage] = useState(0);
 
   // Ausrichtung (für die Navigations-Grenze: im Querformat nie eine Seite allein lassen).
-  // matchMedia('orientation') ist beim Screen-/App-Wechsel stabiler als innerWidth/Height.
-  const isLandscape = () =>
-    typeof window.matchMedia === 'function'
-      ? window.matchMedia('(orientation: landscape)').matches
-      : window.innerWidth > window.innerHeight;
-  const [landscape, setLandscape] = useState(isLandscape);
-  useEffect(() => {
-    const f = () => setLandscape(isLandscape());
-    window.addEventListener('resize', f);
-    window.addEventListener('orientationchange', f);
-    return () => {
-      window.removeEventListener('resize', f);
-      window.removeEventListener('orientationchange', f);
-    };
-  }, []);
+  const landscape = useLandscape();
 
   const lastPage = Math.max(0, owners.length - 1);
   // Max. linke Seite: im 2-up stoppt die Navigation eine Seite früher (Paar bleibt voll).

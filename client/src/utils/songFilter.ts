@@ -22,12 +22,12 @@ export interface SongFilterOpts {
 }
 
 /** Häufigkeit + letztes Spieldatum eines Lieds im gewählten Zeitraum. */
-export interface SongStat {
+interface SongStat {
   count: number;
   last: string | null;
 }
 
-export interface SongFilterResult {
+interface SongFilterResult {
   list: SongLibraryEntry[];
   stats: Map<number, SongStat>;
   /** true, wenn nach Häufigkeit/Zuletzt gefiltert/sortiert wird (Statistik sichtbar). */

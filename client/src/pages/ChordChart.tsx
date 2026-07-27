@@ -7,6 +7,7 @@ import { SectionTransposeSheet } from '../components/SectionTransposeSheet';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
 import { PageDeck } from '../components/PageDeck';
+import { useLandscape } from '../hooks/useLandscape';
 import { Coachmarks } from '../components/Coachmarks';
 import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
 import { Icon } from '../components/icons';
@@ -338,27 +339,7 @@ export function ChordChart({
 
   // Aktuell SICHTBARE Lieder (fürs Fußzeilen-Punkte-Highlight): im Querformat 2 Seiten → bis zu
   // 2 Lieder nebeneinander, beide markieren. matchMedia('orientation') ist beim Wechsel stabil.
-  const [landscape, setLandscape] = useState(() =>
-    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-      ? window.matchMedia('(orientation: landscape)').matches
-      : typeof window !== 'undefined'
-        ? window.innerWidth > window.innerHeight
-        : false,
-  );
-  useEffect(() => {
-    const f = () =>
-      setLandscape(
-        typeof window.matchMedia === 'function'
-          ? window.matchMedia('(orientation: landscape)').matches
-          : window.innerWidth > window.innerHeight,
-      );
-    window.addEventListener('resize', f);
-    window.addEventListener('orientationchange', f);
-    return () => {
-      window.removeEventListener('resize', f);
-      window.removeEventListener('orientationchange', f);
-    };
-  }, []);
+  const landscape = useLandscape();
   const visibleSongIdx = new Set<number>();
   if (owners[pageIdx]) visibleSongIdx.add(owners[pageIdx].songIdx);
   if (landscape && owners[pageIdx + 1]) visibleSongIdx.add(owners[pageIdx + 1].songIdx);

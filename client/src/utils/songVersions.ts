@@ -9,7 +9,7 @@ function fullKey(base: string, songId: number, versionKey: string): string {
 }
 
 /** Eine auswählbare Version inkl. Original (immer erste Auswahl). */
-export interface ResolvedVersion {
+interface ResolvedVersion {
   key: string;
   name: string;
   text: string;

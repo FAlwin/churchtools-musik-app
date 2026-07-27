@@ -62,7 +62,7 @@ export function isStandalone(): boolean {
 }
 
 /** iPhone/iPad (inkl. iPadOS 13+, das sich als „MacIntel" mit Touch meldet). */
-export function isIos(): boolean {
+function isIos(): boolean {
   const ua = navigator.userAgent;
   const iPhoneOrPad = /iphone|ipad|ipod/i.test(ua);
   const iPadOs13Plus = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
@@ -76,13 +76,13 @@ function isSafari(): boolean {
 }
 
 /** macOS-Desktop-Safari (echter Mac, kein iPad): Installation läuft über „Zum Dock hinzufügen". */
-export function isMacSafari(): boolean {
+function isMacSafari(): boolean {
   const isMac = navigator.platform === 'MacIntel' && navigator.maxTouchPoints <= 1;
   return isMac && isSafari();
 }
 
 /** Android-Gerät. */
-export function isAndroid(): boolean {
+function isAndroid(): boolean {
   return /android/i.test(navigator.userAgent);
 }
 

@@ -7,7 +7,7 @@ import {
 import type { DrawTool } from '../types/index';
 
 /** Der Teil einer usePageDraw-Instanz, den die Zeichen-Engine ansteuert (Verlauf + Speichern). */
-export interface StrokeDrawTarget {
+interface StrokeDrawTarget {
   setSelectedId: (id: number | null) => void;
   pushHistory: () => void;
   dropHistory: () => void;
