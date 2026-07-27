@@ -136,7 +136,7 @@ sollst nicht wischen, neu laden oder die App wechseln müssen.
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `server/src/services/versionMemo.ts`, `server/src/controllers/setlistController.ts`, `client/src/hooks/useSetlistLive.ts`
+- **Betrifft:** `server/src/services/versionMemo.ts`, `server/src/controllers/setlistController.ts`, `client/src/hooks/useSetlistLiveSync.ts`
 - **Automatisiert:** nein – braucht eine echte Änderung und Wartezeit
 - **Historie:** #159
 

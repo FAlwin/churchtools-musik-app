@@ -16,7 +16,7 @@ verfügbar.
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/services/offline.ts`, `client/src/services/offlineAuto.ts`, `client/src/hooks/useOfflineReserve.ts`, `client/vite.config.ts`
+- **Betrifft:** `client/src/services/offline.ts`, `client/src/services/offlineAuto.ts`, `client/src/hooks/useOfflineServices.ts`, `client/src/hooks/useOfflineAutoSync.ts`, `client/vite.config.ts`
 - **Automatisiert:** teilweise – `client/src/services/offline.registry.test.ts`
 - **Historie:** #32
 

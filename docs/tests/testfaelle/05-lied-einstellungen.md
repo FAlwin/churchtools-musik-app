@@ -20,7 +20,7 @@ entsprechend verschoben.
 <details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
-- **Betrifft:** `client/src/hooks/useSongSettings.ts`, `client/src/utils/transpose.ts`, `client/src/components/KeyPicker.tsx`, `client/src/components/CapoPicker.tsx`, `client/src/utils/chordPdf.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/transpose.ts`, `client/src/components/KeyPicker.tsx`, `client/src/components/CapoPicker.tsx`, `client/src/utils/chordPdf.ts`
 - **Automatisiert:** teilweise – `client/src/utils/transpose.test.ts`, `client/src/hooks/useSongSettings.test.tsx`
 - **Historie:** –
 
@@ -51,7 +51,7 @@ Tonart auf dem Blatt.
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/hooks/useSongSettings.ts`, `client/src/utils/songVersions.ts`, `client/src/utils/chartSettings.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/songVersions.ts`, `client/src/utils/chartSettings.ts`
 - **Automatisiert:** ja – `client/src/hooks/useSongSettings.test.tsx`
 - **Historie:** –
 
@@ -74,7 +74,7 @@ Akkorden zurückspringen. Nach Schritt 6 sind dieselbe Version und wieder das PD
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/hooks/useSongSettings.ts`, `client/src/utils/songVersions.ts`, `client/src/utils/chartSettings.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/songVersions.ts`, `client/src/utils/chartSettings.ts`
 - **Automatisiert:** ja – `client/src/hooks/useSongSettings.test.tsx`
 - **Historie:** –
 
@@ -94,7 +94,7 @@ bleibt vollständig.
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/hooks/useSongSettings.ts`, `client/src/utils/chordPdf.ts`, `client/src/utils/chartPdfOptions.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/chordPdf.ts`, `client/src/utils/chartPdfOptions.ts`
 - **Automatisiert:** teilweise – `client/src/utils/chordPdf.test.ts`
 - **Historie:** –
 
@@ -115,7 +115,7 @@ ist wieder alles einheitlich.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/SectionTransposeSheet.tsx`, `client/src/utils/chartSettings.ts`, `client/src/hooks/useSongSettings.ts`, `client/src/utils/chordPdf.ts`
+- **Betrifft:** `client/src/components/SectionTransposeSheet.tsx`, `client/src/utils/chartSettings.ts`, `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/chordPdf.ts`
 - **Automatisiert:** nein
 - **Historie:** #16
 

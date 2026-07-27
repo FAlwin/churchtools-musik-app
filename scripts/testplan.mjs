@@ -11,8 +11,9 @@
  *   node scripts/testplan.mjs --since v2.14.0      anderer Vergleichspunkt
  *   node scripts/testplan.mjs --issue v2.14.3      legt das Testlauf-Issue an (braucht `gh`)
  *   node scripts/testplan.mjs --alle               ganze Sammlung (z. B. vor einem großen Release)
+ *   node scripts/testplan.mjs --pruefen            Sammlung gegen den Code prüfen (bei /festhalten)
  */
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
@@ -26,6 +27,7 @@ const wert = (name) => {
   return i >= 0 ? argv[i + 1] : undefined;
 };
 const alle = argv.includes('--alle');
+const pruefen = argv.includes('--pruefen');
 const issueVersion = wert('--issue');
 
 /** Alle Testfälle aus den Markdown-Dateien lesen. */
@@ -93,6 +95,52 @@ function geaenderteDateien(seit) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Prüft die Sammlung gegen den Code. Der gefährlichste Fund ist ein **Betrifft**, das auf eine
+ * verschobene oder gelöschte Datei zeigt: Der Testfall wird dann NIE wieder vorgeschlagen – ohne
+ * Fehlermeldung, ohne dass es jemandem auffällt. Genau die Art stiller Lücke, die diese Sammlung
+ * eigentlich verhindern soll.
+ */
+function pruefeSammlung(faelle) {
+  const probleme = [];
+  for (const f of faelle) {
+    if (!f.betrifft.length) {
+      probleme.push(
+        `${f.id}: kein »Betrifft« – wird nur noch als kritisch/gar nicht vorgeschlagen`,
+      );
+      continue;
+    }
+    for (const m of f.betrifft) {
+      if (m.includes('*')) continue; // Muster können auf noch nichts zeigen
+      if (!existsSync(path.join(WURZEL, m))) probleme.push(`${f.id}: »${m}« gibt es nicht mehr`);
+    }
+    if (!['kritisch', 'hoch', 'normal'].includes(f.prioritaet)) {
+      probleme.push(`${f.id}: unbekannte Priorität »${f.prioritaet}«`);
+    }
+    if (!f.historie) probleme.push(`${f.id}: kein »Historie«-Feld (»–« reicht)`);
+  }
+  const ids = faelle.map((f) => f.id);
+  for (const id of ids) {
+    if (ids.indexOf(id) !== ids.lastIndexOf(id)) probleme.push(`${id}: Nummer doppelt vergeben`);
+  }
+  return [...new Set(probleme)];
+}
+
+if (pruefen) {
+  const probleme = pruefeSammlung(ladeFaelle());
+  const anzahl = ladeFaelle().length;
+  if (probleme.length === 0) {
+    console.log(`✓ ${anzahl} Testfälle geprüft – alle »Betrifft«-Pfade gibt es noch.`);
+    process.exit(0);
+  }
+  console.error(`✗ ${probleme.length} Problem(e) in ${anzahl} Testfällen:\n`);
+  for (const p of probleme) console.error(`  - ${p}`);
+  console.error(
+    '\nEin »Betrifft« auf eine verschobene Datei heißt: Der Fall wird nie wieder vorgeschlagen.',
+  );
+  process.exit(1);
 }
 
 const seit = wert('--since') ?? letzterTag();

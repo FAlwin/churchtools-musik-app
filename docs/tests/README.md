@@ -29,6 +29,27 @@ teilt in drei Gruppen:
 - **Nicht betroffen** – wird nur gezählt, nicht aufgelistet. Damit sichtbar bleibt, was bewusst
   ausgelassen wurde (stilles Weglassen wäre schlimmer als gar keine Auswahl).
 
+## Die Sammlung aktuell halten
+
+Das passiert bei **`/festhalten`** (Schritt „Manuelle Testfälle nachziehen") – aber jeder darf es
+auch zwischendurch:
+
+```bash
+npm run testplan -- --pruefen
+```
+
+Prüft, ob alle unter **Betrifft** genannten Dateien noch existieren. Der gefährlichste Fund ist ein
+Verweis auf eine verschobene Datei: Der Testfall wird dann **nie wieder** vorgeschlagen – ohne
+Fehlermeldung, ohne dass es jemandem auffällt. Genau die Art stiller Lücke, die diese Sammlung
+verhindern soll. (Beim Anlegen dieser Sammlung fand der Lauf auf Anhieb zwölf falsche Pfade.)
+
+**Ein neuer Testfall gehört dazu, wenn** ein Fehler behoben wurde, den man nur am Gerät bemerkt
+(Geste, Tastatur, Offline, ChurchTools-Zusammenspiel), oder eine Funktion dazukam, die man anfassen
+muss. Reine Logikfehler brauchen keinen – die deckt ein Vitest-Test ab.
+
+**Wird ein Fall automatisiert**, bleibt er stehen; nur das Feld **Automatisiert** bekommt den
+Verweis auf den Test. So sieht man, wie die manuelle Liste schrumpft.
+
 ## Ablauf vor einem Release
 
 ```bash

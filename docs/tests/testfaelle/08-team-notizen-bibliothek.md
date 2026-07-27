@@ -59,7 +59,7 @@ dabei nicht mit.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/pages/Songs.tsx`, `client/src/utils/songFilter.ts`, `client/src/components/SongStatsBar.tsx`, `server/src/services/songUsage.ts`
+- **Betrifft:** `client/src/pages/AllSongs.tsx`, `client/src/utils/songFilter.ts`, `client/src/components/SongStatsBar.tsx`, `server/src/services/setlistBuilder.ts`
 - **Automatisiert:** teilweise – `client/src/utils/songFilter.test.ts`, `server/src/services/songUsage.test.ts`
 - **Historie:** #157, #158
 
@@ -81,7 +81,7 @@ richtiger **Lied-Punkt** mit Arrangement – kein reiner Text-Punkt.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/AddToAgendaSheet.tsx`, `client/src/pages/Songs.tsx`, `server/src/services/agendaPayload.ts`
+- **Betrifft:** `client/src/components/AddToAgendaSheet.tsx`, `client/src/pages/AllSongs.tsx`, `server/src/services/agendaPayload.ts`
 - **Automatisiert:** teilweise – `server/src/services/agendaPayload.test.ts`
 - **Historie:** #15
 
@@ -146,7 +146,7 @@ Konto sind sie gar nicht sichtbar – nicht ausgegraut, sondern weg.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/pages/Settings.tsx`, `server/src/controllers/siteConfigController.ts`, `server/src/middleware/requireAdmin.ts`
+- **Betrifft:** `client/src/pages/Settings.tsx`, `server/src/controllers/siteConfigController.ts`, `server/src/routes/siteConfig.ts`
 - **Automatisiert:** teilweise – `server/src/controllers/siteConfigController.trim.test.ts`
 - **Historie:** #152
 

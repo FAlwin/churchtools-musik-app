@@ -218,7 +218,7 @@ Konto.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/utils/devicePrefs.ts`, `client/src/components/DrawToolbar.tsx`
+- **Betrifft:** `client/src/components/DrawToolbar.tsx`, `client/src/components/DrawToolbar.tsx`
 - **Automatisiert:** nein – Ziehen
 - **Historie:** –
 
