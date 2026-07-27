@@ -3,13 +3,10 @@
  *  - Liste der Gottesdienste, die tatsächlich eine Setlist (Agenda mit Songs) haben
  *  - die Songs einer Setlist inkl. heruntergeladenem ChordPro-Inhalt
  */
-import { createHash } from 'node:crypto';
 import type {
   AgendaItem,
-  ResponsibleEntry,
   Service,
   SetlistSong,
-  SongDocument,
   SongLibraryEntry,
   SongVersion,
 } from '@shared/types/index';
@@ -25,7 +22,22 @@ import {
   fileIdFromUrl,
   type CtAgendaSong,
 } from './churchtools.js';
-import type { CtArrangementFile, CtSong, CtAgendaItem } from './churchtools.js';
+import type { CtArrangementFile, CtSong } from './churchtools.js';
+import {
+  versionSlug,
+  versionNameOf,
+  versionFileName,
+  isVersionFile,
+  isOriginalChordpro,
+  documentsOf,
+} from './arrangementFiles.js';
+import { metaValue } from './chordproMeta.js';
+import { setlistFingerprint, agendaSignatureList, diffAgendaItems } from './agendaDiff.js';
+import {
+  isHeaderType,
+  formatBerlinTime,
+  responsibleEntries,
+} from './agendaFormat.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
 
@@ -45,170 +57,6 @@ function skipMissingAgenda(context: string, e: unknown): void {
  * die zufällig einen Bindestrich enthalten) und ist – anders als das frühere `(ECG)` – nicht
  * gemeindespezifisch. Alt-Bestand mit `(ECG)` wird weiterhin erkannt (siehe versionNameOf).
  */
-const VERSION_TAG = '(App)';
-
-/** Macht aus einem Versionsnamen einen stabilen Schlüssel (Slug). */
-export function versionSlug(name: string): string {
-  const s = name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '') // Akzente entfernen
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return s || 'version';
-}
-
-/**
- * Erkennt am Namen, ob eine Datei eine von uns verwaltete Version ist, und liefert deren Namen.
- * Aktueller Marker „— <Name> (App).chordpro"; abwärtskompatibel:
- *  - „— <Name> (ECG).chordpro" (Bestandsdateien mit dem früheren, gemeindespezifischen Kürzel)
- *  - „— Bearbeitet.chordpro" / „— ECG.chordpro" (ganz alte namenlose Varianten → Name „Bearbeitet").
- */
-export function versionNameOf(f: CtArrangementFile): string | null {
-  const tagged = f.name.match(/[—-]\s*(.+?)\s*\((?:App|ECG)\)\.chordpro$/i);
-  if (tagged) return tagged[1].trim();
-  if (/[—-]\s*(?:bearbeitet|ecg)\.chordpro$/i.test(f.name)) return 'Bearbeitet';
-  return null;
-}
-function isVersionFile(f: CtArrangementFile): boolean {
-  return versionNameOf(f) !== null;
-}
-function isOriginalChordpro(f: CtArrangementFile): boolean {
-  return /\.chordpro$/i.test(f.name) && !isVersionFile(f);
-}
-
-/** Dateiname einer verwalteten Version aus Lied-Titel + Versionsname. */
-export function versionFileName(songName: string, versionName: string): string {
-  const safeTitle = songName.replace(/[\\/:*?"<>|]/g, '').trim();
-  const safeName = versionName.replace(/[\\/:*?"<>|()]/g, '').trim();
-  return `${safeTitle} — ${safeName} ${VERSION_TAG}.chordpro`;
-}
-
-/** PDF/Bild-Dokumente eines Arrangements (für die Dokumentenanzeige). */
-export function documentsOf(files: CtArrangementFile[]): SongDocument[] {
-  const out: SongDocument[] = [];
-  for (const f of files) {
-    const fileId = fileIdFromUrl(f.fileUrl);
-    if (fileId === null) continue;
-    if (/\.pdf$/i.test(f.name)) out.push({ fileId, name: f.name, type: 'pdf' });
-    else if (/\.(jpe?g|png|gif|webp)$/i.test(f.name))
-      out.push({ fileId, name: f.name, type: 'image' });
-  }
-  return out;
-}
-
-/** Liest einen Metadaten-Wert aus ChordPro-Text ({key: E} → "E"). */
-export function metaValue(chordpro: string, key: string): string | null {
-  const m = chordpro.match(new RegExp(`\\{${key}\\s*:\\s*([^}]+)\\}`, 'i'));
-  return m ? m[1].trim() : null;
-}
-
-/**
- * Fingerabdruck einer Setlist (#143): stabile Signatur aus Lied, Arrangement, Tonart UND
- * Reihenfolge der Lied-Punkte. Ändert sich eines davon (Lied neu/raus, umsortiert, Tonart),
- * ändert sich der Fingerabdruck. Nicht-Lieder (Überschriften, Begrüßung …) zählen bewusst nicht.
- * Rein & testbar; muss auf denselben Roh-Agenda-Daten laufen wie beim „gesehen"-Merken.
- */
-/**
- * Inhalts-Signatur EINES Ablaufpunkts (#143/#161) – OHNE die id (die ist der Schlüssel). Erfasst
- * Titel, Typ, Lied+Arrangement+Tonart, Verantwortliche, Dauer, Notiz. Änderungen daran = Punkt
- * inhaltlich geändert.
- */
-export function agendaItemSignature(i: CtAgendaItem): string {
-  const song = i.song ? `${i.song.songId}:${i.song.arrangementId}:${i.song.key ?? ''}` : '';
-  const resp = i.responsible?.text ?? '';
-  return `${i.title}#${i.type ?? ''}#${song}#${resp}#${i.duration ?? ''}#${i.note ?? ''}`;
-}
-
-export function setlistFingerprint(items: CtAgendaItem[]): string {
-  // „Struktur + Details" (#143): jede Ablaufänderung schlägt an – Reihenfolge (Array-Position),
-  // Punkte hinzu/raus/umbenannt, Lied/Tonart, Verantwortliche, Dauer, Notiz.
-  // Als sha256-Digest, NICHT als Klartext: der Wert geht per /setlist/version an jeden Client
-  // (inkl. 5-s-Memo über Konten hinweg) – Titel/Notizen/Verantwortliche dürfen darin nicht
-  // ablesbar sein. Verglichen wird ohnehin nur auf Gleichheit.
-  if (items.length === 0) return '';
-  const raw = items.map((i) => `${i.id}#${agendaItemSignature(i)}`).join('|');
-  return createHash('sha256').update(raw).digest('hex');
-}
-
-/**
- * Geordnete Liste je Punkt (id + Inhalts-Signatur + Titel) – Basis für den „gesehen"-Vergleich
- * (#161). Der Titel wird für die „aufgelöst"-Anzeige entfernter Punkte mitgeführt (Etappe B).
- */
-export function agendaSignatureList(
-  items: CtAgendaItem[],
-): { id: number; sig: string; title: string }[] {
-  return items.map((i) => ({ id: i.id, sig: agendaItemSignature(i), title: i.title }));
-}
-
-/** Längste aufsteigende Teilsequenz (Positionen). Die NICHT enthaltenen Punkte gelten als verschoben. */
-function lisPositions(arr: number[]): Set<number> {
-  const n = arr.length;
-  const keep = new Set<number>();
-  if (n === 0) return keep;
-  const len = new Array<number>(n).fill(1);
-  const prev = new Array<number>(n).fill(-1);
-  let best = 0;
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[j] < arr[i] && len[j] + 1 > len[i]) {
-        len[i] = len[j] + 1;
-        prev[i] = j;
-      }
-    }
-    if (len[i] > len[best]) best = i;
-  }
-  for (let i = best; i !== -1; i = prev[i]) keep.add(i);
-  return keep;
-}
-
-/**
- * Vergleicht den zuletzt gesehenen Ablauf-Stand (`prev`) mit dem aktuellen (`current`) und liefert,
- * welche Punkte sich verändert haben (#161). Rein & testbar.
- * - `changedIds`: neu, inhaltlich geändert ODER verschoben (relative Reihenfolge über LIS).
- * - `removedIds`: im vorigen Stand vorhanden, jetzt weg (für die „auflösen"-Animation, Etappe B).
- * Ist `prev` leer (nie gesehen), gilt NICHTS als geändert (kein Fehlalarm bei Erstnutzung).
- */
-export function diffAgendaItems(
-  prev: { id: number; sig: string; title?: string }[],
-  current: { id: number; sig: string }[],
-): {
-  changedIds: number[];
-  /** Entfernte Punkte samt Titel und „stand hinter welchem noch vorhandenen Punkt" (afterId,
-   *  null = ganz vorne) – der Client blendet sie dort kurz ein und lässt sie auflösen (Etappe B). */
-  removed: { id: number; title: string; afterId: number | null }[];
-} {
-  if (prev.length === 0) return { changedIds: [], removed: [] };
-  const prevById = new Map(prev.map((p, index) => [p.id, { sig: p.sig, index }]));
-  const changed = new Set<number>();
-  for (const it of current) {
-    const p = prevById.get(it.id);
-    if (!p || p.sig !== it.sig) changed.add(it.id); // neu oder inhaltlich geändert
-  }
-  // Verschoben: gemeinsame Punkte (unabhängig von Inhaltsänderung) auf Reihenfolge prüfen.
-  const common = current.filter((it) => prevById.has(it.id));
-  const keep = lisPositions(common.map((it) => prevById.get(it.id)!.index));
-  common.forEach((it, k) => {
-    if (!keep.has(k)) changed.add(it.id);
-  });
-  // Entfernt: im vorigen Stand, jetzt weg. Für die Position den letzten noch vorhandenen Vorgänger
-  // im vorigen Stand suchen (afterId) – dort blendet der Client den „aufgelöst"-Platzhalter ein.
-  const currentIds = new Set(current.map((it) => it.id));
-  const removed: { id: number; title: string; afterId: number | null }[] = [];
-  prev.forEach((p, i) => {
-    if (currentIds.has(p.id)) return;
-    let afterId: number | null = null;
-    for (let j = i - 1; j >= 0; j--) {
-      if (currentIds.has(prev[j].id)) {
-        afterId = prev[j].id;
-        break;
-      }
-    }
-    removed.push({ id: p.id, title: p.title ?? 'Entfernter Punkt', afterId });
-  });
-  return { changedIds: [...changed], removed };
-}
-
 /** Fingerabdruck der aktuellen Setlist eines Termins (leichter Abruf, ohne ChordPro zu laden). */
 export async function getSetlistFingerprint(cookie: string, eventId: number): Promise<string> {
   const agenda = await getAgenda(cookie, eventId);
@@ -417,67 +265,6 @@ export async function deleteVersion(
   if (!current) return;
   const id = fileIdFromUrl(current.file.fileUrl);
   if (id) await deleteFile(cookie, id);
-}
-
-/** Erkennt am ChurchTools-Typ, ob ein Agenda-Punkt eine Überschrift / ein Abschnitt ist. */
-export function isHeaderType(type?: string): boolean {
-  return !!type && /header|überschrift|heading|section/i.test(type);
-}
-
-/** Formatiert eine CT-Startzeit (ISO/UTC) als deutsche Ortszeit „HH:MM"; null bei fehlender/ungültiger Zeit. */
-export function formatBerlinTime(iso?: string | null): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat('de-DE', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Europe/Berlin',
-  }).format(d);
-}
-
-/**
- * Säubert ein CT-Dienst-Token zum reinen Namen: entfernt alle eckigen Klammern und ein
- * etwaiges nachgestelltes „?" (CT-Offen-Marker). „[Kamera Studio]?" → „Kamera Studio".
- */
-export function cleanServiceName(service?: string): string {
-  return (service ?? '')
-    .replace(/[[\]]/g, '')
-    .replace(/\?+\s*$/, '')
-    .trim();
-}
-
-/**
- * Zuständige als Einträge, ohne Duplikate: für besetzte Plätze der Personenname (open=false),
- * für offene Dienst-Plätze (z.B. „[Musik]") der Dienstname (open=true).
- *
- * Manuell als Freitext eingetragene Zuständige (nicht über einen Dienst zugewiesen) stehen in
- * ChurchTools nur im `text`-Feld, nicht in `persons[]` – die ergänzen wir zusätzlich. Dienst-Tokens
- * in eckigen Klammern (z.B. „[Moderation]") sind dort bereits über `persons[]` aufgelöst und werden
- * hier übersprungen.
- */
-export function responsibleEntries(item: {
-  responsible?: { text?: string; persons?: { service?: string; person?: { title?: string } }[] };
-}): ResponsibleEntry[] {
-  const entries: ResponsibleEntry[] = [];
-  const seen = new Set<string>();
-  const push = (label: string, open: boolean): void => {
-    if (!label) return;
-    const key = `${label}|${open}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    entries.push({ label, open });
-  };
-  for (const p of item.responsible?.persons ?? []) {
-    const name = p.person?.title?.trim();
-    push(name || cleanServiceName(p.service), !name);
-  }
-  for (const part of (item.responsible?.text ?? '').split(',')) {
-    const label = part.trim();
-    if (!label || label.includes('[')) continue; // Dienst-Tokens kommen über persons[]
-    push(label, false);
-  }
-  return entries;
 }
 
 interface SongUsage {

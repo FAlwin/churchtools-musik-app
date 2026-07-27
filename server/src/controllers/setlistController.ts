@@ -15,6 +15,7 @@ import {
   getSongUsageMap,
   invalidateSongUsageCache,
 } from '../services/setlistBuilder.js';
+import { getMemoizedVersion, rememberVersion } from '../services/versionMemo.js';
 import {
   fetchFileBytes,
   reorderAgenda,
@@ -68,16 +69,6 @@ export async function getServices(req: Request, res: Response): Promise<void> {
   res.json(services);
 }
 
-// Kurz-Memo für den Live-Abgleich: Viele offene Geräte pollen alle ~8 s – jedes KONTO fragt
-// ChurchTools dafür höchstens alle paar Sekunden einmal. Seit #199 ist der Schlüssel bewusst
-// kontobezogen (vorher teilten sich alle Konten einen Eintrag; wer keinen Zugriff auf den Termin
-// hatte, bekam statt 403 den Hash eines Berechtigten). Bei 8 Bandmitgliedern sind das also 8
-// CT-Abfragen je Intervall statt einer – die Zugriffsprüfung ist uns das wert (#215).
-// Schlüssel = `<eventId>|<Konto-ID bzw. Cookie>`: Das Memo darf NICHT kontoübergreifend teilen –
-// sonst erhielte ein Nutzer ohne Zugriff auf den Termin statt 403 einen Hash (#199).
-const versionMemo = new Map<string, { hash: string; at: number }>();
-const VERSION_MEMO_TTL_MS = 5_000;
-
 /**
  * GET /api/services/:eventId/setlist/version – aktueller Ablauf-Fingerabdruck (Live-Abgleich).
  * Bewusst leichtgewichtig: nur die Roh-Agenda (KEINE ChordPro-Downloads). Der Client pollt das,
@@ -91,17 +82,13 @@ export async function getSetlistVersion(req: Request, res: Response): Promise<vo
   const who =
     req.ctUserId ?? `c${createHash('sha256').update(ctCookie(req)).digest('hex').slice(0, 16)}`;
   const memoKey = `${eventId}|${who}`;
-  const hit = versionMemo.get(memoKey);
-  if (hit && Date.now() - hit.at < VERSION_MEMO_TTL_MS) {
-    res.json({ hash: hit.hash });
+  const memoized = getMemoizedVersion(memoKey);
+  if (memoized !== null) {
+    res.json({ hash: memoized });
     return;
   }
-  // Abgelaufene Fremd-Einträge räumen (Map wächst sonst über Wochen mit alten Terminen).
-  for (const [id, v] of versionMemo) {
-    if (Date.now() - v.at >= VERSION_MEMO_TTL_MS) versionMemo.delete(id);
-  }
   const hash = await getSetlistFingerprint(ctCookie(req), eventId);
-  versionMemo.set(memoKey, { hash, at: Date.now() });
+  rememberVersion(memoKey, hash);
   res.json({ hash });
 }
 

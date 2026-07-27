@@ -5,14 +5,15 @@ import {
   versionNameOf,
   versionFileName,
   documentsOf,
-  metaValue,
+} from './arrangementFiles.js';
+import { metaValue } from './chordproMeta.js';
+import { setlistFingerprint, diffAgendaItems } from './agendaDiff.js';
+import {
   isHeaderType,
   formatBerlinTime,
   cleanServiceName,
   responsibleEntries,
-  setlistFingerprint,
-  diffAgendaItems,
-} from './setlistBuilder.js';
+} from './agendaFormat.js';
 
 describe('diffAgendaItems (#161 – was hat sich im Ablauf geändert)', () => {
   const s = (id: number, sig: string) => ({ id, sig });
