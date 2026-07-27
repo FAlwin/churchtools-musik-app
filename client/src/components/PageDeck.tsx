@@ -23,6 +23,7 @@ import { useLatestRef } from '../hooks/useLatestRef';
 import { useRefPair } from '../hooks/useRefPair';
 import { useLandscape } from '../hooks/useLandscape';
 import { joinKeys, splitKeys } from '../utils/pageKeys';
+import { readPageTexts } from '../utils/annotationKeys';
 import { ConfirmDialog } from './ConfirmDialog';
 import { PageDrawToolbar } from './PageDrawToolbar';
 import { PageTextLayer } from './PageTextLayer';
@@ -228,16 +229,7 @@ export function PageDeck({
   const overlayTexts: PageTextObj[][] = useMemo(() => {
     const out: PageTextObj[][] = [[], []];
     if (loading) return out;
-    for (let j = 0; j < 2; j++) {
-      const key = overKeys[j];
-      if (!key) continue;
-      try {
-        const t = localStorage.getItem(`${key}_text`);
-        out[j] = t ? (JSON.parse(t) as PageTextObj[]) : [];
-      } catch {
-        out[j] = [];
-      }
-    }
+    for (let j = 0; j < 2; j++) out[j] = readPageTexts<PageTextObj>(overKeys[j]);
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overKeys, syncTick, loading]);
@@ -442,12 +434,7 @@ export function PageDeck({
         if (!key) continue;
         const strokes = strokeImgCache.current.get(key);
         if (strokes && strokes.complete && strokes.naturalWidth > 0) ctx.drawImage(strokes, 0, 0);
-        try {
-          const t = localStorage.getItem(`${key}_text`);
-          if (t) texts.push(...(JSON.parse(t) as PageTextObj[]));
-        } catch {
-          /* ignorieren */
-        }
+        texts.push(...readPageTexts<PageTextObj>(key));
       }
       out.push({ canvas: c, texts, zoom: loadZoom(p), aspect: `${src.width} / ${src.height}` });
     }

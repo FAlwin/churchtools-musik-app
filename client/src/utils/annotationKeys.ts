@@ -66,3 +66,22 @@ export function levelsUnderNamespace(nsPrefix: string): AnnotationLevel[] {
     return { versionKey, lyr: lyr === '1', pages: [...pages].sort((a, b) => a - b) };
   });
 }
+
+/**
+ * Die Textobjekte EINER Anmerkungs-Seite aus dem lokalen Speicher (#198).
+ *
+ * Warum hier: Das `_text`-Suffix gehört zur Schlüssel-Grammatik dieses Moduls. Vorher hängten es
+ * die Komponenten selbst an – die Grammatik war damit an mehreren Stellen verstreut, obwohl der
+ * Rest davon (Präfixe, Ebenen, Seitenzahl) längst hier liegt.
+ *
+ * Kaputtes JSON ergibt eine leere Liste: Eine unlesbare Anmerkung darf die Seite nicht mitreißen.
+ */
+export function readPageTexts<T>(pageKey: string | null): T[] {
+  if (!pageKey) return [];
+  try {
+    const raw = localStorage.getItem(`${pageKey}_text`);
+    return raw ? (JSON.parse(raw) as T[]) : [];
+  } catch {
+    return [];
+  }
+}

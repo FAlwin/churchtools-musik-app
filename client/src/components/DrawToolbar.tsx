@@ -1,4 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import {
+  getDrawbarCollapsed,
+  setDrawbarCollapsed,
+  getDrawbarOffsetY,
+  setDrawbarOffsetY,
+} from '../utils/devicePrefs';
 import type { DrawTool } from '../types/index';
 import type { TextStyle, TextAlign } from '../hooks/usePageDraw';
 import { Icon } from './icons';
@@ -95,21 +101,12 @@ export function DrawToolbar({
   // Griff oben: senkrecht ziehen verschiebt die Leiste (falls sie genau dort sitzt, wo man
   // anmerken will); Pfeil unten klappt sie zu einem kleinen Rand-Knopf zusammen.
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const [collapsed, setCollapsed] = useState(
-    () => localStorage.getItem('worship:drawbar-collapsed') === '1',
-  );
-  const [offsetY, setOffsetY] = useState(() => {
-    const v = Number(localStorage.getItem('worship:drawbar-y'));
-    return Number.isFinite(v) ? v : 0;
-  });
+  const [collapsed, setCollapsed] = useState(getDrawbarCollapsed);
+  const [offsetY, setOffsetY] = useState(getDrawbarOffsetY);
   const dragRef = useRef<{ startY: number; startOffset: number } | null>(null);
   function setCollapsedPersist(v: boolean) {
     setCollapsed(v);
-    try {
-      localStorage.setItem('worship:drawbar-collapsed', v ? '1' : '0');
-    } catch {
-      /* Speicher voll/gesperrt → Zustand gilt eben nur für diese Sitzung */
-    }
+    setDrawbarCollapsed(v);
   }
   /** Leiste im Sichtbereich halten (halbe Elternhöhe minus halbe Leistenhöhe + Rand). */
   function clampOffset(off: number): number {
@@ -133,11 +130,7 @@ export function DrawToolbar({
     if (!dragRef.current) return;
     dragRef.current = null;
     setOffsetY((v) => {
-      try {
-        localStorage.setItem('worship:drawbar-y', String(v));
-      } catch {
-        /* s. o. */
-      }
+      setDrawbarOffsetY(v);
       return v;
     });
   }

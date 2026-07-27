@@ -8,6 +8,35 @@ function fullKey(base: string, songId: number, versionKey: string): string {
   return `worship_${base}_${songId}_${versionKey}`;
 }
 
+/**
+ * Schlüssel einer Einstellung, die für das GANZE Lied gilt – nicht je Version (#198).
+ * Betrifft die gewählte Version selbst (`ver`) und die Anzeigequelle (`view`, Dokument vs.
+ * Akkorde – die hängt am Arrangement, nicht an der ChordPro-Fassung).
+ */
+function songKey(base: string, songId: number): string {
+  return `worship_${base}_${songId}`;
+}
+
+/** Liest eine lied-weite Einstellung. */
+export function lsSong(base: string, songId: number): string | null {
+  return localStorage.getItem(songKey(base, songId));
+}
+
+/**
+ * Schreibt/entfernt eine lied-weite Einstellung (lokal + Konto-Sync).
+ *
+ * Warum als Funktion und nicht inline: Die Schlüssel `worship_view_<id>` und `worship_ver_<id>`
+ * wurden vorher an je zwei Stellen zusammengesetzt – einmal beim Lesen (`chartSettings`/
+ * `selectedVersionKey`), einmal beim Schreiben (`ChordChart`). Ein Tippfehler auf einer Seite
+ * hätte die Einstellung still ins Leere laufen lassen.
+ */
+export function setLsSong(base: string, songId: number, value: string | null): void {
+  const k = songKey(base, songId);
+  if (value === null) localStorage.removeItem(k);
+  else localStorage.setItem(k, value);
+  pushSetting(k, value);
+}
+
 /** Eine auswählbare Version inkl. Original (immer erste Auswahl). */
 interface ResolvedVersion {
   key: string;
@@ -25,7 +54,7 @@ export function availableVersions(song: SetlistSong): ResolvedVersion[] {
  * Standard: Original, falls vorhanden; sonst die erste Version (Legacy-Lieder ohne Original).
  */
 export function selectedVersionKey(song: SetlistSong): string {
-  const saved = localStorage.getItem(`worship_ver_${song.id}`);
+  const saved = lsSong('ver', song.id);
   const keys = availableVersions(song).map((v) => v.key);
   if (saved && keys.includes(saved)) return saved;
   return song.chordpro ? 'original' : (song.versions[0]?.key ?? 'original');
