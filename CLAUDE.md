@@ -393,8 +393,18 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - **Onboarding bewusst NICHT angepasst** (Release-Routine Schritt 2): #200 brachte kein neues
   Bedienelement (das Titelfeld gab es schon, es war nur gesperrt) und der Tour-Text „…um Titel,
   Dauer, Zuständige zu ändern…" stimmt jetzt sogar erst; #207 ist ein reiner Layout-Fix.
-- **Offen – ZUERST:** `PageDeck` aufteilen (#193, hoch – braucht einen Test am iPad mit Stift und
-  Gesten, deshalb nicht in v2.14.2).
+- **#193 erledigt (27.07.2026, am iPad geprüft):** `PageDeck` 1161 → **713 Zeilen**, abgeschaltete
+  Hook-Prüfungen **13 → 1**. Neu: `hooks/usePageCanvases` (Seiten malen + Bild-Vorrat),
+  `hooks/useZoomOrchestration` (Pinch-Zoom **komplett** – vorher 3 Refs, 4 Effekte und 4
+  Gesten-Callbacks verstreut), `hooks/usePageNavigation`, `components/PageTextLayer`, `SlidePanes`,
+  `PageDrawToolbar`, `utils/textObjStyle` (Textstil stand 3× fast gleich da → Drift lässt Text beim
+  Blättern springen, #113), `utils/pageKeys` + `hooks/useLatestRef`/`useRefPair`.
+  **Das Muster zum Merken:** `drawKeyFor`/`zoomKeyBaseFor` sind Props und je Render NEUE Funktionen –
+  deshalb waren die Prüfungen aus. Abhängigkeit ist jetzt ihr **Ergebnis** (Signatur über die
+  Seitenschlüssel + `useMemo`), nicht die Funktion. Das schloss eine stille Lücke: Ein
+  Schlüsselwechsel ohne Seiten-/Sync-Wechsel ließ den alten Strich-Stand stehen.
+  ⚠️ Das eine verbliebene Disable ist begründet (`overlayTexts`: `syncTick` ist ein reines
+  Speicher-geändert-Signal, das der Rumpf nicht liest).
 - **Offen / optional:** CT-Cookie nicht mehr im App-Cookie (#194, Architektur); Staging härten
   (#196, reine NAS-/Konfigurationsarbeit); Restpunkte aus #198/#215 und Kleinkram-Rest (#199);
   `migrateLocalAnnotations` weiter ohne Test (Rest von #192).

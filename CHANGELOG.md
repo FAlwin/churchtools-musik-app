@@ -7,6 +7,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Intern
+
+- **Seiten-Engine aufgeteilt** (`PageDeck`: 1161 → 713 Zeilen). Die Anzeige verhält sich
+  unverändert – am Gerät geprüft (Stift, Handballen, Zwei-Finger-Abbruch, Pinch-Zoom, Blättern,
+  Querformat, Text). Herausgelöst: das Malen der Seiten, die Zoom-Steuerung, das Blättern, die
+  Text-Ebene, der Blätter-Streifen und die Werkzeugleiste. Die abgeschalteten Hook-Prüfungen sind
+  von 13 auf 1 gesunken; dabei kam eine stille Lücke ans Licht: Wechselte der Anmerkungs-Schlüssel
+  einer Seite, ohne dass Seitenzahl oder Sync sich bewegten, blieb der alte Strich-Stand stehen.
+  40 neue Tests. (#193)
+
 ## [2.14.2] – 2026-07-26
 
 ### Behoben
