@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useState } from 'react';
 import { syncAppHeight } from '../utils/appHeight';
 
 /**
@@ -19,10 +19,16 @@ import { syncAppHeight } from '../utils/appHeight';
  * beiden Kopien nicht auseinanderlaufen. Der Overlay MUSS `position: fixed` sein (nicht `absolute`),
  * sonst scrollt er mit dem Dokument mit und die Aussparung nützt nichts.
  */
-export function useOverlayKeyboardInset(ref: RefObject<HTMLElement | null>): void {
+export function useOverlayKeyboardInset(): (el: HTMLElement | null) => void {
+  // Callback-Ref statt `useRef` (#215): Vorher las der Hook `ref.current` NUR beim Mount. Das ging
+  // gut, solange jeder Rückgabezweig dieselbe DOM-Wurzel wiederverwendet – im `ItemActionSheet`
+  // tun das die beiden Zweige (`songMode`) zufällig. Ein zusätzlicher Wrapper oder ein `key` hätte
+  // die Tastatur-Aussparung STILL abgeschaltet: kein Fehler, nur Knöpfe unter der Tastatur.
+  // Über den State läuft der Effekt jetzt genau dann neu, wenn sich das Element wirklich ändert.
+  const [el, setEl] = useState<HTMLElement | null>(null);
+
   useEffect(() => {
     const vv = window.visualViewport;
-    const el = ref.current;
     if (!vv || !el) return;
     const apply = () => {
       const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
@@ -44,7 +50,9 @@ export function useOverlayKeyboardInset(ref: RefObject<HTMLElement | null>): voi
       window.scrollTo(0, 0);
       syncAppHeight();
     };
-    // ref ist stabil; der Effekt soll genau einmal pro Overlay-Lebensdauer laufen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [el]);
+
+  // `setEl` kommt aus `useState` und hat eine stabile Identität – als Ref-Callback nutzbar,
+  // ohne dass React ihn bei jedem Render mit null und dem Element erneut aufruft.
+  return setEl;
 }

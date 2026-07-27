@@ -114,3 +114,53 @@ describe('putSettings – Konto-Obergrenze (#195)', () => {
     expect(store.worship_lyrics_7).toHaveLength(4000);
   });
 });
+
+/**
+ * #215: Der Filter bekam einen End-Anker. Der Test hält beide Seiten fest – was er ABWEISEN muss
+ * (Müll) und was er unbedingt DURCHLASSEN muss (versionsbezogene Schlüssel). Ein zu strenges
+ * `_\d+$` hätte Letztere still verworfen: Die Einstellungen wären geräteübergreifend verschwunden,
+ * ohne jede Fehlermeldung.
+ */
+describe('SETTINGS_KEY_RE – was synchronisiert werden darf', () => {
+  it('lässt die echten Schlüssel durch', () => {
+    for (const k of [
+      'worship_key_42',
+      'worship_capo_7',
+      'worship_cols_1',
+      'worship_fs_1',
+      'worship_lyrics_1',
+      'worship_secshift_1',
+      'worship_ver_1',
+      'worship_view_1',
+      'worship_key_42_original', // pro Version
+      'worship_fs_42_akustik-2',
+      'worship_cols_42_original_dlarge', // alter Geräte-Zusatz (nur noch lesend)
+    ]) {
+      expect(mod.SETTINGS_KEY_RE.test(k), k).toBe(true);
+    }
+  });
+
+  it('weist Müll hinter der Lied-ID ab (das war die Lücke)', () => {
+    for (const k of [
+      'worship_key_1<Müll>',
+      'worship_key_1 ',
+      'worship_key_1;rm',
+      'worship_key_1/../../etc',
+      'worship_key_1_ORIGINAL_dlarge_zuviel',
+    ]) {
+      expect(mod.SETTINGS_KEY_RE.test(k), k).toBe(false);
+    }
+  });
+
+  it('weist fremde Namensräume und fehlende Lied-ID ab', () => {
+    for (const k of [
+      'worship_docdraw_song1_voriginal_0',
+      'worship_doczoom_1_0',
+      'worship_key_',
+      'worship_unbekannt_1',
+      'key_1',
+    ]) {
+      expect(mod.SETTINGS_KEY_RE.test(k), k).toBe(false);
+    }
+  });
+});

@@ -28,8 +28,20 @@ export function withinSettingsLimits(entryCount: number, totalBytes: number): bo
   );
 }
 
-// Erlaubte Einstellungs-Schlüssel (mit eingebetteter Lied-ID) – begrenzt, was synchronisiert wird.
-export const SETTINGS_KEY_RE = /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_\d+/;
+/**
+ * Erlaubte Einstellungs-Schlüssel – begrenzt, was synchronisiert wird.
+ *
+ * Aufbau: `worship_<feld>_<liedId>` plus optional der Versions-Schlüssel (`versionSlug` liefert
+ * `[a-z0-9-]+`) und ein alter Geräte-Zusatz (`_dlarge`/`_dphone`, nur noch lesend). Der
+ * **End-Anker** kam mit #215 dazu: Vorher passierte `worship_key_1<Müll>` den Filter und landete
+ * als Müll in der Konto-Datei. Ausbrechen konnte damit nichts (Pfade entstehen nur aus der
+ * numerischen `userId`, Größe und Anzahl sind gedeckelt) – aber sauber war es nicht.
+ *
+ * Die beiden erlaubten Zusätze sind Absicht: Ein strenges `_\d+$` würde die versionsbezogenen
+ * Schlüssel **stillschweigend verwerfen** – die Einstellungen wären dann geräteübergreifend weg.
+ * Muss mit `client/src/services/userSettings.ts` übereinstimmen.
+ */
+export const SETTINGS_KEY_RE = /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_\d+(?:_[a-z0-9-]+){0,2}$/;
 /** Lied-ID aus einem Einstellungs-Schlüssel ziehen. */
 function songIdOf(key: string): number | null {
   const m = key.match(/^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_(\d+)/);

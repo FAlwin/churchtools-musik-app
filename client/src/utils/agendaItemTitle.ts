@@ -8,12 +8,12 @@
  */
 
 /** Das Minimum, das für die Bezeichnung nötig ist (Liste, Vollansicht und Dialoge reichen mehr). */
-export interface TitleSource {
+interface TitleSource {
   title: string;
   song: { title: string } | null;
 }
 
-export interface ItemTitleParts {
+interface ItemTitleParts {
   /** Hauptbezeichnung: der eigene Titel – bzw. der Liedname, wenn es keinen eigenen gibt. */
   title: string;
   /** Zusätzlich anzuzeigender Liedname; null, wenn er nichts hinzufügt (kein Lied / Dopplung). */

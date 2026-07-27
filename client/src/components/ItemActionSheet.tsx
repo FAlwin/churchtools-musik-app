@@ -1,6 +1,11 @@
-import { useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { AgendaItem, AgendaServiceOption } from '@shared/types/index';
 import type { AgendaItemUpdate } from '../services/churchtoolsApi';
+import {
+  pendingAgendaFields,
+  isDurationValid,
+  type LinkState,
+} from '../utils/agendaItemChanges';
 import { SongPicker } from './SongPicker';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
@@ -49,18 +54,13 @@ export function ItemActionSheet({
   );
   // Uhrzeit-ausgeblendet: lokal – wird wie alles andere erst beim Speichern übernommen.
   const [hidden, setHidden] = useState(timeHidden);
-  // Verknüpfung wird vorgemerkt und erst beim Speichern nach ChurchTools geschrieben:
-  // 'keep' = unverändert, 'unlink' = Lied entfernen, 'link' = neues Arrangement verknüpfen.
-  type LinkState =
-    | { kind: 'keep' }
-    | { kind: 'unlink' }
-    | { kind: 'link'; arrangementId: number; name: string };
+  // Verknüpfung wird vorgemerkt und erst beim Speichern nach ChurchTools geschrieben
+  // ('keep' = unverändert, 'unlink' = Lied entfernen, 'link' = neues Arrangement verknüpfen).
   const [linkState, setLinkState] = useState<LinkState>({ kind: 'keep' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   // Dialog über der iOS-Tastatur freihalten; verhindert auch die verrutschte Kopfleiste (#207).
-  const overlayRef = useRef<HTMLDivElement>(null);
-  useOverlayKeyboardInset(overlayRef);
+  const overlayRef = useOverlayKeyboardInset();
 
   // Das Lied, das der Punkt nach dem Speichern hätte (steuert Titel-/Lied-Anzeige).
   const effSong =
@@ -80,36 +80,16 @@ export function ItemActionSheet({
     setLinkState(isSong ? { kind: 'unlink' } : { kind: 'keep' });
   }
 
-  const durationNum = duration.trim() === '' ? null : Number(duration);
-  const durationValid = durationNum === null || (Number.isInteger(durationNum) && durationNum >= 0);
-  // Geänderte Dauer: neuer Wert ODER geleertes Feld bei vorhandener Dauer („Dauer entfernen" = 0;
-  // ChurchTools kennt kein „keine Dauer", 0 Minuten blendet sie faktisch aus).
-  const durationTarget =
-    durationNum !== null
-      ? durationNum !== item.durationMin
-        ? durationNum
-        : undefined
-      : item.durationMin != null && item.durationMin !== 0
-        ? 0
-        : undefined;
+  // „Was würde gespeichert?" ist Geschäftslogik und liegt als reine Funktion daneben (#215) –
+  // damit läuft sie einmal je Änderung statt bei jedem Render und ist geprüft.
+  const durationValid = isDurationValid(duration);
+  const pending = useMemo(
+    () =>
+      pendingAgendaFields(item, { title, duration, responsible, note, link: linkState }),
+    [item, title, duration, responsible, note, linkState],
+  );
 
-  /** Sammelt ALLE vorgemerkten Änderungen als ein Update-Objekt (leer = nichts geändert). */
-  function pendingFields(): AgendaItemUpdate {
-    const fields: AgendaItemUpdate = {};
-    if (linkState.kind === 'link') fields.arrangementId = linkState.arrangementId;
-    if (linkState.kind === 'unlink') fields.unlink = true;
-    // Titel gilt für ALLE Punkte – auch für Lieder (#200): ChurchTools führt den Titel des
-    // Ablaufpunkts unabhängig vom verknüpften Lied und zeigt beides an. Ein leerer Titel wird
-    // nicht geschrieben (ChurchTools braucht eine Bezeichnung).
-    const t = title.trim();
-    if (t && t !== item.title) fields.title = t;
-    if (durationTarget !== undefined) fields.durationMin = durationTarget;
-    if (responsible !== item.responsibleText) fields.responsible = responsible.trim();
-    if (note !== item.note) fields.note = note.trim();
-    return fields;
-  }
-
-  const dirty = Object.keys(pendingFields()).length > 0 || hidden !== timeHidden;
+  const dirty = Object.keys(pending).length > 0 || hidden !== timeHidden;
 
   async function saveAll() {
     setBusy(true);
@@ -117,8 +97,7 @@ export function ItemActionSheet({
     try {
       // Alle Feld-Änderungen in EINEM Request (kein Teilzustand bei Fehlern); nur der
       // Uhrzeit-Schalter ist in ChurchTools ein eigener Endpunkt.
-      const fields = pendingFields();
-      if (Object.keys(fields).length > 0) await onUpdate(fields);
+      if (Object.keys(pending).length > 0) await onUpdate(pending);
       if (hidden !== timeHidden) await onSetHidden(hidden);
       onClose();
     } catch (e) {

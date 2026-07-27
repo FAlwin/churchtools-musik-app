@@ -35,7 +35,7 @@ export function hasStoredNotesForLevel(songId: number, versionKey: string, lyr: 
 }
 
 /** Eine Anmerkungs-Ebene mit den Seiten, auf denen etwas gespeichert ist. */
-export interface AnnotationLevel {
+interface AnnotationLevel {
   versionKey: string;
   lyr: boolean;
   pages: number[];

@@ -21,6 +21,7 @@ import { usePageCanvases } from '../hooks/usePageCanvases';
 import { useZoomOrchestration } from '../hooks/useZoomOrchestration';
 import { useLatestRef } from '../hooks/useLatestRef';
 import { useRefPair } from '../hooks/useRefPair';
+import { useLandscape } from '../hooks/useLandscape';
 import { joinKeys, splitKeys } from '../utils/pageKeys';
 import { ConfirmDialog } from './ConfirmDialog';
 import { PageDrawToolbar } from './PageDrawToolbar';
@@ -32,7 +33,7 @@ import styles from './PageDeck.module.scss';
 const MIN_SCALE = 1;
 const MAX_SCALE = 6;
 
-export interface PageDeckProps {
+interface PageDeckProps {
   /** Fertig gerenderte Seiten (offscreen-Canvas). Der aufrufende Loader liefert sie. */
   pages: HTMLCanvasElement[];
   loading: boolean;
@@ -84,15 +85,6 @@ export interface PageDeckProps {
 
 // Stabiler Default für `viewKeyFor` (kein Ansehen).
 const NO_VIEW = (): string | null => null;
-
-function isLandscape(): boolean {
-  // matchMedia('orientation') ist beim Screen-Wechsel/SPA-Navigation stabiler als innerWidth/Height
-  // (die kurzzeitig falsch gemeldet werden) → verhindert, dass der Zoom-Schlüssel (perView) kippt
-  // und der gespeicherte Zoom beim Wieder-Betreten erst „falsch" erscheint und dann springt.
-  if (typeof window.matchMedia === 'function')
-    return window.matchMedia('(orientation: landscape)').matches;
-  return window.innerWidth > window.innerHeight;
-}
 
 /**
  * Gemeinsame 2-Seiten-Engine für ChordPro-Strom (StreamView) UND hochgeladene PDFs/Bilder
@@ -156,7 +148,8 @@ export function PageDeck({
   const overlayRefs = useRefPair<HTMLCanvasElement>();
   const layerRefs = useRefPair<HTMLDivElement>();
   const transformRefs = useRefPair<ReactZoomPanPinchRef>();
-  const [landscape, setLandscape] = useState(isLandscape());
+  // Ausrichtung (steuert 1 vs. 2 Seiten) – inkl. Nachprüfung bei App-Rückkehr.
+  const landscape = useLandscape();
   // Wird bei App-Rückkehr hochgezählt → erzwingt einen sauberen Remount der Zoom-Ebenen (steckt im
   // TransformWrapper-key), damit ein nach dem Backgrounding veralteter Zoom-Zustand aufgelöst wird.
   const [remountEpoch, setRemountEpoch] = useState(0);
@@ -385,34 +378,22 @@ export function PageDeck({
     drawsRef.current[other].setSelectedId(null);
   }, [activeSlot, perView, drawsRef, commitRef]);
 
+  // Bei App-Rückkehr (iOS-PWA) kann der Container neu vermessen worden sein, ohne dass sich die
+  // Ausrichtung ändert → die Zoom-Ebene bliebe mit einem veralteten Transform „stecken". Ein
+  // Epoche-Hochzählen erzwingt einen sauberen Remount der Zoom-Ebenen (onInit stellt den
+  // gespeicherten Zoom des aktuellen Layouts frisch her). Nur im Vordergrund. Committete Striche
+  // liegen in localStorage und werden nach dem Remount neu gezeichnet – kein Datenverlust.
+  // (Die Ausrichtung selbst prüft `useLandscape` bei denselben Ereignissen nach.)
   useEffect(() => {
-    const onResize = () => setLandscape(isLandscape());
-    // Bei App-Rückkehr (iOS-PWA) kann der Container neu vermessen worden sein, ohne dass sich die
-    // Ausrichtung (perView) ändert → die Zoom-Ebene bliebe mit einem veralteten Transform „stecken".
-    // Ein Epoche-Hochzählen erzwingt einen sauberen Remount der Zoom-Ebenen (onInit stellt den
-    // gespeicherten Zoom des aktuellen Layouts frisch her). Nur im Vordergrund. Committete Striche
-    // liegen in localStorage und werden nach dem Remount neu gezeichnet – kein Datenverlust.
     const bump = () => {
       if (document.visibilityState === 'hidden') return;
       setRemountEpoch((n) => n + 1);
     };
-    const onVisible = () => {
-      onResize();
-      bump();
-    };
-    window.addEventListener('resize', onResize);
-    window.addEventListener('orientationchange', onResize);
-    // Ausrichtung auch bei focus neu prüfen (billig), aber den Remount NUR bei echtem
-    // Sichtbarkeitswechsel auslösen – `focus` feuert am Desktop bei jedem Tab-Wechsel.
-    window.addEventListener('focus', onResize);
-    window.addEventListener('pageshow', onVisible);
-    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', bump);
+    document.addEventListener('visibilitychange', bump);
     return () => {
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('orientationchange', onResize);
-      window.removeEventListener('focus', onResize);
-      window.removeEventListener('pageshow', onVisible);
-      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', bump);
+      document.removeEventListener('visibilitychange', bump);
     };
   }, []);
 

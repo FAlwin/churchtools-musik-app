@@ -13,7 +13,7 @@ export function updateSiteConfig(cfg: SiteConfig): Promise<SiteConfig> {
   });
 }
 
-export interface CtGroup {
+interface CtGroup {
   id: number;
   name: string;
 }
@@ -23,7 +23,7 @@ export function getGroups(): Promise<CtGroup[]> {
   return apiFetch<CtGroup[]>('/api/groups');
 }
 
-export interface CtRole {
+interface CtRole {
   /** groupTypeRoleId – wird in `noteRoles.view/manage` gespeichert. */
   id: number;
   name: string;

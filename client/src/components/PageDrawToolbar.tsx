@@ -1,5 +1,6 @@
 import type { DrawTool } from '../types/index';
 import type { usePageDraw, TextStyle } from '../hooks/usePageDraw';
+import { textStyleOf } from '../utils/textObjStyle';
 import { DrawToolbar } from './DrawToolbar';
 
 type PageDraw = ReturnType<typeof usePageDraw>;
@@ -93,17 +94,7 @@ export function PageDrawToolbar({
       onSelectedResize={(delta) => withSelected((id) => activeDraw.resize(id, delta))()}
       textStyle={textStyle}
       setTextStyle={setTextStyle}
-      selectedStyle={
-        selected
-          ? {
-              // Bestandstexte ohne `bold`-Feld waren immer fett → Fallback true.
-              bold: selected.bold ?? true,
-              italic: !!selected.italic,
-              underline: !!selected.underline,
-              align: selected.align ?? 'center',
-            }
-          : undefined
-      }
+      selectedStyle={selected ? textStyleOf(selected) : undefined}
       onSelectedStyle={(patch) => withSelected((id) => activeDraw.setStyle(id, patch))()}
       onUndo={activeDraw.undo}
       canUndo={activeDraw.canUndo}

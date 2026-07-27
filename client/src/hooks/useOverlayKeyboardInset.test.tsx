@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { useRef } from 'react';
 import { useOverlayKeyboardInset } from './useOverlayKeyboardInset';
 
 /**
@@ -9,8 +8,7 @@ import { useOverlayKeyboardInset } from './useOverlayKeyboardInset';
  * Rechnung, das Aufräumen und das Verhalten ohne `visualViewport` sind hier prüfbar.
  */
 function Overlay() {
-  const ref = useRef<HTMLDivElement>(null);
-  useOverlayKeyboardInset(ref);
+  const ref = useOverlayKeyboardInset();
   return <div ref={ref} data-testid="overlay" />;
 }
 
@@ -85,5 +83,32 @@ describe('useOverlayKeyboardInset', () => {
   it('ohne visualViewport passiert nichts (kein Absturz, kein --kb)', () => {
     const { getByTestId } = render(<Overlay />);
     expect(getByTestId('overlay').style.getPropertyValue('--kb')).toBe('');
+  });
+});
+
+/**
+ * #215: Der Hook las das Element früher NUR beim Mount. Tauschte ein Dialog seine Wurzel aus
+ * (zusätzlicher Wrapper, anderer `key`, zweiter Rückgabezweig), lief die Aussparung ins Leere –
+ * ohne Fehler, nur mit Knöpfen unter der Tastatur. Mit dem Callback-Ref zieht sie mit.
+ */
+describe('useOverlayKeyboardInset – Wechsel der Overlay-Wurzel', () => {
+  function Switcher({ zweite }: { zweite: boolean }) {
+    const ref = useOverlayKeyboardInset();
+    return zweite ? (
+      <div ref={ref} data-testid="zweite" />
+    ) : (
+      <div ref={ref} data-testid="erste" />
+    );
+  }
+
+  it('spart auch die NEUE Wurzel aus, wenn der Dialog seinen Zweig wechselt', () => {
+    stubViewport(500);
+    window.innerHeight = 900;
+
+    const { rerender, getByTestId } = render(<Switcher zweite={false} />);
+    expect(getByTestId('erste').style.getPropertyValue('--kb')).toBe('400px');
+
+    rerender(<Switcher zweite />);
+    expect(getByTestId('zweite').style.getPropertyValue('--kb')).toBe('400px');
   });
 });

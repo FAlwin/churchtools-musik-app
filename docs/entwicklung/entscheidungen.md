@@ -80,3 +80,31 @@ Damit hängt die Annahme nicht mehr an der (von hier nicht einsehbaren) Proxy-Ke
 **Nicht abgedeckt:** Würde die App je **ohne** Reverse-Proxy direkt ins Netz gehängt (der Kommentar in
 `deploy/docker-compose.prod.yml` lädt zum Umstellen auf `3001:3001` ein), wäre `X-Forwarded-For` frei
 wählbar und das IP-Limit umgehbar. Prod bindet deshalb bewusst nur `127.0.0.1`.
+
+## Server läuft per `tsx` aus dem Quelltext, ohne Build-Artefakt *(27.07.2026, #199)*
+`server/package.json` fährt `"build": "tsc --noEmit"` und `"start": "tsx src/index.ts"` – in
+Produktion wird also bei jedem Start transpiliert, und `tsx` (eine devDependency) muss im Image
+liegen. Deshalb zieht `npm ci` im Dockerfile die Dev-Abhängigkeiten mit.
+
+**Bewusst so belassen.** Was dagegen spricht, ist real, aber klein: ein paar Sekunden Startzeit und
+ein größeres Image. Was dafür spricht: Ein echtes Emit müsste `shared/` mit auflösen (Pfad-Alias
+`@shared/*`, eigener `rootDir`) und die ESM-Auflösung im Container nachbilden – Aufwand und
+Regressionsrisiko an der Stelle, an der ein Fehler den Produktivstart verhindert. Der Nutzen wäre
+kein Verhalten, sondern nur Bequemlichkeit.
+
+**Wenn es doch umgestellt wird**, gehören diese vier Schritte zusammen: `tsc` mit Emit nach
+`server/dist`, `start` auf `node dist/index.js`, im Dockerfile `npm ci --omit=dev` **nach** dem
+Build, und der Healthcheck als Gegenprobe (der Container muss ohne `tsx` hochkommen). Vorher auf
+Staging prüfen – ein Fehlschlag zeigt sich erst beim Start, nicht beim Bauen.
+
+## Entzogene Team-Notizen-Rechte greifen mit bis zu 5 Minuten Verzögerung *(27.07.2026, #199)*
+`getCapabilities` merkt sich die Rechte eines Kontos bis zu 5 Minuten (`capsMemo` in
+`server/src/services/churchtools.ts`). Wird jemandem der Zugriff auf Team-Notizen in ChurchTools
+entzogen, kann er sie in diesem Fenster noch sehen.
+
+**Bewusst in Kauf genommen.** Der Cache ist die Antwort auf ein reales Problem: ChurchTools liefert
+`/api/permissions/global` sporadisch für Sekunden bis Minuten mit leeren Rechte-Arrays aus (belegt
+am 08.07.2026 im Log). Ohne Überbrückung stünden mitten im Gottesdienst alle ohne Rechte da – das
+wiegt schwerer als ein Rechteentzug, der ein paar Minuten später greift. Es geht zudem um
+Anmerkungen des eigenen Teams, nicht um Personen- oder Finanzdaten. Wer den Entzug sofort
+durchsetzen muss, startet den Container neu.
