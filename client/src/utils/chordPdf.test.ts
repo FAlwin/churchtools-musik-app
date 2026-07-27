@@ -31,11 +31,15 @@ function song(over: Partial<SetlistSong> & { chordpro: string }): SetlistSong {
 /** ChordPro mit `n` Textzeilen in einem Vers – zum Erzwingen von Umbrüchen. */
 function longSong(lines: number, title = 'Langes Lied'): SetlistSong {
   const body = Array.from({ length: lines }, (_, i) => `[C]Zeile ${i} mit [G]Text`).join('\n');
-  return song({ title, chordpro: `{title: ${title}}\n{start_of_verse}\n${body}\n{end_of_verse}\n` });
+  return song({
+    title,
+    chordpro: `{title: ${title}}\n{start_of_verse}\n${body}\n{end_of_verse}\n`,
+  });
 }
 
 const SHORT = song({
-  chordpro: '{title: Kurz}\n{start_of_verse}\n[C]Hallo [G]Welt\n[Am]Zweite [F]Zeile\n{end_of_verse}\n',
+  chordpro:
+    '{title: Kurz}\n{start_of_verse}\n[C]Hallo [G]Welt\n[Am]Zweite [F]Zeile\n{end_of_verse}\n',
 });
 
 describe('generateChordPdf – Seitenaufteilung', () => {
@@ -74,7 +78,8 @@ describe('generateChordPdf – Seitenaufteilung', () => {
 
   it('SongSelect-Dialekt (comment-Abschnitte, optionale/Bass-Akkorde) läuft durch', () => {
     const s = song({
-      chordpro: '{comment: Vers 1}\n[(E)]Optional [E/G#]Bass [C]normal\n{comment: Refrain}\n[G]Zeile\n',
+      chordpro:
+        '{comment: Vers 1}\n[(E)]Optional [E/G#]Bass [C]normal\n{comment: Refrain}\n[G]Zeile\n',
     });
     expect(generateChordPdf(s).getNumberOfPages()).toBe(1);
   });
@@ -136,7 +141,11 @@ describe('generateSetlistPdfWithOwners – Seiten-Zuordnung', () => {
 
   it('songIdx zeigt auf die Position im Ablauf', () => {
     const { owners } = generateSetlistPdfWithOwners(
-      [{ ...SHORT, id: 7 }, { ...SHORT, id: 8 }, { ...SHORT, id: 9 }],
+      [
+        { ...SHORT, id: 7 },
+        { ...SHORT, id: 8 },
+        { ...SHORT, id: 9 },
+      ],
       () => ({}),
     );
     expect(owners.map((o) => o.songIdx)).toEqual([0, 1, 2]);

@@ -115,10 +115,7 @@ export function Settings({
     });
   }
   function saveRoles() {
-    update.mutate(
-      { ...site, noteRoles: rolesDraft },
-      { onSuccess: () => setShowRoles(false) },
-    );
+    update.mutate({ ...site, noteRoles: rolesDraft }, { onSuccess: () => setShowRoles(false) });
   }
   const updateCheck = useUpdateCheck();
   const [offline, setOffline] = useState<{
@@ -199,7 +196,8 @@ export function Settings({
                 <p className={styles.installHint}>
                   Klicke in Safari oben auf das Teilen-Symbol{' '}
                   <Icon name="share" size={15} className={styles.hintIcon} /> und dann auf{' '}
-                  <strong>„Zum Dock hinzufügen"</strong> – so liegt die App wie ein Programm im Dock.
+                  <strong>„Zum Dock hinzufügen"</strong> – so liegt die App wie ein Programm im
+                  Dock.
                 </p>
               ) : pwa.platform === 'android' ? (
                 // Android ohne nativen Prompt (z. B. Firefox/Samsung Internet)
@@ -212,8 +210,8 @@ export function Settings({
               ) : (
                 // Sonstige Desktop-Browser ohne nativen Prompt (Chrome/Edge über HTTP, Firefox …)
                 <p className={styles.installHint}>
-                  Über das <strong>Browser-Menü</strong> kannst du die App wie ein Programm ablegen –
-                  in Chrome/Edge unter <strong>„Streamen, speichern und teilen"</strong> →{' '}
+                  Über das <strong>Browser-Menü</strong> kannst du die App wie ein Programm ablegen
+                  – in Chrome/Edge unter <strong>„Streamen, speichern und teilen"</strong> →{' '}
                   <strong>„Seite als App installieren"</strong>, in anderen Browsern über{' '}
                   <strong>„Zum Startbildschirm hinzufügen"</strong>.
                 </p>
@@ -319,8 +317,8 @@ export function Settings({
                 </button>
               </div>
               <p className={styles.installHint}>
-                Berechtigte Teammitglieder können deine Anmerkungen dann im Lied unter
-                „Notizen von …" ansehen und übernehmen.
+                Berechtigte Teammitglieder können deine Anmerkungen dann im Lied unter „Notizen von
+                …" ansehen und übernehmen.
               </p>
             </div>
           </div>
@@ -444,10 +442,11 @@ export function Settings({
       {showNotes && (
         <Sheet title="Anmerkungen" onClose={() => setShowNotes(false)} cancelLabel="Schließen">
           <p className={styles.sheetHint}>
-            Team-Anmerkungen sind für alle Musiker sichtbar. Lege zuerst die <strong>Gruppen</strong>{' '}
-            fest, deren Mitglieder infrage kommen, und danach je Gruppe die <strong>Rollen</strong>,
-            die Team-Anmerkungen sehen bzw. verwalten dürfen. Ohne freigegebene Rolle darf niemand –
-            alle behalten dann nur ihre <strong>privaten</strong> Anmerkungen.
+            Team-Anmerkungen sind für alle Musiker sichtbar. Lege zuerst die{' '}
+            <strong>Gruppen</strong> fest, deren Mitglieder infrage kommen, und danach je Gruppe die{' '}
+            <strong>Rollen</strong>, die Team-Anmerkungen sehen bzw. verwalten dürfen. Ohne
+            freigegebene Rolle darf niemand – alle behalten dann nur ihre <strong>privaten</strong>{' '}
+            Anmerkungen.
           </p>
           <div className={styles.cardList}>
             <button className={`${styles.setRow} ${styles.tappable}`} onClick={openGroups}>
@@ -502,7 +501,9 @@ export function Settings({
                       onClick={() => toggleGroup(g.id)}
                     >
                       <span className={styles.setLabel}>{g.name}</span>
-                      <span className={`${styles.checkbox}${checked ? ' ' + styles.checkboxOn : ''}`}>
+                      <span
+                        className={`${styles.checkbox}${checked ? ' ' + styles.checkboxOn : ''}`}
+                      >
                         {checked && <Icon name="check" size={14} />}
                       </span>
                     </button>

@@ -73,6 +73,11 @@ churchtools-musik-app/
 - Zentrale/geteilte Typen in `shared/types/` – niemals lokal duplizieren
 - Commits auf Deutsch mit Conventional-Commit-Präfix (`feat:`/`fix:`/`docs:`/`ui:`/`chore:`),
   klein und präzise; pro abgeschlossenem Teilschritt ein Commit
+- **Formatierung macht Prettier, nicht die Hand** (#198): `npm run format` vor dem Commit; die CI
+  prüft es mit `npm run format:check` und schlägt sonst fehl. Wichtig zu wissen: **ESLint prüft
+  Formatierung NICHT** – `eslint-config-prettier` schaltet alle Formatregeln ab. Vor diesem Schritt
+  war der Stil deshalb unbemerkt auseinandergelaufen (86 Dateien). Betroffen sind
+  `ts/tsx/scss/json/md`, also auch `CHANGELOG.md` und die `docs/`.
 
 ### Frontend
 

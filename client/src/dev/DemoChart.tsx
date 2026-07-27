@@ -64,6 +64,13 @@ const SONGS: SetlistSong[] = [
 
 export function DemoChart() {
   return (
-    <ChordChart songs={SONGS} startIndex={0} onBack={() => undefined} canEditSong theme="light" fontId="system" />
+    <ChordChart
+      songs={SONGS}
+      startIndex={0}
+      onBack={() => undefined}
+      canEditSong
+      theme="light"
+      fontId="system"
+    />
   );
 }

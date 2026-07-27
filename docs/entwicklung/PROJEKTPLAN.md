@@ -5,21 +5,24 @@
 > Release-Notes in `CHANGELOG.md` aktualisieren.
 
 ## Worum es geht
+
 Progressive Web App, die Chord Charts der aktuellen Setlist aus ChurchTools holt,
 automatisch transponiert und im Gottesdienst anzeigt. ChurchTools bleibt die einzige
 Datenquelle. Details: `CLAUDE.md`.
 
 ## Feste Entscheidungen
-| Thema            | Entscheidung |
-|------------------|--------------|
-| Datenhaltung     | keine eigene DB – ChurchTools ist Datenquelle |
-| Auth             | persönlicher ChurchTools-Login, Session in signiertem httpOnly-Cookie |
-| Externer Zugang  | Synology Reverse Proxy + Let's Encrypt (KEIN Cloudflare) |
-| Deployment       | Docker auf Synology NAS (Container Manager) |
+
+| Thema           | Entscheidung                                                          |
+| --------------- | --------------------------------------------------------------------- |
+| Datenhaltung    | keine eigene DB – ChurchTools ist Datenquelle                         |
+| Auth            | persönlicher ChurchTools-Login, Session in signiertem httpOnly-Cookie |
+| Externer Zugang | Synology Reverse Proxy + Let's Encrypt (KEIN Cloudflare)              |
+| Deployment      | Docker auf Synology NAS (Container Manager)                           |
 
 Begründungen: `docs/entwicklung/entscheidungen.md`.
 
 ## Doku-Pflicht je Session
+
 Checkbox hier aktualisieren **und** Release-Notes in `CHANGELOG.md`. Architektur-
 Entscheidungen → `docs/entwicklung/entscheidungen.md`.
 
@@ -28,6 +31,7 @@ Entscheidungen → `docs/entwicklung/entscheidungen.md`.
 ## Phasen
 
 ### Phase 1–4 – Aufbau & Funktionen ✅ (abgeschlossen, fertig & produktiv)
+
 - [x] 1 Fundament (Git, Tooling, Struktur, Security)
 - [x] 2 Backend-Proxy zu ChurchTools (Login, Setlist-Pipeline, Schreibzugriff)
 - [x] 3 App-Funktionen: Login, Agenda, Setlist/Ablauf, ChordChart, „Alle Lieder",
@@ -37,16 +41,18 @@ Entscheidungen → `docs/entwicklung/entscheidungen.md`.
 **Definition of Done:** App im Gottesdienst nutzbar, intern und extern live. ✓
 
 ### Phase 5 – Qualitätssicherung (laufend)
+
 - [x] 5.1 Unit-Tests für die kniffligste reine Logik (`transpose.ts`, `chordpro.ts`)
 - [x] 5.2 CI (GitHub Actions): lint + build + test je PR
 - [x] 5.3 Testkonzept dokumentiert (`docs/entwicklung/testkonzept.md`)
 - [x] 5.4 Tests zum Redesign: `hasOpaquePixel` + Render-Tests `<Segment>`/`<Section>`;
       Barrierefreiheit (Fokusring, `prefers-reduced-motion`, aria-labels).
-      *(Aktuelle Testzahlen stehen nur in `docs/entwicklung/testkonzept.md` – hier bewusst keine Zahl.)*
+      _(Aktuelle Testzahlen stehen nur in `docs/entwicklung/testkonzept.md` – hier bewusst keine Zahl.)_
 
 **Definition of Done:** Kernlogik durch grüne Tests abgesichert, CI bei jedem PR grün.
 
 ### Phase 6 – Offen / optional
+
 - [x] 6.1 ~~Musik-Abwesenheitsplaner nachbauen~~ **aus diesem Projekt herausgenommen** (22.06.2026):
       nur ECG-intern, läuft eigenständig und entfällt, sobald ChurchTools das selbst abdeckt.
       Wird NICHT mitverteilt – diese App bleibt das einzige verteilte Produkt.

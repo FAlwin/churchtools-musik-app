@@ -105,7 +105,10 @@ describe('migrateLocalAnnotations – was hochgeladen wird', () => {
 
   it('nimmt die „Nur Text"-Ebene und den Querformat-Zoom mit', async () => {
     localStorage.setItem(`${DRAW}song5_voriginal_lyr_1`, 'strich');
-    localStorage.setItem(`${ZOOM}song5_voriginal_1_dlarge2`, JSON.stringify({ x: 0, y: 0, scale: 2 }));
+    localStorage.setItem(
+      `${ZOOM}song5_voriginal_1_dlarge2`,
+      JSON.stringify({ x: 0, y: 0, scale: 2 }),
+    );
     const f = okFetch();
     await migrateLocalAnnotations();
     expect(Object.keys(uploads(f)).sort()).toEqual([
@@ -132,7 +135,11 @@ describe('migrateLocalAnnotations – der Merker', () => {
     localStorage.setItem(`${DRAW}song7_voriginal_0`, 'strich');
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(401, { error: 'Nicht angemeldet.' }))),
+      vi
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(jsonResponse(401, { error: 'Nicht angemeldet.' })),
+        ),
     );
 
     await migrateLocalAnnotations();
@@ -142,11 +149,15 @@ describe('migrateLocalAnnotations – der Merker', () => {
   it('einzelne Fehlschläge (z. B. zu groß) überspringen nur ihren Eintrag', async () => {
     localStorage.setItem(`${DRAW}song1_voriginal_0`, 'strich');
     localStorage.setItem(`${DRAW}song2_voriginal_0`, 'strich');
-    const f = vi.fn().mockImplementation((url: string) =>
-      Promise.resolve(
-        String(url).includes('song1') ? jsonResponse(413, { error: 'zu groß' }) : jsonResponse(200),
-      ),
-    );
+    const f = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        Promise.resolve(
+          String(url).includes('song1')
+            ? jsonResponse(413, { error: 'zu groß' })
+            : jsonResponse(200),
+        ),
+      );
     vi.stubGlobal('fetch', f);
 
     await migrateLocalAnnotations();

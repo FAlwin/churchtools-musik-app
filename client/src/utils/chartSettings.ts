@@ -1,5 +1,5 @@
 import type { SetlistSong } from '@shared/types/index';
-import {lsVersion, selectedVersionKey } from './songVersions';
+import { lsVersion, selectedVersionKey } from './songVersions';
 
 /** Einstellungen pro Lied (Tonart, Kapo, Abschnitts-Transponierung, Schrift, Spalten, Anzeige). */
 export interface SongSettings {
@@ -81,7 +81,6 @@ function parseSecShift(raw: string | null): Record<number, number> {
     return {};
   }
 }
-
 
 /**
  * SongSettings für eine KONKRETE Ebene (Version + Darstellungsart) aus einer gelieferten

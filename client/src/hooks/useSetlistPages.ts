@@ -35,7 +35,9 @@ interface Args {
 
 const RENDER_SCALE = 2;
 
-async function renderPdfToCanvases(source: { data: ArrayBuffer } | { url: string }): Promise<HTMLCanvasElement[]> {
+async function renderPdfToCanvases(
+  source: { data: ArrayBuffer } | { url: string },
+): Promise<HTMLCanvasElement[]> {
   // Dokumente IMMER komplett laden statt pdf.js selbst streamen zu lassen – Begründung in
   // `services/fileDownload.ts` (#32).
   const data = 'data' in source ? source.data : await fetchFileBytes(source.url);
@@ -127,7 +129,10 @@ export function useSetlistPages({ chordPdfData, chordOwners, songs, settings }: 
         if (!docMatch || docCache.current.has(docMatch.fileId)) continue;
         const url = `/api/songs/${song.id}/files/${docMatch.fileId}`;
         try {
-          const canvases = docMatch.type === 'image' ? [await renderImageToCanvas(url)] : await renderPdfToCanvases({ url });
+          const canvases =
+            docMatch.type === 'image'
+              ? [await renderImageToCanvas(url)]
+              : await renderPdfToCanvases({ url });
           if (cancelled) return;
           docCache.current.set(docMatch.fileId, canvases);
         } catch {
@@ -160,7 +165,13 @@ export function useSetlistPages({ chordPdfData, chordOwners, songs, settings }: 
           const chords = chordBySong.get(si) ?? [];
           chords.forEach(({ canvas, versionKey }, lp) => {
             nextPages.push(canvas);
-            nextOwners.push({ songIdx: si, songId: song.id, localPage: lp, kind: 'chord', versionKey });
+            nextOwners.push({
+              songIdx: si,
+              songId: song.id,
+              localPage: lp,
+              kind: 'chord',
+              versionKey,
+            });
           });
         }
       });

@@ -25,7 +25,9 @@ import 'dotenv/config';
 const BASE = (process.env.CHURCHTOOLS_BASE_URL ?? '').replace(/\/$/, '');
 const TOKEN = process.env.CHURCHTOOLS_LOGIN_TOKEN ?? '';
 const EVENT_ID = Number(process.env.TEST_EVENT_ID ?? '');
-const ARRANGEMENT_ID = process.env.TEST_ARRANGEMENT_ID ? Number(process.env.TEST_ARRANGEMENT_ID) : null;
+const ARRANGEMENT_ID = process.env.TEST_ARRANGEMENT_ID
+  ? Number(process.env.TEST_ARRANGEMENT_ID)
+  : null;
 const PERSON_ID = process.env.TEST_PERSON_ID ? Number(process.env.TEST_PERSON_ID) : null;
 const DO_WRITES = process.env.DO_WRITES === '1';
 
@@ -74,7 +76,9 @@ async function authenticate(): Promise<void> {
 }
 
 async function ctGet(path: string): Promise<unknown> {
-  const res = await fetch(`${BASE}${path}`, { headers: { Cookie: COOKIE, Accept: 'application/json' } });
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { Cookie: COOKIE, Accept: 'application/json' },
+  });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} bei GET ${path}`);
   return res.json();
 }
@@ -186,9 +190,15 @@ async function main(): Promise<void> {
           arrangementId: ARRANGEMENT_ID,
         });
         show('A2 PUT type=song + arrangementId', conv);
-        const after = (await ctGet(`/api/events/${EVENT_ID}/agenda`)) as { data?: { items?: CtItem[] } };
+        const after = (await ctGet(`/api/events/${EVENT_ID}/agenda`)) as {
+          data?: { items?: CtItem[] };
+        };
         const it = after.data?.items?.find((x) => x.id === newId);
-        show('A3 Punkt nach Umwandlung (hat song?)', { type: it?.type, hasSong: !!it?.song, song: it?.song });
+        show('A3 Punkt nach Umwandlung (hat song?)', {
+          type: it?.type,
+          hasSong: !!it?.song,
+          song: it?.song,
+        });
       }
     } else {
       console.log('\n(PROBE A übersprungen – TEST_ARRANGEMENT_ID nicht gesetzt.)');
@@ -206,9 +216,15 @@ async function main(): Promise<void> {
         cleanup.push(newId);
         // Mehrere Format-Kandidaten nacheinander probieren (jeweils GET-Gegenprüfung).
         const candidates: Array<{ label: string; payload: Record<string, unknown> }> = [
-          { label: 'persons:[{personId}]', payload: { responsible: { persons: [{ personId: PERSON_ID }] } } },
+          {
+            label: 'persons:[{personId}]',
+            payload: { responsible: { persons: [{ personId: PERSON_ID }] } },
+          },
           { label: 'personIds:[id]', payload: { responsible: { personIds: [PERSON_ID] } } },
-          { label: 'responsible:[{personId}]', payload: { responsible: [{ personId: PERSON_ID }] } },
+          {
+            label: 'responsible:[{personId}]',
+            payload: { responsible: [{ personId: PERSON_ID }] },
+          },
         ];
         for (const c of candidates) {
           const r = await ctWrite('PUT', `/api/events/${EVENT_ID}/agenda/items/${newId}`, {
@@ -216,7 +232,9 @@ async function main(): Promise<void> {
             title: 'PROBE-WEGWERF',
             ...c.payload,
           });
-          const after = (await ctGet(`/api/events/${EVENT_ID}/agenda`)) as { data?: { items?: CtItem[] } };
+          const after = (await ctGet(`/api/events/${EVENT_ID}/agenda`)) as {
+            data?: { items?: CtItem[] };
+          };
           const it = after.data?.items?.find((x) => x.id === newId);
           show(`B · Format "${c.label}" → status ${r.status}`, { responsible: it?.responsible });
         }

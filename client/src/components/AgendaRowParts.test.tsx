@@ -27,9 +27,7 @@ describe('ItemTitle', () => {
 
   it('zeigt Titel UND Liedname, wenn der Liedname etwas hinzufügt (#200)', () => {
     render(
-      <ItemTitle
-        item={item({ title: 'Lied', song: { title: 'Du großer Gott' } as never })}
-      />,
+      <ItemTitle item={item({ title: 'Lied', song: { title: 'Du großer Gott' } as never })} />,
     );
     expect(screen.getByText('Lied')).toBeTruthy();
     expect(screen.getByText(/Du großer Gott/)).toBeTruthy();

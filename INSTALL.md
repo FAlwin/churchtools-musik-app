@@ -19,15 +19,19 @@ Für Mac und Windows gibt es ein Skript, das alles automatisch macht: Docker pr�
 abfragen, Sicherheits-Schlüssel erzeugen und die App starten.
 
 ### 1. Docker Desktop installieren & starten
+
 → [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/)
 Installieren, öffnen und warten, bis das Wal-Symbol „ruhig" ist.
 
 ### 2. Den Ordner `deploy/` herunterladen
+
 Aus dem GitHub-Repo den Ordner [`deploy/`](https://github.com/FAlwin/churchtools-musik-app/tree/main/deploy)
 mit allen Dateien in einen leeren Ordner auf dem Computer legen (z. B. `musik-app/`).
+
 > Am einfachsten oben auf der Repo-Seite **„Code" → „Download ZIP"**, entpacken, den Ordner `deploy/` behalten.
 
 ### 3. Setup-Skript doppelklicken
+
 - **macOS:** `setup.command` doppelklicken.
   > **Beim allerersten Mal blockiert macOS das Skript** („nicht verifizierter Entwickler"). Dann:
   > **Rechtsklick auf `setup.command` → „Öffnen" → im Dialog nochmal „Öffnen"**. Danach läuft es immer normal.
@@ -38,6 +42,7 @@ mit allen Dateien in einen leeren Ordner auf dem Computer legen (z. B. `musik-ap
 Im Skript die **ChurchTools-URL** eingeben (z. B. `https://eure-gemeinde.church.tools`) – fertig.
 
 ### 4. App öffnen
+
 Browser: **http://localhost:3001** → mit ChurchTools-Zugangsdaten anmelden → im „Mehr"-Tab den
 Gemeindenamen setzen.
 
@@ -60,6 +65,7 @@ Installieren und starten.
 ### 2. Dateien herunterladen
 
 Aus dem GitHub-Repo den Ordner [`deploy/`](https://github.com/FAlwin/churchtools-musik-app/tree/main/deploy) öffnen und diese zwei Dateien herunterladen:
+
 - `docker-compose.yml`
 - `.env.example`
 
@@ -175,6 +181,7 @@ Klassischer Weg ohne Cloudflare. Erfordert eine öffentliche IP-Adresse und Zugr
 #### Schritt 1: Port im Router freigeben
 
 Im Router (z. B. Fritzbox) eine Portweiterleitung einrichten:
+
 - Externer Port: **443** (HTTPS)
 - Internes Ziel: NAS-IP-Adresse, Port **443**
 
@@ -187,14 +194,14 @@ DSM → Systemsteuerung → Sicherheit → Zertifikat → „Hinzufügen"
 
 DSM → Systemsteuerung → Anmeldeportal → Erweitert → Reverse Proxy → „Erstellen":
 
-| Feld | Wert |
-|---|---|
-| Quellprotokoll | HTTPS |
+| Feld           | Wert                   |
+| -------------- | ---------------------- |
+| Quellprotokoll | HTTPS                  |
 | Quell-Hostname | `musik.eure-domain.de` |
-| Quellport | 443 |
-| Zielprotokoll | HTTP |
-| Ziel-Hostname | localhost |
-| Zielport | 3001 |
+| Quellport      | 443                    |
+| Zielprotokoll  | HTTP                   |
+| Ziel-Hostname  | localhost              |
+| Zielport       | 3001                   |
 
 Zertifikat dem Reverse Proxy zuweisen → Speichern.
 
@@ -212,15 +219,15 @@ Die App ist nun unter `https://musik.eure-domain.de` erreichbar.
 
 ## Typische Probleme
 
-| Problem | Ursache & Lösung |
-|---|---|
-| macOS blockiert `setup.command` | „Nicht verifizierter Entwickler" – Rechtsklick → „Öffnen" → „Öffnen" |
-| Windows blockiert `setup.bat` | SmartScreen – „Weitere Informationen" → „Trotzdem ausführen" |
-| „Docker wurde nicht gefunden" | Docker Desktop ist nicht installiert oder nicht gestartet |
-| „Nicht angemeldet" trotz Login | Cookie-Problem – nur über HTTPS (Reverse Proxy/Cloudflare) lösen |
-| Keine Lieder/Abläufe sichtbar | Fehlende ChurchTools-Rechte für diese Person |
-| Admin-Funktionen fehlen | `ADMIN_PERMISSION` in `.env` passt nicht – Wert anpassen |
-| Einstellungen nach Update weg | Daten-Volume wurde gelöscht – beim Update Volume behalten (→ [UPDATE.md](UPDATE.md)) |
+| Problem                         | Ursache & Lösung                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------ |
+| macOS blockiert `setup.command` | „Nicht verifizierter Entwickler" – Rechtsklick → „Öffnen" → „Öffnen"                 |
+| Windows blockiert `setup.bat`   | SmartScreen – „Weitere Informationen" → „Trotzdem ausführen"                         |
+| „Docker wurde nicht gefunden"   | Docker Desktop ist nicht installiert oder nicht gestartet                            |
+| „Nicht angemeldet" trotz Login  | Cookie-Problem – nur über HTTPS (Reverse Proxy/Cloudflare) lösen                     |
+| Keine Lieder/Abläufe sichtbar   | Fehlende ChurchTools-Rechte für diese Person                                         |
+| Admin-Funktionen fehlen         | `ADMIN_PERMISSION` in `.env` passt nicht – Wert anpassen                             |
+| Einstellungen nach Update weg   | Daten-Volume wurde gelöscht – beim Update Volume behalten (→ [UPDATE.md](UPDATE.md)) |
 
 Ausführliche Hilfe mit Schritt-für-Schritt-Lösungen: [docs/betrieb/troubleshooting.md](docs/betrieb/troubleshooting.md).
 
@@ -239,10 +246,10 @@ Eure Daten und Einstellungen bleiben dabei erhalten. Details: [UPDATE.md](UPDATE
 
 Im Ordner `deploy/` liegen drei Varianten. Für die allermeisten Gemeinden reicht die **Basis-Datei**.
 
-| Datei | Wofür | Auto-Update |
-|---|---|---|
-| `docker-compose.yml` | **Empfohlener Standard.** Einfacher Produktivbetrieb einer Gemeinde. Updates spielt ihr bewusst ein (`docker compose pull` + `up -d`, oder per `update`-Skript). | nein |
-| `docker-compose.prod.yml` | Wie die Basis, aber das Image ist auf den Major-Tag `:2` gepinnt (keine ungewollten Sprünge auf eine größere Umstellung). Sinnvoll, wenn ihr maximale Kontrolle über den Zeitpunkt von Updates wollt. | nein |
+| Datei                        | Wofür                                                                                                                                                                                                                      | Auto-Update     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `docker-compose.yml`         | **Empfohlener Standard.** Einfacher Produktivbetrieb einer Gemeinde. Updates spielt ihr bewusst ein (`docker compose pull` + `up -d`, oder per `update`-Skript).                                                           | nein            |
+| `docker-compose.prod.yml`    | Wie die Basis, aber das Image ist auf den Major-Tag `:2` gepinnt (keine ungewollten Sprünge auf eine größere Umstellung). Sinnvoll, wenn ihr maximale Kontrolle über den Zeitpunkt von Updates wollt.                      | nein            |
 | `docker-compose.staging.yml` | **Nur zum Testen.** Eine zweite, parallele Instanz neben der Live-App (eigener Port `3002`, eigenes Volume). Zieht über Watchtower automatisch neue Test-Versionen. Für Gemeinden, die neue Versionen vorab prüfen wollen. | ja (Watchtower) |
 
 Hinweise:

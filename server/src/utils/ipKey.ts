@@ -89,8 +89,7 @@ function rewriteEmbeddedIpv4(addr: string): string | null {
 
 /** Die IPv4 hinter einer IPv4-mapped Adresse (`::ffff:a.b.c.d`) – sonst `null`. */
 function mappedIpv4(groups: string[]): string | null {
-  const istMapped =
-    groups.slice(0, 5).every((g) => g === '0') && groups[5] === 'ffff';
+  const istMapped = groups.slice(0, 5).every((g) => g === '0') && groups[5] === 'ffff';
   if (!istMapped) return null;
   const hi = parseInt(groups[6], 16);
   const lo = parseInt(groups[7], 16);

@@ -120,7 +120,11 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
               </div>
               <div className={styles.field}>
                 <span className={styles.label}>Zuständig</span>
-                <ResponsibleField value={responsible} onChange={setResponsible} services={services} />
+                <ResponsibleField
+                  value={responsible}
+                  onChange={setResponsible}
+                  services={services}
+                />
               </div>
               <div className={styles.field}>
                 <span className={styles.label}>Bemerkung</span>

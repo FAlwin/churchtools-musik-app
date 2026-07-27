@@ -32,7 +32,13 @@ export function Scroll({ children, onRefresh }: ScrollProps) {
   return <PullScroll onRefresh={onRefresh}>{children}</PullScroll>;
 }
 
-function PullScroll({ children, onRefresh }: { children: ReactNode; onRefresh: () => Promise<unknown> | void }) {
+function PullScroll({
+  children,
+  onRefresh,
+}: {
+  children: ReactNode;
+  onRefresh: () => Promise<unknown> | void;
+}) {
   const { ref, pull, refreshing, isTriggered, handlers } = usePullToRefresh(onRefresh);
   return (
     <div
@@ -49,12 +55,20 @@ function PullScroll({ children, onRefresh }: { children: ReactNode; onRefresh: (
         {refreshing ? (
           <Spinner />
         ) : (
-          <span className={styles.pullArrow} style={{ transform: `rotate(${isTriggered ? 180 : 0}deg)` }}>
+          <span
+            className={styles.pullArrow}
+            style={{ transform: `rotate(${isTriggered ? 180 : 0}deg)` }}
+          >
             ↓
           </span>
         )}
       </div>
-      <div style={{ transform: refreshing ? 'translateY(0)' : `translateY(${pull}px)`, transition: pull === 0 ? 'transform .2s' : 'none' }}>
+      <div
+        style={{
+          transform: refreshing ? 'translateY(0)' : `translateY(${pull}px)`,
+          transition: pull === 0 ? 'transform .2s' : 'none',
+        }}
+      >
         <div className={styles.refreshHint}>↓ Zum Aktualisieren nach unten ziehen</div>
         {children}
       </div>

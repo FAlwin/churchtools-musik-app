@@ -25,21 +25,21 @@ describe('itemTitleParts', () => {
   });
 
   it('Titel gleich Liedname: keine Dopplung', () => {
-    expect(itemTitleParts({ title: 'Ruft zu dem Herrn', song: { title: 'Ruft zu dem Herrn' } })).toEqual(
-      { title: 'Ruft zu dem Herrn', songName: null },
-    );
+    expect(
+      itemTitleParts({ title: 'Ruft zu dem Herrn', song: { title: 'Ruft zu dem Herrn' } }),
+    ).toEqual({ title: 'Ruft zu dem Herrn', songName: null });
   });
 
   it('Dopplung wird auch bei abweichender Groß-/Kleinschreibung und Rand-Leerzeichen erkannt', () => {
-    expect(itemTitleParts({ title: ' du GROSSER gott ', song: { title: 'Du grosser Gott' } })).toEqual(
-      { title: 'Du grosser Gott', songName: null },
-    );
+    expect(
+      itemTitleParts({ title: ' du GROSSER gott ', song: { title: 'Du grosser Gott' } }),
+    ).toEqual({ title: 'Du grosser Gott', songName: null });
   });
 
   it('Titel wird für die Anzeige getrimmt', () => {
-    expect(itemTitleParts({ title: '  Lobpreis 1  ', song: { title: 'Ruft zu dem Herrn' } })).toEqual(
-      { title: 'Lobpreis 1', songName: 'Ruft zu dem Herrn' },
-    );
+    expect(
+      itemTitleParts({ title: '  Lobpreis 1  ', song: { title: 'Ruft zu dem Herrn' } }),
+    ).toEqual({ title: 'Lobpreis 1', songName: 'Ruft zu dem Herrn' });
   });
 });
 

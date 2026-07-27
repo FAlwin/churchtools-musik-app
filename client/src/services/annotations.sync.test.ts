@@ -1,11 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  pushField,
-  pullAnnotations,
-  flushPendingAnnotations,
-  resetSync,
-} from './annotations';
+import { pushField, pullAnnotations, flushPendingAnnotations, resetSync } from './annotations';
 import { setSessionExpiredHandler } from './api';
 
 /**
@@ -75,10 +70,11 @@ describe('pushField – bündeln statt spammen', () => {
     pushField(`${DRAW}song7_voriginal_1`, 'strokes', 'b');
     await vi.advanceTimersByTimeAsync(700);
 
-    expect(puts(fetchMock).map((p) => p.key).sort()).toEqual([
-      'song7_voriginal_0',
-      'song7_voriginal_1',
-    ]);
+    expect(
+      puts(fetchMock)
+        .map((p) => p.key)
+        .sort(),
+    ).toEqual(['song7_voriginal_0', 'song7_voriginal_1']);
   });
 
   it('schnelle Änderungen am selben Feld ergeben einen Request mit dem LETZTEN Wert', async () => {
@@ -120,9 +116,11 @@ describe('pullAnnotations – lokale Änderungen nicht überschreiben', () => {
   it('überträgt Server-Stand in den lokalen Speicher', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementation(() =>
-        Promise.resolve(jsonResponse(200, { song7_voriginal_0: { strokes: 'vom-server' } })),
-      ),
+      vi
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(jsonResponse(200, { song7_voriginal_0: { strokes: 'vom-server' } })),
+        ),
     );
     await pullAnnotations([7]);
     expect(localStorage.getItem(`${DRAW}song7_voriginal_0`)).toBe('vom-server');
@@ -131,13 +129,15 @@ describe('pullAnnotations – lokale Änderungen nicht überschreiben', () => {
   it('lässt eine Seite mit noch nicht hochgeladener Änderung in Ruhe', async () => {
     // Genau der Datenverlust, den der Code-Kommentar beschreibt: frische Anmerkung würde sonst
     // vom (noch alten) Server-Stand überschrieben.
-    const fetchMock = vi.fn().mockImplementation((url: string) =>
-      Promise.resolve(
-        String(url).startsWith('/api/annotations?')
-          ? jsonResponse(200, { song7_voriginal_0: { strokes: 'alt-vom-server' } })
-          : jsonResponse(200),
-      ),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        Promise.resolve(
+          String(url).startsWith('/api/annotations?')
+            ? jsonResponse(200, { song7_voriginal_0: { strokes: 'alt-vom-server' } })
+            : jsonResponse(200),
+        ),
+      );
     vi.stubGlobal('fetch', fetchMock);
 
     localStorage.setItem(`${DRAW}song7_voriginal_0`, 'frisch-lokal');

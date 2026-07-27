@@ -39,7 +39,8 @@ export function parseSessionValue(
   now = Date.now(),
 ): { ctCookie: string; issuedAt: number; userId: number | null } {
   const withId = raw.match(/^(\d{10,})\|u(\d+)\|([\s\S]+)$/);
-  if (withId) return { ctCookie: withId[3], issuedAt: Number(withId[1]), userId: Number(withId[2]) };
+  if (withId)
+    return { ctCookie: withId[3], issuedAt: Number(withId[1]), userId: Number(withId[2]) };
   const m = raw.match(/^(\d{10,})\|([\s\S]+)$/);
   if (m) return { ctCookie: m[2], issuedAt: Number(m[1]), userId: null };
   return { ctCookie: raw, issuedAt: now, userId: null }; // Altformat → Lebensdauer zählt ab jetzt

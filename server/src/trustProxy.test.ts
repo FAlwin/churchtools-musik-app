@@ -30,7 +30,10 @@ async function startWith(trust: string | number): Promise<string> {
 }
 
 async function ipFor(base: string, forwarded?: string): Promise<{ ip: string; key: string }> {
-  const res = await fetch(`${base}/ip`, forwarded ? { headers: { 'X-Forwarded-For': forwarded } } : {});
+  const res = await fetch(
+    `${base}/ip`,
+    forwarded ? { headers: { 'X-Forwarded-For': forwarded } } : {},
+  );
   return (await res.json()) as { ip: string; key: string };
 }
 

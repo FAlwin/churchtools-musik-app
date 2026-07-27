@@ -15,7 +15,12 @@ export interface TextStyle {
 }
 
 /** Standard für neu platzierten Text: normale Stärke, mittig. */
-export const DEFAULT_TEXT_STYLE: TextStyle = { bold: false, italic: false, underline: false, align: 'center' };
+export const DEFAULT_TEXT_STYLE: TextStyle = {
+  bold: false,
+  italic: false,
+  underline: false,
+  align: 'center',
+};
 
 /** Eine Text-Anmerkung auf einer PDF-Seite. Position als Bruchteil der Seite (0..1), Größe in
  *  cqh (% der Seitenhöhe) → skaliert/zoomt verlustfrei mit der Seite mit. Format-Felder optional
@@ -73,7 +78,14 @@ export function usePageDraw(
 
   const history = useRef<Snapshot[]>([]);
   const redoStack = useRef<Snapshot[]>([]);
-  const drag = useRef<{ id: number; sx: number; sy: number; ofx: number; ofy: number; moved: boolean } | null>(null);
+  const drag = useRef<{
+    id: number;
+    sx: number;
+    sy: number;
+    ofx: number;
+    ofy: number;
+    moved: boolean;
+  } | null>(null);
 
   const drawKey = storageKey;
   const textKey = storageKey ? `${storageKey}_text` : null;
@@ -220,14 +232,19 @@ export function usePageDraw(
     if (pending.editId != null) {
       pushHistory();
       setTexts((prev) =>
-        t ? prev.map((o) => (o.id === pending.editId ? { ...o, text: t } : o)) : prev.filter((o) => o.id !== pending.editId),
+        t
+          ? prev.map((o) => (o.id === pending.editId ? { ...o, text: t } : o))
+          : prev.filter((o) => o.id !== pending.editId),
       );
       // Bearbeiteten Text ausgewählt lassen (Rahmen); bei leerem Text nichts auswählen.
       setSelectedId(t ? pending.editId : null);
     } else if (t) {
       pushHistory();
       const id = Date.now();
-      setTexts((prev) => [...prev, { id, fx: pending.fx, fy: pending.fy, text: t, color, sizeCqh, ...style }]);
+      setTexts((prev) => [
+        ...prev,
+        { id, fx: pending.fx, fy: pending.fy, text: t, color, sizeCqh, ...style },
+      ]);
       // Neuen Text gleich auswählen → Bearbeiten-/Verschieben-Rahmen erscheint.
       setSelectedId(id);
     }
@@ -260,7 +277,11 @@ export function usePageDraw(
     setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
   }
   function resize(id: number, delta: number) {
-    setTexts((prev) => prev.map((o) => (o.id === id ? { ...o, sizeCqh: Math.max(1, Math.min(10, o.sizeCqh + delta)) } : o)));
+    setTexts((prev) =>
+      prev.map((o) =>
+        o.id === id ? { ...o, sizeCqh: Math.max(1, Math.min(10, o.sizeCqh + delta)) } : o,
+      ),
+    );
   }
   /** Größe direkt setzen (Zieh-Knopf am Auswahlrahmen). Verlauf sichert der Aufrufer einmal am Zieh-Start. */
   function setSize(id: number, sizeCqh: number) {
@@ -285,7 +306,9 @@ export function usePageDraw(
       pushHistory();
     }
     setTexts((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, fx: drag.current!.ofx + dfx, fy: drag.current!.ofy + dfy } : o)),
+      prev.map((o) =>
+        o.id === id ? { ...o, fx: drag.current!.ofx + dfx, fy: drag.current!.ofy + dfy } : o,
+      ),
     );
   }
   function endDrag() {

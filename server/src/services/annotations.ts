@@ -110,7 +110,11 @@ export async function getAnnotations(userId: number, songIds: number[]): Promise
 }
 
 /** Aktualisiert einen Eintrag (Feld-Merge: nur übergebene Felder überschreiben). */
-export async function putAnnotation(userId: number, key: string, partial: PageAnnotation): Promise<void> {
+export async function putAnnotation(
+  userId: number,
+  key: string,
+  partial: PageAnnotation,
+): Promise<void> {
   await withLock(userId, async () => {
     const store = await read(userId);
     const cur = store[key] ?? {};

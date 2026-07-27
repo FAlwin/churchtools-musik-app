@@ -247,7 +247,11 @@ export function ChordEditor({
               <div className={styles.cbLbl}>Grundton – tippen fügt sofort ein</div>
               <div className={styles.cbGrid}>
                 {CHORD_ROOTS.map((r) => (
-                  <button key={r} className={`${styles.cbChip} ${styles.cbRoot}`} onClick={() => insertRoot(r)}>
+                  <button
+                    key={r}
+                    className={`${styles.cbChip} ${styles.cbRoot}`}
+                    onClick={() => insertRoot(r)}
+                  >
                     {r}
                   </button>
                 ))}
@@ -331,7 +335,11 @@ export function ChordEditor({
                 >
                   −
                 </button>
-                <button className={styles.tVal} onClick={() => setSemitones(0)} title="Zurücksetzen">
+                <button
+                  className={styles.tVal}
+                  onClick={() => setSemitones(0)}
+                  title="Zurücksetzen"
+                >
                   {transposeLabel}
                 </button>
                 <button
@@ -347,7 +355,6 @@ export function ChordEditor({
           </div>
         )}
       </div>
-
     </div>
   );
 }

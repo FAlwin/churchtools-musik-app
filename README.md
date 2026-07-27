@@ -39,10 +39,10 @@ mit ihren **eigenen ChurchTools-Zugangsdaten** an.
 
 Anpassbar sind nur:
 
-| Was | Wo |
-|---|---|
-| ChurchTools-URL, Session-Secret, Admin-Recht | `.env` auf eurem Server |
-| Gemeindename + eigene Links | in der App (Admin → „Mehr"-Tab) |
+| Was                                          | Wo                              |
+| -------------------------------------------- | ------------------------------- |
+| ChurchTools-URL, Session-Secret, Admin-Recht | `.env` auf eurem Server         |
+| Gemeindename + eigene Links                  | in der App (Admin → „Mehr"-Tab) |
 
 Optik und Funktionen sind für alle identisch (eine gemeinsame Codebasis).
 

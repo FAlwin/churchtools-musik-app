@@ -42,9 +42,11 @@ describe('userSettings – Speichern schlägt fehl (#213)', () => {
     setSettingsSyncErrorHandler(onError);
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementation(() =>
-        Promise.resolve(jsonResponse(413, { error: 'Speicher-Obergrenze erreicht.' })),
-      ),
+      vi
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(jsonResponse(413, { error: 'Speicher-Obergrenze erreicht.' })),
+        ),
     );
 
     pushSetting('worship_key_1', 'G');

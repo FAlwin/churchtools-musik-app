@@ -86,7 +86,8 @@ export function DemoPdf() {
         const c = document.createElement('canvas');
         c.width = vp.width;
         c.height = vp.height;
-        c.style.cssText = 'width:100%;max-width:600px;display:block;margin:10px auto;box-shadow:0 1px 6px rgba(0,0,0,.3);background:#fff';
+        c.style.cssText =
+          'width:100%;max-width:600px;display:block;margin:10px auto;box-shadow:0 1px 6px rgba(0,0,0,.3);background:#fff';
         await page.render({ canvasContext: c.getContext('2d')!, viewport: vp }).promise;
         if (!cancelled) host.current?.appendChild(c);
       }
@@ -98,20 +99,51 @@ export function DemoPdf() {
 
   const btn = { padding: '6px 10px', marginRight: 6, cursor: 'pointer' };
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', font: '14px sans-serif', background: '#888' }}>
-      <div style={{ padding: 8, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', background: '#eee' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        font: '14px sans-serif',
+        background: '#888',
+      }}
+    >
+      <div
+        style={{
+          padding: 8,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 6,
+          alignItems: 'center',
+          background: '#eee',
+        }}
+      >
         <span>Spalten:</span>
-        <button style={btn} onClick={() => setCols(1)} disabled={cols === 1}>1</button>
-        <button style={btn} onClick={() => setCols(2)} disabled={cols === 2}>2</button>
+        <button style={btn} onClick={() => setCols(1)} disabled={cols === 1}>
+          1
+        </button>
+        <button style={btn} onClick={() => setCols(2)} disabled={cols === 2}>
+          2
+        </button>
         <span>Schrift:</span>
-        <button style={btn} onClick={() => setFontPt((f) => Math.max(7, f - 1))}>A−</button>
+        <button style={btn} onClick={() => setFontPt((f) => Math.max(7, f - 1))}>
+          A−
+        </button>
         <span>{fontPt}pt</span>
-        <button style={btn} onClick={() => setFontPt((f) => Math.min(20, f + 1))}>A+</button>
+        <button style={btn} onClick={() => setFontPt((f) => Math.min(20, f + 1))}>
+          A+
+        </button>
         <span>Transp.:</span>
-        <button style={btn} onClick={() => setSemitones((s) => s - 1)}>−1</button>
+        <button style={btn} onClick={() => setSemitones((s) => s - 1)}>
+          −1
+        </button>
         <span>{semitones}</span>
-        <button style={btn} onClick={() => setSemitones((s) => s + 1)}>+1</button>
-        <button style={btn} onClick={() => setLyricsOnly((v) => !v)}>{lyricsOnly ? 'mit Akkorden' : 'nur Text'}</button>
+        <button style={btn} onClick={() => setSemitones((s) => s + 1)}>
+          +1
+        </button>
+        <button style={btn} onClick={() => setLyricsOnly((v) => !v)}>
+          {lyricsOnly ? 'mit Akkorden' : 'nur Text'}
+        </button>
         <span>· {pages} Seite(n)</span>
       </div>
       <div ref={host} style={{ flex: 1, overflow: 'auto', padding: 10 }} />

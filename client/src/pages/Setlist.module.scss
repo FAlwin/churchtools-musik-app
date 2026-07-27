@@ -261,10 +261,14 @@
 @keyframes changedPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 transparent, var(--shadow);
+    box-shadow:
+      0 0 0 0 transparent,
+      var(--shadow);
   }
   50% {
-    box-shadow: 0 0 0 2px var(--blue), var(--shadow);
+    box-shadow:
+      0 0 0 2px var(--blue),
+      var(--shadow);
   }
 }
 .changed {
@@ -275,7 +279,9 @@
 @media (prefers-reduced-motion: reduce) {
   .changed {
     animation: none;
-    box-shadow: 0 0 0 2px var(--blue), var(--shadow);
+    box-shadow:
+      0 0 0 2px var(--blue),
+      var(--shadow);
   }
 }
 

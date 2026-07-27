@@ -35,7 +35,10 @@ export function resetSync(): void {
 
 /** localStorage-Key → Server-Eintrags-Schlüssel (song<id>_v<version>_<seite>). */
 function serverKeyOf(lsKey: string): string {
-  return lsKey.replace(DRAW, '').replace(ZOOM, '').replace(/_text$/, '');
+  return lsKey
+    .replace(DRAW, '')
+    .replace(ZOOM, '')
+    .replace(/_text$/, '');
 }
 
 /** Alte (versionslose) Schlüssel auf das neue Schema heben: song12_3 → song12_voriginal_3. */
@@ -59,14 +62,17 @@ function safeJson<T>(raw: string | null): T | null {
 export async function pullAnnotations(songIds: number[]): Promise<void> {
   if (disabled || songIds.length === 0) return;
   try {
-    const data = await apiFetch<Record<string, PageAnnotation>>(`/api/annotations?songs=${songIds.join(',')}`);
+    const data = await apiFetch<Record<string, PageAnnotation>>(
+      `/api/annotations?songs=${songIds.join(',')}`,
+    );
     for (const [key, a] of Object.entries(data)) {
       // Seiten mit noch nicht hochgeladener ODER gerade hochladender lokaler Änderung NICHT
       // überschreiben (sonst gehen frische Anmerkungen/Zooms an den alten Server-Stand verloren).
       if (pendingFields.has(key) || inflight.has(key)) continue;
       if (a.strokes) localStorage.setItem(DRAW + key, a.strokes);
       else localStorage.removeItem(DRAW + key);
-      if (a.texts && a.texts.length) localStorage.setItem(DRAW + key + '_text', JSON.stringify(a.texts));
+      if (a.texts && a.texts.length)
+        localStorage.setItem(DRAW + key + '_text', JSON.stringify(a.texts));
       else localStorage.removeItem(DRAW + key + '_text');
       if (a.zoom) localStorage.setItem(ZOOM + key, JSON.stringify(a.zoom));
       else localStorage.removeItem(ZOOM + key);
@@ -129,7 +135,10 @@ export function pushField(lsKey: string, field: keyof PageAnnotation, value: unk
   pendingFields.set(key, cur);
   const t = timers.get(key);
   if (t) clearTimeout(t);
-  timers.set(key, setTimeout(() => void flush(key), 600));
+  timers.set(
+    key,
+    setTimeout(() => void flush(key), 600),
+  );
 }
 
 // ── Migration: bestehende Geräte-Anmerkungen einmalig aufs Konto ──

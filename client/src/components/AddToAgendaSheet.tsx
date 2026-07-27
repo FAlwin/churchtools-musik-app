@@ -34,7 +34,11 @@ export function AddToAgendaSheet({ song, services, onClose }: AddToAgendaSheetPr
   async function pick(a: SongArrangementOption) {
     if (!service || add.isPending) return;
     try {
-      await add.mutateAsync({ eventId: service.id, arrangementId: a.arrangementId, title: song.name });
+      await add.mutateAsync({
+        eventId: service.id,
+        arrangementId: a.arrangementId,
+        title: song.name,
+      });
       setDone(true);
     } catch {
       // Fehler wird über add.isError unten angezeigt
@@ -93,7 +97,11 @@ export function AddToAgendaSheet({ song, services, onClose }: AddToAgendaSheetPr
           <button className={styles.back} onClick={() => setService(null)} disabled={add.isPending}>
             <Icon name="chev-left" size={16} stroke={2.4} /> {service.name}
           </button>
-          {add.isError && <div className={styles.err}>Konnte nicht hinzugefügt werden. Bitte erneut versuchen.</div>}
+          {add.isError && (
+            <div className={styles.err}>
+              Konnte nicht hinzugefügt werden. Bitte erneut versuchen.
+            </div>
+          )}
           {arrangements.isLoading ? (
             <CenterMessage loading text="Arrangements werden geladen…" />
           ) : arrangements.isError ? (

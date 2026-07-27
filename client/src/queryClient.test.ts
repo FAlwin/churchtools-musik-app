@@ -2,7 +2,10 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
-import { persistQueryClientSave, persistQueryClientRestore } from '@tanstack/react-query-persist-client';
+import {
+  persistQueryClientSave,
+  persistQueryClientRestore,
+} from '@tanstack/react-query-persist-client';
 import { createIdbPersister } from './queryClient';
 
 const WEEK = 1000 * 60 * 60 * 24 * 7;

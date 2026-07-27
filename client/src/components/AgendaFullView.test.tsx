@@ -123,9 +123,7 @@ describe('AgendaFullView – entfernte Punkte auflösen', () => {
     // „gesehen"-Basislinie des Servers – er meldet für sie keinen Platzhalter. Die Ansicht muss das
     // selbst bemerken, sonst verschwindet die Zeile kommentarlos.
     const vorher = [item({ id: 1, title: 'Bleibt' }), item({ id: 2, title: 'Verschwindet' })];
-    const { rerender } = render(
-      <AgendaFullView items={vorher} eventId={1} onSelect={vi.fn()} />,
-    );
+    const { rerender } = render(<AgendaFullView items={vorher} eventId={1} onSelect={vi.fn()} />);
     rerender(
       <AgendaFullView items={[item({ id: 1, title: 'Bleibt' })]} eventId={1} onSelect={vi.fn()} />,
     );

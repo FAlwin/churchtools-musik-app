@@ -38,7 +38,10 @@ export function Section({
   return (
     <div className={`${styles.sectionBlock} ${typeClass}`}>
       {(section.label || shiftLabel) && (
-        <div className={styles.secLabel} style={{ fontSize: Math.max(12, Math.round(fontSize * 0.8)) }}>
+        <div
+          className={styles.secLabel}
+          style={{ fontSize: Math.max(12, Math.round(fontSize * 0.8)) }}
+        >
           {section.label}
           {shiftLabel && (
             <span className={styles.shiftBadge} title="Dieser Abschnitt ist transponiert">

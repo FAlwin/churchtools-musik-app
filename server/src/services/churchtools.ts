@@ -94,10 +94,7 @@ async function ctGet<T = unknown>(cookie: string, path: string): Promise<T> {
     // 404 NICHT loggen (#215): Der Fall ist erwartbar und würde im 8-Sekunden-Polling das
     // Container-Log fluten. Pfad ohnehin nur ins Log (#199), nach außen generisch.
     if (res.status !== 404) console.warn(`[churchtools] Fehler ${res.status} bei ${path}`);
-    throw new HttpError(
-      res.status === 404 ? 404 : 502,
-      `ChurchTools-Fehler (${res.status}).`,
-    );
+    throw new HttpError(res.status === 404 ? 404 : 502, `ChurchTools-Fehler (${res.status}).`);
   }
   const json = (await res.json()) as { data?: T };
   return (json.data ?? json) as T;
@@ -565,7 +562,6 @@ export async function uploadChordpro(
     throw new HttpError(502, `Speichern in ChurchTools fehlgeschlagen (${res.status}).`);
   }
 }
-
 
 /**
  * Schreibt die Reihenfolge des Ablaufs zurück: lädt die aktuellen Punkte frisch,

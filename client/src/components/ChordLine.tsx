@@ -22,7 +22,14 @@ function isBar(chord: string | null): boolean {
 }
 
 /** Rendert eine einzelne ChordPro-Zeile (Akkorde über dem Text). */
-export function ChordLine({ line, semitones, fontSize, flat = false, lyricsOnly = false, chordGap = 2 }: ChordLineProps) {
+export function ChordLine({
+  line,
+  semitones,
+  fontSize,
+  flat = false,
+  lyricsOnly = false,
+  chordGap = 2,
+}: ChordLineProps) {
   const pairs = parseLine(line);
   const hasChord = pairs.some((p) => p.chord);
   const hasLyric = pairs.some((p) => p.text && p.text.trim());

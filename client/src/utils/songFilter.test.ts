@@ -29,7 +29,11 @@ const names = (list: SongLibraryEntry[]) => list.map((s) => s.name);
 
 describe('filterSongs', () => {
   it('A–Z zeigt alle Lieder alphabetisch und ignoriert den Zeitraum', () => {
-    const r = filterSongs(SONGS, USAGE, opts({ sort: 'name', from: '2026-06-01', to: '2026-06-30' }));
+    const r = filterSongs(
+      SONGS,
+      USAGE,
+      opts({ sort: 'name', from: '2026-06-01', to: '2026-06-30' }),
+    );
     expect(names(r.list)).toEqual(['Anker', 'Berg', 'Cedar']);
     expect(r.statMode).toBe(false);
   });
