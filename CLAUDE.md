@@ -221,6 +221,13 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
 ## Tests & CI
 - **Befehle:** `npm test` (alle Unit-/Server-Tests), `npm run test:cov` (Coverage), im Client
   `npm run test:watch`; `npm run test:e2e` (Playwright).
+- ⚠️ **`npm test` allein reicht als Freigabe NICHT:** Der Client-Build fährt `tsc && vite build`, und
+  `tsc` typprüft die **Testdateien mit**. Ein Tippfehler im Typ eines Tests lässt alle Tests grün
+  durchlaufen und bricht trotzdem den Build (und damit die CI). Vor dem Push immer auch
+  `npm run build`.
+- **Umgebung je Testdatei:** Standard ist `node` (reine Logik). Tests, die DOM/localStorage/jsPDF
+  brauchen, setzen selbst `// @vitest-environment jsdom` als ERSTE Zeile – fehlt sie, scheitern sie
+  mit „window is not defined".
 - **Umfang:** Vitest für reine Logik (`utils/transpose.ts`, `chordpro.ts`, …), den
   Interaktionskern (`hooks/usePageDraw` Undo/Redo/Push-Dedup/Key-Wechsel), Basis-Komponenten
   (`Coachmarks`) und alle Server-Services/-Controller/-Middleware (ChurchTools gemockt).
