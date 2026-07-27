@@ -411,9 +411,11 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   Dazu: Musik-Verfügbarkeit/Abwesenheiten als App-Modul (#177, Plan in
   `docs/entwicklung/plan-verfuegbarkeit-phase1.md`); voller Auth-Flow-E2E mit CT-Stub (#174);
   Push-Benachrichtigung (#144), BPM-Puls (#145), Objektradierer/Vektor-Striche (#134).
-  Erledigt: #200/#195/#146(komplett)/#207/#186/#187/#152/#178/#176/#140/#141/#161/#124/#32/#45/#46/#47.
-  **#175 (OAuth-Spike) ist faktisch überholt:** In einer ChurchTools-Extension (`/ccm/`) läuft die
-  Anmeldung automatisch über die CT-Session im gleichen Context – dort braucht es kein OAuth.
+  Erledigt: #193/#200/#195/#146(komplett)/#207/#186/#187/#152/#178/#176/#140/#141/#161/#124/#32/#45/#46/#47.
+  **#175 (OAuth-Spike) am 27.07.2026 als überholt GESCHLOSSEN:** In einer ChurchTools-Extension
+  (`/ccm/`) läuft die Anmeldung automatisch über die CT-Session im gleichen Context – dort braucht
+  es kein OAuth, und der Session-Proxy entfällt von selbst. Wieder aufmachen nur, falls die
+  Extension-Schiene scheitert; die offene Frage wäre dann unverändert der Umfang eines Access-Tokens.
 
 ## Deployment-Stand (NAS) – wichtige Lernpunkte
 - Prod läuft image-basiert (GHCR) im Container Manager (Projekt `worship-charts`, Port 3001).
