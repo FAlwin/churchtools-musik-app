@@ -20,9 +20,16 @@ const app = express();
 // Pfad zur gebauten Web-App (client/dist), relativ zu dieser Datei
 const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
 
-// Hinter dem Cloudflare-Tunnel/Reverse-Proxy: X-Forwarded-Proto vertrauen,
-// damit secure-Cookies korrekt gesetzt werden.
-if (config.isProduction) app.set('trust proxy', 1);
+// Hinter dem Reverse-Proxy (bei der ECG: Synology; andere Gemeinden ggf. Cloudflare Tunnel):
+// X-Forwarded-Proto vertrauen, damit secure-Cookies korrekt gesetzt werden.
+//
+// `'loopback'` statt `1` (#214): Express überspringt damit von rechts ALLE lokalen Hops und nimmt
+// den rechtesten echten Client-Eintrag – korrekt bei einem UND bei zwei lokalen Zwischenstationen.
+// Mit der festen `1` hing die gesamte IP-Härtung an einer ungeprüften Annahme über die Proxy-Kette:
+// Steht noch ein Hop dazwischen, wäre `req.ip` immer `127.0.0.1` → alle Anfragen der Welt teilten
+// EINEN Rate-Limit-Schlüssel (eine von außen auslösbare Login-Sperre für die ganze Gemeinde).
+// Wichtig fürs Login-Limit (`routes/auth.ts`), das mangels Session nur die IP hat.
+if (config.isProduction) app.set('trust proxy', 'loopback');
 
 // ── Sicherheit & Basis-Middleware ───────────────────────────
 // Content-Security-Policy: In Produktion restriktiv (zusätzliche Schutzschicht gegen XSS),

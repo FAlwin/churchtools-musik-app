@@ -87,6 +87,26 @@ describe('putSettings – Konto-Obergrenze (#195)', () => {
     );
   });
 
+  it('bereits übergroßer Store: Aufräumen bleibt möglich, Wachsen nicht (#213)', async () => {
+    // Die Grenzen sind neu – eine Bestandsdatei kann sie schon überschreiten. Dann darf die
+    // Prüfung das Freiräumen nicht blockieren, sonst kommt das Konto nie wieder heraus.
+    const user = newUser();
+    const tooBig: Record<string, string> = {};
+    const value = 'x'.repeat(4000);
+    for (let i = 0; i < 1400; i++) tooBig[`worship_lyrics_${i}`] = value; // ~5,6 MB > 5 MB
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, `settings-${user}.json`), JSON.stringify(tooBig), 'utf-8');
+
+    // Wachsen ist weiterhin verboten …
+    await expect(mod.putSettings(user, { worship_key_99999: 'A' })).rejects.toMatchObject({
+      status: 413,
+    });
+    // … Aufräumen dagegen erlaubt, obwohl der Store danach IMMER NOCH über der Grenze liegt.
+    await mod.putSettings(user, { worship_lyrics_0: null, worship_lyrics_1: null });
+    const after = await mod.getSettings(user, []);
+    expect(Object.keys(after).length).toBe(1398);
+  });
+
   it('Wert wird auf 4000 Zeichen gekappt', async () => {
     const user = newUser();
     await mod.putSettings(user, { worship_lyrics_7: 'y'.repeat(5000) });

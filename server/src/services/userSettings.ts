@@ -104,13 +104,21 @@ export async function putSettings(userId: number, entries: Record<string, string
       else candidate[key] = String(value).slice(0, 4000);
     }
     const serialized = JSON.stringify(candidate);
-    // Ein Stapel aus reinen Löschungen kann die Grenzen nie reißen (der Store schrumpft nur) →
-    // Aufräumen bleibt immer möglich, auch wenn das Konto voll ist (#195, wie bei den Anmerkungen).
-    if (!withinSettingsLimits(Object.keys(candidate).length, Buffer.byteLength(serialized))) {
-      throw new HttpError(
-        413,
-        'Speicher-Obergrenze für Lied-Einstellungen erreicht. Bitte nicht mehr benötigte Einstellungen zurücksetzen.',
-      );
+    const count = Object.keys(candidate).length;
+    const bytes = Buffer.byteLength(serialized);
+    if (!withinSettingsLimits(count, bytes)) {
+      // Über der Grenze wird NUR abgelehnt, was den Store wachsen lässt (#213). Sonst säße ein
+      // Konto, dessen Datei schon vor Einführung der Grenzen zu groß war, in der Sackgasse: Auch
+      // das Aufräumen bekäme 413, und nur ein Handeingriff auf dem Volume käme da raus.
+      // (`annotations.ts` löst dasselbe über einen eigenen Löschzweig vor der Prüfung.)
+      const prevCount = Object.keys(store).length;
+      const prevBytes = Buffer.byteLength(JSON.stringify(store));
+      if (count > prevCount || bytes > prevBytes) {
+        throw new HttpError(
+          413,
+          'Speicher-Obergrenze für Lied-Einstellungen erreicht. Bitte nicht mehr benötigte Einstellungen zurücksetzen.',
+        );
+      }
     }
     await write(userId, candidate, serialized);
   });

@@ -65,3 +65,18 @@ keine Secrets im Image (Env nur zur Laufzeit). Jede Gemeinde ist für DSGVO + ei
 **Entscheidung:** Solange Anmerkungen existieren, sind Schriftgröße/Spaltenzahl gesperrt.
 **Begründung:** Anmerkungen sind pixelbasiert (Canvas). Würde der Text neu umbrechen,
 lägen die Anmerkungen falsch. Sperre verhindert das Verrutschen.
+
+## `trust proxy: 'loopback'` statt `1` *(26.07.2026, #214)*
+**Entscheidung:** In Produktion gilt `app.set('trust proxy', 'loopback')`.
+**Begründung:** Von dieser Einstellung hängt die gesamte IP-Härtung ab – vor allem das Login-Limit
+(`routes/auth.ts`), das mangels Session **nur** die IP hat. Mit der festen `1` vertraut Express genau
+einem Hop; steht noch eine lokale Zwischenstation dazwischen, ist `req.ip` immer `127.0.0.1` und
+**alle** Anfragen teilen einen Rate-Limit-Schlüssel – eine von außen auslösbare Login-Sperre für die
+ganze Gemeinde. `'loopback'` überspringt von rechts **alle** lokalen Hops und liefert den rechtesten
+echten Client-Eintrag; das ist bei einer **und** bei zwei lokalen Stationen korrekt.
+**Verifiziert:** `server/src/trustProxy.test.ts` startet einen echten Express-Server und prüft beide
+Fälle – inklusive Gegenprobe, dass die alte `1` im Zwei-Hop-Fall tatsächlich auf `127.0.0.1` kippt.
+Damit hängt die Annahme nicht mehr an der (von hier nicht einsehbaren) Proxy-Kette des NAS.
+**Nicht abgedeckt:** Würde die App je **ohne** Reverse-Proxy direkt ins Netz gehängt (der Kommentar in
+`deploy/docker-compose.prod.yml` lädt zum Umstellen auf `3001:3001` ein), wäre `X-Forwarded-For` frei
+wählbar und das IP-Limit umgehbar. Prod bindet deshalb bewusst nur `127.0.0.1`.
