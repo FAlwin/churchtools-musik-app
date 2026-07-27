@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, lazy, Suspense, type ComponentProps } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { setSessionExpiredHandler } from './services/api';
+import { setSettingsSyncErrorHandler } from './services/userSettings';
 import { Login } from './pages/Login';
 import { Agenda } from './pages/Agenda';
 import { useSettings } from './hooks/useSettings';
@@ -134,7 +135,7 @@ export default function App() {
   // Offline-Zustand: Liedersammlung braucht das Netz (Charts werden je Lied geladen) → Tab wird
   // ohne Netz ausgegraut, ein Tipp erklärt das kurz (#32).
   const online = useOnlineStatus();
-  const { toast: offlineToast, showToast: showOfflineToast } = useToast();
+  const { toast, showToast } = useToast();
 
   // Geführte Einführung (#Onboarding): startet automatisch beim ersten Mal, sobald die Termine
   // geladen sind (dann existieren die hervorzuhebenden Elemente). „Einführung nochmal ansehen"
@@ -205,6 +206,13 @@ export default function App() {
     if (sessionExpired) void auth.logout();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionExpired]);
+
+  // Hinweis, wenn Lied-Einstellungen nicht gespeichert werden konnten (#213) – z. B. weil die
+  // Konto-Obergrenze erreicht ist. Vorher verschwand die Änderung kommentarlos.
+  useEffect(() => {
+    setSettingsSyncErrorHandler((msg) => showToast(msg));
+    return () => setSettingsSyncErrorHandler(null);
+  }, [showToast]);
 
   // Globaler „Session abgelaufen"-Fänger (#186): Ein 401 aus JEDER Query/Mutation (nicht nur der
   // Rechte-Abfrage oben) führt sauber zum Login, statt in eine „Erneut versuchen"-Sackgasse.
@@ -467,7 +475,7 @@ export default function App() {
             onRetry={() => songLibrary.refetch()}
             onSelect={(e) => {
               if (!online) {
-                showOfflineToast('Liedersammlung ist offline nicht verfügbar.');
+                showToast('Liedersammlung ist offline nicht verfügbar.');
                 return;
               }
               setLibSel({ songId: e.songId, arrangementId: e.arrangementId });
@@ -504,13 +512,13 @@ export default function App() {
         dimmed={online ? [] : ['lieder']}
         onChange={(t) => {
           if (!online && t === 'lieder') {
-            showOfflineToast('Liedersammlung ist offline nicht verfügbar.');
+            showToast('Liedersammlung ist offline nicht verfügbar.');
             return;
           }
           setTab(t);
         }}
       />
-      <Toast message={offlineToast} />
+      <Toast message={toast} />
       {tab === 'termine' && tourActive && (
         <Coachmarks
           steps={TERMINE_STEPS}

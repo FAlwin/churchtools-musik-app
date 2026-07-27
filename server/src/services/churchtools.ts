@@ -10,6 +10,7 @@ import { config } from '../config.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { getSiteConfig } from './siteConfig.js';
 import { getCachedCapabilities, rememberCapabilities } from './capabilitiesCache.js';
+import { agendaItemWritePayload } from './agendaPayload.js';
 import type { UserCapabilities, NoteRolePerm } from '@shared/types/index';
 
 // Einzige Quelle des Typs ist `@shared`; hier re-exportiert, damit Bestandsimporte
@@ -564,47 +565,6 @@ export async function uploadChordpro(
   }
 }
 
-/**
- * Baut den Schreib-Payload eines Ablaufpunkts aus den Live-Daten. Wichtig:
- *  - `responsible` als Text (Personen-Zuordnungen bleiben in ChurchTools erhalten),
- *  - Lied-Verknüpfung als **top-level `arrangementId`** – ein verschachteltes song-Objekt
- *    ignoriert ChurchTools und stuft den Punkt auf „text" herab!
- * `overrides` überschreibt einzelne Felder (z.B. title/note/position).
- */
-function agendaItemWritePayload(
-  it: CtAgendaItem,
-  overrides: {
-    title?: string;
-    note?: string;
-    position?: number;
-    arrangementId?: number;
-    unlink?: boolean;
-    responsible?: string;
-    /** Neue Dauer in Sekunden (CT-Einheit); überschreibt die bestehende. */
-    durationSec?: number;
-  } = {},
-): Record<string, unknown> {
-  // Lied-Verknüpfung: ein übergebenes arrangementId hebt den Punkt auf type 'song' an
-  // (verifiziert: PUT mit type 'song' + top-level arrangementId wandelt einen text-Punkt
-  // sauber um, ohne Herabstufung); sonst bleibt eine vorhandene Verknüpfung erhalten.
-  // unlink=true löst die Verknüpfung wieder (verifiziert: type 'text' ohne arrangementId).
-  const arrangementId = overrides.unlink
-    ? undefined
-    : (overrides.arrangementId ?? it.song?.arrangementId);
-  const isSong = !overrides.unlink && (overrides.arrangementId !== undefined || !!it.song);
-  return {
-    title: overrides.title ?? it.title,
-    type: isSong ? 'song' : overrides.unlink ? 'text' : it.type,
-    note: overrides.note ?? it.note ?? '',
-    duration: overrides.durationSec ?? it.duration ?? 0,
-    isBeforeEvent: it.isBeforeEvent ?? false,
-    // responsible ist ein Textfeld; ChurchTools löst Dienst-Tokens wie „[Musik]" selbst
-    // zu den im Dienstplan zugewiesenen Personen auf.
-    responsible: overrides.responsible ?? it.responsible?.text ?? '',
-    ...(overrides.position !== undefined ? { position: overrides.position } : {}),
-    ...(arrangementId ? { arrangementId } : {}),
-  };
-}
 
 /**
  * Schreibt die Reihenfolge des Ablaufs zurück: lädt die aktuellen Punkte frisch,
