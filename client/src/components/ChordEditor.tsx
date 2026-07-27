@@ -3,7 +3,7 @@ import { ChordProInput, type ChordProHandle } from './ChordProInput';
 import { PdfPreview } from './PdfPreview';
 import { Icon } from './icons';
 import { Spinner } from './Spinner';
-import { useKeyboardInset } from '../hooks/useKeyboardInset';
+import { useOverlayKeyboardInset } from '../hooks/useOverlayKeyboardInset';
 import styles from './ChordEditor.module.scss';
 
 interface ChordEditorProps {
@@ -104,9 +104,9 @@ export function ChordEditor({
   // halbtransparenten Tastatur nichts von der dahinterliegenden Ansicht durch. Statt den Overlay
   // zu verschieben (das „sprang" sichtbar), bekommt er unten einen Innenabstand in Höhe der
   // Tastatur (--kb) → Kopf-/Werkzeugleiste bleiben stehen, nur der intern scrollende
-  // Editor-Bereich wird kürzer. Die Mechanik liegt in `useKeyboardInset` (seit #207 gemeinsam mit
+  // Editor-Bereich wird kürzer. Die Mechanik liegt in `useOverlayKeyboardInset` (seit #207 gemeinsam mit
   // den Dialogen genutzt, damit die Kopien nicht auseinanderlaufen).
-  useKeyboardInset(overlayRef);
+  useOverlayKeyboardInset(overlayRef);
 
   // Menüs bei Klick außerhalb schließen
   useEffect(() => {

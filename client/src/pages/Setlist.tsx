@@ -231,7 +231,9 @@ function AgendaFullView({
   if (!prev || prev.eventId !== eventId || prev.items !== items) {
     const shown: ShownRow[] = items
       .filter((i) => !i.removed)
-      .map((i) => ({ id: i.id, title: i.song ? i.song.title : i.title }));
+      // Gleiche Bezeichnung wie in der Liste (#215) – sonst stand beim Auflösen plötzlich nur
+      // noch der Liedname statt „Lied – Du großer Gott".
+      .map((i) => ({ id: i.id, title: itemLabel(i) }));
     prevShown.current = { eventId, items, rows: shown };
     if (!prev || prev.eventId !== eventId) {
       // Terminwechsel/Erstaufbau: nichts auflösen, nur Merkstand setzen.

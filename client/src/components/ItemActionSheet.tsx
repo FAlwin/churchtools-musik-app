@@ -4,7 +4,7 @@ import type { AgendaItemUpdate } from '../services/churchtoolsApi';
 import { SongPicker } from './SongPicker';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
-import { useKeyboardInset } from '../hooks/useKeyboardInset';
+import { useOverlayKeyboardInset } from '../hooks/useOverlayKeyboardInset';
 import styles from './ItemActionSheet.module.scss';
 
 interface ItemActionSheetProps {
@@ -60,7 +60,7 @@ export function ItemActionSheet({
   const [err, setErr] = useState<string | null>(null);
   // Dialog über der iOS-Tastatur freihalten; verhindert auch die verrutschte Kopfleiste (#207).
   const overlayRef = useRef<HTMLDivElement>(null);
-  useKeyboardInset(overlayRef);
+  useOverlayKeyboardInset(overlayRef);
 
   // Das Lied, das der Punkt nach dem Speichern hätte (steuert Titel-/Lied-Anzeige).
   const effSong =

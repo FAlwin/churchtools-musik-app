@@ -8,6 +8,7 @@ import { RestoreGate } from './components/RestoreGate';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SwUpdateProvider } from './hooks/useSwUpdate';
 import { initPwaInstall } from './services/pwaInstall';
+import { syncAppHeight } from './utils/appHeight';
 import './styles/main.scss';
 
 // Früh registrieren: das `beforeinstallprompt`-Event feuert einmalig kurz nach dem Laden.
@@ -16,15 +17,6 @@ initPwaInstall();
 // iOS-PWA: zuverlässige App-Höhe. `window.innerHeight` trackt im Standalone-Modus beide
 // Ausrichtungen korrekt (anders als `100dvh`, das beim Drehen hängen bleibt). Wert landet in
 // der CSS-Variable `--app-h`, die `html { height: var(--app-h) }` (main.scss) nutzt.
-function syncAppHeight(): void {
-  // Bei geöffneter Tastatur (Eingabefeld fokussiert) NICHT mitschrumpfen: sonst reflowt die
-  // GANZE App nach oben („alles verschiebt sich"). Das Freihalten des Cursors übernehmen die
-  // Tastatur-Ausweich-Logiken in PageDeck/ChordEditor; nach dem Blur kommt ein Resize und
-  // die Höhe wird wieder normal nachgeführt.
-  const ae = document.activeElement as HTMLElement | null;
-  if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
-  document.documentElement.style.setProperty('--app-h', `${window.innerHeight}px`);
-}
 syncAppHeight();
 window.addEventListener('resize', syncAppHeight);
 window.addEventListener('orientationchange', syncAppHeight);

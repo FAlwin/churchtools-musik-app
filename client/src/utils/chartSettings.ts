@@ -1,5 +1,5 @@
 import type { SetlistSong } from '@shared/types/index';
-import { availableVersions, lsVersion, selectedVersionKey } from './songVersions';
+import {lsVersion, selectedVersionKey } from './songVersions';
 
 /** Einstellungen pro Lied (Tonart, Kapo, Abschnitts-Transponierung, Schrift, Spalten, Anzeige). */
 export interface SongSettings {
@@ -82,34 +82,6 @@ function parseSecShift(raw: string | null): Record<number, number> {
   }
 }
 
-/**
- * Baut die SongSettings eines Lieds aus einer GELIEFERTEN Schlüssel-Tabelle – z. B. den
- * Einstellungen einer teilenden Person („Notizen von …" zeigt deren Ansicht). Tonart/Kapo werden
- * mit übernommen (exakte Wiedergabe der fremden Ansicht); `viewSource` bleibt Akkorde, weil es
- * Team-Notizen nur an Akkord-Seiten gibt.
- */
-export function settingsFromMap(song: SetlistSong, map: Record<string, string>): SongSettings {
-  const get = (base: string, versionKey: string): string | null =>
-    map[`worship_${base}_${song.id}_${versionKey}`] ?? null;
-  const savedVer = map[`worship_ver_${song.id}`];
-  const keys = availableVersions(song).map((v) => v.key);
-  const versionKey =
-    savedVer && keys.includes(savedVer)
-      ? savedVer
-      : song.chordpro
-        ? 'original'
-        : (song.versions[0]?.key ?? 'original');
-  return {
-    key: get('key', versionKey) || null,
-    capo: parseInt(get('capo', versionKey) || '0', 10),
-    cols: parseInt(get('cols', versionKey) || '1', 10) === 2 ? 2 : 1,
-    fontSize: parseInt(get('fs', versionKey) || '20', 10),
-    lyricsOnly: get('lyrics', versionKey) === '1',
-    secShift: parseSecShift(get('secshift', versionKey)),
-    versionKey,
-    viewSource: 'chords',
-  };
-}
 
 /**
  * SongSettings für eine KONKRETE Ebene (Version + Darstellungsart) aus einer gelieferten

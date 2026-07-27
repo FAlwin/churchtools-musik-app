@@ -8,10 +8,11 @@ import { getUserId } from '../services/churchtools.js';
  * der whoami-Cache kalt war – und die PUTs laufen debounced im Sekundentakt.
  */
 async function myUserId(req: Request): Promise<number> {
-  return req.ctUserId ?? (await getUserId(req.ctCookie as string));
+  return req.ctUserId ?? (await getUserId(ctCookie(req)));
 }
 import * as store from '../services/annotations.js';
 import type { PageAnnotation } from '@shared/types/index';
+import { ctCookie } from '../utils/ctCookie.js';
 
 const textSchema = z.object({
   id: z.number(),

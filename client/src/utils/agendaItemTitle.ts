@@ -28,7 +28,9 @@ export interface ItemTitleParts {
 export function itemTitleParts(item: TitleSource): ItemTitleParts {
   const own = item.title.trim();
   const song = item.song?.title.trim() ?? '';
-  if (!song) return { title: item.title, songName: null };
+  // Auch ohne Lied getrimmt zurückgeben (#215) – vorher war nur der Lied-Fall getrimmt, was zu
+  // unterschiedlicher Darstellung desselben Titels führte.
+  if (!song) return { title: own, songName: null };
   if (!own || own.toLocaleLowerCase('de') === song.toLocaleLowerCase('de')) {
     return { title: song, songName: null };
   }

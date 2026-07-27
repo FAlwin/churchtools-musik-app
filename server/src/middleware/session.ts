@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { HttpError } from './errorHandler.js';
 import { config } from '../config.js';
 import { getCapabilities } from '../services/churchtools.js';
+import { ctCookie } from '../utils/ctCookie.js';
 
 const COOKIE_NAME = 'ct_session';
 // Sitzungsdauer des App-Cookies. Rollierend: bei jeder Nutzung (requireSession) neu gesetzt,
@@ -122,7 +123,7 @@ export async function requireAdmin(
   _res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const caps = await getCapabilities(req.ctCookie as string, req.ctUserId ?? null);
+  const caps = await getCapabilities(ctCookie(req), req.ctUserId ?? null);
   if (!caps.isAdmin) {
     throw new HttpError(403, 'Nur Administratoren dürfen die Einstellungen ändern.');
   }
