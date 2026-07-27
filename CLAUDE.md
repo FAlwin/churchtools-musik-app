@@ -7,9 +7,11 @@
 > Konfig/Umgebungen: `docs/entwicklung/konfigurationsmanagement.md` ·
 > API des Backends: `docs/entwicklung/api-referenz.md`.
 > Release-Notes: `CHANGELOG.md`. Granulare Aufgaben/Bugs: GitHub Issues + Projects-Board.
+> **Manuelle Testfälle + Testlauf vor dem Release: `docs/tests/README.md`.**
 > **Vor jedem Release: Release-Routine unten beachten.**
 
 ## Projektübersicht
+
 - **Was:** Progressive Web App (PWA), die Chord Charts der aktuellen Setlist aus ChurchTools
   abruft, automatisch auf die hinterlegte Tonart transponiert und im Gottesdienst anzeigt.
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
@@ -20,22 +22,25 @@
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
-| Bereich        | Technologie                        |
-|----------------|------------------------------------|
-| Frontend       | React + Vite + TypeScript (PWA)    |
-| Styling        | SCSS Modules                       |
-| Datenfetching  | TanStack Query                     |
-| Formulare      | React Hook Form + Zod              |
-| Backend        | Node.js + Express + TypeScript     |
-| Datenbank      | keine – ChurchTools ist Datenquelle; Anmerkungen/Einstellungen pro Konto als JSON auf dem Volume (`ANNOTATIONS_PATH`), localStorage als Cache |
-| Validierung    | Zod (serverseitig)                 |
-| Deployment     | Docker auf Synology NAS (Container Manager) |
-| Externer Zugang| Synology Reverse Proxy + DDNS + Let's Encrypt (KEIN Cloudflare) |
-| Tests          | Vitest (Client-Logik/Hooks/Komponenten + Server, CT gemockt); Playwright-Render-Smoke (E2E) |
-| CI             | GitHub Actions: lint + build + test je PR |
+
+| Bereich         | Technologie                                                                                                                                   |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend        | React + Vite + TypeScript (PWA)                                                                                                               |
+| Styling         | SCSS Modules                                                                                                                                  |
+| Datenfetching   | TanStack Query                                                                                                                                |
+| Formulare       | React Hook Form + Zod                                                                                                                         |
+| Backend         | Node.js + Express + TypeScript                                                                                                                |
+| Datenbank       | keine – ChurchTools ist Datenquelle; Anmerkungen/Einstellungen pro Konto als JSON auf dem Volume (`ANNOTATIONS_PATH`), localStorage als Cache |
+| Validierung     | Zod (serverseitig)                                                                                                                            |
+| Deployment      | Docker auf Synology NAS (Container Manager)                                                                                                   |
+| Externer Zugang | Synology Reverse Proxy + DDNS + Let's Encrypt (KEIN Cloudflare)                                                                               |
+| Tests           | Vitest (Client-Logik/Hooks/Komponenten + Server, CT gemockt); Playwright-Render-Smoke (E2E)                                                   |
+| CI              | GitHub Actions: lint + build + test je PR                                                                                                     |
 
 ## Ordnerstruktur
+
 Monorepo mit npm-Workspaces:
+
 ```
 churchtools-musik-app/
 ├── client/                  # React + Vite PWA
@@ -63,12 +68,14 @@ churchtools-musik-app/
 ## Konventionen
 
 ### Allgemein
+
 - TypeScript überall – kein `any` ohne Kommentar und Begründung
 - Zentrale/geteilte Typen in `shared/types/` – niemals lokal duplizieren
 - Commits auf Deutsch mit Conventional-Commit-Präfix (`feat:`/`fix:`/`docs:`/`ui:`/`chore:`),
   klein und präzise; pro abgeschlossenem Teilschritt ein Commit
 
 ### Frontend
+
 - Komponenten: PascalCase (`ChordChart.tsx`)
 - Hooks: camelCase mit use-Prefix (`useSetlist.ts`)
 - Services: camelCase (`churchtoolsApi.ts`)
@@ -101,6 +108,7 @@ churchtools-musik-app/
   (Schriftgröße, Akkordfarbe, Canvas-Position)
 
 ### Backend
+
 - Routen enthalten keine Geschäftslogik
 - Geschäftslogik gehört ausschließlich in `services/`
 - Jede Route validiert Input mit Zod vor der Verarbeitung
@@ -115,11 +123,13 @@ churchtools-musik-app/
   Session läuft serverseitig, Client bekommt signiertes httpOnly-Cookie
 
 ### Sicherheit
+
 - Secrets ausschließlich über `.env`
 - `.env` wird nie committet – nur `.env.example` mit Platzhaltern
 - `npm audit` regelmäßig ausführen
 
 ## Design & Branding (feste ChurchTools-Version)
+
 Das frühere White-Label (Farb-/Logo-Anpassung pro Gemeinde) wurde **zurückgebaut**: Die App ist eine
 **feste ChurchTools-Version** mit eigenem Schallwellen-Logo. Aussehen = ChurchTools-Designsprache
 (helle gruppierte Listen auf Grau, **blaue** Primärfarbe `#0061A1`, System-Font, untere Tab-Bar,
@@ -140,6 +150,7 @@ im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site
 (SCSS-Mixins `styles/_mixins.scss`, `<Segment>`, `Icon`/Line-Icons statt Emojis).
 
 ## Akkord-Ansicht: durchgehender Seiten-Strom + Anmerkungen
+
 Die Akkord-Ansicht ist **kein** Live-HTML-Chart mehr, sondern ein **Seiten-Strom aus Canvas-Seiten**.
 `utils/chordPdf.ts` baut aus ChordPro ein A4-PDF (SongSelect-Look, alles schwarz, Logo oben rechts);
 `generateSetlistPdfWithOwners` erzeugt daraus **eine** kombinierte PDF + `owners[]` (welche Seite zu
@@ -152,8 +163,8 @@ durchgehenden Strom** zusammen: je Lied steuert – nach `viewSource` – entwed
 `components/PageDeck.tsx` ist die **gemeinsame 2-Seiten-Engine**, die diesen Strom rendert (pdf.js/
 Bild → Canvas): Hochformat 1 Seite, **Querformat 2 Seiten nebeneinander** über Liedgrenzen, je Seite
 eigener Zoom. `StreamView`/`DocumentView` gibt es nicht mehr (durch PageDeck ersetzt).
-Blättern schiebt horizontal ein (Slide-Übergang). *(Live-Chart-Reste `useDrawing.ts`/
-`usePagedColumns.ts`/`constants.ts` wurden früher entfernt.)* PageDeck delegiert (seit #140) die
+Blättern schiebt horizontal ein (Slide-Übergang). _(Live-Chart-Reste `useDrawing.ts`/
+`usePagedColumns.ts`/`constants.ts` wurden früher entfernt.)_ PageDeck delegiert (seit #140) die
 querschneidenden Belange an eigene Hooks: `useZoomPersistence` (Zoom je Seite+Geräteklasse laden/
 speichern + `restoreVisibleZoom`), `useKeyboardInsets` (iOS-Tastatur-Hub), `useSlideTransition`
 (Blätter-Animation) und `usePointerStrokes` (Zeichen-Engine Stift/Marker/Radierer inkl. aller
@@ -195,6 +206,7 @@ Speichern still wegschneiden, Ursache von #115). Dokument-Anmerkungen nutzen `wo
 Geräteklasse `phone` vs `large` via `utils/deviceClass.ts`. Versions-Helfer: `utils/songVersions.ts`.
 
 ## Domänen-Besonderheiten
+
 - **ChordPro:** zwei Dialekte unterstützen – Standard (`{start_of_verse}`) UND
   SongSelect (`{comment: Vers}`, optionale Akkorde `[(E)]`, Bass-Akkorde `[E/G#]`)
 - **Transponieren:** Original-Tonart aus der .chordpro-Datei, Ziel-Tonart aus dem
@@ -204,6 +216,7 @@ Geräteklasse `phone` vs `large` via `utils/deviceClass.ts`. Versions-Helfer: `u
   (SongSelect-Stil). Details: `docs/entwicklung/design-system.md`
 
 ## Onboarding / Geführte Einführung (VERBINDLICH)
+
 Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblasen am echten Element
 (`components/Coachmarks.tsx`; Schritte + „gesehen"-Merker in `utils/onboarding.ts`; Ziele per
 `data-tour="…"`-Attribut). Verbindliche Regel bei **jeder** Änderung/**jedem** neuen Feature:
@@ -221,6 +234,7 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
    Ziel-Elemente gerendert sind).
 
 ## Tests & CI
+
 - **Befehle:** `npm test` (alle Unit-/Server-Tests), `npm run test:cov` (Coverage), im Client
   `npm run test:watch`; `npm run test:e2e` (Playwright).
 - ⚠️ **`npm test` allein reicht als Freigabe NICHT:** Der Client-Build fährt `tsc && vite build`, und
@@ -244,6 +258,7 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
   zusätzlich ein Regressionstest.
 
 ## Security-Checkliste
+
 - [x] .env + .gitignore korrekt eingerichtet
 - [x] Zod-Validierung auf allen API-Routen
 - [x] helmet eingerichtet
@@ -252,11 +267,12 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
 - [x] Authentifizierung: persönlicher ChurchTools-Login, Session in signiertem httpOnly-Cookie
 - [x] HTTPS extern via Synology Reverse Proxy + Let's Encrypt (`musik.ecg-donrath.de`)
 - [x] npm audit: zuletzt geprüft am 26.07.2026 – Funde betreffen **ausschließlich Build-/Lint-/
-  Test-Werkzeuge** (sass, eslint, vitest), zur Laufzeit nicht erreichbar; Prod-Pfad unbetroffen
-  (Details in Issue #199). Frühere Prüfung 16.07.2026 – **0 Schwachstellen** (die früheren 3 moderaten
+      Test-Werkzeuge** (sass, eslint, vitest), zur Laufzeit nicht erreichbar; Prod-Pfad unbetroffen
+      (Details in Issue #199). Frühere Prüfung 16.07.2026 – **0 Schwachstellen** (die früheren 3 moderaten
       esbuild/vite-Funde sind mit den aktuellen Dev-Deps nicht mehr vorhanden)
 
 ## Deployment
+
 - **Synology NAS via Docker** (Container Manager, Projekt `worship-charts`) → **umgesetzt & live**.
 - **docker-compose.yml + Dockerfile:** vorhanden; ein Container liefert API + App aus (Port 3001).
 - **Intern (WLAN):** `http://<NAS-IP>:3001`.
@@ -267,7 +283,7 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
   Build-aus-Quellcode-Variante: `docs/betrieb/DEPLOYMENT.md`.
 - **Images:** `.github/workflows/staging.yml` baut bei jedem Push (main/feature/**) ein `:staging`-Image
   (amd64) nach GHCR; `release.yml` baut bei Tag `vX.Y.Z` Multi-Arch mit den Tags `vX.Y.Z`, `X.Y`,
-  **`X` (Major, z. B. `2`)** und `latest`.
+  **`X` (Major, z. B. `2`)\*\* und `latest`.
 - **Test-Instanz (Auto-Deploy):** `deploy/docker-compose.staging.yml` (Container `musik-app-test`, Port
   3002, `:staging`, Scope `musik-app-test`, 60 s) zieht automatisch – über den **gepflegten
   Watchtower-Fork `nickfedor/watchtower`** (Original `containrrr` ist unmaintained / Docker-29-inkompatibel).
@@ -301,6 +317,7 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
   – beim Re-Deploy **Volume behalten**.
 
 ## Release-Routine (JEDES Mal vor einem Tag durchgehen)
+
 Diese Checkliste wird **bei jedem Release** abgearbeitet – nichts überspringen. Am bequemsten über
 den Skill `/festhalten`, der genau das automatisiert.
 
@@ -336,9 +353,11 @@ Recovery bei falsch eingehängtem Volume: Daten per `cp -a` ins aktuell gemounte
 (altes Volume nie löschen). Docker löscht benannte Volumes nie von selbst → Daten sind wiederherstellbar.
 
 ## Changelog
+
 Release-Notes & Versionshistorie: siehe `CHANGELOG.md` (Single Source – hier nicht doppelt pflegen).
 
 ## So startest du die App lokal
+
 ```
 cd ~/ecg-donrath/churchtools-musik-app
 npm install        # einmalig
@@ -349,6 +368,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
+
 - **Aktuell (v2.14.1 getaggt am 26.07.2026; in Prod läuft v2.14.0):** Titel eines Lied-Punkts ist
   änderbar und wird zusammen mit dem Liednamen angezeigt – wie in ChurchTools (Lied – Du großer Gott)
   (#200); Konto-Obergrenze für Lied-Einstellungen (#195); Login-Bremse wirkt auch bei IPv6 (#146);
@@ -418,6 +438,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   Extension-Schiene scheitert; die offene Frage wäre dann unverändert der Umfang eines Access-Tokens.
 
 ## Deployment-Stand (NAS) – wichtige Lernpunkte
+
 - Prod läuft image-basiert (GHCR) im Container Manager (Projekt `worship-charts`, Port 3001).
 - **⚠️ Reihenfolge beim Prod-Update (zwei Vorfälle am 26.07.2026):**
   **1. `sudo docker pull ghcr.io/falwin/churchtools-musik-app:2`** ausführen und den Erfolg prüfen,
@@ -454,9 +475,11 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   `.sng`/`.txt`) → Frontend zeigt dann „keine Akkord-Datei hinterlegt".
 
 ## API des eigenen Backends
+
 Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
 
 ## ChurchTools-Schreibzugriff Ablauf – Eigenheiten (verifiziert 12.06.2026, Event 1500)
+
 - **Umsortieren:** `PUT /api/events/{id}/agenda` mit `{items:[…]}` (ganze Liste, position = Index).
 - **Einzelpunkt:** `PUT /…/agenda/items/{id}` (Titel/Notiz/responsible) – ignoriert `position`.
 - **`responsible` als String** senden (Text), nicht als Objekt – Personen bleiben erhalten.
@@ -475,9 +498,10 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   sondern in **`startTimes[eventId]`**: `null` = ausgeblendet, sonst die Zeit. Beim Lesen die Uhrzeit
   IMMER aus `startTimes[eventId]` ableiten, nicht aus `start`. Diagnose-Skript: `server/scripts/probe-agenda-hidden.ts`.
 - **Rechte „Liederbuch für alle Mitglieder":** CT-Rolle braucht „Veranstaltungen sehen (view)"
-  + „Einzelne Song-Kategorien sehen (view songcategory)" – sonst nichts. Kein Service-Konto nötig.
+  - „Einzelne Song-Kategorien sehen (view songcategory)" – sonst nichts. Kein Service-Konto nötig.
 
 ## Berechtigungsmodell (Capabilities)
+
 - Server liest beim Login `/api/permissions/global` (Modul `churchservice`) → `parseCapabilities`
   (`server/src/services/churchtools.ts`) leitet ab: `canViewSongs`/`canViewAgendas`/`canEditSongs`/
   `canEditAgendas` (aus `view/edit songcategory|agenda`) + `isAdmin` (aus `ADMIN_PERMISSION`, Default
@@ -495,6 +519,7 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   Die früher geplante gemeinsame „Team-Ebene" (`_shared.json`) wurde bewusst verworfen.
 
 ## Schreibzugriff (Editor) – ChurchTools-Eigenheiten
+
 - Schreibende Calls brauchen ein CSRF-Token (`GET /api/csrftoken`) + Session-Cookie.
 - Upload: `POST /api/files/song_arrangement/{arrId}` multipart, Feld `files[]`.
 - Löschen: `DELETE /api/files/{fileId}` (fileId aus der fileUrl `?…id=` extrahiert).
@@ -506,6 +531,7 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
 - Datei-Download braucht die volle fileUrl (nur `id` reicht nicht); Browser lädt nur über den Proxy.
 
 ## ChurchTools-API – bestätigtes Datenmodell (11.06.2026, Instanz v3.133.0)
+
 Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend).
 
 - **Gottesdienste:** `GET /api/events?from=YYYY-MM-DD&to=YYYY-MM-DD`
@@ -527,12 +553,13 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
 - **2-Faktor:** kein Problem – Login-Token-Zugriff klappt.
 
 ## Offene Punkte (optional)
+
 - [x] Login-Token aus lokaler Dev-`.env` entfernt (14.06.2026) – in ChurchTools noch widerrufen
 - [x] Test-Service-Konto/Token #1012 in ChurchTools gelöscht (14.06.2026)
 - [x] White-Label (Farb-Anpassung) verworfen → feste CT-Version (Redesign live, 19.06.2026)
 - [x] Verteilung an andere Gemeinden (Selbst-Hosting) – abgeschlossen (öffentlich, MIT, `INSTALL.md`)
 - [x] Offline-Reserve (Issue #32) – umgesetzt & produktiv seit v2.6.0; Plan bleibt als Referenz:
-  `docs/entwicklung/plan-offline-reserve.md`
+      `docs/entwicklung/plan-offline-reserve.md`
 - [ ] Musik-Verfügbarkeit/Abwesenheiten als App-Modul – **optional**, aus dem Kern-Projekt
-  herausgenommen (22.06.2026, siehe `docs/entwicklung/PROJEKTPLAN.md`); lebt als Issue #177 mit Plan
-  in `docs/entwicklung/plan-verfuegbarkeit-phase1.md`
+      herausgenommen (22.06.2026, siehe `docs/entwicklung/PROJEKTPLAN.md`); lebt als Issue #177 mit Plan
+      in `docs/entwicklung/plan-verfuegbarkeit-phase1.md`
