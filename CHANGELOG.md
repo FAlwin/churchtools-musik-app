@@ -7,6 +7,49 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.14.2] – 2026-07-26
+
+### Behoben
+
+- **Ein falsch getipptes Passwort löscht nicht mehr die Offline-Reserve.** Die App hielt einen
+  fehlgeschlagenen Anmeldeversuch für eine abgelaufene Sitzung und räumte dabei alles vom Gerät –
+  auch die für den Gottesdienst gespeicherten Lieder. Genau im schlechtesten Moment (im Saal, ohne
+  Netz, einmal vertippt) waren die Charts damit weg. (#210)
+- **Anmerkungen und Einstellungen werden nach einer erneuten Anmeldung wieder gespeichert.** Hatte
+  die App zwischendurch automatisch abgemeldet, landeten sie bis zum Neustart nur noch auf dem Gerät
+  und fehlten auf anderen Geräten – ohne jeden Hinweis. (#211)
+- **Nach einer Offline-Phase findet die App von selbst zurück.** Bisher blieb der Hinweis „Keine
+  Verbindung" stehen, und die Anmeldung scheiterte mit „Bitte E-Mail und Passwort prüfen", obwohl
+  das Passwort stimmte – nur ein kompletter Neustart half. Die App prüft die Verbindung jetzt aktiv
+  nach (auch beim Zurückkehren in die App), und die Meldung benennt die echte Ursache:
+  Verbindungsproblem, falsche Zugangsdaten oder zu viele Versuche. (#218)
+- **Das Liederheft blockiert die Bedienung nicht mehr.** Beim Ändern von Tonart, Spalten oder
+  Schriftgröße wurde es mitten im Bildaufbau neu erzeugt – auf älteren Geräten stand die App
+  solange. Jetzt reagiert die Oberfläche sofort, die bisherigen Seiten bleiben sichtbar, bis die
+  neuen fertig sind. (#197)
+- **Lied-Einstellungen: Aufräumen ist immer möglich**, auch wenn die Speichergrenze schon
+  überschritten war (vorher kam man aus der Sackgasse nicht mehr heraus). Und wenn eine Einstellung
+  nicht gespeichert werden kann, sagt die App das jetzt, statt sie stillschweigend zu verwerfen.
+  (#213)
+
+### Sicherheit
+
+- **Schutz gegen Passwort-Rateversuche gehärtet:** Die Erkennung des Anschlusses hinter dem
+  Reverse-Proxy hing an einer ungeprüften Annahme; sie ist jetzt korrekt und durch einen Test
+  abgesichert. (#214)
+- Abhängigkeiten aktualisiert – im ausgelieferten Stand sind **keine bekannten Schwachstellen**
+  mehr offen. (#215)
+
+### Intern
+
+- **Tests an den Hotspots** (#192, #212): Der Schreibpfad, der eine Lied-Verknüpfung unwiderruflich
+  zerstören könnte, ist jetzt abgesichert (11 Tests); die PDF-Erzeugung ging von 0 % auf 88 %
+  Abdeckung, die Anmerkungs-Synchronisierung von 13 % auf 54 %.
+- Nachschliff aus den Code-Checks (#198, #215): einheitlicher Sitzungs-Zugriff im Server statt 29
+  stiller Typ-Zusicherungen, kein Session-Cookie mehr als Cache-Schlüssel, weniger Log-Rauschen,
+  toter Code entfernt, eindeutigere Hook-Namen.
+- Tests: Client 129 → 185, Server 133 → 150.
+
 ## [2.14.1] – 2026-07-26
 
 ### Behoben
