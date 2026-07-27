@@ -8,6 +8,7 @@ import { HttpError } from '../middleware/errorHandler.js';
 import { getSiteConfig, saveSiteConfig, siteConfigSchema } from '../services/siteConfig.js';
 import { getGroups, getGroupRoles } from '../services/churchtools.js';
 import { readSession, isSessionExpired } from '../middleware/session.js';
+import { ctCookie } from '../utils/ctCookie.js';
 
 /**
  * GET /api/site-config – öffentlich (der Login-Screen braucht Name/Logo/Links, bevor man
@@ -51,7 +52,7 @@ export async function putSiteConfigCtrl(req: Request, res: Response): Promise<vo
 
 /** GET /api/groups (nur Admin) – ChurchTools-Gruppen für das Dropdown „Gruppen-Zuweisung". */
 export async function getGroupsCtrl(req: Request, res: Response): Promise<void> {
-  res.json(await getGroups(req.ctCookie as string));
+  res.json(await getGroups(ctCookie(req)));
 }
 
 /** GET /api/groups/:id/roles (nur Admin) – Rollen einer Gruppe für die Rollen-Zuweisung. */
@@ -60,5 +61,5 @@ export async function getGroupRolesCtrl(req: Request, res: Response): Promise<vo
   if (!Number.isInteger(groupId) || groupId <= 0) {
     throw new HttpError(400, 'Ungültige Gruppen-ID.');
   }
-  res.json(await getGroupRoles(req.ctCookie as string, groupId));
+  res.json(await getGroupRoles(ctCookie(req), groupId));
 }

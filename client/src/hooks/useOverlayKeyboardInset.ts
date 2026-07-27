@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react';
+import { syncAppHeight } from '../utils/appHeight';
 
 /**
  * Hält einen Vollbild-Overlay über der iOS-Tastatur frei (#207).
@@ -18,7 +19,7 @@ import { useEffect, type RefObject } from 'react';
  * beiden Kopien nicht auseinanderlaufen. Der Overlay MUSS `position: fixed` sein (nicht `absolute`),
  * sonst scrollt er mit dem Dokument mit und die Aussparung nützt nichts.
  */
-export function useKeyboardInset(ref: RefObject<HTMLElement | null>): void {
+export function useOverlayKeyboardInset(ref: RefObject<HTMLElement | null>): void {
   useEffect(() => {
     const vv = window.visualViewport;
     const el = ref.current;
@@ -35,11 +36,13 @@ export function useKeyboardInset(ref: RefObject<HTMLElement | null>): void {
       vv.removeEventListener('resize', apply);
       vv.removeEventListener('scroll', apply);
       el.style.removeProperty('--kb');
-      // Beim Schließen den Dokument-Scroll zurückholen und `--app-h` neu setzen (der Resize stößt
-      // syncAppHeight in main.tsx an) – sonst bleibt die Ansicht verschoben, wenn die Tastatur
-      // gemeinsam mit dem Dialog verschwindet.
+      // Beim Schließen den Dokument-Scroll zurückholen und `--app-h` neu setzen – sonst bleibt die
+      // Ansicht verschoben, wenn die Tastatur gemeinsam mit dem Dialog verschwindet.
+      // `syncAppHeight` direkt statt eines synthetischen `resize`-Events (#215): Der Hook sitzt in
+      // JEDEM Dialog, und das Event hätte beim Schließen eines Pickers nebenbei die Resize-Handler
+      // von PageDeck/ChordChart/useChartNavigation ausgelöst – Fernwirkung auf Verdacht.
       window.scrollTo(0, 0);
-      window.dispatchEvent(new Event('resize'));
+      syncAppHeight();
     };
     // ref ist stabil; der Effekt soll genau einmal pro Overlay-Lebensdauer laufen.
     // eslint-disable-next-line react-hooks/exhaustive-deps

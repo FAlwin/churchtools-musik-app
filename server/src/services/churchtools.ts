@@ -90,8 +90,9 @@ async function ctGet<T = unknown>(cookie: string, path: string): Promise<T> {
   if (!res.ok) {
     // 404 durchreichen (z. B. „Termin hat keinen Ablaufplan") – Aufrufer wie die Statistik
     // unterscheiden das von echten Fehlern (500/Netz), die geloggt werden. Rest bleibt 502.
-    // Pfad nur ins Log (#199), nach außen generisch.
-    console.warn(`[churchtools] Fehler ${res.status} bei ${path}`);
+    // 404 NICHT loggen (#215): Der Fall ist erwartbar und würde im 8-Sekunden-Polling das
+    // Container-Log fluten. Pfad ohnehin nur ins Log (#199), nach außen generisch.
+    if (res.status !== 404) console.warn(`[churchtools] Fehler ${res.status} bei ${path}`);
     throw new HttpError(
       res.status === 404 ? 404 : 502,
       `ChurchTools-Fehler (${res.status}).`,

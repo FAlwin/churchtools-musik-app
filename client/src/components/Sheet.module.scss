@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
-  // Tastatur aussparen (--kb kommt aus useKeyboardInset) → Inhalt bleibt sichtbar, ohne zu wischen.
+  // Tastatur aussparen (--kb kommt aus useOverlayKeyboardInset) → Inhalt bleibt sichtbar, ohne zu wischen.
   padding-bottom: calc(16px + var(--kb, 0px));
   animation: fadeIn 0.15s ease both;
 }

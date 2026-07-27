@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { useRef } from 'react';
-import { useKeyboardInset } from './useKeyboardInset';
+import { useOverlayKeyboardInset } from './useOverlayKeyboardInset';
 
 /**
  * Mechanik der Tastatur-Aussparung (#207). Der eigentliche Effekt ist iOS-spezifisch, aber die
@@ -10,7 +10,7 @@ import { useKeyboardInset } from './useKeyboardInset';
  */
 function Overlay() {
   const ref = useRef<HTMLDivElement>(null);
-  useKeyboardInset(ref);
+  useOverlayKeyboardInset(ref);
   return <div ref={ref} data-testid="overlay" />;
 }
 
@@ -38,7 +38,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('useKeyboardInset', () => {
+describe('useOverlayKeyboardInset', () => {
   it('setzt --kb auf die Höhe der Tastatur', () => {
     window.innerHeight = 800;
     stubViewport(500); // 800 - 500 - 0 = 300px Tastatur

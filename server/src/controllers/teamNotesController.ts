@@ -11,9 +11,10 @@ import { setSharing, isSharing, listSharers } from '../services/sharing.js';
 import * as annotations from '../services/annotations.js';
 import { getSettings } from '../services/userSettings.js';
 import { HttpError } from '../middleware/errorHandler.js';
+import { ctCookie } from '../utils/ctCookie.js';
 
 async function requireTeamNotes(req: Request): Promise<void> {
-  const caps = await getCapabilitiesCached(req.ctCookie as string, req.ctUserId ?? null);
+  const caps = await getCapabilitiesCached(ctCookie(req), req.ctUserId ?? null);
   if (!caps.canUseGlobalNotes) {
     throw new HttpError(403, 'Keine Berechtigung für Team-Notizen.');
   }
@@ -38,7 +39,7 @@ function personIdOf(req: Request): number {
  * die ID längst im signierten Cookie steht (kein Netz nötig).
  */
 async function myUserId(req: Request): Promise<number> {
-  return req.ctUserId ?? (await getUserId(req.ctCookie as string));
+  return req.ctUserId ?? (await getUserId(ctCookie(req)));
 }
 
 /** GET /api/annotations/sharing – teilt DIESES Konto gerade? (für den Schalter im Mehr-Tab) */
@@ -55,7 +56,7 @@ export async function putSharing(req: Request, res: Response): Promise<void> {
   const { enabled } = sharingSchema.parse(req.body);
   // Hier ist whoami nötig (nicht nur die Cookie-ID): der Anzeigename landet in sharing.json,
   // damit andere „Notizen von <Name>" sehen. Betrifft nur diese eine Schreibaktion.
-  const me = await whoami(req.ctCookie as string);
+  const me = await whoami(ctCookie(req));
   await setSharing(me.id, `${me.firstName} ${me.lastName}`.trim(), enabled);
   res.json({ enabled });
 }

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import {
@@ -28,6 +29,7 @@ import {
 } from '../services/churchtools.js';
 import { getSeenSetlists, markSeenSetlist } from '../services/seenSetlists.js';
 import type { AgendaServiceOption, SongArrangementOption } from '@shared/types/index';
+import { ctCookie } from '../utils/ctCookie.js';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -44,7 +46,7 @@ const dateSchema = z
 
 /** GET /api/services – Gottesdienste mit Setlist. */
 export async function getServices(req: Request, res: Response): Promise<void> {
-  const cookie = req.ctCookie as string;
+  const cookie = ctCookie(req);
   const def = defaultWindow();
   const from = dateSchema.parse(req.query.from) ?? def.from;
   const to = dateSchema.parse(req.query.to) ?? def.to;
@@ -66,8 +68,11 @@ export async function getServices(req: Request, res: Response): Promise<void> {
   res.json(services);
 }
 
-// Kurz-Memo je Termin für den Live-Abgleich: Viele offene Geräte pollen alle ~8 s – ChurchTools
-// soll dafür höchstens alle paar Sekunden EINMAL gefragt werden, egal wie viele Geräte schauen.
+// Kurz-Memo für den Live-Abgleich: Viele offene Geräte pollen alle ~8 s – jedes KONTO fragt
+// ChurchTools dafür höchstens alle paar Sekunden einmal. Seit #199 ist der Schlüssel bewusst
+// kontobezogen (vorher teilten sich alle Konten einen Eintrag; wer keinen Zugriff auf den Termin
+// hatte, bekam statt 403 den Hash eines Berechtigten). Bei 8 Bandmitgliedern sind das also 8
+// CT-Abfragen je Intervall statt einer – die Zugriffsprüfung ist uns das wert (#215).
 // Schlüssel = `<eventId>|<Konto-ID bzw. Cookie>`: Das Memo darf NICHT kontoübergreifend teilen –
 // sonst erhielte ein Nutzer ohne Zugriff auf den Termin statt 403 einen Hash (#199).
 const versionMemo = new Map<string, { hash: string; at: number }>();
@@ -80,7 +85,12 @@ const VERSION_MEMO_TTL_MS = 5_000;
  */
 export async function getSetlistVersion(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
-  const memoKey = `${eventId}|${req.ctUserId ?? (req.ctCookie as string)}`;
+  // Bei Alt-Cookies ohne Konto-ID nicht das rohe Session-Cookie als Map-Schlüssel halten (#215),
+  // sondern nur dessen Fingerabdruck – gleiche Trennschärfe, ohne das Geheimnis zusätzlich im
+  // Speicher zu spiegeln.
+  const who =
+    req.ctUserId ?? `c${createHash('sha256').update(ctCookie(req)).digest('hex').slice(0, 16)}`;
+  const memoKey = `${eventId}|${who}`;
   const hit = versionMemo.get(memoKey);
   if (hit && Date.now() - hit.at < VERSION_MEMO_TTL_MS) {
     res.json({ hash: hit.hash });
@@ -90,14 +100,14 @@ export async function getSetlistVersion(req: Request, res: Response): Promise<vo
   for (const [id, v] of versionMemo) {
     if (Date.now() - v.at >= VERSION_MEMO_TTL_MS) versionMemo.delete(id);
   }
-  const hash = await getSetlistFingerprint(req.ctCookie as string, eventId);
+  const hash = await getSetlistFingerprint(ctCookie(req), eventId);
   versionMemo.set(memoKey, { hash, at: Date.now() });
   res.json({ hash });
 }
 
 /** POST /api/services/:eventId/seen – merkt den aktuellen Setlist-Stand als „gesehen" (#143). */
 export async function markSetlistSeen(req: Request, res: Response): Promise<void> {
-  const cookie = req.ctCookie as string;
+  const cookie = ctCookie(req);
   const eventId = idSchema.parse(req.params.eventId);
   const userId = req.ctUserId ?? (await getUserId(cookie));
   const { hash, items } = await getSetlistState(cookie, eventId);
@@ -115,7 +125,7 @@ const orderSchema = z.object({
 export async function putAgendaOrder(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
   const { order } = orderSchema.parse(req.body);
-  await reorderAgenda(req.ctCookie as string, eventId, order);
+  await reorderAgenda(ctCookie(req), eventId, order);
   res.json({ ok: true });
 }
 
@@ -164,7 +174,7 @@ export async function postAgendaItem(req: Request, res: Response): Promise<void>
   const { type, title, arrangementId, responsible, note, durationMin } = createItemSchema.parse(
     req.body,
   );
-  await createAgendaItem(req.ctCookie as string, eventId, {
+  await createAgendaItem(ctCookie(req), eventId, {
     type,
     title: title ?? (type === 'header' ? 'Überschrift' : type === 'song' ? 'Lied' : 'Neuer Punkt'),
     arrangementId,
@@ -179,7 +189,7 @@ export async function postAgendaItem(req: Request, res: Response): Promise<void>
 /** GET /api/songs/:songId/arrangements – Arrangements eines bekannten Lieds (für „Zu Ablauf hinzufügen"). */
 export async function getSongArrangementsCtrl(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
-  const song = await getSong(req.ctCookie as string, songId);
+  const song = await getSong(ctCookie(req), songId);
   const result: SongArrangementOption[] = (song.arrangements ?? []).map((a) => ({
     arrangementId: a.id,
     arrangementName: a.name,
@@ -195,7 +205,7 @@ export async function putAgendaItem(req: Request, res: Response): Promise<void> 
   const { title, arrangementId, unlink, responsible, durationMin, note } = updateItemSchema.parse(
     req.body,
   );
-  await updateAgendaItem(req.ctCookie as string, eventId, itemId, {
+  await updateAgendaItem(ctCookie(req), eventId, itemId, {
     // Beim Aufheben der Lied-Verknüpfung den Titel leeren (der Liedtitel soll nicht als Text
     // zurückbleiben) – es sei denn, im selben Request kommt ein neuer Titel mit (Kombi-Speichern
     // aus dem Bearbeiten-Dialog: aufheben + umbenennen in EINEM Schreibvorgang).
@@ -217,7 +227,7 @@ export async function putAgendaItemHidden(req: Request, res: Response): Promise<
   const eventId = idSchema.parse(req.params.eventId);
   const itemId = idSchema.parse(req.params.itemId);
   const { hidden } = hiddenSchema.parse(req.body);
-  await setAgendaItemHidden(req.ctCookie as string, eventId, itemId, hidden);
+  await setAgendaItemHidden(ctCookie(req), eventId, itemId, hidden);
   res.json({ ok: true });
 }
 
@@ -225,33 +235,33 @@ export async function putAgendaItemHidden(req: Request, res: Response): Promise<
 export async function deleteAgendaItemCtrl(req: Request, res: Response): Promise<void> {
   const eventId = idSchema.parse(req.params.eventId);
   const itemId = idSchema.parse(req.params.itemId);
-  await deleteAgendaItem(req.ctCookie as string, eventId, itemId);
+  await deleteAgendaItem(ctCookie(req), eventId, itemId);
   invalidateSongUsageCache(); // entferntes Lied soll aus der Statistik verschwinden
   res.json({ ok: true });
 }
 
 /** GET /api/song-library – alle Lieder (Standard-Arrangement) für die „Alle Lieder"-Ansicht. */
 export async function getSongLibraryCtrl(req: Request, res: Response): Promise<void> {
-  const songs = await getSongLibrary(req.ctCookie as string);
+  const songs = await getSongLibrary(ctCookie(req));
   res.json(songs);
 }
 
 /** GET /api/capabilities – was der angemeldete Nutzer laut ChurchTools darf. */
 export async function getCapabilitiesCtrl(req: Request, res: Response): Promise<void> {
-  const caps = await getCapabilities(req.ctCookie as string, req.ctUserId ?? null);
+  const caps = await getCapabilities(ctCookie(req), req.ctUserId ?? null);
   res.json(caps);
 }
 
 /** GET /api/agenda-services – ChurchTools-Dienste (für die Verantwortlich-Chips). */
 export async function getAgendaServicesCtrl(req: Request, res: Response): Promise<void> {
-  const services = await getCtServices(req.ctCookie as string);
+  const services = await getCtServices(ctCookie(req));
   const result: AgendaServiceOption[] = services.map((s) => ({ id: s.id, name: s.name }));
   res.json(result);
 }
 
 /** GET /api/song-usage – Nutzungsdaten je Song (Häufigkeit + zuletzt), separat/gecacht. */
 export async function getSongUsageCtrl(req: Request, res: Response): Promise<void> {
-  const usage = await getSongUsageMap(req.ctCookie as string);
+  const usage = await getSongUsageMap(ctCookie(req));
   res.json(usage);
 }
 
@@ -261,13 +271,13 @@ const arrSchema = z.coerce.number().int().positive().optional();
 export async function getSongChartCtrl(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
   const arrangementId = arrSchema.parse(req.query.arrangementId);
-  const song = await getSongChart(req.ctCookie as string, songId, arrangementId);
+  const song = await getSongChart(ctCookie(req), songId, arrangementId);
   res.json(song);
 }
 
 /** GET /api/services/:eventId/setlist – alle Ablaufpunkte (Lieder inkl. ChordPro). */
 export async function getSetlist(req: Request, res: Response): Promise<void> {
-  const cookie = req.ctCookie as string;
+  const cookie = ctCookie(req);
   const eventId = idSchema.parse(req.params.eventId);
   // Zuletzt gesehenen Stand des Kontos laden → geänderte Punkte markieren (#161). Best effort:
   // ohne Konto-ID/Stand liefern wir ohne Markierungen (kein Fehlalarm bei Erstnutzung).
@@ -292,7 +302,7 @@ const createVersionSchema = z.object({
 export async function postVersion(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
   const { arrangementId, name, text } = createVersionSchema.parse(req.body);
-  const version = await createVersion(req.ctCookie as string, songId, arrangementId, name, text);
+  const version = await createVersion(ctCookie(req), songId, arrangementId, name, text);
   res.json(version);
 }
 
@@ -307,7 +317,7 @@ export async function putVersion(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
   const versionKey = z.string().min(1).parse(req.params.versionKey);
   const { arrangementId, text, name } = updateVersionSchema.parse(req.body);
-  const version = await updateVersion(req.ctCookie as string, songId, arrangementId, versionKey, {
+  const version = await updateVersion(ctCookie(req), songId, arrangementId, versionKey, {
     text,
     name,
   });
@@ -347,7 +357,7 @@ export function sanitizeFileContentType(raw: string): {
 export async function getFile(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
   const fileId = idSchema.parse(req.params.fileId);
-  const cookie = req.ctCookie as string;
+  const cookie = ctCookie(req);
   const fileUrl = await resolveFileUrl(cookie, songId, fileId);
   const { buffer, contentType: raw } = await fetchFileBytes(cookie, fileUrl);
   const { contentType, attachment } = sanitizeFileContentType(raw);
@@ -367,6 +377,6 @@ export async function deleteVersionCtrl(req: Request, res: Response): Promise<vo
   const songId = idSchema.parse(req.params.songId);
   const versionKey = z.string().min(1).parse(req.params.versionKey);
   const { arrangementId } = deleteSchema.parse(req.body);
-  await deleteVersion(req.ctCookie as string, songId, arrangementId, versionKey);
+  await deleteVersion(ctCookie(req), songId, arrangementId, versionKey);
   res.json({ ok: true });
 }
