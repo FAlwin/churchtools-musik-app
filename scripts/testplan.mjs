@@ -178,18 +178,27 @@ const teile = [
   '',
   ...immer.map(zeile),
   '',
-  `### Von dieser Änderung betroffen (${betroffen.length})`,
+  alle
+    ? `### Alle übrigen Fälle (${betroffen.length})`
+    : `### Von dieser Änderung betroffen (${betroffen.length})`,
   '',
-  betroffen.length
-    ? 'Ermittelt über das Feld **Betrifft** der Testfälle.'
-    : '_Keiner – die Änderung berührt keinen Bereich mit manuellen Testfällen._',
+  alle
+    ? 'Der Rest der Sammlung, unabhängig von Änderungen.'
+    : betroffen.length
+      ? 'Ermittelt über das Feld **Betrifft** der Testfälle.'
+      : '_Keiner – die Änderung berührt keinen Bereich mit manuellen Testfällen._',
   '',
   ...betroffen.map(zeile),
   '',
-  `### Nicht vorgeschlagen: ${uebrig} weitere Fälle`,
-  '',
-  `Bewusst ausgelassen, weil diese Änderung sie nicht berührt. Ganze Sammlung: \`npm run testplan -- --alle\`.`,
-  '',
+  // Bei `--alle` steht die ganze Sammlung da – ein „nicht vorgeschlagen: 0" wäre dort sinnlos.
+  ...(alle
+    ? []
+    : [
+        `### Nicht vorgeschlagen: ${uebrig} weitere Fälle`,
+        '',
+        'Bewusst ausgelassen, weil diese Änderung sie nicht berührt. Ganze Sammlung: `npm run testplan -- --alle`.',
+        '',
+      ]),
   '---',
   '',
   '**Durchgefallen?** Fehler-Issue anlegen, die Testfall-Nummer in den Titel, hier verlinken und das',
