@@ -82,17 +82,19 @@ churchtools-musik-app/
   Orientierungsänderung darf ihn senken. `env()` bleibt Fallback → keine Regression ohne JS-Messung.
 - **Dialoge müssen die iOS-Tastatur aussparen** (#207): Jedes Vollbild-Overlay mit Eingabefeldern ist
   `position: fixed` (NIE `absolute` – sonst scrollt es mit dem Dokument mit) und nutzt den Hook
-  `hooks/useKeyboardInset` + `padding-bottom: calc(… + var(--kb, 0px))`. Der Hook misst die
+  `hooks/useOverlayKeyboardInset` + `padding-bottom: calc(… + var(--kb, 0px))`. Der Hook misst die
   Tastaturhöhe am `visualViewport` und holt den von iOS hinterlassenen Dokument-Scroll zurück; ohne
   ihn liegen Trefferlisten/Knöpfe unter der Tastatur und die Kopfleiste bleibt verrutscht. Gilt für
   `Sheet` (alle Dialoge), `ItemActionSheet` und den `ChordEditor`.
-- **Ein 401 aus JEDER Query/Mutation heißt „Sitzung abgelaufen" und führt zum Login** (#186): Der
-  globale Fänger sitzt in `queryClient.ts` (`QueryCache`/`MutationCache` `onError` →
-  `setSessionExpiredHandler`), registriert in `App.tsx`. Kein Screen darf 401 selbst als „Erneut
-  versuchen" anbieten – das war die alte Sackgasse, aus der nur Ab-/Neuanmelden half.
-  ⚠️ **Diese Regel gilt derzeit NICHT vollständig:** `services/annotations.ts` und
-  `services/userSettings.ts` gehen direkt über `apiFetch` (nicht über TanStack Query) – ihre 401er
-  erreichen den Fänger nicht, und der Login-401 löst ihn fälschlich aus. Offen als #211 und #210.
+- **Ein 401 heißt „Sitzung abgelaufen" und führt zum Login** (#186, #210, #211): Der globale Fänger
+  sitzt in **`services/api.ts`** (`setSessionExpiredHandler`, registriert in `App.tsx`) – bewusst in
+  `apiFetch` und nicht mehr am QueryClient, denn `services/annotations.ts` und
+  `services/userSettings.ts` rufen `apiFetch` direkt auf; am QueryClient blieben ihre 401er
+  unsichtbar (#211). Kein Screen darf 401 selbst als „Erneut versuchen" anbieten – das war die alte
+  Sackgasse, aus der nur Ab-/Neuanmelden half.
+  ⚠️ **Ausnahme `/api/auth/…`** (`isAuthPath`): Dort ist 401 = „falsches Passwort", nicht
+  „Sitzung abgelaufen". Ohne die Ausnahme löste ein Tippfehler beim Login das Abmelden samt
+  Geräte-Aufräumen aus und **löschte die Offline-Reserve** (#210).
 - API-Calls ausschließlich über `services/` + TanStack Query
 - Keine Geschäftslogik in Komponenten (→ in `hooks/`)
 - Keine Inline-Styles, außer für dynamische Laufzeitwerte
@@ -375,9 +377,15 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
 - **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
   mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
-- **Zuletzt erledigt (26.07.2026):** v2.14.0 (#200 Titel bei Lied-Punkten, #195 Konto-Limit,
-  #146 IPv6-Rate-Limit **komplett geschlossen**, #199-Teil) und v2.14.1 (#207 iOS-Tastatur in
-  Dialogen). Davor v2.13.6: globaler 401-Fänger (#186), Safe-Area `--sat` (#187), Nachschliff (#152).
+- **Zuletzt erledigt (27.07.2026): v2.14.2 – in Prod, am ausgelieferten Bundle verifiziert.**
+  Enthält die drei Folgefehler aus #186: **#210** (falsches Passwort löscht die Offline-Reserve),
+  **#211** (401-Fänger wandert nach `services/api.ts`, sieht jetzt auch Anmerkungs-/Einstellungs-Sync),
+  **#218** (Offline→Online-Hänger im Login) sowie #212 (`agendaItemWritePayload` ausgelagert + 11
+  Tests), #213 (Konto-Limit blockiert Aufräumen nicht mehr), #214 (`trust proxy: 'loopback'`, echter
+  Express-Test), #197 (Liederheft-PDF raus aus dem Render), #192 (Tests `chordPdf`/`annotations`),
+  #198/#215 (Nachschliff, u. a. `ctCookie()` statt 29 `as string`). Tests: Client 185 / Server 150.
+  Davor v2.14.0 (#200 Titel bei Lied-Punkten, #195, #146) und v2.14.1 (#207 iOS-Tastatur in Dialogen);
+  v2.13.6: globaler 401-Fänger (#186), Safe-Area `--sat` (#187), Nachschliff (#152).
 - **Bestätigte ChurchTools-Eigenheit (26.07.2026, am Gerät verifiziert):** Ein Lied-Punkt hat in CT
   einen **eigenen Titel UND** ein verknüpftes Lied. CT **behält** einen selbst gesetzten Titel und
   zeigt beides an; der Titel ist unabhängig vom Lied schreibbar (`title` + `arrangementId` in EINEM
@@ -385,19 +393,11 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - **Onboarding bewusst NICHT angepasst** (Release-Routine Schritt 2): #200 brachte kein neues
   Bedienelement (das Titelfeld gab es schon, es war nur gesperrt) und der Tour-Text „…um Titel,
   Dauer, Zuständige zu ändern…" stimmt jetzt sogar erst; #207 ist ein reiner Layout-Fix.
-- **Offen – ZUERST (Code-Check v2.14.1; alle drei gehen auf #186 zurück und sind in Prod):**
-  **#210** ein falsch getipptes Passwort löscht die Offline-Reserve (der Login-401 löst den
-  Sitzung-abgelaufen-Pfad samt `clearDeviceData()` aus); **#211** der „globale" 401-Fänger sieht
-  `services/annotations.ts` + `services/userSettings.ts` NICHT (die gehen direkt über `apiFetch`), und
-  ihr `disabled`-Schalter wird beim Neu-Anmelden nie zurückgesetzt → Anmerkungen/Einstellungen
-  speichern danach nur noch lokal; **#212** `agendaItemWritePayload` – der laut dieser Doku
-  „kritische" Schreibpfad – hat null Tests, obwohl seit #200 jedes Speichern eines Lied-Punkts
-  darüber läuft.
-- **Offen / optional:** Konto-Limit blockiert Aufräumen + 413 im Client unbehandelt (#213);
-  `trust proxy: 1` unverifiziert (#214 – davon hängt die Wirksamkeit von #146 ab); Nachschliff-Sammel
-  (#215). Aus dem Check v2.13.6 weiter offen: Testabdeckung `chordPdf`/`annotations` (#192, hoch),
-  `PageDeck` aufteilen (#193, hoch), CT-Cookie nicht mehr im App-Cookie (#194), Staging härten (#196),
-  PDF-Aufbau raus aus dem Render (#197), Qualitäts-Nachschliff (#198), Kleinkram-Rest (#199).
+- **Offen – ZUERST:** `PageDeck` aufteilen (#193, hoch – braucht einen Test am iPad mit Stift und
+  Gesten, deshalb nicht in v2.14.2).
+- **Offen / optional:** CT-Cookie nicht mehr im App-Cookie (#194, Architektur); Staging härten
+  (#196, reine NAS-/Konfigurationsarbeit); Restpunkte aus #198/#215 und Kleinkram-Rest (#199);
+  `migrateLocalAnnotations` weiter ohne Test (Rest von #192).
   Dazu: Musik-Verfügbarkeit/Abwesenheiten als App-Modul (#177, Plan in
   `docs/entwicklung/plan-verfuegbarkeit-phase1.md`); voller Auth-Flow-E2E mit CT-Stub (#174);
   Push-Benachrichtigung (#144), BPM-Puls (#145), Objektradierer/Vektor-Striche (#134).
@@ -425,6 +425,12 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   dann in dieser Datei die Versionsnummer suchen. Bei Änderungen in nachgeladenen Seiten (Setlist,
   ChordChart) zusätzlich die Chunks aus `/sw.js` prüfen – Code-Splitting heißt, dass ein neuer
   Setlist-Fix NICHT im Haupt-Bundle steckt.
+  ⚠️ **Nicht über Chunk-Dateinamen verifizieren** (27.07.2026 nachgemessen): Zwei lokale Builds
+  desselben Commits erzeugen bei mehreren Chunks (`index`, `Setlist`, `ChordChart`, `Settings`,
+  `AllSongs`, `logoAsset`, `dndAutoScroll`, `useSongFilter`) **unterschiedliche Hashes** – der Build
+  ist nicht reproduzierbar, ein Hash-Unterschied zu Prod beweist also gar nichts. Verlässlich sind
+  nur **Inhalte**: `VITE_APP_VERSION` (die Versionsnummer steckt im `index`-Bundle) und ein
+  markanter Text-/Code-Schnipsel des jeweiligen Fixes.
 - Prod-`.env` auf dem NAS: `CHURCHTOOLS_BASE_URL` + `SESSION_SECRET` (**kein** Login-Token!).
 - **Cookie `secure` per Env `COOKIE_SECURE`:** In Prod **`true`** (seit 13.07.2026; Zugang nur über
   HTTPS via Synology-Reverse-Proxy, Prod-Port an `127.0.0.1:3001` gebunden). `trust proxy` ist in Prod
