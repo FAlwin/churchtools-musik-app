@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { SetlistSong } from '@shared/types/index';
 import { Screen } from '../components/Screen';
 import { KeyPicker } from '../components/KeyPicker';
@@ -21,6 +21,8 @@ import { parseChordPro } from '../utils/chordpro';
 import { availableVersions, versionText, setLsVersion } from '../utils/songVersions';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
+import type { SetlistPageOwner } from '../utils/chordPdf';
+import { pdfOptionsForSong } from '../utils/chartPdfOptions';
 import { sharePdf } from '../utils/sharePdf';
 import { type SongSettings, DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
 import { logoTightUrl } from '../utils/logoAsset';
@@ -239,26 +241,51 @@ export function ChordChart({
   }, []);
 
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
-  const stream = useMemo(() => {
-    if (songs.length === 0) return null;
-    const songsForPdf = songs.map((s) => {
-      const st = effSettings[s.id] ?? loadSettings(s);
-      return { ...s, chordpro: versionText(s, st.versionKey), versionKey: st.versionKey };
-    });
-    const { doc, owners } = generateSetlistPdfWithOwners(songsForPdf, (s) => {
-      const st = effSettings[s.id] ?? loadSettings(s);
-      const off = getSemitoneOffset(s.originalKey, st.key || s.targetKey) - st.capo;
-      return {
-        semitones: off,
-        cols: st.cols,
-        fontPt: Math.max(8, Math.round(st.fontSize * 0.6)),
-        lyricsOnly: st.lyricsOnly,
-        sectionSemitones: st.secShift,
-        displayKey: st.key || s.targetKey,
-        logo: logoImg,
-      };
-    });
-    return { data: doc.output('arraybuffer') as ArrayBuffer, owners };
+  // Der Aufbau lief bis #197 in einem useMemo, also MITTEN IM RENDER: Bei jeder Änderung von
+  // Tonart/Spalten/Schrift stand die Oberfläche, bis das komplette Liederheft neu erzeugt war (auf
+  // einem älteren iPad deutlich spürbar – das Menü blieb offen, nichts reagierte).
+  // Jetzt außerhalb des Renders in einem Effekt: Erst zeichnet der Browser (Menü schließt, Gesten
+  // laufen weiter), danach wird gebaut. Bis das neue Ergebnis da ist, bleibt das ALTE stehen –
+  // deshalb State statt Memo, sonst blitzte zwischendurch eine leere Ansicht auf.
+  // Ehrlich: jsPDF bleibt synchron, der Aufbau blockiert also weiterhin kurz den Hauptthread –
+  // nur eben NACH dem Zeichnen. Ihn ganz auszulagern bräuchte einen Web Worker (eigenes Thema).
+  const [stream, setStream] = useState<{ data: ArrayBuffer; owners: SetlistPageOwner[] } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (songs.length === 0) {
+      setStream(null);
+      return;
+    }
+    let cancelled = false;
+    const build = (): void => {
+      if (cancelled) return;
+      const songsForPdf = songs.map((s) => {
+        const st = effSettings[s.id] ?? loadSettings(s);
+        return { ...s, chordpro: versionText(s, st.versionKey), versionKey: st.versionKey };
+      });
+      const { doc, owners } = generateSetlistPdfWithOwners(songsForPdf, (s) =>
+        pdfOptionsForSong(s, effSettings[s.id] ?? loadSettings(s), logoImg),
+      );
+      // Zwischenzeitlich hat sich die Eingabe geändert → dieses Ergebnis ist veraltet, verwerfen.
+      if (cancelled) return;
+      setStream({ data: doc.output('arraybuffer') as ArrayBuffer, owners });
+    };
+    // Nach dem Zeichnen bauen; `requestIdleCallback` lässt Eingaben zuerst durch, der Timeout
+    // sorgt dafür, dass es auch bei Dauerlast zügig passiert. Ältere Safari-Versionen kennen
+    // rIC nicht – dort genügt ein Timeout 0 (auch das läuft erst nach dem Zeichnen).
+    let cancelScheduled: () => void;
+    if (typeof window.requestIdleCallback === 'function') {
+      const h = window.requestIdleCallback(build, { timeout: 300 });
+      cancelScheduled = () => window.cancelIdleCallback(h);
+    } else {
+      const h = window.setTimeout(build, 0);
+      cancelScheduled = () => window.clearTimeout(h);
+    }
+    return () => {
+      cancelled = true;
+      cancelScheduled();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songsSig, effSettings, logoImg]);
 
