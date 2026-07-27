@@ -24,6 +24,15 @@ export const KEY_RE = /^song\d+_v[a-z0-9-]+(?:_lyr)?_\d+(?:_d(?:phone|large)\d?)
 // Sync abschalten, wenn nicht angemeldet (Demo / 401) – dann bleibt alles rein lokal.
 let disabled = false;
 
+/**
+ * Sync wieder einschalten – MUSS nach jeder erfolgreichen Anmeldung passieren (#211). Ohne das
+ * blieb `disabled` nach einem automatischen Abmelden für den Rest der Seiten-Lebensdauer stehen:
+ * Anmerkungen wurden dann nur noch lokal gespeichert und gingen geräteübergreifend still verloren.
+ */
+export function resetSync(): void {
+  disabled = false;
+}
+
 /** localStorage-Key → Server-Eintrags-Schlüssel (song<id>_v<version>_<seite>). */
 function serverKeyOf(lsKey: string): string {
   return lsKey.replace(DRAW, '').replace(ZOOM, '').replace(/_text$/, '');

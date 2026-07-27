@@ -16,6 +16,28 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Globaler „Sitzung abgelaufen"-Melder (#186, hierher gezogen mit #210/#211).
+ *
+ * Er sitzt bewusst HIER und nicht mehr am QueryClient: Nicht alles läuft über TanStack Query –
+ * `services/annotations.ts` und `services/userSettings.ts` rufen `apiFetch` direkt auf. Am
+ * QueryClient blieben ihre 401er unsichtbar, sie schalteten sich nur still selbst ab (#211). In
+ * `apiFetch` kommt dagegen JEDER Aufruf vorbei, damit gilt die Regel wirklich global.
+ *
+ * **Ausnahme `/api/auth/…`:** Diese Endpunkte SIND die Sitzungsverwaltung. Ein 401 vom Login heißt
+ * „falsches Passwort", nicht „Sitzung abgelaufen" – ohne die Ausnahme löste ein Tippfehler das
+ * Abmelden samt Geräte-Aufräumen aus und löschte die Offline-Reserve (#210).
+ */
+let sessionExpiredHandler: (() => void) | null = null;
+export function setSessionExpiredHandler(fn: (() => void) | null): void {
+  sessionExpiredHandler = fn;
+}
+
+/** Gehört der Pfad zur Sitzungsverwaltung selbst? Dort ist ein 401 eine normale Antwort. */
+function isAuthPath(path: string): boolean {
+  return path.startsWith('/api/auth/');
+}
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   let res: Response;
   try {
@@ -54,6 +76,9 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string'
         ? body.error
         : null) ?? `Fehler ${res.status}`;
+    // Sitzung abgelaufen → einmal zentral melden (führt zum Login). Auth-Endpunkte ausgenommen:
+    // dort ist 401 = „falsche Zugangsdaten", kein Sitzungsverlust (#210).
+    if (res.status === 401 && !isAuthPath(path)) sessionExpiredHandler?.();
     throw new ApiError(res.status, message);
   }
 

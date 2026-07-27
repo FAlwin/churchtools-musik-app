@@ -1,24 +1,12 @@
-import { QueryClient, QueryCache, MutationCache, dehydrate } from '@tanstack/react-query';
+import { QueryClient, dehydrate } from '@tanstack/react-query';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { get, set, del } from 'idb-keyval';
-import { ApiError } from './services/api';
-
 const WEEK = 1000 * 60 * 60 * 24 * 7;
 
-/**
- * Globaler „Session abgelaufen"-Melder (#186): Ein 401 aus IRGENDEINER Query oder Mutation heißt,
- * die ChurchTools-Session ist tot (unser App-Cookie ist evtl. noch da). Früher fing das nur die
- * Rechte-Abfrage in App.tsx ab – an ihr vorbei (Ablauf laden, Ablaufpunkt speichern) lief man in
- * eine „Erneut versuchen"-Sackgasse, aus der nur Ab- und Neuanmelden half. Der Melder führt jetzt
- * in ALLEN Fällen sauber zum Login. App.tsx registriert den Handler (→ auth.logout()).
- */
-let sessionExpiredHandler: (() => void) | null = null;
-export function setSessionExpiredHandler(fn: (() => void) | null): void {
-  sessionExpiredHandler = fn;
-}
-function handleGlobalError(error: unknown): void {
-  if (error instanceof ApiError && error.status === 401) sessionExpiredHandler?.();
-}
+// Der globale „Sitzung abgelaufen"-Melder saß bis #211 hier (QueryCache/MutationCache onError).
+// Er liegt jetzt in `services/api.ts`: Dort kommt JEDER Aufruf vorbei – auch die Sync-Dienste
+// (annotations/userSettings), die bewusst an TanStack Query vorbeigehen und deren 401er hier
+// unsichtbar blieben.
 const CACHE_KEY = 'worship-rq-cache';
 // buster = App-Version → ein App-Update verwirft den alten Cache (verhindert veraltete Datenformen).
 const BUSTER = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'dev';
@@ -29,9 +17,6 @@ const BUSTER = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'dev'
  * der Offline-Reserve (Charts ohne Netz im Saal, Issue #32).
  */
 export const queryClient = new QueryClient({
-  // Global über QueryCache + MutationCache, damit ein 401 aus jeder Quelle erkannt wird (#186).
-  queryCache: new QueryCache({ onError: handleGlobalError }),
-  mutationCache: new MutationCache({ onError: handleGlobalError }),
   defaultOptions: {
     queries: { staleTime: 1000 * 60 * 5, gcTime: WEEK, retry: 1 },
   },
