@@ -47,9 +47,13 @@ async function authenticate(): Promise<void> {
   const cookie = extractSessionCookie(res);
   if (!cookie) throw new Error('Kein Session-Cookie erhalten.');
   COOKIE = cookie;
-  const me = (await res.json()) as { data?: { id?: number; firstName?: string; lastName?: string } };
+  const me = (await res.json()) as {
+    data?: { id?: number; firstName?: string; lastName?: string };
+  };
   MY_ID = me.data?.id ?? 0;
-  console.log(`✓ Angemeldet als ${me.data?.firstName ?? '?'} ${me.data?.lastName ?? ''} (id ${MY_ID})`);
+  console.log(
+    `✓ Angemeldet als ${me.data?.firstName ?? '?'} ${me.data?.lastName ?? ''} (id ${MY_ID})`,
+  );
 }
 
 async function ctGet(path: string): Promise<{ status: number; body: unknown }> {
@@ -76,13 +80,18 @@ async function main(): Promise<void> {
   // (a) Meine Mitgliedschaften – welche Felder beschreiben die Rolle in der Gruppe?
   const mine = await ctGet(`/api/persons/${MY_ID}/groups`);
   const rows = (mine.body as { data?: unknown[] })?.data ?? [];
-  console.log(`\n[a] /api/persons/${MY_ID}/groups → status ${mine.status}, ${rows.length} Einträge`);
+  console.log(
+    `\n[a] /api/persons/${MY_ID}/groups → status ${mine.status}, ${rows.length} Einträge`,
+  );
   // Nur die interessante Gruppe (falls Mitglied) + ansonsten den ERSTEN Eintrag komplett dumpen,
   // damit wir alle Felder einer Mitgliedschaft sehen (v. a. rollenbezogene).
   const forGroup = (rows as Array<{ group?: { domainIdentifier?: string | number } }>).find(
     (r) => Number(r.group?.domainIdentifier) === GROUP_ID,
   );
-  show(`Mitgliedschaft in Gruppe ${GROUP_ID} (VOLL) – oder undefined, wenn nicht Mitglied`, forGroup);
+  show(
+    `Mitgliedschaft in Gruppe ${GROUP_ID} (VOLL) – oder undefined, wenn nicht Mitglied`,
+    forGroup,
+  );
   if (!forGroup && rows.length) show('Ersatzweise: erste Mitgliedschaft (VOLL)', rows[0]);
 
   // (b1) Die Gruppe selbst – enthält sie den Gruppentyp (groupTypeId)?
@@ -92,7 +101,8 @@ async function main(): Promise<void> {
   show('Gruppe: ausgewählte Felder', {
     id: g.id,
     name: g.name,
-    groupTypeId: (g.information as Record<string, unknown> | undefined)?.groupTypeId ?? g.groupTypeId,
+    groupTypeId:
+      (g.information as Record<string, unknown> | undefined)?.groupTypeId ?? g.groupTypeId,
     information: g.information,
   });
 

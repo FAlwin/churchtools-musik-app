@@ -26,7 +26,10 @@ describe('clearDeviceData (Abmelde-Aufräumen, geteilte Geräte)', () => {
   });
 
   it('leert das Offline-Verzeichnis', async () => {
-    localStorage.setItem('worship:offline-services', JSON.stringify({ 7: { savedAt: 1, date: '2026-07-12' } }));
+    localStorage.setItem(
+      'worship:offline-services',
+      JSON.stringify({ 7: { savedAt: 1, date: '2026-07-12' } }),
+    );
     await clearDeviceData();
     expect(localStorage.getItem('worship:offline-services')).toBe('{}');
   });

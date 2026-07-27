@@ -94,11 +94,7 @@ describe('useOverlayKeyboardInset', () => {
 describe('useOverlayKeyboardInset – Wechsel der Overlay-Wurzel', () => {
   function Switcher({ zweite }: { zweite: boolean }) {
     const ref = useOverlayKeyboardInset();
-    return zweite ? (
-      <div ref={ref} data-testid="zweite" />
-    ) : (
-      <div ref={ref} data-testid="erste" />
-    );
+    return zweite ? <div ref={ref} data-testid="zweite" /> : <div ref={ref} data-testid="erste" />;
   }
 
   it('spart auch die NEUE Wurzel aus, wenn der Dialog seinen Zweig wechselt', () => {

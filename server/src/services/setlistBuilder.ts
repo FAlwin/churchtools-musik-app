@@ -33,11 +33,7 @@ import {
 } from './arrangementFiles.js';
 import { metaValue } from './chordproMeta.js';
 import { setlistFingerprint, agendaSignatureList, diffAgendaItems } from './agendaDiff.js';
-import {
-  isHeaderType,
-  formatBerlinTime,
-  responsibleEntries,
-} from './agendaFormat.js';
+import { isHeaderType, formatBerlinTime, responsibleEntries } from './agendaFormat.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
 

@@ -48,8 +48,13 @@ export function getAnnotationsOf(
 }
 
 /** Lied-Einstellungen einer teilenden Person (worship_*-Schlüssel) – für deren Ansicht. */
-export function getSettingsOf(personId: number, songIds: number[]): Promise<Record<string, string>> {
-  return apiFetch<Record<string, string>>(`/api/settings/of/${personId}?songs=${songIds.join(',')}`);
+export function getSettingsOf(
+  personId: number,
+  songIds: number[],
+): Promise<Record<string, string>> {
+  return apiFetch<Record<string, string>>(
+    `/api/settings/of/${personId}?songs=${songIds.join(',')}`,
+  );
 }
 
 /** Räumt den flüchtigen Ansichts-Spiegel (beim Beenden des Ansehens/Personenwechsel). */

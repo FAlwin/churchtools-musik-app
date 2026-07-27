@@ -169,7 +169,8 @@ export function DrawToolbar({
   useEffect(() => {
     if (!paletteOpen) return;
     const onDown = (e: PointerEvent) => {
-      if (colorWrapRef.current && !colorWrapRef.current.contains(e.target as Node)) setPaletteOpen(false);
+      if (colorWrapRef.current && !colorWrapRef.current.contains(e.target as Node))
+        setPaletteOpen(false);
     };
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);
@@ -293,7 +294,11 @@ export function DrawToolbar({
               title={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
               aria-label={t === 'pen' ? 'Stift' : t === 'marker' ? 'Marker' : 'Radierer'}
             >
-              <Icon name={t === 'pen' ? 'pencil' : t === 'marker' ? 'marker' : 'eraser'} size={20} stroke={2} />
+              <Icon
+                name={t === 'pen' ? 'pencil' : t === 'marker' ? 'marker' : 'eraser'}
+                size={20}
+                stroke={2}
+              />
               {drawTool === t && <span className={styles.moreHint} />}
             </button>
             {/* Strichstärke-Popover – klappt auf Höhe GENAU dieses Werkzeugs nach links auf. */}
@@ -345,7 +350,9 @@ export function DrawToolbar({
                 >
                   <span className={styles.sizeBtnLabel}>A−</span>
                 </button>
-                <span className={styles.sizeValue}>{sizeLabel ? sizeLabel(shownSize) : Math.round(shownSize)}</span>
+                <span className={styles.sizeValue}>
+                  {sizeLabel ? sizeLabel(shownSize) : Math.round(shownSize)}
+                </span>
                 <button
                   className={styles.toolBtn}
                   onClick={() => changeSize(sizeStep)}
@@ -373,7 +380,10 @@ export function DrawToolbar({
                   aria-label="Kursiv"
                   aria-pressed={activeStyle.italic}
                 >
-                  <span className={styles.fmtLabel} style={{ fontStyle: 'italic', fontWeight: 600 }}>
+                  <span
+                    className={styles.fmtLabel}
+                    style={{ fontStyle: 'italic', fontWeight: 600 }}
+                  >
                     I
                   </span>
                 </button>
@@ -384,7 +394,10 @@ export function DrawToolbar({
                   aria-label="Unterstrichen"
                   aria-pressed={activeStyle.underline}
                 >
-                  <span className={styles.fmtLabel} style={{ textDecoration: 'underline', fontWeight: 600 }}>
+                  <span
+                    className={styles.fmtLabel}
+                    style={{ textDecoration: 'underline', fontWeight: 600 }}
+                  >
                     U
                   </span>
                 </button>
@@ -394,11 +407,19 @@ export function DrawToolbar({
                     key={a}
                     className={`${styles.toolBtn}${activeStyle.align === a ? ' ' + styles.on : ''}`}
                     onClick={() => setAlign(a)}
-                    title={a === 'left' ? 'Linksbündig' : a === 'center' ? 'Zentriert' : 'Rechtsbündig'}
-                    aria-label={a === 'left' ? 'Linksbündig' : a === 'center' ? 'Zentriert' : 'Rechtsbündig'}
+                    title={
+                      a === 'left' ? 'Linksbündig' : a === 'center' ? 'Zentriert' : 'Rechtsbündig'
+                    }
+                    aria-label={
+                      a === 'left' ? 'Linksbündig' : a === 'center' ? 'Zentriert' : 'Rechtsbündig'
+                    }
                     aria-pressed={activeStyle.align === a}
                   >
-                    <Icon name={`align-${a}` as 'align-left' | 'align-center' | 'align-right'} size={19} stroke={2} />
+                    <Icon
+                      name={`align-${a}` as 'align-left' | 'align-center' | 'align-right'}
+                      size={19}
+                      stroke={2}
+                    />
                   </button>
                 ))}
               </div>
@@ -410,21 +431,43 @@ export function DrawToolbar({
       {/* Aktionen */}
       <div className={styles.sep} />
       {isTextSelected && onDeleteSelected && (
-        <button className={styles.toolBtn} onClick={onDeleteSelected} title="Text löschen" aria-label="Text löschen">
+        <button
+          className={styles.toolBtn}
+          onClick={onDeleteSelected}
+          title="Text löschen"
+          aria-label="Text löschen"
+        >
           <Icon name="trash" size={19} stroke={2} />
         </button>
       )}
       {showUndo && (
         <>
-          <button className={styles.toolBtn} onClick={onUndo} disabled={!canUndo} title="Rückgängig" aria-label="Rückgängig">
+          <button
+            className={styles.toolBtn}
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="Rückgängig"
+            aria-label="Rückgängig"
+          >
             <Icon name="undo" size={19} stroke={2} />
           </button>
-          <button className={styles.toolBtn} onClick={onRedo} disabled={!canRedo} title="Wiederherstellen" aria-label="Wiederherstellen">
+          <button
+            className={styles.toolBtn}
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="Wiederherstellen"
+            aria-label="Wiederherstellen"
+          >
             <Icon name="redo" size={19} stroke={2} />
           </button>
         </>
       )}
-      <button className={styles.clear} onClick={onClear} title="Alles löschen" aria-label="Alles löschen">
+      <button
+        className={styles.clear}
+        onClick={onClear}
+        title="Alles löschen"
+        aria-label="Alles löschen"
+      >
         <Icon name="trash" size={19} stroke={2} />
       </button>
 

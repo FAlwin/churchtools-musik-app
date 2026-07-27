@@ -191,7 +191,9 @@ export function PageDeck({
   const ownSig = joinKeys([ownKeyFor(pageIndex), ownKeyFor(pageIndex + 1)]);
   const overSig = joinKeys([overlayKeyFor(pageIndex), overlayKeyFor(pageIndex + 1)]);
   const neighbourSig = joinKeys(
-    Array.from({ length: Math.max(0, Math.min(pageCount - 1, pageIndex + 3) - Math.max(0, pageIndex - 2) + 1) })
+    Array.from({
+      length: Math.max(0, Math.min(pageCount - 1, pageIndex + 3) - Math.max(0, pageIndex - 2) + 1),
+    })
       .map((_, i) => Math.max(0, pageIndex - 2) + i)
       .flatMap((p) => [ownKeyFor(p), overlayKeyFor(p)]),
   );
@@ -337,7 +339,13 @@ export function PageDeck({
     const layer = layerRefs[slot].current;
     if (!layer) return;
     draws[slot].pushHistory();
-    resizeDrag.current = { slot, id, startY: e.clientY, startSize: size, layerH: layer.clientHeight };
+    resizeDrag.current = {
+      slot,
+      id,
+      startY: e.clientY,
+      startSize: size,
+      layerH: layer.clientHeight,
+    };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function handleResizeMove(e: React.PointerEvent) {

@@ -6,11 +6,14 @@ labels: 'typ:feature'
 ---
 
 ## Ziel
+
 Was soll erreicht werden und warum?
 
 ## Umfang / Akzeptanzkriterien
+
 - [ ]
 - [ ]
 
 ## Hinweise (optional)
+
 Betroffene Dateien, Abhängigkeiten, Design-Überlegungen.

@@ -4,7 +4,7 @@
 > abgeschlossen und wird **nicht mehr gepflegt**. Aktueller Fahrplan: `docs/entwicklung/PROJEKTPLAN.md`;
 > aktuelle Architektur/Stand: `CLAUDE.md`. Nur als Entstehungs-Dokumentation aufbewahrt.
 
-*ECG Donrath · Technische Leitung: Alwin · Stand: 13. Juni 2026 · **fertig & produktiv***
+\*ECG Donrath · Technische Leitung: Alwin · Stand: 13. Juni 2026 · **fertig & produktiv\***
 
 ## Kontext
 
@@ -16,6 +16,7 @@ transponiert und einfach zu bedienen ist – auch für wenig technikaffine Musik
 Grundlage war ein nahezu vollständiger Design-Prototyp (Claude-Design-Handoff).
 
 Festgelegte Entscheidungen:
+
 - **Hosting:** Synology-NAS via Docker; externer Zugang über Synology Reverse Proxy + DDNS
   (`https://musik.ecg-donrath.de`) – **kein Cloudflare** (Entscheidung 13.06.2026)
 - **Anmeldung:** persönlicher ChurchTools-Login pro Musiker
@@ -24,16 +25,16 @@ Festgelegte Entscheidungen:
 
 ## Tech-Stack (laut Vorlage)
 
-| Bereich | Technologie |
-|---|---|
-| Frontend | React + Vite + TypeScript (PWA) |
-| Styling | SCSS Modules, globale Vars in `styles/_variables.scss` |
-| Datenfetching | TanStack Query (alle Calls über `services/`) |
-| Formulare | React Hook Form + Zod |
-| Backend | Node.js + Express + TypeScript |
-| Datenbank | keine (ChurchTools ist Datenquelle; Notizen/Annotationen lokal) |
-| Validierung | Zod (serverseitig auf allen Routen) |
-| Deployment | Docker auf Synology NAS + Synology Reverse Proxy (extern) |
+| Bereich       | Technologie                                                     |
+| ------------- | --------------------------------------------------------------- |
+| Frontend      | React + Vite + TypeScript (PWA)                                 |
+| Styling       | SCSS Modules, globale Vars in `styles/_variables.scss`          |
+| Datenfetching | TanStack Query (alle Calls über `services/`)                    |
+| Formulare     | React Hook Form + Zod                                           |
+| Backend       | Node.js + Express + TypeScript                                  |
+| Datenbank     | keine (ChurchTools ist Datenquelle; Notizen/Annotationen lokal) |
+| Validierung   | Zod (serverseitig auf allen Routen)                             |
+| Deployment    | Docker auf Synology NAS + Synology Reverse Proxy (extern)       |
 
 ## Architektur
 
@@ -46,6 +47,7 @@ Handy/Tablet → /client (React PWA) → /server (Express-Proxy, Session) → Ch
 ```
 
 Ordnerstruktur (npm-Workspaces-Monorepo):
+
 ```
 churchtools-musik-app/
 ├── client/   src/{components,pages,hooks,services,utils,types,styles,assets}
@@ -57,24 +59,30 @@ churchtools-musik-app/
 
 ## Phasen / Schritte
 
-### ✅ Schritt 1 – Git & Grundstruktur *(erledigt)*
+### ✅ Schritt 1 – Git & Grundstruktur _(erledigt)_
+
 git init, .gitignore, .env.example, leere .env, Initial-Commit.
 
-### ✅ Schritt 2 – Tooling & Code-Qualität *(erledigt)*
+### ✅ Schritt 2 – Tooling & Code-Qualität _(erledigt)_
+
 TypeScript strict, ESLint (TS-Plugin), Prettier (singleQuote, semi, tabWidth 2),
 eslint-config-prettier – für client und server.
 
-### ✅ Schritt 3 – Ordnerstruktur (Fullstack) *(erledigt)*
+### ✅ Schritt 3 – Ordnerstruktur (Fullstack) _(erledigt)_
+
 client (Vite+React+TS+SCSS Modules), server (Express+TS), shared/types.
 
-### ✅ Schritt 4 – Sicherheits-Grundregeln *(erledigt)*
+### ✅ Schritt 4 – Sicherheits-Grundregeln _(erledigt)_
+
 Secrets nur via .env; helmet, express-rate-limit, zentraler errorHandler; npm audit berichtet
 (3 moderate, nur Dev-Server esbuild/vite, kein Prod-Risiko – zurückgestellt).
 
-### ✅ Schritt 5 – CLAUDE.md *(erledigt)*
+### ✅ Schritt 5 – CLAUDE.md _(erledigt)_
+
 Aus Vorlage Abschnitt 2 befüllt (Tech-Stack, Konventionen, Security-Checkliste, Changelog).
 
-### ✅ Schritt 6 – Frontend Design & Logik (Mock-Daten) *(erledigt, im Browser verifiziert)*
+### ✅ Schritt 6 – Frontend Design & Logik (Mock-Daten) _(erledigt, im Browser verifiziert)_
+
 - Globales Theme nach `styles/_variables.scss` (Teal #00616E, Orange #EB5E28, Cream #FFFCF2)
 - Screens als `pages/`: Login, Agenda, Setlist, ChordChart
 - Wiederverwendbare Komponenten je mit `*.module.scss`
@@ -84,16 +92,19 @@ Aus Vorlage Abschnitt 2 befüllt (Tech-Stack, Konventionen, Security-Checkliste,
 - Einstellungen + Annotationen via localStorage
 - PWA-Manifest + Icons
 
-### ✅ Schritt 7 – Backend: ChurchTools-Proxy & persönlicher Login *(erledigt)*
+### ✅ Schritt 7 – Backend: ChurchTools-Proxy & persönlicher Login _(erledigt)_
+
 - `routes/` → `controllers/` → `services/churchtools.ts`
 - `POST /api/auth/login`: Zod-validiert, Session serverseitig, signiertes httpOnly-Cookie
 - Proxy: events, agenda, songs/arrangements (inkl. `key`), Datei-Download
 - helmet, strenges Rate-Limit am Login, zentraler Error-Handler
 
-### ✅ Schritt 8 – Frontend an Backend anbinden *(erledigt)*
+### ✅ Schritt 8 – Frontend an Backend anbinden _(erledigt)_
+
 `services/` + TanStack Query statt Mock-Daten; automatisches Transponieren auf Ziel-Tonart.
 
-### ✅ Phase 3 – Editor & Dokumente *(erledigt, vom User abgenommen 11.06.2026)*
+### ✅ Phase 3 – Editor & Dokumente _(erledigt, vom User abgenommen 11.06.2026)_
+
 - **ChordPro-Editor:** Text bearbeiten mit Live-Vorschau; speichert als separate
   `"<Titel> — ECG.chordpro"` in ChurchTools (Original bleibt), Umschalter ECG/Original,
   „Zurücksetzen" löscht die ECG-Datei. Auch Neuanlage, wenn keine Datei existiert.
@@ -101,12 +112,14 @@ Aus Vorlage Abschnitt 2 befüllt (Tech-Stack, Konventionen, Security-Checkliste,
   integriert im normalen Ablauf; mehrseitiges Blättern, Zoom/Anpassen pro Seite (gespeichert),
   Anmerkungen pro Seite. Auswahl pro Lied im Titel-Menü.
 
-### ✅ Schritt 9 – Deployment *(erledigt 11.06.2026)*
+### ✅ Schritt 9 – Deployment _(erledigt 11.06.2026)_
+
 Dockerfile + docker-compose.yml; ein Container liefert API + App aus. **Auf dem
 Synology-NAS deployt** (Container Manager, Projekt `worship-charts`), lokal im WLAN
 live unter `http://<NAS-IP>:3001`. Anleitung in `DEPLOYMENT.md`.
 
-### ✅ Schritt 10 – Ausbau & externer Zugang *(erledigt 12./13.06.2026)*
+### ✅ Schritt 10 – Ausbau & externer Zugang _(erledigt 12./13.06.2026)_
+
 - Kompletten Ablauf anzeigen + **voll bearbeiten** (Drag&Drop/Löschen/Umbenennen/Hinzufügen,
   Rückschreiben nach ChurchTools), Termin-Untertitel.
 - **„Alle Lieder"-Ansicht** mit Suche + Nutzungsstatistik (12 Monate).
@@ -120,9 +133,11 @@ live unter `http://<NAS-IP>:3001`. Anleitung in `DEPLOYMENT.md`.
   Undo/Redo, sicheres Löschen).
 
 ### Optionale Folgethemen (nicht begonnen)
+
 Musik-Abwesenheitsplaner nachbauen · White-Label für andere Gemeinden · Metronom/BPM
 
 ## App lokal starten
+
 ```
 cd ~/ecg-donrath/churchtools-musik-app
 npm install        # einmalig

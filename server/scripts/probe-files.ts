@@ -33,7 +33,9 @@ async function main() {
   const songs = await ctJson('/api/songs?limit=1');
   const song = songs.data?.[0];
   const arr = song?.arrangements?.[0];
-  console.log(`Song: "${song?.name}" · Arrangement "${arr?.name}" · key=${arr?.key} · bpm=${arr?.bpm}`);
+  console.log(
+    `Song: "${song?.name}" · Arrangement "${arr?.name}" · key=${arr?.key} · bpm=${arr?.bpm}`,
+  );
   console.log(`Dateien: ${(arr?.files ?? []).map((f: any) => f.name).join(', ')}`);
 
   for (const f of arr?.files ?? []) {
@@ -60,7 +62,9 @@ async function main() {
       const ag = agenda.data ?? agenda;
       const items = (ag.items ?? []) as any[];
       const songItems = items.filter((i) => i.song || /song/i.test(String(i.type ?? '')));
-      console.log(`✓ Event ${ev.id} "${ev.name}" (${ev.startDate}): Agenda mit ${items.length} Items, ${songItems.length} Songs`);
+      console.log(
+        `✓ Event ${ev.id} "${ev.name}" (${ev.startDate}): Agenda mit ${items.length} Items, ${songItems.length} Songs`,
+      );
       if (songItems.length && !found) {
         found = true;
         console.log('\n=== AGENDA-ITEM (Song) – Felder ===');

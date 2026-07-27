@@ -31,7 +31,12 @@ interface AppNav {
  * Persistenz gegen den iOS-PWA-Kaltstart: sichert den Stand laufend und stellt ihn beim Start wieder
  * her. Reine Zustands-/Speicherlogik – ohne sie wäre `App` mit drei Effekten und sechs States voll.
  */
-export function useAppNav({ isAuthenticated, isAuthLoading, services, servicesLoading }: UseAppNavArgs): AppNav {
+export function useAppNav({
+  isAuthenticated,
+  isAuthLoading,
+  services,
+  servicesLoading,
+}: UseAppNavArgs): AppNav {
   // Einmalig beim Mount den gespeicherten Stand lesen (oder null).
   const [restored] = useState(loadNav);
   const [tab, setTab] = useState<TabId>(() => restored?.tab ?? 'termine');

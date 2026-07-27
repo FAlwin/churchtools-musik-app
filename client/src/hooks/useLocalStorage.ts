@@ -4,7 +4,10 @@ import { useCallback, useState } from 'react';
  * Wie useState, persistiert den Wert aber in localStorage.
  * Serialisiert via JSON. Fällt bei Fehlern auf den Initialwert zurück.
  */
-export function useLocalStorage<T>(key: string, initial: T): [T, (value: T | ((prev: T) => T)) => void] {
+export function useLocalStorage<T>(
+  key: string,
+  initial: T,
+): [T, (value: T | ((prev: T) => T)) => void] {
   const [stored, setStored] = useState<T>(() => {
     try {
       const raw = localStorage.getItem(key);

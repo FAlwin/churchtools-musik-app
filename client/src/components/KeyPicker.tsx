@@ -14,7 +14,14 @@ interface KeyPickerProps {
 }
 
 /** Bottom-Sheet zur Tonart-Auswahl (Dur/Moll). */
-export function KeyPicker({ currentKey, defaultKey, isCustom, onPick, onReset, onClose }: KeyPickerProps) {
+export function KeyPicker({
+  currentKey,
+  defaultKey,
+  isCustom,
+  onPick,
+  onReset,
+  onClose,
+}: KeyPickerProps) {
   return (
     <Sheet title="Tonart wählen" onClose={onClose}>
       <div className={styles.secLbl}>Dur</div>

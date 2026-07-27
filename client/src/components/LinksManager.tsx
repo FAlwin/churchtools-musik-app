@@ -25,7 +25,8 @@ import styles from './LinksManager.module.scss';
 
 /** Eindeutige ID – mit Fallback, da crypto.randomUUID nur im sicheren Kontext (HTTPS) existiert. */
 function genId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+    return crypto.randomUUID();
   return `l${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 

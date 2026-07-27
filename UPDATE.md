@@ -34,11 +34,11 @@ In der `docker-compose.yml` steht hinter `image:` ein Tag. Empfohlen ist **`:2`*
 image: ghcr.io/falwin/churchtools-musik-app:2
 ```
 
-| Tag | Bedeutung |
-|---|---|
+| Tag                  | Bedeutung                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------- |
 | **`:2`** (empfohlen) | Alle Updates der Version 2 (Funktionen + Bugfixes), **kein** ungewollter Sprung auf v3 |
-| `:2.13.6` | Eine ganz feste Version – ändert sich nie von selbst (volle Kontrolle) |
-| `:latest` | Immer das Allerneueste, **inklusive** großer Umstellungen (v3 …) |
+| `:2.13.6`            | Eine ganz feste Version – ändert sich nie von selbst (volle Kontrolle)                 |
+| `:latest`            | Immer das Allerneueste, **inklusive** großer Umstellungen (v3 …)                       |
 
 Ein Sprung auf eine größere Version (z. B. von `:2` auf `:3`) ist damit immer eine **bewusste**
 Entscheidung – Tag ändern, vorher kurz ins [CHANGELOG.md](CHANGELOG.md) schauen, dann aktualisieren.

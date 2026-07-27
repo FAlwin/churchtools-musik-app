@@ -23,9 +23,7 @@ export const MAX_SETTINGS_BYTES_PER_ACCOUNT = 5 * 1024 * 1024; // 5 MB
 
 /** Rein & testbar: Liegt ein Einstellungs-Store mit dieser Eintragszahl + Bytegröße im Rahmen? */
 export function withinSettingsLimits(entryCount: number, totalBytes: number): boolean {
-  return (
-    entryCount <= MAX_SETTINGS_PER_ACCOUNT && totalBytes <= MAX_SETTINGS_BYTES_PER_ACCOUNT
-  );
+  return entryCount <= MAX_SETTINGS_PER_ACCOUNT && totalBytes <= MAX_SETTINGS_BYTES_PER_ACCOUNT;
 }
 
 /**
@@ -41,7 +39,8 @@ export function withinSettingsLimits(entryCount: number, totalBytes: number): bo
  * Schlüssel **stillschweigend verwerfen** – die Einstellungen wären dann geräteübergreifend weg.
  * Muss mit `client/src/services/userSettings.ts` übereinstimmen.
  */
-export const SETTINGS_KEY_RE = /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_\d+(?:_[a-z0-9-]+){0,2}$/;
+export const SETTINGS_KEY_RE =
+  /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_\d+(?:_[a-z0-9-]+){0,2}$/;
 /** Lied-ID aus einem Einstellungs-Schlüssel ziehen. */
 function songIdOf(key: string): number | null {
   const m = key.match(/^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_(\d+)/);
@@ -104,7 +103,10 @@ export async function getSettings(userId: number, songIds: number[]): Promise<St
 }
 
 /** Mehrere Einstellungen setzen/entfernen (null/"" entfernt). Nur erlaubte Schlüssel. */
-export async function putSettings(userId: number, entries: Record<string, string | null>): Promise<void> {
+export async function putSettings(
+  userId: number,
+  entries: Record<string, string | null>,
+): Promise<void> {
   await withLock(userId, async () => {
     const store = await read(userId);
     // Auf einer KOPIE arbeiten und erst nach der Grenzprüfung übernehmen – sonst wäre der Store

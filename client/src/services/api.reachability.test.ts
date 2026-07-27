@@ -25,10 +25,7 @@ describe('apiFetch → Erreichbarkeit', () => {
 
   it('Gateway-Fehler 502 (Backend weg) → offline und wirft ApiError', async () => {
     markReachable(true);
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(new Response('Bad Gateway', { status: 502 })),
-    );
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Bad Gateway', { status: 502 })));
     await expect(apiFetch('/api/test')).rejects.toBeInstanceOf(ApiError);
     expect(getReachable()).toBe(false);
   });

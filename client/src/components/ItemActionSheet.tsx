@@ -1,11 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { AgendaItem, AgendaServiceOption } from '@shared/types/index';
 import type { AgendaItemUpdate } from '../services/churchtoolsApi';
-import {
-  pendingAgendaFields,
-  isDurationValid,
-  type LinkState,
-} from '../utils/agendaItemChanges';
+import { pendingAgendaFields, isDurationValid, type LinkState } from '../utils/agendaItemChanges';
 import { SongPicker } from './SongPicker';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
@@ -84,8 +80,7 @@ export function ItemActionSheet({
   // damit läuft sie einmal je Änderung statt bei jedem Render und ist geprüft.
   const durationValid = isDurationValid(duration);
   const pending = useMemo(
-    () =>
-      pendingAgendaFields(item, { title, duration, responsible, note, link: linkState }),
+    () => pendingAgendaFields(item, { title, duration, responsible, note, link: linkState }),
     [item, title, duration, responsible, note, linkState],
   );
 

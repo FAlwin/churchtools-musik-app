@@ -6,6 +6,7 @@ Entscheidungen unten anhängen (Datum + Kontext + Entscheidung + Begründung).
 ---
 
 ## Keine eigene Datenbank
+
 **Entscheidung:** Die App hält keine eigene DB. ChurchTools ist die einzige
 Datenquelle; das Backend ist ein reiner Proxy.
 **Begründung:** Doppelte Datenhaltung (Lieder, Setlisten, Tonarten) wäre fehleranfällig
@@ -18,12 +19,14 @@ Teilen-Status) liegen **pro Konto als JSON-Dateien auf einem Docker-Volume** (En
 klassischer Datenbank. Die Blueprint-Punkte rund um Datenbanken entfallen für dieses Projekt.
 
 ## Auth über ChurchTools-Session
+
 **Entscheidung:** Login mit persönlichem ChurchTools-Konto; das Backend hält die
 Session und gibt dem Client ein signiertes httpOnly-Cookie.
 **Begründung:** Keine zweite Nutzerverwaltung. Rechte (wer darf Ablauf bearbeiten,
 wer sieht nur das Liederbuch) kommen direkt aus ChurchTools (`/api/capabilities`).
 
 ## Reverse Proxy statt Cloudflare
+
 **Entscheidung:** Externer Zugang über Synology Reverse Proxy + DDNS + Let's Encrypt,
 **kein** Cloudflare Tunnel (anders als im Blueprint vorgeschlagen).
 **Begründung:** Das NAS bringt Reverse Proxy und Zertifikatsverwaltung mit; der
@@ -31,13 +34,15 @@ Router leitet nur 443/80 weiter. Eine zusätzliche Cloudflare-Abhängigkeit ist
 nicht nötig. DSM-Ports (5000/5001) bleiben geschlossen.
 
 ## ChordPro-Bearbeitung als separate App-Version
+
 **Entscheidung:** Der Editor speichert Änderungen als eigene Datei
 `"<Titel> — <Name> (App).chordpro"` (Marker `(App)`; Alt-Bestand `(ECG)` bleibt
 abwärtskompatibel erkannt), das Original-Arrangement bleibt unangetastet.
 **Begründung:** Kein Risiko, von SongSelect bezogene Originale zu überschreiben;
 jederzeit auf das Original zurückführbar.
 
-## Branding: erst White-Label, dann feste ChurchTools-Version *(geändert 19.06.2026)*
+## Branding: erst White-Label, dann feste ChurchTools-Version _(geändert 19.06.2026)_
+
 **Ursprünglich (verworfen):** Pro-Gemeinde-Branding (Name/Logo/Farben/CCLI) zur Laufzeit aus
 `site.json` auf einem Docker-Volume – ein gemeinsames Image für alle, Branding kommt zur Laufzeit.
 **Geändert zu:** eine **feste ChurchTools-Version** mit einheitlicher Optik und eigenem Logo für alle
@@ -47,13 +52,15 @@ weniger Konfigurationsfläche und Fehlerquellen. **Geblieben ist nur** der anpas
 `CLAUDE.md` (Abschnitt „Design & Branding") + `design-system.md`.
 
 ## Admin-Schutz über ChurchTools-Recht
+
 **Entscheidung:** Nur ChurchTools-Administratoren dürfen den Gemeindenamen ändern. Das maßgebliche
 Recht ist konfigurierbar (`ADMIN_PERMISSION`, Default `churchcore:administer persons`).
 **Begründung:** Keine zweite Passwortverwaltung; konsistent zur restlichen rechtebewussten UI.
 **Hinweis:** Das exakte Admin-Recht variiert je CT-Instanz und sollte vor dem Ausrollen an eine
 fremde Gemeinde an deren Instanz verifiziert werden.
 
-## Verteilung: öffentliches GHCR-Image, MIT-Lizenz *(geändert 22.06.2026)*
+## Verteilung: öffentliches GHCR-Image, MIT-Lizenz _(geändert 22.06.2026)_
+
 **Ursprünglich geplant (verworfen):** privates GHCR-Image, Nutzung nur auf Anfrage, proprietäre Lizenz.
 **Aktuelle Entscheidung:** Das Repo ist **öffentlich**, die Software steht unter der **MIT-Lizenz**
 (`LICENSE`), die Docker-Images sind **anonym aus GHCR ziehbar**. Jede Gemeinde hostet ihre eigene
@@ -62,11 +69,13 @@ Instanz selbst (Anleitung `INSTALL.md` + `UPDATE.md`).
 keine Secrets im Image (Env nur zur Laufzeit). Jede Gemeinde ist für DSGVO + eigenen Zugang verantwortlich.
 
 ## Schrift/Spalten gesperrt bei vorhandenen Anmerkungen
+
 **Entscheidung:** Solange Anmerkungen existieren, sind Schriftgröße/Spaltenzahl gesperrt.
 **Begründung:** Anmerkungen sind pixelbasiert (Canvas). Würde der Text neu umbrechen,
 lägen die Anmerkungen falsch. Sperre verhindert das Verrutschen.
 
-## `trust proxy: 'loopback'` statt `1` *(26.07.2026, #214)*
+## `trust proxy: 'loopback'` statt `1` _(26.07.2026, #214)_
+
 **Entscheidung:** In Produktion gilt `app.set('trust proxy', 'loopback')`.
 **Begründung:** Von dieser Einstellung hängt die gesamte IP-Härtung ab – vor allem das Login-Limit
 (`routes/auth.ts`), das mangels Session **nur** die IP hat. Mit der festen `1` vertraut Express genau
@@ -81,7 +90,8 @@ Damit hängt die Annahme nicht mehr an der (von hier nicht einsehbaren) Proxy-Ke
 `deploy/docker-compose.prod.yml` lädt zum Umstellen auf `3001:3001` ein), wäre `X-Forwarded-For` frei
 wählbar und das IP-Limit umgehbar. Prod bindet deshalb bewusst nur `127.0.0.1`.
 
-## Server läuft per `tsx` aus dem Quelltext, ohne Build-Artefakt *(27.07.2026, #199)*
+## Server läuft per `tsx` aus dem Quelltext, ohne Build-Artefakt _(27.07.2026, #199)_
+
 `server/package.json` fährt `"build": "tsc --noEmit"` und `"start": "tsx src/index.ts"` – in
 Produktion wird also bei jedem Start transpiliert, und `tsx` (eine devDependency) muss im Image
 liegen. Deshalb zieht `npm ci` im Dockerfile die Dev-Abhängigkeiten mit.
@@ -97,7 +107,8 @@ kein Verhalten, sondern nur Bequemlichkeit.
 Build, und der Healthcheck als Gegenprobe (der Container muss ohne `tsx` hochkommen). Vorher auf
 Staging prüfen – ein Fehlschlag zeigt sich erst beim Start, nicht beim Bauen.
 
-## Entzogene Team-Notizen-Rechte greifen mit bis zu 5 Minuten Verzögerung *(27.07.2026, #199)*
+## Entzogene Team-Notizen-Rechte greifen mit bis zu 5 Minuten Verzögerung _(27.07.2026, #199)_
+
 `getCapabilities` merkt sich die Rechte eines Kontos bis zu 5 Minuten (`capsMemo` in
 `server/src/services/churchtools.ts`). Wird jemandem der Zugriff auf Team-Notizen in ChurchTools
 entzogen, kann er sie in diesem Fenster noch sehen.
@@ -109,15 +120,16 @@ wiegt schwerer als ein Rechteentzug, der ein paar Minuten später greift. Es geh
 Anmerkungen des eigenen Teams, nicht um Personen- oder Finanzdaten. Wer den Entzug sofort
 durchsetzen muss, startet den Container neu.
 
-## Ein Prozess, ein Zustand – die App skaliert nicht horizontal *(27.07.2026, #198)*
+## Ein Prozess, ein Zustand – die App skaliert nicht horizontal _(27.07.2026, #198)_
+
 Vier Caches leben **im Arbeitsspeicher des Server-Prozesses**, alle in `services/`:
 
-| Wo | Was | Lebensdauer |
-|---|---|---|
-| `versionMemo.ts` | Ablauf-Fingerabdruck je Termin **und Konto** | 5 s |
-| `churchtools.ts` (`userIdCache`) | Konto-ID zum Session-Cookie | Sitzung |
-| `churchtools.ts` (`capsMemo`) | Rechte eines Kontos | 5 min |
-| `setlistBuilder.ts` (`usageCache`) | org-weite Lied-Statistik | 1 h |
+| Wo                                 | Was                                          | Lebensdauer |
+| ---------------------------------- | -------------------------------------------- | ----------- |
+| `versionMemo.ts`                   | Ablauf-Fingerabdruck je Termin **und Konto** | 5 s         |
+| `churchtools.ts` (`userIdCache`)   | Konto-ID zum Session-Cookie                  | Sitzung     |
+| `churchtools.ts` (`capsMemo`)      | Rechte eines Kontos                          | 5 min       |
+| `setlistBuilder.ts` (`usageCache`) | org-weite Lied-Statistik                     | 1 h         |
 
 **Bewusst so.** Die App läuft als **eine** Container-Instanz auf dem NAS; ein geteilter Speicher
 (Redis o. ä.) wäre ein zusätzlicher Dienst, der ausfallen kann – für Caches, deren Verlust nichts

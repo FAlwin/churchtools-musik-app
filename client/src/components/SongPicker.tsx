@@ -45,7 +45,11 @@ export function SongPicker({ onPick, busy, autoFocus }: SongPickerProps) {
         {lib.isLoading ? (
           <CenterMessage loading text="Lieder werden geladen…" />
         ) : lib.isError ? (
-          <CenterMessage icon="⚠️" text="Lieder konnten nicht geladen werden." onRetry={() => lib.refetch()} />
+          <CenterMessage
+            icon="⚠️"
+            text="Lieder konnten nicht geladen werden."
+            onRetry={() => lib.refetch()}
+          />
         ) : f.list.length === 0 ? (
           <div className={styles.empty}>
             {query

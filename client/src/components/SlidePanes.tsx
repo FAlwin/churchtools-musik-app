@@ -49,7 +49,9 @@ export function SlidePanes({ slide, panes, perView, overlayRef }: SlidePanesProp
                 >
                   <div
                     className={styles.pageBox}
-                    style={{ justifyItems: perView === 2 && pane.length === 1 ? 'start' : 'center' }}
+                    style={{
+                      justifyItems: perView === 2 && pane.length === 1 ? 'start' : 'center',
+                    }}
                     ref={(n) => {
                       if (n && s.canvas.parentElement !== n) {
                         s.canvas.className = styles.contentCanvas;

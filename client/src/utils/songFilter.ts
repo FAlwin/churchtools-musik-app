@@ -55,7 +55,8 @@ export function filterSongs(
   const query = opts.query.trim().toLowerCase();
   const searched = query
     ? songs.filter(
-        (s) => s.name.toLowerCase().includes(query) || (s.author ?? '').toLowerCase().includes(query),
+        (s) =>
+          s.name.toLowerCase().includes(query) || (s.author ?? '').toLowerCase().includes(query),
       )
     : [...songs];
 

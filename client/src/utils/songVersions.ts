@@ -28,7 +28,7 @@ export function selectedVersionKey(song: SetlistSong): string {
   const saved = localStorage.getItem(`worship_ver_${song.id}`);
   const keys = availableVersions(song).map((v) => v.key);
   if (saved && keys.includes(saved)) return saved;
-  return song.chordpro ? 'original' : song.versions[0]?.key ?? 'original';
+  return song.chordpro ? 'original' : (song.versions[0]?.key ?? 'original');
 }
 
 /** ChordPro-Text einer Version (fällt auf das Original zurück). */
@@ -56,7 +56,12 @@ export function lsVersion(base: string, songId: number, versionKey: string): str
 }
 
 /** Schreibt/entfernt einen pro-Version gespeicherten Einstellungswert (lokal + Konto-Sync). */
-export function setLsVersion(base: string, songId: number, versionKey: string, value: string | null): void {
+export function setLsVersion(
+  base: string,
+  songId: number,
+  versionKey: string,
+  value: string | null,
+): void {
   const k = fullKey(base, songId, versionKey);
   if (value === null) localStorage.removeItem(k);
   else localStorage.setItem(k, value);

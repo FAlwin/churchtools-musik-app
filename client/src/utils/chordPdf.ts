@@ -40,8 +40,21 @@ const MUTED_COLOR: [number, number, number] = [90, 90, 90];
  * Abschnitts-Labels, 1/2 Spalten, Seitenumbruch). ChordPro bleibt die Quelle – die PDF ist
  * die erzeugte Ansicht/das Export-Format. Liefert das fertige jsPDF-Dokument zurück.
  */
-export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, doc?: jsPDF): jsPDF {
-  const { semitones = 0, cols = 1, fontPt = 11, lyricsOnly = false, flat = false, sectionSemitones, displayKey, logo } = opts;
+export function generateChordPdf(
+  song: SetlistSong,
+  opts: ChordPdfOptions = {},
+  doc?: jsPDF,
+): jsPDF {
+  const {
+    semitones = 0,
+    cols = 1,
+    fontPt = 11,
+    lyricsOnly = false,
+    flat = false,
+    sectionSemitones,
+    displayKey,
+    logo,
+  } = opts;
   const d = doc ?? new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
   const lyricH = fontPt * PT_TO_MM * 1.18; // Höhe einer Textzeile
@@ -86,7 +99,8 @@ export function generateChordPdf(song: SetlistSong, opts: ChordPdfOptions = {}, 
       const lw = 17; // mm (eng zugeschnittenes Logo → ohne Eigenrand kleiner ansetzen)
       const logoMargin = 6; // sauber in die Ecke, oben = rechts gleich
       let lh = lw;
-      if (typeof logo !== 'string' && logo.naturalWidth > 0) lh = lw * (logo.naturalHeight / logo.naturalWidth);
+      if (typeof logo !== 'string' && logo.naturalWidth > 0)
+        lh = lw * (logo.naturalHeight / logo.naturalWidth);
       d.addImage(logo, 'PNG', PAGE_W - logoMargin - lw, logoMargin, lw, lh);
       logoBottom = logoMargin + lh;
     } catch {

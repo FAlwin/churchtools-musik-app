@@ -19,7 +19,8 @@
     "test:cov": "npm run test:cov --workspace=client",
     "test:e2e": "playwright test",
     "testplan": "node scripts/testplan.mjs",
-    "format": "prettier --write \"**/*.{ts,tsx,scss,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,scss,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,scss,json,md}\""
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

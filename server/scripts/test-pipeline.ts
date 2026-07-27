@@ -30,7 +30,9 @@ async function main() {
   console.log('=== Gottesdienste mit Setlist ===');
   const services = await getServicesWithSetlists(cookie, '2026-05-01', '2026-07-10');
   for (const s of services) {
-    console.log(`  [${s.id}] ${s.weekday} ${s.day}. ${s.month} · ${s.name} · ${s.songCount} Songs · ${s.location}`);
+    console.log(
+      `  [${s.id}] ${s.weekday} ${s.day}. ${s.month} · ${s.name} · ${s.songCount} Songs · ${s.location}`,
+    );
   }
   if (!services.length) {
     console.log('  (keine)');
@@ -41,7 +43,10 @@ async function main() {
   console.log(`\n=== Setlist von Event ${target.id} (${target.name}) ===`);
   const songs = await getSetlistSongs(cookie, target.id);
   for (const song of songs) {
-    const transp = song.originalKey === song.targetKey ? song.originalKey : `${song.originalKey}→${song.targetKey}`;
+    const transp =
+      song.originalKey === song.targetKey
+        ? song.originalKey
+        : `${song.originalKey}→${song.targetKey}`;
     console.log(
       `  • ${song.title} | Tonart ${transp} | bpm ${song.bpm ?? '-'} | ChordPro ${song.chordpro.length} Zeichen | CCLI ${song.ccli ?? '-'}`,
     );

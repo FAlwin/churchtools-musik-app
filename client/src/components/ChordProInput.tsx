@@ -85,7 +85,12 @@ const theme = EditorView.theme({
     // Ziffern/Buchstaben in Akkorden gleich breit halten → Chips wirken ruhig.
     fontVariantNumeric: 'tabular-nums',
   },
-  '.cm-content': { padding: '18px 18px 32px', fontSize: '16px', lineHeight: '1.95', caretColor: 'var(--blue)' },
+  '.cm-content': {
+    padding: '18px 18px 32px',
+    fontSize: '16px',
+    lineHeight: '1.95',
+    caretColor: 'var(--blue)',
+  },
   // Akkorde [C] als kompakter Chip mit zartem Hintergrund.
   '.cm-cp-chord': {
     color: 'var(--blue-ink)',
@@ -99,7 +104,9 @@ const theme = EditorView.theme({
   '.cm-cp-dir': { color: 'var(--cp-dir)', fontWeight: '700' },
   '.cm-cp-dir-val': { color: 'var(--text)', fontWeight: '800' },
   '.cm-cursor': { borderLeftColor: 'var(--blue)', borderLeftWidth: '2px' },
-  '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': { backgroundColor: 'var(--blue-soft)' },
+  '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
+    backgroundColor: 'var(--blue-soft)',
+  },
 });
 
 interface ChordProInputProps {
@@ -154,7 +161,10 @@ export const ChordProInput = forwardRef<ChordProHandle, ChordProInputProps>(func
         if (!ins.endsWith('\n')) ins = ins + '\n';
       }
       const caret = sel.from + ins.length - (opts?.caretBack ?? 0);
-      view.dispatch({ changes: { from: sel.from, to: sel.to, insert: ins }, selection: { anchor: caret } });
+      view.dispatch({
+        changes: { from: sel.from, to: sel.to, insert: ins },
+        selection: { anchor: caret },
+      });
       view.focus();
     },
     appendChord(suffix) {

@@ -7,7 +7,8 @@ import { apiFetch, ApiError } from './api';
 import { getReachable } from './reachability';
 
 // Muss mit `server/src/services/userSettings.ts` übereinstimmen (Aufbau dort erklärt, #215).
-const SETTINGS_KEY_RE = /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_\d+(?:_[a-z0-9-]+){0,2}$/;
+const SETTINGS_KEY_RE =
+  /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_\d+(?:_[a-z0-9-]+){0,2}$/;
 const MIGRATED_FLAG = 'worship_settings_migrated_v1';
 
 let disabled = false;

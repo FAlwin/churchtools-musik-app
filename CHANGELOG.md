@@ -927,6 +927,7 @@ Erster **öffentlicher** Release, für die Verteilung an andere Gemeinden
 (jede Gemeinde betreibt ihre eigene, autarke Instanz desselben Codes).
 
 ### Geändert
+
 - **ChurchTools-Look** als feste App-Optik (Tab-Navigation, neue Farb-/Schrift-Tokens,
   Light/Dark). Die frühere White-Label-Idee (Theming pro Gemeinde) ist verworfen.
 - **Von ECG entkoppelt:** `CHURCHTOOLS_BASE_URL` ist Pflichtfeld ohne Default (die App
@@ -936,6 +937,7 @@ Erster **öffentlicher** Release, für die Verteilung an andere Gemeinden
   weiterhin erkannt und beim nächsten Speichern automatisch übernommen.
 
 ### Hinzugefügt
+
 - **Verteilung per fertigem Image:** automatischer Build bei jedem Versions-Tag
   (`v*`) → Multi-Arch-Image (amd64 **und** arm64) nach GHCR.
 - End-User-Verteilpaket unter `deploy/` (image-basiertes `docker-compose.yml` + `.env.example`).

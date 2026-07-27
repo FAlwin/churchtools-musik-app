@@ -7,14 +7,24 @@ const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 
 function parts(iso: string): { day: string; month: string; weekday: string; time: string } {
   const d = new Date(iso);
   const day = new Intl.DateTimeFormat('de-DE', { day: '2-digit', timeZone: TZ }).format(d);
-  const monthNum = Number(new Intl.DateTimeFormat('en-US', { month: 'numeric', timeZone: TZ }).format(d));
+  const monthNum = Number(
+    new Intl.DateTimeFormat('en-US', { month: 'numeric', timeZone: TZ }).format(d),
+  );
   const weekday = new Intl.DateTimeFormat('de-DE', { weekday: 'long', timeZone: TZ }).format(d);
-  const time = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: TZ }).format(d);
+  const time = new Intl.DateTimeFormat('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: TZ,
+  }).format(d);
   return { day, month: MONTHS[monthNum - 1] ?? '', weekday, time: `${time} Uhr` };
 }
 
 /** Wandelt ein ChurchTools-Event in unser Service-Format um. */
-export function mapEventToService(ev: CtEvent, songCount: number, subtitle: string | null = null): Service {
+export function mapEventToService(
+  ev: CtEvent,
+  songCount: number,
+  subtitle: string | null = null,
+): Service {
   const p = parts(ev.startDate);
   return {
     id: ev.id,

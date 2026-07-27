@@ -33,7 +33,11 @@ describe('putAnnotation – Konto-Obergrenze (#139)', () => {
   const key = (n: number) => `song${n}_vorig_1`;
 
   it('normale Anmerkung wird gespeichert und ist wieder lesbar', async () => {
-    await mod.putAnnotation(USER, key(1), { texts: [], strokes: 'data:image/png;base64,AAAA', zoom: null });
+    await mod.putAnnotation(USER, key(1), {
+      texts: [],
+      strokes: 'data:image/png;base64,AAAA',
+      zoom: null,
+    });
     const stored = await mod.getAnnotations(USER, [1]);
     expect(stored[key(1)]?.strokes).toBe('data:image/png;base64,AAAA');
   });

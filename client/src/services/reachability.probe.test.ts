@@ -19,14 +19,20 @@ describe('probeReachable', () => {
   it('holt den Zustand zurück auf „erreichbar", wenn der Server antwortet', async () => {
     markReachable(false);
     expect(getReachable()).toBe(false);
-    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response('{}'))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => Promise.resolve(new Response('{}'))),
+    );
 
     await expect(probeReachable()).resolves.toBe(true);
     expect(getReachable()).toBe(true);
   });
 
   it('setzt bei einem Netzwerkfehler auf „nicht erreichbar"', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.reject(new TypeError('offline'))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => Promise.reject(new TypeError('offline'))),
+    );
     await expect(probeReachable()).resolves.toBe(false);
     expect(getReachable()).toBe(false);
   });
@@ -52,9 +58,7 @@ describe('probeReachable', () => {
 
   it('bündelt parallele Aufrufe zu EINER Anfrage', async () => {
     // online-Event, Sichtbarkeitswechsel und Anmeldeversuch können gleichzeitig auslösen.
-    const fetchMock = vi
-      .fn()
-      .mockImplementation(() => Promise.resolve(new Response('{}')));
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response('{}')));
     vi.stubGlobal('fetch', fetchMock);
     await Promise.all([probeReachable(), probeReachable(), probeReachable()]);
     expect(fetchMock).toHaveBeenCalledTimes(1);

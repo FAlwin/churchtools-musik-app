@@ -126,7 +126,9 @@ export function parseLine(line: string): ChordPair[] {
 export function parseMetadata(text: string): Record<string, string> {
   const meta: Record<string, string> = {};
   for (const raw of text.split('\n')) {
-    const m = raw.trim().match(/^\{(title|artist|key|tempo|time|ccli|composer|copyright)[:\s]+(.+?)\}$/i);
+    const m = raw
+      .trim()
+      .match(/^\{(title|artist|key|tempo|time|ccli|composer|copyright)[:\s]+(.+?)\}$/i);
     if (m) meta[m[1].toLowerCase()] = m[2].trim();
   }
   return meta;

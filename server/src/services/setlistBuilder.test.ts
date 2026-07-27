@@ -1,11 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CtArrangementFile, CtAgendaItem } from './churchtools.js';
-import {
-  versionSlug,
-  versionNameOf,
-  versionFileName,
-  documentsOf,
-} from './arrangementFiles.js';
+import { versionSlug, versionNameOf, versionFileName, documentsOf } from './arrangementFiles.js';
 import { metaValue } from './chordproMeta.js';
 import { setlistFingerprint, diffAgendaItems } from './agendaDiff.js';
 import {
@@ -60,12 +55,24 @@ describe('diffAgendaItems (#161 – was hat sich im Ablauf geändert)', () => {
 });
 
 /** Minimaler Agenda-Eintrag (nur die für den Fingerabdruck relevanten Felder). */
-function item(id: number, song?: { songId: number; arrangementId: number; key: string | null }): CtAgendaItem {
+function item(
+  id: number,
+  song?: { songId: number; arrangementId: number; key: string | null },
+): CtAgendaItem {
   return {
     id,
     title: song ? 'Lied' : 'Punkt',
     ...(song
-      ? { song: { songId: song.songId, arrangementId: song.arrangementId, title: 'x', arrangement: 'y', key: song.key, bpm: null } }
+      ? {
+          song: {
+            songId: song.songId,
+            arrangementId: song.arrangementId,
+            title: 'x',
+            arrangement: 'y',
+            key: song.key,
+            bpm: null,
+          },
+        }
       : {}),
   };
 }
@@ -172,7 +179,8 @@ describe('versionFileName', () => {
 describe('metaValue (ChordPro-Metadaten)', () => {
   it('liest {key: E}', () => expect(metaValue('{key: E}\n[E]Text', 'key')).toBe('E'));
   it('liest mehrstellige Werte {key:Ab}', () => expect(metaValue('{key:Ab}', 'key')).toBe('Ab'));
-  it('liefert null, wenn der Schlüssel fehlt', () => expect(metaValue('[C]nur Text', 'key')).toBeNull());
+  it('liefert null, wenn der Schlüssel fehlt', () =>
+    expect(metaValue('[C]nur Text', 'key')).toBeNull());
 });
 
 describe('isHeaderType', () => {
@@ -203,9 +211,9 @@ describe('cleanServiceName (CT-Dienst-Token säubern)', () => {
 
 describe('responsibleEntries (Zuständige, dedupliziert)', () => {
   it('besetzte Person → open=false', () => {
-    expect(responsibleEntries({ responsible: { persons: [{ person: { title: 'Max Muster' } }] } })).toEqual([
-      { label: 'Max Muster', open: false },
-    ]);
+    expect(
+      responsibleEntries({ responsible: { persons: [{ person: { title: 'Max Muster' } }] } }),
+    ).toEqual([{ label: 'Max Muster', open: false }]);
   });
   it('offener Dienstplatz → Dienstname, open=true', () => {
     expect(responsibleEntries({ responsible: { persons: [{ service: '[Musik]' }] } })).toEqual([
@@ -233,7 +241,10 @@ describe('responsibleEntries (Zuständige, dedupliziert)', () => {
   it('Dienst-Token im text wird übersprungen (kommt über persons[])', () => {
     expect(
       responsibleEntries({
-        responsible: { text: '[Moderation]', persons: [{ service: '[Moderation]', person: { title: 'Willi' } }] },
+        responsible: {
+          text: '[Moderation]',
+          persons: [{ service: '[Moderation]', person: { title: 'Willi' } }],
+        },
       }),
     ).toEqual([{ label: 'Willi', open: false }]);
   });
@@ -258,14 +269,18 @@ describe('responsibleEntries (Zuständige, dedupliziert)', () => {
 
 describe('documentsOf (PDF/Bild-Dokumente)', () => {
   it('erkennt PDF und Bild, ignoriert ChordPro', () => {
-    expect(documentsOf([file('chart.pdf', 1), file('foto.jpg', 2), file('lied.chordpro', 3)])).toEqual([
+    expect(
+      documentsOf([file('chart.pdf', 1), file('foto.jpg', 2), file('lied.chordpro', 3)]),
+    ).toEqual([
       { fileId: 1, name: 'chart.pdf', type: 'pdf' },
       { fileId: 2, name: 'foto.jpg', type: 'image' },
     ]);
   });
   it('überspringt Dateien ohne id in der URL', () => {
-    expect(documentsOf([{ name: 'x.pdf', fileUrl: 'https://x.ct/ohne-id' } as unknown as CtArrangementFile])).toEqual(
-      [],
-    );
+    expect(
+      documentsOf([
+        { name: 'x.pdf', fileUrl: 'https://x.ct/ohne-id' } as unknown as CtArrangementFile,
+      ]),
+    ).toEqual([]);
   });
 });

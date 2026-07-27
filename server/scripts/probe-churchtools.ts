@@ -52,7 +52,9 @@ async function main() {
   // 1) Wer bin ich?
   const whoami = (await ct('/api/whoami')) as { data?: Record<string, unknown> };
   const me = whoami.data ?? whoami;
-  console.log(`Angemeldet als: ${(me as any).firstName ?? '?'} ${(me as any).lastName ?? ''} (id ${(me as any).id})`);
+  console.log(
+    `Angemeldet als: ${(me as any).firstName ?? '?'} ${(me as any).lastName ?? ''} (id ${(me as any).id})`,
+  );
 
   // 2) Kommende Gottesdienste
   const events = (await ct('/api/events')) as { data?: unknown[] };
@@ -65,7 +67,9 @@ async function main() {
   const firstId = eventList[0]?.id;
   if (firstId !== undefined) {
     try {
-      const agenda = (await ct(`/api/events/${firstId}/agenda`)) as { data?: Record<string, unknown> };
+      const agenda = (await ct(`/api/events/${firstId}/agenda`)) as {
+        data?: Record<string, unknown>;
+      };
       const ag = agenda.data ?? agenda;
       show('AGENDA – Felder', keysOf(ag));
       const items = ((ag as any).items ?? []) as Array<Record<string, unknown>>;

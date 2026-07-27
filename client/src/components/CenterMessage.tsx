@@ -13,7 +13,14 @@ interface CenterMessageProps {
 }
 
 /** Zentrierte Statusmeldung (Laden, leer, Fehler) für Screen-Inhalte. */
-export function CenterMessage({ loading, icon, text, onRetry, actionLabel, onAction }: CenterMessageProps) {
+export function CenterMessage({
+  loading,
+  icon,
+  text,
+  onRetry,
+  actionLabel,
+  onAction,
+}: CenterMessageProps) {
   return (
     <div className={styles.wrap}>
       {loading ? <Spinner /> : icon && <div className={styles.icon}>{icon}</div>}

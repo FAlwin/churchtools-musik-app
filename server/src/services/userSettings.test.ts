@@ -36,7 +36,7 @@ describe('withinSettingsLimits (#195 – reine Grenzlogik)', () => {
 describe('putSettings – Schlüssel-Filter', () => {
   it('übernimmt erlaubte Schlüssel und ignoriert fremde', async () => {
     const user = newUser();
-    await mod.putSettings(user, { worship_key_12: 'G', boese_key: 'x', 'worship_ver_': 'y' });
+    await mod.putSettings(user, { worship_key_12: 'G', boese_key: 'x', worship_ver_: 'y' });
     expect(await mod.getSettings(user, [])).toEqual({ worship_key_12: 'G' });
   });
 

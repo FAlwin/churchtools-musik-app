@@ -56,7 +56,8 @@ html[data-theme='dark'] {
 
 // SCHRIFTEN
 // UI ist der System-Font (bewusst wie ChurchTools). $font-sans = Spiegelung als SCSS-Konstante.
-$font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-sans:
+  -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 $font-display: $font-sans;
 $font-mono: 'JetBrains Mono', monospace;
 $font-serif: 'Merriweather', serif;

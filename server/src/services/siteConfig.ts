@@ -110,7 +110,9 @@ export async function getSiteConfig(): Promise<SiteConfig> {
 }
 
 /** Schreibt die Konfiguration atomar (orgName + links + musicianGroupIds) und aktualisiert den Cache. */
-export async function saveSiteConfig(next: Partial<Editable> & { orgName: string }): Promise<SiteConfig> {
+export async function saveSiteConfig(
+  next: Partial<Editable> & { orgName: string },
+): Promise<SiteConfig> {
   const cfg = normalize(next);
   const dir = path.dirname(config.siteConfigPath);
   await fs.mkdir(dir, { recursive: true });

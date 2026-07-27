@@ -15,7 +15,9 @@ type EventsResult = Awaited<ReturnType<typeof getEvents>>;
 type AgendaResult = Awaited<ReturnType<typeof getAgenda>>;
 
 const agendaWith = (...songIds: number[]) =>
-  ({ items: songIds.map((songId, i) => ({ id: i + 1, song: { songId } })) }) as unknown as AgendaResult;
+  ({
+    items: songIds.map((songId, i) => ({ id: i + 1, song: { songId } })),
+  }) as unknown as AgendaResult;
 
 beforeEach(() => {
   invalidateSongUsageCache(); // 1-h-Cache zwischen Tests leeren

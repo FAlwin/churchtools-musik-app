@@ -16,11 +16,13 @@ interface PageDrawToolbarProps {
   drawTool: DrawTool;
   setDrawTool: (t: DrawTool) => void;
   toolSizes: { pen: number; marker: number; eraser: number };
-  setToolSizes: (fn: (s: { pen: number; marker: number; eraser: number }) => {
-    pen: number;
-    marker: number;
-    eraser: number;
-  }) => void;
+  setToolSizes: (
+    fn: (s: { pen: number; marker: number; eraser: number }) => {
+      pen: number;
+      marker: number;
+      eraser: number;
+    },
+  ) => void;
   textSize: number;
   setTextSize: (fn: (s: number) => number) => void;
   textStyle: TextStyle;

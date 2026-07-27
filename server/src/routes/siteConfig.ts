@@ -14,7 +14,12 @@ const router = Router();
 router.get('/site-config', asyncHandler(getSiteConfigCtrl));
 
 // Schreiben nur für angemeldete Administratoren.
-router.put('/site-config', requireSession, asyncHandler(requireAdmin), asyncHandler(putSiteConfigCtrl));
+router.put(
+  '/site-config',
+  requireSession,
+  asyncHandler(requireAdmin),
+  asyncHandler(putSiteConfigCtrl),
+);
 
 // ChurchTools-Gruppen für das Admin-Dropdown „Gruppen-Zuweisung" (nur Admin).
 router.get('/groups', requireSession, asyncHandler(requireAdmin), asyncHandler(getGroupsCtrl));

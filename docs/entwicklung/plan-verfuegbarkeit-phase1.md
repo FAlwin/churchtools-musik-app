@@ -11,12 +11,14 @@ Planner-Web). Speicherung in **ChurchTools**. Die **Excel bleibt gleichwertig ge
 beidseitiger Abgleich Excel↔CT – und bleibt vorerst Heimat der Dienst-Einteilung.
 
 **Zielarchitektur – ChurchTools als zentraler Hub / Master:**
+
 ```
    Musik-App  ──(Nutzer-Login)──►  ChurchTools  ◄──(beidseitig, Cron)──►  Excel
   (Abwesenheiten eingeben)          = MASTER              (Eintragen + Dienst-Einteilung)
 ```
 
 **In diesem Vorhaben (Phase 1) enthalten**
+
 - App-Eingabe: eigene Abwesenheiten ansehen/anlegen/entfernen (Nutzer-Login → CT, kein Service-Token)
 - Termin-Basis kombiniert: kommende Gottesdienste (Schnellauswahl) + freie Datumsauswahl
 - Kommentarfeld je Abwesenheit
@@ -24,24 +26,27 @@ beidseitiger Abgleich Excel↔CT – und bleibt vorerst Heimat der Dienst-Eintei
 - Leiteransicht (optional, read-only) über die Abwesenheiten des Teams
 
 **Bewusst NICHT (→ Phase 2)**
+
 - Dienst-Einteilung (B/O-Zellen), Monatssperre, Eintragen als Musik-Dienst in CT-`eventServices`.
   ⚠️ Solange in Excel: die heutige „Einteilung → CT-Dienste"-Funktion des alten Planners
   (`assign_musicians_for_month`) darf beim Ablösen **nicht verloren gehen** (s. §8).
 
 ## 2. Getroffene Entscheidungen (16.07.2026, mit Alwin)
 
-| Thema | Entscheidung |
-|---|---|
+| Thema                | Entscheidung                                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------------------------- |
 | Datenhoheit / Master | **ChurchTools ist Master.** Bei Konflikt (Excel ≠ CT am selben Tag) **gewinnt CT** (überschreibt Excel). |
-| App-Eingabe | Persönliches CT-Session-Cookie → jeder pflegt nur **seine eigenen** (kein Service-Token) |
-| Excel | **bleibt aktiv** – aktiver Eingabeweg + Dienst-Einteilung; beidseitig mit CT gekoppelt |
-| CT-Kennzeichnung | Grund „Abwesend" (`absenceReasonId=1`) **+ Kommentar** mit Marker `[Musikteam] <Freitext>` |
-| Termine | Gottesdienste aus CT (Schnellauswahl) **+** freie Datumsauswahl |
-| Reihenfolge | **Beidseitig gleich mitbauen** (App-Eingabe + voller Sync zusammen) |
-| Rechte | Eigene: immer. Fremde (Leiteransicht): nur mit Leiter-Rolle |
+| App-Eingabe          | Persönliches CT-Session-Cookie → jeder pflegt nur **seine eigenen** (kein Service-Token)                 |
+| Excel                | **bleibt aktiv** – aktiver Eingabeweg + Dienst-Einteilung; beidseitig mit CT gekoppelt                   |
+| CT-Kennzeichnung     | Grund „Abwesend" (`absenceReasonId=1`) **+ Kommentar** mit Marker `[Musikteam] <Freitext>`               |
+| Termine              | Gottesdienste aus CT (Schnellauswahl) **+** freie Datumsauswahl                                          |
+| Reihenfolge          | **Beidseitig gleich mitbauen** (App-Eingabe + voller Sync zusammen)                                      |
+| Rechte               | Eigene: immer. Fremde (Leiteransicht): nur mit Leiter-Rolle                                              |
 
 ### Marker-Konvention (zentral für „nur eigene anfassen")
+
 Von App **und** Sync erzeugte CT-Abwesenheiten tragen den Kommentar-Präfix `[Musikteam] …`.
+
 - **Schreiben/Löschen in CT** nur bei Einträgen mit diesem Marker.
 - **Manuelle** CT-Abwesenheiten (Urlaub/Krank, ohne Marker) werden **gelesen** (fürs Anzeigen/
   Excel-Spiegeln), aber **nie verändert/gelöscht**.
@@ -52,6 +57,7 @@ Von App **und** Sync erzeugte CT-Abwesenheiten tragen den Kommentar-Präfix `[Mu
 Vergleichsgröße nicht unterscheidbar. Lösung: **Baseline-Snapshot** (Stand des letzten Sync).
 
 **Datenbasis:** je Zelle `(personId, datum) → abwesend? ja/nein`.
+
 - **C** = aktueller CT-Stand (nur Marker-Einträge zählen als „von uns")
 - **E** = aktueller Excel-Stand (X in der Musiker-Zeile)
 - **B** = Baseline (persistierter JSON-Snapshot auf dem Volume, z. B. `sync-baseline.json`)
@@ -80,12 +86,20 @@ NICHT verschluckt wie im Alt-Planner.
 Basis: `/api/persons/{personId}/absences` – `GET` (from/to/limit), `POST`, `DELETE /{id}`.
 Felder: `id, startDate, endDate, startTime/endTime (null=ganztägig), absenceReason{…}, comment,
 meta{createdDate, createdPerson, modifiedDate}`. POST-Body:
+
 ```json
-{ "startDate":"2026-05-24", "endDate":"2026-05-24", "absenceReasonId":1, "comment":"[Musikteam] Urlaub" }
+{
+  "startDate": "2026-05-24",
+  "endDate": "2026-05-24",
+  "absenceReasonId": 1,
+  "comment": "[Musikteam] Urlaub"
+}
 ```
+
 Gottesdienste (Schnellauswahl): `GET /api/events?from=…&to=…`, Name enthält „gottesdienst".
 
 ### ✅ Machbarkeits-Check App-Eingabe (Testkonto „Test Tester" id 1009, ohne Admin-Rechte)
+
 lesen 200 · anlegen 201 · löschen 204 · Events 200 → **normaler Nutzer kann eigene Abwesenheiten
 pflegen, kein Service-Token für die App-Eingabe nötig.**
 
@@ -96,6 +110,7 @@ pflegen, kein Service-Token für die App-Eingabe nötig.**
 ## 5. Server (Muster: `annotations`/`teamNotes`)
 
 **App-Eingabe (Nutzer-Cookie):**
+
 - `services/absences.ts` – `getAbsences/createAbsence/deleteAbsence/getUpcomingServices`
 - `controllers/absencesController.ts`, `routes/absences.ts` (session-geschützt)
 - Endpunkte: `GET/POST/DELETE /api/absences`, `GET /api/absences/services`,
@@ -103,6 +118,7 @@ pflegen, kein Service-Token für die App-Eingabe nötig.**
 - `personId` serverseitig aus Cookie; Löschen nur bei Marker-Einträgen; Duplikate vermeiden.
 
 **Sync-Dienst (Service-Token, NEU – OPTIONALES Modul, s. §12 White-Label):**
+
 - `services/excelSync/…` – Graph-Client (Excel lesen/schreiben, aus Alt-`graph_client.py` portieren),
   CT-Service-Client, Baseline-Store (`sync-baseline.json` auf dem Volume), Merge-Logik (§3).
 - Scheduler (Intervall, z. B. alle 5–10 min) + manueller Trigger `POST /api/absences/sync`
@@ -115,17 +131,21 @@ pflegen, kein Service-Token für die App-Eingabe nötig.**
   > (eine Infrastruktur), aber Service-Token strikt getrennt vom Nutzerpfad halten.
 
 ## 6. Client
+
 `pages/Availability.tsx` (+ `.module.scss`), `services/availability.ts`,
 Hooks `useMyAbsences/useUpcomingServices/useToggleAbsence`, NavBar-Tab „Verfügbarkeit"
 (nur Musikteam). UI: Gottesdienst-Schnellauswahl + freie Datumsauswahl + Kommentar;
 eigene Liste mit Löschen; manuelle CT-Einträge angezeigt, aber gesperrt. Onboarding-Tour
-+ Tour-Version erhöhen. Offline: Ansicht ja; Schreiben online (Queue optional später).
+
+- Tour-Version erhöhen. Offline: Ansicht ja; Schreiben online (Queue optional später).
 
 ## 7. Rechte / Capabilities
+
 Tab + Selbstpflege: Musikteam (Gruppe 9), analog `canUseGlobalNotes`. Leiteransicht:
 Leiter-Rolle (Rollen-System aus #124). Fremde bearbeiten: nicht in Phase 1.
 
 ## 8. Übergang & Altlasten
+
 1. Alter Planner + Excel laufen parallel, bis Phase 1 steht.
 2. **Weboberfläche des Planners abschalten**, Backend/Sync durch neuen Dienst ersetzen.
 3. **Dienst-Einteilung → CT** (heute `assign_musicians_for_month`) muss erhalten bleiben:
@@ -136,11 +156,13 @@ Leiter-Rolle (Rollen-System aus #124). Fremde bearbeiten: nicht in Phase 1.
    in CT neu erzeugen; für den Sync-Dienst ein sauberes eigenes Service-Konto/Token verwenden.
 
 ## 9. Tests
+
 Server-Unit: Marker-Präfix, Löschschutz Nicht-Marker, Duplikate. **Sync-Merge: alle 4
 Zell-Fälle inkl. Konflikt (CT gewinnt) + Baseline-Fortschreibung** (reine testbare Funktion).
 Namens-Matching + „nicht auflösbar"-Pfad. Client-Hook-Optimismus. Lint 0, Tests grün.
 
 ## 10. Offene Punkte / Risiken
+
 - Sync-Dienst: im Musik-App-Server oder eigenständig? (§5)
 - Dienst-Einteilung-Übertragung beim Planner-Abschalten (§8.3).
 - Marker-Präfix final (`[Musikteam]`).
@@ -158,6 +180,7 @@ ChurchTools, kennt kein „Excel". `shared/types`, Client-UI und Kern-Endpunkte 
 keinerlei Excel-Bezug.
 
 **Excel-Sync = optionales, gekapseltes Add-on (nur ECG):**
+
 - Lebt isoliert in `services/excelSync/`.
 - **Aktivierung über Server-Env**, nicht über SiteConfig (Secrets gehören nicht in die teils
   öffentliche/admin-editierbare Config): Modul + Scheduler + `POST /api/absences/sync` werden
@@ -171,6 +194,7 @@ keinerlei Excel-Bezug.
 aber so gekapselt, dass die Abstraktion später leichtfällt.
 
 ## 11. Etappen (da „beidseitig gleich mitbauen")
+
 1. ~~CT-Selbstpflege verifizieren~~ ✅ (16.07.2026).
 2. Server App-Eingabe: `absences.ts` + Controller + Route + Tests.
 3. Client: Service + Hooks + `Availability.tsx` + Tab.
