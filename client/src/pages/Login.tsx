@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { SiteConfig } from '@shared/types/index';
 import type { Theme } from '../types/index';
 import { Screen } from '../components/Screen';
+import { loginErrorMessage, isConnectionProblem } from '../utils/loginError';
+import { probeReachable } from '../services/reachability';
 import { Spinner } from '../components/Spinner';
 import { Icon } from '../components/icons';
 import { SupportBox } from '../components/SupportBox';
@@ -32,8 +34,12 @@ export function Login({ onLogin, site, theme, offline = false }: LoginProps) {
     setLoading(true);
     try {
       await onLogin(email, password);
-    } catch {
-      setError('Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen.');
+    } catch (e) {
+      // Ursache benennen statt pauschal aufs Passwort zu zeigen (#218) – und bei einem
+      // Verbindungsproblem gleich aktiv nachsehen, ob der Server wieder da ist. Damit räumt
+      // sich der Offline-Hinweis auf, ohne dass die App neu gestartet werden muss.
+      setError(loginErrorMessage(e));
+      if (isConnectionProblem(e)) void probeReachable();
       setLoading(false);
     }
   }

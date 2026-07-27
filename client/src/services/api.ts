@@ -3,8 +3,7 @@
  * Schickt Cookies mit (credentials), wirft bei Fehlern eine ApiError mit Klartext.
  */
 import { markReachable } from './reachability';
-
-const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+import { BASE } from './apiBase';
 
 export class ApiError extends Error {
   constructor(
