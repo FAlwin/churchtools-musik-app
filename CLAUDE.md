@@ -17,8 +17,8 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 26.07.2026; getaggt **v2.14.1**, in Prod
-  ausgeliefert ist **v2.14.0** – Deploy von v2.14.1 steht noch aus).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 30.07.2026; in Prod ausgeliefert ist
+  **v2.14.2**, am Bundle verifiziert – `main` ist seither deutlich weiter, Release v2.15.0 offen).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -374,7 +374,14 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
-- **Aktuell (v2.14.1 getaggt am 26.07.2026; in Prod läuft v2.14.0):** Titel eines Lied-Punkts ist
+- **Aktuell (30.07.2026): in Prod läuft v2.14.2, `main` ist deutlich weiter → Release v2.15.0 fällig.**
+  In `main` seit v2.14.2: Seiten-Engine aufgeteilt (#193), Ablauf-Ansicht und `setlistBuilder`
+  aufgeteilt (#232/#230), Persistenz raus aus den Komponenten (#231), Prettier-Prüfung in der CI
+  (#233), Testmanagement für die manuellen Tests (#234, `docs/tests/` + `npm run testplan`),
+  Kleinkram aus den Sammel-Issues (#229 → #215/#199/#192) und `{title}`/`{artist}` aus dem ChordPro
+  (#236). Nutzersichtbar davon: #236, Querformat nach Rückkehr aus dem Hintergrund und die
+  einheitliche Titel-Darstellung (beide #215) – der Rest ist intern.
+  Davor v2.14.1: Titel eines Lied-Punkts ist
   änderbar und wird zusammen mit dem Liednamen angezeigt – wie in ChurchTools (Lied – Du großer Gott)
   (#200); Konto-Obergrenze für Lied-Einstellungen (#195); Login-Bremse wirkt auch bei IPv6 (#146);
   Datei-Abrufe folgen keinen Weiterleitungen (#199); iOS-Tastatur in Dialogen sperrt die Trefferliste
