@@ -15,6 +15,21 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   waren dabei vergessen worden. Gilt nun auf dem Blatt, in der Kopfzeile, im Ablaufplan und im
   PDF-Export; eine Version mit eigener Überschrift trägt sie auch auf ihrem Blatt. Unter **Alle
   Lieder** bleibt bewusst der ChurchTools-Name, weil die Liste die Liedtexte nicht lädt. (#236)
+- **Querformat wird auch erkannt, wenn die App aus dem Hintergrund zurückkommt.** Drehte man das
+  iPad, während die App weggelegt war, kam kein `resize` – die Chart-Anzeige merkte es trotzdem, das
+  Blättern aber nicht. Anzeige und Blättern waren dann unterschiedlicher Meinung darüber, ob eine
+  oder zwei Seiten zu sehen sind. Alle drei Stellen nutzen jetzt dieselbe Erkennung. (#215)
+- **Derselbe Ablauf-Titel wird überall gleich dargestellt.** Bei einem Punkt ohne verknüpftes Lied
+  wurden führende/folgende Leerzeichen nicht entfernt, mit Lied schon – derselbe Titel sah dadurch
+  je nach Stelle anders aus. (#215)
+
+### Geändert
+
+- **Einheitliche Code-Formatierung**, die auch geprüft wird: `npm run format:check` läuft in der CI
+  vor dem Lint. Nötig, weil ESLint hier bewusst **nicht** greift (`eslint-config-prettier` schaltet
+  alle Formatregeln ab) – der Stil war darum unbemerkt auseinandergelaufen (86 Dateien). Ändert nur
+  Formatierung; gegengeprüft, indem alle geänderten Code-Dateien vor und nach dem Formatieren auf
+  ihren Zeichen-Kern reduziert und verglichen wurden. (#233)
 
 ### Intern
 
@@ -25,6 +40,41 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   von 13 auf 1 gesunken; dabei kam eine stille Lücke ans Licht: Wechselte der Anmerkungs-Schlüssel
   einer Seite, ohne dass Seitenzahl oder Sync sich bewegten, blieb der alte Strich-Stand stehen.
   40 neue Tests. (#193)
+- **Testmanagement für die Tests, die nur von Hand gehen** (`docs/tests/`): 56 Testfälle als
+  Klickanleitung, aus den geschlossenen Fehler-Issues und der Doku rekonstruiert, jeder mit der
+  Issue-Nummer, bei der es schon einmal wehgetan hat. Der Kern ist die Auswahl: `npm run testplan`
+  vergleicht die Änderungen seit dem letzten Tag mit dem Feld **Betrifft** und trennt „immer prüfen"
+  (12), „betroffen" und „übrige" – letztere nur als Zahl, damit sichtbar bleibt, was ausgelassen
+  wurde. `--pruefen` findet Verweise auf verschobene Dateien; ohne das würde ein Fall nie wieder
+  vorgeschlagen, ohne jede Fehlermeldung. (#234)
+- **Ablauf-Ansicht aufgeteilt** (`Setlist`: 672 → 357 Zeilen): Zeilen-Bestandteile, der „poof"-Zerfall
+  entfernter Punkte, die volle Ansicht und die sortierbare Zeile sind eigene Komponenten. +18 Tests,
+  darunter zwei für die Stellen, die im Gottesdienst wehtun: Die Lied-Nummer beim Antippen zählt nur
+  **Lieder**, nicht alle Ablaufpunkte, und ein gelöschter Punkt zerfällt dort, wo er stand. Dazu ein
+  Test gegen den stillen Fehler dieser Art Umzug: Wäre der Pfad zum SCSS-Modul falsch, gäbe es keinen
+  Fehler – die Zeilen ständen einfach ohne Layout da. (#232)
+- **Persistenz raus aus den Komponenten** (#198): `useSongSettings` hält und speichert die
+  Anzeige-Einstellungen; die Schlüsselbildung liegt an genau einer Stelle. Vorher wurden
+  `worship_view_<id>`/`worship_ver_<id>` an je **zwei** Stellen zusammengesetzt – beim Lesen und beim
+  Schreiben; ein Tippfehler auf einer Seite hätte die Einstellung still ins Leere laufen lassen. In
+  `components/` und `pages/` steht jetzt kein einziger `localStorage`-Zugriff mehr. +12 Tests für die
+  Regel, die man leicht verwechselt: Tonart, Kapo, Spalten, Schrift, Nur-Text und
+  Abschnitts-Transponierung gelten **pro Version**, die gewählte Version selbst **pro Lied**. (#231)
+- **Serverseitig aufgeteilt** (`setlistBuilder`: 660 → 447 Zeilen) in vier reine Module ohne
+  Netzzugriff: Ablauf-Diff, Arrangement-Dateien, ChordPro-Kopfangaben, Ablauf-Formatierung. Die vier
+  prozesslokalen Caches liegen jetzt beieinander statt zwischen Routing-Code, mit der Folge
+  aufgeschrieben: Mit einer zweiten Instanz hinter einem Lastverteiler würde der Ablauf zwischen
+  „geändert" und „unverändert" flackern. (#230)
+- **Kleinkram aus den Sammel-Issues**, zwölf Punkte, +36 Tests. Zusammengeführt statt kopiert
+  (Querformat-Erkennung, Textstil-Regel, der letzte rohe `fetch` außerhalb von `services/`). Härter
+  geworden: Der Rate-Limit-Schlüssel erkennt IPv4-mapped in jeder Schreibweise – vorher hätte ein
+  Client über die ausgeschriebene Form **zwei** Kontingente gehabt; der Schlüssel-Filter der
+  Lied-Einstellungen bekam einen End-Anker (bewusst nicht `_\d+$`, das hätte die versionsbezogenen
+  Schlüssel still verworfen und Einstellungen geräteübergreifend gelöscht); die Tastatur-Aussparung
+  nutzt einen Callback-Ref, sonst hätte ein zusätzlicher Wrapper sie still abgeschaltet. Endlich
+  getestet: die einmalige Übernahme lokaler Anmerkungen ins Konto (Rest von #192) – der Merker darf
+  nach einem 401 **nicht** gesetzt werden, sonst ist die Übernahme für immer verpasst. (#229, #215,
+  #199, #192)
 
 ## [2.14.2] – 2026-07-26
 
