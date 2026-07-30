@@ -7,6 +7,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **Eine eigene Überschrift über `{title: …}` wird jetzt übernommen.** Wer im Editor die Titelzeile
+  änderte, sah den neuen Titel nur in der Vorschau rechts – auf dem fertigen Blatt stand weiter der
+  Liedname aus ChurchTools. Tonart und Taktart aus der Datei hatten längst Vorrang, Titel und Autor
+  waren dabei vergessen worden. Gilt nun auf dem Blatt, in der Kopfzeile, im Ablaufplan und im
+  PDF-Export; eine Version mit eigener Überschrift trägt sie auch auf ihrem Blatt. Unter **Alle
+  Lieder** bleibt bewusst der ChurchTools-Name, weil die Liste die Liedtexte nicht lädt. (#236)
+
 ### Intern
 
 - **Seiten-Engine aufgeteilt** (`PageDeck`: 1161 → 713 Zeilen). Die Anzeige verhält sich

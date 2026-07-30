@@ -145,7 +145,7 @@ async function buildSong(
     return { key: versionSlug(name), name, text: versionTexts[i] ?? '' };
   });
 
-  // Tonart/Takt aus dem Original ableiten (sonst erste Version, falls kein Original existiert)
+  // Kopfangaben aus dem Original ableiten (sonst erste Version, falls kein Original existiert)
   const source = chordpro || versions[0]?.text || '';
   const originalKey =
     metaValue(source, 'key') ?? arr?.keyOfArrangement ?? arr?.key ?? agendaSong.key ?? 'C';
@@ -155,8 +155,11 @@ async function buildSong(
   return {
     id: agendaSong.songId,
     arrangementId: agendaSong.arrangementId,
-    title: agendaSong.title || song.name,
-    author: song.author ?? '',
+    // `{title}`/`{artist}` aus der Datei gehen vor – genau wie Tonart und Taktart darüber (#236).
+    // Wirkt damit in Kopfzeile, Ablaufplan, Blatt und PDF. Die Bibliothek „Alle Lieder" bleibt
+    // beim ChurchTools-Namen: `getSongLibrary` hat keinen ChordPro-Text (siehe Kommentar dort).
+    title: metaValue(source, 'title') ?? (agendaSong.title || song.name),
+    author: metaValue(source, 'artist') ?? song.author ?? '',
     originalKey,
     targetKey,
     bpm: agendaSong.bpm ?? arr?.bpm ?? null,
@@ -334,7 +337,13 @@ export async function getSongUsageMap(cookie: string): Promise<Record<number, So
   return usage;
 }
 
-/** Liefert alle Lieder (Standard-Arrangement), alphabetisch. Statistik wird separat geladen. */
+/**
+ * Liefert alle Lieder (Standard-Arrangement), alphabetisch. Statistik wird separat geladen.
+ *
+ * Bewusst der **ChurchTools-Name**, nicht `{title}` aus der Datei (#236): Hier liegt kein
+ * ChordPro-Text vor, und ihn zu beschaffen hieße, beim Öffnen der Liste jede Lieddatei einzeln
+ * herunterzuladen. In Ablaufplan, Kopfzeile und auf dem Blatt gilt dagegen `{title}`.
+ */
 export async function getSongLibrary(cookie: string): Promise<SongLibraryEntry[]> {
   const songs = await getAllSongs(cookie);
   return songs

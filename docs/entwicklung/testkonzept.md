@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand v2.14.1: **40 Testdateien** –
-**25 Client (129 Tests)** + **15 Server (133 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #236: **59 Testdateien** –
+**41 Client (286 Tests)** + **18 Server (168 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 
@@ -34,6 +34,10 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
   der Grenze, Löschen muss trotzdem gehen" ist NICHT abgedeckt (#213)
 - `utils/ipKey` – Rate-Limit-Schlüssel (#146): gleiches /64 ⇒ gleicher Schlüssel, verschiedene /64
   getrennt, IPv4-mapped wie IPv4, Zone-Index, Normalisierung, unparsebar, leer
+- `services/buildSong.head` – Kopfangaben aus der ChordPro-Datei (#236): `{title}`/`{artist}`
+  schlagen Liedname/Autor aus ChurchTools, ohne sie bleibt der CT-Wert stehen, ein leeres
+  `{title: }` ersetzt nichts. Hängt bewusst an `getSongChart` und damit an der **Verdrahtung** in
+  `buildSong` – der Fehler war ja nicht `metaValue`, sondern die fehlende Nutzung
 - `middleware/session.rolling` – rollierende Verlängerung trägt Login-Zeitstempel **und** Konto-ID
   weiter (#152); Altformat ohne ID bleibt nutzbar
 - `controllers/siteConfigController.trim` – `GET /api/site-config` liefert unauthentifiziert **keine**
@@ -90,6 +94,8 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
 
 ### Weitere Client-Logik
 
+`chordPdf.chartHead` (Titel/Autor des Blatts, #236: `{title}`/`{artist}` des **gerenderten** Textes
+gehen vor, leerer Wert zählt nicht, eine Version bestimmt den Kopf ihres eigenen Blatts),
 `songFilter` (Sortierung/Zeitfilter Lieder), `chartSettings`, `color`, `canvas`,
 `chunkReload` (Reload-Schleifenschutz nach Deploy, inkl. `isChunkLoadError` #176),
 `clearDeviceData` (Abmelde-Aufräumen), `reachability`/`api.reachability`, `offline.registry`,
@@ -109,7 +115,7 @@ Erledigt: `utils/chordPdf.ts` 0 → 87,7 % und `services/annotations.ts` 13 → 
 
 Alles, was Finger, Stift, iOS-Tastatur oder echte Netztrennung braucht, steht als Testfall in
 [`docs/tests/`](../tests/README.md) – mit Schritten, erwartetem Ergebnis und dem Feld **Betrifft**,
-über das `npm run testplan` vor einem Release die betroffenen Fälle auswählt. Aktuell 55 Fälle,
+über das `npm run testplan` vor einem Release die betroffenen Fälle auswählt. Aktuell 56 Fälle,
 davon 12 „immer prüfen".
 
 ## Regel für neue Fehler
