@@ -20,7 +20,7 @@ entsprechend verschoben.
 <details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
-- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/transpose.ts`, `client/src/components/KeyPicker.tsx`, `client/src/components/CapoPicker.tsx`, `client/src/utils/chordPdf.ts`, `client/src/hooks/useSongSettings.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/components/SongMenu.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/transpose.ts`, `client/src/components/KeyPicker.tsx`, `client/src/components/CapoPicker.tsx`, `client/src/utils/chordPdf.ts`, `client/src/hooks/useSongSettings.ts`
 - **Automatisiert:** teilweise – `client/src/utils/transpose.test.ts`, `client/src/hooks/useSongSettings.test.tsx`
 - **Historie:** –
 
@@ -139,5 +139,32 @@ ist wieder alles einheitlich.
 - **Betrifft:** `client/src/services/userSettings.ts`, `server/src/services/userSettings.ts`, `server/src/controllers/userSettingsController.ts`
 - **Automatisiert:** teilweise – `server/src/services/userSettings.test.ts`
 - **Historie:** #195, #213
+
+</details>
+
+### TF-EINST-07 · Geteiltes PDF sieht aus wie der Bildschirm (auch mit Kapo)
+
+**Das brauchst du:** Ein Lied mit Akkorden. Am besten ein Gerät, auf dem du das PDF gleich ansehen
+kannst.
+
+**Das muss passieren:** Die Akkorde im PDF sind **dieselben** wie auf dem Bildschirm. Auch die
+Kopfzeile („Tonart – …") stimmt überein. Bis Version 2.14 stand im geteilten PDF bei gesetztem Kapo
+eine andere Tonart als auf dem Blatt – bei Kapo 2 zwei Halbtöne zu hoch.
+
+1. Ein Lied öffnen und oben auf den **Liedtitel** tippen.
+2. Bei **Kapo** die 2 wählen.
+3. Die Akkorde der ersten Zeile auf dem Bildschirm aufschreiben oder merken.
+4. Wieder auf den Titel tippen und **Als PDF teilen** wählen.
+5. Das PDF ansehen (z. B. in Dateien speichern oder sich selbst schicken).
+6. Die erste Zeile im PDF mit dem Zettel aus Schritt 3 vergleichen.
+7. Zur Gegenprobe: Kapo zurück auf **0**, noch einmal teilen – auch dann müssen Bildschirm und PDF
+   übereinstimmen.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartPdfOptions.ts`, `client/src/utils/songPdfOpts.ts`, `client/src/utils/sharePdf.ts`, `client/src/utils/chordPdf.ts`
+- **Automatisiert:** teilweise – `client/src/utils/chartPdfOptions.test.ts` (die Rechnung inkl. Kapo und der Weg über den Speicher); von Hand bleibt der Teilen-Dialog des Geräts und das Ansehen der fertigen Datei
+- **Historie:** #239
 
 </details>

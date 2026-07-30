@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SetlistSong } from '@shared/types/index';
-import { loadSecShift, loadSettings } from './chartSettings';
+import { loadSecShift, loadSettings, stepFontSize, FONT_MIN, FONT_MAX } from './chartSettings';
 
 const song = (over: Partial<SetlistSong> = {}): SetlistSong =>
   ({
@@ -70,5 +70,31 @@ describe('loadSettings', () => {
   it('viewSource = chords, wenn die gespeicherte fileId nicht (mehr) existiert', () => {
     localStorage.setItem('worship_view_5', '999');
     expect(loadSettings(song()).viewSource).toBe('chords');
+  });
+});
+
+/**
+ * #198: Die Schriftgröße wurde im JSX des Aussehen-Menüs gerechnet (zwei `Math.max`/`Math.min`).
+ * Als reine Funktion prüfbar – vor allem, dass sie an den Grenzen stehen bleibt.
+ */
+describe('stepFontSize', () => {
+  it('geht in Zweierschritten hoch und runter', () => {
+    expect(stepFontSize(20, 1)).toBe(22);
+    expect(stepFontSize(20, -1)).toBe(18);
+  });
+
+  it('bleibt an der unteren Grenze stehen, statt darunter zu laufen', () => {
+    expect(stepFontSize(FONT_MIN, -1)).toBe(FONT_MIN);
+    expect(stepFontSize(FONT_MIN + 1, -1)).toBe(FONT_MIN);
+  });
+
+  it('bleibt an der oberen Grenze stehen', () => {
+    expect(stepFontSize(FONT_MAX, 1)).toBe(FONT_MAX);
+    expect(stepFontSize(FONT_MAX - 1, 1)).toBe(FONT_MAX);
+  });
+
+  it('holt einen Wert außerhalb der Grenzen wieder herein', () => {
+    expect(stepFontSize(200, 1)).toBe(FONT_MAX);
+    expect(stepFontSize(2, -1)).toBe(FONT_MIN);
   });
 });

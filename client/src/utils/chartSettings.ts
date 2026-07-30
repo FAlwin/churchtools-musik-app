@@ -25,6 +25,23 @@ export const DEFAULT_SETTINGS: SongSettings = {
   viewSource: 'chords',
 };
 
+/** Grenzen der Schriftgröße im Aussehen-Menü (Punkt = Bildschirm-Pixel der Anzeige). */
+export const FONT_MIN = 12;
+export const FONT_MAX = 40;
+const FONT_STEP = 2;
+
+/**
+ * Nächste Schriftgröße beim Tippen auf „A−"/„A+" (#198).
+ *
+ * Lag als doppelte `Math.max`/`Math.min`-Rechnung im JSX des Aussehen-Menüs. Als reine Funktion ist
+ * das Wichtige prüfbar: An den Grenzen darf sie **stehen bleiben** und nicht darüber hinauslaufen –
+ * eine 8 oder eine 60 würde das Chart auf dem Notenständer unlesbar bzw. unbrauchbar machen.
+ */
+export function stepFontSize(current: number, direction: 1 | -1): number {
+  const next = current + direction * FONT_STEP;
+  return Math.min(FONT_MAX, Math.max(FONT_MIN, next));
+}
+
 /** Liest die per-Abschnitt-Transponierung aus localStorage; ignoriert ungültige/0-Werte. */
 export function loadSecShift(songId: number, versionKey: string): Record<number, number> {
   try {
@@ -42,6 +59,18 @@ export function loadSecShift(songId: number, versionKey: string): Record<number,
   }
 }
 
+/**
+ * Ganzzahl aus dem Speicher, mit Rückfall bei Fehlen **und bei Unsinn**.
+ *
+ * `parseInt('abc')` ergibt `NaN`; ein NaN im Kapo hätte den Halbton-Versatz der PDF zu `NaN` gemacht
+ * und damit das ganze Blatt zerstört. Die frühere zweite Fassung in `songPdfOpts.ts` fing das ab,
+ * `loadSettings` – also die ANZEIGE – nicht. Beim Zusammenführen (#239) gilt die robustere Regel.
+ */
+function intOr(value: string | null, fallback: number): number {
+  const n = value ? parseInt(value, 10) : NaN;
+  return Number.isNaN(n) ? fallback : n;
+}
+
 /** Baut die SongSettings eines Lieds aus localStorage (Defaults, wenn nichts gespeichert ist). */
 export function loadSettings(
   song: SetlistSong,
@@ -56,9 +85,9 @@ export function loadSettings(
       : 'chords';
   return {
     key: lsVersion('key', song.id, versionKey) || null,
-    capo: parseInt(lsVersion('capo', song.id, versionKey) || '0', 10),
-    cols: parseInt(lsVersion('cols', song.id, versionKey) || '1', 10) === 2 ? 2 : 1,
-    fontSize: parseInt(lsVersion('fs', song.id, versionKey) || '20', 10),
+    capo: intOr(lsVersion('capo', song.id, versionKey), 0),
+    cols: intOr(lsVersion('cols', song.id, versionKey), 1) === 2 ? 2 : 1,
+    fontSize: intOr(lsVersion('fs', song.id, versionKey), DEFAULT_SETTINGS.fontSize),
     lyricsOnly: lsVersion('lyrics', song.id, versionKey) === '1',
     secShift: loadSecShift(song.id, versionKey),
     versionKey,

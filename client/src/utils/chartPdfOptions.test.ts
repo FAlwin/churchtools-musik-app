@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
+// @vitest-environment jsdom
+import { describe, it, expect, beforeEach } from 'vitest';
 import { pdfOptionsForSong } from './chartPdfOptions';
+import { loadSongPdfOpts } from './songPdfOpts';
 import { DEFAULT_SETTINGS, type SongSettings } from './chartSettings';
 import type { SetlistSong } from '@shared/types/index';
 
@@ -9,7 +11,15 @@ import type { SetlistSong } from '@shared/types/index';
  * transponiert das ganze Liederheft falsch, und das fällt erst im Gottesdienst auf.
  */
 const song = (over: Partial<SetlistSong> = {}): SetlistSong =>
-  ({ id: 1, originalKey: 'C', targetKey: 'D', ...over }) as unknown as SetlistSong;
+  ({
+    id: 1,
+    originalKey: 'C',
+    targetKey: 'D',
+    chordpro: '[C]Text',
+    versions: [],
+    documents: [],
+    ...over,
+  }) as unknown as SetlistSong;
 
 const settings = (over: Partial<SongSettings> = {}): SongSettings => ({
   ...DEFAULT_SETTINGS,
@@ -71,5 +81,61 @@ describe('pdfOptionsForSong – Darstellung', () => {
       'data:image/png;base64,AAA',
     );
     expect(pdfOptionsForSong(song(), settings()).logo).toBeNull();
+  });
+});
+
+/**
+ * #239: Es gab DREI Fassungen der PDF-Optionen – `pdfOptionsForSong`, `loadSongPdfOpts` (mit
+ * eigenem Speicher-Lesen) und ein Inline-Block in `ChordChart` für „Als PDF teilen", dem der
+ * Kapo-Abzug fehlte. Jetzt führt alles hierher. Diese Tests halten fest, dass der Weg über den
+ * Speicher (Ablauf-PDF) zum selben Ergebnis kommt wie der direkte.
+ */
+describe('loadSongPdfOpts – derselbe Weg über den Speicher (#239)', () => {
+  const SONG_ID = 42;
+
+  beforeEach(() => localStorage.clear());
+
+  it('liest Tonart und Kapo und zieht den Kapo ab – wie pdfOptionsForSong', () => {
+    localStorage.setItem(`worship_key_${SONG_ID}_original`, 'D');
+    localStorage.setItem(`worship_capo_${SONG_ID}_original`, '2');
+    const s = song({ id: SONG_ID, originalKey: 'C', targetKey: 'C' });
+
+    const ueberSpeicher = loadSongPdfOpts(s);
+    const direkt = pdfOptionsForSong(s, settings({ key: 'D', capo: 2 }));
+    expect(ueberSpeicher.semitones).toBe(direkt.semitones);
+    expect(ueberSpeicher.semitones).toBe(0); // C→D = +2, Kapo 2 → 0
+    expect(ueberSpeicher.displayKey).toBe('D');
+  });
+
+  it('ohne gespeicherte Werte gilt die Ziel-Tonart aus ChurchTools', () => {
+    const o = loadSongPdfOpts(song({ id: SONG_ID, originalKey: 'C', targetKey: 'E' }));
+    expect(o.semitones).toBe(4);
+    expect(o.displayKey).toBe('E');
+  });
+
+  it('fällt ohne Ziel-Tonart auf die Original-Tonart zurück (statt auf nichts)', () => {
+    const o = loadSongPdfOpts(song({ id: SONG_ID, originalKey: 'G', targetKey: '' }));
+    expect(o.semitones).toBe(0);
+    expect(o.displayKey).toBe('G');
+  });
+
+  it('Unsinn im Speicher zerstört das Blatt nicht (kein NaN im Versatz)', () => {
+    // Ein NaN hier hätte jsPDF ein unbrauchbares Dokument liefern lassen.
+    localStorage.setItem(`worship_capo_${SONG_ID}_original`, 'kaputt');
+    localStorage.setItem(`worship_fs_${SONG_ID}_original`, 'auch-kaputt');
+    const o = loadSongPdfOpts(song({ id: SONG_ID, originalKey: 'C', targetKey: 'C' }));
+    expect(Number.isNaN(o.semitones)).toBe(false);
+    expect(o.semitones).toBe(0);
+    expect(o.fontPt).toBe(12); // 20 * 0,6 = 12 (Rückfall auf die Standardgröße)
+  });
+
+  it('übernimmt Spalten, Nur-Text und Abschnitts-Transponierung aus dem Speicher', () => {
+    localStorage.setItem(`worship_cols_${SONG_ID}_original`, '2');
+    localStorage.setItem(`worship_lyrics_${SONG_ID}_original`, '1');
+    localStorage.setItem(`worship_secshift_${SONG_ID}_original`, JSON.stringify({ 1: 2 }));
+    const o = loadSongPdfOpts(song({ id: SONG_ID }));
+    expect(o.cols).toBe(2);
+    expect(o.lyricsOnly).toBe(true);
+    expect(o.sectionSemitones).toEqual({ 1: 2 });
   });
 });

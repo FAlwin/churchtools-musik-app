@@ -168,8 +168,8 @@ sichtbar, bis die neuen fertig sind. Die App darf nicht mehrere Sekunden stehen.
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chordPdf.ts`, `client/src/utils/chartPdfOptions.ts`
-- **Automatisiert:** teilweise – `client/src/utils/chartPdfOptions.test.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/components/ChartAppearanceMenu.tsx`, `client/src/utils/chordPdf.ts`, `client/src/utils/chartPdfOptions.ts`
+- **Automatisiert:** teilweise – `client/src/utils/chartPdfOptions.test.ts`, `client/src/components/ChartAppearanceMenu.test.tsx`
 - **Historie:** #197
 
 </details>
