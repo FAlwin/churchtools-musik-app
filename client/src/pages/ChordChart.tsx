@@ -7,6 +7,7 @@ import { SectionTransposeSheet } from '../components/SectionTransposeSheet';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
 import { PageDeck } from '../components/PageDeck';
+import { useSongSettings } from '../hooks/useSongSettings';
 import { useLandscape } from '../hooks/useLandscape';
 import { Coachmarks } from '../components/Coachmarks';
 import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
@@ -17,15 +18,15 @@ import { hasStoredNotesForLevel as hasOwnNotes } from '../utils/annotationKeys';
 import { Sheet } from '../components/Sheet';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { migrateLocalSettings, pullSettings, pushSetting } from '../services/userSettings';
+import { migrateLocalSettings, pullSettings } from '../services/userSettings';
 import { parseChordPro } from '../utils/chordpro';
-import { availableVersions, versionText, setLsVersion } from '../utils/songVersions';
+import { availableVersions, versionText } from '../utils/songVersions';
 import { getSemitoneOffset, shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import type { SetlistPageOwner } from '../utils/chordPdf';
 import { pdfOptionsForSong } from '../utils/chartPdfOptions';
 import { sharePdf } from '../utils/sharePdf';
-import { type SongSettings, DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
+import { DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
 import { logoTightUrl } from '../utils/logoAsset';
 import { useTeamNotesImport } from '../hooks/useTeamNotesImport';
 import { useChartNavigation } from '../hooks/useChartNavigation';
@@ -60,11 +61,8 @@ export function ChordChart({
   canEditSong = false,
   canUseGlobalNotes = false,
 }: ChordChartProps) {
-  // Einstellungen aller Lieder (für den durchgehenden Strom). Aus localStorage initialisiert.
-  const [settings, setSettings] = useState<Record<number, SongSettings>>(() =>
-    Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])),
-  );
-  const songIds = songs.map((s) => s.id).join(',');
+  // Anzeige-Einstellungen aller Lieder – Halten und Speichern liegt in useSongSettings (#198).
+  const { settings, updateSetting, selectVersion, reloadSettings } = useSongSettings(songs);
   // Signatur über den INHALT aller Versionen → der Strom wird neu erzeugt, sobald sich ein Lied-Text
   // ändert (z. B. nach dem Bearbeiten/Anlegen einer Version), nicht nur bei geänderter Lied-Liste.
   const songsSig = songs
@@ -73,10 +71,6 @@ export function ChordChart({
         `${s.id}:${s.chordpro?.length ?? 0}:${s.versions.map((v) => v.key + v.text.length).join('|')}`,
     )
     .join(',');
-  useEffect(() => {
-    setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songIds]);
 
   // Anmerkungen pro Konto: bestehende Geräte-Anmerkungen einmalig hochladen, dann die
   // Server-Anmerkungen dieser Lieder in den lokalen Cache holen und Anzeige neu laden.
@@ -92,45 +86,14 @@ export function ChordChart({
       if (canUseGlobalNotes) refreshSharers();
       if (cancelled) return;
       // Einstellungen aus dem (jetzt gespiegelten) localStorage neu übernehmen.
-      setSettings(Object.fromEntries(songs.map((s) => [s.id, loadSettings(s)])));
+      reloadSettings();
       setSyncTick((t) => t + 1);
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songIds]);
-
-  function updateSetting(songId: number, patch: Partial<SongSettings>) {
-    setSettings((prev) => {
-      const cur = prev[songId] ?? DEFAULT_SETTINGS;
-      const next = { ...cur, ...patch };
-      const vk = next.versionKey;
-      if ('key' in patch) setLsVersion('key', songId, vk, next.key);
-      if ('capo' in patch) setLsVersion('capo', songId, vk, String(next.capo));
-      if ('cols' in patch) setLsVersion('cols', songId, vk, String(next.cols));
-      if ('fontSize' in patch) setLsVersion('fs', songId, vk, String(next.fontSize));
-      if ('lyricsOnly' in patch) setLsVersion('lyrics', songId, vk, next.lyricsOnly ? '1' : '0');
-      // viewSource gilt pro Lied (Dokumentauswahl betrifft das Arrangement, nicht die Version).
-      if ('viewSource' in patch) {
-        localStorage.setItem(`worship_view_${songId}`, String(next.viewSource));
-        pushSetting(`worship_view_${songId}`, String(next.viewSource));
-      }
-      if ('secShift' in patch) {
-        const has = Object.keys(next.secShift).length > 0;
-        setLsVersion('secshift', songId, vk, has ? JSON.stringify(next.secShift) : null);
-      }
-      return { ...prev, [songId]: next };
-    });
-  }
-
-  /** Wechselt die gewählte Version eines Lieds und lädt deren Einstellungen. */
-  function selectVersion(songId: number, versionKey: string) {
-    localStorage.setItem(`worship_ver_${songId}`, versionKey);
-    pushSetting(`worship_ver_${songId}`, versionKey);
-    const s = songs.find((x) => x.id === songId);
-    setSettings((prev) => ({ ...prev, [songId]: s ? loadSettings(s, versionKey) : prev[songId] }));
-  }
+  }, [songsSig]);
 
   const [showKeyPicker, setShowKeyPicker] = useState(false);
   const [showCapoPicker, setShowCapoPicker] = useState(false);
@@ -165,7 +128,7 @@ export function ChordChart({
   } = useTeamNotesImport({
     songs,
     settings,
-    setSettings,
+    reloadSettings,
     setSyncTick,
     setDrawMode,
     showToast,
@@ -216,7 +179,7 @@ export function ChordChart({
           pullAnnotations(list.map((s) => s.id)),
           pullSettings(list.map((s) => s.id)),
         ]);
-        setSettings(Object.fromEntries(list.map((s) => [s.id, loadSettings(s)])));
+        reloadSettings();
         setSyncTick((t) => t + 1);
       }
       liveRef.current.onReload?.();
@@ -239,7 +202,9 @@ export function ChordChart({
       window.removeEventListener('focus', onReturn);
       document.removeEventListener('visibilitychange', onReturn);
     };
-  }, []);
+    // `reloadSettings` hat eine stabile Identität (useCallback über eine Ref) – die Intervalle und
+    // Listener werden dadurch NICHT erneut angemeldet.
+  }, [reloadSettings]);
 
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
   // Der Aufbau lief bis #197 in einem useMemo, also MITTEN IM RENDER: Bei jeder Änderung von

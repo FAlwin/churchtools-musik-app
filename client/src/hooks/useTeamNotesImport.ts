@@ -9,9 +9,8 @@ import {
   type Sharer,
 } from '../services/teamNotes';
 import { pushField } from '../services/annotations';
-import { pushSetting } from '../services/userSettings';
-import { availableVersions, setLsVersion } from '../utils/songVersions';
-import { type SongSettings, loadSettings, settingsForLevel } from '../utils/chartSettings';
+import { availableVersions, setLsVersion, setLsSong } from '../utils/songVersions';
+import { type SongSettings, settingsForLevel } from '../utils/chartSettings';
 import { mergeStrokes } from '../utils/strokes';
 import { levelsUnderNamespace, levelKeyOf } from '../utils/annotationKeys';
 
@@ -33,7 +32,8 @@ function safeParse<T>(raw: string | null): T | null {
 interface UseTeamNotesImportParams {
   songs: SetlistSong[];
   settings: Record<number, SongSettings>;
-  setSettings: Dispatch<SetStateAction<Record<number, SongSettings>>>;
+  /** Einstellungen aller Lieder aus dem lokalen Speicher neu übernehmen (useSongSettings). */
+  reloadSettings: () => void;
   setSyncTick: Dispatch<SetStateAction<number>>;
   setDrawMode: Dispatch<SetStateAction<boolean>>;
   showToast: (msg: string) => void;
@@ -48,7 +48,7 @@ interface UseTeamNotesImportParams {
 export function useTeamNotesImport({
   songs,
   settings,
-  setSettings,
+  reloadSettings,
   setSyncTick,
   setDrawMode,
   showToast,
@@ -184,14 +184,13 @@ export function useTeamNotesImport({
     // Roh-Einstellungen der ZIEL-Version; Tonart/Kapo bleiben bewusst eigene).
     const raw = viewRaw ?? {};
     const rawGet = (b: string): string | null => raw[`worship_${b}_${songId}_${pVersion}`] ?? null;
-    localStorage.setItem(`worship_ver_${songId}`, pVersion);
-    pushSetting(`worship_ver_${songId}`, pVersion);
+    setLsSong('ver', songId, pVersion);
     setLsVersion('lyrics', songId, pVersion, pLyr === '1' ? '1' : '0');
     setLsVersion('cols', songId, pVersion, rawGet('cols') ?? String(vs?.cols ?? 1));
     setLsVersion('fs', songId, pVersion, rawGet('fs') ?? String(vs?.fontSize ?? 20));
     const rawShift = rawGet('secshift');
     if (rawShift) setLsVersion('secshift', songId, pVersion, rawShift);
-    setSettings(Object.fromEntries(songs.map((x) => [x.id, loadSettings(x)])));
+    reloadSettings();
     const target = songs.find((x) => x.id === songId);
     const vName =
       (target && availableVersions(target).find((v) => v.key === pVersion)?.name) ?? pVersion;

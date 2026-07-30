@@ -1,5 +1,5 @@
 import type { SetlistSong } from '@shared/types/index';
-import { lsVersion, selectedVersionKey } from './songVersions';
+import { lsVersion, lsSong, selectedVersionKey } from './songVersions';
 
 /** Einstellungen pro Lied (Tonart, Kapo, Abschnitts-Transponierung, Schrift, Spalten, Anzeige). */
 export interface SongSettings {
@@ -48,7 +48,7 @@ export function loadSettings(
   versionKey: string = selectedVersionKey(song),
 ): SongSettings {
   // viewSource (Dokument vs. Akkorde) gilt pro Lied, nicht pro Version.
-  const savedView = localStorage.getItem(`worship_view_${song.id}`);
+  const savedView = lsSong('view', song.id);
   const savedId = savedView ? Number(savedView) : NaN;
   const viewSource =
     savedView && !Number.isNaN(savedId) && song.documents.some((d) => d.fileId === savedId)
