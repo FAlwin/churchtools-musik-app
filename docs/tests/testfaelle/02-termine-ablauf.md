@@ -118,7 +118,7 @@ einfach kommentarlos verschwinden; sonst denkt man, man habe sich verklickt.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/DisintegratingRow.tsx`, `client/src/components/AgendaFullView.tsx`, `client/src/utils/vanishedRows.ts`, `client/src/utils/disintegrate.ts`
+- **Betrifft:** `client/src/components/DisintegratingRow.tsx`, `client/src/components/AgendaFullView.tsx`, `client/src/utils/vanishedRows.ts`, `client/src/utils/disintegrate.ts`, `client/src/utils/annotationKeys.ts`
 - **Automatisiert:** teilweise – `client/src/components/AgendaFullView.test.tsx` (Position), Animation nicht
 - **Historie:** #161, #178
 
