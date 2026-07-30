@@ -181,6 +181,23 @@ describe('metaValue (ChordPro-Metadaten)', () => {
   it('liest mehrstellige Werte {key:Ab}', () => expect(metaValue('{key:Ab}', 'key')).toBe('Ab'));
   it('liefert null, wenn der Schlüssel fehlt', () =>
     expect(metaValue('[C]nur Text', 'key')).toBeNull());
+
+  // #236: Titel/Autor kommen jetzt auf demselben Weg – inkl. Leerzeichen und Bindestrichen.
+  it('liest {title} mit Leerzeichen und Bindestrich vollständig', () =>
+    expect(metaValue('{title: Mottosong AC26 - Auf dich will ich bauen}\n{key: C}', 'title')).toBe(
+      'Mottosong AC26 - Auf dich will ich bauen',
+    ));
+  it('liest {artist}', () =>
+    expect(metaValue('{artist: Max Muster}', 'artist')).toBe('Max Muster'));
+
+  it('ein leerer Wert gilt als nicht gesetzt (halb getippte Kopfzeile)', () =>
+    expect(metaValue('{title: }\n[C]Text', 'title')).toBeNull());
+
+  it('ein leerer Wert verdeckt einen späteren echten nicht', () =>
+    expect(metaValue('{title:}\n{title: Richtig}', 'title')).toBe('Richtig'));
+
+  it('verwechselt {subtitle} nicht mit {title}', () =>
+    expect(metaValue('{subtitle: Untertitel}', 'title')).toBeNull());
 });
 
 describe('isHeaderType', () => {

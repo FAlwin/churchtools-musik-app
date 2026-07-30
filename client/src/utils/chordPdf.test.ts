@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { generateChordPdf, generateSetlistPdf, generateSetlistPdfWithOwners } from './chordPdf';
+import {
+  chartHead,
+  generateChordPdf,
+  generateSetlistPdf,
+  generateSetlistPdfWithOwners,
+} from './chordPdf';
 import type { SetlistSong } from '@shared/types/index';
 
 /**
@@ -153,5 +158,46 @@ describe('generateSetlistPdfWithOwners – Seiten-Zuordnung', () => {
 
   it('leere Liste ergibt keine Besitzer', () => {
     expect(generateSetlistPdfWithOwners([], () => ({})).owners).toEqual([]);
+  });
+});
+
+/**
+ * #236: `{title: …}` im ChordPro wurde auf dem Blatt ignoriert – nur die Editor-Vorschau las es.
+ * Der Kopf ist jetzt eine reine Funktion, damit die Regel prüfbar ist, ohne das PDF-Binary zu
+ * zerlegen.
+ */
+describe('chartHead – Titel/Autor des Blatts', () => {
+  it('{title} aus dem Text schlägt den ChurchTools-Liednamen', () => {
+    const s = song({
+      title: 'Mottosong AC26',
+      chordpro: '{title: Mottosong AC26 - Auf dich will ich bauen}\n[C]Text\n',
+    });
+    expect(chartHead(s).title).toBe('Mottosong AC26 - Auf dich will ich bauen');
+  });
+
+  it('ohne {title} bleibt der ChurchTools-Liedname stehen', () => {
+    expect(chartHead(song({ title: 'Nur CT', chordpro: '[C]Text\n' })).title).toBe('Nur CT');
+  });
+
+  it('ein leeres {title: } ersetzt den Liednamen NICHT durch nichts', () => {
+    expect(chartHead(song({ title: 'Nur CT', chordpro: '{title: }\n[C]Text\n' })).title).toBe(
+      'Nur CT',
+    );
+  });
+
+  it('{artist} schlägt den ChurchTools-Autor, sonst bleibt dieser', () => {
+    const mit = song({ author: 'CT-Autor', chordpro: '{artist: Echter Autor}\n[C]Text\n' });
+    const ohne = song({ author: 'CT-Autor', chordpro: '[C]Text\n' });
+    expect(chartHead(mit).author).toBe('Echter Autor');
+    expect(chartHead(ohne).author).toBe('CT-Autor');
+  });
+
+  it('eine Version mit eigenem {title} bestimmt den Kopf ihres Blatts', () => {
+    // Das ist der Fall, den der Server allein NICHT abdecken kann: er leitet den Titel aus dem
+    // Original ab, angezeigt wird aber der Versionstext.
+    const original = song({ title: 'Lied', chordpro: '{title: Lied lang}\n[C]Text\n' });
+    const version = { ...original, chordpro: '{title: Lied – Akustik}\n[C]Text\n' };
+    expect(chartHead(original).title).toBe('Lied lang');
+    expect(chartHead(version).title).toBe('Lied – Akustik');
   });
 });

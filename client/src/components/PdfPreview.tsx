@@ -49,8 +49,11 @@ export function PdfPreview({ title, text, semitones }: PdfPreviewProps) {
       const song = {
         id: 0,
         arrangementId: 0,
-        title: meta.title || title,
-        author: meta.artist || '',
+        // Titel/Autor NICHT hier auflösen – das macht `chartHead` in `generateChordPdf` für Blatt
+        // und Vorschau gemeinsam (#236). Vorher stand die Regel nur hier, weshalb die Vorschau
+        // den `{title}` zeigte und das fertige Blatt nicht.
+        title,
+        author: '',
         originalKey: meta.key || '',
         targetKey: meta.key || '',
         bpm: meta.tempo ? Number(meta.tempo) || null : null,

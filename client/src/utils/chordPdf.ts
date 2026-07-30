@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { parseChordPro, parseLine } from './chordpro';
+import { parseChordPro, parseLine, parseMetadata } from './chordpro';
 import { transposeChord } from './transpose';
 import type { SetlistSong } from '@shared/types/index';
 
@@ -34,6 +34,25 @@ const TEXT_COLOR: [number, number, number] = [20, 17, 15];
 const CHORD_COLOR: [number, number, number] = TEXT_COLOR;
 const LABEL_COLOR: [number, number, number] = TEXT_COLOR;
 const MUTED_COLOR: [number, number, number] = [90, 90, 90];
+
+/**
+ * Titel und Autor für den Kopf des Blatts (#236).
+ *
+ * `{title}`/`{artist}` **des gerenderten Textes** gehen vor. Der Server tut dasselbe für das
+ * Original (`buildSong`) – hier ist es zusätzlich nötig, weil das Blatt auch eine **Version**
+ * zeigen kann, die ihren eigenen Titel trägt. Damit kann die Editor-Vorschau nie wieder etwas
+ * anderes anzeigen als das fertige Blatt: beide gehen durch diese Funktion.
+ */
+export function chartHead(song: Pick<SetlistSong, 'title' | 'author' | 'chordpro'>): {
+  title: string;
+  author: string;
+} {
+  const meta = parseMetadata(song.chordpro ?? '');
+  return {
+    title: meta.title || song.title,
+    author: meta.artist || song.author,
+  };
+}
 
 /**
  * Erzeugt aus dem ChordPro eines Lieds eine SongSelect-artige PDF (Akkorde über Text,
@@ -108,19 +127,20 @@ export function generateChordPdf(
     }
   }
 
+  const head = chartHead(song);
   const titlePt = fontPt + 6;
   d.setFont('helvetica', 'bold');
   d.setFontSize(titlePt);
   d.setTextColor(...TEXT_COLOR);
-  d.text(song.title, MARGIN, y + titlePt * PT_TO_MM);
+  d.text(head.title, MARGIN, y + titlePt * PT_TO_MM);
   y += titlePt * PT_TO_MM + 1.5;
 
   const subPt = Math.max(8, fontPt - 2);
-  if (song.author) {
+  if (head.author) {
     d.setFont('helvetica', 'normal');
     d.setFontSize(subPt);
     d.setTextColor(...MUTED_COLOR);
-    d.text(song.author, MARGIN, y + subPt * PT_TO_MM);
+    d.text(head.author, MARGIN, y + subPt * PT_TO_MM);
     y += subPt * PT_TO_MM + 1;
   }
 

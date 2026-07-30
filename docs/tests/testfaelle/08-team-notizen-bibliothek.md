@@ -132,6 +132,37 @@ sitzt die Ansicht wieder normal.
 
 </details>
 
+### TF-VER-03 · Eigene Überschrift für ein Lied setzen
+
+**Das brauchst du:** Ein Lied, das du bearbeiten darfst, und einen Ablaufplan, in dem es vorkommt.
+
+**Das muss passieren:** Die neue Überschrift steht **auf dem Blatt** – und zwar dieselbe, die du in
+der Vorschau rechts gesehen hast. Sie steht auch oben in der Kopfzeile und im Ablaufplan.
+
+**Eine Stelle ändert sich absichtlich NICHT:** Unter **Alle Lieder** steht weiter der Name, den das
+Lied in ChurchTools trägt. Das ist so gewollt und kein Fehler – die Liste kennt den Liedtext nicht.
+
+1. Das Lied öffnen und oben rechts auf den **Stift** tippen.
+2. In der Zeile `{title: …}` die Überschrift ändern, z. B. auf
+   `{title: Mottosong AC26 - Auf dich will ich bauen}`.
+3. Die **Vorschau rechts** ansehen und dir die Überschrift merken.
+4. **Speichern** und zurück zum Blatt.
+5. Die Überschrift auf dem Blatt mit der aus Schritt 3 vergleichen – sie muss gleich sein.
+6. Oben in die **Kopfzeile** schauen.
+7. Zum Ablaufplan des Gottesdienstes wechseln, in dem das Lied vorkommt.
+8. Unten auf **Alle Lieder** tippen und das Lied suchen (hier steht der ChurchTools-Name).
+9. Zurück in den Editor: die Zeile `{title: …}` ganz löschen und speichern. Jetzt muss überall
+   wieder der ChurchTools-Name stehen.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/utils/chordPdf.ts`, `client/src/components/PdfPreview.tsx`, `server/src/services/setlistBuilder.ts`, `server/src/services/chordproMeta.ts`
+- **Automatisiert:** teilweise – `server/src/services/buildSong.head.test.ts`, `client/src/utils/chordPdf.test.ts` (`chartHead`); von Hand bleibt das Zusammenspiel aus Vorschau, Kopfzeile, Ablaufplan und Bibliothek
+- **Historie:** #236
+
+</details>
+
 ### TF-ADMIN-01 · Verwaltung nur für Berechtigte
 
 **Das brauchst du:** Ein Konto **ohne** Admin-Recht und eines **mit**.
