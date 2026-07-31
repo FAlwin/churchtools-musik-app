@@ -115,9 +115,23 @@ Dopplung" und Groß-/Kleinschreibung) und `hooks/useKeyboardInset` (Tastatur-Aus
 Höhe korrekt, nie negativ, Listener an/ab, Scroll-Reset, kein Absturz ohne `visualViewport`).
 
 **Bekannte Test-Lücken (bewusst als Issues geführt, nicht vergessen):** `migrateLocalAnnotations`
-(einmalige Übernahme lokaler Anmerkungen ins Konto) ist weiterhin ungetestet – Rest von #192.
+(einmalige Übernahme lokaler Anmerkungen ins Konto) ist weiterhin ungetestet – Rest von #192, und
+genau dort sitzt der Fehler #246 (Merker wird auch nach Fehlschlag gesetzt).
 Erledigt: `utils/chordPdf.ts` 0 → 87,7 % und `services/annotations.ts` 13 → 53,6 % (#192),
 `agendaItemWritePayload` mit 11 Tests (#212).
+
+**Neu erkannt im Code-Check 31.07.2026 (#251):** `DrawToolbar.tsx` (479 Z.), `ChordEditor.tsx`
+(360 Z.) und `PageDeck.tsx` (689 Z.) stehen bei **0 %** – die Werkzeugleiste ist das, was Musiker im
+Gottesdienst tatsächlich anfassen. `client/vitest.config.ts` nimmt zudem `src/pages/**` und `App.tsx`
+ganz aus der Messung, die größten Dateien tauchen also nicht einmal in der Statistik auf. Nicht
+Coverage jagen, sondern die reinen Teile herauslösen (`commitInlineText`, `layerDown`) und die
+Werkzeugleisten-Bedienung in jsdom prüfen; Zeigergerät-Nahes bleibt zu Recht manuell.
+
+⚠️ **Ein Test, der nicht schützt (#250):** `services/annotations.keys.test.ts` prüft `KEY_RE` gegen
+**handgeschriebene Literale** statt gegen die Funktionen, die die Schlüssel erzeugen. Lieferte
+`modeSeg` künftig `_lyrics` statt `_lyr`, blieben alle Client-Tests grün und der Konto-Sync stürbe
+still – also genau der Fehler, den dieser Test „zementieren" soll. **Merkregel: Tests gegen die
+Erzeuger schreiben, nicht gegen Literale.**
 
 ## Manuelle Tests
 
