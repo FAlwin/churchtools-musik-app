@@ -71,7 +71,7 @@ describe('annotations – Upload schlägt fehl (#245)', () => {
 
   it('DER Fehler von #245: nach einem Fehlschlag darf der Pull die Seite NICHT überschreiben', async () => {
     // Das ist die eigentliche Ausfallkette – der Grund, warum der Strich sichtbar verschwand.
-    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') return Promise.resolve(jsonResponse(500)); // Upload scheitert
       return Promise.resolve(jsonResponse(200, { [KEY]: { strokes: 'ALTER_SERVER_STAND' } }));
     });
@@ -101,7 +101,7 @@ describe('annotations – Upload schlägt fehl (#245)', () => {
   });
 
   it('offline gezeichnet: der Pull überschreibt trotzdem nicht (Eintrag bleibt in der Schlange)', async () => {
-    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') return Promise.reject(new TypeError('Failed to fetch'));
       return Promise.resolve(jsonResponse(200, { [KEY]: { strokes: 'ALTER_SERVER_STAND' } }));
     });
