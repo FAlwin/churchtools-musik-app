@@ -16,6 +16,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   dabei gegen den zurückgelegten. Ist das Konto voll, erscheint jetzt ein Hinweis, statt die Anmerkung
   stillschweigend fallen zu lassen. ⚠️ Bleibt offen: Wird die App **geschlossen**, während ein Upload
   noch aussteht, ist das beim nächsten Start nicht mehr bekannt. (#245)
+- **Die einmalige Übernahme bestehender Anmerkungen aufs Konto verpasst sich nicht mehr.** Lief sie
+  bei schlechtem Netz ins Leere, galt sie trotzdem als erledigt – die auf dem Gerät gesammelten
+  Anmerkungen landeten damit **nie** auf dem Konto, still und ohne Meldung. Sie läuft genau einmal pro
+  Gerät, es gab also keine zweite Chance. Jetzt wird der Merker nur gesetzt, wenn nichts
+  netzbedingt gescheitert ist; ein einzelner zu großer Eintrag hält den Vorgang dagegen nicht auf
+  (er würde auch beim nächsten Mal scheitern) und wird gemeldet. (#246)
 
 ## [2.15.0] – 2026-07-31
 

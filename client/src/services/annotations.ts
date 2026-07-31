@@ -227,7 +227,12 @@ export async function migrateLocalAnnotations(): Promise<void> {
   }
   // Nur gültige Lied-Schlüssel hochladen (Dokument-Anmerkungen bleiben lokal).
   const keys = Object.keys(entries).filter((k) => KEY_RE.test(k));
-  // Pro Schlüssel hochladen (kleine Requests, einmaliger Vorgang); Einzelfehler überspringen.
+  // Netzbedingter Fehlschlag = später nochmal versuchen. Der Merker darf dann NICHT fallen (#246):
+  // Der Vorgang läuft genau einmal pro Gerät – wurde er bei schlechtem Netz „erledigt", landen die
+  // bestehenden Geräte-Anmerkungen NIE auf dem Konto, still und ohne Meldung. Vorher wurde der
+  // Merker bedingungslos gesetzt und nur 401 brach vorzeitig ab.
+  let retryLater = false;
+  // Pro Schlüssel hochladen (kleine Requests, einmaliger Vorgang).
   for (const key of keys) {
     try {
       await apiFetch(`/api/annotations/${encodeURIComponent(key)}`, {
@@ -239,8 +244,14 @@ export async function migrateLocalAnnotations(): Promise<void> {
         disabled = true;
         return; // nicht angemeldet → Merker NICHT setzen, später erneut versuchen
       }
-      // anderer Fehler (z. B. zu groß): diesen Schlüssel überspringen
+      if (e instanceof ApiError && e.status === 413) {
+        // Zu groß fürs Konto: ein erneuter Versuch scheitert genauso → diesen Schlüssel endgültig
+        // überspringen (lokal bleibt er erhalten) und den Vorgang trotzdem abschließen.
+        syncErrorHandler?.(e.message);
+        continue;
+      }
+      retryLater = true; // Netz-/Serverfehler → nächster Start versucht es erneut
     }
   }
-  localStorage.setItem(MIGRATED_FLAG, '1');
+  if (!retryLater) localStorage.setItem(MIGRATED_FLAG, '1');
 }

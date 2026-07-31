@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #245: **63 Testdateien** –
-**45 Client (328 Tests)** + **18 Server (168 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #246: **63 Testdateien** –
+**45 Client (332 Tests)** + **18 Server (168 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 
@@ -114,9 +114,20 @@ Neu seit v2.14.x: `utils/agendaItemTitle` (Anzeige-Regeln für Lied-Punkte, #200
 Dopplung" und Groß-/Kleinschreibung) und `hooks/useKeyboardInset` (Tastatur-Aussparung #207, jsdom:
 Höhe korrekt, nie negativ, Listener an/ab, Scroll-Reset, kein Absturz ohne `visualViewport`).
 
-**Bekannte Test-Lücken (bewusst als Issues geführt, nicht vergessen):** `migrateLocalAnnotations`
-(einmalige Übernahme lokaler Anmerkungen ins Konto) ist weiterhin ungetestet – Rest von #192, und
-genau dort sitzt der Fehler #246 (Merker wird auch nach Fehlschlag gesetzt).
+**Bekannte Test-Lücken:** derzeit keine offene, die als Issue geführt wird.
+
+⚠️ **Korrektur (31.07.2026):** Hier stand bis heute „`migrateLocalAnnotations` ist weiterhin ungetestet
+– Rest von #192". **Das war falsch** – die Funktion ist seit #229 (27.07.) mit 10 Tests abgedeckt, wie
+der CHANGELOG-Eintrag zu #229 korrekt sagt; nur diese Seite wurde damals nicht nachgezogen. Die
+veraltete Aussage hat prompt Folgefehler erzeugt: Der Prüf-Agent im `/code-check` übernahm sie, und
+sie landete unhinterfragt im Issue #246. **Lehre: Auch eine Aussage über Tests im Code gegenprüfen –
+und wenn zwei Doku-Stellen dasselbe behaupten, beide nachziehen.**
+Die echte Lücke war eine andere und kleinere: von den Fehlerzweigen der Migration waren **401 und 413**
+geprüft, der **vorübergehende Netz-/Serverfehler nicht** – genau dort saß #246. Jetzt 14 Tests
+(`services/annotations.migrate`): Merker bleibt bei 500/offline/Teilerfolg aus, ein zu großer Eintrag
+(413) verhindert den Abschluss dagegen NICHT. **Merkregel: „401 und 413 getestet" heißt nicht
+„Fehlerfall getestet" – die Zweige einzeln prüfen.**
+
 Neu abgedeckt: `services/annotations.flush` (#245, 9 Tests) – **der fehlgeschlagene Upload wird
 zurückgelegt und wiederholt**, der Pull überschreibt die Seite danach NICHT (das war die eigentliche
 Ausfallkette), 413 meldet dem Nutzer die Ursache, 401 schaltet ab ohne Wiederholung, ein neuerer

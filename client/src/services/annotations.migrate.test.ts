@@ -174,3 +174,77 @@ describe('migrateLocalAnnotations – der Merker', () => {
     expect(localStorage.getItem(FLAG)).toBe('1');
   });
 });
+
+/**
+ * #246: Der Fall, der hier fehlte – und in dem der Fehler saß. Geprüft waren 401 (bricht ab) und 413
+ * (endgültig, Vorgang gilt als erledigt), **nicht** aber der vorübergehende Netz-/Serverfehler. Genau
+ * dort wurde der Merker gesetzt, obwohl nichts hochgeladen war: Der Vorgang läuft einmal pro Gerät,
+ * die Anmerkungen landeten also NIE auf dem Konto – still, ohne Meldung.
+ *
+ * Merkregel: Bei einer Fehlerbehandlung sind die Zweige einzeln zu prüfen. „401 und 413 getestet"
+ * heißt nicht „Fehlerfall getestet".
+ */
+describe('migrateLocalAnnotations – vorübergehender Fehler (#246)', () => {
+  it('Serverfehler: Merker bleibt AUS, der nächste Start holt es nach', async () => {
+    localStorage.setItem(`${DRAW}song7_voriginal_0`, 'strich');
+    const f = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(500)));
+    vi.stubGlobal('fetch', f);
+
+    await migrateLocalAnnotations();
+    expect(localStorage.getItem(FLAG)).toBeNull();
+
+    // Nächster Anlauf (nach dem nächsten Laden) – jetzt erreichbar.
+    f.mockImplementation(() => Promise.resolve(jsonResponse(200)));
+    await migrateLocalAnnotations();
+    expect(Object.keys(uploads(f))).toEqual(['song7_voriginal_0']);
+    expect(localStorage.getItem(FLAG)).toBe('1');
+  });
+
+  it('offline: Merker bleibt AUS (der Fall im Gemeindehaus mit schlechtem Netz)', async () => {
+    localStorage.setItem(`${DRAW}song7_voriginal_0`, 'strich');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => Promise.reject(new TypeError('Failed to fetch'))),
+    );
+
+    await migrateLocalAnnotations();
+
+    expect(localStorage.getItem(FLAG)).toBeNull();
+  });
+
+  it('Teilerfolg: der geglückte Eintrag ist oben, der Merker bleibt trotzdem aus', async () => {
+    localStorage.setItem(`${DRAW}song1_voriginal_0`, 'strich');
+    localStorage.setItem(`${DRAW}song2_voriginal_0`, 'strich');
+    const f = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        Promise.resolve(String(url).includes('song1') ? jsonResponse(500) : jsonResponse(200)),
+      );
+    vi.stubGlobal('fetch', f);
+
+    await migrateLocalAnnotations();
+
+    expect(Object.keys(uploads(f)).sort()).toEqual(['song1_voriginal_0', 'song2_voriginal_0']);
+    expect(localStorage.getItem(FLAG)).toBeNull();
+  });
+
+  it('ein zu großer Eintrag verhindert den Abschluss NICHT, ein Serverfehler daneben schon', async () => {
+    // Die Unterscheidung ist der Kern: endgültig (413) vs. vorübergehend (500).
+    localStorage.setItem(`${DRAW}song1_voriginal_0`, 'riesig');
+    localStorage.setItem(`${DRAW}song2_voriginal_0`, 'strich');
+    const f = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        Promise.resolve(
+          String(url).includes('song1')
+            ? jsonResponse(413, { error: 'zu groß' })
+            : jsonResponse(500),
+        ),
+      );
+    vi.stubGlobal('fetch', f);
+
+    await migrateLocalAnnotations();
+
+    expect(localStorage.getItem(FLAG)).toBeNull(); // wegen der 500, nicht wegen der 413
+  });
+});
