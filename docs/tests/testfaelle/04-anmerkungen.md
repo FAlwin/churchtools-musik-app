@@ -223,3 +223,33 @@ Konto.
 - **Historie:** –
 
 </details>
+
+### TF-ANNO-11 · Ein Netzaussetzer beim Zeichnen kostet keine Anmerkung
+
+**Das brauchst du:** Ein Gerät, an dem du das WLAN kurz aus- und wieder einschalten kannst.
+
+**Das muss passieren:** Der Strich **bleibt** – auch nachdem die App im Hintergrund weiter mit dem
+Server abgeglichen hat. Bis Version 2.15.0 verschwand er in dieser Situation sichtbar wieder: Der
+Upload scheiterte, wurde nicht wiederholt, und der nächste Abgleich holte den älteren Stand vom
+Server zurück.
+
+1. Ein Lied öffnen und den **Anmerkungsmodus** einschalten.
+2. **WLAN und Mobilfunk ausschalten.**
+3. Einen deutlich sichtbaren Strich über die Seite ziehen.
+4. Ein paar Sekunden warten, dann **WLAN wieder einschalten**.
+5. **Eine Minute warten**, ohne etwas zu tun (in dieser Zeit gleicht die App ab).
+6. Die Seite ansehen – der Strich muss noch da sein.
+7. Zur Gegenprobe: App schließen, neu öffnen, dasselbe Lied aufrufen. Der Strich ist da.
+
+**Wenn dein Konto voll ist:** Dann erscheint jetzt ein Hinweis unten am Bildschirm („Speicher-
+Obergrenze erreicht"). Vorher verschwand die Anmerkung in diesem Fall stillschweigend. Lokal auf dem
+Gerät bleibt sie erhalten.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `client/src/services/annotations.ts`, `client/src/services/reachability.ts`, `client/src/App.tsx`
+- **Automatisiert:** teilweise – `client/src/services/annotations.flush.test.ts` (Zurücklegen, Wiederholung, Pull-Schutz, 413/401); von Hand bleibt die echte Netztrennung am Gerät
+- **Historie:** #245
+
+</details>

@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #239: **62 Testdateien** –
-**44 Client (319 Tests)** + **18 Server (168 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #245: **63 Testdateien** –
+**45 Client (328 Tests)** + **18 Server (168 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 
@@ -117,6 +117,11 @@ Höhe korrekt, nie negativ, Listener an/ab, Scroll-Reset, kein Absturz ohne `vis
 **Bekannte Test-Lücken (bewusst als Issues geführt, nicht vergessen):** `migrateLocalAnnotations`
 (einmalige Übernahme lokaler Anmerkungen ins Konto) ist weiterhin ungetestet – Rest von #192, und
 genau dort sitzt der Fehler #246 (Merker wird auch nach Fehlschlag gesetzt).
+Neu abgedeckt: `services/annotations.flush` (#245, 9 Tests) – **der fehlgeschlagene Upload wird
+zurückgelegt und wiederholt**, der Pull überschreibt die Seite danach NICHT (das war die eigentliche
+Ausfallkette), 413 meldet dem Nutzer die Ursache, 401 schaltet ab ohne Wiederholung, ein neuerer
+Strich gewinnt gegen den zurückgelegten und ein anderes Feld überlebt daneben. Aufbau bewusst von
+`userSettings.flush.test.ts` (#213) übernommen – gleiche Fehlerklasse, gleicher Test.
 Erledigt: `utils/chordPdf.ts` 0 → 87,7 % und `services/annotations.ts` 13 → 53,6 % (#192),
 `agendaItemWritePayload` mit 11 Tests (#212).
 
@@ -137,7 +142,7 @@ Erzeuger schreiben, nicht gegen Literale.**
 
 Alles, was Finger, Stift, iOS-Tastatur oder echte Netztrennung braucht, steht als Testfall in
 [`docs/tests/`](../tests/README.md) – mit Schritten, erwartetem Ergebnis und dem Feld **Betrifft**,
-über das `npm run testplan` vor einem Release die betroffenen Fälle auswählt. Aktuell 56 Fälle,
+über das `npm run testplan` vor einem Release die betroffenen Fälle auswählt. Aktuell 58 Fälle,
 davon 12 „immer prüfen".
 
 ## Regel für neue Fehler
