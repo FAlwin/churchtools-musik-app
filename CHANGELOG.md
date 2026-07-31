@@ -22,6 +22,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 - **Derselbe Ablauf-Titel wird überall gleich dargestellt.** Bei einem Punkt ohne verknüpftes Lied
   wurden führende/folgende Leerzeichen nicht entfernt, mit Lied schon – derselbe Titel sah dadurch
   je nach Stelle anders aus. (#215)
+- **„Als PDF teilen" rechnet den Kapo mit.** Bei gesetztem Kapo war das geteilte PDF anders
+  transponiert als der Bildschirm – bei Kapo 2 standen die Akkorde zwei Halbtöne zu hoch. Ursache
+  waren drei Fassungen derselben Rechnung; einer fehlte der Kapo-Abzug. Es gibt sie jetzt nur noch
+  einmal. Bei Kapo 0 war nichts zu sehen, deshalb fiel es lange nicht auf. (#239)
 
 ### Geändert
 
@@ -65,6 +69,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   prozesslokalen Caches liegen jetzt beieinander statt zwischen Routing-Code, mit der Folge
   aufgeschrieben: Mit einer zweiten Instanz hinter einem Lastverteiler würde der Ablauf zwischen
   „geändert" und „unverändert" flackern. (#230)
+- **Chart-Ansicht entlastet** (`ChordChart`: 1053 → 812 Zeilen) – der letzte offene Punkt von #198.
+  Drei Komponenten heraus: Lied-Menü, Aussehen-Menü und der „Notizen von …"-Wähler. Das Lied-Menü
+  schließt sich jetzt **selbst** nach jeder Auswahl; vorher stand derselbe Aufruf elf Mal in den
+  Klick-Handlern. Die Schriftgrößen-Regel ist eine reine, geprüfte Funktion. +33 Tests. Dabei kam
+  der Kapo-Fehler (#239) ans Licht: Die Aufteilung machte sichtbar, dass die PDF-Optionen an drei
+  Stellen gerechnet wurden. `songPdfOpts` ist nun eine dünne Hülle über `loadSettings` +
+  `pdfOptionsForSong`, samt zweiter Kopie von `loadSecShift` weniger. Beim Zusammenführen galt
+  jeweils die robustere Fassung – dadurch macht Unsinn im Speicher (`capo: "kaputt"`) nun auch in
+  der **Anzeige** keinen `NaN`-Versatz mehr. (#198, #239)
 - **Kleinkram aus den Sammel-Issues**, zwölf Punkte, +36 Tests. Zusammengeführt statt kopiert
   (Querformat-Erkennung, Textstil-Regel, der letzte rohe `fetch` außerhalb von `services/`). Härter
   geworden: Der Rate-Limit-Schlüssel erkennt IPv4-mapped in jeder Schreibweise – vorher hätte ein

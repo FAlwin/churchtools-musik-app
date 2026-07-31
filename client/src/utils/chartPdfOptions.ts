@@ -16,7 +16,10 @@ export function pdfOptionsForSong(
   st: SongSettings,
   logo: HTMLImageElement | string | null = null,
 ): ChordPdfOptions {
-  const targetKey = st.key || song.targetKey;
+  // Rückfall bis zur Original-Tonart: Hat ein Lied in ChurchTools keine Ziel-Tonart, stand hier
+  // vorher ein leerer Wert und der Versatz war nicht mehr berechenbar. Die frühere zweite Fassung
+  // in `songPdfOpts.ts` fiel korrekt auf `originalKey` zurück – diese Regel gilt jetzt hier (#239).
+  const targetKey = st.key || song.targetKey || song.originalKey || '';
   return {
     semitones: getSemitoneOffset(song.originalKey, targetKey) - st.capo,
     cols: st.cols,

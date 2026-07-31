@@ -14,14 +14,15 @@ import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onbo
 import { Icon } from '../components/icons';
 import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
 import { VIEW_NS } from '../services/teamNotes';
-import { hasStoredNotesForLevel as hasOwnNotes } from '../utils/annotationKeys';
-import { Sheet } from '../components/Sheet';
+import { ChartAppearanceMenu } from '../components/ChartAppearanceMenu';
+import { SongMenu } from '../components/SongMenu';
+import { SharersSheet } from '../components/SharersSheet';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { migrateLocalSettings, pullSettings } from '../services/userSettings';
 import { parseChordPro } from '../utils/chordpro';
 import { availableVersions, versionText } from '../utils/songVersions';
-import { getSemitoneOffset, shiftKey } from '../utils/transpose';
+import { shiftKey } from '../utils/transpose';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import type { SetlistPageOwner } from '../utils/chordPdf';
 import { pdfOptionsForSong } from '../utils/chartPdfOptions';
@@ -312,7 +313,6 @@ export function ChordChart({
 
   // ── abgeleitete Werte des AKTIVEN Lieds ──
   const curKey = set.key || song.targetKey;
-  const totalOffset = getSemitoneOffset(song.originalKey, curKey);
   const shapeKey = shiftKey(curKey, -set.capo);
   // Versionen: Original + benannte; aktuell gewählte ableiten.
   const versions = availableVersions(song);
@@ -374,6 +374,22 @@ export function ChordChart({
     const unitPages = owners.filter((o) => o.songIdx === cur.songIdx).length;
     if (unitPages <= 1) return null;
     return `Seite ${cur.localPage + 1} / ${unitPages}`;
+  };
+
+  /**
+   * „Als PDF teilen" – das aktive Lied als einzelne PDF.
+   *
+   * Geht über `pdfOptionsForSong`, dieselbe Funktion, die auch den Seitenstrom der Anzeige baut.
+   * Vorher baute diese Stelle die Optionen selbst und übergab `totalOffset` – also OHNE den
+   * Kapo-Abzug. Bei gesetztem Kapo war das geteilte PDF dadurch anders transponiert als der
+   * Bildschirm (#239). Es darf hier keine zweite Fassung dieser Rechnung geben.
+   */
+  const shareCurrentAsPdf = (): void => {
+    const doc = generateChordPdf(
+      { ...song, chordpro: displayedChordpro },
+      pdfOptionsForSong(song, set, logoImg),
+    );
+    void sharePdf(doc, song.title);
   };
 
   // ChordPro-Versionen anlegen/bearbeiten/löschen (Zustand + ChurchTools-Aufrufe im Hook gebündelt).
@@ -511,8 +527,7 @@ export function ChordChart({
         {viewing &&
           (() => {
             const vName =
-              availableVersions(song).find((v) => v.key === viewing.versionKey)?.name ??
-              viewing.versionKey;
+              versions.find((v) => v.key === viewing.versionKey)?.name ?? viewing.versionKey;
             const otherVersion =
               (settings[song.id]?.versionKey ?? 'original') !== viewing.versionKey;
             return (
@@ -529,244 +544,40 @@ export function ChordChart({
             );
           })()}
 
-        {/* Aussehen-Dropdown (pro aktivem Lied: Schriftgröße, Spalten) */}
+        {/* Aussehen-Menü (pro aktivem Lied: Schriftgröße, Spalten) */}
         {showAppearance && (
-          <>
-            <div className={styles.scrim} onClick={() => setShowAppearance(false)} />
-            <div className={styles.appMenu}>
-              <div className={styles.menuLbl}>Schriftgröße</div>
-              <div className={styles.appRow}>
-                <button
-                  className={styles.stepBtn}
-                  onClick={() =>
-                    updateSetting(song.id, { fontSize: Math.max(12, set.fontSize - 2) })
-                  }
-                >
-                  A−
-                </button>
-                <span className={styles.stepValue}>{set.fontSize}</span>
-                <button
-                  className={styles.stepBtn}
-                  onClick={() =>
-                    updateSetting(song.id, { fontSize: Math.min(40, set.fontSize + 2) })
-                  }
-                >
-                  A+
-                </button>
-              </div>
-
-              <div className={styles.menuLbl}>Spalten</div>
-              <div className={styles.segGroup}>
-                <button
-                  className={`${styles.segBtn}${set.cols === 1 ? ' ' + styles.on : ''}`}
-                  onClick={() => updateSetting(song.id, { cols: 1 })}
-                >
-                  1 Spalte
-                </button>
-                <button
-                  className={`${styles.segBtn}${set.cols === 2 ? ' ' + styles.on : ''}`}
-                  onClick={() => updateSetting(song.id, { cols: 2 })}
-                >
-                  2 Spalten
-                </button>
-              </div>
-            </div>
-          </>
+          <ChartAppearanceMenu
+            fontSize={set.fontSize}
+            cols={set.cols}
+            onFontSize={(fontSize) => updateSetting(song.id, { fontSize })}
+            onCols={(cols) => updateSetting(song.id, { cols })}
+            onClose={() => setShowAppearance(false)}
+          />
         )}
 
         {/* Lied-Menü (über den Titel) */}
         {showSongMenu && (
-          <>
-            <div className={styles.scrim} onClick={() => setShowSongMenu(false)} />
-            <div className={styles.modeMenu}>
-              <button
-                className={styles.mmItem}
-                onClick={() => {
-                  setShowKeyPicker(true);
-                  setShowSongMenu(false);
-                }}
-              >
-                <span>Transponieren</span>
-                <span className={styles.mmValueActive}>{curKey}</span>
-              </button>
-              <button
-                className={styles.mmItem}
-                onClick={() => {
-                  setShowCapoPicker(true);
-                  setShowSongMenu(false);
-                }}
-              >
-                <span>Kapo</span>
-                {set.capo > 0 ? (
-                  <span className={styles.mmValueActive}>Bund {set.capo}</span>
-                ) : (
-                  <span className={styles.mmValue}>–</span>
-                )}
-              </button>
-              {set.viewSource === 'chords' && (
-                <button
-                  className={styles.mmItem}
-                  onClick={() => {
-                    setShowSecTranspose(true);
-                    setShowSongMenu(false);
-                  }}
-                >
-                  <span>Abschnitte transponieren</span>
-                  {Object.keys(set.secShift).length > 0 ? (
-                    <span className={styles.mmValueActive}>
-                      {Object.keys(set.secShift).length} aktiv
-                    </span>
-                  ) : (
-                    <span className={styles.mmValue}>–</span>
-                  )}
-                </button>
-              )}
-              {set.viewSource === 'chords' && sections.length > 0 && (
-                <button
-                  className={styles.mmItem}
-                  onClick={() => {
-                    setShowSongMenu(false);
-                    const doc = generateChordPdf(
-                      { ...song, chordpro: displayedChordpro },
-                      {
-                        semitones: totalOffset,
-                        cols: set.cols,
-                        fontPt: Math.max(8, Math.round(set.fontSize * 0.6)),
-                        lyricsOnly: set.lyricsOnly,
-                        sectionSemitones: set.secShift,
-                        displayKey: curKey,
-                        logo: logoImg,
-                      },
-                    );
-                    void sharePdf(doc, song.title);
-                  }}
-                >
-                  <span>Als PDF teilen</span>
-                  <span className={styles.mmValue}>⤴</span>
-                </button>
-              )}
-              {canEditSong && set.viewSource === 'chords' && (
-                <button
-                  className={styles.mmItem}
-                  onClick={() => {
-                    openEditCurrent();
-                    setShowSongMenu(false);
-                  }}
-                >
-                  <span>
-                    {isOriginal
-                      ? 'Bearbeiten (neue Version)'
-                      : `„${currentVersion.name}" bearbeiten`}
-                  </span>
-                  <span className={styles.mmValue}>🖉</span>
-                </button>
-              )}
-
-              <div className={styles.menuLbl} style={{ marginTop: 6 }}>
-                Anzeige
-              </div>
-              <button
-                className={`${styles.mmItem}${set.viewSource === 'chords' && !set.lyricsOnly ? ' ' + styles.on : ''}`}
-                onClick={() => {
-                  updateSetting(song.id, { viewSource: 'chords', lyricsOnly: false });
-                  setShowSongMenu(false);
-                }}
-              >
-                <span>
-                  Akkorde &amp; Text
-                  {hasOwnNotes(song.id, set.versionKey, false) && (
-                    <Icon name="pencil" size={12} className={styles.mmNote} />
-                  )}
-                </span>
-                {set.viewSource === 'chords' && !set.lyricsOnly && (
-                  <span className={styles.mmCheck}>✓</span>
-                )}
-              </button>
-              <button
-                className={`${styles.mmItem}${set.viewSource === 'chords' && set.lyricsOnly ? ' ' + styles.on : ''}`}
-                onClick={() => {
-                  updateSetting(song.id, { viewSource: 'chords', lyricsOnly: true });
-                  setShowSongMenu(false);
-                }}
-              >
-                <span>
-                  Nur Text
-                  {hasOwnNotes(song.id, set.versionKey, true) && (
-                    <Icon name="pencil" size={12} className={styles.mmNote} />
-                  )}
-                </span>
-                {set.viewSource === 'chords' && set.lyricsOnly && (
-                  <span className={styles.mmCheck}>✓</span>
-                )}
-              </button>
-              {song.documents.map((d) => (
-                <button
-                  key={d.fileId}
-                  className={`${styles.mmItem}${set.viewSource === d.fileId ? ' ' + styles.on : ''}`}
-                  onClick={() => {
-                    updateSetting(song.id, { viewSource: d.fileId });
-                    setShowSongMenu(false);
-                  }}
-                >
-                  <span>
-                    {d.type === 'pdf' ? '📄' : '🖼️'} {d.name}
-                  </span>
-                  {set.viewSource === d.fileId && <span className={styles.mmCheck}>✓</span>}
-                </button>
-              ))}
-
-              {set.viewSource === 'chords' && (hasVersions || canEditSong) && (
-                <>
-                  <div className={styles.menuLbl} style={{ marginTop: 6 }}>
-                    Version
-                  </div>
-                  {versions.map((v) => (
-                    <button
-                      key={v.key}
-                      className={`${styles.mmItem}${set.versionKey === v.key ? ' ' + styles.on : ''}`}
-                      onClick={() => {
-                        selectVersion(song.id, v.key);
-                        setShowSongMenu(false);
-                      }}
-                    >
-                      <span>
-                        {v.name}
-                        {(hasOwnNotes(song.id, v.key, false) ||
-                          hasOwnNotes(song.id, v.key, true)) && (
-                          <Icon name="pencil" size={12} className={styles.mmNote} />
-                        )}
-                      </span>
-                      {set.versionKey === v.key && <span className={styles.mmCheck}>✓</span>}
-                    </button>
-                  ))}
-                  {canEditSong && (
-                    <button
-                      className={styles.mmItem}
-                      onClick={() => {
-                        openNewVersion();
-                        setShowSongMenu(false);
-                      }}
-                    >
-                      <span>Neue Version…</span>
-                      <span className={styles.mmValue}>＋</span>
-                    </button>
-                  )}
-                  {canEditSong && !isOriginal && (
-                    <button
-                      className={styles.mmItem}
-                      onClick={() => {
-                        setShowSongMenu(false);
-                        setConfirmDelEdited(true);
-                      }}
-                    >
-                      <span className={styles.mmDanger}>„{currentVersion.name}" löschen</span>
-                      <span className={styles.mmValue}>🗑</span>
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          </>
+          <SongMenu
+            song={song}
+            set={set}
+            curKey={curKey}
+            sections={sections}
+            versions={versions}
+            currentVersion={currentVersion}
+            isOriginal={isOriginal}
+            hasVersions={hasVersions}
+            canEditSong={canEditSong}
+            onClose={() => setShowSongMenu(false)}
+            onOpenKeyPicker={() => setShowKeyPicker(true)}
+            onOpenCapoPicker={() => setShowCapoPicker(true)}
+            onOpenSectionTranspose={() => setShowSecTranspose(true)}
+            onSharePdf={shareCurrentAsPdf}
+            onEditCurrent={openEditCurrent}
+            onNewVersion={openNewVersion}
+            onDeleteVersion={() => setConfirmDelEdited(true)}
+            onChange={(patch) => updateSetting(song.id, patch)}
+            onSelectVersion={(versionKey) => selectVersion(song.id, versionKey)}
+          />
         )}
 
         {/* Tonart-Picker */}
@@ -970,70 +781,18 @@ export function ChordChart({
 
         {/* „Notizen von …": Stufe 1 = Person wählen, Stufe 2 = ihre Ebene (Version + Darstellung). */}
         {showSharers && (
-          <Sheet
-            title={pickerPerson ? `Notizen von ${pickerPerson.name}` : 'Notizen von …'}
+          <SharersSheet
+            songTitle={song.title}
+            sharers={songSharers}
+            pickerPerson={pickerPerson}
+            levels={mirrorGroups()}
+            versionName={(key) => versions.find((v) => v.key === key)?.name ?? key}
+            levelKey={groupKeyOf}
+            onPickPerson={(p) => void openPersonLevels(p, song.id)}
+            onPickLevel={(g) => viewLevel(song.id, g.versionKey, g.lyr)}
+            onBackToPersons={() => setPickerPerson(null)}
             onClose={() => setShowSharers(false)}
-            cancelLabel="Schließen"
-          >
-            {!pickerPerson ? (
-              <>
-                <p className={styles.pickHint}>
-                  Wähle eine Person, um ihre geteilten Anmerkungen zu „{song.title}" anzusehen –
-                  schreibgeschützt, in ihrer Ansicht. Übernehmen ist danach möglich.
-                </p>
-                {songSharers.length === 0 ? (
-                  <p className={styles.pickHint}>
-                    Zurzeit teilt niemand Anmerkungen zu diesem Lied.
-                  </p>
-                ) : (
-                  songSharers.map((p) => (
-                    <button
-                      key={p.id}
-                      className={styles.pickRow}
-                      onClick={() => void openPersonLevels(p, song.id)}
-                    >
-                      <Icon name="people" size={18} stroke={2} />
-                      <span className={styles.pickName}>{p.name}</span>
-                      <Icon name="chev-right" size={16} className={styles.pickChev} />
-                    </button>
-                  ))
-                )}
-              </>
-            ) : (
-              <>
-                <p className={styles.pickHint}>
-                  Welche Anmerkungen von {pickerPerson.name} möchtest du ansehen? (Nur Ebenen mit
-                  Anmerkungen werden angezeigt.)
-                </p>
-                {mirrorGroups().length === 0 && (
-                  <p className={styles.pickHint}>Keine Anmerkungen zu diesem Lied vorhanden.</p>
-                )}
-                {mirrorGroups().map((g) => {
-                  const vName =
-                    availableVersions(song).find((v) => v.key === g.versionKey)?.name ??
-                    g.versionKey;
-                  return (
-                    <button
-                      key={groupKeyOf(g)}
-                      className={styles.pickRow}
-                      onClick={() => viewLevel(song.id, g.versionKey, g.lyr)}
-                    >
-                      <Icon name="pencil" size={16} stroke={2} />
-                      <span className={styles.pickName}>
-                        Version „{vName}" · {g.lyr ? 'Nur Text' : 'Akkorde & Text'}
-                      </span>
-                      <span className={styles.pickPages}>
-                        {g.pages.length} {g.pages.length === 1 ? 'Seite' : 'Seiten'}
-                      </span>
-                    </button>
-                  );
-                })}
-                <button className={styles.pickBack} onClick={() => setPickerPerson(null)}>
-                  Andere Person wählen
-                </button>
-              </>
-            )}
-          </Sheet>
+          />
         )}
 
         <Toast message={toast} />

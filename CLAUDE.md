@@ -378,9 +378,11 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   In `main` seit v2.14.2: Seiten-Engine aufgeteilt (#193), Ablauf-Ansicht und `setlistBuilder`
   aufgeteilt (#232/#230), Persistenz raus aus den Komponenten (#231), Prettier-Prüfung in der CI
   (#233), Testmanagement für die manuellen Tests (#234, `docs/tests/` + `npm run testplan`),
-  Kleinkram aus den Sammel-Issues (#229 → #215/#199/#192) und `{title}`/`{artist}` aus dem ChordPro
-  (#236). Nutzersichtbar davon: #236, Querformat nach Rückkehr aus dem Hintergrund und die
-  einheitliche Titel-Darstellung (beide #215) – der Rest ist intern.
+  Kleinkram aus den Sammel-Issues (#229 → #215/#199/#192), `{title}`/`{artist}` aus dem ChordPro
+  (#236) und die Chart-Ansicht entlastet (#198 abgeschlossen: Lied-Menü, Aussehen-Menü und
+  „Notizen von …"-Wähler heraus, `ChordChart` 1053 → 812 Zeilen). Nutzersichtbar davon: #236, der
+  Kapo im geteilten PDF (#239 – dabei gefunden), Querformat nach Rückkehr aus dem Hintergrund und
+  die einheitliche Titel-Darstellung (beide #215) – der Rest ist intern.
   Davor v2.14.1: Titel eines Lied-Punkts ist
   änderbar und wird zusammen mit dem Liednamen angezeigt – wie in ChurchTools (Lied – Du großer Gott)
   (#200); Konto-Obergrenze für Lied-Einstellungen (#195); Login-Bremse wirkt auch bei IPv6 (#146);
