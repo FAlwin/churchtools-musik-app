@@ -17,8 +17,9 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 31.07.2026; in Prod ausgeliefert ist
-  **v2.14.2**, am Bundle verifiziert – `main` ist seither deutlich weiter, Release v2.15.0 offen).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 31.07.2026; **v2.15.0 ist getaggt und auf
+  GHCR veröffentlicht** – Digest `sha256:63004182…`, amd64+arm64, `:2`/`:2.15`/`:2.15.0`/`:latest`,
+  GitHub-Release LATEST. **In Prod läuft noch v2.14.2 – der Deploy durch Alwin steht aus.**).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -374,8 +375,12 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
-- **Aktuell (31.07.2026): in Prod läuft v2.14.2, `main` ist deutlich weiter → Release v2.15.0 fällig.**
-  In `main` seit v2.14.2: Seiten-Engine aufgeteilt (#193), Ablauf-Ansicht und `setlistBuilder`
+- **Aktuell (31.07.2026): v2.15.0 GETAGGT + auf GHCR (Digest `sha256:63004182…`), GitHub-Release
+  LATEST – PROD-DEPLOY DURCH ALWIN OFFEN (Prod liefert noch v2.14.2 aus).** ⚠️ Weil das Release
+  LATEST ist, meldet `useUpdateCheck` allen Nutzern schon jetzt „neue Version" (es vergleicht das
+  GitHub-Release mit der laufenden Version) – bis zum Deploy zeigt der Hinweis also ins Leere.
+  Testlauf-Issue: **#242** (auf 16 Pflichtfälle gekürzt, auf Staging `staging-41a710a` abgenommen).
+  In v2.15.0 enthalten: Seiten-Engine aufgeteilt (#193), Ablauf-Ansicht und `setlistBuilder`
   aufgeteilt (#232/#230), Persistenz raus aus den Komponenten (#231), Prettier-Prüfung in der CI
   (#233), Testmanagement für die manuellen Tests (#234, `docs/tests/` + `npm run testplan`),
   Kleinkram aus den Sammel-Issues (#229 → #215/#199/#192), `{title}`/`{artist}` aus dem ChordPro
@@ -411,7 +416,14 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
 - **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
   mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
-- **Zuletzt erledigt (27.07.2026): v2.14.2 – in Prod, am ausgelieferten Bundle verifiziert.**
+- **Zuletzt erledigt (31.07.2026): v2.15.0 getaggt.** Vier nutzersichtbare Korrekturen – `{title}`/
+  `{artist}` aus dem ChordPro werden übernommen (#236), „Als PDF teilen" rechnet den Kapo mit (#239),
+  Querformat nach Rückkehr aus dem Hintergrund und einheitliche Ablauf-Titel (beide #215) – plus
+  **#198 komplett abgeschlossen** (alle sieben Pakete, im Code gegengeprüft). Tests Client 319 /
+  Server 168, 57 manuelle Testfälle. Keine neuen Bedienelemente → Einführung bewusst unverändert;
+  gegengeprüft, dass die vier aufgeteilten Dateien kein `data-tour`-Ziel verloren haben (Coachmarks
+  überspringen fehlende Ziele STILL).
+- **Davor (27.07.2026): v2.14.2 – in Prod, am ausgelieferten Bundle verifiziert.**
   Enthält die drei Folgefehler aus #186: **#210** (falsches Passwort löscht die Offline-Reserve),
   **#211** (401-Fänger wandert nach `services/api.ts`, sieht jetzt auch Anmerkungs-/Einstellungs-Sync),
   **#218** (Offline→Online-Hänger im Login) sowie #212 (`agendaItemWritePayload` ausgelagert + 11
