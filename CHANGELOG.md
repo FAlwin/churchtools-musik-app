@@ -7,6 +7,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.15.0] – 2026-07-31
+
+Sammel-Release: vier nutzersichtbare Korrekturen und eine große Aufräumrunde (#198 abgeschlossen).
+Für Mitspielende ändert sich nichts an der Bedienung – die geführte Einführung bleibt deshalb
+bewusst unverändert.
+
 ### Behoben
 
 - **Eine eigene Überschrift über `{title: …}` wird jetzt übernommen.** Wer im Editor die Titelzeile

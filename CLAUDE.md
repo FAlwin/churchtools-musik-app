@@ -17,7 +17,7 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 30.07.2026; in Prod ausgeliefert ist
+  extern unter `https://musik.ecg-donrath.de` live (Stand 31.07.2026; in Prod ausgeliefert ist
   **v2.14.2**, am Bundle verifiziert – `main` ist seither deutlich weiter, Release v2.15.0 offen).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
@@ -374,7 +374,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
-- **Aktuell (30.07.2026): in Prod läuft v2.14.2, `main` ist deutlich weiter → Release v2.15.0 fällig.**
+- **Aktuell (31.07.2026): in Prod läuft v2.14.2, `main` ist deutlich weiter → Release v2.15.0 fällig.**
   In `main` seit v2.14.2: Seiten-Engine aufgeteilt (#193), Ablauf-Ansicht und `setlistBuilder`
   aufgeteilt (#232/#230), Persistenz raus aus den Komponenten (#231), Prettier-Prüfung in der CI
   (#233), Testmanagement für die manuellen Tests (#234, `docs/tests/` + `npm run testplan`),

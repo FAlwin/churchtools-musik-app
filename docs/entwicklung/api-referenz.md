@@ -2,7 +2,7 @@
 
 > Referenz der Endpunkte, die das Express-Backend dem Client anbietet (ausgelagert aus `CLAUDE.md`).
 > ChurchTools-spezifische Schreib-/Lese-Eigenheiten stehen weiterhin in `CLAUDE.md`.
-> Stand: v2.13.6. Alle `/api/...`-Routen erfordern eine gültige Session – **außer** `health`,
+> Stand: v2.15.0. Alle `/api/...`-Routen erfordern eine gültige Session – **außer** `health`,
 > `site-config` (GET), `update-check` und dem kompletten `auth/`-Router (`login`, `logout`, `me`;
 > `me` antwortet ohne Session bewusst mit `{authenticated:false}`).
 >
@@ -37,7 +37,10 @@
 
 ## Lieder
 
-- `GET  /api/song-library` → alle Lieder (Ansicht „Alle Lieder" + Auswahl beim Hinzufügen/Verknüpfen)
+- `GET  /api/song-library` → alle Lieder (Ansicht „Alle Lieder" + Auswahl beim Hinzufügen/Verknüpfen).
+  Liefert bewusst den **ChurchTools-Namen**, nicht `{title: …}` aus der Datei: Die Liste lädt keine
+  ChordPro-Texte, und sie dafür zu laden hieße, bei jedem Öffnen jede Lieddatei einzeln zu holen
+  (#236). Überall sonst gewinnt `{title}` – siehe unten.
 - `GET  /api/song-usage` → Nutzungsstatistik je Song als **`{ dates: string[] }`** (vergangene Spieltermine, bis zu 4 Jahre zurück, absteigend; 1h-Cache). Häufigkeit + „zuletzt gespielt" für den gewählten Zeitraum rechnet der **Client** daraus – ohne erneuten Server-Roundtrip.
 - `GET  /api/songs/:songId/arrangements` → Arrangements eines Lieds (für „Zu Ablauf hinzufügen")
 - `GET  /api/songs/:songId/chart` → Chart eines einzelnen Lieds (aus „Alle Lieder")
@@ -45,6 +48,15 @@
 - `PUT  /api/songs/:songId/versions/:versionKey` {arrangementId, text?, name?} → Version aktualisieren/umbenennen
 - `DELETE /api/songs/:songId/versions/:versionKey` {arrangementId} → Version löschen (Original bleibt)
 - `GET  /api/songs/:songId/files/:fileId` → PDF/Bild aus ChurchTools durchreichen (Content-Type-Whitelist; Viewer)
+
+**Kopfangaben eines Lieds – die Datei hat das letzte Wort (#236).** Überall, wo ein Lied als
+`SetlistSong` geliefert wird (`/setlist`, `/songs/:songId/chart`), gewinnen die ChordPro-Angaben der
+Datei über das, was ChurchTools am Lied/Arrangement hinterlegt hat: `{title}` → `title`,
+`{artist}` → `author`, `{key}` → `originalKey`, `{time}` → `timeSig`. Ein **leerer** Wert
+(`{title: }`) gilt als nicht gesetzt und ersetzt den ChurchTools-Wert nicht. Abgeleitet wird aus dem
+Original (bzw. der ersten Version, falls kein Original existiert); welche Überschrift auf dem
+gerenderten Blatt steht, entscheidet zusätzlich der **angezeigte** Text – siehe `chartHead()` im
+Client, damit eine Version mit eigener Überschrift auch ihre eigene trägt.
 
 ## Anmerkungen / Einstellungen (pro Konto, serverseitig auf dem Volume)
 

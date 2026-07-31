@@ -54,7 +54,7 @@ Verweis auf den Test. So sieht man, wie die manuelle Liste schrumpft.
 
 ```bash
 npm run testplan                      # Vorschau im Terminal
-npm run testplan -- --issue v2.14.3   # legt das Testlauf-Issue an
+npm run testplan -- --issue v2.15.0   # legt das Testlauf-Issue an
 ```
 
 Dann am Gerät abhaken. Ein durchgefallener Schritt wird ein Fehler-Issue mit der Testfall-Nummer im
