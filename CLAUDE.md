@@ -17,9 +17,9 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 31.07.2026; **v2.15.0 ist getaggt und auf
-  GHCR veröffentlicht** – Digest `sha256:63004182…`, amd64+arm64, `:2`/`:2.15`/`:2.15.0`/`:latest`,
-  GitHub-Release LATEST. **In Prod läuft noch v2.14.2 – der Deploy durch Alwin steht aus.**).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 31.07.2026: **v2.15.0 PRODUKTIV, am
+  ausgelieferten Bundle verifiziert** – Version im `index`-Chunk, `2.14.2` nicht mehr auffindbar,
+  neuer Marker im `AllSongs`-Chunk vorhanden; Digest `sha256:63004182…`, amd64+arm64).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -375,10 +375,17 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
-- **Aktuell (31.07.2026): v2.15.0 GETAGGT + auf GHCR (Digest `sha256:63004182…`), GitHub-Release
-  LATEST – PROD-DEPLOY DURCH ALWIN OFFEN (Prod liefert noch v2.14.2 aus).** ⚠️ Weil das Release
-  LATEST ist, meldet `useUpdateCheck` allen Nutzern schon jetzt „neue Version" (es vergleicht das
-  GitHub-Release mit der laufenden Version) – bis zum Deploy zeigt der Hinweis also ins Leere.
+- **Aktuell (31.07.2026): v2.15.0 PRODUKTIV LIVE ✅ – verifiziert.** `/api/health` ok/production,
+  Version **2.15.0** im ausgelieferten `index`-Bundle (`2.14.2` = 0 Treffer), der in v2.15.0 neue Text
+  „Lieder konnten nicht geladen werden." im `AllSongs`-Chunk, die Menü-Texte der drei neuen
+  Komponenten im `ChordChart`-Chunk. `/api/update-check` meldet 2.15.0 = laufende Version → kein
+  Update-Hinweis mehr. ⚠️ **Gelernt: Zwischen Tag und Deploy sehen ALLE Nutzer „neue Version"** –
+  `useUpdateCheck` vergleicht das GitHub-Release (LATEST) mit der laufenden Version, nicht mit dem
+  Server-Stand. Tag und Deploy zeitlich zusammenlegen.
+  ⚠️ **Auch gelernt: v2.15.0 brachte KEINEN neuen sichtbaren Text mit** (nur Umbauten und
+  Rechenkorrekturen). Für die Deploy-Verifikation musste der Marker maschinell gesucht werden
+  (String-Literale heute gegen den Vorgänger-Tag) – bei reinen Refactoring-Releases ist die aus
+  `VITE_APP_VERSION` injizierte Versionsnummer der Hauptbeleg.
   Testlauf-Issue: **#242** (auf 16 Pflichtfälle gekürzt, auf Staging `staging-41a710a` abgenommen).
   In v2.15.0 enthalten: Seiten-Engine aufgeteilt (#193), Ablauf-Ansicht und `setlistBuilder`
   aufgeteilt (#232/#230), Persistenz raus aus den Komponenten (#231), Prettier-Prüfung in der CI
