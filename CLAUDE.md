@@ -423,6 +423,23 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
 - **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
   mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
+- **🔴 CODE-CHECK 31.07.2026 (nach v2.15.0): Qualität professionell, Note 2 · Sicherheit 0 kritische,
+  0 hohe Funde.** Gelobt: **kein einziges `any`** im Produktivcode (als Fehler erzwungen), kein
+  `@ts-ignore`, ausnahmslos gelebte Server-Schichtung, der Compile-Wächter Zod↔Typ in
+  `annotationsController.ts:38-45`, CSP ohne `unsafe-inline` mit automatisch nachgezogenem
+  Script-Hash (live gegen Prod verifiziert), kein IDOR, kein Path-Traversal, SSRF im Datei-Proxy
+  doppelt zu (Host-Präfix **plus** `redirect: 'manual'`), `npm audit --omit=dev` = 0. **Der
+  Sub-Router-Footgun aus dem Geräteverleih existiert hier NICHT** (jede Route einzeln geprüft).
+  **Alle Funde als Issues: #245–#251.** ⚠️ **Die drei hohen Funde sind ALLE dieselbe Fehlerklasse –
+  „dieselbe Regel an einer zweiten Stelle, Korrektur nur an einer":** #245 (`annotations.ts` fehlt die
+  Härtung, die `userSettings.ts` unter #213 schon hat → Anmerkung verschwindet nach fehlgeschlagenem
+  Upload), #246 (Migrations-Merker wird auch nach Fehlschlag gesetzt → Übernahme dauerhaft verpasst),
+  #247 (`settingsForLevel` ohne `intOr` – **40 Zeilen unter der Funktion, die am selben Tag dagegen
+  eingeführt wurde**). Dazu #250: `annotationKeys.ts` nennt sich „zentrale Grammatik", die Erzeuger in
+  `ChordChart.tsx:340-369` bauen die Schlüssel aber selbst – und der Test dazu prüft **Literale statt
+  Erzeuger**, bleibt also bei genau diesem Fehler grün. **Konsequenz: Pflichtschritt „nach der zweiten
+  Stelle suchen" ist jetzt in der globalen CLAUDE.md und als Schritt 1b im `/festhalten`-Skill
+  verankert.**
 - **Zuletzt erledigt (31.07.2026): v2.15.0 getaggt.** Vier nutzersichtbare Korrekturen – `{title}`/
   `{artist}` aus dem ChordPro werden übernommen (#236), „Als PDF teilen" rechnet den Kapo mit (#239),
   Querformat nach Rückkehr aus dem Hintergrund und einheitliche Ablauf-Titel (beide #215) – plus
@@ -587,7 +604,11 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
 
 ## Offene Punkte (optional)
 
-- [x] Login-Token aus lokaler Dev-`.env` entfernt (14.06.2026) – in ChurchTools noch widerrufen
+- [ ] ⚠️ **Login-Token aus lokaler Dev-`.env` entfernen – NICHT erledigt (Stand 31.07.2026).** Der
+      Haken hier war falsch: `CHURCHTOOLS_LOGIN_TOKEN` ist in der lokalen `.env` **gefüllt** (im
+      Sicherheits-Review nachgeprüft, ohne den Wert auszugeben). Er trägt die vollen persönlichen
+      ChurchTools-Rechte. Die Datei ist korrekt gitignoriert und war nie im Repo – das Risiko ist rein
+      lokal (Geräteverlust, Backup). **Zu tun: Token in ChurchTools widerrufen, Zeile leeren.**
 - [x] Test-Service-Konto/Token #1012 in ChurchTools gelöscht (14.06.2026)
 - [x] White-Label (Farb-Anpassung) verworfen → feste CT-Version (Redesign live, 19.06.2026)
 - [x] Verteilung an andere Gemeinden (Selbst-Hosting) – abgeschlossen (öffentlich, MIT, `INSTALL.md`)
