@@ -4,8 +4,16 @@
  *  - pullAnnotations(): Server → localStorage (beim Öffnen einer Setlist)
  *  - pushField(): localStorage-Änderung → Server (gebündelt/debounced, Feld-Merge)
  *  - migrateLocalAnnotations(): einmalig bestehende Geräte-Anmerkungen aufs Konto hochladen
+ *
+ * ⚠️ **Bekannte Grenze der Wiederholung (#245):** Die Warteschlange lebt nur im Speicher. Wird die
+ * App geschlossen, während ein Upload noch aussteht (offline weggelegt), ist beim nächsten Start
+ * nicht mehr bekannt, dass etwas fehlt – `pullAnnotations` spiegelt dann den älteren Server-Stand
+ * über den lokalen. Das zu schließen bräuchte einen ausstehend-Merker in localStorage, der beim
+ * Start abgearbeitet wird, und ist bewusst NICHT Teil dieses Fixes. Der häufige Fall (Aussetzer
+ * während laufender Sitzung) ist abgedeckt.
  */
 import { apiFetch, ApiError } from './api';
+import { getReachable } from './reachability';
 import type { AnnotationText, PageAnnotation } from '@shared/types/index';
 
 const DRAW = 'worship_docdraw_';
@@ -89,6 +97,33 @@ const timers = new Map<string, ReturnType<typeof setTimeout>>();
 // nicht mit dem (noch alten) Server-Stand überschreiben.
 const inflight = new Set<string>();
 
+/**
+ * Meldet dem Nutzer, dass eine Anmerkung NICHT gespeichert werden konnte (#245). Registriert wird der
+ * Handler in `App.tsx` (Toast) – wie der Zwilling für die Einstellungen (#213).
+ */
+let syncErrorHandler: ((msg: string) => void) | null = null;
+export function setAnnotationsSyncErrorHandler(fn: ((msg: string) => void) | null): void {
+  syncErrorHandler = fn;
+}
+
+/**
+ * Einen fehlgeschlagenen Stand zurück in die Warteschlange legen (#245).
+ *
+ * Feld-weise, und **neuere Werte gewinnen**: Hat der Nutzer während des laufenden Requests weiter
+ * gezeichnet, steht das neue `strokes` schon in der Warteschlange – es darf nicht vom alten
+ * überschrieben werden. Ergänzt werden nur Felder, die inzwischen NICHT neu gesetzt wurden.
+ */
+function requeue(key: string, body: PageAnnotation): void {
+  const current = pendingFields.get(key);
+  if (!current) {
+    pendingFields.set(key, body);
+    return;
+  }
+  for (const [field, value] of Object.entries(body)) {
+    if (!(field in current)) (current as Record<string, unknown>)[field] = value;
+  }
+}
+
 async function flush(key: string, keepalive = false): Promise<void> {
   const body = pendingFields.get(key);
   pendingFields.delete(key);
@@ -103,7 +138,30 @@ async function flush(key: string, keepalive = false): Promise<void> {
       ...(keepalive ? { keepalive: true } : {}),
     });
   } catch (e) {
-    if (e instanceof ApiError && e.status === 401) disabled = true;
+    if (e instanceof ApiError && e.status === 401) {
+      disabled = true;
+      return;
+    }
+    if (e instanceof ApiError && e.status === 413) {
+      // Konto-Obergrenze erreicht (#139): ein erneuter Versuch würde genauso scheitern → nicht
+      // zurücklegen, aber sagen, was los ist (lokal bleibt die Anmerkung erhalten).
+      syncErrorHandler?.(e.message);
+      return;
+    }
+    // Netz-/Serverfehler: zurücklegen, sonst ist die Anmerkung weg (#245). Vorher wurde der Eintrag
+    // VOR dem Request entnommen und im Fehlerfall nicht zurückgelegt – danach überschrieb der nächste
+    // `pullAnnotations` den lokalen Stand mit dem älteren Server-Stand und der Strich verschwand
+    // sichtbar. (Dieselbe Lehre hatte `userSettings.ts` unter #213 schon gezogen.)
+    requeue(key, body);
+    // Nur erneut ansetzen, wenn der Server grundsätzlich erreichbar ist – sonst wartet der Eintrag
+    // auf die nächste Änderung bzw. auf `flushPendingAnnotations` beim Verlassen der App, statt
+    // offline alle paar Sekunden vergeblich zu funken.
+    if (getReachable() && !timers.has(key)) {
+      timers.set(
+        key,
+        setTimeout(() => void flush(key), 5000),
+      );
+    }
   } finally {
     inflight.delete(key);
   }

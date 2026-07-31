@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, lazy, Suspense, type ComponentProps } from
 import { useQueryClient } from '@tanstack/react-query';
 import { setSessionExpiredHandler } from './services/api';
 import { setSettingsSyncErrorHandler } from './services/userSettings';
+import { setAnnotationsSyncErrorHandler } from './services/annotations';
 import { Login } from './pages/Login';
 import { Agenda } from './pages/Agenda';
 import { useSettings } from './hooks/useSettings';
@@ -212,6 +213,13 @@ export default function App() {
   useEffect(() => {
     setSettingsSyncErrorHandler((msg) => showToast(msg));
     return () => setSettingsSyncErrorHandler(null);
+  }, [showToast]);
+
+  // Dasselbe für Anmerkungen (#245): Ein Netz-/Serverfehler wird jetzt wiederholt, aber eine
+  // erreichte Konto-Obergrenze bleibt endgültig – dann muss der Nutzer es erfahren.
+  useEffect(() => {
+    setAnnotationsSyncErrorHandler((msg) => showToast(msg));
+    return () => setAnnotationsSyncErrorHandler(null);
   }, [showToast]);
 
   // Globaler „Session abgelaufen"-Fänger (#186): Ein 401 aus JEDER Query/Mutation (nicht nur der

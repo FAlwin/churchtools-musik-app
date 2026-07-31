@@ -7,6 +7,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **Ein Netzaussetzer beim Zeichnen kostet keine Anmerkung mehr.** Scheiterte der Upload eines Strichs
+  (kurzer WLAN-Aussetzer, Serverneustart), wurde er nicht wiederholt – und der nächste Abgleich holte
+  den älteren Stand vom Server zurück, wodurch der Strich **sichtbar verschwand**. Jetzt wird der
+  Stand zurückgelegt und erneut versucht, sobald der Server erreichbar ist; ein neuerer Strich gewinnt
+  dabei gegen den zurückgelegten. Ist das Konto voll, erscheint jetzt ein Hinweis, statt die Anmerkung
+  stillschweigend fallen zu lassen. ⚠️ Bleibt offen: Wird die App **geschlossen**, während ein Upload
+  noch aussteht, ist das beim nächsten Start nicht mehr bekannt. (#245)
+
 ## [2.15.0] – 2026-07-31
 
 Sammel-Release: vier nutzersichtbare Korrekturen und eine große Aufräumrunde (#198 abgeschlossen).
