@@ -17,9 +17,9 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 31.07.2026: **v2.15.0 PRODUKTIV, am
-  ausgelieferten Bundle verifiziert** – Version im `index`-Chunk, `2.14.2` nicht mehr auffindbar,
-  neuer Marker im `AllSongs`-Chunk vorhanden; Digest `sha256:63004182…`, amd64+arm64).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 03.08.2026: **in Prod läuft v2.15.0**, am
+  Bundle verifiziert – `main` ist seither deutlich weiter, **v2.16.0 vorbereitet und auf Staging zur
+  Abnahme**).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -375,7 +375,20 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
-- **Aktuell (31.07.2026): v2.15.0 PRODUKTIV LIVE ✅ – verifiziert.** `/api/health` ok/production,
+- **Aktuell (03.08.2026): v2.16.0 VORBEREITET, auf Staging zur Abnahme – Prod läuft v2.15.0.**
+  15 Commits seit v2.15.0: **zehn Issues abgearbeitet** (#194, #245, #246, #247, #248, #249, #250,
+  #251, #256, #174), davon sechs mit stillem Datenverlust oder Ausfallrisiko. Tests **Client 377 /
+  Server 193 / 4 E2E** (vorher 319 / 168 / 1). Nutzersichtbar: Anmerkungen gehen bei Netzaussetzern
+  und beim Schließen der App nicht mehr verloren (#245/#256), „Notizen von …" zeigt wieder die Ansicht
+  des Kollegen (#247), eine übergroße ChurchTools-Datei legt die App nicht mehr lahm (#248), entzogene
+  Admin-Rechte wirken sofort (#249), ein nicht ladbares Dokument wird gemeldet statt still durch
+  Akkorde ersetzt (#251). Intern: **Sitzungs-Cookie verschlüsselt** (#194 – der CT-Anteil ist nicht
+  mehr auslesbar; abwärtskompatibel, niemand wird abgemeldet), Schlüssel-Grammatik in `shared/keys`
+  (#250) und ein **E2E-Auth-Flow gegen einen ChurchTools-Stub** (#174: Anmelden → Termin → Chart →
+  Anmerkung → `PUT` mit 200). ⚠️ Beim Deploy: `SESSION_SECRET` unverändert lassen (der
+  Verschlüsselungsschlüssel wird daraus abgeleitet). **#196 bleibt offen** – die Compose-Härtung liegt
+  im Repo, das Anwenden auf dem NAS (Reverse Proxy für Staging!) steht aus.
+- **Davor (31.07.2026): v2.15.0 PRODUKTIV LIVE ✅ – verifiziert.** `/api/health` ok/production,
   Version **2.15.0** im ausgelieferten `index`-Bundle (`2.14.2` = 0 Treffer), der in v2.15.0 neue Text
   „Lieder konnten nicht geladen werden." im `AllSongs`-Chunk, die Menü-Texte der drei neuen
   Komponenten im `ChordChart`-Chunk. `/api/update-check` meldet 2.15.0 = laufende Version → kein
