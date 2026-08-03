@@ -107,6 +107,14 @@ export function setAnnotationsSyncErrorHandler(fn: ((msg: string) => void) | nul
 }
 
 /**
+ * Ein Problem mit den Anmerkungen melden – nutzt denselben Kanal wie die Sync-Fehler (#251).
+ * Gedacht für Fälle, die außerhalb dieses Moduls auffallen, z. B. ein voller Gerätespeicher.
+ */
+export function reportAnnotationProblem(msg: string): void {
+  syncErrorHandler?.(msg);
+}
+
+/**
  * Einen fehlgeschlagenen Stand zurück in die Warteschlange legen (#245).
  *
  * Feld-weise, und **neuere Werte gewinnen**: Hat der Nutzer während des laufenden Requests weiter

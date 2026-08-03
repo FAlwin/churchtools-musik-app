@@ -9,10 +9,6 @@ interface UsePageNavigationParams {
   drawMode: boolean;
   onPageIndex: (i: number) => void;
   onActivePage: (i: number) => void;
-  /** Über die erste Seite hinaus (z. B. voriges Lied). Fehlt = am Rand stehen bleiben. */
-  onBeforeFirst?: () => void;
-  /** Über die letzte Seite hinaus (z. B. nächstes Lied). */
-  onAfterLast?: () => void;
 }
 
 /**
@@ -33,8 +29,6 @@ export function usePageNavigation({
   drawMode,
   onPageIndex,
   onActivePage,
-  onBeforeFirst,
-  onAfterLast,
 }: UsePageNavigationParams) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressClick = useRef(false);
@@ -45,14 +39,9 @@ export function usePageNavigation({
 
   function go(delta: number) {
     const target = pageIndex + delta;
-    if (target < 0) {
-      onBeforeFirst?.();
-      return;
-    }
-    if (target > maxLeft) {
-      onAfterLast?.();
-      return;
-    }
+    // Am Rand stehen bleiben. Früher gab es hier optionale Haken für „voriges/nächstes Lied" – seit
+    // der Seitenstrom über ALLE Lieder durchgeht, sind sie überflüssig und wurden nie gesetzt (#251).
+    if (target < 0 || target > maxLeft) return;
     if (target !== pageIndex) {
       onPageIndex(target);
       onActivePage(target);

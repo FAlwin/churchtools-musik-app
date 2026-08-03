@@ -19,9 +19,14 @@ import type { UserCapabilities } from './churchtools.js';
 /**
  * Wie lange ein gemerkter Rechtestand als vertrauenswürdig gilt. Danach wird er nicht mehr zum
  * Überbrücken herangezogen (begrenzt das Zeitfenster, in dem zwischenzeitlich in ChurchTools
- * entzogene Rechte noch aus dem Cache „nachwirken" könnten). Großzügig, aber nicht endlos.
+ * entzogene Rechte noch aus dem Cache „nachwirken" könnten).
+ *
+ * **12 Stunden statt der früheren 30 Tage (#249).** Zu überbrücken sind Aussetzer von Sekunden – ein
+ * Monat war dafür um Größenordnungen zu großzügig. 12 Stunden decken den eigentlichen Zweck
+ * vollständig und halten zusätzlich den Fall ab, dass jemand am Samstagabend vorbereitet und am
+ * Sonntagmorgen wieder öffnet, während ChurchTools gerade schwächelt.
  */
-export const CACHE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 Tage
+export const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 Stunden
 
 interface Entry {
   caps: UserCapabilities;
@@ -48,14 +53,26 @@ async function load(): Promise<Store> {
   return store;
 }
 
-/** Zuletzt gültige Rechte des Kontos – nur, wenn vorhanden UND nicht zu alt. Sonst `null`. */
+/**
+ * Zuletzt gültige Rechte des Kontos – nur, wenn vorhanden UND nicht zu alt. Sonst `null`.
+ *
+ * **`isAdmin` wird NIE überbrückt (#249).** Am Admin-Recht hängen schreibende Verwaltungs-Endpunkte
+ * (`PUT /api/site-config`, Gruppen-/Rollen-Zuweisung). Ein Konto, dem in ChurchTools gerade das Recht
+ * entzogen wurde, dessen Sitzung aber noch lebt, dürfte sonst bis zum Ablauf des Fensters weiter
+ * schreiben. Die Lese-Rechte zu überbrücken ist der Zweck des Caches – ein Verwaltungsrecht nicht.
+ * Der echte Admin sieht die Verwaltung während eines ChurchTools-Aussetzers kurz nicht; das ist der
+ * bewusst konservative Preis.
+ *
+ * Die Regel sitzt hier und nicht beim Aufrufer, damit sie auch für einen künftigen zweiten Aufrufer
+ * gilt.
+ */
 export async function getCachedCapabilities(
   userId: number,
   now = Date.now(),
 ): Promise<UserCapabilities | null> {
   const entry = (await load())[String(userId)];
   if (!entry || !isCacheFresh(entry.savedAt, now)) return null;
-  return entry.caps;
+  return { ...entry.caps, isAdmin: false };
 }
 
 /** Merkt sich die (gültigen) Rechte des Kontos. Best effort – Schreibfehler werden geschluckt. */

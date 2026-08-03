@@ -58,12 +58,6 @@ interface PageDeckProps {
   zoomKeyBaseFor: (page: number) => string;
   /** Optionaler Seiten-Hinweis unten rechts (z. B. „Seite 1 / 3"). null = nicht anzeigen. */
   pageLabel?: (activePage: number, pageIndex: number, pageCount: number) => string | null;
-  /** Wenn gesetzt, ist das Seiten-Badge klickbar (blättert weiter). */
-  onBadgeClick?: () => void;
-  /** Wischen/Tippen über die erste Seite hinaus (z. B. voriges Lied). Fehlt = am Rand stehen bleiben. */
-  onBeforeFirst?: () => void;
-  /** Wischen/Tippen über die letzte Seite hinaus (z. B. nächstes Lied). Fehlt = am Rand stehen bleiben. */
-  onAfterLast?: () => void;
 
   pageIndex: number;
   onPageIndex: (i: number) => void;
@@ -113,9 +107,6 @@ export function PageDeck({
   previewOwn = false,
   zoomKeyBaseFor,
   pageLabel,
-  onBadgeClick,
-  onBeforeFirst,
-  onAfterLast,
   pageIndex,
   onPageIndex,
   activePage,
@@ -495,8 +486,6 @@ export function PageDeck({
     drawMode,
     onPageIndex,
     onActivePage,
-    onBeforeFirst,
-    onAfterLast,
   });
 
   const slots: number[] = [];
@@ -669,21 +658,7 @@ export function PageDeck({
         />
       )}
 
-      {label &&
-        (onBadgeClick ? (
-          <button
-            className={styles.pageBadge}
-            onClick={(e) => {
-              e.stopPropagation();
-              onBadgeClick();
-            }}
-          >
-            {label}
-            <span className={styles.pageBadgeArrow}>›</span>
-          </button>
-        ) : (
-          <div className={styles.pageBadge}>{label}</div>
-        ))}
+      {label && <div className={styles.pageBadge}>{label}</div>}
     </div>
   );
 }

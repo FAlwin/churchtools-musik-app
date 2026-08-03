@@ -68,11 +68,32 @@ Instanz selbst (Anleitung `INSTALL.md` + `UPDATE.md`).
 **Begründung:** niedrigschwellige Weitergabe an andere Gemeinden ohne Token-/Freigabe-Aufwand; es liegen
 keine Secrets im Image (Env nur zur Laufzeit). Jede Gemeinde ist für DSGVO + eigenen Zugang verantwortlich.
 
-## Schrift/Spalten gesperrt bei vorhandenen Anmerkungen
+## Schrift/Spalten NICHT gesperrt – Verrutschen wird in Kauf genommen _(31.07.2026, #251)_
 
-**Entscheidung:** Solange Anmerkungen existieren, sind Schriftgröße/Spaltenzahl gesperrt.
-**Begründung:** Anmerkungen sind pixelbasiert (Canvas). Würde der Text neu umbrechen,
-lägen die Anmerkungen falsch. Sperre verhindert das Verrutschen.
+**Entscheidung:** Schriftgröße und Spaltenzahl sind **jederzeit** änderbar, auch wenn zu der Seite
+schon Anmerkungen existieren.
+
+⚠️ **Korrektur:** Hier stand bis zum 31.07.2026 das Gegenteil – „solange Anmerkungen existieren, sind
+Schriftgröße/Spaltenzahl gesperrt". **Diese Sperre gibt es im Code nicht** (und gab es seit dem Umbau
+auf den durchgehenden Seitenstrom nicht mehr): `ChartAppearanceMenu` lässt beides immer zu, und der
+Rückgabewert `hasAnnotations` in `usePageDraw`, der die Sperre einmal steuerte, war zuletzt toter Code
+(im Zuge von #251 entfernt). Die Doku beschrieb also ein Verhalten, auf das man sich nicht verlassen
+konnte.
+
+**Die Begründung der alten Entscheidung gilt aber weiter:** Anmerkungen sind pixelbasiert (PNG pro
+Seite), und der Anmerkungs-Schlüssel (`drawKeyFor` in `pages/ChordChart.tsx`) enthält **weder `cols`
+noch `fontSize`**. Ein Wechsel der Spaltenzahl baut die PDF neu → vorhandene Striche liegen danach
+verschoben.
+
+**Warum trotzdem keine Sperre:** Das Ändern der Schriftgröße ist die häufigste Einstellung überhaupt
+(unterschiedliche Augen, unterschiedliche Geräte) – sie zu sperren, sobald irgendwo ein Strich liegt,
+wäre in der Praxis lästiger als das Verrutschen. Wer die Darstellung ändert, sieht das Verrutschen
+sofort und kann rückgängig machen.
+
+**Wollte man es sauber lösen,** müsste `cols` (und ggf. `fontSize`) in den Anmerkungs-Schlüssel wandern
+– dann hätte jede Darstellung ihre eigene Anmerkungs-Ebene, wie es „Nur Text" per `_lyr` bereits hat.
+Das ist bewusst nicht umgesetzt: Es vervielfacht die Ebenen und würde bestehende Anmerkungen ohne
+Migration unsichtbar machen.
 
 ## `trust proxy: 'loopback'` statt `1` _(26.07.2026, #214)_
 
