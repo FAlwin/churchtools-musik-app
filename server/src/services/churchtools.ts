@@ -19,6 +19,79 @@ export type { UserCapabilities };
 
 const BASE = config.churchtoolsBaseUrl.replace(/\/$/, '');
 
+/**
+ * Zeitgrenzen für ChurchTools-Aufrufe (#248).
+ *
+ * Ohne Grenze wartet eine Anfrage unbegrenzt, wenn ChurchTools hängt – der Node-Prozess sammelt dann
+ * offene Requests, bis nichts mehr geht. Die App pollt im Sekundentakt, das potenziert sich.
+ * Dateien dürfen länger dauern als API-Aufrufe (große PDFs über eine schmale Leitung).
+ */
+const CT_TIMEOUT_MS = 15_000;
+const CT_FILE_TIMEOUT_MS = 60_000;
+
+/**
+ * Obergrenze für durchgereichte Dateien (#248).
+ *
+ * Der Datei-Proxy hält die Datei **komplett im Speicher**. Ein versehentlich in ChurchTools
+ * hochgeladener Scan von mehreren hundert MB würde den Container umlegen – und damit die App für
+ * ALLE gleichzeitig. 50 MB liegen weit über jedem realen Liedblatt oder Notensatz.
+ *
+ * Bewusst **nur für Dateien**, nicht für die JSON-Antworten der CT-API (`ctGet`): Dort bestimmt die
+ * Datenmenge der Gemeinde die Größe – ein paar hundert Lieder oder Ablaufpunkte –, und es gibt keinen
+ * Weg, sie von außen aufzublähen. Ein Limit dort wäre Aufwand ohne Schutzgewinn. Dateien dagegen sind
+ * beliebige Uploads.
+ */
+const MAX_FILE_BYTES = 50 * 1024 * 1024;
+
+/** Ein Abbruch-Signal mit Zeitgrenze – die Zahlen stehen nur oben. */
+function ctSignal(ms: number = CT_TIMEOUT_MS): AbortSignal {
+  return AbortSignal.timeout(ms);
+}
+
+/**
+ * Antwort-Rumpf lesen, aber **höchstens** `maxBytes` (#248).
+ *
+ * Zuerst die angekündigte Größe prüfen (spart das Laden ganz), dann beim Lesen mitzählen – ein
+ * `Content-Length` kann fehlen oder lügen, deshalb reicht die Ankündigung allein nicht.
+ *
+ * Exportiert, damit die Grenze mit einem kleinen `maxBytes` prüfbar ist – ein Test mit den echten
+ * 50 MB würde nur Speicher und Zeit kosten, ohne mehr zu beweisen.
+ */
+export async function readLimited(res: Response, maxBytes: number): Promise<Buffer> {
+  const declared = Number(res.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new HttpError(502, 'Die Datei ist zu groß, um sie anzuzeigen.');
+  }
+  if (!res.body) return Buffer.alloc(0);
+  const reader = res.body.getReader();
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel(); // Verbindung abbrechen, statt weiter Speicher zu füllen
+      throw new HttpError(502, 'Die Datei ist zu groß, um sie anzuzeigen.');
+    }
+    chunks.push(Buffer.from(value));
+  }
+  return Buffer.concat(chunks);
+}
+
+/**
+ * Zeitüberschreitungen als 504 melden, nicht als 500 (#248): Der Fehler liegt beim Upstream, und der
+ * Client soll „später nochmal" unterscheiden können von „echter Fehler".
+ */
+function asGatewayError(e: unknown, was: string): never {
+  if (e instanceof HttpError) throw e;
+  if (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
+    console.warn(`[churchtools] Zeitüberschreitung bei ${was}`);
+    throw new HttpError(504, 'ChurchTools antwortet gerade nicht. Bitte später erneut versuchen.');
+  }
+  throw e;
+}
+
 export interface ChurchToolsUser {
   id: number;
   firstName: string;
@@ -50,6 +123,7 @@ export async function login(
   password: string,
 ): Promise<{ cookie: string; user: ChurchToolsUser }> {
   const res = await fetch(`${BASE}/api/login`, {
+    signal: ctSignal(),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ username, password }),
@@ -75,6 +149,7 @@ export async function login(
 /** Führt eine authentifizierte JSON-Anfrage gegen die ChurchTools-API aus. */
 async function ctGet<T = unknown>(cookie: string, path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
+    signal: ctSignal(),
     headers: { Cookie: cookie, Accept: 'application/json' },
   });
   if (res.status === 401) {
@@ -133,6 +208,7 @@ export async function logout(cookie: string): Promise<void> {
   userIdCache.delete(cookie);
   try {
     await fetch(`${BASE}/api/logout`, {
+      signal: ctSignal(),
       method: 'POST',
       headers: { Cookie: cookie, Accept: 'application/json' },
     });
@@ -495,14 +571,23 @@ function assertCtFileUrl(fileUrl: string): void {
 /** Lädt eine Arrangement-Datei (z.B. .chordpro) als Text – mit Session-Cookie. */
 export async function downloadFileText(cookie: string, fileUrl: string): Promise<string> {
   assertCtFileUrl(fileUrl);
-  // `redirect: 'manual'` (#199): assertCtFileUrl prüft den Host der ANGEFRAGTEN URL – ohne diese
-  // Zeile würde fetch einer Weiterleitung folgen und das CT-Cookie mitnehmen. Ein Open Redirect in
-  // der eigenen CT-Instanz könnte es so abfließen lassen.
-  const res = await fetch(fileUrl, { headers: { Cookie: cookie }, redirect: 'manual' });
-  if (!res.ok) {
-    throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
+  try {
+    // `redirect: 'manual'` (#199): assertCtFileUrl prüft den Host der ANGEFRAGTEN URL – ohne diese
+    // Zeile würde fetch einer Weiterleitung folgen und das CT-Cookie mitnehmen. Ein Open Redirect in
+    // der eigenen CT-Instanz könnte es so abfließen lassen.
+    const res = await fetch(fileUrl, {
+      headers: { Cookie: cookie },
+      redirect: 'manual',
+      signal: ctSignal(CT_FILE_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
+    }
+    // Auch ChordPro-Text gedeckelt (#248): Es ist eine Datei aus ChurchTools und kann alles sein.
+    return (await readLimited(res, MAX_FILE_BYTES)).toString('utf8');
+  } catch (e) {
+    asGatewayError(e, 'Datei-Download (Text)');
   }
-  return res.text();
 }
 
 /** Extrahiert die Datei-ID aus einer ChurchTools-fileUrl (…&id=213&…). */
@@ -517,17 +602,28 @@ export async function fetchFileBytes(
   fileUrl: string,
 ): Promise<{ buffer: Buffer; contentType: string }> {
   assertCtFileUrl(fileUrl);
-  // Wie in downloadFileText: keinen Weiterleitungen folgen, damit das CT-Cookie die geprüfte
-  // Instanz nicht verlässt (#199). Verifiziert: ChurchTools liefert Dateien direkt mit 200 aus.
-  const res = await fetch(fileUrl, { headers: { Cookie: cookie }, redirect: 'manual' });
-  if (!res.ok) throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
-  const buffer = Buffer.from(await res.arrayBuffer());
-  return { buffer, contentType: res.headers.get('content-type') ?? 'application/octet-stream' };
+  try {
+    // Wie in downloadFileText: keinen Weiterleitungen folgen, damit das CT-Cookie die geprüfte
+    // Instanz nicht verlässt (#199). Verifiziert: ChurchTools liefert Dateien direkt mit 200 aus.
+    const res = await fetch(fileUrl, {
+      headers: { Cookie: cookie },
+      redirect: 'manual',
+      signal: ctSignal(CT_FILE_TIMEOUT_MS),
+    });
+    if (!res.ok) throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
+    // Gedeckelt lesen statt `arrayBuffer()` (#248) – sonst landet eine beliebig große Datei
+    // vollständig im Speicher des Containers.
+    const buffer = await readLimited(res, MAX_FILE_BYTES);
+    return { buffer, contentType: res.headers.get('content-type') ?? 'application/octet-stream' };
+  } catch (e) {
+    asGatewayError(e, 'Datei-Download (Bytes)');
+  }
 }
 
 /** Holt ein CSRF-Token (für schreibende Anfragen mit Cookie-Session nötig). */
 async function getCsrfToken(cookie: string): Promise<string> {
   const res = await fetch(`${BASE}/api/csrftoken`, {
+    signal: ctSignal(),
     headers: { Cookie: cookie, Accept: 'application/json' },
   });
   // Tote CT-Session als 401 durchreichen (nicht 502): Sonst wertet der Client das als „offline"
@@ -551,6 +647,8 @@ export async function uploadChordpro(
   const form = new FormData();
   form.append('files[]', new Blob([text], { type: 'text/plain' }), filename);
   const res = await fetch(`${BASE}/api/files/song_arrangement/${arrangementId}`, {
+    // Datei-Upload: darf länger dauern als ein API-Aufruf.
+    signal: ctSignal(CT_FILE_TIMEOUT_MS),
     method: 'POST',
     headers: { Cookie: cookie, 'CSRF-Token': csrf },
     body: form,
@@ -589,6 +687,7 @@ export async function reorderAgenda(
   }));
 
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda`, {
+    signal: ctSignal(),
     method: 'PUT',
     headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },
     body: JSON.stringify({ items: payload }),
@@ -624,6 +723,7 @@ export async function createAgendaItem(
   // CT erwartet die Dauer in Sekunden (Feld `duration`), die UI arbeitet in Minuten.
   if (data.durationMin !== undefined) body.duration = data.durationMin * 60;
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items`, {
+    signal: ctSignal(),
     method: 'POST',
     headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -694,6 +794,7 @@ export async function updateAgendaItem(
     durationSec: fields.durationMin !== undefined ? fields.durationMin * 60 : undefined,
   });
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items/${itemId}`, {
+    signal: ctSignal(),
     method: 'PUT',
     headers: { Cookie: cookie, 'CSRF-Token': csrf, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -714,6 +815,7 @@ export async function deleteAgendaItem(
 ): Promise<void> {
   const csrf = await getCsrfToken(cookie);
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items/${itemId}`, {
+    signal: ctSignal(),
     method: 'DELETE',
     headers: { Cookie: cookie, 'CSRF-Token': csrf },
   });
@@ -739,6 +841,7 @@ export async function setAgendaItemHidden(
   const csrf = await getCsrfToken(cookie);
   const action = hidden ? 'hide' : 'unhide';
   const res = await fetch(`${BASE}/api/events/${eventId}/agenda/items/${itemId}/${action}`, {
+    signal: ctSignal(),
     method: 'POST',
     headers: { Cookie: cookie, 'CSRF-Token': csrf },
   });
@@ -754,6 +857,7 @@ export async function setAgendaItemHidden(
 export async function deleteFile(cookie: string, fileId: number): Promise<void> {
   const csrf = await getCsrfToken(cookie);
   const res = await fetch(`${BASE}/api/files/${fileId}`, {
+    signal: ctSignal(),
     method: 'DELETE',
     headers: { Cookie: cookie, 'CSRF-Token': csrf },
   });
