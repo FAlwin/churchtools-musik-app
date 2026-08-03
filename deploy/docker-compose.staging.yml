@@ -8,10 +8,17 @@
 # gleiche Labels (com.centurylinklabs.watchtower.*) und Flags (--interval/--cleanup/--scope).
 # NUR die Test-Instanz zieht automatisch; Prod (docker-compose.prod.yml) aktualisiert bewusst.
 #
+# ⚠️ BEWUSST EINGEGANGENES RISIKO (#196): Watchtower braucht den Docker-Socket, und ein Container mit
+# Socket-Zugriff kann auf dem NAS alles tun, was root kann. Abgemildert durch: festen Image-Digest
+# (unten), eigener Scope (nur die Test-Container), und der Socket ist nur hier eingebunden – Prod
+# hat ihn NICHT. Wer das nicht will, lässt den Watchtower-Dienst weg und zieht Staging von Hand:
+#   sudo docker compose -f docker-compose.staging.yml pull && … up -d
+#
 # Einrichtung im Synology Container-Manager:
 #   1. Neues Projekt aus DIESER Datei + einer Test-.env erstellen (eigene, von Prod getrennte
 #      CHURCHTOOLS_BASE_URL/SESSION_SECRET sind empfehlenswert).
-#   2. Reverse Proxy (optional) auf eine Test-Domain → localhost:3002.
+#   2. Reverse Proxy auf eine Test-Domain → 127.0.0.1:3002 (PFLICHT, nicht optional – seit #196
+#      lauscht der Port nur lokal und COOKIE_SECURE ist standardmäßig an).
 #   3. Volume worship-data-test enthält die Test-Daten (Anmerkungen/Einstellungen) – BEHALTEN.
 #   4. Fertig: ab jetzt zieht Watchtower nach jedem Push (sobald die CI das Image gebaut hat)
 #      automatisch die neue Version (Prüfintervall 60 s).
@@ -29,8 +36,16 @@ services:
       CHURCHTOOLS_BASE_URL: ${CHURCHTOOLS_BASE_URL}
       SESSION_SECRET: ${SESSION_SECRET}
       ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
+      # Sicher als Standard (#196): Das Cookie darf nur über HTTPS übertragen werden. Setzt den
+      # Reverse Proxy voraus (siehe Einrichtung unten) – ohne HTTPS speichert der Browser das Cookie
+      # nicht und die Anmeldung schlägt fehl. Nur für einen bewussten Test ohne Proxy:
+      # COOKIE_SECURE=false in der Test-.env.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
     ports:
-      - '3002:3001'
+      # NUR lokal binden (#196) – wie Prod. Vorher lauschte der Port auf ALLEN Interfaces: Das
+      # Session-Cookie (mit der ChurchTools-Anmeldung darin) lief damit unverschlüsselt über HTTP
+      # durchs LAN. Zugriff jetzt ausschließlich über den Reverse Proxy mit HTTPS.
+      - '127.0.0.1:3002:3001'
     volumes:
       - worship-data-test:/app/data
     labels:
@@ -38,7 +53,11 @@ services:
       - com.centurylinklabs.watchtower.scope=musik-app-test
 
   watchtower:
-    image: nickfedor/watchtower
+    # Auf einen festen Digest gepinnt (#196): Dieser Container hat über den Docker-Socket
+    # root-äquivalenten Zugriff auf das NAS. Ein bewegliches `:latest` würde jede neue Fassung des
+    # Fremd-Images ungeprüft mit diesen Rechten ausführen. Aktualisieren also bewusst und von Hand –
+    # neuen Digest holen und hier eintragen.
+    image: nickfedor/watchtower@sha256:696a5fb17b9a2e5e04a4e56daedcf88cc4e4fb95c673b8937063f493e2f63ad4
     container_name: musik-app-watchtower-test
     restart: unless-stopped
     volumes:
