@@ -1,5 +1,12 @@
 import type { SetlistSong } from '@shared/types/index';
-import { lsVersion, lsSong, selectedVersionKey } from './songVersions';
+import {
+  lsVersion,
+  lsSong,
+  selectedVersionKey,
+  readVersioned,
+  fromLocalStorage,
+  type SettingSource,
+} from './songVersions';
 
 /** Einstellungen pro Lied (Tonart, Kapo, Abschnitts-Transponierung, Schrift, Spalten, Anzeige). */
 export interface SongSettings {
@@ -42,21 +49,13 @@ export function stepFontSize(current: number, direction: 1 | -1): number {
   return Math.min(FONT_MAX, Math.max(FONT_MIN, next));
 }
 
-/** Liest die per-Abschnitt-Transponierung aus localStorage; ignoriert ungültige/0-Werte. */
+/**
+ * Liest die per-Abschnitt-Transponierung aus localStorage; ignoriert ungültige/0-Werte.
+ *
+ * Nutzt bewusst `parseSecShift` – die Parse-Schleife stand hier bis #247 ein zweites Mal wortgleich.
+ */
 export function loadSecShift(songId: number, versionKey: string): Record<number, number> {
-  try {
-    const raw = lsVersion('secshift', songId, versionKey);
-    if (!raw) return {};
-    const obj = JSON.parse(raw) as Record<string, number>;
-    const out: Record<number, number> = {};
-    for (const [k, v] of Object.entries(obj)) {
-      const n = Number(k);
-      if (Number.isInteger(n) && typeof v === 'number' && v !== 0) out[n] = v;
-    }
-    return out;
-  } catch {
-    return {};
-  }
+  return parseSecShift(lsVersion('secshift', songId, versionKey));
 }
 
 /**
@@ -71,6 +70,31 @@ function intOr(value: string | null, fallback: number): number {
   return Number.isNaN(n) ? fallback : n;
 }
 
+/**
+ * Die Einstellungen einer Lied-Version aus einer beliebigen Quelle bauen (#247).
+ *
+ * **Es darf nur diese eine Umrechnung geben.** Vorher baute `settingsForLevel` sie daneben selbst –
+ * ohne `intOr` (also mit `NaN`-Gefahr im Kapo), mit hartkodierter Standard-Schriftgröße und ohne die
+ * Schlüssel-Rückfälle aus `songVersions`. Wer die Notizen eines Kollegen ansah, bekam dadurch
+ * Standardwerte statt dessen Ansicht.
+ */
+function buildSettings(
+  src: SettingSource,
+  songId: number,
+  versionKey: string,
+): Omit<SongSettings, 'viewSource' | 'lyricsOnly'> & { lyricsOnly: boolean } {
+  const get = (base: string): string | null => readVersioned(src, base, songId, versionKey);
+  return {
+    key: get('key') || null,
+    capo: intOr(get('capo'), DEFAULT_SETTINGS.capo),
+    cols: intOr(get('cols'), DEFAULT_SETTINGS.cols) === 2 ? 2 : 1,
+    fontSize: intOr(get('fs'), DEFAULT_SETTINGS.fontSize),
+    lyricsOnly: get('lyrics') === '1',
+    secShift: parseSecShift(get('secshift')),
+    versionKey,
+  };
+}
+
 /** Baut die SongSettings eines Lieds aus localStorage (Defaults, wenn nichts gespeichert ist). */
 export function loadSettings(
   song: SetlistSong,
@@ -83,16 +107,7 @@ export function loadSettings(
     savedView && !Number.isNaN(savedId) && song.documents.some((d) => d.fileId === savedId)
       ? savedId
       : 'chords';
-  return {
-    key: lsVersion('key', song.id, versionKey) || null,
-    capo: intOr(lsVersion('capo', song.id, versionKey), 0),
-    cols: intOr(lsVersion('cols', song.id, versionKey), 1) === 2 ? 2 : 1,
-    fontSize: intOr(lsVersion('fs', song.id, versionKey), DEFAULT_SETTINGS.fontSize),
-    lyricsOnly: lsVersion('lyrics', song.id, versionKey) === '1',
-    secShift: loadSecShift(song.id, versionKey),
-    versionKey,
-    viewSource,
-  };
+  return { ...buildSettings(fromLocalStorage, song.id, versionKey), viewSource };
 }
 
 /** secShift-Rohwert (JSON) sicher parsen; ignoriert Ungültiges/0-Werte. */
@@ -115,6 +130,8 @@ function parseSecShift(raw: string | null): Record<number, number> {
  * SongSettings für eine KONKRETE Ebene (Version + Darstellungsart) aus einer gelieferten
  * Schlüssel-Tabelle – fürs Ansehen einer ausgewählten Ebene einer teilenden Person
  * (nicht zwingend ihrer aktuell gewählten).
+ *
+ * Die Darstellungsart kommt hier von außen (die angesehene Ebene bestimmt sie), nicht aus der Tabelle.
  */
 export function settingsForLevel(
   song: SetlistSong,
@@ -122,16 +139,10 @@ export function settingsForLevel(
   versionKey: string,
   lyricsOnly: boolean,
 ): SongSettings {
-  const get = (base: string): string | null =>
-    map[`worship_${base}_${song.id}_${versionKey}`] ?? null;
+  const fromMap: SettingSource = (key) => map[key] ?? null;
   return {
-    key: get('key') || null,
-    capo: parseInt(get('capo') || '0', 10),
-    cols: parseInt(get('cols') || '1', 10) === 2 ? 2 : 1,
-    fontSize: parseInt(get('fs') || '20', 10),
+    ...buildSettings(fromMap, song.id, versionKey),
     lyricsOnly,
-    secShift: parseSecShift(get('secshift')),
-    versionKey,
     viewSource: 'chords',
   };
 }

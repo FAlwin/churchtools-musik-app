@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #246: **63 Testdateien** –
-**45 Client (332 Tests)** + **18 Server (168 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #247: **63 Testdateien** –
+**45 Client (338 Tests)** + **18 Server (168 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 
@@ -99,7 +99,10 @@ einzeln da; und was bei einem angezeigten Dokument NICHT erscheinen darf, weil e
 ChordPro-Text bezieht), `components/ChartAppearanceMenu` (A−/A+ nicht vertauscht, an den Grenzen
 bleibt der Wert stehen), `components/SharersSheet` (beide Stufen, und **beide leeren Fälle sagen
 einen Satz dazu** – eine stumme leere Liste ist eine Sackgasse), `chartSettings.stepFontSize`
-(Zweierschritte, Grenzen halten), `chartPdfOptions.loadSongPdfOpts` (#239: der Weg über den Speicher
+(Zweierschritte, Grenzen halten), `chartSettings.settingsForLevel` (#247: **dieselbe Umrechnung wie
+`loadSettings`, nur mit anderer Quelle** – Unsinn ergibt kein NaN, fehlende Werte kommen aus
+`DEFAULT_SETTINGS`, und die Schlüssel-Rückfälle `_dlarge`/`_dphone`/song-only gelten auch beim
+Ansehen fremder Notizen; dazu der Vertrag „Quelle Gerät liefert dasselbe wie Quelle Tabelle"), `chartPdfOptions.loadSongPdfOpts` (#239: der Weg über den Speicher
 kommt zum selben Ergebnis wie der direkte, inkl. Kapo-Abzug; Unsinn im Speicher ergibt **kein** NaN
 im Versatz),
 `chordPdf.chartHead` (Titel/Autor des Blatts, #236: `{title}`/`{artist}` des **gerenderten** Textes

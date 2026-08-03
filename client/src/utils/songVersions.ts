@@ -66,22 +66,55 @@ export function versionText(song: SetlistSong, key: string): string {
 }
 
 /**
- * Liest einen pro-Version gespeicherten Einstellungswert. Für 'original' wird auf die alten
+ * Woher ein Roh-Einstellungswert kommt: aus dem Gerät (`localStorage`) oder aus einer gelieferten
+ * Schlüssel-Tabelle (die Roh-Einstellungen einer anderen Person beim Ansehen ihrer Notizen).
+ */
+export type SettingSource = (key: string) => string | null;
+
+/** Die Gerätequelle – der Normalfall. */
+export const fromLocalStorage: SettingSource = (key) => localStorage.getItem(key);
+
+/**
+ * Schlüssel-Kandidaten eines pro-Version gespeicherten Werts, in Vorrang-Reihenfolge.
+ *
+ * Die Rückfälle sind Migrationen und **müssen für jede Quelle gleich gelten** (#247): Vorher las
+ * `settingsForLevel` seine Tabelle mit nur dem ersten Kandidaten – wer seine Einstellungen noch unter
+ * einem älteren Schlüssel hatte, wurde beim Ansehen seiner Notizen mit Standardwerten dargestellt.
+ */
+function versionKeyCandidates(base: string, songId: number, versionKey: string): string[] {
+  const keys = [
+    fullKey(base, songId, versionKey),
+    // Migration: Spalten/Textgröße waren früher pro Geräteklasse gespeichert (_dlarge/_dphone).
+    // Vorhandenen Wert übernehmen (iPad/PC bevorzugt), damit die Einstellung nicht verloren geht;
+    // beim nächsten Ändern wird sie unter dem geräteübergreifenden Schlüssel gespeichert.
+    `worship_${base}_${songId}_${versionKey}_dlarge`,
+    `worship_${base}_${songId}_${versionKey}_dphone`,
+  ];
+  // Fallback: alte song-only-Schlüssel (Migration) für 'original'.
+  if (versionKey === 'original') keys.push(`worship_${base}_${songId}`);
+  return keys;
+}
+
+/** Liest einen pro-Version gespeicherten Einstellungswert aus einer beliebigen Quelle. */
+export function readVersioned(
+  src: SettingSource,
+  base: string,
+  songId: number,
+  versionKey: string,
+): string | null {
+  for (const key of versionKeyCandidates(base, songId, versionKey)) {
+    const v = src(key);
+    if (v !== null) return v;
+  }
+  return null;
+}
+
+/**
+ * Liest einen pro-Version gespeicherten Einstellungswert vom Gerät. Für 'original' wird auf die alten
  * song-only-Schlüssel zurückgegriffen (Migration bestehender Einstellungen).
  */
 export function lsVersion(base: string, songId: number, versionKey: string): string | null {
-  const v = localStorage.getItem(fullKey(base, songId, versionKey));
-  if (v !== null) return v;
-  // Migration: Spalten/Textgröße waren früher pro Geräteklasse gespeichert (_dlarge/_dphone).
-  // Vorhandenen Wert übernehmen (iPad/PC bevorzugt), damit die Einstellung nicht verloren geht;
-  // beim nächsten Ändern wird sie unter dem geräteübergreifenden Schlüssel gespeichert.
-  const migrated =
-    localStorage.getItem(`worship_${base}_${songId}_${versionKey}_dlarge`) ??
-    localStorage.getItem(`worship_${base}_${songId}_${versionKey}_dphone`);
-  if (migrated !== null) return migrated;
-  // Fallback: alte song-only-Schlüssel (Migration) für 'original'.
-  if (versionKey === 'original') return localStorage.getItem(`worship_${base}_${songId}`);
-  return null;
+  return readVersioned(fromLocalStorage, base, songId, versionKey);
 }
 
 /** Schreibt/entfernt einen pro-Version gespeicherten Einstellungswert (lokal + Konto-Sync). */
