@@ -52,5 +52,7 @@ jobs:
       - name: Playwright-Browser installieren
         run: npx playwright install --with-deps chromium
 
-      - name: E2E-Smoke (Chart-Render via ?demo=chart, ohne Backend)
+      # Zwei Ebenen: Render-Smoke (?demo=chart, ohne Backend) UND der volle Auth-Flow gegen den
+      # ChurchTools-Stub (#174) – Playwright startet Stub, Server und Client selbst.
+      - name: E2E (Render-Smoke + Auth-Flow gegen CT-Stub)
         run: npm run test:e2e

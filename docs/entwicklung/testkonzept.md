@@ -3,7 +3,7 @@
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
 zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #194: **69 Testdateien** –
-**48 Client (377 Tests)** + **20 Server (193 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
+**48 Client (377 Tests)** + **20 Server (193 Tests)** mit Vitest + **4 Playwright-E2E** (Render-Smoke + voller Auth-Flow).
 
 ## Umfang
 
@@ -13,12 +13,21 @@ zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #194: **69 Testdatei
 | Client-Hooks/-Komponenten (Interaktionskern) | aktiv                | Vitest (jsdom)               | `client/src/{hooks,components}/**/*.test.tsx` |
 | Server-Services/-Controller/-Middleware      | aktiv                | Vitest (ChurchTools gemockt) | `server/src/**/*.test.ts`                     |
 | E2E Render-Smoke (ohne Login)                | aktiv (CI-Job `e2e`) | Playwright                   | `e2e/chart-smoke.spec.ts` (`?demo=chart`)     |
-| E2E voller Auth-Flow (Login→Sync)            | offen                | –                            | braucht ChurchTools-Stub (Issue #174)         |
+| E2E voller Auth-Flow (Login→Sync)            | aktiv (CI-Job `e2e`) | Playwright + CT-Stub         | `e2e/auth-flow.spec.ts` + `e2e/ct-stub.mjs`   |
 
 **Befehle:** `npm test` (alle Vitest), `npm run test:cov` (mit Coverage),
 `npm run test:watch` (Watch-Modus, im Client), `npm run test:e2e` (Playwright).
-Der E2E-Smoke fährt den Dev-Server hoch und lädt `?demo=chart` (mountet die Chart-Ansicht ohne
+Der Render-Smoke fährt den Dev-Server hoch und lädt `?demo=chart` (mountet die Chart-Ansicht ohne
 ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelte JS-Ausnahme auftritt.
+
+**Auth-Flow (#174):** Dafür laufen drei Prozesse – der ChurchTools-**Stub** (`e2e/ct-stub.mjs`), der
+**echte** Server (mit seiner echten Session-, Rechte- und Proxy-Logik, nur auf den Stub gerichtet) und
+der Client. Geprüft wird der Weg, der im Gottesdienst zählt: Anmelden → Terminliste (also Login,
+Session-Cookie **und** Rechte-Abfrage) → Ablauf mit Lied-Punkt (#200) → Chart (Seitenstrom aus dem
+ChordPro der Stub-Datei) → Strich zeichnen → **`PUT /api/annotations/…` mit Status 200**, wobei der
+Schlüssel der Grammatik aus #250 folgen muss. Dazu: die geführte Einführung erscheint beim ersten
+Öffnen, und ohne Anmeldung steht die Anmeldemaske statt einer „Erneut versuchen"-Sackgasse (#186).
+Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #211, #245, #256.
 
 ## Server-Tests (ChurchTools gemockt)
 
