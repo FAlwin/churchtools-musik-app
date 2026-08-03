@@ -33,8 +33,15 @@ import { useTeamNotesImport } from '../hooks/useTeamNotesImport';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
 import { useSetlistPages } from '../hooks/useSetlistPages';
-import type { DrawTool, Theme } from '../types/index';
+import type { DrawTool } from '../types/index';
 import styles from './ChordChart.module.scss';
+
+/**
+ * Vier Anmerkungsfarben (ECG-Palette): Rot, Blau, Grün (Türkis), Orange.
+ * Modul-Konstante, damit die Liste nicht bei jedem Render neu entsteht – sie geht als Prop an
+ * `PageDeck` weiter und würde dort sonst bei jedem Render als „geändert" gelten.
+ */
+const DRAW_COLORS = ['#bb2946', '#0062ac', '#1bb0a2', '#fb8f00'];
 
 interface ChordChartProps {
   songs: SetlistSong[];
@@ -45,8 +52,6 @@ interface ChordChartProps {
   canEditSong?: boolean;
   /** Darf Team-Notizen nutzen (eigene teilen + geteilte anderer ansehen)? */
   canUseGlobalNotes?: boolean;
-  theme: Theme;
-  fontId: string;
 }
 
 /**
@@ -137,8 +142,8 @@ export function ChordChart({
   // Geführte Einführung Chart-Ansicht (#Onboarding, Gruppe 2): startet beim ersten Öffnen, sobald
   // die Seiten gerendert sind (dann existieren die hervorzuhebenden Elemente).
   const [chartTour, setChartTour] = useState(false);
-  // Anmerkungs-Farben fest Schwarz/Rot/Gelb (wir arbeiten nur noch auf weißen PDF-Seiten → kein
-  // Weiß, kein Dunkelmodus-Wechsel). Plus der freie Farbwähler in der Leiste.
+  // Anmerkungs-Farben: feste ECG-Palette (unten `DRAW_COLORS`), plus der freie Farbwähler in der
+  // Leiste. Kein Weiß und kein Dunkelmodus-Wechsel – gezeichnet wird immer auf weißen PDF-Seiten.
   const [drawColor, setDrawColor] = useState('#0062ac'); // Standard-Anmerkungsfarbe: Blau
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
   const [streamZoomed, setStreamZoomed] = useState(false); // eine sichtbare Seite (Strom oder Dokument) ist reingezoomt
@@ -152,9 +157,6 @@ export function ChordChart({
     img.onload = () => setLogoImg(img);
     img.src = logoTightUrl;
   }, []);
-
-  // Vier Anmerkungsfarben (ECG-Palette): Rot, Blau, Grün (Türkis), Orange.
-  const drawColors = ['#bb2946', '#0062ac', '#1bb0a2', '#fb8f00'];
 
   // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
   const liveRef = useRef({ songs, drawMode, onReload, lastReturn: 0 });
@@ -649,7 +651,7 @@ export function ChordChart({
               setDrawColor={setDrawColor}
               drawTool={drawTool}
               setDrawTool={setDrawTool}
-              drawColors={drawColors}
+              drawColors={DRAW_COLORS}
               syncTick={syncTick}
               onZoomedChange={setStreamZoomed}
               resetZoomSignal={resetZoomSignal}

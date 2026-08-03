@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { pushField } from '../services/annotations';
+import { pushField, reportAnnotationProblem } from '../services/annotations';
 
 /** Signatur der Sync-Push-Funktion (privat: pushField, global: pushSharedField). */
 type PushFn = (lsKey: string, field: 'strokes' | 'texts', value: unknown) => void;
@@ -54,6 +54,9 @@ type LayerRef = React.MutableRefObject<HTMLDivElement | null>;
  * pro Seite in localStorage. Die Striche selbst zeichnet der Viewer auf die Canvas; dieser Hook
  * verwaltet Verlauf, Text und Persistenz.
  */
+// Einmal pro Sitzung genügt der Hinweis auf einen vollen Gerätespeicher (#251).
+let storageWarned = false;
+
 export function usePageDraw(
   storageKey: string | null,
   strokesRef: CanvasRef,
@@ -164,7 +167,15 @@ export function usePageDraw(
     try {
       localStorage.setItem(drawKey, data);
     } catch {
-      /* Speicher voll */
+      // Gerätespeicher voll (#251). Die Anmerkung ist NICHT verloren – sie geht unten trotzdem zum
+      // Konto und kommt beim nächsten Abgleich zurück. Aber der Offline-Vorrat funktioniert nicht
+      // mehr, und das muss der Nutzer wissen. EINMAL pro Sitzung melden, nicht bei jedem Strich.
+      if (!storageWarned) {
+        storageWarned = true;
+        reportAnnotationProblem(
+          'Der Speicher dieses Geräts ist voll. Anmerkungen werden weiter auf dein Konto gesichert, stehen aber offline nicht bereit.',
+        );
+      }
     }
     pushRef.current(drawKey, 'strokes', data);
   }
@@ -334,8 +345,6 @@ export function usePageDraw(
     setSelectedId(null);
   }
 
-  const hasAnnotations = texts.length > 0; // (Striche separat; für Sperren nicht mehr nötig)
-
   return {
     texts,
     selectedId,
@@ -343,7 +352,6 @@ export function usePageDraw(
     pending,
     canUndo,
     canRedo,
-    hasAnnotations,
     pushHistory,
     dropHistory,
     saveStrokes,

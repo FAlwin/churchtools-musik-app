@@ -16,6 +16,19 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   dabei gegen den zurückgelegten. Ist das Konto voll, erscheint jetzt ein Hinweis, statt die Anmerkung
   stillschweigend fallen zu lassen. ⚠️ Bleibt offen: Wird die App **geschlossen**, während ein Upload
   noch aussteht, ist das beim nächsten Start nicht mehr bekannt. (#245)
+- **Entzogene Admin-Rechte wirken sofort.** Der Rechte-Cache, der kurze ChurchTools-Aussetzer
+  überbrückt, hielt seinen Stand bis zu **30 Tage** – und überbrückte dabei auch das Admin-Recht. Wem
+  in ChurchTools die Verwaltung entzogen wurde, dessen Sitzung aber noch lief, hätte damit weiter
+  Einstellungen ändern können. Das Fenster liegt jetzt bei 12 Stunden (der Zweck sind Aussetzer von
+  Sekunden), und das **Admin-Recht wird grundsätzlich nicht mehr überbrückt**. (#249)
+
+### Geändert
+
+- **Ein voller Gerätespeicher wird nicht mehr verschwiegen.** Passt eine Anmerkung nicht mehr in den
+  Gerätespeicher, sagt die App das jetzt – einmal pro Sitzung, nicht bei jedem Strich. Die Anmerkung
+  selbst ist nicht verloren: Sie geht weiter aufs Konto und kommt beim nächsten Abgleich zurück; nur
+  der Offline-Vorrat funktioniert dann nicht. (#251)
+
 - **Eine übergroße Datei in ChurchTools legt die App nicht mehr lahm.** Der Server hielt jede
   durchgereichte Datei vollständig im Speicher – ohne Obergrenze. Ein versehentlich hochgeladener
   Scan von einigen hundert MB hätte den Container umgelegt und damit die App für **alle

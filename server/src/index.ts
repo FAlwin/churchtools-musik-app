@@ -137,7 +137,39 @@ if (config.isProduction) {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(config.port, () => {
+const server = app.listen(config.port, () => {
   // eslint-disable-next-line no-console
   console.log(`Server läuft auf http://localhost:${config.port} (${config.nodeEnv})`);
+});
+
+/**
+ * Sauber herunterfahren (#251).
+ *
+ * `docker stop` schickt SIGTERM und wartet dann 10 s. Ohne Handler bricht der Prozess sofort ab –
+ * eine Anmerkung oder Einstellung, die gerade in der Schreib-Kette wartet (die Schreibvorgänge sind
+ * pro Konto serialisiert), wäre verloren. Der einzelne Schreibvorgang selbst ist atomar (tmp +
+ * rename), es geht also nur um das Wartende. Wir nehmen keine neuen Verbindungen mehr an und lassen
+ * laufende Anfragen auslaufen; nach 8 s wird hart beendet, damit ein hängender Socket den Neustart
+ * nicht blockiert.
+ */
+for (const sig of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(sig, () => {
+    // eslint-disable-next-line no-console
+    console.log(`${sig} empfangen – Server wird beendet.`);
+    const hard = setTimeout(() => process.exit(0), 8000);
+    hard.unref();
+    server.close(() => {
+      clearTimeout(hard);
+      process.exit(0);
+    });
+  });
+}
+
+/**
+ * Eine unbehandelte Promise-Ablehnung soll NICHT still verschwinden (#251): ohne Handler beendet Node
+ * den Prozess je nach Version stillschweigend oder mit unklarer Meldung. Wir loggen sie und leben
+ * weiter – ein einzelner fehlgeschlagener Hintergrund-Vorgang darf den Gottesdienst nicht abbrechen.
+ */
+process.on('unhandledRejection', (reason) => {
+  console.error('[server] unbehandelte Promise-Ablehnung:', reason);
 });

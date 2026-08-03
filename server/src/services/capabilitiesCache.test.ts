@@ -71,3 +71,27 @@ describe('rememberCapabilities / getCachedCapabilities', () => {
     expect(await mod.getCachedCapabilities(7, 1_000 + mod.CACHE_MAX_AGE_MS)).toEqual(CAPS);
   });
 });
+
+/**
+ * #249: Das Überbrückungsfenster stand auf 30 Tagen, gedacht ist es für Aussetzer von Sekunden – und
+ * es überbrückte auch `isAdmin`. Ein Konto, dem in ChurchTools gerade das Admin-Recht entzogen wurde,
+ * dessen Sitzung aber noch lebt, hätte damit bis zu einen Monat weiter Verwaltungs-Endpunkte
+ * beschreiben können.
+ */
+describe('Überbrückung ist konservativ (#249)', () => {
+  it('gibt ein gemerktes Admin-Recht NICHT aus dem Cache zurück', async () => {
+    await mod.rememberCapabilities(5, { ...CAPS, isAdmin: true });
+    const bridged = await mod.getCachedCapabilities(5);
+    expect(bridged?.isAdmin).toBe(false);
+    // Die Lese-Rechte werden dagegen überbrückt – das ist der Zweck des Caches.
+    expect(bridged?.canViewSongs).toBe(true);
+    expect(bridged?.canViewAgendas).toBe(true);
+  });
+
+  it('das Fenster liegt im Stunden-Bereich, nicht im Wochen-Bereich', async () => {
+    // Wächter gegen ein erneutes Aufweiten: zu überbrücken sind Sekunden-Aussetzer.
+    const stunden = mod.CACHE_MAX_AGE_MS / (60 * 60 * 1000);
+    expect(stunden).toBeGreaterThanOrEqual(1);
+    expect(stunden).toBeLessThanOrEqual(24);
+  });
+});

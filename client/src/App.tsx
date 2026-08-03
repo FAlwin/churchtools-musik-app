@@ -396,8 +396,6 @@ export default function App() {
             onReload={() => agendaQuery.refetch()}
             canEditSong={canEditSongs}
             canUseGlobalNotes={caps.canUseGlobalNotes}
-            theme={settings.theme}
-            fontId={settings.fontId}
           />
           {/* Live-Abgleich: Ablauf wurde währenddessen geändert → Hinweis statt Auto-Umsortieren
               (Seiten dürfen mitten im Spielen nicht springen). */}
@@ -419,8 +417,6 @@ export default function App() {
           onReload={() => songChart.refetch()}
           canEditSong={canEditSongs}
           canUseGlobalNotes={caps.canUseGlobalNotes}
-          theme={settings.theme}
-          fontId={settings.fontId}
         />
       ) : (
         <Screen>
