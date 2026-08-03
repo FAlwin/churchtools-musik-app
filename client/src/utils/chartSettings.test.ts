@@ -1,7 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SetlistSong } from '@shared/types/index';
-import { loadSecShift, loadSettings, stepFontSize, FONT_MIN, FONT_MAX } from './chartSettings';
+import {
+  loadSecShift,
+  loadSettings,
+  settingsForLevel,
+  stepFontSize,
+  DEFAULT_SETTINGS,
+  FONT_MIN,
+  FONT_MAX,
+} from './chartSettings';
 
 const song = (over: Partial<SetlistSong> = {}): SetlistSong =>
   ({
@@ -96,5 +104,84 @@ describe('stepFontSize', () => {
   it('holt einen Wert außerhalb der Grenzen wieder herein', () => {
     expect(stepFontSize(200, 1)).toBe(FONT_MAX);
     expect(stepFontSize(2, -1)).toBe(FONT_MIN);
+  });
+});
+
+/**
+ * #247: `settingsForLevel` baute die Einstellungen daneben selbst – ohne `intOr` (NaN-Gefahr im
+ * Kapo), mit hartkodierter Standard-Schriftgröße und **ohne die Schlüssel-Rückfälle** aus
+ * `songVersions`. Es ist der Pfad für „Notizen von …": Man sieht die Ansicht eines Teamkollegen.
+ * Wer seine Einstellungen noch unter einem älteren Schlüssel hatte, wurde mit Standardwerten
+ * dargestellt – seine Tonart, Spaltenzahl und Schriftgröße wurden ignoriert.
+ *
+ * Jetzt teilen `loadSettings` und `settingsForLevel` EINEN Bauer, der nur seine Quelle wechselt.
+ */
+describe('settingsForLevel – dieselbe Umrechnung wie loadSettings (#247)', () => {
+  const s = song({ id: 42 });
+
+  it('liest Tonart, Kapo, Spalten, Schrift und Abschnitte aus der Tabelle', () => {
+    const map = {
+      worship_key_42_akustik: 'F',
+      worship_capo_42_akustik: '3',
+      worship_cols_42_akustik: '2',
+      worship_fs_42_akustik: '28',
+      worship_secshift_42_akustik: JSON.stringify({ 1: 2 }),
+    };
+    const st = settingsForLevel(s, map, 'akustik', false);
+    expect(st.key).toBe('F');
+    expect(st.capo).toBe(3);
+    expect(st.cols).toBe(2);
+    expect(st.fontSize).toBe(28);
+    expect(st.secShift).toEqual({ 1: 2 });
+    expect(st.versionKey).toBe('akustik');
+    expect(st.viewSource).toBe('chords');
+  });
+
+  it('Unsinn in der Tabelle ergibt KEIN NaN (das zerstörte das ganze Blatt)', () => {
+    const st = settingsForLevel(s, { worship_capo_42_akustik: 'kaputt' }, 'akustik', false);
+    expect(Number.isNaN(st.capo)).toBe(false);
+    expect(st.capo).toBe(DEFAULT_SETTINGS.capo);
+  });
+
+  it('fehlende Werte kommen aus DEFAULT_SETTINGS, nicht aus hartkodierten Zahlen', () => {
+    const st = settingsForLevel(s, {}, 'akustik', false);
+    expect(st.fontSize).toBe(DEFAULT_SETTINGS.fontSize);
+    expect(st.cols).toBe(DEFAULT_SETTINGS.cols);
+    expect(st.capo).toBe(DEFAULT_SETTINGS.capo);
+  });
+
+  it('DER Fall von #247: die Schlüssel-Rückfälle gelten auch hier', () => {
+    // Der Kollege hat seine Werte noch unter dem alten Geräteklassen-Schlüssel …
+    const alt = { worship_fs_42_akustik_dlarge: '30' };
+    expect(settingsForLevel(s, alt, 'akustik', false).fontSize).toBe(30);
+    // … oder, beim Original, unter dem alten song-only-Schlüssel.
+    const songOnly = { worship_cols_42: '2' };
+    expect(settingsForLevel(s, songOnly, 'original', false).cols).toBe(2);
+  });
+
+  it('die Darstellungsart kommt von außen, nicht aus der Tabelle', () => {
+    // Die angesehene Ebene bestimmt sie – ein abweichender Wert in der Tabelle darf nicht gewinnen.
+    const map = { worship_lyrics_42_akustik: '1' };
+    expect(settingsForLevel(s, map, 'akustik', false).lyricsOnly).toBe(false);
+    expect(settingsForLevel(s, {}, 'akustik', true).lyricsOnly).toBe(true);
+  });
+
+  it('liefert für dieselben Rohwerte dasselbe wie loadSettings', () => {
+    // Der eigentliche Vertrag: Quelle Gerät vs. Quelle Tabelle darf nichts ändern.
+    const roh = {
+      worship_key_42_akustik: 'A',
+      worship_capo_42_akustik: '2',
+      worship_cols_42_akustik: '2',
+      worship_fs_42_akustik: '24',
+    };
+    for (const [k, v] of Object.entries(roh)) localStorage.setItem(k, v);
+
+    const vomGeraet = loadSettings(s, 'akustik');
+    const ausTabelle = settingsForLevel(s, roh, 'akustik', vomGeraet.lyricsOnly);
+
+    expect(ausTabelle.key).toBe(vomGeraet.key);
+    expect(ausTabelle.capo).toBe(vomGeraet.capo);
+    expect(ausTabelle.cols).toBe(vomGeraet.cols);
+    expect(ausTabelle.fontSize).toBe(vomGeraet.fontSize);
   });
 });

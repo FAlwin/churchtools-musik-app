@@ -16,6 +16,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   dabei gegen den zurückgelegten. Ist das Konto voll, erscheint jetzt ein Hinweis, statt die Anmerkung
   stillschweigend fallen zu lassen. ⚠️ Bleibt offen: Wird die App **geschlossen**, während ein Upload
   noch aussteht, ist das beim nächsten Start nicht mehr bekannt. (#245)
+- **„Notizen von …" zeigt wieder die Ansicht des Kollegen, nicht Standardwerte.** Hatte die andere
+  Person ihre Spalten-/Schriftgröße noch unter einem älteren Schlüssel gespeichert, wurden diese Werte
+  beim Ansehen ignoriert – man sah ihre Anmerkungen in der falschen Darstellung, wodurch sie
+  verrutscht wirken konnten. Ursache: Die Umrechnung der Einstellungen gab es ein zweites Mal, ohne
+  die Rückfälle auf die alten Schlüssel und ohne den Schutz gegen unsinnige Werte. Es gibt sie jetzt
+  nur noch einmal. (#247)
 - **Die einmalige Übernahme bestehender Anmerkungen aufs Konto verpasst sich nicht mehr.** Lief sie
   bei schlechtem Netz ins Leere, galt sie trotzdem als erledigt – die auf dem Gerät gesammelten
   Anmerkungen landeten damit **nie** auf dem Konto, still und ohne Meldung. Sie läuft genau einmal pro

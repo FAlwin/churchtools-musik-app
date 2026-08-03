@@ -9,8 +9,8 @@ import {
   type Sharer,
 } from '../services/teamNotes';
 import { pushField } from '../services/annotations';
-import { availableVersions, setLsVersion, setLsSong } from '../utils/songVersions';
-import { type SongSettings, settingsForLevel } from '../utils/chartSettings';
+import { availableVersions, setLsVersion, setLsSong, readVersioned } from '../utils/songVersions';
+import { type SongSettings, settingsForLevel, DEFAULT_SETTINGS } from '../utils/chartSettings';
 import { mergeStrokes } from '../utils/strokes';
 import { levelsUnderNamespace, levelKeyOf } from '../utils/annotationKeys';
 
@@ -183,11 +183,25 @@ export function useTeamNotesImport({
     // Ansicht der Person für die Ziel-Ebene übernehmen (Spalten/Schrift/Abschnitte aus ihren
     // Roh-Einstellungen der ZIEL-Version; Tonart/Kapo bleiben bewusst eigene).
     const raw = viewRaw ?? {};
-    const rawGet = (b: string): string | null => raw[`worship_${b}_${songId}_${pVersion}`] ?? null;
+    // Über `readVersioned` gelesen, damit die Schlüssel-Rückfälle (_dlarge/_dphone, alte
+    // song-only-Schlüssel) auch hier gelten – und die Standardwerte aus DEFAULT_SETTINGS kommen,
+    // statt ein drittes Mal hartkodiert zu werden (#247).
+    const rawGet = (b: string): string | null =>
+      readVersioned((key) => raw[key] ?? null, b, songId, pVersion);
     setLsSong('ver', songId, pVersion);
     setLsVersion('lyrics', songId, pVersion, pLyr === '1' ? '1' : '0');
-    setLsVersion('cols', songId, pVersion, rawGet('cols') ?? String(vs?.cols ?? 1));
-    setLsVersion('fs', songId, pVersion, rawGet('fs') ?? String(vs?.fontSize ?? 20));
+    setLsVersion(
+      'cols',
+      songId,
+      pVersion,
+      rawGet('cols') ?? String(vs?.cols ?? DEFAULT_SETTINGS.cols),
+    );
+    setLsVersion(
+      'fs',
+      songId,
+      pVersion,
+      rawGet('fs') ?? String(vs?.fontSize ?? DEFAULT_SETTINGS.fontSize),
+    );
     const rawShift = rawGet('secshift');
     if (rawShift) setLsVersion('secshift', songId, pVersion, rawShift);
     reloadSettings();
