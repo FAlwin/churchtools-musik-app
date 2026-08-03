@@ -9,11 +9,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [2.16.0] – 2026-08-03
 
-Aufräum- und Härtungs-Release nach dem Code-Check: **sechs Fehler behoben, bei denen Daten still
-verschwanden oder die App ausfallen konnte**, dazu die Verschlüsselung des Sitzungs-Cookies und ein
-neuer automatischer Test für den ganzen Weg vom Anmelden bis zur gespeicherten Anmerkung.
+Aufräum- und Härtungs-Release nach dem Code-Check: **neun Fehler behoben, bei denen Daten still
+verschwanden, die Anmeldung wegflog oder die App ausfallen konnte**, dazu die Verschlüsselung des
+Sitzungs-Cookies und ein neuer automatischer Test für den ganzen Weg vom Anmelden bis zur
+gespeicherten Anmerkung.
 
-An der Bedienung ändert sich nichts – die geführte Einführung bleibt deshalb unverändert.
+Zwei der Fehler fielen erst beim Prüfen auf der Test-Instanz auf (#270, #268) – der wichtigere davon
+hätte bei einem kurzen ChurchTools-Aussetzer **alle gleichzeitig zum Neu-Anmelden gezwungen**.
+
+An der Bedienung ändert sich nichts – die geführte Einführung bleibt deshalb unverändert. Neu ist nur
+eine Meldung, die man hoffentlich nie sieht: „ChurchTools antwortet gerade nicht."
 
 ### Behoben
 
