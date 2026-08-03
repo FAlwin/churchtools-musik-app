@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { config } from './config.js';
 import { ipRateKey } from './utils/ipKey.js';
+import { sessionRateKey } from './middleware/session.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import setlistRoutes from './routes/setlist.js';
@@ -105,10 +106,11 @@ app.use(
     max: 600,
     standardHeaders: true,
     legacyHeaders: false,
-    // Ohne Session als Schlüssel der Anschluss, nicht die einzelne Adresse: `ipRateKey` fasst
-    // IPv6 auf das /64-Netz zusammen (#146).
-    keyGenerator: (req) =>
-      (req.signedCookies?.ct_session as string | undefined) || ipRateKey(req.ip),
+    // Angemeldet zählt die SITZUNG (stabiler Schlüssel, siehe `sessionRateKey` – #194): Seit der
+    // Cookie-Verschlüsselung ändert sich der rohe Cookie-Wert bei jeder Anfrage, als Schlüssel wäre
+    // das Limit wirkungslos. Ohne Session der Anschluss, nicht die einzelne Adresse: `ipRateKey`
+    // fasst IPv6 auf das /64-Netz zusammen (#146).
+    keyGenerator: (req) => sessionRateKey(req) ?? ipRateKey(req.ip),
   }),
 );
 
