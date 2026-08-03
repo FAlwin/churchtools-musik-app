@@ -5,12 +5,12 @@
  *  - pushField(): localStorage-Änderung → Server (gebündelt/debounced, Feld-Merge)
  *  - migrateLocalAnnotations(): einmalig bestehende Geräte-Anmerkungen aufs Konto hochladen
  *
- * ⚠️ **Bekannte Grenze der Wiederholung (#245):** Die Warteschlange lebt nur im Speicher. Wird die
- * App geschlossen, während ein Upload noch aussteht (offline weggelegt), ist beim nächsten Start
- * nicht mehr bekannt, dass etwas fehlt – `pullAnnotations` spiegelt dann den älteren Server-Stand
- * über den lokalen. Das zu schließen bräuchte einen ausstehend-Merker in localStorage, der beim
- * Start abgearbeitet wird, und ist bewusst NICHT Teil dieses Fixes. Der häufige Fall (Aussetzer
- * während laufender Sitzung) ist abgedeckt.
+ *  - resumePendingAnnotations(): beim Start nachholen, was beim letzten Mal nicht durchging (#256)
+ *
+ * **Zwei Ebenen der Absicherung gegen verlorene Anmerkungen:** Innerhalb einer Sitzung wird ein
+ * fehlgeschlagener Upload zurückgelegt und wiederholt (#245); über einen App-Neustart hinweg trägt der
+ * Merker `worship_anno_pending_v1` in localStorage die offenen Schlüssel (#256). Beide Wege schützen
+ * dieselbe Stelle: `pullAnnotations` darf eine Seite mit ausstehendem Upload NICHT überschreiben.
  */
 import { apiFetch, ApiError } from './api';
 import { getReachable } from './reachability';
@@ -70,10 +70,13 @@ export async function pullAnnotations(songIds: number[]): Promise<void> {
     const data = await apiFetch<Record<string, PageAnnotation>>(
       `/api/annotations?songs=${songIds.join(',')}`,
     );
+    // Der Merker aus localStorage zählt mit (#256): Nach einem Neustart ist die Speicher-Warteschlange
+    // leer, die Seite aber weiterhin nicht hochgeladen – ohne diese Prüfung gewinnt der alte Stand.
+    const stillPending = readPendingKeys();
     for (const [key, a] of Object.entries(data)) {
       // Seiten mit noch nicht hochgeladener ODER gerade hochladender lokaler Änderung NICHT
       // überschreiben (sonst gehen frische Anmerkungen/Zooms an den alten Server-Stand verloren).
-      if (pendingFields.has(key) || inflight.has(key)) continue;
+      if (pendingFields.has(key) || inflight.has(key) || stillPending.has(key)) continue;
       if (a.strokes) localStorage.setItem(DRAW + key, a.strokes);
       else localStorage.removeItem(DRAW + key);
       if (a.texts && a.texts.length)
@@ -84,6 +87,82 @@ export async function pullAnnotations(songIds: number[]): Promise<void> {
     }
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) disabled = true;
+  }
+}
+
+// ── Ausstehende Uploads: überleben das Schließen der App (#256) ──────────────
+/**
+ * Schlüssel, deren Upload noch aussteht – **in localStorage**, damit er einen App-Neustart übersteht.
+ *
+ * Vorher lebte die Warteschlange nur im Speicher: Zeichnete jemand offline und wurde die App danach
+ * beendet, war beim nächsten Start nicht mehr bekannt, dass etwas fehlt – der erste `pullAnnotations`
+ * spiegelte den älteren Server-Stand über den lokalen und der Strich verschwand sichtbar.
+ *
+ * Gespeichert werden nur die SCHLÜSSEL; die Anmerkung selbst liegt ohnehin im localStorage.
+ */
+const PENDING_KEYS = 'worship_anno_pending_v1';
+
+function readPendingKeys(): Set<string> {
+  return new Set(safeJson<string[]>(localStorage.getItem(PENDING_KEYS)) ?? []);
+}
+
+function writePendingKeys(keys: Set<string>): void {
+  try {
+    if (keys.size === 0) localStorage.removeItem(PENDING_KEYS);
+    else localStorage.setItem(PENDING_KEYS, JSON.stringify([...keys]));
+  } catch {
+    // Voller Speicher: dann bleibt es beim Verhalten von vorher (Merker im Speicher). Kein Grund,
+    // deshalb den Upload selbst zu verhindern.
+  }
+}
+
+function markPending(key: string): void {
+  const keys = readPendingKeys();
+  if (keys.has(key)) return;
+  keys.add(key);
+  writePendingKeys(keys);
+}
+
+function unmarkPending(key: string): void {
+  const keys = readPendingKeys();
+  if (!keys.delete(key)) return;
+  writePendingKeys(keys);
+}
+
+/**
+ * Die Anmerkung eines Schlüssels aus dem localStorage zusammensetzen.
+ *
+ * Von der Wiederaufnahme UND der einmaligen Migration genutzt – vorher baute die Migration das
+ * gleiche Objekt selbst zusammen (dieselbe Fehlerklasse, die dieses Projekt mehrfach getroffen hat).
+ */
+function annotationFromStorage(key: string): PageAnnotation | null {
+  const out: PageAnnotation = {};
+  const strokes = localStorage.getItem(DRAW + key);
+  if (strokes) out.strokes = strokes;
+  const texts = safeJson<AnnotationText[]>(localStorage.getItem(DRAW + key + '_text'));
+  if (texts && texts.length) out.texts = texts;
+  const zoom = safeJson<{ x: number; y: number; scale: number }>(localStorage.getItem(ZOOM + key));
+  if (zoom) out.zoom = zoom;
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+/**
+ * Beim Start: Uploads nachholen, die beim letzten Mal nicht durchgingen (#256).
+ *
+ * MUSS vor dem ersten `pullAnnotations` laufen – sonst überschreibt der Pull genau die Seiten, die
+ * hier noch hochzuladen sind. Ein Schlüssel ohne lokale Daten (Anmerkung wurde inzwischen gelöscht)
+ * wird nur aus dem Merker entfernt.
+ */
+export async function resumePendingAnnotations(): Promise<void> {
+  if (disabled) return;
+  for (const key of readPendingKeys()) {
+    const body = annotationFromStorage(key);
+    if (!body) {
+      unmarkPending(key);
+      continue;
+    }
+    pendingFields.set(key, body);
+    await flush(key);
   }
 }
 
@@ -142,6 +221,7 @@ async function flush(key: string, keepalive = false): Promise<void> {
       // keepalive: Request überlebt das Backgrounding der Seite (App-Wechsel/Schließen).
       ...(keepalive ? { keepalive: true } : {}),
     });
+    unmarkPending(key); // durch – der Merker darf weg (#256)
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) {
       disabled = true;
@@ -150,6 +230,7 @@ async function flush(key: string, keepalive = false): Promise<void> {
     if (e instanceof ApiError && e.status === 413) {
       // Konto-Obergrenze erreicht (#139): ein erneuter Versuch würde genauso scheitern → nicht
       // zurücklegen, aber sagen, was los ist (lokal bleibt die Anmerkung erhalten).
+      unmarkPending(key); // endgültig – sonst versucht es jeder Start erneut (#256)
       syncErrorHandler?.(e.message);
       return;
     }
@@ -196,6 +277,7 @@ export function pushField(lsKey: string, field: keyof PageAnnotation, value: unk
   const cur = pendingFields.get(key) ?? {};
   (cur as Record<string, unknown>)[field] = value;
   pendingFields.set(key, cur);
+  markPending(key); // übersteht das Schließen der App (#256)
   const t = timers.get(key);
   if (t) clearTimeout(t);
   timers.set(
@@ -208,27 +290,31 @@ export function pushField(lsKey: string, field: keyof PageAnnotation, value: unk
 /** Lädt vorhandene lokale Anmerkungen einmalig aufs Konto (danach gesetzter Merker). */
 export async function migrateLocalAnnotations(): Promise<void> {
   if (disabled || localStorage.getItem(MIGRATED_FLAG)) return;
-  const entries: Record<string, PageAnnotation> = {};
+  // Alle Ebenen-Schlüssel im Speicher finden; die Anmerkung selbst baut `annotationFromStorage`
+  // (dieselbe Funktion wie bei der Wiederaufnahme – nicht ein zweites Mal zusammengesetzt, #256).
+  // Die ORIGINAL-Schlüssel sammeln (so, wie sie im Speicher stehen) – gelesen wird darunter, und
+  // erst beim Hochladen wird auf das aktuelle Schema gehoben. Umgekehrt fände `annotationFromStorage`
+  // nichts: Bei einem Altbestand liegen die Daten unter `song12_3`, nicht unter `song12_voriginal_3`.
+  const found = new Set<string>();
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
     if (!k) continue;
     if (k.startsWith(DRAW)) {
-      if (k.endsWith('_text')) {
-        const sk = normalizeKey(k.slice(0, -'_text'.length).replace(DRAW, ''));
-        const texts = safeJson<AnnotationText[]>(localStorage.getItem(k));
-        if (texts && texts.length) (entries[sk] ??= {}).texts = texts;
-      } else {
-        const sk = normalizeKey(k.replace(DRAW, ''));
-        const strokes = localStorage.getItem(k);
-        if (strokes) (entries[sk] ??= {}).strokes = strokes;
-      }
+      found.add(k.slice(DRAW.length).replace(/_text$/, ''));
     } else if (k.startsWith(ZOOM)) {
-      const base = k.replace(ZOOM, '');
+      const base = k.slice(ZOOM.length);
       if (/^p\d+$/.test(base)) continue; // alte seiten-globale Zoom-Keys ignorieren
-      const sk = normalizeKey(base);
-      const zoom = safeJson<{ x: number; y: number; scale: number }>(localStorage.getItem(k));
-      if (zoom) (entries[sk] ??= {}).zoom = zoom;
+      found.add(base);
     }
+  }
+  const entries: Record<string, PageAnnotation> = {};
+  for (const raw of found) {
+    const body = annotationFromStorage(raw);
+    if (!body) continue;
+    const ziel = normalizeKey(raw);
+    // Sollten Alt- und Neuschlüssel derselben Seite beide existieren, gewinnt Feld für Feld der
+    // zuerst gefundene – die Felder werden zusammengelegt statt einander zu verwerfen.
+    entries[ziel] = { ...body, ...(entries[ziel] ?? {}) };
   }
   // Nur gültige Lied-Schlüssel hochladen (Dokument-Anmerkungen bleiben lokal).
   const keys = Object.keys(entries).filter((k) => KEY_RE.test(k));

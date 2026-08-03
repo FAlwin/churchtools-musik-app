@@ -240,6 +240,10 @@ Server zurück.
 5. **Eine Minute warten**, ohne etwas zu tun (in dieser Zeit gleicht die App ab).
 6. Die Seite ansehen – der Strich muss noch da sein.
 7. Zur Gegenprobe: App schließen, neu öffnen, dasselbe Lied aufrufen. Der Strich ist da.
+8. **Der härtere Fall (#256):** Nochmal WLAN aus, einen zweiten Strich ziehen, und die App **sofort
+   vollständig schließen** (aus dem App-Umschalter wischen) – noch ohne Netz. Dann WLAN einschalten,
+   App öffnen, Lied aufrufen und eine Minute warten. Auch dieser Strich muss bleiben; er wird beim
+   Öffnen nachträglich hochgeladen.
 
 **Wenn dein Konto voll ist:** Dann erscheint jetzt ein Hinweis unten am Bildschirm („Speicher-
 Obergrenze erreicht"). Vorher verschwand die Anmerkung in diesem Fall stillschweigend. Lokal auf dem
