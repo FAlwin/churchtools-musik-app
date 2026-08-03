@@ -29,6 +29,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Geändert
 
+- **Die Test-Instanz ist gehärtet** (betrifft nur die Einrichtung auf dem NAS, nicht die App): Ihr Port
+  lauscht nur noch lokal statt im ganzen LAN, `COOKIE_SECURE` ist standardmäßig an, und der
+  Auto-Update-Dienst ist auf eine feste Image-Fassung gepinnt. Vorher lief das Sitzungs-Cookie dort
+  unverschlüsselt über HTTP durchs Netz. **Zum Anwenden ist ein Reverse Proxy auf die Test-Domain
+  nötig** – die Anleitung in der Compose-Datei sagt, was zu tun ist. (#196)
 - **Das ChurchTools-Cookie liegt nicht mehr lesbar im App-Cookie.** Wer das Sitzungs-Cookie in die
   Hände bekam – aus einem Backup, einem Proxy-Log oder einem verlorenen iPad –, konnte daraus die
   ChurchTools-Anmeldung herauslesen und damit **direkt in ChurchTools** arbeiten, also weit mehr als
