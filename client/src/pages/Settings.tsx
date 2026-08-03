@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { SiteConfig, NoteRolePerm } from '@shared/types/index';
+import { sameIdSet, sameRolePerms } from '../utils/adminDrafts';
 import type { Theme, ThemePref } from '../types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
@@ -92,20 +93,9 @@ export function Settings({
   }
   // Ungespeicherte Änderungen? Steuert, ob „Speichern" erscheint und der Fuß-Knopf
   // „Abbrechen" (verwerfen) oder nur „Schließen" heißt.
-  const sameIds = (a: number[], b: number[]) => {
-    if (a.length !== b.length) return false;
-    const sb = [...b].sort((x, y) => x - y);
-    return [...a].sort((x, y) => x - y).every((v, i) => v === sb[i]);
-  };
-  const groupsDirty = showGroups && !sameIds(groupDraft, site.musicianGroupIds);
-  const normRoles = (rs: NoteRolePerm[]) =>
-    JSON.stringify(
-      [...rs]
-        .filter((r) => r.roles.length)
-        .sort((a, b) => a.groupId - b.groupId)
-        .map((r) => ({ g: r.groupId, roles: [...r.roles].sort((x, y) => x - y) })),
-    );
-  const rolesDirty = showRoles && normRoles(rolesDraft) !== normRoles(site.noteRoles ?? []);
+  // Vergleiche in `utils/adminDrafts` (#251) – reihenfolgeunabhängig und dort getestet.
+  const groupsDirty = showGroups && !sameIdSet(groupDraft, site.musicianGroupIds);
+  const rolesDirty = showRoles && !sameRolePerms(rolesDraft, site.noteRoles ?? []);
   /** Rollen-Freigabe einer Gruppe im Entwurf ändern; leere Einträge fallen weg. */
   function setGroupRoles(groupId: number, roles: number[]) {
     setRolesDraft((prev) => {
