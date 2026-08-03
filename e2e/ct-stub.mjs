@@ -153,3 +153,13 @@ const server = createServer((req, res) => {
 });
 
 server.listen(PORT, () => console.log(`[ct-stub] läuft auf http://localhost:${PORT}`));
+
+// Sauber beenden, wenn Playwright den Prozess stoppt: Ohne das halten untätige Keep-Alive-
+// Verbindungen den Stub am Leben und der CI-Job hängt nach den Tests.
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => {
+    server.closeIdleConnections();
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 3000);
+  });
+}
