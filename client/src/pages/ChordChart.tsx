@@ -12,7 +12,11 @@ import { useLandscape } from '../hooks/useLandscape';
 import { Coachmarks } from '../components/Coachmarks';
 import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
 import { Icon } from '../components/icons';
-import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
+import {
+  migrateLocalAnnotations,
+  pullAnnotations,
+  resumePendingAnnotations,
+} from '../services/annotations';
 import { VIEW_NS } from '../services/teamNotes';
 import { ANNO_ZOOM_NS } from '@shared/keys/index';
 import { drawKeyForOwner, zoomKeyBaseForOwner, viewKeyForOwner } from '../utils/streamKeys';
@@ -87,7 +91,10 @@ export function ChordChart({
     let cancelled = false;
     (async () => {
       const ids = songs.map((s) => s.id);
-      // Erst bestehende lokale Daten einmalig hochladen, dann Server-Stand holen.
+      // Reihenfolge ist wichtig: Erst die beim letzten Mal NICHT durchgegangenen Uploads nachholen
+      // (#256) und bestehende lokale Daten einmalig hochladen – DANN den Server-Stand holen. Andernfalls
+      // überschreibt der Pull genau die Seiten, die noch hochzuladen sind.
+      await resumePendingAnnotations();
       await Promise.all([migrateLocalAnnotations(), migrateLocalSettings()]);
       await Promise.all([pullAnnotations(ids), pullSettings(ids)]);
       // Team-Notizen: wer teilt Anmerkungen zu diesen Liedern? (nur für Berechtigte)

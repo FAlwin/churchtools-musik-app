@@ -5,6 +5,7 @@ import {
   pullAnnotations,
   resetSync,
   setAnnotationsSyncErrorHandler,
+  resumePendingAnnotations,
 } from './annotations';
 import { markReachable } from './reachability';
 import { setSessionExpiredHandler } from './api';
@@ -192,5 +193,100 @@ describe('annotations – Upload schlägt fehl (#245)', () => {
     >;
     expect(sent.strokes).toBe('NEUER_STRICH');
     expect(sent.zoom).toEqual({ x: 1, y: 2, scale: 3 });
+  });
+});
+
+/**
+ * #256: Die Warteschlange lebte nur im Speicher. Zeichnete jemand offline und wurde die App danach
+ * beendet, war beim nächsten Start nicht mehr bekannt, dass etwas fehlt – der erste `pullAnnotations`
+ * spiegelte den älteren Server-Stand über den lokalen und der Strich verschwand.
+ *
+ * Der Merker liegt jetzt in localStorage. Ein „Neustart" wird hier simuliert, indem nur der
+ * Modul-Zustand zurückgesetzt wird (`resetSync` + neue Testdatei-Instanz ist nicht nötig – die
+ * Speicher-Warteschlange ist nach einem fehlgeschlagenen Flush ohnehin leer, sobald der Merker greift).
+ */
+describe('annotations – ausstehender Upload übersteht den Neustart (#256)', () => {
+  const PENDING = 'worship_anno_pending_v1';
+
+  it('ein ausstehender Schlüssel steht im Merker – und ist nach Erfolg wieder weg', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(500)));
+    vi.stubGlobal('fetch', fetchMock);
+
+    pushField(`${DRAW}${KEY}`, 'strokes', 'STRICH');
+    expect(JSON.parse(localStorage.getItem(PENDING) ?? '[]')).toContain(KEY);
+
+    await runFlush(); // scheitert → Merker MUSS bleiben
+    expect(JSON.parse(localStorage.getItem(PENDING) ?? '[]')).toContain(KEY);
+
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse(200)));
+    await vi.advanceTimersByTimeAsync(5100); // Wiederholung
+    expect(localStorage.getItem(PENDING)).toBeNull();
+  });
+
+  it('DER Fall von #256: nach einem ECHTEN Neustart gewinnt der lokale Stand, nicht der Server', async () => {
+    // 1) Offline zeichnen, Upload scheitert.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => Promise.reject(new TypeError('Failed to fetch'))),
+    );
+    markReachable(false);
+    localStorage.setItem(`${DRAW}${KEY}`, 'OFFLINE_GEZEICHNET');
+    pushField(`${DRAW}${KEY}`, 'strokes', 'OFFLINE_GEZEICHNET');
+    await runFlush();
+    expect(JSON.parse(localStorage.getItem(PENDING) ?? '[]')).toContain(KEY);
+
+    // 2) ECHTER Neustart: das Modul frisch laden. Nur `resetSync()` genügt NICHT – dann stünde der
+    // Schlüssel noch in der Speicher-Warteschlange und der Pull-Schutz käme von dort statt vom
+    // Merker (so war eine frühere Fassung dieses Tests grün, ohne etwas zu prüfen).
+    vi.resetModules();
+    const frisch = await import('./annotations');
+    markReachable(true);
+
+    // 3) Der Pull liefert den ÄLTEREN Serverstand.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        if (init?.method === 'PUT') return Promise.resolve(jsonResponse(200));
+        return Promise.resolve(jsonResponse(200, { [KEY]: { strokes: 'ALTER_SERVER_STAND' } }));
+      }),
+    );
+    await frisch.pullAnnotations([7]);
+
+    // Der lokale Strich überlebt – nur dank des Merkers in localStorage.
+    expect(localStorage.getItem(`${DRAW}${KEY}`)).toBe('OFFLINE_GEZEICHNET');
+  });
+
+  it('die Wiederaufnahme lädt den lokalen Stand hoch und räumt den Merker', async () => {
+    localStorage.setItem(PENDING, JSON.stringify([KEY]));
+    localStorage.setItem(`${DRAW}${KEY}`, 'NACHZUTRAGEN');
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(200)));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await resumePendingAnnotations();
+
+    const sent = JSON.parse(String(fetchMock.mock.calls[0][1].body)) as Record<string, unknown>;
+    expect(sent.strokes).toBe('NACHZUTRAGEN');
+    expect(localStorage.getItem(PENDING)).toBeNull();
+  });
+
+  it('ein Merker ohne lokale Daten wird nur aufgeräumt (Anmerkung wurde gelöscht)', async () => {
+    localStorage.setItem(PENDING, JSON.stringify(['song9_voriginal_0']));
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(200)));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await resumePendingAnnotations();
+
+    expect(putCount(fetchMock)).toBe(0);
+    expect(localStorage.getItem(PENDING)).toBeNull();
+  });
+
+  it('413 räumt den Merker – sonst versucht es jeder Start erneut', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(413, { error: 'voll' }))),
+    );
+    pushField(`${DRAW}${KEY}`, 'strokes', 'ZU_GROSS');
+    await runFlush();
+    expect(localStorage.getItem(PENDING)).toBeNull();
   });
 });

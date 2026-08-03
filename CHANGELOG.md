@@ -9,6 +9,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Behoben
 
+- **Eine Anmerkung übersteht jetzt auch das Schließen der App.** Zeichnete jemand ohne Netz und wurde
+  die App danach beendet (was iOS im Hintergrund von selbst tut), war beim nächsten Start nicht mehr
+  bekannt, dass der Strich noch nicht auf dem Konto liegt – der erste Abgleich holte den älteren Stand
+  und der Strich war weg. Die offenen Uploads werden jetzt auf dem Gerät vermerkt und beim nächsten
+  Öffnen nachgeholt. (#256)
 - **Ein Netzaussetzer beim Zeichnen kostet keine Anmerkung mehr.** Scheiterte der Upload eines Strichs
   (kurzer WLAN-Aussetzer, Serverneustart), wurde er nicht wiederholt – und der nächste Abgleich holte
   den älteren Stand vom Server zurück, wodurch der Strich **sichtbar verschwand**. Jetzt wird der
