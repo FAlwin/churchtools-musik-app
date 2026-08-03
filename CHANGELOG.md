@@ -7,6 +7,14 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.16.0] – 2026-08-03
+
+Aufräum- und Härtungs-Release nach dem Code-Check: **sechs Fehler behoben, bei denen Daten still
+verschwanden oder die App ausfallen konnte**, dazu die Verschlüsselung des Sitzungs-Cookies und ein
+neuer automatischer Test für den ganzen Weg vom Anmelden bis zur gespeicherten Anmerkung.
+
+An der Bedienung ändert sich nichts – die geführte Einführung bleibt deshalb unverändert.
+
 ### Behoben
 
 - **Eine Anmerkung übersteht jetzt auch das Schließen der App.** Zeichnete jemand ohne Netz und wurde
@@ -19,32 +27,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   den älteren Stand vom Server zurück, wodurch der Strich **sichtbar verschwand**. Jetzt wird der
   Stand zurückgelegt und erneut versucht, sobald der Server erreichbar ist; ein neuerer Strich gewinnt
   dabei gegen den zurückgelegten. Ist das Konto voll, erscheint jetzt ein Hinweis, statt die Anmerkung
-  stillschweigend fallen zu lassen. ⚠️ Bleibt offen: Wird die App **geschlossen**, während ein Upload
-  noch aussteht, ist das beim nächsten Start nicht mehr bekannt. (#245)
+  stillschweigend fallen zu lassen. (Der Fall „App wird zwischendurch geschlossen" kam mit #256 dazu.)
+  (#245)
 - **Entzogene Admin-Rechte wirken sofort.** Der Rechte-Cache, der kurze ChurchTools-Aussetzer
   überbrückt, hielt seinen Stand bis zu **30 Tage** – und überbrückte dabei auch das Admin-Recht. Wem
   in ChurchTools die Verwaltung entzogen wurde, dessen Sitzung aber noch lief, hätte damit weiter
   Einstellungen ändern können. Das Fenster liegt jetzt bei 12 Stunden (der Zweck sind Aussetzer von
   Sekunden), und das **Admin-Recht wird grundsätzlich nicht mehr überbrückt**. (#249)
-
-### Geändert
-
-- **Die Test-Instanz ist gehärtet** (betrifft nur die Einrichtung auf dem NAS, nicht die App): Ihr Port
-  lauscht nur noch lokal statt im ganzen LAN, `COOKIE_SECURE` ist standardmäßig an, und der
-  Auto-Update-Dienst ist auf eine feste Image-Fassung gepinnt. Vorher lief das Sitzungs-Cookie dort
-  unverschlüsselt über HTTP durchs Netz. **Zum Anwenden ist ein Reverse Proxy auf die Test-Domain
-  nötig** – die Anleitung in der Compose-Datei sagt, was zu tun ist. (#196)
-- **Das ChurchTools-Cookie liegt nicht mehr lesbar im App-Cookie.** Wer das Sitzungs-Cookie in die
-  Hände bekam – aus einem Backup, einem Proxy-Log oder einem verlorenen iPad –, konnte daraus die
-  ChurchTools-Anmeldung herauslesen und damit **direkt in ChurchTools** arbeiten, also weit mehr als
-  in der App möglich ist. Der Anteil ist jetzt verschlüsselt. **Niemand wird dadurch abgemeldet:**
-  Bestehende Anmeldungen werden weiter gelesen und beim nächsten Aufruf automatisch umgestellt. (#194)
-
-- **Die Schlüssel-Grammatik der Anmerkungen und Einstellungen liegt jetzt an EINER Stelle**
-  (`shared/keys`), die Client und Server gemeinsam nutzen. Vorher wurden die Schlüssel an fünf Stellen
-  von Hand zusammengesetzt und die Prüfmuster standen zweimal wortgleich über die Prozessgrenze – eine
-  Abweichung hätte den Abgleich still lahmgelegt, wie es beim Querformat-Zoom schon einmal passiert
-  ist. Für Mitspielende ändert sich nichts. (#250)
 
 - **Ein Dokument, das nicht geladen werden kann, wird nicht mehr verschwiegen.** Wählte man zu einem
   Lied ein hochgeladenes PDF oder Bild und dessen Laden scheiterte, zeigte die App **ohne ein Wort**
@@ -73,6 +62,46 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Gerät, es gab also keine zweite Chance. Jetzt wird der Merker nur gesetzt, wenn nichts
   netzbedingt gescheitert ist; ein einzelner zu großer Eintrag hält den Vorgang dagegen nicht auf
   (er würde auch beim nächsten Mal scheitern) und wird gemeldet. (#246)
+
+### Geändert
+
+- **Das ChurchTools-Cookie liegt nicht mehr lesbar im App-Cookie.** Wer das Sitzungs-Cookie in die
+  Hände bekam – aus einem Backup, einem Proxy-Log oder einem verlorenen iPad –, konnte daraus die
+  ChurchTools-Anmeldung herauslesen und damit **direkt in ChurchTools** arbeiten, also weit mehr als
+  in der App möglich ist. Der Anteil ist jetzt verschlüsselt. **Niemand wird dadurch abgemeldet:**
+  Bestehende Anmeldungen werden weiter gelesen und beim nächsten Aufruf automatisch umgestellt.
+  ⚠️ Beim Deploy muss `SESSION_SECRET` unverändert bleiben – der Schlüssel wird daraus abgeleitet. (#194)
+- **Die Test-Instanz ist gehärtet** (betrifft nur die Einrichtung auf dem NAS, nicht die App): Ihr Port
+  lauscht nur noch lokal statt im ganzen LAN, `COOKIE_SECURE` ist standardmäßig an, und der
+  Auto-Update-Dienst ist auf eine feste Image-Fassung gepinnt. Vorher lief das Sitzungs-Cookie dort
+  unverschlüsselt über HTTP durchs Netz. **Zum Anwenden ist ein Reverse Proxy auf die Test-Domain
+  nötig** – die Anleitung in der Compose-Datei sagt, was zu tun ist. (#196)
+- **Der Server beendet sich beim Neustart geordnet.** Bisher gab es kein Signal-Handling: Beim
+  `docker stop` brach Node sofort ab, laufende Anfragen (z. B. ein gerade hochgeladener Strich)
+  einfach mitten durch. Jetzt darf Laufendes fertig werden, untätige Verbindungen werden geschlossen,
+  und nach 8 Sekunden greift eine Notbremse – in der Praxis ist er in rund einer Sekunde unten.
+  Unbehandelte Promise-Fehler landen außerdem im Log statt still zu verpuffen. (#251)
+
+### Intern
+
+- **Die Schlüssel-Grammatik der Anmerkungen und Einstellungen liegt jetzt an EINER Stelle**
+  (`shared/keys`), die Client und Server gemeinsam nutzen. Vorher wurden die Schlüssel an fünf Stellen
+  von Hand zusammengesetzt und die Prüfmuster standen zweimal wortgleich über die Prozessgrenze – eine
+  Abweichung hätte den Abgleich still lahmgelegt, wie es beim Querformat-Zoom schon einmal passiert
+  ist. Für Mitspielende ändert sich nichts. (#250)
+- **Der wichtigste Weg der App läuft jetzt automatisch durch:** Anmelden → Termin → Ablauf → Chart →
+  Anmerkung → Abgleich, gegen einen kleinen ChurchTools-Ersatz (`e2e/ct-stub.mjs`), aber mit dem
+  **echten** Server samt Sitzungs-, Rechte- und Proxy-Logik. Genau dort lagen die Fehler, die diese
+  App am häufigsten getroffen haben (#186, #211, #245/#256) – geprüft wurde bisher nur das Rendern
+  der Chart-Ansicht ohne Backend. (#174)
+- **Tests: Client 377 · Server 193 · 4 E2E** (vorher 319 · 168 · 1). Neu abgedeckt: das
+  Wiederholen fehlgeschlagener Uploads, die Dateigrenze und die Zeitgrenzen zu ChurchTools, die
+  Cookie-Verschlüsselung samt Bestandsformaten, der Seitenstrom aus Akkorden und Dokumenten sowie die
+  Zeichen-Werkzeugleiste. Vier Testfälle in `docs/tests/` ergänzt (58 insgesamt).
+- **Aus den Funden dieses Releases wurden Regeln gemacht** statt nur Notizen: Nach jedem Fix wird per
+  `grep` nach der **zweiten Stelle** derselben Regel gesucht, jeder neue Test wird durch Zurücknehmen
+  des Fixes gegengeprüft, und Build/Lint/Tests werden am **Exit-Code** geprüft (ein `grep` auf die
+  Ausgabe meldete einmal „0 Fehler", während die CI rot war).
 
 ## [2.15.0] – 2026-07-31
 
