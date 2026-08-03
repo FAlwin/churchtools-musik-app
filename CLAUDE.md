@@ -17,9 +17,8 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 03.08.2026: **in Prod läuft v2.15.0**, am
-  Bundle verifiziert – `main` ist seither deutlich weiter, **v2.16.0 vorbereitet und auf Staging zur
-  Abnahme**).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 03.08.2026: **v2.16.0 PRODUKTIV**, am
+  ausgelieferten Bundle verifiziert).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -375,10 +374,19 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
-- **Aktuell (03.08.2026): v2.16.0 VORBEREITET, auf Staging zur Abnahme – Prod läuft v2.15.0.**
-  15 Commits seit v2.15.0: **zehn Issues abgearbeitet** (#194, #245, #246, #247, #248, #249, #250,
-  #251, #256, #174), davon sechs mit stillem Datenverlust oder Ausfallrisiko. Tests **Client 377 /
-  Server 205 / 5 E2E** (vorher 319 / 168 / 1). Nutzersichtbar: Anmerkungen gehen bei Netzaussetzern
+- **Aktuell (03.08.2026): v2.16.0 PRODUKTIV LIVE - verifiziert.** Digest
+  `sha256:f8e177c6...` auf `:2`/`:2.16`/`:2.16.0`/`:latest` (amd64+arm64), GitHub-Release LATEST.
+  Verifikation am ausgelieferten Bundle: `v2.16.0` im `index`-Chunk, `2.15.0` = **0 Treffer**, die in
+  v2.16.0 NEUE Meldung „ChurchTools antwortet gerade nicht" im selben Chunk, `/api/update-check`
+  = 2.16.0 = laufende Version (kein Update-Hinweis mehr). **Serverseitig gegengeprüft, nicht nur am
+  Bundle:** Eine Anfrage an `/api/auth/me` mit kaputtem `ct_session` bekommt
+  `Set-Cookie: ct_session=; Expires=Thu, 01 Jan 1970` zurück (#268 ist live), ohne Cookie kommt
+  **kein** `Set-Cookie`, geschützte Endpunkte antworten 401. Cookie trägt `Secure` → `COOKIE_SECURE`
+  ist in Prod an.
+  **13 Issues in diesem Release** (#194, #245, #246, #247, #248, #249, #250, #251, #256, #174, #196,
+  #268, #270); neun davon Fehler mit stillem Datenverlust, wegfliegender Anmeldung oder
+  Ausfallrisiko. **#268 und #270 kamen erst aus Alwins Staging-Test** – ohne diesen Lauf wären sie in
+  Produktion gegangen. Tests **Client 383 / Server 205 / 5 E2E** (vorher 319 / 168 / 1). Nutzersichtbar: Anmerkungen gehen bei Netzaussetzern
   und beim Schließen der App nicht mehr verloren (#245/#256), „Notizen von …" zeigt wieder die Ansicht
   des Kollegen (#247), eine übergroße ChurchTools-Datei legt die App nicht mehr lahm (#248), entzogene
   Admin-Rechte wirken sofort (#249), ein nicht ladbares Dokument wird gemeldet statt still durch
