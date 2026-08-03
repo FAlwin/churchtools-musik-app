@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto';
 import { HttpError } from './errorHandler.js';
 import { config } from '../config.js';
 import { getCapabilities } from '../services/churchtools.js';
@@ -13,6 +14,78 @@ const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 Tage
 // Login ist eine Neuanmeldung fällig. Sonst bliebe ein einmal abgegriffenes Cookie bei
 // regelmäßiger Nutzung beliebig lange gültig.
 const SESSION_ABSOLUTE_MAX_MS = 1000 * 60 * 60 * 24 * 90; // 90 Tage
+
+/**
+ * Verschlüsselung des ChurchTools-Cookie-Anteils im App-Cookie (#194).
+ *
+ * Das App-Cookie ist signiert und `httpOnly`, war aber **nicht verschlüsselt**: Wer es je in die Hände
+ * bekam (Backup, Proxy-Log, kompromittiertes oder verlorenes Gerät), konnte daraus das rohe
+ * ChurchTools-Cookie herauslesen und damit **direkt gegen ChurchTools** arbeiten – also deutlich mehr,
+ * als die App selbst erlaubt. Verschlüsselt geht das nicht mehr ohne den Server-Schlüssel.
+ *
+ * Bewusst KEIN server-seitiger Sitzungs-Speicher: Das Cookie bleibt selbsttragend, es gibt also keine
+ * Sitzungsdatei auf dem Volume (die in jedes Backup wanderte) und niemand wird bei einem Deploy
+ * abgemeldet.
+ *
+ * Der Schlüssel wird per HKDF aus `SESSION_SECRET` abgeleitet – mit eigenem `info`-Label, damit er
+ * nicht derselbe ist, mit dem `cookie-parser` signiert.
+ */
+const ENC_PREFIX = 'e1:';
+const encKey = Buffer.from(hkdfSync('sha256', config.sessionSecret, '', 'ct-session-enc-v1', 32));
+
+function encryptCtCookie(plain: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', encKey, iv);
+  const body = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
+  return ENC_PREFIX + Buffer.concat([iv, cipher.getAuthTag(), body]).toString('base64url');
+}
+
+/**
+ * Entschlüsselt den Cookie-Anteil. Bestandsformate (unverschlüsselt) werden **unverändert
+ * durchgereicht** – niemand wird durch das Update abgemeldet; beim nächsten Rollieren
+ * (`requireSession`) landet das Cookie automatisch verschlüsselt beim Browser.
+ *
+ * `null` bedeutet: sah verschlüsselt aus, ließ sich aber nicht entschlüsseln (fremder/rotierter
+ * Schlüssel, manipuliert) → wie „keine Session" behandeln.
+ */
+function decryptCtCookie(value: string): string | null {
+  if (!value.startsWith(ENC_PREFIX)) return value; // Altformat
+  try {
+    const raw = Buffer.from(value.slice(ENC_PREFIX.length), 'base64url');
+    const iv = raw.subarray(0, 12);
+    const tag = raw.subarray(12, 28);
+    const body = raw.subarray(28);
+    const decipher = createDecipheriv('aes-256-gcm', encKey, iv);
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(body), decipher.final()]).toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stabiler Rate-Limit-Schlüssel einer Sitzung – oder `null`, wenn keine vorliegt (#194/N1).
+ *
+ * ZWEI Gründe, das nicht mehr am rohen Cookie-Wert zu machen:
+ *  1. Seit der Verschlüsselung enthält das Cookie bei **jeder** Anfrage einen neuen Zufallswert (IV).
+ *     Der rohe Wert als Schlüssel hätte das Limit still wirkungslos gemacht – jede Anfrage wäre ein
+ *     neuer „Nutzer" gewesen.
+ *  2. Der rohe Wert lag als Map-Key im Limiter-Speicher, also eine weitere Kopie des Geheimnisses.
+ *
+ * Bevorzugt die Konto-ID; nur bei Alt-Cookies ohne ID ein sha256-Fingerprint (nie das Cookie selbst) –
+ * dieselbe Ableitung wie beim Ablauf-Fingerabdruck in `setlistController`.
+ */
+export function sessionRateKey(req: Request): string | null {
+  const session = readSession(req);
+  if (!session) return null;
+  if (session.userId != null) return `u${session.userId}`;
+  return `c${createHash('sha256').update(session.ctCookie).digest('hex').slice(0, 16)}`;
+}
+
+/** Nur für Tests: prüfen, dass ein Wert wirklich verschlüsselt ist (und nicht im Klartext liegt). */
+export function isEncryptedCtCookie(value: string): boolean {
+  return value.startsWith(ENC_PREFIX);
+}
 
 /** Express-Request um das ChurchTools-Session-Cookie (+ Konto-ID) erweitern. */
 declare global {
@@ -57,7 +130,11 @@ export function readSession(
 ): { ctCookie: string; issuedAt: number; userId: number | null } | null {
   const raw = req.signedCookies?.[COOKIE_NAME];
   if (!raw || typeof raw !== 'string') return null;
-  return parseSessionValue(raw);
+  const parsed = parseSessionValue(raw);
+  // `parseSessionValue` zerlegt nur (rein und ohne Schlüssel); entschlüsselt wird hier (#194).
+  const ctCookie = decryptCtCookie(parsed.ctCookie);
+  if (ctCookie === null) return null; // sah verschlüsselt aus, passt aber nicht → wie keine Session
+  return { ...parsed, ctCookie };
 }
 
 /**
@@ -73,7 +150,8 @@ export function setSession(
   userId: number | null = null,
 ): void {
   const idPart = userId != null ? `u${userId}|` : '';
-  res.cookie(COOKIE_NAME, `${issuedAt}|${idPart}${churchToolsCookie}`, {
+  // Der CT-Anteil wird verschlüsselt (#194) – im Cookie steht danach kein nutzbares CT-Cookie mehr.
+  res.cookie(COOKIE_NAME, `${issuedAt}|${idPart}${encryptCtCookie(churchToolsCookie)}`, {
     httpOnly: true,
     secure: config.cookieSecure,
     sameSite: 'lax',

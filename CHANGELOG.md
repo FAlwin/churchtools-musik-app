@@ -29,6 +29,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Geändert
 
+- **Das ChurchTools-Cookie liegt nicht mehr lesbar im App-Cookie.** Wer das Sitzungs-Cookie in die
+  Hände bekam – aus einem Backup, einem Proxy-Log oder einem verlorenen iPad –, konnte daraus die
+  ChurchTools-Anmeldung herauslesen und damit **direkt in ChurchTools** arbeiten, also weit mehr als
+  in der App möglich ist. Der Anteil ist jetzt verschlüsselt. **Niemand wird dadurch abgemeldet:**
+  Bestehende Anmeldungen werden weiter gelesen und beim nächsten Aufruf automatisch umgestellt. (#194)
+
 - **Die Schlüssel-Grammatik der Anmerkungen und Einstellungen liegt jetzt an EINER Stelle**
   (`shared/keys`), die Client und Server gemeinsam nutzen. Vorher wurden die Schlüssel an fünf Stellen
   von Hand zusammengesetzt und die Prüfmuster standen zweimal wortgleich über die Prozessgrenze – eine

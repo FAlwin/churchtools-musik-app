@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #256: **68 Testdateien** –
-**48 Client (377 Tests)** + **19 Server (181 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #194: **69 Testdateien** –
+**48 Client (377 Tests)** + **20 Server (193 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 
@@ -38,6 +38,12 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
   schlagen Liedname/Autor aus ChurchTools, ohne sie bleibt der CT-Wert stehen, ein leeres
   `{title: }` ersetzt nichts. Hängt bewusst an `getSongChart` und damit an der **Verdrahtung** in
   `buildSong` – der Fehler war ja nicht `metaValue`, sondern die fehlende Nutzung
+- `middleware/session.crypto` – Cookie-Verschlüsselung (#194): das CT-Cookie steht **nicht** im
+  Klartext im App-Cookie, Hin- und Rückweg ergeben dasselbe, jedes Setzen erzeugt einen anderen Wert
+  (frischer IV), ein manipulierter Wert gilt als KEINE Session. Dazu die drei **Bestandsformate**
+  (mit/ohne Konto-ID, nur CT-Cookie) – sie müssen weiter gelesen werden, sonst meldet ein Update alle
+  ab. Und `sessionRateKey`: zwei verschieden verschlüsselte Cookies derselben Sitzung ergeben DENSELBEN
+  Rate-Limit-Schlüssel – ohne diese Stabilität wäre das Limit nach #194 still wirkungslos gewesen
 - `middleware/session.rolling` – rollierende Verlängerung trägt Login-Zeitstempel **und** Konto-ID
   weiter (#152); Altformat ohne ID bleibt nutzbar
 - `controllers/siteConfigController.trim` – `GET /api/site-config` liefert unauthentifiziert **keine**
