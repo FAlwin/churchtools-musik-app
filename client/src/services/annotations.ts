@@ -14,17 +14,21 @@
  */
 import { apiFetch, ApiError } from './api';
 import { getReachable } from './reachability';
+import {
+  ANNO_DRAW_NS,
+  ANNO_ZOOM_NS,
+  ANNO_KEY_RE,
+  normalizeAnnoKey as normalizeKey,
+} from '@shared/keys/index';
 import type { AnnotationText, PageAnnotation } from '@shared/types/index';
 
-const DRAW = 'worship_docdraw_';
-const ZOOM = 'worship_doczoom_';
+// Namensräume und Grammatik aus @shared/keys – EINZIGE Quelle für Client und Server (#250).
+const DRAW = ANNO_DRAW_NS;
+const ZOOM = ANNO_ZOOM_NS;
 const MIGRATED_FLAG = 'worship_anno_migrated_v1';
-// Gültige Server-Schlüssel: song<id>_v<version>[_lyr]_<seite> (+ optional _d<geräteklasse><spalten>
-// beim Zoom, z. B. _dlarge2 im iPad-Querformat). `_lyr` = eigene Notiz-Ebene der Darstellungsart
-// „Nur Text" (ohne = „Akkorde & Text", abwärtskompatibel zu Bestandsnotizen). Andere Schlüssel
-// (z. B. Dokument-fileId-Keys) bleiben lokal. Die abschließende Layout-Ziffer (1 = Hochformat,
-// 2 = Querformat/2-up) MUSS erlaubt sein, sonst wird der Querformat-Zoom nie zum Server gepusht.
-export const KEY_RE = /^song\d+_v[a-z0-9-]+(?:_lyr)?_\d+(?:_d(?:phone|large)\d?)?$/i;
+// Die Grammatik liegt in @shared/keys (#250) – hier nur re-exportiert, damit Bestandsimporte
+// (`services/annotations`.KEY_RE) weiter funktionieren.
+export const KEY_RE = ANNO_KEY_RE;
 
 // Anmerkungs-Typen (AnnotationText, PageAnnotation) kommen aus @shared/types – einzige Quelle
 // für Client + Server, damit beim Server-Roundtrip kein Feld verloren geht.
@@ -47,13 +51,6 @@ function serverKeyOf(lsKey: string): string {
     .replace(DRAW, '')
     .replace(ZOOM, '')
     .replace(/_text$/, '');
-}
-
-/** Alte (versionslose) Schlüssel auf das neue Schema heben: song12_3 → song12_voriginal_3. */
-function normalizeKey(key: string): string {
-  if (KEY_RE.test(key)) return key;
-  const m = key.match(/^song(\d+)_(\d+)$/);
-  return m ? `song${m[1]}_voriginal_${m[2]}` : key;
 }
 
 function safeJson<T>(raw: string | null): T | null {

@@ -8,15 +8,17 @@
  * localStorage-Scans (Stift-Marker im Lied-Menü, Team-Import) nicht jeweils eigene Regexe pflegen.
  */
 
-/** Präfix der EIGENEN (privaten) Anmerkungen im localStorage. */
-export const OWN_DRAW_PREFIX = 'worship_docdraw_';
+import { ANNO_DRAW_NS, levelPrefix } from '@shared/keys/index';
+
+/** Präfix der EIGENEN (privaten) Anmerkungen – aus der geteilten Grammatik (#250). */
+export const OWN_DRAW_PREFIX = ANNO_DRAW_NS;
 
 /** Basis-Schlüssel einer Ebenen-Seite (ohne Namensraum-Präfix, ohne `_text`). */
 const LEVEL_PAGE_RE = /^song\d+_v([a-z0-9-]+)(_lyr)?_(\d+)$/i;
 
 /** Präfix aller Seiten EINER Ebene (Version + Darstellungsart) eines Lieds – ohne Namensraum. */
 export function levelPagePrefix(songId: number, versionKey: string, lyr: boolean): string {
-  return `song${songId}_v${versionKey}${lyr ? '_lyr' : ''}_`;
+  return levelPrefix(songId, versionKey, lyr);
 }
 
 /** Hat das Konto eigene, nicht-leere Anmerkungen (Striche ODER Texte) auf dieser Ebene? */

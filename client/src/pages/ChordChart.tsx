@@ -14,6 +14,8 @@ import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onbo
 import { Icon } from '../components/icons';
 import { migrateLocalAnnotations, pullAnnotations } from '../services/annotations';
 import { VIEW_NS } from '../services/teamNotes';
+import { ANNO_ZOOM_NS } from '@shared/keys/index';
+import { drawKeyForOwner, zoomKeyBaseForOwner, viewKeyForOwner } from '../utils/streamKeys';
 import { ChartAppearanceMenu } from '../components/ChartAppearanceMenu';
 import { SongMenu } from '../components/SongMenu';
 import { SharersSheet } from '../components/SharersSheet';
@@ -345,14 +347,13 @@ export function ChordChart({
   // nicht aus den Live-Einstellungen – die Notiz-Ebene wechselt exakt mit den sichtbaren Seiten,
   // nicht schon während des asynchronen Neuaufbaus (sonst: Notizen „vor dem Text", Stift schreibt
   // in die falsche Ebene).
-  const modeSeg = (songId: number): string =>
-    (publishedSettings[songId] ?? effSettings[songId] ?? DEFAULT_SETTINGS).lyricsOnly ? '_lyr' : '';
+  // Die Schlüssel selbst baut `utils/streamKeys` aus der geteilten Grammatik (#250) – hier wird nur
+  // entschieden, WELCHE Darstellungsart gilt: die des veröffentlichten Schnappschusses.
+  const isLyr = (songId: number): boolean =>
+    (publishedSettings[songId] ?? effSettings[songId] ?? DEFAULT_SETTINGS).lyricsOnly;
   const drawKeyFor = (page: number): string | null => {
     const o = owners[page];
-    if (!o) return null;
-    return o.kind === 'doc'
-      ? `worship_docdraw_${o.fileId}_${o.localPage}`
-      : `worship_docdraw_song${o.songId}_v${o.versionKey}${modeSeg(o.songId)}_${o.localPage}`;
+    return o ? drawKeyForOwner(o, isLyr(o.songId)) : null;
   };
   // „Notizen von …": Schlüssel der angesehenen fremden Ebene je Seite (nur Akkord-Seiten;
   // stabile Identität für PageDeck-Effekte). Die Versions-Schlüssel stammen aus der Ansicht der
@@ -362,20 +363,22 @@ export function ChordChart({
   const viewingLyr = viewing?.lyr ?? false;
   const viewKeyFor = useCallback(
     (page: number): string | null => {
-      if (viewingId == null) return null;
+      if (viewingId == null || viewingSongId == null) return null;
       const o = owners[page];
-      if (!o || o.kind === 'doc' || o.songId !== viewingSongId) return null;
-      const lyr = viewingLyr ? '_lyr' : '';
-      return `${VIEW_NS}song${o.songId}_v${o.versionKey}${lyr}_${o.localPage}`;
+      if (!o) return null;
+      return viewKeyForOwner(
+        o,
+        { songId: viewingSongId, versionKey: o.versionKey, lyr: viewingLyr },
+        VIEW_NS,
+      );
     },
     [owners, viewingId, viewingSongId, viewingLyr],
   );
   const zoomKeyBaseFor = (page: number): string => {
     const o = owners[page];
-    if (!o) return `worship_doczoom_p${page}`;
-    return o.kind === 'doc'
-      ? `worship_doczoom_${o.fileId}_${o.localPage}`
-      : `worship_doczoom_song${o.songId}_v${o.versionKey}${modeSeg(o.songId)}_${o.localPage}`;
+    // Ohne Besitzer (z. B. während des Neuaufbaus) ein eigener, harmloser Schlüssel je Seitenzahl.
+    if (!o) return `${ANNO_ZOOM_NS}p${page}`;
+    return zoomKeyBaseForOwner(o, isLyr(o.songId));
   };
   // Seiten-Hinweis nur bei mehrseitigen Einheiten (Lied/Dokument): „Seite x / y".
   const pageLabel = (activePg: number, pageIdx: number): string | null => {

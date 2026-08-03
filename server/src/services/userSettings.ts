@@ -37,10 +37,10 @@ export function withinSettingsLimits(entryCount: number, totalBytes: number): bo
  *
  * Die beiden erlaubten Zusätze sind Absicht: Ein strenges `_\d+$` würde die versionsbezogenen
  * Schlüssel **stillschweigend verwerfen** – die Einstellungen wären dann geräteübergreifend weg.
- * Muss mit `client/src/services/userSettings.ts` übereinstimmen.
+ * Liegt in @shared/keys und wird von Client UND Server geteilt (#250) – hier nur re-exportiert.
  */
-export const SETTINGS_KEY_RE =
-  /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_\d+(?:_[a-z0-9-]+){0,2}$/;
+import { SETTINGS_KEY_RE } from '@shared/keys/index';
+export { SETTINGS_KEY_RE };
 /** Lied-ID aus einem Einstellungs-Schlüssel ziehen. */
 function songIdOf(key: string): number | null {
   const m = key.match(/^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_(\d+)/);
