@@ -33,7 +33,11 @@ export default defineConfig({
     {
       // Der ECHTE Server, nur auf den Stub gerichtet. SESSION_SECRET ist hier ein Testwert; die
       // Cookie-Verschlüsselung (#194) leitet ihren Schlüssel daraus ab.
-      command: 'npm run dev:server',
+      //
+      // Bewusst `start` und NICHT `dev:server`: Letzteres ist `tsx watch`, und der Beobachter-Prozess
+      // beendet sich nach den Tests nicht sauber – im CI hing der Job dadurch nach 10 Sekunden Tests
+      // noch zehn Minuten, bis das Zeitlimit griff.
+      command: 'npm run start --workspace=server',
       url: 'http://localhost:3001/api/health',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
