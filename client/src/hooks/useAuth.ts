@@ -3,6 +3,7 @@ import * as api from '../services/churchtoolsApi';
 import { resetSync as resetAnnotationsSync } from '../services/annotations';
 import { resetSync as resetSettingsSync } from '../services/userSettings';
 import { clearDeviceData } from '../utils/clearDeviceData';
+import { ApiError } from '../services/api';
 
 /** Anmeldestatus + Login/Logout. Nutzt das /api/auth/me-Cookie des Backends. */
 export function useAuth() {
@@ -45,6 +46,18 @@ export function useAuth() {
 
   return {
     isLoading: meQuery.isLoading,
+    /**
+     * Der Anmeldestatus ließ sich nicht ermitteln (#270): Der eigene Server antwortet, aber
+     * ChurchTools nicht (Zeitüberschreitung, 5xx). Das ist ausdrücklich **nicht** „abgemeldet" – die
+     * Anmeldung liegt weiter im Cookie und gilt nach dem Aussetzer wieder. Ohne diese Unterscheidung
+     * erschien der Login-Screen, und dann gibt jemand mitten im Gottesdienst unnötig seine
+     * ChurchTools-Zugangsdaten ein.
+     *
+     * Ein **401** ist bewusst ausgenommen: Dann ist die Sitzung wirklich tot und der Login gehört hin
+     * (#186 – kein Screen darf ein 401 als „Erneut versuchen" anbieten).
+     */
+    statusUnknown: meQuery.error instanceof ApiError && meQuery.error.status !== 401,
+    retryStatus: () => void meQuery.refetch(),
     isAuthenticated: meQuery.data?.authenticated ?? false,
     user: meQuery.data?.user,
     login: (email: string, password: string) => loginMutation.mutateAsync({ email, password }),
