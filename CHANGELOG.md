@@ -24,6 +24,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Geändert
 
+- **Die Schlüssel-Grammatik der Anmerkungen und Einstellungen liegt jetzt an EINER Stelle**
+  (`shared/keys`), die Client und Server gemeinsam nutzen. Vorher wurden die Schlüssel an fünf Stellen
+  von Hand zusammengesetzt und die Prüfmuster standen zweimal wortgleich über die Prozessgrenze – eine
+  Abweichung hätte den Abgleich still lahmgelegt, wie es beim Querformat-Zoom schon einmal passiert
+  ist. Für Mitspielende ändert sich nichts. (#250)
+
 - **Ein Dokument, das nicht geladen werden kann, wird nicht mehr verschwiegen.** Wählte man zu einem
   Lied ein hochgeladenes PDF oder Bild und dessen Laden scheiterte, zeigte die App **ohne ein Wort**
   die Akkorde. Der Rückfall bleibt (lieber Akkorde als eine leere Seite), aber jetzt mit Hinweis. (#251)

@@ -12,7 +12,7 @@ import { pushField } from '../services/annotations';
 import { availableVersions, setLsVersion, setLsSong, readVersioned } from '../utils/songVersions';
 import { type SongSettings, settingsForLevel, DEFAULT_SETTINGS } from '../utils/chartSettings';
 import { mergeStrokes } from '../utils/strokes';
-import { levelsUnderNamespace, levelKeyOf } from '../utils/annotationKeys';
+import { levelsUnderNamespace, levelKeyOf, OWN_DRAW_PREFIX } from '../utils/annotationKeys';
 
 /** Textobjekt einer Anmerkungs-Seite (Form wird beim Import 1:1 übernommen). */
 interface PageTextObjLike {
@@ -151,7 +151,7 @@ export function useTeamNotesImport({
         const theirStrokes = localStorage.getItem(VIEW_NS + base);
         const theirTexts =
           safeParse<PageTextObjLike[]>(localStorage.getItem(`${VIEW_NS + base}_text`)) ?? [];
-        const ownKey = `worship_docdraw_${base}`;
+        const ownKey = OWN_DRAW_PREFIX + base;
         if (mode === 'replace') {
           if (theirStrokes) localStorage.setItem(ownKey, theirStrokes);
           else localStorage.removeItem(ownKey);

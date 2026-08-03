@@ -12,6 +12,7 @@ async function myUserId(req: Request): Promise<number> {
 }
 import * as store from '../services/annotations.js';
 import type { PageAnnotation } from '@shared/types/index';
+import { ANNO_KEY_RE } from '@shared/keys/index';
 import { ctCookie } from '../utils/ctCookie.js';
 
 const textSchema = z.object({
@@ -46,17 +47,10 @@ const _annoTypeSubsetOfZod = (p: PageAnnotation): z.infer<typeof annoSchema> => 
 void _annoZodSubsetOfType;
 void _annoTypeSubsetOfZod;
 
-// Schlüsselform: song<id>_v<versionKey>[_lyr]_<seite> (+ optional _d<geräteklasse><spalten> beim
-// Zoom, z. B. _dlarge2 im iPad-Querformat). `_lyr` = Notiz-Ebene der Darstellungsart „Nur Text".
-// MUSS zur Client-KEY_RE passen (annotations.keys.test.ts) – sonst werden Schlüssel serverseitig
-// abgelehnt und nie gespeichert.
-const keySchema = z
-  .string()
-  .max(120)
-  .regex(
-    /^song\d+_v[a-z0-9-]+(?:_lyr)?_\d+(?:_d(?:phone|large)\d?)?$/i,
-    'Ungültiger Anmerkungs-Schlüssel.',
-  );
+// Die Schlüsselform kommt aus @shared/keys (#250) – dieselbe Konstante wie im Client. Vorher stand
+// dieselbe Regex hier wortgleich ein zweites Mal; wäre eine der beiden gedriftet, hätte der Server
+// gültige Schlüssel abgelehnt und sie wären nie gespeichert worden.
+const keySchema = z.string().max(120).regex(ANNO_KEY_RE, 'Ungültiger Anmerkungs-Schlüssel.');
 
 /** GET /api/annotations?songs=1,2,3 – alle Anmerkungen des Kontos zu diesen Liedern. */
 export async function getAnnotations(req: Request, res: Response): Promise<void> {
