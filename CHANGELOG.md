@@ -16,6 +16,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   dabei gegen den zurückgelegten. Ist das Konto voll, erscheint jetzt ein Hinweis, statt die Anmerkung
   stillschweigend fallen zu lassen. ⚠️ Bleibt offen: Wird die App **geschlossen**, während ein Upload
   noch aussteht, ist das beim nächsten Start nicht mehr bekannt. (#245)
+- **Eine übergroße Datei in ChurchTools legt die App nicht mehr lahm.** Der Server hielt jede
+  durchgereichte Datei vollständig im Speicher – ohne Obergrenze. Ein versehentlich hochgeladener
+  Scan von einigen hundert MB hätte den Container umgelegt und damit die App für **alle
+  gleichzeitig**. Jetzt ist bei 50 MB Schluss (weit über jedem realen Notenblatt), und wer so eine
+  Datei öffnet, bekommt eine Meldung statt eines Ausfalls. Außerdem haben alle ChurchTools-Aufrufe
+  jetzt eine Zeitgrenze: Antwortet ChurchTools nicht, endet die Anfrage nach 15 Sekunden (Dateien 60)
+  mit einem verständlichen Hinweis, statt den Server mit hängenden Anfragen zu füllen. (#248)
 - **„Notizen von …" zeigt wieder die Ansicht des Kollegen, nicht Standardwerte.** Hatte die andere
   Person ihre Spalten-/Schriftgröße noch unter einem älteren Schlüssel gespeichert, wurden diese Werte
   beim Ansehen ignoriert – man sah ihre Anmerkungen in der falschen Darstellung, wodurch sie

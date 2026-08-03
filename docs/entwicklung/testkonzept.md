@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #247: **63 Testdateien** –
-**45 Client (338 Tests)** + **18 Server (168 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #248: **64 Testdateien** –
+**45 Client (338 Tests)** + **19 Server (179 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 
@@ -42,6 +42,11 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
   weiter (#152); Altformat ohne ID bleibt nutzbar
 - `controllers/siteConfigController.trim` – `GET /api/site-config` liefert unauthentifiziert **keine**
   `musicianGroupIds`/`noteRoles` (auch nicht bei abgelaufener Session), angemeldet die volle Konfig (#152)
+- `services/churchtools.filelimit` – Datei-Proxy (#248): die Obergrenze greift bei der
+  **angekündigten** Größe (ohne zu laden), bei **fehlender** und bei **lügender** Ankündigung (dort
+  zählt der Leser mit); genau an der Grenze ist noch in Ordnung. Dazu die Fehlerbilder: eine
+  Zeitüberschreitung wird **504**, ein echter Netzfehler bleibt er selbst, und der Host-Wächter aus
+  #199 fragt eine Fremd-URL gar nicht erst an
 - `services/updateCheck` – Cache-Fenster: Erfolg lang (6 h), Fehler/Offline nur kurz
   (`ERROR_CACHE_MS` 15 min) und danach erneuter Versuch → schützt das GitHub-Rate-Limit (#152)
 
