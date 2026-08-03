@@ -71,6 +71,11 @@ An der Bedienung ändert sich nichts – die geführte Einführung bleibt deshal
   in der App möglich ist. Der Anteil ist jetzt verschlüsselt. **Niemand wird dadurch abgemeldet:**
   Bestehende Anmeldungen werden weiter gelesen und beim nächsten Aufruf automatisch umgestellt.
   ⚠️ Beim Deploy muss `SESSION_SECRET` unverändert bleiben – der Schlüssel wird daraus abgeleitet. (#194)
+- **Eine unbrauchbare Anmeldung wird auf dem Gerät auch gelöscht, nicht nur ignoriert.** Ließ sich das
+  Sitzungs-Cookie nicht mehr lesen (gewechseltes `SESSION_SECRET`, beschädigter Inhalt), behandelte
+  der Server das als „nicht angemeldet" – ließ das tote Cookie aber liegen, sodass der Browser es bis
+  zu 30 Tage bei jeder Anfrage weiter mitschickte. Kein Datenverlust, aber unnötiger Ballast; jetzt
+  ist es nach dem ersten Aufruf weg. (#268)
 - **Die Test-Instanz ist gehärtet** (betrifft nur die Einrichtung auf dem NAS, nicht die App): Ihr Port
   lauscht nur noch lokal statt im ganzen LAN, `COOKIE_SECURE` ist standardmäßig an, und der
   Auto-Update-Dienst ist auf eine feste Image-Fassung gepinnt. Vorher lief das Sitzungs-Cookie dort
@@ -94,7 +99,7 @@ An der Bedienung ändert sich nichts – die geführte Einführung bleibt deshal
   **echten** Server samt Sitzungs-, Rechte- und Proxy-Logik. Genau dort lagen die Fehler, die diese
   App am häufigsten getroffen haben (#186, #211, #245/#256) – geprüft wurde bisher nur das Rendern
   der Chart-Ansicht ohne Backend. (#174)
-- **Tests: Client 377 · Server 193 · 4 E2E** (vorher 319 · 168 · 1). Neu abgedeckt: das
+- **Tests: Client 377 · Server 199 · 5 E2E** (vorher 319 · 168 · 1). Neu abgedeckt: das
   Wiederholen fehlgeschlagener Uploads, die Dateigrenze und die Zeitgrenzen zu ChurchTools, die
   Cookie-Verschlüsselung samt Bestandsformaten, der Seitenstrom aus Akkorden und Dokumenten sowie die
   Zeichen-Werkzeugleiste. Vier Testfälle in `docs/tests/` ergänzt (58 insgesamt).

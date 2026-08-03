@@ -97,6 +97,32 @@ test.describe('Auth-Flow mit ChurchTools-Stub', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 
+  test('ein unbrauchbares Session-Cookie wird beim ersten Aufruf entsorgt (#268)', async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    /**
+     * Der Fall aus der Praxis: Das Cookie ist noch da, aber unlesbar (gewechseltes `SESSION_SECRET`
+     * oder ein CT-Anteil, der sich nicht entschlüsseln lässt). Es wurde bisher nur ignoriert, nicht
+     * gelöscht – der Browser schickte eine tote Anmeldung also bis zu 30 Tage bei JEDER Anfrage mit.
+     *
+     * ⚠️ Was dieser Test bewusst NICHT behauptet: dass das Anmelden dadurch blockiert war. Genau das
+     * hatte ich zuerst geprüft – der Test war auch OHNE die Middleware grün, weil das frische
+     * Login-Cookie das kaputte ohnehin überschreibt. Geprüft wird deshalb der Unterschied, den es
+     * wirklich gibt: **ohne Anmeldung** ist das Cookie hinterher weg.
+     */
+    await context.addCookies([
+      { name: 'ct_session', value: 's:voelliger-unsinn.kaputte-signatur', url: baseURL! },
+    ]);
+
+    await page.goto('/');
+    // Auf die Statusabfrage warten – erst danach steht die Antwort mit dem Lösch-Header.
+    await page.waitForResponse((r) => r.url().includes('/api/auth/me'), { timeout: 20_000 });
+
+    expect((await context.cookies()).find((c) => c.name === 'ct_session')).toBeUndefined();
+  });
+
   test('ohne Anmeldung führt der Weg zum Login, nicht in eine Sackgasse (#186)', async ({
     page,
   }) => {
