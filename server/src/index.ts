@@ -8,7 +8,7 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { config } from './config.js';
 import { ipRateKey } from './utils/ipKey.js';
-import { sessionRateKey } from './middleware/session.js';
+import { sessionRateKey, dropUnusableSessionCookie } from './middleware/session.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import setlistRoutes from './routes/setlist.js';
@@ -93,6 +93,9 @@ if (config.isProduction) {
 // Limit höher: Logo (base64) + Anmerkungs-Striche einer Seite (PNG-DataURL) müssen hineinpassen.
 app.use(express.json({ limit: '8mb' }));
 app.use(cookieParser(config.sessionSecret));
+// Direkt nach dem Cookie-Lesen: ein unbrauchbares Session-Cookie (falsche Signatur oder nicht
+// entschlüsselbar) einmal löschen, statt es bei jeder Anfrage erneut geschickt zu bekommen (#268).
+app.use(dropUnusableSessionCookie);
 
 // Allgemeines Rate-Limit – NUR auf echte API-Aktionen (`/api`), nicht auf statische
 // Frontend-Dateien (JS/CSS/Icons); die zählten sonst jede beim App-Laden mit.
