@@ -24,6 +24,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Geändert
 
+- **Ein Dokument, das nicht geladen werden kann, wird nicht mehr verschwiegen.** Wählte man zu einem
+  Lied ein hochgeladenes PDF oder Bild und dessen Laden scheiterte, zeigte die App **ohne ein Wort**
+  die Akkorde. Der Rückfall bleibt (lieber Akkorde als eine leere Seite), aber jetzt mit Hinweis. (#251)
 - **Ein voller Gerätespeicher wird nicht mehr verschwiegen.** Passt eine Anmerkung nicht mehr in den
   Gerätespeicher, sagt die App das jetzt – einmal pro Sitzung, nicht bei jedem Strich. Die Anmerkung
   selbst ist nicht verloren: Sie geht weiter aufs Konto und kommt beim nächsten Abgleich zurück; nur

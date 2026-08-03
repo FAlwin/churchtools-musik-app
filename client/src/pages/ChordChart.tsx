@@ -271,6 +271,14 @@ export function ChordChart({
     chordOwners: stream?.owners ?? [],
     songs,
     settings: effSettings,
+    // Ein gewähltes Dokument, das nicht geladen werden konnte, fällt auf die Akkorde zurück – das
+    // soll der Nutzer erfahren, statt sich zu fragen, warum sein PDF nicht kommt (#251).
+    onDocError: (titel) =>
+      showToast(
+        titel.length === 1
+          ? `Das Dokument zu „${titel[0]}" konnte nicht geladen werden – es werden die Akkorde gezeigt.`
+          : `${titel.length} Dokumente konnten nicht geladen werden – es werden die Akkorde gezeigt.`,
+      ),
   });
 
   // Einführung Chart-Ansicht beim ersten Mal starten – erst wenn die Seiten fertig gerendert sind.

@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #248: **64 Testdateien** –
-**45 Client (338 Tests)** + **19 Server (179 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #251: **66 Testdateien** –
+**47 Client (356 Tests)** + **19 Server (181 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 
@@ -99,6 +99,13 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
 
 ### Weitere Client-Logik
 
+`components/DrawToolbar` (#251 – die Leiste, die Musiker im Gottesdienst anfassen, stand bei 0 %:
+zweiter Tipp aufs aktive Werkzeug öffnet die Strichstärken statt zu wechseln, Werkzeugwechsel schließt
+sie, ausgewählter Text öffnet den Text-Balken von selbst, und das Einklappen landet im **Geräte-**
+Namensraum `worship:` statt im Konto-Namensraum), `utils/streamCompose` (#251 – die Zusammensetzung
+des Seitenstroms: Reihenfolge, `localPage` je Lied neu gezählt, Versions-Schlüssel je Ebene, ein Lied
+ohne Seiten verschiebt die Zuordnung der anderen NICHT, und der Rückfall von einem nicht ladbaren
+Dokument auf die Akkorde wird **gemeldet** statt still),
 `components/SongMenu` (#198: **jede Auswahl schließt das Menü** – der Aufruf stand vorher elf Mal
 einzeln da; und was bei einem angezeigten Dokument NICHT erscheinen darf, weil es sich auf den
 ChordPro-Text bezieht), `components/ChartAppearanceMenu` (A−/A+ nicht vertauscht, an den Grenzen
