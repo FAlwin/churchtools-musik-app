@@ -29,6 +29,14 @@ An der Bedienung ändert sich nichts – die geführte Einführung bleibt deshal
   dabei gegen den zurückgelegten. Ist das Konto voll, erscheint jetzt ein Hinweis, statt die Anmerkung
   stillschweigend fallen zu lassen. (Der Fall „App wird zwischendurch geschlossen" kam mit #256 dazu.)
   (#245)
+- **Ein kurzer ChurchTools-Aussetzer meldet nicht mehr alle ab.** Antwortete ChurchTools bei der
+  Statusabfrage nicht (Zeitüberschreitung, Serverfehler, Netz-Schluckauf), verwarf der Server die
+  Anmeldung – und weil das Cookie dabei weg war, half auch Warten nicht mehr: Im Gottesdienst hätten
+  damit alle mitten im Lied ihre ChurchTools-Zugangsdaten neu eingeben müssen. Nur ein ausdrückliches
+  „Sitzung ungültig" von ChurchTools beendet die Anmeldung jetzt noch; bei einem Aussetzer erscheint
+  eine Meldung mit „Erneut versuchen", und die Anmeldung bleibt bestehen. Der Fehler steckte schon in
+  v2.15.0, wurde durch die neuen Zeitgrenzen (#248) aber wahrscheinlicher. Die Offline-Reserve war
+  dabei nie in Gefahr – die wird nur beim ausdrücklichen Abmelden geräumt. (#270)
 - **Entzogene Admin-Rechte wirken sofort.** Der Rechte-Cache, der kurze ChurchTools-Aussetzer
   überbrückt, hielt seinen Stand bis zu **30 Tage** – und überbrückte dabei auch das Admin-Recht. Wem
   in ChurchTools die Verwaltung entzogen wurde, dessen Sitzung aber noch lief, hätte damit weiter
@@ -99,7 +107,7 @@ An der Bedienung ändert sich nichts – die geführte Einführung bleibt deshal
   **echten** Server samt Sitzungs-, Rechte- und Proxy-Logik. Genau dort lagen die Fehler, die diese
   App am häufigsten getroffen haben (#186, #211, #245/#256) – geprüft wurde bisher nur das Rendern
   der Chart-Ansicht ohne Backend. (#174)
-- **Tests: Client 377 · Server 199 · 5 E2E** (vorher 319 · 168 · 1). Neu abgedeckt: das
+- **Tests: Client 383 · Server 205 · 5 E2E** (vorher 319 · 168 · 1). Neu abgedeckt: das
   Wiederholen fehlgeschlagener Uploads, die Dateigrenze und die Zeitgrenzen zu ChurchTools, die
   Cookie-Verschlüsselung samt Bestandsformaten, der Seitenstrom aus Akkorden und Dokumenten sowie die
   Zeichen-Werkzeugleiste. Vier Testfälle in `docs/tests/` ergänzt (58 insgesamt).

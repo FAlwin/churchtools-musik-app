@@ -378,7 +378,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - **Aktuell (03.08.2026): v2.16.0 VORBEREITET, auf Staging zur Abnahme – Prod läuft v2.15.0.**
   15 Commits seit v2.15.0: **zehn Issues abgearbeitet** (#194, #245, #246, #247, #248, #249, #250,
   #251, #256, #174), davon sechs mit stillem Datenverlust oder Ausfallrisiko. Tests **Client 377 /
-  Server 199 / 5 E2E** (vorher 319 / 168 / 1). Nutzersichtbar: Anmerkungen gehen bei Netzaussetzern
+  Server 205 / 5 E2E** (vorher 319 / 168 / 1). Nutzersichtbar: Anmerkungen gehen bei Netzaussetzern
   und beim Schließen der App nicht mehr verloren (#245/#256), „Notizen von …" zeigt wieder die Ansicht
   des Kollegen (#247), eine übergroße ChurchTools-Datei legt die App nicht mehr lahm (#248), entzogene
   Admin-Rechte wirken sofort (#249), ein nicht ladbares Dokument wird gemeldet statt still durch

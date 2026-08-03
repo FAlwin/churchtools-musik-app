@@ -267,6 +267,23 @@ export default function App() {
     );
   }
 
+  // Status unklar, weil ChurchTools gerade nicht antwortet (#270) – VOR der Login-Weiche: Die
+  // Anmeldung ist nicht weg, sie ließ sich nur nicht bestätigen. Mit Rückwegen in beide Richtungen
+  // („Erneut versuchen" und „Abmelden"), damit hier keine Sackgasse entsteht (#186).
+  if (auth.statusUnknown) {
+    return (
+      <Screen>
+        <CenterMessage
+          icon="⚠️"
+          text="ChurchTools antwortet gerade nicht. Die Anmeldung bleibt bestehen – bitte gleich noch einmal versuchen."
+          onRetry={auth.retryStatus}
+          actionLabel="Abmelden"
+          onAction={() => auth.logout()}
+        />
+      </Screen>
+    );
+  }
+
   if (!auth.isAuthenticated) {
     return (
       <Login
