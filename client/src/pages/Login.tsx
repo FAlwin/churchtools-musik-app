@@ -63,8 +63,13 @@ export function Login({ onLogin, site, theme, offline = false }: LoginProps) {
         )}
         <form className={styles.form} onSubmit={submit}>
           <div className={styles.field}>
-            <label className={styles.label}>E-Mail</label>
+            {/* `htmlFor`/`id` verbinden Beschriftung und Feld – ohne das liest ein Screenreader nur
+                „Eingabefeld", und ein Tipp auf die Beschriftung setzt den Cursor nicht (#174). */}
+            <label className={styles.label} htmlFor="login-email">
+              E-Mail
+            </label>
             <input
+              id="login-email"
               className={styles.input}
               type="email"
               value={email}
@@ -74,8 +79,11 @@ export function Login({ onLogin, site, theme, offline = false }: LoginProps) {
             />
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Passwort</label>
+            <label className={styles.label} htmlFor="login-password">
+              Passwort
+            </label>
             <input
+              id="login-password"
               className={styles.input}
               type="password"
               value={password}

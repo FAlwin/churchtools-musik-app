@@ -158,8 +158,14 @@ for (const sig of ['SIGTERM', 'SIGINT'] as const) {
   process.on(sig, () => {
     // eslint-disable-next-line no-console
     console.log(`${sig} empfangen – Server wird beendet.`);
+    // Der Watchdog darf NICHT `unref()`-t werden: Sonst hält er den Prozess nicht am Leben, feuert
+    // also nie – während untätige Keep-Alive-Verbindungen ihn offen halten und `server.close()` auf
+    // sie wartet. Genau das ließ den CI-Job nach 10 Sekunden Tests noch neun Minuten hängen; bei
+    // `docker stop` hätte es ebenso 10 s gedauert, bis Docker mit SIGKILL nachhilft.
     const hard = setTimeout(() => process.exit(0), 8000);
-    hard.unref();
+    // Untätige Verbindungen sofort schließen, laufende Antworten aber zu Ende schicken – ohne das
+    // wartet `close()` auf jeden Browser, der seine Verbindung offen hält.
+    server.closeIdleConnections();
     server.close(() => {
       clearTimeout(hard);
       process.exit(0);

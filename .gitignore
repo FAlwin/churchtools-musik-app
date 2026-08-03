@@ -36,3 +36,4 @@ server/data/
 
 # versehentliche shared-Build-Artefakte
 shared/types/*.js
+.e2e-data/
