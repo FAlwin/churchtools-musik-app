@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #251: **66 Testdateien** –
-**47 Client (356 Tests)** + **19 Server (181 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #251: **67 Testdateien** –
+**48 Client (366 Tests)** + **19 Server (181 Tests)** mit Vitest + **1 Playwright-E2E-Smoke**.
 
 ## Umfang
 
@@ -99,6 +99,9 @@ ChurchTools-Login) → prüft, dass die PDF-Seiten rendern und keine unbehandelt
 
 ### Weitere Client-Logik
 
+`utils/adminDrafts` (#251 – die Vergleiche, die „ungespeicherte Änderungen" erkennen: beide
+reihenfolgeunabhängig, und eine Gruppe ohne Rollen zählt als nicht vorhanden – sonst meldet der
+Entwurf ein falsches „geändert" und warnt beim Schließen ohne Grund),
 `components/DrawToolbar` (#251 – die Leiste, die Musiker im Gottesdienst anfassen, stand bei 0 %:
 zweiter Tipp aufs aktive Werkzeug öffnet die Strichstärken statt zu wechseln, Werkzeugwechsel schließt
 sie, ausgewählter Text öffnet den Text-Balken von selbst, und das Einklappen landet im **Geräte-**
