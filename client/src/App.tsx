@@ -490,6 +490,7 @@ export default function App() {
             songs={songLibrary.data ?? []}
             usage={songUsage.data}
             usageLoading={songUsage.isLoading}
+            usageError={songUsage.isError}
             showStats={canViewAgendas}
             isLoading={songLibrary.isLoading}
             isError={songLibrary.isError}

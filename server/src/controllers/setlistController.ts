@@ -113,6 +113,10 @@ export async function putAgendaOrder(req: Request, res: Response): Promise<void>
   const eventId = idSchema.parse(req.params.eventId);
   const { order } = orderSchema.parse(req.body);
   await reorderAgenda(ctCookie(req), eventId, order);
+  // BEWUSST ohne `invalidateSongUsageCache` (#300): Die Reihenfolge ändert nicht, WELCHE Lieder an
+  // welchem Datum gespielt wurden – die Statistik kann sich dadurch nicht ändern. Bitte nicht als
+  // vergessene Lücke „nachrüsten": Jedes unnötige Invalidieren kostet einen Lauf mit ~250
+  // ChurchTools-Anfragen und war die Ursache der 429-Drosselung.
   res.json({ ok: true });
 }
 
@@ -169,7 +173,9 @@ export async function postAgendaItem(req: Request, res: Response): Promise<void>
     note,
     durationMin,
   });
-  invalidateSongUsageCache(); // Liederzahl/„zuletzt" können sich geändert haben
+  // Nur wenn DIESER Termin zur Statistik beigetragen hat (#300). Ein Zukunftstermin ist nie darin –
+  // das Vorbereiten des nächsten Gottesdienstes löst damit keinen ~250-Anfragen-Lauf mehr aus.
+  invalidateSongUsageCache(eventId);
   res.json({ ok: true });
 }
 
@@ -203,7 +209,7 @@ export async function putAgendaItem(req: Request, res: Response): Promise<void> 
     durationMin,
     note,
   });
-  invalidateSongUsageCache(); // Verknüpfen/Lösen ändert die Liederzahl/„zuletzt"
+  invalidateSongUsageCache(eventId); // nur bei beigetragenem Termin (#300)
   res.json({ ok: true });
 }
 
@@ -215,6 +221,8 @@ export async function putAgendaItemHidden(req: Request, res: Response): Promise<
   const itemId = idSchema.parse(req.params.itemId);
   const { hidden } = hiddenSchema.parse(req.body);
   await setAgendaItemHidden(ctCookie(req), eventId, itemId, hidden);
+  // BEWUSST ohne `invalidateSongUsageCache` (#300): Das Aus-/Einblenden der Uhrzeit ändert nichts an
+  // den gespielten Liedern. Siehe die Begründung bei `putAgendaOrder`.
   res.json({ ok: true });
 }
 
@@ -223,7 +231,7 @@ export async function deleteAgendaItemCtrl(req: Request, res: Response): Promise
   const eventId = idSchema.parse(req.params.eventId);
   const itemId = idSchema.parse(req.params.itemId);
   await deleteAgendaItem(ctCookie(req), eventId, itemId);
-  invalidateSongUsageCache(); // entferntes Lied soll aus der Statistik verschwinden
+  invalidateSongUsageCache(eventId); // nur bei beigetragenem Termin (#300)
   res.json({ ok: true });
 }
 

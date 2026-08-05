@@ -17,6 +17,15 @@ export interface SongFilterOpts {
   /** Zeitraumgrenzen (YYYY-MM-DD), leer = offen. Nur für Häufigkeit/Zuletzt. */
   from: string;
   to: string;
+  /**
+   * Ob die Statistik überhaupt **verfügbar** ist (#300). `false` = der Server konnte die Zahlen nicht
+   * liefern (ChurchTools drosselt gerade).
+   *
+   * Wichtig: Dann darf NICHT nach „im Zeitraum gespielt" gefiltert werden – sonst wäre die Liederliste
+   * komplett leer und behauptete „In diesem Zeitraum wurde kein Lied gespielt", obwohl wir es nur nicht
+   * wissen. Fehlende Zahlen sind etwas anderes als die Zahl 0.
+   */
+  usageAvailable?: boolean;
   /** Ob Statistik/Zeitfilter überhaupt greifen (sonst reines A–Z). */
   showStats: boolean;
 }
@@ -61,8 +70,10 @@ export function filterSongs(
     : [...songs];
 
   const withStat = searched.map((s) => [s, statOf(s)] as const);
-  // Bei Häufigkeit/Zuletzt nur im Zeitraum gespielte Lieder zeigen.
-  const visible = statMode ? withStat.filter(([, st]) => st.count > 0) : withStat;
+  // Bei Häufigkeit/Zuletzt nur im Zeitraum gespielte Lieder zeigen – aber NUR, wenn wir die Zahlen
+  // wirklich haben (#300). Fehlt die Statistik, bleiben alle Lieder stehen (unsortiert nach Namen).
+  const statistikDa = opts.usageAvailable !== false;
+  const visible = statMode && statistikDa ? withStat.filter(([, st]) => st.count > 0) : withStat;
 
   visible.sort(([a, sa], [b, sb]) => {
     if (opts.sort === 'count') return sb.count - sa.count || a.name.localeCompare(b.name, 'de');
@@ -76,4 +87,22 @@ export function filterSongs(
     stats: new Map(visible.map(([s, st]) => [s.songId, st])),
     statMode,
   };
+}
+
+/**
+ * Der Statistik-Text neben einem Lied – EINE Stelle für beide Listen (#300).
+ *
+ * Stand vorher wortgleich in `AllSongs.tsx` und `SongPicker.tsx` und lautete `${st?.count ?? 0}×
+ * gespielt`. Damit behauptete eine **fehlende** Statistik „0× gespielt" bzw. „zuletzt: noch nie" –
+ * eine falsche Aussage über die Gemeinde-Historie. Fehlende Zahlen sind nicht die Zahl 0.
+ */
+export function statLabel(
+  sort: SongSort,
+  st: SongStat | undefined,
+  state: 'ok' | 'loading' | 'error',
+): string {
+  if (state === 'loading') return 'Statistik lädt…';
+  if (state === 'error') return '–';
+  if (sort === 'recent') return `zuletzt: ${fmtPlayDate(st?.last ?? null)}`;
+  return `${st?.count ?? 0}× gespielt`;
 }

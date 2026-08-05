@@ -13,6 +13,8 @@ export function useSongFilter(
   usage: SongUsageMap | undefined,
   showStats: boolean,
   initialSort: SongSort = 'name',
+  /** `false` = Statistik nicht verfuegbar (#300) – dann NICHT nach gespielt filtern. */
+  usageAvailable = true,
 ) {
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<SongSort>(initialSort);
@@ -20,8 +22,8 @@ export function useSongFilter(
   const [to, setTo] = useState('');
 
   const result = useMemo(
-    () => filterSongs(songs, usage, { query: q, sort, from, to, showStats }),
-    [songs, usage, q, sort, from, to, showStats],
+    () => filterSongs(songs, usage, { query: q, sort, from, to, showStats, usageAvailable }),
+    [songs, usage, q, sort, from, to, showStats, usageAvailable],
   );
 
   return {
