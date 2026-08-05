@@ -55,11 +55,6 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     markReachable(false);
     throw e;
   }
-  // 502/503/504 = ein Vorschalt-Server (Reverse-Proxy) antwortet, aber unser App-Server ist NICHT
-  // erreichbar → praktisch offline (kommt auch im Gemeinde-Netz vor, wenn nur das Backend fehlt).
-  // Jede andere Antwort (auch 400/401/403/404/500) heißt: der App-Server ist erreichbar.
-  markReachable(![502, 503, 504].includes(res.status));
-
   let body: unknown = null;
   const text = await res.text();
   if (text) {
@@ -69,6 +64,16 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       body = text;
     }
   }
+
+  // 502/503/504 heißt nur dann „offline", wenn die Antwort NICHT von unserem App-Server stammt –
+  // ein reiner Vorschalt-Fehler des Reverse-Proxys (Body leer oder HTML). ABER: Unser Server gibt
+  // bei einem ChurchTools-Problem SELBST 502/504 zurück (Token-Endpunkt abgelehnt, CT-Timeout →
+  // asGatewayError). Diese Antwort trägt unseren `{error}`-Body → unser Server LÄUFT, wir sind NICHT
+  // offline. Ohne diese Unterscheidung kippte ein einzelner ChurchTools-Aussetzer die ganze App in
+  // den Offline-/„ChurchTools antwortet nicht"-Zustand samt Login-Screen (#296). Jede andere Antwort
+  // (400/401/403/404/500) heißt ohnehin: App-Server erreichbar.
+  const vonAppServer = !!body && typeof body === 'object' && 'error' in body;
+  markReachable(!([502, 503, 504].includes(res.status) && !vonAppServer));
 
   if (!res.ok) {
     const message =

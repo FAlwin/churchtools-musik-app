@@ -644,8 +644,29 @@ async function fetchCsrfTokenOnce(cookie: string): Promise<string> {
   if (res.status === 401 || res.status === 403) {
     throw new HttpError(401, 'Session abgelaufen. Bitte neu anmelden.');
   }
-  if (!res.ok) throw new HttpError(502, 'CSRF-Token konnte nicht geholt werden.');
-  const json = (await res.json()) as { data?: string };
+  if (!res.ok) {
+    // Diagnostisch (#296): den ECHTEN ChurchTools-Status mitgeben. Dieser Fehler trat reproduzierbar
+    // auf, während dieselbe Cookie-/fetch-Konfiguration bei allen anderen Endpunkten funktionierte –
+    // ohne den Status ließ sich nicht sagen, ob CT drosselt (429), einen Serverfehler hat (5xx) oder
+    // den Endpunkt/Request ablehnt (400/404/406). Der Body geht nur ins Log (kann interne Pfade
+    // enthalten), der Status auch nach außen, weil er beim Einordnen hilft.
+    const body = await res.text().catch(() => '');
+    console.error(`[churchtools] csrftoken → HTTP ${res.status}; body: ${body.slice(0, 300)}`);
+    throw new HttpError(
+      502,
+      `CSRF-Token konnte nicht geholt werden (ChurchTools: HTTP ${res.status}).`,
+    );
+  }
+  const raw = await res.text();
+  let json: { data?: string };
+  try {
+    json = JSON.parse(raw) as { data?: string };
+  } catch {
+    // res.ok, aber kein JSON (z. B. eine HTML-Seite nach einem Redirect) – auch das war bisher als
+    // undurchsichtiger 500 erschienen. Jetzt sichtbar machen, statt beim `res.json()` blind zu werfen.
+    console.error(`[churchtools] csrftoken → 200, aber kein JSON: ${raw.slice(0, 300)}`);
+    throw new HttpError(502, 'CSRF-Token unlesbar (ChurchTools lieferte kein JSON).');
+  }
   return json.data ?? '';
 }
 

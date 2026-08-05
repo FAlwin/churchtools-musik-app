@@ -20,6 +20,12 @@ Meldungen, die man hoffentlich nie sieht.
 
 ### Behoben
 
+- **Ein einzelner ChurchTools-Zicker legt nicht mehr die ganze App lahm.** Schlug ein einzelner
+  ChurchTools-Aufruf fehl (das Sicherheits-Token beim Speichern, eine Zeitüberschreitung), zeigte die
+  App danach den Vollbild-Hinweis „ChurchTools antwortet gerade nicht" und teils den Login – obwohl
+  der eigene Server lief und alles andere ging. Jetzt bleibt ein solcher Fehler auf die betroffene
+  Aktion beschränkt. Die Speichern-Meldung nennt außerdem den ChurchTools-Statuscode, damit sich die
+  Ursache einordnen lässt. (#296)
 - **Das Speichern eines Ablaufeintrags gibt bei einem kurzen Aussetzer nicht mehr sofort auf.** Vor
   jedem Speichern holt die App ein Sicherheits-Token von ChurchTools. Ging das eine Mal daneben (ein
   kurzer ChurchTools-Schluckauf), erschien „CSRF-Token konnte nicht geholt werden." und man musste

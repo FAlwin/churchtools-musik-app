@@ -23,11 +23,42 @@ describe('apiFetch → Erreichbarkeit', () => {
     expect(getReachable()).toBe(true);
   });
 
-  it('Gateway-Fehler 502 (Backend weg) → offline und wirft ApiError', async () => {
+  it('Gateway-Fehler 502 OHNE unseren Body (Reverse-Proxy, Backend weg) → offline', async () => {
     markReachable(true);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Bad Gateway', { status: 502 })));
     await expect(apiFetch('/api/test')).rejects.toBeInstanceOf(ApiError);
     expect(getReachable()).toBe(false);
+  });
+
+  it('502 MIT unserem {error}-Body (ChurchTools zickt, App-Server läuft) → NICHT offline (#296)', async () => {
+    // Der Kern von #296: Ein abgelehntes /api/csrftoken oder ein CT-Timeout kommt als 502/504 MIT
+    // unserem JSON-Body. Das darf die App NICHT in den Offline-Zustand kippen – sonst folgt auf einen
+    // einzelnen Endpunkt-Fehler der „ChurchTools antwortet nicht"-Screen und teils der Login.
+    markReachable(true);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: 'CSRF-Token konnte nicht geholt werden.' }), {
+          status: 502,
+        }),
+      ),
+    );
+    await expect(apiFetch('/api/test')).rejects.toBeInstanceOf(ApiError);
+    expect(getReachable()).toBe(true);
+  });
+
+  it('504 MIT unserem {error}-Body (CT-Timeout) → NICHT offline (#296)', async () => {
+    markReachable(true);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: 'ChurchTools antwortet gerade nicht.' }), {
+          status: 504,
+        }),
+      ),
+    );
+    await expect(apiFetch('/api/test')).rejects.toBeInstanceOf(ApiError);
+    expect(getReachable()).toBe(true);
   });
 
   it('Erfolg → erreichbar und liefert den Body', async () => {

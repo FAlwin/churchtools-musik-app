@@ -18,7 +18,15 @@ import { __getCsrfTokenForTests as getCsrfToken } from './churchtools.js';
 const COOKIE = 'ChurchTools_sid=abc';
 
 function jsonRes(body: unknown, status = 200): Response {
-  return { ok: status >= 200 && status < 300, status, json: async () => body } as Response;
+  const text = typeof body === 'string' ? body : JSON.stringify(body);
+  // `fetchCsrfTokenOnce` liest seit #296 den Body über `res.text()` (Erfolgsfall JSON.parse,
+  // Fehlerfall fürs Log) – der Mock muss beides können.
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => text,
+    json: async () => body,
+  } as Response;
 }
 
 afterEach(() => {
