@@ -411,6 +411,26 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
     ⚠️ **Gelernt:** `userSettings.flush.test.ts` und `.reset.test.ts` brauchen jetzt
     `@vitest-environment jsdom` – seit `pushSetting` den Merker schreibt, gibt es ohne jsdom
     „localStorage is not defined".
+- **ALLE Code-Check-Funde abgearbeitet (05.08.2026) außer #280 – in `main`, NICHT in Prod.**
+  Reihenfolge der PRs: #285 (#273), #286 (#276), #287 (#274), #288 (#275), #289 (#281/#282),
+  #290 (#277/#278/#279 Teil 1), #291 (#279 Teil 2), #292 (#283). Tests **Client 420 / Server 254 /
+  5 E2E**, 59 manuelle Testfälle, `npm audit` = **0** (auch mit Dev-Abhängigkeiten).
+  Neue geteilte Bausteine, die dabei entstanden sind – bei Änderungen IMMER dort ansetzen, nicht
+  danebenbauen:
+  - `server/services/jsonStore.ts` – Lesen/Schreiben ALLER JSON-Ablagen. Nur `ENOENT` heißt „leer".
+  - `client/services/pendingKeys.ts` – Merker für ausstehende Uploads (Anmerkungen UND Einstellungen).
+  - `client/services/appHidden.ts` – `visibilitychange`/`pagehide` an einer Stelle.
+  - `server/utils/songIdsQuery.ts` – `?songs=…` auswerten (Express liefert dort auch Arrays/Objekte).
+  - `fileDownloadError` in `churchtools.ts` – 404 bleibt 404, alles andere 502.
+  - `eslint.config.mjs` – EINE Flat Config statt vier (siehe Konventionen).
+    ⚠️ **Zwei Lehren aus diesem Durchgang, die über das Projekt hinausgehen:**
+  1. **Sobald mehrere unabhängige Zustände zu EINEM zusammengelegt werden, wird die Reihenfolge der
+     Setter-Aufrufe bedeutsam.** Bei #283 rief `SongMenu.pick()` erst die Aktion, dann `onClose()` –
+     mit dem gemeinsamen `overlay`-Zustand schloss „Transponieren" das Menü, ohne die Tonart-Auswahl
+     zu öffnen. **Build, Lint, 672 Tests und 5 E2E waren grün.** Gefunden nur durch Durchklicken im
+     Browser (`?demo=chart`). Bei solchen Zusammenlegungen alle Aufrufer einzeln ansehen.
+  2. **Typbewusste Lint-Regeln finden echte Fehler, die keinem auffallen:** `?songs=…` wurde an drei
+     Stellen als String behandelt, obwohl Express dort auch Objekte liefert.
 - **CODE-CHECK 05.08.2026 (nach v2.16.0): Qualität Note 1,7 „professionell, in Teilen
   herausragend", Sicherheit 0 kritische / 0 hohe Funde.** Gelobt: 0× `any`, 0× `@ts-ignore`, nur 5
   Non-null-Assertions im Produktionscode; Kommentare durchweg mit _warum_ + Issue-Nummer; die
