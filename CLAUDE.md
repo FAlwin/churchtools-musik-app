@@ -17,8 +17,8 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.1 GETAGGT**, Prod-Deploy
-  durch Alwin – bis dahin läuft dort v2.16.0).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.1 PRODUKTIV**, am
+  ausgelieferten Bundle verifiziert).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -416,7 +416,25 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
     ⚠️ **Gelernt:** `userSettings.flush.test.ts` und `.reset.test.ts` brauchen jetzt
     `@vitest-environment jsdom` – seit `pushSetting` den Merker schreibt, gibt es ohne jsdom
     „localStorage is not defined".
-- **v2.16.1 GETAGGT (06.08.2026) – Prod-Deploy durch Alwin offen.** 14 Issues: alle
+- **v2.16.1 PRODUKTIV LIVE ✅ (06.08.2026, verifiziert).** Digest `sha256:a8c61358…` auf
+  `:2`/`:2.16`/`:2.16.1`/`:latest` (direkt bei GHCR abgefragt – **der Digest aus dem Build-Log ist NICHT
+  der Image-Digest**, das habe ich einmal verwechselt). Verifikation: `v2.16.1` im `index`-Chunk,
+  `2.16.0` = 0 Treffer, `/api/update-check` = laufende Version. Die neuen Funktionen stecken in
+  **nachgeladenen Chunks**, nicht im Haupt-Bundle – gesucht über die Liste in `/sw.js` (dort stehen die
+  Pfade OHNE führenden Schrägstrich): `usageAvailable`+„Statistik lädt" in `useSongFilter`, „weiter
+  sichtbar" in `Settings`, die Akkord-Meldung in `ChordChart`, und die #296-Logik
+  (`` `error` in r `` + `[502,503,504]`) in `appHeight`.
+  **⚠️ Serverseitige Neuerungen (503 bei Drosselung, Notbremse, Token-Cache) sind von außen NICHT
+  auslösbar** – ohne Anmeldung oder absichtliche Überlastung. Dass sie live sind, folgt daraus, dass
+  Client und Server aus DEMSELBEN Image kommen. Das ist eine Schlussfolgerung, keine Messung.
+- **ERSTE ECHTE ZAHLEN aus dem Betrieb (die Vermessung konnte nur schätzen):**
+  `[songUsage] Lauf beendet: 48 Termine, 175 übersprungen, … 2.3 s` → **223 Termine** im
+  4-Jahres-Fenster, davon nur **48 mit Ablaufplan**, Laufzeit **2,3 s**. Daraus drei Folgerungen:
+  (1) Der Burst ist kleiner/schneller als gedacht – eine ausgehende Drossel wäre womöglich schädlicher
+  als hilfreich. (2) **78 % der Anfragen gehen an Termine ganz ohne Lieder** – die vorab zu erkennen
+  senkt den Burst auf ein Fünftel und ist die wirksamste offene Optimierung. (3) Die **Grundlast**
+  (~180 Anfragen/min bei 5 Geräten) ist der größere Posten als der Burst.
+- **Davor getaggt (06.08.2026).** 14 Issues: alle
   Code-Check-Funde außer #280, plus die vier, die erst beim Testen auf der Instanz auffielen: #294
   (CSRF-Retry), #296 (ein ChurchTools-Fehler kippte die App in „offline"), #298 (CSRF-Token wird
   zwischengespeichert), **#300 (die Wurzel: die Lied-Statistik hat ChurchTools mit ~250 Anfragen
