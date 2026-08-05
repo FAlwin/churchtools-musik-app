@@ -20,6 +20,12 @@ Meldungen, die man hoffentlich nie sieht.
 
 ### Behoben
 
+- **Speichern belastet ChurchTools deutlich weniger.** Vor jedem Schreibvorgang holte die App ein
+  Sicherheits-Token bei ChurchTools – bei **jedem** Speichern neu, beim Umsortieren mehrfach in Folge.
+  Genau dieser Aufruf war es, der beim Testen zu mehreren reproduzierbar abgelehnt wurde. Das Token
+  gilt jetzt eine Minute und wird bei gleichzeitigen Vorgängen nur einmal geholt. Lehnt ChurchTools
+  einen Schreibvorgang ab, wird es sofort verworfen – es kann also kein altes Token hängen bleiben.
+  (#298)
 - **Ein einzelner ChurchTools-Zicker legt nicht mehr die ganze App lahm.** Schlug ein einzelner
   ChurchTools-Aufruf fehl (das Sicherheits-Token beim Speichern, eine Zeitüberschreitung), zeigte die
   App danach den Vollbild-Hinweis „ChurchTools antwortet gerade nicht" und teils den Login – obwohl

@@ -690,7 +690,7 @@ export const CSRF_RETRY_DELAY_MS = 300;
  * Ein **401/403** (tote Session) wird NICHT wiederholt: Das ändert sich beim zweiten Versuch nicht und
  * würde nur den Weg zum Login verzögern.
  */
-async function getCsrfToken(cookie: string): Promise<string> {
+async function fetchCsrfTokenWithRetry(cookie: string): Promise<string> {
   try {
     return await fetchCsrfTokenOnce(cookie);
   } catch (e) {
@@ -702,8 +702,97 @@ async function getCsrfToken(cookie: string): Promise<string> {
   }
 }
 
+/**
+ * Gültigkeitsdauer des zwischengespeicherten CSRF-Tokens (#298).
+ *
+ * Bewusst KURZ: Ein CSRF-Token ist an die ChurchTools-Session gebunden und bliebe theoretisch lange
+ * gültig – aber ein zu lange gehaltenes Token ist genau die Art Annahme, die später still bricht.
+ * Eine Minute reicht für den Zweck (eine Bearbeitungs-Sitzung: mehrere Speichervorgänge, Umsortieren
+ * per Ziehen) und macht ein abgelaufenes Token praktisch unmöglich.
+ */
+const CSRF_TTL_MS = 60_000;
+const csrfCache = new Map<string, { token: string; at: number }>();
+/** Laufende Abrufe je Cookie – damit parallele Schreibvorgänge EINEN GET teilen, nicht je einen. */
+const csrfInflight = new Map<string, Promise<string>>();
+
+/**
+ * Zwischengespeichertes Token verwerfen (#298).
+ *
+ * Wird bei **jedem** abgelehnten Schreibvorgang (401/403) aufgerufen: Die Ablehnung kann daran liegen,
+ * dass ChurchTools dieses Token nicht mehr akzeptiert. Dann muss der nächste Versuch ein frisches
+ * holen, statt dasselbe abgelehnte erneut zu schicken – sonst hätte der Cache eine dauerhafte
+ * Sackgasse gebaut, aus der nur ein Neustart hilft.
+ */
+function invalidateCsrfToken(cookie: string): void {
+  csrfCache.delete(cookie);
+}
+
+/**
+ * Holt ein CSRF-Token für schreibende Anfragen – **zwischengespeichert** (#298) und mit **einem**
+ * automatischen Wiederholversuch (#294).
+ *
+ * Jede Schreibaktion (Ablauf speichern, Lied hochladen, …) holte dieses Token vorher **jedes Mal neu**.
+ * Ein Speichervorgang kostete damit einen zusätzlichen ChurchTools-Aufruf, Umsortieren per Ziehen
+ * gleich mehrere in Folge. Beim Testen zu mehreren trat reproduzierbar „CSRF-Token konnte nicht geholt
+ * werden" auf, während alle anderen Endpunkte mit demselben Cookie funktionierten – das Bild einer
+ * Drosselung genau dieses Endpunkts. Bewiesen ist die Drosselung nicht (der Statuscode wurde nie
+ * gesehen, siehe #296); der Cache hilft aber unabhängig davon, weil er die Zahl der Anfragen an die
+ * empfindlichste Stelle des Schreibpfads drastisch senkt.
+ *
+ * Zwei Sparmechanismen:
+ *  - **TTL-Cache je Sitzung** (eine Minute) – Folge-Speichervorgänge holen kein neues Token.
+ *  - **Bündelung paralleler Abrufe** – mehrere gleichzeitige Schreibvorgänge lösen EINEN GET aus.
+ *
+ * Das Token-Holen ist ein reiner GET ohne Nebenwirkung – ein zweiter Versuch ist gefahrlos. Dieselbe
+ * Lehre wie #245/#270 („vorübergehend ≠ ungültig“), hier auf dem Schreibpfad. **Bewusst nur das Token
+ * wird wiederholt, NICHT der eigentliche Schreibvorgang danach** – der ist nicht überall idempotent
+ * (ein Datei-Upload würde sonst doppelt laufen).
+ *
+ * Ein **401/403** (tote Session) wird NICHT wiederholt: Das ändert sich beim zweiten Versuch nicht und
+ * würde nur den Weg zum Login verzögern.
+ */
+async function getCsrfToken(cookie: string): Promise<string> {
+  const hit = csrfCache.get(cookie);
+  if (hit && Date.now() - hit.at < CSRF_TTL_MS) return hit.token;
+
+  const laufend = csrfInflight.get(cookie);
+  if (laufend) return laufend; // parallelen Schreibvorgang mitnutzen statt zweiten GET auslösen
+
+  const abruf = (async () => {
+    try {
+      const token = await fetchCsrfTokenWithRetry(cookie);
+      csrfCache.set(cookie, { token, at: Date.now() });
+      // Abgelaufene Fremd-Einträge bei dieser Gelegenheit räumen (wie `userIdCache`) – sonst wächst
+      // die Map über die Laufzeit mit jeder je angemeldeten Sitzung.
+      for (const [k, v] of csrfCache) {
+        if (Date.now() - v.at >= CSRF_TTL_MS) csrfCache.delete(k);
+      }
+      return token;
+    } finally {
+      csrfInflight.delete(cookie);
+    }
+  })();
+  csrfInflight.set(cookie, abruf);
+  return abruf;
+}
+
+/**
+ * Ein abgelehnter Schreibvorgang (401/403) – an EINER Stelle, weil sechs Schreibfunktionen dasselbe
+ * tun müssen (#298): Fehler melden UND das zwischengespeicherte Token verwerfen. Wäre die
+ * Invalidierung an den sechs Stellen einzeln eingebaut, hätte genau eine davon gefehlt.
+ */
+function csrfWriteDenied(cookie: string, meldung: string): never {
+  invalidateCsrfToken(cookie);
+  throw new HttpError(403, meldung);
+}
+
 /** Nur für Tests: den Schreibpfad an seiner empfindlichsten Stelle (Token-Holen) prüfbar machen. */
 export const __getCsrfTokenForTests = getCsrfToken;
+/** Nur für Tests: Token-Cache leeren, damit jeder Fall bei null anfängt. */
+export function __resetCsrfCacheForTests(): void {
+  csrfCache.clear();
+  csrfInflight.clear();
+}
 
 /** Lädt eine .chordpro-Datei an ein Arrangement hoch (ersetzt vorhandene gleichen Namens nicht automatisch). */
 export async function uploadChordpro(
@@ -723,7 +812,7 @@ export async function uploadChordpro(
     body: form,
   });
   if (res.status === 401 || res.status === 403) {
-    throw new HttpError(403, 'Keine Berechtigung, in ChurchTools zu speichern.');
+    csrfWriteDenied(cookie, 'Keine Berechtigung, in ChurchTools zu speichern.');
   }
   if (!res.ok) {
     throw new HttpError(502, `Speichern in ChurchTools fehlgeschlagen (${res.status}).`);
@@ -762,7 +851,7 @@ export async function reorderAgenda(
     body: JSON.stringify({ items: payload }),
   });
   if (res.status === 401 || res.status === 403) {
-    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+    csrfWriteDenied(cookie, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
   }
   if (!res.ok) {
     throw new HttpError(502, `Ablauf-Reihenfolge speichern fehlgeschlagen (${res.status}).`);
@@ -798,7 +887,7 @@ export async function createAgendaItem(
     body: JSON.stringify(body),
   });
   if (res.status === 401 || res.status === 403) {
-    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+    csrfWriteDenied(cookie, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
   }
   if (!res.ok) {
     throw new HttpError(502, `Ablaufpunkt anlegen fehlgeschlagen (${res.status}).`);
@@ -869,7 +958,7 @@ export async function updateAgendaItem(
     body: JSON.stringify(body),
   });
   if (res.status === 401 || res.status === 403) {
-    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+    csrfWriteDenied(cookie, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
   }
   if (!res.ok) {
     throw new HttpError(502, `Ablaufpunkt ändern fehlgeschlagen (${res.status}).`);
@@ -889,7 +978,7 @@ export async function deleteAgendaItem(
     headers: { Cookie: cookie, 'CSRF-Token': csrf },
   });
   if (res.status === 401 || res.status === 403) {
-    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+    csrfWriteDenied(cookie, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
   }
   if (!res.ok && res.status !== 404) {
     throw new HttpError(502, `Ablaufpunkt löschen fehlgeschlagen (${res.status}).`);
@@ -915,7 +1004,7 @@ export async function setAgendaItemHidden(
     headers: { Cookie: cookie, 'CSRF-Token': csrf },
   });
   if (res.status === 401 || res.status === 403) {
-    throw new HttpError(403, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
+    csrfWriteDenied(cookie, 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.');
   }
   if (!res.ok) {
     throw new HttpError(502, `Uhrzeit aus-/einblenden fehlgeschlagen (${res.status}).`);
@@ -931,7 +1020,7 @@ export async function deleteFile(cookie: string, fileId: number): Promise<void> 
     headers: { Cookie: cookie, 'CSRF-Token': csrf },
   });
   if (res.status === 401 || res.status === 403) {
-    throw new HttpError(403, 'Keine Berechtigung zum Löschen in ChurchTools.');
+    csrfWriteDenied(cookie, 'Keine Berechtigung zum Löschen in ChurchTools.');
   }
   if (!res.ok && res.status !== 404) {
     throw new HttpError(502, `Löschen in ChurchTools fehlgeschlagen (${res.status}).`);
