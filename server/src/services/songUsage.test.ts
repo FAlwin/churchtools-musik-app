@@ -228,3 +228,56 @@ describe('Teilergebnis wird nicht zur Wahrheit (#300)', () => {
     expect(mockedGetEvents).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * #300, Nachtrag aus dem ERSTEN Betriebslauf: `[songUsage] Lauf beendet: 48 Termine, 175 übersprungen,
+ * vollständig=false`.
+ *
+ * Die 175 waren keine Fehler, sondern Termine **ganz ohne Ablaufplan** (404) – im 4-Jahres-Fenster der
+ * Normalfall (Gebetstreffen, Sitzungen, alles ohne Lieder). Sie als „übersprungen" zu zählen, ließ
+ * dauerhaft `vollständig=false` im Log stehen. Eine Warnung, die immer leuchtet, wird ignoriert – und
+ * sie sollte später einmal das „Statistik unvollständig"-Signal in der Oberfläche speisen.
+ */
+describe('404 ist kein Mangel, sondern der Normalfall (#300)', () => {
+  /** Die Abschluss-Zeile des Laufs herausfischen – sie ist das einzige Beobachtbare. */
+  function laufZeile(spy: ReturnType<typeof vi.spyOn>): string {
+    const call = spy.mock.calls.find((c) => String(c[0]).includes('[songUsage] Lauf beendet'));
+    return String(call?.[0] ?? '');
+  }
+
+  it('Termine ohne Ablaufplan zählen NICHT als fehlerhaft', async () => {
+    // Erster Betriebslauf meldete "48 Termine, 175 übersprungen, vollständig=false". Die 175 waren
+    // Termine ohne Ablauf – der Normalfall. Eine Warnung, die immer leuchtet, wird ignoriert.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockedGetEvents.mockResolvedValue([ev(1), ev(2), ev(3)]);
+    mockedGetAgenda.mockImplementation(async (_c: string, id: number) => {
+      if (id !== 1) throw new HttpError(404, 'Kein Ablaufplan.');
+      return agendaWith(10);
+    });
+
+    const usage = await getSongUsageMap('cookie');
+    expect(usage[10].dates).toHaveLength(1);
+
+    const zeile = laufZeile(warn);
+    expect(zeile).toContain('2 ohne (normal)');
+    expect(zeile).toContain('0 fehlerhaft');
+    expect(zeile).toContain('vollständig=true');
+  });
+
+  it('ein ECHTER Fehler (403) zählt weiterhin als fehlerhaft', async () => {
+    // Gegenrichtung – die Unterscheidung muss in beide Richtungen greifen.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockedGetEvents.mockResolvedValue([ev(1), ev(2)]);
+    mockedGetAgenda.mockImplementation(async (_c: string, id: number) => {
+      if (id === 2) throw new HttpError(403, 'Kein Zugriff.');
+      return agendaWith(10);
+    });
+
+    await getSongUsageMap('cookie');
+
+    const zeile = laufZeile(warn);
+    expect(zeile).toContain('1 fehlerhaft');
+    expect(zeile).toContain('vollständig=false');
+    expect(mockedGetAgenda).toHaveBeenCalledTimes(2); // beide versucht, kein Abbruch
+  });
+});
