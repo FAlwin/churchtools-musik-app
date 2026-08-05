@@ -7,6 +7,29 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **Eine ohne Netz geänderte Einstellung übersteht jetzt auch das Schließen der App.** Wer im
+  Flugmodus die Tonart oder den Kapo eines Lieds änderte und die App danach beendete (was iOS im
+  Hintergrund von selbst tut), fand beim nächsten Öffnen den alten Wert vor – der Abgleich holte den
+  älteren Stand vom Konto zurück. Die Anmerkungen hatten diesen Schutz seit v2.16.0, die
+  Einstellungen nicht. Dazu behebt es zwei kleinere Wege zum selben Verlust: eine Änderung, die genau
+  während des laufenden Uploads abgeglichen wurde, und eine Änderung direkt vor dem Weg-Wischen der
+  App. (#275)
+- **Eine nicht ladbare Akkord-Datei ergibt kein leeres Blatt mehr.** Antwortete ChurchTools beim Laden
+  nicht (Zeitüberschreitung, Serverfehler), zeigte die App ein **leeres Blatt ohne ein Wort** – und in
+  der Sammel-PDF fehlte das Lied ganz. Jetzt wird es gemeldet, und beim Teilen kommt eine Rückfrage.
+  Ein Lied, dessen Datei in ChurchTools wirklich gelöscht wurde, bleibt wie bisher einfach leer. (#274)
+- **Ein Lesefehler kann keine Kontodaten mehr vernichten.** Konnte der Server die Datei mit den
+  Anmerkungen oder Einstellungen nicht lesen (Rechteproblem, beschädigter Inhalt), behandelte er sie
+  als **leer** – und der nächste Speichervorgang schrieb diesen leeren Stand zurück. Damit waren alle
+  Anmerkungen bzw. alle Lied-Einstellungen des Kontos weg. Betroffen waren sechs Ablagen, darunter die
+  Teilen-Tabelle (die für **alle** gilt) und die Gemeinde-Einstellungen. (#273)
+- **„Teilen abschalten" meldet keinen Erfolg mehr, wenn nichts gespeichert wurde.** Scheiterte das
+  Speichern, sagte die App „gespeichert" und der Schalter blieb aus – nach dem nächsten Neustart des
+  Servers waren die Anmerkungen aber weiter für das Team sichtbar. Jetzt steht dort, dass es nicht
+  geklappt hat, und dass weiter geteilt wird. (#276)
+
 ## [2.16.0] – 2026-08-03
 
 Aufräum- und Härtungs-Release nach dem Code-Check: **neun Fehler behoben, bei denen Daten still

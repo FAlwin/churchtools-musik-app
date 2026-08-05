@@ -14,6 +14,8 @@
  */
 import { apiFetch, ApiError } from './api';
 import { getReachable } from './reachability';
+import { createPendingKeys } from './pendingKeys';
+import { onAppHidden } from './appHidden';
 import {
   ANNO_DRAW_NS,
   ANNO_ZOOM_NS,
@@ -72,7 +74,7 @@ export async function pullAnnotations(songIds: number[]): Promise<void> {
     );
     // Der Merker aus localStorage zählt mit (#256): Nach einem Neustart ist die Speicher-Warteschlange
     // leer, die Seite aber weiterhin nicht hochgeladen – ohne diese Prüfung gewinnt der alte Stand.
-    const stillPending = readPendingKeys();
+    const stillPending = pendingStore.read();
     for (const [key, a] of Object.entries(data)) {
       // Seiten mit noch nicht hochgeladener ODER gerade hochladender lokaler Änderung NICHT
       // überschreiben (sonst gehen frische Anmerkungen/Zooms an den alten Server-Stand verloren).
@@ -100,34 +102,8 @@ export async function pullAnnotations(songIds: number[]): Promise<void> {
  *
  * Gespeichert werden nur die SCHLÜSSEL; die Anmerkung selbst liegt ohnehin im localStorage.
  */
-const PENDING_KEYS = 'worship_anno_pending_v1';
-
-function readPendingKeys(): Set<string> {
-  return new Set(safeJson<string[]>(localStorage.getItem(PENDING_KEYS)) ?? []);
-}
-
-function writePendingKeys(keys: Set<string>): void {
-  try {
-    if (keys.size === 0) localStorage.removeItem(PENDING_KEYS);
-    else localStorage.setItem(PENDING_KEYS, JSON.stringify([...keys]));
-  } catch {
-    // Voller Speicher: dann bleibt es beim Verhalten von vorher (Merker im Speicher). Kein Grund,
-    // deshalb den Upload selbst zu verhindern.
-  }
-}
-
-function markPending(key: string): void {
-  const keys = readPendingKeys();
-  if (keys.has(key)) return;
-  keys.add(key);
-  writePendingKeys(keys);
-}
-
-function unmarkPending(key: string): void {
-  const keys = readPendingKeys();
-  if (!keys.delete(key)) return;
-  writePendingKeys(keys);
-}
+// Der Mechanismus liegt in `pendingKeys.ts` – die Einstellungen brauchen ihn genauso (#275).
+const pendingStore = createPendingKeys('worship_anno_pending_v1');
 
 /**
  * Die Anmerkung eines Schlüssels aus dem localStorage zusammensetzen.
@@ -155,10 +131,10 @@ function annotationFromStorage(key: string): PageAnnotation | null {
  */
 export async function resumePendingAnnotations(): Promise<void> {
   if (disabled) return;
-  for (const key of readPendingKeys()) {
+  for (const key of pendingStore.read()) {
     const body = annotationFromStorage(key);
     if (!body) {
-      unmarkPending(key);
+      pendingStore.unmark(key);
       continue;
     }
     pendingFields.set(key, body);
@@ -221,7 +197,7 @@ async function flush(key: string, keepalive = false): Promise<void> {
       // keepalive: Request überlebt das Backgrounding der Seite (App-Wechsel/Schließen).
       ...(keepalive ? { keepalive: true } : {}),
     });
-    unmarkPending(key); // durch – der Merker darf weg (#256)
+    pendingStore.unmark(key); // durch – der Merker darf weg (#256)
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) {
       disabled = true;
@@ -230,7 +206,7 @@ async function flush(key: string, keepalive = false): Promise<void> {
     if (e instanceof ApiError && e.status === 413) {
       // Konto-Obergrenze erreicht (#139): ein erneuter Versuch würde genauso scheitern → nicht
       // zurücklegen, aber sagen, was los ist (lokal bleibt die Anmerkung erhalten).
-      unmarkPending(key); // endgültig – sonst versucht es jeder Start erneut (#256)
+      pendingStore.unmark(key); // endgültig – sonst versucht es jeder Start erneut (#256)
       syncErrorHandler?.(e.message);
       return;
     }
@@ -262,12 +238,7 @@ export function flushPendingAnnotations(): void {
   for (const key of [...pendingFields.keys()]) void flush(key, true);
 }
 
-if (typeof document !== 'undefined') {
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') flushPendingAnnotations();
-  });
-  window.addEventListener('pagehide', flushPendingAnnotations);
-}
+onAppHidden(flushPendingAnnotations);
 
 /** Eine Feld-Änderung (strokes/texts/zoom) einer Seite zum Server schreiben (debounced, Feld-Merge). */
 export function pushField(lsKey: string, field: keyof PageAnnotation, value: unknown): void {
@@ -277,7 +248,7 @@ export function pushField(lsKey: string, field: keyof PageAnnotation, value: unk
   const cur = pendingFields.get(key) ?? {};
   (cur as Record<string, unknown>)[field] = value;
   pendingFields.set(key, cur);
-  markPending(key); // übersteht das Schließen der App (#256)
+  pendingStore.mark(key); // übersteht das Schließen der App (#256)
   const t = timers.get(key);
   if (t) clearTimeout(t);
   timers.set(

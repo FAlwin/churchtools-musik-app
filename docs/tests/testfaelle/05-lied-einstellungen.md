@@ -168,3 +168,34 @@ eine andere Tonart als auf dem Blatt – bei Kapo 2 zwei Halbtöne zu hoch.
 - **Historie:** #239
 
 </details>
+### TF-EINST-08 · Ohne Netz geänderte Tonart übersteht das Schließen der App
+
+**Das brauchst du:** Ein iPad/iPhone mit der App als PWA und ein zweites Gerät (oder denselben
+Browser am Rechner), um gegenzuprüfen. Ein Lied, dessen Tonart du gefahrlos ändern kannst.
+
+**Das muss passieren:** Die ohne Netz geänderte Tonart ist nach dem Neustart **noch da** und landet
+auf dem Konto. Bis Version 2.16 war sie still weg: Der Merker für den ausstehenden Upload lebte nur
+im Speicher, und beim nächsten Öffnen spiegelte der Abgleich den älteren Server-Stand zurück. Die
+Anmerkungen hatten diesen Schutz schon, die Einstellungen nicht.
+
+1. Das Lied öffnen und die aktuelle Tonart notieren.
+2. **Flugmodus einschalten** (oder WLAN aus – die App muss wirklich ohne Netz sein).
+3. Auf den Liedtitel tippen und eine **andere Tonart** wählen. Sie gilt sofort auf dem Blatt.
+4. Die App **ganz schließen** (App-Umschalter, nach oben wegwischen – nicht nur in den Hintergrund).
+5. Flugmodus wieder aus.
+6. Die App öffnen und dasselbe Lied ansehen: Es muss die **in Schritt 3 gewählte** Tonart stehen.
+7. Gegenprobe auf dem zweiten Gerät (bzw. nach Ab- und Neuanmelden): Dort muss ebenfalls die neue
+   Tonart erscheinen – dann ist sie wirklich auf dem Konto und nicht nur auf dem ersten Gerät.
+
+**Zweiter Durchgang (kürzer):** Schritte 1–3 wiederholen, dann die App **sofort** wegwischen, ohne
+eine halbe Sekunde zu warten. Auch das darf die Änderung nicht kosten (iOS friert dabei die
+Sammel-Pause ein).
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `client/src/services/userSettings.ts`, `client/src/services/pendingKeys.ts`, `client/src/services/appHidden.ts`, `client/src/pages/ChordChart.tsx`
+- **Automatisiert:** teilweise – `client/src/services/userSettings.pending.test.ts` (Merker, Abgleich-Schutz, Flush beim Weglegen) und `client/src/services/pendingKeys.test.ts`; von Hand bleiben der echte Flugmodus, das echte Beenden durch iOS und das Zusammenspiel zweier Geräte
+- **Historie:** #275 (Vorbild: #245/#256 bei den Anmerkungen)
+
+</details>
