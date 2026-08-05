@@ -14,7 +14,7 @@ import { useUpdateSiteConfig, useGroups, useGroupRoles } from '../hooks/useSiteC
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { getOfflineStatus } from '../queryClient';
 import { isOfflineAutoEnabled, setOfflineAutoEnabled } from '../services/offlineAuto';
-import { getSharing as apiGetSharing, setSharing as apiSetSharing } from '../services/teamNotes';
+import { useSharing } from '../hooks/useSharing';
 import { usePwaInstall } from '../hooks/usePwaInstall';
 import { promptInstall } from '../services/pwaInstall';
 import styles from './Settings.module.scss';
@@ -124,19 +124,13 @@ export function Settings({
     setOfflineAutoEnabled(v);
   }
   // Team-Notizen: eigenes Teilen (PCO-Modell; nur für Berechtigte sichtbar). null = lädt noch.
-  const [sharing, setSharingState] = useState<boolean | null>(null);
-  useEffect(() => {
-    if (!canUseGlobalNotes) return;
-    apiGetSharing()
-      .then((r) => setSharingState(r.enabled))
-      .catch(() => setSharingState(false));
-  }, [canUseGlobalNotes]);
-  function toggleSharing() {
-    if (sharing == null) return;
-    const next = !sharing;
-    setSharingState(next); // optimistisch; bei Fehler zurückdrehen
-    apiSetSharing(next).catch(() => setSharingState(!next));
-  }
+  // Eigenes Teilen der Anmerkungen: Zustandsmaschine im Hook (#276) – ein vorübergehender Fehler
+  // darf hier nicht als „teilt nicht" erscheinen, siehe `useSharing`.
+  const {
+    enabled: sharing,
+    error: sharingError,
+    toggle: toggleSharing,
+  } = useSharing(canUseGlobalNotes);
   const logo = theme === 'dark' ? '/logo-rund-dunkel.png' : '/logo-rund-hell.png';
 
   function saveOrg() {
@@ -306,6 +300,7 @@ export function Settings({
                   <span className={styles.togThumb} />
                 </button>
               </div>
+              {sharingError && <p className={styles.sharingError}>{sharingError}</p>}
               <p className={styles.installHint}>
                 Berechtigte Teammitglieder können deine Anmerkungen dann im Lied unter „Notizen von
                 …" ansehen und übernehmen.

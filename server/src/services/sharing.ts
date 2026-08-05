@@ -30,23 +30,33 @@ async function read(): Promise<Store> {
   return cache;
 }
 
+/**
+ * Schreibt die Teilen-Tabelle. **Wirft bei Fehlschlag** (#276).
+ *
+ * Vorher wurde der Fehler vollständig geschluckt (`.then(() => {}, () => {})`) und der Aufrufer
+ * meldete trotzdem Erfolg. Wer sein Teilen **abschaltete**, bekam „gespeichert" – nach dem nächsten
+ * Container-Neustart (Cache weg) teilte er weiter. Das ist der Fall, der wirklich zählt: Die Person
+ * glaubt, ihre Anmerkungen sind nicht mehr sichtbar.
+ *
+ * Die Serialisierung der Schreibvorgänge bleibt (kein Clobbern bei parallelen Umschaltungen); nur das
+ * Verschlucken ist weg. Der Cache wird **erst nach** erfolgreichem Schreiben gesetzt (#273).
+ */
 async function write(store: Store): Promise<void> {
-  cache = store;
   const run = async (): Promise<void> => {
     await writeJsonStore(file(), JSON.stringify(store));
   };
+  // `.then(run, run)` läuft auch, wenn der vorherige Vorgang scheiterte – die Kette bleibt intakt.
   writeChain = writeChain.then(run, run);
-  return writeChain.then(
-    () => {},
-    () => {},
-  );
+  await writeChain;
+  cache = store;
 }
 
 /** Teilen für ein Konto ein-/ausschalten (Name wird für die Anzeige mitgeführt). */
 export async function setSharing(userId: number, name: string, enabled: boolean): Promise<void> {
   const store = await read();
-  store[String(userId)] = { name, enabled };
-  await write(store);
+  // Auf einer KOPIE arbeiten: Sonst stünde die Änderung schon im Cache, wenn das Schreiben scheitert
+  // (#273) – und die App zeigte einen Stand, der nie auf der Platte lag.
+  await write({ ...store, [String(userId)]: { name, enabled } });
 }
 
 /** Teilt dieses Konto seine Anmerkungen? */
