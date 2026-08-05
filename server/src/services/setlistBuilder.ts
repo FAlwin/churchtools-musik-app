@@ -20,6 +20,8 @@ import {
   uploadChordpro,
   deleteFile,
   fileIdFromUrl,
+  isCtOverloaded,
+  CtOverloadedError,
   type CtAgendaSong,
 } from './churchtools.js';
 import type { CtArrangementFile, CtSong } from './churchtools.js';
@@ -295,11 +297,53 @@ interface SongUsage {
 // Bewusst mit dem Cookie des ERSTEN Anfragenden im TTL-Fenster aufgebaut: Die Statistik ist
 // organisationsweit identisch, und der Inhalt (nur Lied-Spieldaten, keine Titel/Notizen) ist
 // unkritisch. CT-Sichtbarkeitsunterschiede zwischen Konten werden hier bewusst eingeebnet.
-let usageCache: { at: number; data: Record<number, SongUsage> } | null = null;
+//
+// `eventIds` = die Termine, aus denen dieser Stand gebaut wurde (#300). Damit kann das Invalidieren
+// präzise werden, statt bei jeder Ablauf-Änderung alles wegzuwerfen (siehe `invalidateSongUsageCache`).
+// `complete` = liefen alle Termine durch, oder fehlten einzelne (403/500)?
+let usageCache: {
+  at: number;
+  data: Record<number, SongUsage>;
+  eventIds: Set<number>;
+  complete: boolean;
+} | null = null;
 
-/** Leert den Statistik-Cache – nach Ablauf-Änderungen aufrufen, damit Zahlen/Daten frisch sind. */
-export function invalidateSongUsageCache(): void {
+/** Läuft gerade ein Statistik-Lauf? Dann mitnutzen statt einen zweiten starten (#300). */
+let usageInflight: Promise<Record<number, SongUsage>> | null = null;
+/** Bis wann nach einer Drosselung nicht erneut versucht wird (#300). */
+let usageRetryAfter = 0;
+/** Sperrfrist nach einer Drosselung – lang genug, dass sich das CT-Limit erholt. */
+const USAGE_COOLDOWN_MS = 120_000;
+
+/**
+ * Leert den Statistik-Cache – **nur wenn dieser Termin überhaupt mitgezählt wurde** (#300).
+ *
+ * Vorher warf jede Ablauf-Änderung den ganzen Stand weg. Folge: Wer den nächsten Sonntag vorbereitet
+ * (Lied hinzufügen, Titel ändern), entwertete die Statistik – und der nächste Blick in „Alle Lieder"
+ * oder „Lied hinzufügen" löste einen **kalten Lauf mit ~250 ChurchTools-Anfragen** aus. Genau diese
+ * Schleife hat das CT-Limit gerissen und danach Anmeldung, Rechte und Speichern mit lahmgelegt.
+ *
+ * Die Prüfung ist beweisbar richtig: Hat ein Termin nichts zum Stand beigetragen, kann sein Ändern
+ * keine Zahl verändern. **Zukunftstermine sind nie im Set** (`date > to` unten filtert sie), das
+ * Vorbereiten des nächsten Gottesdienstes invalidiert also nie mehr.
+ */
+export function invalidateSongUsageCache(eventId?: number): void {
+  if (!usageCache) return;
+  if (eventId === undefined || usageCache.eventIds.has(eventId)) {
+    // Bewusst NICHT wegwerfen, sondern nur als „muss neu gebaut werden" markieren (`at = 0`):
+    // Der Stand ist danach nur leicht veraltet, aber im Wesentlichen richtig. Scheitert der neue Lauf
+    // an einer Drosselung, ist er die deutlich bessere Antwort als „keine Statistik" – ohne Zahlen
+    // zeigt die Liederliste sonst „–" und die Sortierung nach Häufigkeit wird unbrauchbar.
+    // `at = 0` heißt: TTL ist sicher abgelaufen → der nächste Aufruf baut neu.
+    usageCache = { ...usageCache, at: 0 };
+  }
+}
+
+/** Nur für Tests: Cache, laufender Abruf und Sperrfrist zurücksetzen. */
+export function __resetSongUsageForTests(): void {
   usageCache = null;
+  usageInflight = null;
+  usageRetryAfter = 0;
 }
 
 /** Führt `fn` über alle Items aus, aber maximal `limit` gleichzeitig (schont die CT-API). */
@@ -329,32 +373,103 @@ const USAGE_LOOKBACK_YEARS = 4;
  */
 export async function getSongUsageMap(cookie: string): Promise<Record<number, SongUsage>> {
   if (usageCache && Date.now() - usageCache.at < 3_600_000) return usageCache.data;
+  // Läuft schon einer? Dann mitnutzen (#300). Ohne das starten fünf iPads, die gleichzeitig
+  // „Alle Lieder" öffnen, FÜNF volle Läufe – rund 1.235 ChurchTools-Anfragen statt 250.
+  if (usageInflight) return usageInflight;
+  // Nach einer Drosselung eine Weile gar nicht erst versuchen – sonst rennt jeder Aufruf erneut in
+  // die Wand und verlängert die Drosselung, die er gerade abwarten sollte.
+  if (Date.now() < usageRetryAfter) {
+    if (usageCache) return usageCache.data; // alter, vollständiger Stand ist besser als nichts
+    throw new CtOverloadedError(usageRetryAfter - Date.now());
+  }
+
+  usageInflight = runSongUsage(cookie).finally(() => {
+    usageInflight = null;
+  });
+  return usageInflight;
+}
+
+/** Der eigentliche Lauf – getrennt, damit `getSongUsageMap` nur noch Cache/Bündelung/Sperrfrist regelt. */
+async function runSongUsage(cookie: string): Promise<Record<number, SongUsage>> {
+  const started = Date.now();
   const today = new Date();
   const to = today.toISOString().slice(0, 10);
   const fromD = new Date(today);
   fromD.setFullYear(fromD.getFullYear() - USAGE_LOOKBACK_YEARS);
   const from = fromD.toISOString().slice(0, 10);
 
-  const events = await getEvents(cookie, from, to);
+  /** Bei Drosselung/Zeitüberschreitung sofort aufhören (#300) – siehe `bailOut` unten. */
+  let overloaded = false;
+  let events;
+  try {
+    events = await getEvents(cookie, from, to);
+  } catch (e) {
+    // Auch der EINE Termin-Abruf am Anfang kann gedrosselt werden – dann ist der Lauf hier zu Ende
+    // und die Sperrfrist muss genauso greifen wie unten.
+    if (isCtOverloaded(e)) return bailOut(e, 0, started);
+    throw e;
+  }
+
   const usage: Record<number, SongUsage> = {};
+  const eventIds = new Set<number>();
+  let skipped = 0;
   await mapLimit(events, 8, async (ev) => {
+    // Notbremse: Sobald ChurchTools gebremst hat, keine weiteren Anfragen mehr starten. Es laufen
+    // höchstens noch die 8 begonnenen aus – statt weiterer ~240 in ein erschöpftes Limit.
+    if (overloaded) return;
     try {
       const date = ev.startDate.slice(0, 10);
       if (date > to) return; // Sicherheitsnetz: keine Zukunftstermine mitzählen
       const agenda = await getAgenda(cookie, ev.id);
+      eventIds.add(ev.id); // hat beigetragen → nur DIESE Termine dürfen den Stand invalidieren
       for (const it of agenda.items ?? []) {
         const id = it.song?.songId;
         if (!id) continue;
         (usage[id] ??= { dates: [] }).dates.push(date);
       }
     } catch (e) {
+      if (isCtOverloaded(e)) {
+        overloaded = true;
+        return;
+      }
+      // Andere Fehler (403/500) überspringen nur diesen Termin und brechen den Lauf NICHT ab – sonst
+      // würde ein dauerhaft unlesbarer Termin die Statistik für immer blockieren.
+      skipped++;
       skipMissingAgenda('getSongUsageMap', e);
     }
   });
+
+  if (overloaded) return bailOut(null, events.length, started);
+
   // Termine je Lied absteigend sortieren (neuester zuerst) → Client nimmt [0] als „zuletzt".
   for (const u of Object.values(usage)) u.dates.sort((a, b) => b.localeCompare(a));
-  usageCache = { at: Date.now(), data: usage };
+  usageCache = { at: Date.now(), data: usage, eventIds, complete: skipped === 0 };
+  usageRetryAfter = 0;
+  console.warn(
+    `[songUsage] Lauf beendet: ${eventIds.size} Termine, ${skipped} übersprungen, ` +
+      `vollständig=${skipped === 0}, ${((Date.now() - started) / 1000).toFixed(1)} s`,
+  );
   return usage;
+}
+
+/**
+ * Abbruch wegen Drosselung (#300): Das Teilergebnis wird **verworfen**, nicht gecacht.
+ *
+ * Sonst würde eine im Sturm entstandene, viel zu kleine Statistik eine volle Stunde als Wahrheit
+ * ausgeliefert – und über die Client-Persistenz sogar sieben Tage lang. Liegt ein vollständiger Stand
+ * im Speicher, wird der weiter ausgeliefert (sein Alter bleibt unverändert, der Cache verlängert sich
+ * also nicht selbst). Liegt keiner, ist ein ehrlicher Fehler besser als falsche Zahlen.
+ */
+function bailOut(e: unknown, geplant: number, started: number): Record<number, SongUsage> {
+  const retryAfterMs = (e instanceof HttpError ? e.retryAfterMs : undefined) ?? USAGE_COOLDOWN_MS;
+  usageRetryAfter = Date.now() + retryAfterMs;
+  console.warn(
+    `[songUsage] Lauf ABGEBROCHEN (ChurchTools drosselt) nach ` +
+      `${((Date.now() - started) / 1000).toFixed(1)} s von ${geplant} Terminen; ` +
+      `Sperrfrist ${Math.round(retryAfterMs / 1000)} s`,
+  );
+  if (usageCache) return usageCache.data;
+  throw new CtOverloadedError(retryAfterMs);
 }
 
 /**

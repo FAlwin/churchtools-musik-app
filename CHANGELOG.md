@@ -20,6 +20,20 @@ Meldungen, die man hoffentlich nie sieht.
 
 ### Behoben
 
+- **Die App überlastet ChurchTools nicht mehr – und das war die Ursache fast aller Aussetzer.** Die
+  Statistik „wie oft wurde dieses Lied gespielt" fragte für **jeden** Gottesdienst der letzten vier
+  Jahre einzeln bei ChurchTools nach: rund **250 Anfragen auf einen Schlag**, bei fünf Geräten
+  gleichzeitig über tausend. ChurchTools bremste daraufhin **alles** aus – Anmelden, Berechtigungen und
+  Speichern bekamen Fehler, obwohl ChurchTools selbst einwandfrei lief. Behoben:
+  - Bremst ChurchTools, **hört die Statistik sofort auf** statt weiter zu fragen.
+  - Öffnen mehrere Geräte gleichzeitig die Liederliste, wird die Statistik **einmal** geholt statt für
+    jedes Gerät neu.
+  - **Das Vorbereiten des nächsten Gottesdienstes wirft die Statistik nicht mehr weg.** Vorher löste
+    schon das Umbenennen eines Ablaufpunkts beim nächsten Blick in die Liederliste einen neuen
+    250-Anfragen-Lauf aus – genau diese Schleife hat die Bremse ausgelöst.
+  - Kam die Statistik nur halb an, wurde sie bisher **eine Stunde lang als Wahrheit angezeigt** (mit zu
+    niedrigen Zahlen). Jetzt bleibt der letzte vollständige Stand stehen, und wenn es keinen gibt, sagt
+    die App „–" statt „0× gespielt". Die Liederliste bleibt dabei vollständig. (#300)
 - **Speichern belastet ChurchTools deutlich weniger.** Vor jedem Schreibvorgang holte die App ein
   Sicherheits-Token bei ChurchTools – bei **jedem** Speichern neu, beim Umsortieren mehrfach in Folge.
   Genau dieser Aufruf war es, der beim Testen zu mehreren reproduzierbar abgelehnt wurde. Das Token

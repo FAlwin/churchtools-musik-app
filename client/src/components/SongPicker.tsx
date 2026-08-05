@@ -3,7 +3,7 @@ import { Icon } from './icons';
 import { CenterMessage } from './CenterMessage';
 import { SongStatsBar } from './SongStatsBar';
 import { useSongFilter } from '../hooks/useSongFilter';
-import { fmtPlayDate } from '../utils/songFilter';
+import { statLabel } from '../utils/songFilter';
 import { useCapabilities, useSongLibrary, useSongUsage } from '../hooks/useServices';
 import styles from './SongPicker.module.scss';
 
@@ -25,7 +25,7 @@ export function SongPicker({ onPick, busy, autoFocus }: SongPickerProps) {
   const showStats = caps.data?.canViewAgendas ?? false;
   const lib = useSongLibrary(true);
   const usage = useSongUsage(showStats);
-  const f = useSongFilter(lib.data ?? [], usage.data, showStats);
+  const f = useSongFilter(lib.data ?? [], usage.data, showStats, 'name', !usage.isError);
   const query = f.q.trim();
 
   return (
@@ -73,11 +73,11 @@ export function SongPicker({ onPick, busy, autoFocus }: SongPickerProps) {
                   {s.author && <span className={styles.sub}>{s.author}</span>}
                   {showStats && f.sort !== 'name' && (
                     <span className={styles.stat}>
-                      {usage.isLoading
-                        ? 'Statistik lädt…'
-                        : f.sort === 'count'
-                          ? `${st?.count ?? 0}× gespielt`
-                          : `zuletzt ${fmtPlayDate(st?.last ?? null)}`}
+                      {statLabel(
+                        f.sort,
+                        st,
+                        usage.isError ? 'error' : usage.isLoading ? 'loading' : 'ok',
+                      )}
                     </span>
                   )}
                 </div>

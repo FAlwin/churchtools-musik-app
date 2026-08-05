@@ -8,7 +8,7 @@ import { NoteTile } from '../components/NoteTile';
 import { AddToAgendaSheet } from '../components/AddToAgendaSheet';
 import { SongStatsBar } from '../components/SongStatsBar';
 import { useSongFilter } from '../hooks/useSongFilter';
-import { fmtPlayDate } from '../utils/songFilter';
+import { statLabel } from '../utils/songFilter';
 import type { SongUsageMap } from '../services/churchtoolsApi';
 import styles from './AllSongs.module.scss';
 
@@ -16,6 +16,8 @@ interface AllSongsProps {
   songs: SongLibraryEntry[];
   usage?: SongUsageMap;
   usageLoading?: boolean;
+  /** Statistik konnte nicht geladen werden (#300) – dann Gedankenstrich statt einer Null. */
+  usageError?: boolean;
   showStats?: boolean;
   isLoading?: boolean;
   isError?: boolean;
@@ -32,6 +34,7 @@ export function AllSongs({
   songs,
   usage,
   usageLoading,
+  usageError,
   showStats = false,
   isLoading,
   isError,
@@ -41,7 +44,7 @@ export function AllSongs({
   services = [],
 }: AllSongsProps) {
   const [addSong, setAddSong] = useState<SongLibraryEntry | null>(null);
-  const f = useSongFilter(songs, usage, showStats);
+  const f = useSongFilter(songs, usage, showStats, 'name', !usageError);
   const query = f.q.trim();
 
   return (
@@ -91,11 +94,11 @@ export function AllSongs({
                         {s.author && <div className={styles.sub}>{s.author}</div>}
                         {showStats && f.sort !== 'name' && (
                           <span className={styles.stat}>
-                            {usageLoading
-                              ? 'Statistik lädt…'
-                              : f.sort === 'count'
-                                ? `${st?.count ?? 0}× gespielt`
-                                : `zuletzt ${fmtPlayDate(st?.last ?? null)}`}
+                            {statLabel(
+                              f.sort,
+                              st,
+                              usageError ? 'error' : usageLoading ? 'loading' : 'ok',
+                            )}
                           </span>
                         )}
                       </div>
