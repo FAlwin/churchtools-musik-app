@@ -36,6 +36,13 @@ const CAPS: UserCapabilities = {
   canUseGlobalNotes: true,
 };
 
+/**
+ * Was beim Überbrücken aus `CAPS` wird: Die sensiblen Rechte kommen NICHT aus dem Cache – `isAdmin`
+ * seit #249, `canUseGlobalNotes` seit #282 (es gibt Lesezugriff auf die Anmerkungen ANDERER).
+ * Steht auch in `capabilitiesCache.test.ts`; wird die Liste erweitert, sind BEIDE Stellen nachzuziehen.
+ */
+const CAPS_BRIDGED: UserCapabilities = { ...CAPS, isAdmin: false, canUseGlobalNotes: false };
+
 // permissions/global-Antwort während eines CT-Aussetzers: churchservice-Block vorhanden,
 // aber alle Rechte-Arrays leer (sieht aus wie „kein Zugriff") – exakt der Vorfall vom 13.07.2026.
 const EMPTY_PERMS = { data: { churchservice: { 'view songcategory': [], 'view agenda': [] } } };
@@ -60,7 +67,8 @@ describe('getCapabilities – Überbrückung realer ChurchTools-Aussetzer (#149)
 
     const caps = await ct.getCapabilities('ChurchTools_s=bridge1', 42);
 
-    expect(caps).toEqual(CAPS);
+    // Überbrückt wird, aber ohne die sensiblen Rechte (#249/#282) – siehe CAPS_BRIDGED.
+    expect(caps).toEqual(CAPS_BRIDGED);
     // Nur permissions/global – whoami darf NICHT nötig gewesen sein. Genau diese Abhängigkeit
     // war die Lücke: Hing whoami mit, konnte der Cache nie überbrücken.
     expect(fetchMock).toHaveBeenCalledTimes(1);
