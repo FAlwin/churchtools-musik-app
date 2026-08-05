@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 // Worker inline im Bundle (../pdfSetup) → funktioniert auch offline (#32).
 import '../pdfSetup';
-import type { SetlistSong } from '@shared/types/index';
-import { generateChordPdf } from '../utils/chordPdf';
+import { type ChordPdfSong, generateChordPdf } from '../utils/chordPdf';
 import { parseMetadata } from '../utils/chordpro';
 import styles from './PdfPreview.module.scss';
 
@@ -46,9 +45,10 @@ export function PdfPreview({ title, text, semitones }: PdfPreviewProps) {
 
     async function render() {
       const meta = parseMetadata(text);
-      const song = {
-        id: 0,
-        arrangementId: 0,
+      // Genau die Felder, die ein Blatt braucht (#283): `ChordPdfSong` statt eines künstlich
+      // vervollständigten `SetlistSong` mit `as unknown as` – der Doppel-Cast hätte jeden Tippfehler
+      // hier durchgelassen. `id`/`arrangementId`/`versions`/`documents` braucht das PDF nicht.
+      const song: ChordPdfSong = {
         // Titel/Autor NICHT hier auflösen – das macht `chartHead` in `generateChordPdf` für Blatt
         // und Vorschau gemeinsam (#236). Vorher stand die Regel nur hier, weshalb die Vorschau
         // den `{title}` zeigte und das fertige Blatt nicht.
@@ -59,9 +59,8 @@ export function PdfPreview({ title, text, semitones }: PdfPreviewProps) {
         bpm: meta.tempo ? Number(meta.tempo) || null : null,
         timeSig: meta.time || '',
         chordpro: text,
-        versions: [],
-        documents: [],
-      } as unknown as SetlistSong;
+        ccli: null,
+      };
 
       let bytes: ArrayBuffer;
       try {

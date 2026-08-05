@@ -1,10 +1,4 @@
-import {
-  ANNO_DRAW_NS,
-  ANNO_ZOOM_NS,
-  docPageKey,
-  songPageKey,
-  levelPrefix,
-} from '@shared/keys/index';
+import { ANNO_DRAW_NS, ANNO_ZOOM_NS, docPageKey, songPageKey } from '@shared/keys/index';
 import type { StreamOwner } from './streamCompose';
 
 /**
@@ -51,9 +45,4 @@ export function viewKeyForOwner(
 ): string | null {
   if (!viewing || owner.kind === 'doc' || owner.songId !== viewing.songId) return null;
   return viewNamespace + songPageKey(owner.songId, owner.versionKey, viewing.lyr, owner.localPage);
-}
-
-/** Präfix aller Seiten einer Ebene – für die localStorage-Scans (Stift-Marker, Team-Import). */
-export function levelPrefixFor(songId: number, versionKey: string, lyricsOnly: boolean): string {
-  return levelPrefix(songId, versionKey, lyricsOnly);
 }

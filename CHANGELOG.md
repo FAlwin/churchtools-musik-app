@@ -45,6 +45,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Intern
 
+- **Kleinere Aufräumarbeiten** (#283): Die fünf Auswahl-Overlays der Chart-Ansicht teilen jetzt EINEN
+  Zustand statt fünf unabhängiger Schalter – zwei gleichzeitig offene Menüs sind damit nicht mehr
+  darstellbar. **Dabei fiel ein Fehler auf, den nur das Durchklicken im Browser zeigte:** Das
+  Lied-Menü rief erst die Aktion und dann sein Schließen auf; mit dem gemeinsamen Zustand hätte
+  „Transponieren" das Menü geschlossen, **ohne** die Tonart-Auswahl zu öffnen. Reihenfolge korrigiert
+  und mit einem Test festgehalten. Außerdem: Der gespeicherte Zoom wird beim Löschen jetzt auch unter
+  dem alten Schlüssel vom Konto entfernt (vorher kam er beim nächsten Abgleich zurück), das
+  Liederheft-PDF nimmt nur noch die Felder, die es wirklich braucht (ein Doppel-Cast weniger), toter
+  Code entfernt und der Kurz-Puffer des Ablauf-Abgleichs erstmals getestet.
+
 - **Die Codeprüfung erkennt jetzt Typ-Zusammenhänge** (`recommended-type-checked`). Damit greifen
   Regeln, die vorher nicht greifen konnten – vor allem „nicht abgewartetes Versprechen": Die Disziplin
   dafür wurde bisher überall von Hand gefahren. 114 Funde, davon **68 im Code behoben**; die restlichen

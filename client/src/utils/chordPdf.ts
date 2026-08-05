@@ -59,8 +59,19 @@ export function chartHead(song: Pick<SetlistSong, 'title' | 'author' | 'chordpro
  * Abschnitts-Labels, 1/2 Spalten, Seitenumbruch). ChordPro bleibt die Quelle – die PDF ist
  * die erzeugte Ansicht/das Export-Format. Liefert das fertige jsPDF-Dokument zurück.
  */
+/**
+ * Was ein Blatt wirklich braucht (#283): Titel/Autor über `chartHead`, dazu Akkorde, Tonarten, Taktart
+ * und Tempo. NICHT das ganze `SetlistSong` – die weite Signatur war der Grund, warum `PdfPreview` ein
+ * zusammengesetztes Objekt mit `as unknown as SetlistSong` durchschieben musste. Ein Doppel-Cast
+ * schaltet die Typprüfung komplett ab; eine schmale Signatur braucht ihn gar nicht.
+ */
+export type ChordPdfSong = Pick<
+  SetlistSong,
+  'title' | 'author' | 'chordpro' | 'originalKey' | 'targetKey' | 'timeSig' | 'bpm' | 'ccli'
+>;
+
 export function generateChordPdf(
-  song: SetlistSong,
+  song: ChordPdfSong,
   opts: ChordPdfOptions = {},
   doc?: jsPDF,
 ): jsPDF {
