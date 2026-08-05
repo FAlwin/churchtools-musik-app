@@ -3,11 +3,10 @@
  * Gemeinde-Name (`orgName`) in einer `site.json` auf dem Volume – ohne DB.
  * Fehlt die Datei, gelten die Standardwerte.
  */
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
 import { z } from 'zod';
 import { DEFAULT_SITE_CONFIG, type SiteConfig } from '@shared/types/index';
 import { config } from '../config.js';
+import { readJsonStore, writeJsonStore } from './jsonStore.js';
 
 /** Nur echte Web-Links zulassen – verhindert `javascript:`/`data:`-XSS in gerenderten Links. */
 const linkSchema = z.object({
@@ -80,12 +79,23 @@ function normalize({
   };
 }
 
-/** Aktuelle Konfiguration (gecacht). Fällt bei Fehlern/fehlender Datei auf Defaults zurück. */
+/**
+ * Aktuelle Konfiguration (gecacht).
+ *
+ * Defaults gibt es NUR, wenn die Datei fehlt oder inhaltlich nicht zum Schema passt. Ein
+ * **Lesefehler** (EACCES/EIO) oder beschädigtes JSON wirft jetzt (#273): Vorher fiel beides auf die
+ * Defaults zurück, und das nächste Speichern eines Admins hätte Gemeindename, Links und
+ * Gruppen-/Rollen-Zuweisungen durch die Defaults ersetzt.
+ */
 export async function getSiteConfig(): Promise<SiteConfig> {
   if (cache) return cache;
-  try {
-    const raw = await fs.readFile(config.siteConfigPath, 'utf-8');
-    const parsed = siteConfigSchema.safeParse(JSON.parse(raw));
+  const raw = await readJsonStore<unknown>(config.siteConfigPath, 'Branding-Einstellungen');
+  if (raw === null) {
+    cache = { ...DEFAULT_SITE_CONFIG };
+    return cache;
+  }
+  {
+    const parsed = siteConfigSchema.safeParse(raw);
     if (parsed.success) {
       // Altbestand: hatte nur die Einzel-ID `musicianGroupId` → in das Array überführen.
       const ids =
@@ -101,10 +111,9 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         noteRoles: parsed.data.noteRoles,
       });
     } else {
+      // Inhaltlich unpassend (z. B. handgeschriebene Datei) → Defaults, wie bisher.
       cache = { ...DEFAULT_SITE_CONFIG };
     }
-  } catch {
-    cache = { ...DEFAULT_SITE_CONFIG };
   }
   return cache;
 }
@@ -114,11 +123,7 @@ export async function saveSiteConfig(
   next: Partial<Editable> & { orgName: string },
 ): Promise<SiteConfig> {
   const cfg = normalize(next);
-  const dir = path.dirname(config.siteConfigPath);
-  await fs.mkdir(dir, { recursive: true });
-  const tmp = `${config.siteConfigPath}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(cfg, null, 2), 'utf-8');
-  await fs.rename(tmp, config.siteConfigPath);
-  cache = cfg;
+  await writeJsonStore(config.siteConfigPath, JSON.stringify(cfg, null, 2));
+  cache = cfg; // erst nach erfolgreichem Schreiben (#273)
   return cache;
 }

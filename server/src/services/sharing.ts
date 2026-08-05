@@ -4,9 +4,9 @@
  * Volume (`sharing.json`): userId → { name, enabled }. Der Anzeigename wird beim Umschalten
  * mitgespeichert, damit die „Notizen von …"-Liste ohne ChurchTools-Abfragen auskommt.
  */
-import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { config } from '../config.js';
+import { readJsonStore, writeJsonStore } from './jsonStore.js';
 
 interface Entry {
   name: string;
@@ -23,21 +23,17 @@ let writeChain: Promise<unknown> = Promise.resolve();
 
 async function read(): Promise<Store> {
   if (cache) return cache;
-  try {
-    cache = JSON.parse(await fs.readFile(file(), 'utf-8')) as Store;
-  } catch {
-    cache = {};
-  }
+  // Nur „Datei gibt es noch nicht" ist leer; jeder andere Lesefehler wirft (#273) und lässt `cache`
+  // unangetastet auf `null`. Hier besonders wichtig: Diese Datei gilt für ALLE Konten – ein
+  // Zurückschreiben aus einem leeren Stand hätte die Teilen-Einstellungen der ganzen Gemeinde gelöscht.
+  cache = (await readJsonStore<Store>(file(), 'Teilen-Einstellungen')) ?? {};
   return cache;
 }
 
 async function write(store: Store): Promise<void> {
   cache = store;
   const run = async (): Promise<void> => {
-    await fs.mkdir(config.annotationsPath, { recursive: true });
-    const tmp = `${file()}.tmp`;
-    await fs.writeFile(tmp, JSON.stringify(store), 'utf-8');
-    await fs.rename(tmp, file());
+    await writeJsonStore(file(), JSON.stringify(store));
   };
   writeChain = writeChain.then(run, run);
   return writeChain.then(

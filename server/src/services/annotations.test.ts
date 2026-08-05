@@ -76,3 +76,64 @@ describe('putAnnotation – Konto-Obergrenze (#139)', () => {
     expect(stored[key(0)]).toBeUndefined();
   });
 });
+
+/**
+ * #273: Ein Lesefehler darf die Kontodatei NICHT vernichten.
+ *
+ * Vorher fing `read()` jeden Fehler und legte `{}` als Wahrheit in den Cache. Der nächste
+ * `putAnnotation` schrieb diesen leeren Stand samt dem einen neuen Eintrag zurück – **alle übrigen
+ * Anmerkungen des Kontos waren weg**, ohne Meldung. Nur `ENOENT` darf „leer" heißen.
+ *
+ * Die Fehler entstehen hier ohne `chmod`: Ein **Verzeichnis** an der Stelle der Datei liefert
+ * verlässlich `EISDIR`, und beschädigtes JSON ist ohnehin ein reiner Inhaltsfall. `chmod 000` würde
+ * als root nicht greifen – der Test wäre dann still wirkungslos.
+ *
+ * Jedes `it` nutzt ein EIGENES Konto: Der Cache ist je Konto, ein frisches Konto erzwingt also
+ * wirklich einen Zugriff auf die Platte.
+ */
+describe('Lesefehler zerstört keine Daten (#273)', () => {
+  it('beschädigte Datei: putAnnotation wirft und der Inhalt bleibt UNVERÄNDERT erhalten', async () => {
+    // Das ist der Datenverlust-Beweis: Der kaputte Inhalt ist noch rettbar (jemand kann ihn von Hand
+    // reparieren). Mit der alten Fassung stand danach nur noch der neue Eintrag in der Datei.
+    const user = 5101;
+    const file = path.join(dir, `${user}.json`);
+    const kaputt = '{"song1_vorig_1":{"strokes":"WICHTIGE-ANMERKUNG"} dann Müll';
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(file, kaputt, 'utf-8');
+
+    await expect(
+      mod.putAnnotation(user, 'song2_vorig_1', { strokes: 'neu', texts: [], zoom: null }),
+    ).rejects.toMatchObject({ status: 500 });
+
+    expect(await fs.readFile(file, 'utf-8')).toBe(kaputt);
+  });
+
+  it('Lesefehler: getAnnotations wirft, statt „keine Anmerkungen" zu behaupten', async () => {
+    const user = 5102;
+    await fs.mkdir(path.join(dir, `${user}.json`), { recursive: true }); // → EISDIR
+    await expect(mod.getAnnotations(user, [])).rejects.toMatchObject({ status: 500 });
+  });
+
+  it('fehlende Datei bleibt der normale Leerfall (niemand bekommt einen Fehler)', async () => {
+    const user = 5103;
+    await expect(mod.getAnnotations(user, [])).resolves.toEqual({});
+  });
+
+  it('Schreibfehler hinterlässt keinen abweichenden Cache', async () => {
+    // Vorher setzte `write()` den Cache VOR dem Schreiben, und die Aufrufer veränderten dabei das
+    // gecachte Objekt an der Stelle. Nach einem gescheiterten Schreiben zeigte die App also einen
+    // Stand, der nie auf der Platte lag – und bestätigte ihn beim nächsten Lesen.
+    const user = 5104;
+    await mod.putAnnotation(user, 'song1_vorig_1', { strokes: 'ALT', texts: [], zoom: null });
+
+    // Schreiben blockieren: die .tmp-Datei ist ein Verzeichnis → EISDIR
+    await fs.mkdir(path.join(dir, `${user}.json.tmp`), { recursive: true });
+    await expect(
+      mod.putAnnotation(user, 'song2_vorig_1', { strokes: 'NEU', texts: [], zoom: null }),
+    ).rejects.toThrow();
+
+    const stored = await mod.getAnnotations(user, []);
+    expect(stored['song1_vorig_1']?.strokes).toBe('ALT');
+    expect(stored['song2_vorig_1']).toBeUndefined();
+  });
+});
