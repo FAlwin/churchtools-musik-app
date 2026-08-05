@@ -25,7 +25,11 @@ import { SongMenu } from '../components/SongMenu';
 import { SharersSheet } from '../components/SharersSheet';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { migrateLocalSettings, pullSettings } from '../services/userSettings';
+import {
+  migrateLocalSettings,
+  pullSettings,
+  resumePendingSettings,
+} from '../services/userSettings';
 import { parseChordPro } from '../utils/chordpro';
 import { availableVersions, versionText } from '../utils/songVersions';
 import { shiftKey } from '../utils/transpose';
@@ -92,9 +96,9 @@ export function ChordChart({
     (async () => {
       const ids = songs.map((s) => s.id);
       // Reihenfolge ist wichtig: Erst die beim letzten Mal NICHT durchgegangenen Uploads nachholen
-      // (#256) und bestehende lokale Daten einmalig hochladen – DANN den Server-Stand holen. Andernfalls
-      // überschreibt der Pull genau die Seiten, die noch hochzuladen sind.
-      await resumePendingAnnotations();
+      // (#256 Anmerkungen, #275 Einstellungen) und bestehende lokale Daten einmalig hochladen – DANN
+      // den Server-Stand holen. Andernfalls überschreibt der Pull genau das, was noch hochzuladen ist.
+      await Promise.all([resumePendingAnnotations(), resumePendingSettings()]);
       await Promise.all([migrateLocalAnnotations(), migrateLocalSettings()]);
       await Promise.all([pullAnnotations(ids), pullSettings(ids)]);
       // Team-Notizen: wer teilt Anmerkungen zu diesen Liedern? (nur für Berechtigte)

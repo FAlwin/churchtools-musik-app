@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { pushSetting, resetSync, setSettingsSyncErrorHandler } from './userSettings';
 import { markReachable } from './reachability';
@@ -15,9 +16,14 @@ function jsonResponse(status: number, body: unknown = {}): Response {
   });
 }
 
-/** localStorage-Ersatz für die Node-Umgebung (pushSetting selbst schreibt nicht, pullSettings schon). */
+/**
+ * jsdom, weil dieses Modul den Browser braucht: `pullSettings` schreibt in localStorage, und seit
+ * #275 vermerkt `pushSetting` den ausstehenden Upload ebenfalls dort. Der frühere Kommentar an dieser
+ * Stelle behauptete einen „localStorage-Ersatz für die Node-Umgebung" – installiert wurde nie einer.
+ */
 beforeEach(() => {
   vi.useFakeTimers();
+  localStorage.clear();
   resetSync();
   markReachable(true);
   setSessionExpiredHandler(null);

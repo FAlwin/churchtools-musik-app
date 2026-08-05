@@ -374,6 +374,30 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
+- **In `main` seit v2.16.0 (NICHT in Prod): die vier hohen Code-Check-Funde behoben** – #273, #274,
+  #275, #276. Alle vier waren dieselbe Lehre („vorübergehend ≠ ungültig"), und bei jedem wurde zuerst
+  nach der zweiten Stelle gesucht:
+  - **#273** `read()` cachte `{}` bei JEDEM Lesefehler → der nächste Schreibvorgang überschrieb die
+    Kontodatei. Es waren **sechs** Ablagen mit derselben Kopie; vier davon zerstörend (Anmerkungen,
+    Einstellungen, Teilen-Tabelle für ALLE, Branding). Neu `services/jsonStore.ts` als einzige Stelle
+    für Lesen/Schreiben; nur `ENOENT` heißt „leer". Die zwei reinen Caches (`seenSetlists`,
+    `capabilitiesCache`) bleiben **bewusst** tolerant, mit Begründung im Code.
+  - **#274** Download-Fehler wurde zu einem leeren Lied. Dafür musste `404` erst unterscheidbar
+    werden (vorher wurde jede nicht-ok-Antwort zu 502) – die Zeile stand **zweimal** wortgleich, also
+    neu der Helfer `fileDownloadError`. Das Lied trägt jetzt `chordproFailed`; Chart-Ansicht meldet es,
+    „Als PDF teilen" fragt nach.
+  - **#275** Dem Zwilling `client/services/userSettings.ts` fehlten **drei** Härtungen aus
+    `annotations.ts` (grep: 19 Treffer dort, 0 hier). Sie werden jetzt **geteilt**, nicht nachgebaut:
+    neu `services/pendingKeys.ts` (Merker in localStorage) und `services/appHidden.ts`
+    (`visibilitychange`/`pagehide`); `annotations.ts` wurde auf beide umgestellt, sonst wäre es die
+    dritte Kopie. Dazu `resumePendingSettings()` beim Start, `inflight`-Schutz im Pull.
+  - **#276** „Teilen abschalten" meldete Erfolg ohne zu speichern. Zustandsmaschine dafür jetzt in
+    `hooks/useSharing.ts` statt als `.catch(() => …)`-Einzeiler in `Settings.tsx`.
+    Tests **Client 410 / Server 236 / 5 E2E**, 59 manuelle Testfälle (neu TF-EINST-08). Erledigt
+    nebenbei zwei Punkte aus #283 (Settings-`catch`, veralteter Kommentar in `userSettings.flush.test`).
+    ⚠️ **Gelernt:** `userSettings.flush.test.ts` und `.reset.test.ts` brauchen jetzt
+    `@vitest-environment jsdom` – seit `pushSetting` den Merker schreibt, gibt es ohne jsdom
+    „localStorage is not defined".
 - **CODE-CHECK 05.08.2026 (nach v2.16.0): Qualität Note 1,7 „professionell, in Teilen
   herausragend", Sicherheit 0 kritische / 0 hohe Funde.** Gelobt: 0× `any`, 0× `@ts-ignore`, nur 5
   Non-null-Assertions im Produktionscode; Kommentare durchweg mit _warum_ + Issue-Nummer; die
