@@ -6,6 +6,13 @@
 > `site-config` (GET), `update-check` und dem kompletten `auth/`-Router (`login`, `logout`, `me`;
 > `me` antwortet ohne Session bewusst mit `{authenticated:false}`).
 >
+> **503 bei Drosselung (#300):** Antwortet ChurchTools mit **429** („zu viele Anfragen"), wird das zu
+> einem **503** mit `Retry-After`-Kopf – bewusst nicht als 429, weil der Client einen 429 als „zu viele
+> Anmeldeversuche" deuten würde. Betrifft **alle** ChurchTools-gestützten Endpunkte, weil es in `ctGet`
+> sitzt. `/api/song-usage` liefert 503 zusätzlich **während seiner Sperrfrist**, also auch ohne einen
+> ChurchTools-Aufruf. Ausnahme: `getCsrfToken` bildet ein CT-429 weiter auf **502** ab (mit dem
+> CT-Status im Text).
+>
 > **401/403-Vertrag (wichtig für den Client):** `ctGet` reicht nur echte **401** als 401 weiter
 > („Session abgelaufen"), ein **403** von ChurchTools bleibt **403** – denn jeder 401 löst im Client
 > einen Zwangs-Logout aus (#152/#186). `getCsrfToken` mappt eine tote CT-Session dagegen bewusst auf
@@ -41,7 +48,7 @@
   Liefert bewusst den **ChurchTools-Namen**, nicht `{title: …}` aus der Datei: Die Liste lädt keine
   ChordPro-Texte, und sie dafür zu laden hieße, bei jedem Öffnen jede Lieddatei einzeln zu holen
   (#236). Überall sonst gewinnt `{title}` – siehe unten.
-- `GET  /api/song-usage` → Nutzungsstatistik je Song als **`{ dates: string[] }`** (vergangene Spieltermine, bis zu 4 Jahre zurück, absteigend; 1h-Cache). Häufigkeit + „zuletzt gespielt" für den gewählten Zeitraum rechnet der **Client** daraus – ohne erneuten Server-Roundtrip.
+- `GET  /api/song-usage` → Nutzungsstatistik je Song als **`{ dates: string[] }`** (vergangene Spieltermine, bis zu 4 Jahre zurück, absteigend; 1h-Cache). Häufigkeit + „zuletzt gespielt" für den gewählten Zeitraum rechnet der **Client** daraus – ohne erneuten Server-Roundtrip. Bei Drosselung **503** (+ `Retry-After`), wenn kein früherer Stand im Speicher liegt; der Client zeigt dann „–" statt einer Null und lässt die Liederliste vollständig (#300).
 - `GET  /api/songs/:songId/arrangements` → Arrangements eines Lieds (für „Zu Ablauf hinzufügen")
 - `GET  /api/songs/:songId/chart` → Chart eines einzelnen Lieds (aus „Alle Lieder")
 - `POST /api/songs/:songId/versions` {arrangementId, name, text} → neue benannte Version → `SongVersion`

@@ -2,7 +2,7 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #194: **69 Testdateien** –
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #300: **82 Testdateien** –
 **54 Client (428 Tests)** + **28 Server (294 Tests)** mit Vitest + **5 Playwright-E2E** (Render-Smoke + voller Auth-Flow).
 
 ## Umfang
@@ -189,7 +189,7 @@ Testdatei); die Literale stehen nur noch als zweite Absicherung des Formats dane
 
 Alles, was Finger, Stift, iOS-Tastatur oder echte Netztrennung braucht, steht als Testfall in
 [`docs/tests/`](../tests/README.md) – mit Schritten, erwartetem Ergebnis und dem Feld **Betrifft**,
-über das `npm run testplan` vor einem Release die betroffenen Fälle auswählt. Aktuell 58 Fälle,
+über das `npm run testplan` vor einem Release die betroffenen Fälle auswählt. Aktuell 59 Fälle,
 davon 12 „immer prüfen".
 
 ## Regel für neue Fehler
