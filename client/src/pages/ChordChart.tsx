@@ -290,6 +290,21 @@ export function ChordChart({
       ),
   });
 
+  // Akkord-Datei nicht ladbar (#274): Vorher blieb das Blatt einfach leer. Der Server sagt jetzt, ob
+  // der Fehlschlag vorübergehend war (ein echtes 404 zählt nicht) – dann bekommt der Nutzer eine
+  // Meldung statt einer leeren Seite. Je Lied nur EINMAL, sonst poppt es bei jedem Blättern wieder.
+  const gemeldeteLadefehler = useRef(new Set<number>());
+  useEffect(() => {
+    const offen = songs.filter((s) => s.chordproFailed && !gemeldeteLadefehler.current.has(s.id));
+    if (offen.length === 0) return;
+    for (const s of offen) gemeldeteLadefehler.current.add(s.id);
+    showToast(
+      offen.length === 1
+        ? `Die Akkorde zu „${offen[0].title}" konnten nicht geladen werden. Bitte später erneut versuchen.`
+        : `${offen.length} Lieder konnten nicht geladen werden. Bitte später erneut versuchen.`,
+    );
+  }, [songs, showToast]);
+
   // Einführung Chart-Ansicht beim ersten Mal starten – erst wenn die Seiten fertig gerendert sind.
   useEffect(() => {
     if (!pagesLoading && pages.length > 0 && !isTourDone(TOUR_CHART)) setChartTour(true);

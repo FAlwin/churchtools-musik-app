@@ -49,6 +49,19 @@ export interface SetlistSong {
   /** Roher ChordPro-Inhalt der Originaldatei (SongSelect-Dialekt oder Standard) */
   chordpro: string;
   /**
+   * `true`, wenn mindestens eine Akkord-Datei dieses Lieds **nicht geladen werden konnte** (#274) –
+   * Zeitüberschreitung, Serverfehler, Netzproblem. Dann ist `chordpro` bzw. ein Versionstext leer,
+   * OHNE dass das Lied wirklich leer ist.
+   *
+   * Vorher wurde jeder Download-Fehler zu einem leeren Text: Das Blatt blieb leer und das Lied fiel
+   * stillschweigend aus der Sammel-PDF. Ein echtes 404 (Datei in ChurchTools gelöscht) setzt dieses
+   * Kennzeichen NICHT – da ist leer die Wahrheit.
+   *
+   * Ein Kennzeichen für das ganze Lied genügt bewusst: Die Handlung ist in jedem Fall dieselbe
+   * („später erneut versuchen"), eine Aufschlüsselung je Version brächte dem Nutzer nichts.
+   */
+  chordproFailed?: boolean;
+  /**
    * Zusätzliche benannte Versionen (eigene .chordpro-Dateien im Arrangement, vom Team gepflegt).
    * Das Original ist NICHT enthalten – es wird im Client als feste erste Auswahl „Original" geführt.
    */
