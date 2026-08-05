@@ -64,17 +64,20 @@ function decryptCtCookie(value: string): string | null {
 }
 
 /**
- * Middleware: ein **unbrauchbares** Session-Cookie einmal aktiv löschen (#268).
+ * Middleware: ein **unbrauchbares** Session-Cookie einmal aktiv löschen (#268, #281).
  *
- * Es gibt zwei Wege, auf denen das Cookie unlesbar wird – beide entstehen erst mit #194:
- *  - die Signatur passt nicht mehr (`cookie-parser` legt dann `false` ab), z. B. weil
- *    `SESSION_SECRET` gewechselt hat;
- *  - die Signatur passt, aber der verschlüsselte CT-Anteil lässt sich nicht entschlüsseln.
+ * Es gibt DREI Wege, auf denen das Cookie unlesbar wird – alle entstehen erst mit #194:
+ *  - die Signatur passt nicht mehr → `cookie-parser` legt `false` in `req.signedCookies` ab
+ *    (z. B. weil `SESSION_SECRET` gewechselt hat);
+ *  - die Signatur passt, aber der verschlüsselte CT-Anteil lässt sich nicht entschlüsseln;
+ *  - das Cookie ist gar nicht signiert (kein `s:`-Präfix) → `cookie-parser` legt es NUR in
+ *    `req.cookies` ab, NICHT in `req.signedCookies`. **Genau dieser Fall fehlte in #268** (#281):
+ *    Die alte Bedingung sah nur `signedCookies` und ließ das Cookie liegen.
  *
- * Ohne diesen Schritt behandelten alle Stellen das wie „nicht angemeldet" – **ohne das Cookie
- * loszuwerden**. Der Browser sendet es dann bei JEDER weiteren Anfrage wieder mit; die App bleibt in
- * einem Zwischenzustand hängen, aus dem nur Ab- und Neuanmelden hilft. Genau der Ablauf, der beim
- * ersten Öffnen der Test-Instanz auffiel.
+ * Ohne das Löschen behandelten alle Stellen es wie „nicht angemeldet" – aber der Browser sendet es
+ * bei JEDER weiteren Anfrage wieder mit; die App bleibt in einem Zwischenzustand, aus dem nur Ab- und
+ * Neuanmelden hilft. Kein Auth-Bypass (`readSession` liest ausschließlich `signedCookies`), aber
+ * unnötiger Ballast bis zu 30 Tage.
  *
  * Bewusst **eine** Stelle für alle Routen (statt in `getMe` und `requireSession` je einmal) – sonst
  * wäre es die nächste halb umgesetzte Regel. Mountet direkt nach `cookieParser`; dass ein
@@ -82,9 +85,11 @@ function decryptCtCookie(value: string): string | null {
  * kopf gewinnt), hält der E2E-Test im echten Browser fest.
  */
 export function dropUnusableSessionCookie(req: Request, res: Response, next: NextFunction): void {
-  // `undefined` = gar kein solches Cookie dabei → nichts zu tun. Alles andere (auch `false` aus
-  // einer fehlgeschlagenen Signaturprüfung) ist ein vorhandenes, aber unbrauchbares Cookie.
-  if (req.signedCookies?.[COOKIE_NAME] !== undefined && readSession(req) === null) {
+  // Vorhanden (egal ob in `signedCookies` mit `false`/Wert, oder nur in `cookies` beim unsignierten
+  // Cookie) UND nicht lesbar → löschen. `undefined` an BEIDEN Stellen heißt: gar kein Cookie dabei.
+  const present =
+    req.signedCookies?.[COOKIE_NAME] !== undefined || req.cookies?.[COOKIE_NAME] !== undefined;
+  if (present && readSession(req) === null) {
     clearSession(res);
   }
   next();

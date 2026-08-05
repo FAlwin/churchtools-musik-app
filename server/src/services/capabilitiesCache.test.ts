@@ -29,6 +29,13 @@ const CAPS: UserCapabilities = {
   canUseGlobalNotes: true,
 };
 
+/**
+ * Was `getCachedCapabilities` daraus macht: die sensiblen Rechte werden beim Überbrücken auf `false`
+ * gesetzt (`isAdmin` seit #249, `canUseGlobalNotes` seit #282 – Lesezugriff auf FREMDE Anmerkungen).
+ * Die übrigen (eigenen) Lese-/Bearbeitungsrechte werden überbrückt.
+ */
+const BRIDGED: UserCapabilities = { ...CAPS, isAdmin: false, canUseGlobalNotes: false };
+
 describe('isCacheFresh', () => {
   it('gilt für einen eben gemerkten Stand', () => {
     const now = 1_000_000_000_000;
@@ -49,9 +56,9 @@ describe('rememberCapabilities / getCachedCapabilities', () => {
     expect(await mod.getCachedCapabilities(42)).toBeNull();
   });
 
-  it('merkt sich Rechte pro Konto und gibt sie zurück', async () => {
+  it('merkt sich Rechte pro Konto und gibt sie (überbrückt) zurück', async () => {
     await mod.rememberCapabilities(42, CAPS);
-    expect(await mod.getCachedCapabilities(42)).toEqual(CAPS);
+    expect(await mod.getCachedCapabilities(42)).toEqual(BRIDGED);
     // Anderes Konto bleibt unberührt.
     expect(await mod.getCachedCapabilities(99)).toBeNull();
   });
@@ -59,7 +66,7 @@ describe('rememberCapabilities / getCachedCapabilities', () => {
   it('überlebt einen Neustart (aus der Datei gelesen)', async () => {
     await mod.rememberCapabilities(7, CAPS);
     mod.__resetForTests(); // simuliert frischen Prozess/Container
-    expect(await mod.getCachedCapabilities(7)).toEqual(CAPS);
+    expect(await mod.getCachedCapabilities(7)).toEqual(BRIDGED);
   });
 
   it('liefert einen zu alten Stand nicht mehr aus', async () => {
@@ -68,7 +75,7 @@ describe('rememberCapabilities / getCachedCapabilities', () => {
     // „Jetzt" ist deutlich später als der gemerkte Zeitpunkt → gilt als veraltet.
     expect(await mod.getCachedCapabilities(7, 1_000 + long)).toBeNull();
     // Innerhalb der Frist weiterhin gültig.
-    expect(await mod.getCachedCapabilities(7, 1_000 + mod.CACHE_MAX_AGE_MS)).toEqual(CAPS);
+    expect(await mod.getCachedCapabilities(7, 1_000 + mod.CACHE_MAX_AGE_MS)).toEqual(BRIDGED);
   });
 });
 
@@ -86,6 +93,17 @@ describe('Überbrückung ist konservativ (#249)', () => {
     // Die Lese-Rechte werden dagegen überbrückt – das ist der Zweck des Caches.
     expect(bridged?.canViewSongs).toBe(true);
     expect(bridged?.canViewAgendas).toBe(true);
+  });
+
+  it('gibt ein gemerktes canUseGlobalNotes NICHT aus dem Cache zurück (#282)', async () => {
+    // Das Recht gibt Lesezugriff auf die Anmerkungen ANDERER. Wird jemand aus der Musiker-Gruppe
+    // entfernt, dessen Sitzung aber noch läuft, dürfte er sonst bis zu 12 h weiter fremde Notizen
+    // lesen. In #249 war nur `isAdmin` abgedeckt – die Schwesterstelle wurde jetzt nachgezogen.
+    await mod.rememberCapabilities(6, { ...CAPS, canUseGlobalNotes: true });
+    const bridged = await mod.getCachedCapabilities(6);
+    expect(bridged?.canUseGlobalNotes).toBe(false);
+    // Die eigenen Lese-Rechte bleiben überbrückt.
+    expect(bridged?.canViewSongs).toBe(true);
   });
 
   it('das Fenster liegt im Stunden-Bereich, nicht im Wochen-Bereich', async () => {

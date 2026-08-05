@@ -142,13 +142,17 @@ describe('sessionRateKey – stabil trotz wechselnder Verschlüsselung (#194/N1)
  * möglich: gewechseltes `SESSION_SECRET` (Signatur passt nicht → `cookie-parser` legt `false` ab) und
  * ein CT-Anteil, der sich nicht entschlüsseln lässt.
  */
-describe('dropUnusableSessionCookie – totes Cookie einmal loswerden (#268)', () => {
-  /** Request + Response wie in der Middleware-Kette, mit Zähler auf `clearCookie`/`next`. */
-  function chain(signedCookies: Record<string, unknown>) {
+describe('dropUnusableSessionCookie – totes Cookie einmal loswerden (#268, #281)', () => {
+  /**
+   * Request + Response wie in der Middleware-Kette, mit Zähler auf `clearCookie`/`next`.
+   * `cookies` deckt den unsignierten Fall (#281) ab: Ein Cookie ohne `s:`-Präfix landet bei
+   * `cookie-parser` NUR in `req.cookies`, nicht in `req.signedCookies`.
+   */
+  function chain(signedCookies: Record<string, unknown>, cookies: Record<string, unknown> = {}) {
     const clearCookie = vi.fn();
     const next = vi.fn();
     dropUnusableSessionCookie(
-      { signedCookies } as unknown as Request,
+      { signedCookies, cookies } as unknown as Request,
       { clearCookie } as unknown as Response,
       next,
     );
@@ -164,6 +168,14 @@ describe('dropUnusableSessionCookie – totes Cookie einmal loswerden (#268)', (
   it('löscht es, wenn der verschlüsselte Anteil nicht entschlüsselbar ist', () => {
     const { clearCookie } = chain({ ct_session: '1750000000000|u42|e1:VoellsigerUnsinn' });
     expect(clearCookie).toHaveBeenCalledOnce();
+  });
+
+  it('löscht ein UNSIGNIERTES Cookie – der Fall, der in #268 fehlte (#281)', () => {
+    // cookie-parser legt ein Cookie ohne `s:`-Präfix nur in `req.cookies` ab. Empirisch bestätigt:
+    // `cookie-parser` gibt es unverändert zurück und übernimmt es NICHT nach `signedCookies`.
+    // Ohne den `req.cookies`-Zweig blieb es liegen und wurde bis zu 30 Tage weiter mitgeschickt.
+    const { clearCookie } = chain({}, { ct_session: 'einfach-unsinn' });
+    expect(clearCookie).toHaveBeenCalledWith('ct_session', expect.objectContaining({ path: '/' }));
   });
 
   it('lässt ein gültiges Cookie in Ruhe', () => {

@@ -54,17 +54,28 @@ async function load(): Promise<Store> {
 }
 
 /**
+ * Rechte, die **NIE** aus dem Cache überbrückt werden (#249, #282).
+ *
+ * Der Cache soll einen ChurchTools-Aussetzer von Sekunden bei den EIGENEN Lese-/Bearbeitungsrechten
+ * überbrücken (Setlist sehen, Ablauf bearbeiten). Zwei Rechte fallen bewusst heraus, weil sie Zugriff
+ * auf FREMDE Daten bzw. auf die Verwaltung geben – dort ist der konservative Weg richtig, lieber kurz
+ * zu wenig als zu lange zu viel:
+ *  - `isAdmin`: schreibende Verwaltungs-Endpunkte (`PUT /api/site-config`, Gruppen-/Rollen-Zuweisung).
+ *  - `canUseGlobalNotes`: **Lesezugriff auf die Anmerkungen ANDERER Personen** (`teamNotesController`).
+ *    Wird jemand aus der Musiker-Gruppe entfernt, dessen Sitzung aber noch läuft, könnte er sonst bis
+ *    zu 12 h weiter fremde Notizen lesen. War in #249 übersehen worden (nur `isAdmin` abgedeckt).
+ *
+ * Die übrigen Rechte (`canViewSongs/Agendas`, `canEdit…`) betreffen geteilte Gemeinde-Inhalte, die der
+ * Nutzer ohnehin sehen darf – die zu überbrücken ist genau der Zweck des Caches.
+ *
+ * Wer künftig ein Recht ergänzt, das FREMDE Daten freigibt, trägt es hier ein. Die Regel sitzt hier
+ * und nicht beim Aufrufer, damit sie auch für einen zweiten Aufrufer gilt.
+ */
+const NEVER_BRIDGED: Partial<UserCapabilities> = { isAdmin: false, canUseGlobalNotes: false };
+
+/**
  * Zuletzt gültige Rechte des Kontos – nur, wenn vorhanden UND nicht zu alt. Sonst `null`.
- *
- * **`isAdmin` wird NIE überbrückt (#249).** Am Admin-Recht hängen schreibende Verwaltungs-Endpunkte
- * (`PUT /api/site-config`, Gruppen-/Rollen-Zuweisung). Ein Konto, dem in ChurchTools gerade das Recht
- * entzogen wurde, dessen Sitzung aber noch lebt, dürfte sonst bis zum Ablauf des Fensters weiter
- * schreiben. Die Lese-Rechte zu überbrücken ist der Zweck des Caches – ein Verwaltungsrecht nicht.
- * Der echte Admin sieht die Verwaltung während eines ChurchTools-Aussetzers kurz nicht; das ist der
- * bewusst konservative Preis.
- *
- * Die Regel sitzt hier und nicht beim Aufrufer, damit sie auch für einen künftigen zweiten Aufrufer
- * gilt.
+ * Die sensiblen Rechte (siehe `NEVER_BRIDGED`) werden dabei ausdrücklich auf `false` gesetzt.
  */
 export async function getCachedCapabilities(
   userId: number,
@@ -72,7 +83,7 @@ export async function getCachedCapabilities(
 ): Promise<UserCapabilities | null> {
   const entry = (await load())[String(userId)];
   if (!entry || !isCacheFresh(entry.savedAt, now)) return null;
-  return { ...entry.caps, isAdmin: false };
+  return { ...entry.caps, ...NEVER_BRIDGED };
 }
 
 /** Merkt sich die (gültigen) Rechte des Kontos. Best effort – Schreibfehler werden geschluckt. */
