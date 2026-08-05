@@ -101,7 +101,17 @@ export function Agenda({
         queryKey: ['agenda', s.id],
         queryFn: () => api.getAgenda(s.id),
       });
-      await saveServiceOffline({ id: s.id, date: s.date }, items);
+      const { total, failed } = await saveServiceOffline({ id: s.id, date: s.date }, items);
+      // Teilweise geladen ist NICHT „gespeichert" (#277): Sonst verlässt sich jemand im Saal darauf
+      // und die Dokumente fehlen. Die geglückten Dateien bleiben im Vorrat – erneut versuchen lädt
+      // nur das Fehlende nach.
+      if (failed > 0) {
+        showToast(
+          failed === total
+            ? 'Keine Dokumente konnten geladen werden – bitte erneut versuchen.'
+            : `${failed} von ${total} Dokumenten konnten nicht geladen werden – bitte erneut versuchen.`,
+        );
+      }
     } catch {
       showToast('Speichern fehlgeschlagen – bitte erneut versuchen.');
     } finally {

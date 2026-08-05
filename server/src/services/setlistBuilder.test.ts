@@ -123,11 +123,10 @@ describe('setlistFingerprint (#143 – ganze Ablauf-Struktur, Struktur + Details
 });
 
 /** Baut eine Test-Datei (nur die für die Logik relevanten Felder). */
-const file = (name: string, id?: number): CtArrangementFile =>
-  ({
-    name,
-    fileUrl: id === undefined ? '' : `https://x.church.tools/?q=public/filedownload&id=${id}`,
-  }) as unknown as CtArrangementFile;
+const file = (name: string, id?: number): CtArrangementFile => ({
+  name,
+  fileUrl: id === undefined ? '' : `https://x.church.tools/?q=public/filedownload&id=${id}`,
+});
 
 describe('versionSlug', () => {
   it('macht aus einem Namen einen kleingeschriebenen Slug', () => {
@@ -294,10 +293,6 @@ describe('documentsOf (PDF/Bild-Dokumente)', () => {
     ]);
   });
   it('überspringt Dateien ohne id in der URL', () => {
-    expect(
-      documentsOf([
-        { name: 'x.pdf', fileUrl: 'https://x.ct/ohne-id' } as unknown as CtArrangementFile,
-      ]),
-    ).toEqual([]);
+    expect(documentsOf([{ name: 'x.pdf', fileUrl: 'https://x.ct/ohne-id' }])).toEqual([]);
   });
 });

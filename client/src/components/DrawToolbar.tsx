@@ -408,11 +408,7 @@ export function DrawToolbar({
                     }
                     aria-pressed={activeStyle.align === a}
                   >
-                    <Icon
-                      name={`align-${a}` as 'align-left' | 'align-center' | 'align-right'}
-                      size={19}
-                      stroke={2}
-                    />
+                    <Icon name={`align-${a}`} size={19} stroke={2} />
                   </button>
                 ))}
               </div>

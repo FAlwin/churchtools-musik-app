@@ -50,7 +50,7 @@ describe('requireSession – Rollieren trägt userId weiter (#152)', () => {
     const req = reqWith(`${issuedAt}|${CT_COOKIE}`);
     const { res, cookie } = resSpy();
 
-    requireSession(req, res, vi.fn() as unknown as NextFunction);
+    requireSession(req, res, vi.fn());
 
     expect(req.ctCookie).toBe(CT_COOKIE);
     expect(req.ctUserId).toBeNull();

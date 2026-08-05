@@ -6,7 +6,7 @@ import type { jsPDF } from 'jspdf';
  */
 export async function sharePdf(doc: jsPDF, filename: string): Promise<void> {
   const safe = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
-  const blob = doc.output('blob') as Blob;
+  const blob = doc.output('blob');
 
   // Teilen mit Datei, falls unterstützt
   const file = new File([blob], safe, { type: 'application/pdf' });

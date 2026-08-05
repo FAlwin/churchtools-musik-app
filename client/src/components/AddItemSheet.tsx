@@ -100,7 +100,7 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
               autoFocus
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && title.trim() && durationValid) add(textPayload());
+                if (e.key === 'Enter' && title.trim() && durationValid) void add(textPayload());
               }}
             />
           </div>

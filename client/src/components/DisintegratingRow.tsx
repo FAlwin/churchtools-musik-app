@@ -35,18 +35,22 @@ export function DisintegratingRow({ title }: { title: string }) {
       setGone(true);
       return;
     }
-    const t = setTimeout(async () => {
-      const rect = el.getBoundingClientRect();
-      try {
-        const html2canvas = (await import('html2canvas')).default;
-        if (cancelled) return;
-        const snap = await html2canvas(el, { backgroundColor: null, scale: 1, logging: false });
-        if (cancelled) return;
-        setGone(true); // echte Zeile verschwindet + fällt zusammen …
-        disintegrate(snap, rect); // … während die Partikel verwehen
-      } catch {
-        if (!cancelled) setGone(true);
-      }
+    // `void (async () => …)()` statt eines async-Callbacks direkt in `setTimeout` (#279): Der Timer
+    // erwartet eine void-Funktion, ein zurückgegebenes Promise würde niemand behandeln.
+    const t = setTimeout(() => {
+      void (async () => {
+        const rect = el.getBoundingClientRect();
+        try {
+          const html2canvas = (await import('html2canvas')).default;
+          if (cancelled) return;
+          const snap = await html2canvas(el, { backgroundColor: null, scale: 1, logging: false });
+          if (cancelled) return;
+          setGone(true); // echte Zeile verschwindet + fällt zusammen …
+          disintegrate(snap, rect); // … während die Partikel verwehen
+        } catch {
+          if (!cancelled) setGone(true);
+        }
+      })();
     }, 450); // kurz lesbar, bevor es zerfällt
     return () => {
       cancelled = true;

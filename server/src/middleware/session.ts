@@ -160,7 +160,9 @@ export function isSessionExpired(issuedAt: number, now = Date.now()): boolean {
 export function readSession(
   req: Request,
 ): { ctCookie: string; issuedAt: number; userId: number | null } | null {
-  const raw = req.signedCookies?.[COOKIE_NAME];
+  // Bewusst `unknown`: `signedCookies` ist untypisiert (`any`) – der Guard darunter macht daraus
+  // einen String, statt das `any` weiterzureichen (#279).
+  const raw: unknown = req.signedCookies?.[COOKIE_NAME];
   if (!raw || typeof raw !== 'string') return null;
   const parsed = parseSessionValue(raw);
   // `parseSessionValue` zerlegt nur (rein und ohne Schlüssel); entschlüsselt wird hier (#194).

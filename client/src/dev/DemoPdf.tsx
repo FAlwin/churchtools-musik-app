@@ -73,7 +73,7 @@ export function DemoPdf() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const doc = generateChordPdf(SONG, { cols, fontPt, semitones, lyricsOnly, logo });
       const data = doc.output('arraybuffer');
       const pdf = await pdfjsLib.getDocument({ data }).promise;

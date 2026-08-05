@@ -108,7 +108,7 @@ function tick(ts: number): void {
     : null;
   const texts = Array.from(document.querySelectorAll('[class*="textObj"]')).map((el) => {
     const r = (el as HTMLElement).getBoundingClientRect();
-    const cs = getComputedStyle(el as HTMLElement);
+    const cs = getComputedStyle(el);
     return {
       t: (el.textContent ?? '').slice(0, 20),
       x: Math.round(r.x),

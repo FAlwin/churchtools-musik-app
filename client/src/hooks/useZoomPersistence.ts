@@ -54,8 +54,9 @@ export function useZoomPersistence({
     try {
       const s = localStorage.getItem(zoomKeyFor(page));
       if (s) {
-        const parsed = JSON.parse(s);
-        if (parsed && typeof parsed.scale === 'number') return parsed;
+        // `JSON.parse` liefert `any` – erst prüfen, dann als ZoomState behandeln (#279).
+        const parsed = JSON.parse(s) as Partial<ZoomState> | null;
+        if (parsed && typeof parsed.scale === 'number') return parsed as ZoomState;
       }
     } catch {
       /* ignorieren */

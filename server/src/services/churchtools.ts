@@ -63,7 +63,8 @@ export async function readLimited(res: Response, maxBytes: number): Promise<Buff
     throw new HttpError(502, 'Die Datei ist zu groß, um sie anzuzeigen.');
   }
   if (!res.body) return Buffer.alloc(0);
-  const reader = res.body.getReader();
+  // Ohne die Angabe ist `value` ein `any` und alles daran hängende ungeprüft (#279).
+  const reader = (res.body as ReadableStream<Uint8Array>).getReader();
   const chunks: Buffer[] = [];
   let total = 0;
   for (;;) {

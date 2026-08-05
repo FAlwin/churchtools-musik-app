@@ -376,7 +376,7 @@ export async function getSongLibrary(cookie: string): Promise<SongLibraryEntry[]
         author: s.author ?? null,
         key: arr.keyOfArrangement ?? arr.key ?? null,
         arrangementId: arr.id,
-      } as SongLibraryEntry;
+      };
     })
     .filter((e): e is SongLibraryEntry => e !== null)
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));

@@ -41,7 +41,11 @@ export function useOfflineAutoSync(services: Service[] | undefined): void {
             queryKey: ['agenda', svc.id],
             queryFn: () => api.getAgenda(svc.id),
           });
-          if (!cancelled) await saveServiceOffline({ id: svc.id, date: svc.date }, items);
+          if (cancelled) return;
+          const { failed } = await saveServiceOffline({ id: svc.id, date: svc.date }, items);
+          // Unvollständig → nicht als erledigt merken, damit der nächste Lauf es nachholt (#277).
+          // Vorher galt der Termin als gespeichert, obwohl kein einziges Dokument geladen war.
+          if (failed > 0) synced.current.delete(svc.id);
         } catch {
           synced.current.delete(svc.id); // bei Fehler (z. B. kurz offline) später erneut versuchen
         }

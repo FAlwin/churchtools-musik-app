@@ -11,22 +11,21 @@ import {
   FONT_MAX,
 } from './chartSettings';
 
-const song = (over: Partial<SetlistSong> = {}): SetlistSong =>
-  ({
-    id: 5,
-    arrangementId: 1,
-    title: 'Test',
-    author: '',
-    originalKey: 'C',
-    targetKey: 'C',
-    bpm: null,
-    timeSig: null,
-    ccli: null,
-    chordpro: '{key: C}\n[C]Text',
-    versions: [],
-    documents: [],
-    ...over,
-  }) as SetlistSong;
+const song = (over: Partial<SetlistSong> = {}): SetlistSong => ({
+  id: 5,
+  arrangementId: 1,
+  title: 'Test',
+  author: '',
+  originalKey: 'C',
+  targetKey: 'C',
+  bpm: null,
+  timeSig: null,
+  ccli: null,
+  chordpro: '{key: C}\n[C]Text',
+  versions: [],
+  documents: [],
+  ...over,
+});
 
 beforeEach(() => localStorage.clear());
 

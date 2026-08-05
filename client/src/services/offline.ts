@@ -72,17 +72,35 @@ export function pruneOfflineRegistry(): void {
   if (changed) writeRegistry(reg);
 }
 
+/** Ergebnis einer Offline-Speicherung – wie viele Dokumente NICHT geladen werden konnten (#277). */
+export interface OfflineSaveResult {
+  /** Anzahl der Dokumente des Ablaufs. */
+  total: number;
+  /** Davon nicht geladen (Serverfehler, Netz weg, ChurchTools-Aussetzer). */
+  failed: number;
+}
+
 /**
  * „Für offline speichern": lädt (online) alle Dokumente (PDF/Bild) des Ablaufs in den
  * Service-Worker-Datei-Cache, schreibt danach die Daten (Termine/Ablauf/ChordPro) sofort nach
  * IndexedDB und trägt den Gottesdienst ins Offline-Verzeichnis ein. Danach ist er im Saal auch
- * ohne Netz verfügbar (#32). Einzelne fehlschlagende Dateien werden übersprungen.
+ * ohne Netz verfügbar (#32).
+ *
+ * **Fehlgeschlagene Dateien werden gezählt und gemeldet (#277).** Vorher wurden sie schlicht
+ * übersprungen – und zwar zusätzlich unbemerkt: `await fetch(url)` wirft bei **502/504 nicht**, und
+ * `res.ok` wurde nie geprüft. Danach wurde der Gottesdienst bedingungslos als „vollständig
+ * gespeichert" eingetragen. Wer sich darauf verließ, stand im Saal ohne Dokumente – also genau in der
+ * Lage, für die das Feature gebaut wurde.
+ *
+ * Der Eintrag ins Verzeichnis erfolgt deshalb nur bei **vollständigem** Erfolg (das Feld heißt
+ * `savedAt` = „letzte vollständige Speicherung"). Die Daten und die geglückten Dateien bleiben
+ * trotzdem im Cache – ein erneuter Versuch lädt nur das Fehlende nach.
  */
 export async function saveServiceOffline(
   service: { id: number; date: string },
   items: AgendaItem[],
   onProgress?: (done: number, total: number) => void,
-): Promise<void> {
+): Promise<OfflineSaveResult> {
   const urls: string[] = [];
   for (const it of items) {
     if (it.song)
@@ -90,15 +108,19 @@ export async function saveServiceOffline(
         urls.push(`/api/songs/${it.song.id}/files/${doc.fileId}`);
   }
   let done = 0;
+  let failed = 0;
   onProgress?.(0, urls.length);
   await mapLimit(urls, 4, async (url) => {
     try {
-      await fetch(url, { credentials: 'include' });
+      const res = await fetch(url, { credentials: 'include' });
+      // `fetch` wirft nur bei Netzfehlern – ein 502/504 kommt als normale Antwort zurück.
+      if (!res.ok) failed++;
     } catch {
-      /* einzelne Datei nicht erreichbar → überspringen */
+      failed++;
     }
     onProgress?.(++done, urls.length);
   });
   await saveOfflineNow();
-  markServiceOffline(service.id, service.date);
+  if (failed === 0) markServiceOffline(service.id, service.date);
+  return { total: urls.length, failed };
 }
