@@ -17,8 +17,8 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 03.08.2026: **v2.16.0 PRODUKTIV**, am
-  ausgelieferten Bundle verifiziert).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.1 GETAGGT**, Prod-Deploy
+  durch Alwin – bis dahin läuft dort v2.16.0).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -411,10 +411,19 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
     ⚠️ **Gelernt:** `userSettings.flush.test.ts` und `.reset.test.ts` brauchen jetzt
     `@vitest-environment jsdom` – seit `pushSetting` den Merker schreibt, gibt es ohne jsdom
     „localStorage is not defined".
-- **v2.16.1 VORBEREITET (05.08.2026): alle Code-Check-Funde außer #280 + #294 (CSRF-Retry beim Speichern) – in `main`, Prod läuft v2.16.0.**
+- **v2.16.1 GETAGGT (06.08.2026) – Prod-Deploy durch Alwin offen.** 14 Issues: alle
+  Code-Check-Funde außer #280, plus die vier, die erst beim Testen auf der Instanz auffielen: #294
+  (CSRF-Retry), #296 (ein ChurchTools-Fehler kippte die App in „offline"), #298 (CSRF-Token wird
+  zwischengespeichert), **#300 (die Wurzel: die Lied-Statistik hat ChurchTools mit ~250 Anfragen
+  überlastet → 429, danach scheiterten Anmeldung, Rechte und Speichern)**.
   Reihenfolge der PRs: #285 (#273), #286 (#276), #287 (#274), #288 (#275), #289 (#281/#282),
-  #290 (#277/#278/#279 Teil 1), #291 (#279 Teil 2), #292 (#283). Tests **Client 420 / Server 254 /
-  5 E2E**, 59 manuelle Testfälle, `npm audit` = **0** (auch mit Dev-Abhängigkeiten).
+  #290 (#277/#278/#279 Teil 1), #291 (#279 Teil 2), #292 (#283), #295 (#294), #297 (#296),
+  #299 (#298), #301 (#300). Tests **Client 428 / Server 294 / 5 E2E**, 59 manuelle Testfälle.
+  ⚠️ **Noch offen und wichtig:** Die **Grundlast** ist unangetastet – bei 5 Geräten ~180
+  ChurchTools-Anfragen/Minute (Termin-Polling 60 s, Ablauf-Abgleich 8 s). Und **ChurchTools' Limit ist
+  unbekannt**: deshalb steht im Code KEINE geratene Rate. Klärung per Anfrage an ChurchTools oder mit
+  `server/scripts/probe-ratelimit.ts` (Messung an der echten Instanz – nur wochentags abends, stoppt
+  beim ersten 429, Trockenlauf ohne `--ja-ich-will`).
   Neue geteilte Bausteine, die dabei entstanden sind – bei Änderungen IMMER dort ansetzen, nicht
   danebenbauen:
   - `server/src/services/jsonStore.ts` – Lesen/Schreiben ALLER JSON-Ablagen. Nur `ENOENT` heißt „leer".
