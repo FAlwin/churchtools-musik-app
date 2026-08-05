@@ -39,8 +39,8 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
 - `controllers/setlistController.filetype` – Datei-Proxy Content-Type-Whitelist (#138)
 - `middleware/session` – signiertes Session-Cookie, Ablauf/Format
 - `services/userSettings` – Konto-Obergrenzen der Lied-Einstellungen (#195): Grenzlogik, Eintrags-
-  und Byte-Grenze, Wert-Kappung, Schlüssel-Filter. ⚠️ Lücke bekannt: der Fall „Store liegt schon ÜBER
-  der Grenze, Löschen muss trotzdem gehen" ist NICHT abgedeckt (#213)
+  und Byte-Grenze, Wert-Kappung, Schlüssel-Filter. Auch der Fall „Store liegt schon ÜBER der Grenze,
+  Löschen muss trotzdem gehen" ist abgedeckt (#213, `server/src/services/userSettings.test.ts`)
 - `utils/ipKey` – Rate-Limit-Schlüssel (#146): gleiches /64 ⇒ gleicher Schlüssel, verschiedene /64
   getrennt, IPv4-mapped wie IPv4, Zone-Index, Normalisierung, unparsebar, leer
 - `services/buildSong.head` – Kopfangaben aus der ChordPro-Datei (#236): `{title}`/`{artist}`
@@ -169,18 +169,21 @@ Strich gewinnt gegen den zurückgelegten und ein anderes Feld überlebt daneben.
 Erledigt: `utils/chordPdf.ts` 0 → 87,7 % und `services/annotations.ts` 13 → 53,6 % (#192),
 `agendaItemWritePayload` mit 11 Tests (#212).
 
-**Neu erkannt im Code-Check 31.07.2026 (#251):** `DrawToolbar.tsx` (479 Z.), `ChordEditor.tsx`
-(360 Z.) und `PageDeck.tsx` (689 Z.) stehen bei **0 %** – die Werkzeugleiste ist das, was Musiker im
+**Erkannt im Code-Check 31.07.2026 (#251), teils erledigt:** `DrawToolbar.tsx` (479 Z.) ist seit
+#251 mit `DrawToolbar.test.tsx` abgedeckt. Offen bei **0 %** bleiben `ChordEditor.tsx`
+(360 Z.) und `PageDeck.tsx` (664 Z.) – die Werkzeugleiste ist das, was Musiker im
 Gottesdienst tatsächlich anfassen. `client/vitest.config.ts` nimmt zudem `src/pages/**` und `App.tsx`
 ganz aus der Messung, die größten Dateien tauchen also nicht einmal in der Statistik auf. Nicht
 Coverage jagen, sondern die reinen Teile herauslösen (`commitInlineText`, `layerDown`) und die
 Werkzeugleisten-Bedienung in jsdom prüfen; Zeigergerät-Nahes bleibt zu Recht manuell.
 
-⚠️ **Ein Test, der nicht schützt (#250):** `services/annotations.keys.test.ts` prüft `KEY_RE` gegen
-**handgeschriebene Literale** statt gegen die Funktionen, die die Schlüssel erzeugen. Lieferte
-`modeSeg` künftig `_lyrics` statt `_lyr`, blieben alle Client-Tests grün und der Konto-Sync stürbe
-still – also genau der Fehler, den dieser Test „zementieren" soll. **Merkregel: Tests gegen die
-Erzeuger schreiben, nicht gegen Literale.**
+✅ **Erledigt in #250 – der Test schützt jetzt:** `services/annotations.keys.test.ts` prüfte `KEY_RE`
+gegen **handgeschriebene Literale** statt gegen die Funktionen, die die Schlüssel erzeugen. Lieferte
+`modeSeg` künftig `_lyrics` statt `_lyr`, wären alle Client-Tests grün geblieben und der Konto-Sync
+still gestorben – also genau der Fehler, den der Test „zementieren" sollte. Seit #250 laufen die
+Prüfungen gegen die **Erzeuger** (`drawKeyForOwner`/`zoomKeyBaseForOwner`, siehe Kopfkommentar der
+Testdatei); die Literale stehen nur noch als zweite Absicherung des Formats daneben.
+**Merkregel bleibt: Tests gegen die Erzeuger schreiben, nicht gegen Literale.**
 
 ## Manuelle Tests
 
