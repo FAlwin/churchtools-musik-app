@@ -206,6 +206,16 @@
   }
 }
 
+// Fehlermeldung am Teilen-Schalter (#276): Ein vorübergehender Fehler darf nicht als „teilt nicht"
+// erscheinen – hier steht dann, dass nichts gespeichert wurde.
+.sharingError {
+  margin: 0;
+  padding: 0 14px 13px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--red);
+}
+
 // Anleitungstext „Als App installieren" (iOS / Fallback ohne nativen Dialog).
 .installHint {
   margin: 0;
