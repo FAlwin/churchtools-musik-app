@@ -16,6 +16,7 @@ vi.mock('./churchtools.js', async (importOriginal) => ({
 
 import { getSongChart } from './setlistBuilder.js';
 import { getSong, downloadFileText, type CtSong } from './churchtools.js';
+import { HttpError } from '../middleware/errorHandler.js';
 
 const mockedGetSong = vi.mocked(getSong);
 const mockedDownload = vi.mocked(downloadFileText);
@@ -82,5 +83,92 @@ describe('getSongChart – Kopfangaben aus der ChordPro-Datei (#236)', () => {
     const chart = await getSongChart('cookie', 42);
     expect(chart.title).toBe('Nur Titel');
     expect(chart.author).toBe('');
+  });
+});
+
+/**
+ * #274: Ein Download-Fehler darf nicht zu einem stillen leeren Lied werden.
+ *
+ * Vorher lieferte jeder Fehler schlicht `''`. Eine Zeitüberschreitung ergab damit ein leeres Blatt
+ * ohne ein Wort – und weil `Setlist.tsx` Lieder mit leerem Text aus der Sammel-PDF filtert, fehlte
+ * das Lied dort ganz. Seit #248 haben alle ChurchTools-Aufrufe eine Zeitgrenze, der Fall ist also
+ * erreichbar geworden.
+ *
+ * Unterschieden werden zwei Dinge, die vorher gleich aussahen:
+ *  - **404** = die Datei ist in ChurchTools wirklich weg → leer ist die Wahrheit, kein Kennzeichen
+ *  - alles andere = vorübergehend → `chordproFailed`, damit die App es sagen kann
+ */
+describe('getSongChart – nicht ladbare Akkord-Datei (#274)', () => {
+  /** Lied mit Original + einer benannten Version (zwei Downloads). */
+  function ctSongMitVersion(): CtSong {
+    const s = ctSong();
+    s.arrangements[0].files.push({
+      name: 'Mottosong AC26 — Akustik (App).chordpro',
+      fileUrl: 'https://x/?id=2',
+    });
+    return s;
+  }
+
+  it('Zeitüberschreitung: Lied wird als „nicht geladen" gekennzeichnet, nicht als leer', async () => {
+    mockedGetSong.mockResolvedValue(ctSong());
+    mockedDownload.mockRejectedValue(new HttpError(504, 'ChurchTools antwortet gerade nicht.'));
+
+    const chart = await getSongChart('cookie', 42);
+    expect(chart.chordproFailed).toBe(true);
+    expect(chart.chordpro).toBe(''); // der Text fehlt weiterhin – aber jetzt sagt es jemand
+  });
+
+  it('Serverfehler (502) kennzeichnet ebenfalls', async () => {
+    mockedGetSong.mockResolvedValue(ctSong());
+    mockedDownload.mockRejectedValue(new HttpError(502, 'Datei-Download fehlgeschlagen (500).'));
+
+    expect((await getSongChart('cookie', 42)).chordproFailed).toBe(true);
+  });
+
+  it('404 kennzeichnet NICHT – die Datei ist wirklich weg, leer ist die Wahrheit', async () => {
+    // Wichtig für die Abgrenzung: Sonst würde jedes Lied ohne Datei dauerhaft eine Meldung erzeugen.
+    mockedGetSong.mockResolvedValue(ctSong());
+    mockedDownload.mockRejectedValue(new HttpError(404, 'Datei-Download fehlgeschlagen (404).'));
+
+    const chart = await getSongChart('cookie', 42);
+    expect(chart.chordproFailed).toBeUndefined();
+    expect(chart.chordpro).toBe('');
+  });
+
+  it('Normalfall trägt das Kennzeichen gar nicht (Antwort bleibt unverändert)', async () => {
+    mockedGetSong.mockResolvedValue(ctSong());
+    mockedDownload.mockResolvedValue('[C]Text\n');
+
+    expect((await getSongChart('cookie', 42)).chordproFailed).toBeUndefined();
+  });
+
+  it('scheitert nur eine VERSION, wird das Lied trotzdem gekennzeichnet', async () => {
+    // Sonst hätte man die Akkorde vor sich, aber die gewählte Version wäre still leer.
+    mockedGetSong.mockResolvedValue(ctSongMitVersion());
+    mockedDownload.mockImplementation((_cookie: string, url: string) =>
+      url.includes('id=2')
+        ? Promise.reject(new HttpError(504, 'weg'))
+        : Promise.resolve('{title: Original}\n[C]Text\n'),
+    );
+
+    const chart = await getSongChart('cookie', 42);
+    expect(chart.chordproFailed).toBe(true);
+    expect(chart.chordpro).toContain('[C]Text'); // Original ist da …
+    expect(chart.versions[0]?.text).toBe(''); // … die Version nicht
+  });
+
+  it('ein Fehlschlag beim Original hindert die Version nicht am Laden', async () => {
+    mockedGetSong.mockResolvedValue(ctSongMitVersion());
+    mockedDownload.mockImplementation((_cookie: string, url: string) =>
+      url.includes('id=1')
+        ? Promise.reject(new HttpError(504, 'weg'))
+        : Promise.resolve('{title: Akustik-Fassung}\n[G]Version\n'),
+    );
+
+    const chart = await getSongChart('cookie', 42);
+    expect(chart.chordproFailed).toBe(true);
+    expect(chart.versions[0]?.text).toContain('[G]Version');
+    // Kopfangaben fallen auf die erste Version zurück – wie ohne Original.
+    expect(chart.title).toBe('Akustik-Fassung');
   });
 });

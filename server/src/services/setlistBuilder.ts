@@ -127,22 +127,40 @@ async function buildSong(
   const originalFile = arr?.files.find(isOriginalChordpro);
   const versionFiles = (arr?.files ?? []).filter(isVersionFile);
 
-  const download = async (f?: CtArrangementFile): Promise<string> => {
-    if (!f) return '';
+  /**
+   * Lädt eine Akkord-Datei und sagt, OB der Fehlschlag vorübergehend war (#274).
+   *
+   * Vorher gab jeder Fehler schlicht `''` zurück – eine Zeitüberschreitung wurde damit zu einem
+   * **leeren Lied**: leeres Blatt ohne ein Wort, und in der Sammel-PDF fiel das Lied ganz heraus
+   * (`Setlist.tsx` filtert leere Texte). Ein Absturz des ganzen Ablaufs wäre die falsche Antwort –
+   * dann sähe man auch die anderen Lieder nicht. Deshalb wird der Fehlschlag am Lied vermerkt.
+   *
+   * `404` zählt NICHT als Fehlschlag: Dann ist die Datei in ChurchTools wirklich weg und leer ist
+   * die Wahrheit (`fileDownloadError` unterscheidet das seit #274).
+   */
+  const download = async (f?: CtArrangementFile): Promise<{ text: string; failed: boolean }> => {
+    if (!f) return { text: '', failed: false };
     try {
-      return await downloadFileText(cookie, f.fileUrl);
-    } catch {
-      return '';
+      return { text: await downloadFileText(cookie, f.fileUrl), failed: false };
+    } catch (e) {
+      if (e instanceof HttpError && e.status === 404) return { text: '', failed: false };
+      console.warn(
+        `[setlist] Akkord-Datei von Lied ${agendaSong.songId} nicht ladbar:`,
+        e instanceof Error ? e.message : e,
+      );
+      return { text: '', failed: true };
     }
   };
   // Original + alle benannten Versionen parallel laden
-  const [chordpro, ...versionTexts] = await Promise.all([
+  const [original, ...versionResults] = await Promise.all([
     download(originalFile),
     ...versionFiles.map((f) => download(f)),
   ]);
+  const chordpro = original.text;
+  const chordproFailed = original.failed || versionResults.some((r) => r.failed);
   const versions: SongVersion[] = versionFiles.map((f, i) => {
     const name = versionNameOf(f) ?? 'Version';
-    return { key: versionSlug(name), name, text: versionTexts[i] ?? '' };
+    return { key: versionSlug(name), name, text: versionResults[i]?.text ?? '' };
   });
 
   // Kopfangaben aus dem Original ableiten (sonst erste Version, falls kein Original existiert)
@@ -166,6 +184,8 @@ async function buildSong(
     timeSig,
     ccli: song.ccli ?? null,
     chordpro,
+    // Nur setzen, wenn wirklich etwas schiefging – so bleibt die Antwort für den Normalfall gleich.
+    ...(chordproFailed ? { chordproFailed: true } : {}),
     versions,
     documents: arr ? documentsOf(arr.files) : [],
   };

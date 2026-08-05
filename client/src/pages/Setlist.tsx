@@ -210,7 +210,22 @@ export function Setlist({
       return { song: { ...s, chordpro: versionText(s, vk) }, versionKey: vk };
     })
     .filter((e) => e.song.chordpro.length > 0);
+  // Lieder, die NUR wegen eines Ladefehlers fehlen würden (#274). Ohne diesen Hinweis fiele das Lied
+  // stumm aus der geteilten PDF – und niemandem fällt auf, dass ein Blatt fehlt.
+  const nichtGeladen = items
+    .map((i) => i.song)
+    .filter((s): s is NonNullable<typeof s> => !!s && !!s.chordproFailed)
+    .map((s) => s.title);
+
   async function handleExportPdf() {
+    if (nichtGeladen.length > 0) {
+      const liste = nichtGeladen.join(', ');
+      const weiter = window.confirm(
+        `Von ${nichtGeladen.length === 1 ? 'einem Lied' : `${nichtGeladen.length} Liedern`} konnten die Akkorde nicht geladen werden (${liste}). ` +
+          `${nichtGeladen.length === 1 ? 'Es fehlt' : 'Sie fehlen'} dann im PDF.\n\nTrotzdem teilen?`,
+      );
+      if (!weiter) return;
+    }
     if (exportableSongs.length === 0) return;
     const logo = await loadAppLogo();
     const doc = generateSetlistPdf(

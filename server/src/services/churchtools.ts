@@ -83,6 +83,20 @@ export async function readLimited(res: Response, maxBytes: number): Promise<Buff
  * Zeitüberschreitungen als 504 melden, nicht als 500 (#248): Der Fehler liegt beim Upstream, und der
  * Client soll „später nochmal" unterscheiden können von „echter Fehler".
  */
+/**
+ * Nicht-ok-Antwort eines Datei-Downloads in einen Fehler übersetzen (#274).
+ *
+ * **404 bleibt 404**: Die Datei ist in ChurchTools wirklich weg, „leer" ist dann die Wahrheit. Alles
+ * andere (502/503, Serverfehler) ist vorübergehend und darf vom Aufrufer NICHT als leere Datei
+ * durchgehen. Dieselbe Unterscheidung, die `ctGet` seit #152/#199 macht.
+ *
+ * Steht als Helfer da, weil die Zeile vorher an ZWEI Stellen wortgleich stand (`downloadFileText`
+ * und `fetchFileBytes`) – eine davon zu ändern wäre die nächste halb umgesetzte Regel gewesen.
+ */
+function fileDownloadError(status: number): never {
+  throw new HttpError(status === 404 ? 404 : 502, `Datei-Download fehlgeschlagen (${status}).`);
+}
+
 function asGatewayError(e: unknown, was: string): never {
   if (e instanceof HttpError) throw e;
   if (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
@@ -580,9 +594,7 @@ export async function downloadFileText(cookie: string, fileUrl: string): Promise
       redirect: 'manual',
       signal: ctSignal(CT_FILE_TIMEOUT_MS),
     });
-    if (!res.ok) {
-      throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
-    }
+    if (!res.ok) fileDownloadError(res.status);
     // Auch ChordPro-Text gedeckelt (#248): Es ist eine Datei aus ChurchTools und kann alles sein.
     return (await readLimited(res, MAX_FILE_BYTES)).toString('utf8');
   } catch (e) {
@@ -610,7 +622,7 @@ export async function fetchFileBytes(
       redirect: 'manual',
       signal: ctSignal(CT_FILE_TIMEOUT_MS),
     });
-    if (!res.ok) throw new HttpError(502, `Datei-Download fehlgeschlagen (${res.status}).`);
+    if (!res.ok) fileDownloadError(res.status);
     // Gedeckelt lesen statt `arrayBuffer()` (#248) – sonst landet eine beliebig große Datei
     // vollständig im Speicher des Containers.
     const buffer = await readLimited(res, MAX_FILE_BYTES);

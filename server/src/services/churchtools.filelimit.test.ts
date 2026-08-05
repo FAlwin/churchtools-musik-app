@@ -126,3 +126,40 @@ describe('Datei-Proxy – Zeitgrenze und Fehlerbilder (#248)', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * #274: 404 muss von den vorübergehenden Fehlern unterscheidbar sein.
+ *
+ * Vorher wurde JEDE nicht-ok-Antwort zu einem 502 – der Statuscode steckte nur in der Meldung. Damit
+ * konnte der Aufrufer „Datei in ChurchTools gelöscht" (leer ist die Wahrheit) nicht von „ChurchTools
+ * hat gerade einen Aussetzer" (nicht als leeres Lied ausgeben!) trennen. Dieselbe Unterscheidung, die
+ * `ctGet` seit #152/#199 macht.
+ *
+ * Die Übersetzung liegt in EINEM Helfer (`fileDownloadError`), weil die Zeile vorher an zwei Stellen
+ * wortgleich stand – deshalb wird sie hier für BEIDE Download-Funktionen geprüft.
+ */
+describe('Statuscode eines Datei-Downloads (#274)', () => {
+  function statusResponse(status: number): Response {
+    return new Response('nope', { status });
+  }
+
+  it('404 kommt als 404 heraus (Text-Download)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(statusResponse(404));
+    await expect(downloadFileText('cookie', FILE_URL)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('404 kommt als 404 heraus (Bytes-Download)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(statusResponse(404));
+    await expect(fetchFileBytes('cookie', FILE_URL)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('500 bleibt 502 – vorübergehend, nicht „Datei weg"', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(statusResponse(500));
+    await expect(downloadFileText('cookie', FILE_URL)).rejects.toMatchObject({ status: 502 });
+  });
+
+  it('403 bleibt 502 (Bytes-Download)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(statusResponse(403));
+    await expect(fetchFileBytes('cookie', FILE_URL)).rejects.toMatchObject({ status: 502 });
+  });
+});
