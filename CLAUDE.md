@@ -411,7 +411,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
     ⚠️ **Gelernt:** `userSettings.flush.test.ts` und `.reset.test.ts` brauchen jetzt
     `@vitest-environment jsdom` – seit `pushSetting` den Merker schreibt, gibt es ohne jsdom
     „localStorage is not defined".
-- **v2.16.1 VORBEREITET (05.08.2026): alle Code-Check-Funde außer #280 – in `main`, Prod läuft v2.16.0.**
+- **v2.16.1 VORBEREITET (05.08.2026): alle Code-Check-Funde außer #280 + #294 (CSRF-Retry beim Speichern) – in `main`, Prod läuft v2.16.0.**
   Reihenfolge der PRs: #285 (#273), #286 (#276), #287 (#274), #288 (#275), #289 (#281/#282),
   #290 (#277/#278/#279 Teil 1), #291 (#279 Teil 2), #292 (#283). Tests **Client 420 / Server 254 /
   5 E2E**, 59 manuelle Testfälle, `npm audit` = **0** (auch mit Dev-Abhängigkeiten).

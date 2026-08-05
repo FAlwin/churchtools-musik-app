@@ -20,6 +20,12 @@ Meldungen, die man hoffentlich nie sieht.
 
 ### Behoben
 
+- **Das Speichern eines Ablaufeintrags gibt bei einem kurzen Aussetzer nicht mehr sofort auf.** Vor
+  jedem Speichern holt die App ein Sicherheits-Token von ChurchTools. Ging das eine Mal daneben (ein
+  kurzer ChurchTools-Schluckauf), erschien „CSRF-Token konnte nicht geholt werden." und man musste
+  selbst noch einmal auf Speichern tippen. Jetzt versucht die App es einmal automatisch erneut. Das
+  gilt für alle Schreibaktionen (Ablauf speichern und umsortieren, Eintrag ändern, Version
+  hochladen). (#294)
 - **Eine ohne Netz geänderte Einstellung übersteht jetzt auch das Schließen der App.** Wer im
   Flugmodus die Tonart oder den Kapo eines Lieds änderte und die App danach beendete (was iOS im
   Hintergrund von selbst tut), fand beim nächsten Öffnen den alten Wert vor – der Abgleich holte den
