@@ -300,12 +300,15 @@ interface SongUsage {
 //
 // `eventIds` = die Termine, aus denen dieser Stand gebaut wurde (#300). Damit kann das Invalidieren
 // präzise werden, statt bei jeder Ablauf-Änderung alles wegzuwerfen (siehe `invalidateSongUsageCache`).
-// `complete` = liefen alle Termine durch, oder fehlten einzelne (403/500)?
+//
+// Bewusst KEIN `complete`-Feld: Ein Lauf, bei dem einzelne Termine mit 403/500 ausfielen, wird ganz
+// normal gecacht und ausgeliefert – wie vor #300. Ein Feld zu führen, das nirgends gelesen wird, wäre
+// toter Code, der eine Regel behauptet, die es nicht gibt. Das Sichtbarmachen einer unvollständigen
+// Statistik in der Oberfläche ist ein eigener Schritt (am Issue vermerkt).
 let usageCache: {
   at: number;
   data: Record<number, SongUsage>;
   eventIds: Set<number>;
-  complete: boolean;
 } | null = null;
 
 /** Läuft gerade ein Statistik-Lauf? Dann mitnutzen statt einen zweiten starten (#300). */
@@ -379,7 +382,7 @@ export async function getSongUsageMap(cookie: string): Promise<Record<number, So
   // Nach einer Drosselung eine Weile gar nicht erst versuchen – sonst rennt jeder Aufruf erneut in
   // die Wand und verlängert die Drosselung, die er gerade abwarten sollte.
   if (Date.now() < usageRetryAfter) {
-    if (usageCache) return usageCache.data; // alter, vollständiger Stand ist besser als nichts
+    if (usageCache) return usageCache.data; // letzter bekannter Stand ist besser als nichts
     throw new CtOverloadedError(usageRetryAfter - Date.now());
   }
 
@@ -443,7 +446,7 @@ async function runSongUsage(cookie: string): Promise<Record<number, SongUsage>> 
 
   // Termine je Lied absteigend sortieren (neuester zuerst) → Client nimmt [0] als „zuletzt".
   for (const u of Object.values(usage)) u.dates.sort((a, b) => b.localeCompare(a));
-  usageCache = { at: Date.now(), data: usage, eventIds, complete: skipped === 0 };
+  usageCache = { at: Date.now(), data: usage, eventIds };
   usageRetryAfter = 0;
   console.warn(
     `[songUsage] Lauf beendet: ${eventIds.size} Termine, ${skipped} übersprungen, ` +
@@ -456,9 +459,14 @@ async function runSongUsage(cookie: string): Promise<Record<number, SongUsage>> 
  * Abbruch wegen Drosselung (#300): Das Teilergebnis wird **verworfen**, nicht gecacht.
  *
  * Sonst würde eine im Sturm entstandene, viel zu kleine Statistik eine volle Stunde als Wahrheit
- * ausgeliefert – und über die Client-Persistenz sogar sieben Tage lang. Liegt ein vollständiger Stand
- * im Speicher, wird der weiter ausgeliefert (sein Alter bleibt unverändert, der Cache verlängert sich
- * also nicht selbst). Liegt keiner, ist ein ehrlicher Fehler besser als falsche Zahlen.
+ * ausgeliefert – und über die Client-Persistenz sogar sieben Tage lang. Liegt noch ein **früherer**
+ * Stand im Speicher, wird der weiter ausgeliefert (sein Alter bleibt unverändert, der Cache verlängert
+ * sich also nicht selbst). Liegt keiner, ist ein ehrlicher Fehler besser als falsche Zahlen.
+ *
+ * Genau formuliert: der letzte BEKANNTE Stand, nicht zwingend ein vollständiger. Fielen darin einzelne
+ * Termine mit 403/500 aus, ist er leicht zu niedrig – so wie er auch im Normalbetrieb ausgeliefert
+ * würde. Diese Ehrlichkeit ist wichtig, weil eine frühere Fassung dieses Kommentars „vollständiger
+ * Stand" behauptete, was der Code nie geprüft hat.
  */
 function bailOut(e: unknown, geplant: number, started: number): Record<number, SongUsage> {
   const retryAfterMs = (e instanceof HttpError ? e.retryAfterMs : undefined) ?? USAGE_COOLDOWN_MS;

@@ -19,8 +19,8 @@ waren die roten Meldungen, die im Test aufgetaucht sind.
 
 Das rote Band durch fast alle übrigen Fehler: Ein **vorübergehendes** Problem (ChurchTools antwortet
 nicht, Netz weg, Datei nicht lesbar) wurde als **endgültig** behandelt – Daten galten als leer, Erfolg
-wurde gemeldet, wo nichts gespeichert war, und eine halb geladene Statistik galt eine Stunde als
-Wahrheit.
+wurde gemeldet, wo nichts gespeichert war, und eine im Drosselungs-Sturm halb geladene Statistik galt
+eine Stunde als Wahrheit.
 
 An der Bedienung ändert sich nichts – die geführte Einführung bleibt unverändert. Neu sind nur
 Meldungen, die man hoffentlich nie sieht.
@@ -39,8 +39,10 @@ Meldungen, die man hoffentlich nie sieht.
     schon das Umbenennen eines Ablaufpunkts beim nächsten Blick in die Liederliste einen neuen
     250-Anfragen-Lauf aus – genau diese Schleife hat die Bremse ausgelöst.
   - Kam die Statistik nur halb an, wurde sie bisher **eine Stunde lang als Wahrheit angezeigt** (mit zu
-    niedrigen Zahlen). Jetzt bleibt der letzte vollständige Stand stehen, und wenn es keinen gibt, sagt
-    die App „–" statt „0× gespielt". Die Liederliste bleibt dabei vollständig. (#300)
+    niedrigen Zahlen). Jetzt wird ein solcher Stand verworfen: Es bleibt der zuletzt bekannte stehen,
+    und wenn es keinen gibt, sagt die App „–" statt „0× gespielt". Die Liederliste bleibt dabei
+    vollständig. ⚠️ Fällt ein einzelner Termin mit einem anderen Fehler aus (kein Drosseln), sind die
+    Zahlen wie bisher bis zu eine Stunde leicht zu niedrig – das bleibt offen. (#300)
 - **Speichern belastet ChurchTools deutlich weniger.** Vor jedem Schreibvorgang holte die App ein
   Sicherheits-Token bei ChurchTools – bei **jedem** Speichern neu, beim Umsortieren mehrfach in Folge.
   Genau dieser Aufruf war es, der beim Testen zu mehreren reproduzierbar abgelehnt wurde. Das Token
@@ -73,7 +75,7 @@ Meldungen, die man hoffentlich nie sieht.
 - **Ein Lesefehler kann keine Kontodaten mehr vernichten.** Konnte der Server die Datei mit den
   Anmerkungen oder Einstellungen nicht lesen (Rechteproblem, beschädigter Inhalt), behandelte er sie
   als **leer** – und der nächste Speichervorgang schrieb diesen leeren Stand zurück. Damit waren alle
-  Anmerkungen bzw. alle Lied-Einstellungen des Kontos weg. Betroffen waren sechs Ablagen, darunter die
+  Anmerkungen bzw. alle Lied-Einstellungen des Kontos weg. Umgestellt wurden vier Ablagen (zwei reine Zwischenspeicher bleiben bewusst tolerant), darunter die
   Teilen-Tabelle (die für **alle** gilt) und die Gemeinde-Einstellungen. (#273)
 - **„Für offline speichern" meldet Erfolg nur noch, wenn wirklich alles geladen wurde.** Konnte ein
   Dokument nicht geladen werden (Serverfehler, ChurchTools-Aussetzer), wurde der Gottesdienst

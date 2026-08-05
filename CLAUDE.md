@@ -131,6 +131,11 @@ churchtools-musik-app/
 - Geschäftslogik gehört ausschließlich in `services/`
 - Jede Route validiert Input mit Zod vor der Verarbeitung
 - Fehlerbehandlung zentral in `middleware/errorHandler.ts`
+- **429 → 503 mit `Retry-After` (#300):** Ein ChurchTools-429 („zu viele Anfragen") wird in `ctGet` zu
+  `CtOverloadedError` (Status **503**). Bewusst nicht als 429 nach außen: Der Client würde das als „zu
+  viele Anmeldeversuche" deuten, und ein 503 **mit** unserem `{error}`-Rumpf kippt die App dank #296
+  nicht in den Offline-Zustand. Massenläufe brechen beim ersten Vorkommen ab (`isCtOverloaded` deckt
+  auch Zeitüberschreitungen ab, weil `ctGet` nicht über `asGatewayError` läuft).
 - **401 vs. 403 streng trennen (#152):** `ctGet` gibt nur echte **401** als 401 weiter („Session
   abgelaufen"); ein **403** von ChurchTools bleibt **403**. Grund: Seit #186 löst jeder 401 einen
   Zwangs-Logout samt Geräte-Aufräumen aus – ein transienter Proxy-/Rechte-403 würde den Nutzer sonst

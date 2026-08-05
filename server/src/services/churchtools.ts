@@ -838,7 +838,7 @@ async function getCsrfToken(cookie: string): Promise<string> {
 }
 
 /**
- * Ein abgelehnter Schreibvorgang (401/403) – an EINER Stelle, weil sechs Schreibfunktionen dasselbe
+ * Ein abgelehnter Schreibvorgang (401/403) – an EINER Stelle, weil sieben Schreibfunktionen dasselbe
  * tun müssen (#298): Fehler melden UND das zwischengespeicherte Token verwerfen. Wäre die
  * Invalidierung an den sechs Stellen einzeln eingebaut, hätte genau eine davon gefehlt.
  */
