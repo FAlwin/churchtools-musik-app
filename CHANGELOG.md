@@ -7,13 +7,20 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
-## [2.16.1] – 2026-08-05
+## [2.16.1] – 2026-08-06
 
-Wartungs-Release: **sieben Fehler behoben, alle aus dem Code-Check nach v2.16.0** – dazu die
-Codeprüfung deutlich verschärft. Bei sechs der sieben Fehler ging es darum, dass ein
-**vorübergehendes** Problem (ChurchTools antwortet nicht, Netz weg, Datei nicht lesbar) als
-**endgültig** behandelt wurde: Daten galten als leer, Erfolg wurde gemeldet, wo nichts gespeichert
-war.
+Wartungs-Release: **elf Fehler behoben** – dazu die Codeprüfung deutlich verschärft.
+
+Der wichtigste Fund kam beim Testen: **Die App hat ChurchTools selbst überlastet.** Die Statistik „wie
+oft wurde dieses Lied gespielt" fragte für jeden Gottesdienst der letzten vier Jahre einzeln nach –
+rund 250 Anfragen auf einen Schlag. ChurchTools bremste daraufhin **alles** aus, und plötzlich
+scheiterten Anmelden, Berechtigungen und Speichern, obwohl ChurchTools einwandfrei lief. Genau das
+waren die roten Meldungen, die im Test aufgetaucht sind.
+
+Das rote Band durch fast alle übrigen Fehler: Ein **vorübergehendes** Problem (ChurchTools antwortet
+nicht, Netz weg, Datei nicht lesbar) wurde als **endgültig** behandelt – Daten galten als leer, Erfolg
+wurde gemeldet, wo nichts gespeichert war, und eine halb geladene Statistik galt eine Stunde als
+Wahrheit.
 
 An der Bedienung ändert sich nichts – die geführte Einführung bleibt unverändert. Neu sind nur
 Meldungen, die man hoffentlich nie sieht.
