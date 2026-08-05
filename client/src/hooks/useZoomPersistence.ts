@@ -64,7 +64,15 @@ export function useZoomPersistence({
     return null;
   }
 
-  // Gespeicherten Zoom einer Seite dauerhaft löschen (aktueller Layout-Schlüssel + Basis als Fallback).
+  /**
+   * Gespeicherten Zoom einer Seite dauerhaft löschen – lokal UND auf dem Konto (#283).
+   *
+   * Vorher war die Regel halb umgesetzt: Lokal wurden beide Schlüssel entfernt (der aktuelle
+   * Layout-Schlüssel und der alte Basis-Schlüssel als Rückfall), dem Server aber nur der
+   * Layout-Schlüssel gemeldet. Der Alt-Eintrag blieb damit für immer in der Kontodatei und kam bei
+   * jedem Abgleich zurück – „gelöscht" hielt also nur bis zum nächsten Öffnen auf einem Gerät, das
+   * noch den alten Schlüssel kannte.
+   */
   function clearStoredZoom(page: number) {
     for (const k of [zoomKeyFor(page), zoomKeyBaseFor(page)]) {
       try {
@@ -72,8 +80,8 @@ export function useZoomPersistence({
       } catch {
         /* ignorieren */
       }
+      pushField(k, 'zoom', null); // beide Schlüssel auch auf dem Konto abräumen
     }
-    pushField(zoomKeyFor(page), 'zoom', null);
   }
 
   // Zoom/Ausschnitt einer sichtbaren Seite automatisch sichern, sobald eine Geste endet (#33).

@@ -65,10 +65,18 @@ export function SongMenu({
   onChange,
   onSelectVersion,
 }: SongMenuProps) {
-  /** Jede Auswahl schließt das Menü – siehe Kopfkommentar. */
+  /**
+   * Jede Auswahl schließt das Menü – siehe Kopfkommentar.
+   *
+   * ⚠️ **Erst schließen, DANN handeln.** Die umgekehrte Reihenfolge war lange harmlos, weil jedes
+   * Overlay seine eigene Boolean-Flagge hatte. Seit alle Overlays EIN Zustandsfeld teilen (#283)
+   * würde ein `onClose()` nach der Aktion deren `setOverlay(...)` sofort wieder auf `null` setzen –
+   * „Transponieren" schloss dann das Menü, ohne die Tonart-Auswahl zu öffnen. Aufgefallen ist das
+   * erst beim Durchklicken im Browser: Build, Lint und alle 672 Tests waren grün.
+   */
   const pick = (action: () => void) => () => {
-    action();
     onClose();
+    action();
   };
   const showsChords = set.viewSource === 'chords';
 

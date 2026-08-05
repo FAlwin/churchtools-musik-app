@@ -114,11 +114,18 @@ export function ChordChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songsSig]);
 
-  const [showKeyPicker, setShowKeyPicker] = useState(false);
-  const [showCapoPicker, setShowCapoPicker] = useState(false);
-  const [showSecTranspose, setShowSecTranspose] = useState(false);
-  const [showAppearance, setShowAppearance] = useState(false);
-  const [showSongMenu, setShowSongMenu] = useState(false);
+  /**
+   * EIN Zustand für alle Auswahl-Overlays statt fünf Booleans (#283).
+   *
+   * Sie schließen sich gegenseitig aus – mit fünf unabhängigen Flaggen war ein Zustand darstellbar,
+   * den es nicht geben darf (zwei Overlays gleichzeitig offen). Mit einem Feld ist er nicht mehr
+   * ausdrückbar, und beim Öffnen des einen ist das andere automatisch zu.
+   */
+  const [overlay, setOverlay] = useState<'key' | 'capo' | 'sec' | 'appearance' | 'menu' | null>(
+    null,
+  );
+  /** Ein Overlay umschalten (nochmal derselbe Knopf schließt es). */
+  const toggleOverlay = (o: 'appearance' | 'menu') => setOverlay((cur) => (cur === o ? null : o));
 
   const [drawMode, setDrawMode] = useState(false);
   const { toast, showToast } = useToast();
@@ -496,9 +503,9 @@ export function ChordChart({
             <button
               className={styles.menuBtn}
               data-tour="chart-lied"
-              onClick={() => !viewing && setShowSongMenu((v) => !v)}
+              onClick={() => !viewing && toggleOverlay('menu')}
               aria-haspopup="menu"
-              aria-expanded={showSongMenu}
+              aria-expanded={overlay === 'menu'}
             >
               <span className={styles.menuTitleRow}>
                 <span className={styles.songTitle}>{song.title}</span>
@@ -521,9 +528,9 @@ export function ChordChart({
           <div className={styles.right}>
             {!activeDoc && !viewing && (
               <button
-                className={`${styles.toolBtn}${showAppearance ? ' ' + styles.on : ''}`}
+                className={`${styles.toolBtn}${overlay === 'appearance' ? ' ' + styles.on : ''}`}
                 data-tour="chart-aussehen"
-                onClick={() => setShowAppearance((v) => !v)}
+                onClick={() => toggleOverlay('appearance')}
                 title="Aussehen"
               >
                 Aa
@@ -586,18 +593,18 @@ export function ChordChart({
           })()}
 
         {/* Aussehen-Menü (pro aktivem Lied: Schriftgröße, Spalten) */}
-        {showAppearance && (
+        {overlay === 'appearance' && (
           <ChartAppearanceMenu
             fontSize={set.fontSize}
             cols={set.cols}
             onFontSize={(fontSize) => updateSetting(song.id, { fontSize })}
             onCols={(cols) => updateSetting(song.id, { cols })}
-            onClose={() => setShowAppearance(false)}
+            onClose={() => setOverlay(null)}
           />
         )}
 
         {/* Lied-Menü (über den Titel) */}
-        {showSongMenu && (
+        {overlay === 'menu' && (
           <SongMenu
             song={song}
             set={set}
@@ -608,10 +615,10 @@ export function ChordChart({
             isOriginal={isOriginal}
             hasVersions={hasVersions}
             canEditSong={canEditSong}
-            onClose={() => setShowSongMenu(false)}
-            onOpenKeyPicker={() => setShowKeyPicker(true)}
-            onOpenCapoPicker={() => setShowCapoPicker(true)}
-            onOpenSectionTranspose={() => setShowSecTranspose(true)}
+            onClose={() => setOverlay(null)}
+            onOpenKeyPicker={() => setOverlay('key')}
+            onOpenCapoPicker={() => setOverlay('capo')}
+            onOpenSectionTranspose={() => setOverlay('sec')}
             onSharePdf={shareCurrentAsPdf}
             onEditCurrent={openEditCurrent}
             onNewVersion={openNewVersion}
@@ -622,38 +629,38 @@ export function ChordChart({
         )}
 
         {/* Tonart-Picker */}
-        {showKeyPicker && (
+        {overlay === 'key' && (
           <KeyPicker
             currentKey={curKey}
             defaultKey={song.targetKey}
             isCustom={set.key !== null}
             onPick={(k) => {
               updateSetting(song.id, { key: k });
-              setShowKeyPicker(false);
+              setOverlay(null);
             }}
             onReset={() => {
               updateSetting(song.id, { key: null });
-              setShowKeyPicker(false);
+              setOverlay(null);
             }}
-            onClose={() => setShowKeyPicker(false)}
+            onClose={() => setOverlay(null)}
           />
         )}
 
         {/* Kapo-Picker */}
-        {showCapoPicker && (
+        {overlay === 'capo' && (
           <CapoPicker
             capo={set.capo}
             shapeKey={shapeKey}
             soundingKey={curKey}
             onPick={(c) => {
               updateSetting(song.id, { capo: c });
-              setShowCapoPicker(false);
+              setOverlay(null);
             }}
-            onClose={() => setShowCapoPicker(false)}
+            onClose={() => setOverlay(null)}
           />
         )}
 
-        {showSecTranspose && (
+        {overlay === 'sec' && (
           <SectionTransposeSheet
             sections={sections}
             value={set.secShift}
@@ -664,7 +671,7 @@ export function ChordChart({
               updateSetting(song.id, { secShift: nextShift });
             }}
             onReset={() => updateSetting(song.id, { secShift: {} })}
-            onClose={() => setShowSecTranspose(false)}
+            onClose={() => setOverlay(null)}
           />
         )}
 
