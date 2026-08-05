@@ -6,7 +6,7 @@ import { Coachmarks, type CoachStep } from './Coachmarks';
 // jsdom implementiert scrollIntoView/scrollTo nicht → als No-op stubben.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
-  window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+  window.scrollTo = vi.fn();
 });
 beforeEach(() => {
   document.body.innerHTML = '';

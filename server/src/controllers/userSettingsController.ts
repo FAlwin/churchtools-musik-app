@@ -3,14 +3,12 @@ import { z } from 'zod';
 import { getUserId } from '../services/churchtools.js';
 import * as store from '../services/userSettings.js';
 import { ctCookie } from '../utils/ctCookie.js';
+import { songIdsFromQuery } from '../utils/songIdsQuery.js';
 
 /** GET /api/settings?songs=1,2,3 – kontobezogene Lied-Einstellungen zu diesen Liedern. */
 export async function getSettings(req: Request, res: Response): Promise<void> {
   const userId = await getUserId(ctCookie(req));
-  const songs = String(req.query.songs ?? '')
-    .split(',')
-    .map((s) => Number(s))
-    .filter((n) => Number.isInteger(n) && n > 0);
+  const songs = songIdsFromQuery(req.query.songs);
   res.json(await store.getSettings(userId, songs));
 }
 

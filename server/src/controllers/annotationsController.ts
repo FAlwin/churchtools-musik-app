@@ -14,6 +14,7 @@ import * as store from '../services/annotations.js';
 import type { PageAnnotation } from '@shared/types/index';
 import { ANNO_KEY_RE } from '@shared/keys/index';
 import { ctCookie } from '../utils/ctCookie.js';
+import { songIdsFromQuery } from '../utils/songIdsQuery.js';
 
 const textSchema = z.object({
   id: z.number(),
@@ -55,10 +56,7 @@ const keySchema = z.string().max(120).regex(ANNO_KEY_RE, 'Ungültiger Anmerkungs
 /** GET /api/annotations?songs=1,2,3 – alle Anmerkungen des Kontos zu diesen Liedern. */
 export async function getAnnotations(req: Request, res: Response): Promise<void> {
   const userId = await myUserId(req);
-  const songs = String(req.query.songs ?? '')
-    .split(',')
-    .map((s) => Number(s))
-    .filter((n) => Number.isInteger(n) && n > 0);
+  const songs = songIdsFromQuery(req.query.songs);
   res.json(await store.getAnnotations(userId, songs));
 }
 

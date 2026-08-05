@@ -25,10 +25,38 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   als **leer** – und der nächste Speichervorgang schrieb diesen leeren Stand zurück. Damit waren alle
   Anmerkungen bzw. alle Lied-Einstellungen des Kontos weg. Betroffen waren sechs Ablagen, darunter die
   Teilen-Tabelle (die für **alle** gilt) und die Gemeinde-Einstellungen. (#273)
+- **„Für offline speichern" meldet Erfolg nur noch, wenn wirklich alles geladen wurde.** Konnte ein
+  Dokument nicht geladen werden (Serverfehler, ChurchTools-Aussetzer), wurde der Gottesdienst
+  trotzdem als vollständig gespeichert eingetragen – wer sich darauf verließ, stand im Saal ohne
+  Dokumente. Jetzt steht dort, wie viele Dokumente fehlen, und das Offline-Häkchen bleibt aus, bis es
+  vollständig ist. Die schon geladenen Dateien bleiben erhalten; ein erneuter Versuch holt nur das
+  Fehlende nach. (#277)
+- **Ein unbrauchbares Anmelde-Cookie wird jetzt in allen Fällen entsorgt.** Nachtrag zu v2.16.0: Ein
+  Sonderfall (unsigniertes Cookie) blieb liegen und wurde bis zu 30 Tage weiter mitgeschickt. (#281)
+- **Entzogene Team-Notizen-Berechtigung wirkt sofort.** Der Rechte-Puffer, der kurze
+  ChurchTools-Aussetzer überbrückt, hielt auch das Recht „fremde Notizen ansehen" bis zu 12 Stunden
+  aufrecht. Wer aus der Musiker-Gruppe entfernt wurde, hätte in dieser Zeit weiter fremde Anmerkungen
+  lesen können. Wie beim Admin-Recht (v2.16.0) wird es jetzt nicht mehr überbrückt. (#282)
+
 - **„Teilen abschalten" meldet keinen Erfolg mehr, wenn nichts gespeichert wurde.** Scheiterte das
   Speichern, sagte die App „gespeichert" und der Schalter blieb aus – nach dem nächsten Neustart des
   Servers waren die Anmerkungen aber weiter für das Team sichtbar. Jetzt steht dort, dass es nicht
   geklappt hat, und dass weiter geteilt wird. (#276)
+
+### Intern
+
+- **Die Codeprüfung erkennt jetzt Typ-Zusammenhänge** (`recommended-type-checked`). Damit greifen
+  Regeln, die vorher nicht greifen konnten – vor allem „nicht abgewartetes Versprechen": Die Disziplin
+  dafür wurde bisher überall von Hand gefahren. 114 Funde, davon **68 im Code behoben**; die restlichen
+  waren React-Idiome (`onClick={async …}`) bzw. der normale Umgang mit fremden Daten in Tests und sind
+  begründet abgeschaltet. Ein echter Fund dabei: `?songs=…` wurde an **drei** Stellen als String
+  behandelt, obwohl Express dort auch ein Array oder Objekt liefert – jetzt EINE geprüfte Stelle
+  (`utils/songIdsQuery.ts`). (#279)
+- **`shared/` und `e2e/` werden jetzt mitgeprüft.** Beide fielen aus dem Lint heraus – `shared/` ohne
+  `lint`-Skript (der Workspace wurde stillschweigend übersprungen) und ohne ESLint-Konfiguration, `e2e/`
+  weil Client und Server nur ihr eigenes `src` prüfen. Betroffen war damit genau das Paket, das seit
+  v2.16.0 Laufzeit-Code über die Prozessgrenze teilt. Zusätzlich deckt `shared`s eigene Typprüfung jetzt
+  auch `keys/` ab. (#278)
 
 ## [2.16.0] – 2026-08-03
 

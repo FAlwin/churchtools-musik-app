@@ -12,6 +12,7 @@ import * as annotations from '../services/annotations.js';
 import { getSettings } from '../services/userSettings.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { ctCookie } from '../utils/ctCookie.js';
+import { songIdsFromQuery } from '../utils/songIdsQuery.js';
 
 async function requireTeamNotes(req: Request): Promise<void> {
   const caps = await getCapabilitiesCached(ctCookie(req), req.ctUserId ?? null);
@@ -21,10 +22,7 @@ async function requireTeamNotes(req: Request): Promise<void> {
 }
 
 function songIdsOf(req: Request): number[] {
-  return String(req.query.songs ?? '')
-    .split(',')
-    .map((s) => Number(s))
-    .filter((n) => Number.isInteger(n) && n > 0);
+  return songIdsFromQuery(req.query.songs);
 }
 
 function personIdOf(req: Request): number {

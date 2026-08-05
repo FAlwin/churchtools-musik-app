@@ -45,7 +45,7 @@ function ctSong(over: { name?: string; author?: string | null } = {}): CtSong {
         files: [{ name: 'Mottosong AC26.chordpro', fileUrl: 'https://x/?id=1' }],
       },
     ],
-  } as unknown as CtSong;
+  };
 }
 
 describe('getSongChart – Kopfangaben aus der ChordPro-Datei (#236)', () => {

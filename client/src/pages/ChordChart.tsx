@@ -93,7 +93,7 @@ export function ChordChart({
   const [syncTick, setSyncTick] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const ids = songs.map((s) => s.id);
       // Reihenfolge ist wichtig: Erst die beim letzten Mal NICHT durchgegangenen Uploads nachholen
       // (#256 Anmerkungen, #275 Einstellungen) und bestehende lokale Daten einmalig hochladen – DANN
@@ -209,14 +209,16 @@ export function ChordChart({
       liveRef.current.onReload?.();
     }
     const id = setInterval(() => void refreshAnno(), 30000);
-    const idContent = setInterval(refreshContent, 60000);
-    window.addEventListener('focus', onReturn);
-    document.addEventListener('visibilitychange', onReturn);
+    const idContent = setInterval(() => void refreshContent(), 60000);
+    // `onReturn` ist async → in einen void-Wrapper, damit kein unbehandeltes Promise entsteht (#279).
+    const onReturnSync = (): void => void onReturn();
+    window.addEventListener('focus', onReturnSync);
+    document.addEventListener('visibilitychange', onReturnSync);
     return () => {
       clearInterval(id);
       clearInterval(idContent);
-      window.removeEventListener('focus', onReturn);
-      document.removeEventListener('visibilitychange', onReturn);
+      window.removeEventListener('focus', onReturnSync);
+      document.removeEventListener('visibilitychange', onReturnSync);
     };
     // `reloadSettings` hat eine stabile Identität (useCallback über eine Ref) – die Intervalle und
     // Listener werden dadurch NICHT erneut angemeldet.
@@ -251,7 +253,7 @@ export function ChordChart({
       );
       // Zwischenzeitlich hat sich die Eingabe geändert → dieses Ergebnis ist veraltet, verwerfen.
       if (cancelled) return;
-      setStream({ data: doc.output('arraybuffer') as ArrayBuffer, owners });
+      setStream({ data: doc.output('arraybuffer'), owners });
     };
     // Nach dem Zeichnen bauen; `requestIdleCallback` lässt Eingaben zuerst durch, der Timeout
     // sorgt dafür, dass es auch bei Dauerlast zügig passiert. Ältere Safari-Versionen kennen

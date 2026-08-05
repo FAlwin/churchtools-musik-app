@@ -30,7 +30,7 @@ function song(over: Partial<SetlistSong> & { chordpro: string }): SetlistSong {
     versions: [],
     documents: [],
     ...over,
-  } as unknown as SetlistSong;
+  };
 }
 
 /** ChordPro mit `n` Textzeilen in einem Vers – zum Erzwingen von Umbrüchen. */

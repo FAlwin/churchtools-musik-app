@@ -110,9 +110,9 @@ export function useDeleteAgendaItem(eventId: number | null) {
   return useMutation({
     mutationFn: (itemId: number) => api.deleteAgendaItem(eventId as number, itemId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['agenda', eventId] });
-      qc.invalidateQueries({ queryKey: ['services'] });
-      qc.invalidateQueries({ queryKey: ['song-usage'] });
+      void qc.invalidateQueries({ queryKey: ['agenda', eventId] });
+      void qc.invalidateQueries({ queryKey: ['services'] });
+      void qc.invalidateQueries({ queryKey: ['song-usage'] });
     },
   });
 }
@@ -128,10 +128,10 @@ export function useUpdateAgendaItem(eventId: number | null) {
     mutationFn: (v: { itemId: number; fields: api.AgendaItemUpdate }) =>
       api.updateAgendaItem(eventId as number, v.itemId, v.fields),
     onSuccess: (_data, v) => {
-      qc.invalidateQueries({ queryKey: ['agenda', eventId] });
+      void qc.invalidateQueries({ queryKey: ['agenda', eventId] });
       if (v.fields.arrangementId !== undefined || v.fields.unlink) {
-        qc.invalidateQueries({ queryKey: ['services'] });
-        qc.invalidateQueries({ queryKey: ['song-usage'] });
+        void qc.invalidateQueries({ queryKey: ['services'] });
+        void qc.invalidateQueries({ queryKey: ['song-usage'] });
       }
     },
   });
@@ -233,9 +233,9 @@ export function useAddSongToService() {
         arrangementId: v.arrangementId,
       }),
     onSuccess: (_data, v) => {
-      qc.invalidateQueries({ queryKey: ['agenda', v.eventId] });
-      qc.invalidateQueries({ queryKey: ['services'] });
-      qc.invalidateQueries({ queryKey: ['song-usage'] });
+      void qc.invalidateQueries({ queryKey: ['agenda', v.eventId] });
+      void qc.invalidateQueries({ queryKey: ['services'] });
+      void qc.invalidateQueries({ queryKey: ['song-usage'] });
     },
   });
 }
@@ -253,9 +253,9 @@ export function useCreateAgendaItem(eventId: number | null) {
       durationMin?: number;
     }) => api.createAgendaItem(eventId as number, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['agenda', eventId] });
-      qc.invalidateQueries({ queryKey: ['services'] });
-      qc.invalidateQueries({ queryKey: ['song-usage'] });
+      void qc.invalidateQueries({ queryKey: ['agenda', eventId] });
+      void qc.invalidateQueries({ queryKey: ['services'] });
+      void qc.invalidateQueries({ queryKey: ['song-usage'] });
     },
   });
 }

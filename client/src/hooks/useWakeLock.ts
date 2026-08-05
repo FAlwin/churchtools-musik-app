@@ -27,10 +27,10 @@ export function useWakeLock(enabled: boolean): void {
     };
 
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') acquire();
+      if (document.visibilityState === 'visible') void acquire();
     };
 
-    acquire();
+    void acquire();
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {

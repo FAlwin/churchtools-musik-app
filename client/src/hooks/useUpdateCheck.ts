@@ -1,8 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { getUpdateInfo } from '../services/updateApi';
 
-/** Aktuell laufende Version (Build-Zeit, ohne führendes „v"). */
-const CURRENT = (import.meta.env.VITE_APP_VERSION || 'dev').replace(/^v/, '');
+/**
+ * Aktuell laufende Version (Build-Zeit, ohne führendes „v").
+ *
+ * `import.meta.env.*` ist bei Vite `any` – deshalb hier einmal sauber als String einlesen (#279),
+ * sonst zieht sich das `any` durch den ganzen Vergleich.
+ */
+const APP_VERSION: string = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'dev';
+const CURRENT = APP_VERSION.replace(/^v/, '');
 
 /**
  * Ist `latest` eine höhere Version als `current`? Vergleicht reine SemVer-Nummern (MAJOR.MINOR.PATCH).
