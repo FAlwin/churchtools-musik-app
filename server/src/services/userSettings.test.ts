@@ -164,3 +164,35 @@ describe('SETTINGS_KEY_RE – was synchronisiert werden darf', () => {
     }
   });
 });
+
+/**
+ * #273 auch hier – der Zwilling der Anmerkungen hatte denselben Fehler.
+ *
+ * `read()` fing jeden Lesefehler und legte `{}` als Wahrheit in den Cache; das nächste `putSettings`
+ * schrieb diesen leeren Stand zurück und **alle Lied-Einstellungen des Kontos waren weg** (Tonart,
+ * Kapo, Spalten, Schrift für jedes Lied). Nur `ENOENT` darf „leer" heißen.
+ */
+describe('Lesefehler zerstört keine Einstellungen (#273)', () => {
+  it('beschädigte Datei: putSettings wirft und der Inhalt bleibt UNVERÄNDERT', async () => {
+    const user = 6201;
+    const file = path.join(dir, `settings-${user}.json`);
+    const kaputt = '{"worship_key_1":"D" kein gültiges JSON';
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(file, kaputt, 'utf-8');
+
+    await expect(mod.putSettings(user, { worship_key_2: 'E' })).rejects.toMatchObject({
+      status: 500,
+    });
+    expect(await fs.readFile(file, 'utf-8')).toBe(kaputt);
+  });
+
+  it('Lesefehler: getSettings wirft, statt „keine Einstellungen" zu behaupten', async () => {
+    const user = 6202;
+    await fs.mkdir(path.join(dir, `settings-${user}.json`), { recursive: true }); // → EISDIR
+    await expect(mod.getSettings(user, [])).rejects.toMatchObject({ status: 500 });
+  });
+
+  it('fehlende Datei bleibt der normale Leerfall', async () => {
+    await expect(mod.getSettings(6203, [])).resolves.toEqual({});
+  });
+});

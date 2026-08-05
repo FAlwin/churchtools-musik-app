@@ -3,10 +3,10 @@
  * Ohne DB: eine JSON-Datei pro ChurchTools-Konto auf dem Volume (wie site.json), atomar geschrieben.
  * Schlüssel je Eintrag: `song<id>_v<versionKey>_<seite>`.
  */
-import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { config } from '../config.js';
 import { HttpError } from '../middleware/errorHandler.js';
+import { readJsonStore, writeJsonStore } from './jsonStore.js';
 // Anmerkungs-Typen kommen aus @shared/types – EINZIGE Quelle für Client + Server. Re-Export,
 // damit Bestandsimporte aus diesem Modul weiter funktionieren.
 import type { AnnotationText, PageAnnotation } from '@shared/types/index';
@@ -59,25 +59,23 @@ async function read(userId: number): Promise<Store> {
     cacheSet(userId, cached); // als jüngst genutzt markieren (LRU)
     return cached;
   }
-  try {
-    const raw = await fs.readFile(fileFor(userId), 'utf-8');
-    const data = JSON.parse(raw) as Store;
-    cacheSet(userId, data);
-    return data;
-  } catch {
-    const empty: Store = {};
-    cacheSet(userId, empty);
-    return empty;
-  }
+  // Nur „Datei gibt es noch nicht" ist leer; jeder andere Lesefehler wirft (#273) – sonst landete
+  // ein leerer Stand als Wahrheit im Cache und der nächste Schreibvorgang überschrieb das Konto.
+  const data = (await readJsonStore<Store>(fileFor(userId), 'Anmerkungen')) ?? {};
+  cacheSet(userId, data);
+  return data;
 }
 
+/**
+ * Schreibt den Store und übernimmt ihn **erst danach** in den Cache (#273).
+ *
+ * Der übergebene Store muss eine KOPIE sein: Vorher haben die Aufrufer das gecachte Objekt an der
+ * Stelle verändert und dann geschrieben – schlug das Schreiben fehl (z. B. ENOSPC), zeigte der Cache
+ * einen Stand, der nie auf der Platte lag.
+ */
 async function write(userId: number, store: Store, serialized?: string): Promise<void> {
+  await writeJsonStore(fileFor(userId), serialized ?? JSON.stringify(store));
   cacheSet(userId, store);
-  await fs.mkdir(config.annotationsPath, { recursive: true });
-  const file = fileFor(userId);
-  const tmp = `${file}.tmp`;
-  await fs.writeFile(tmp, serialized ?? JSON.stringify(store), 'utf-8');
-  await fs.rename(tmp, file);
 }
 
 /** Führt `fn` aus, sodass Schreibzugriffe desselben Kontos nacheinander laufen. */
@@ -122,11 +120,13 @@ export async function putAnnotation(
     if ('strokes' in partial) next.strokes = partial.strokes ?? null;
     if ('texts' in partial) next.texts = partial.texts ?? [];
     if ('zoom' in partial) next.zoom = partial.zoom ?? null;
-    // Leerer Eintrag → löschen (verkleinert immer, keine Grenzprüfung nötig).
+    // Leerer Eintrag → löschen (verkleinert immer, keine Grenzprüfung nötig). Auf einer KOPIE, damit
+    // ein fehlgeschlagenes Schreiben den Cache nicht verändert zurücklässt (#273).
     if (isEmpty(next)) {
       if (key in store) {
-        delete store[key];
-        await write(userId, store);
+        const shrunk: Store = { ...store };
+        delete shrunk[key];
+        await write(userId, shrunk);
       }
       return;
     }
@@ -142,8 +142,8 @@ export async function putAnnotation(
         'Speicher-Obergrenze für Anmerkungen erreicht. Bitte nicht mehr benötigte Anmerkungen löschen.',
       );
     }
-    store[key] = next;
-    await write(userId, store, serialized);
+    // `candidate` ist die Kopie von oben – sie wird geschrieben, nicht das gecachte Objekt (#273).
+    await write(userId, candidate, serialized);
   });
 }
 
@@ -152,8 +152,9 @@ export async function deleteAnnotation(userId: number, key: string): Promise<voi
   await withLock(userId, async () => {
     const store = await read(userId);
     if (store[key]) {
-      delete store[key];
-      await write(userId, store);
+      const shrunk: Store = { ...store };
+      delete shrunk[key];
+      await write(userId, shrunk);
     }
   });
 }

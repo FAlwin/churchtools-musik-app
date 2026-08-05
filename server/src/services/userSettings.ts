@@ -3,10 +3,10 @@
  * Abschnitte, gewählte Version, Anzeige-Quelle). Ohne DB: eine JSON-Datei pro Konto auf dem
  * Volume (wie annotations). Gespeichert als einfache Schlüssel→Wert-Tabelle (localStorage-Keys).
  */
-import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { config } from '../config.js';
 import { HttpError } from '../middleware/errorHandler.js';
+import { readJsonStore, writeJsonStore } from './jsonStore.js';
 
 type Store = Record<string, string>;
 
@@ -57,26 +57,21 @@ const locks = new Map<number, Promise<unknown>>();
 async function read(userId: number): Promise<Store> {
   const cached = cache.get(userId);
   if (cached) return cached;
-  try {
-    const raw = await fs.readFile(fileFor(userId), 'utf-8');
-    const data = JSON.parse(raw) as Store;
-    cache.set(userId, data);
-    return data;
-  } catch {
-    const empty: Store = {};
-    cache.set(userId, empty);
-    return empty;
-  }
+  // Nur „Datei gibt es noch nicht" ist leer; jeder andere Lesefehler wirft (#273) – sonst landete ein
+  // leerer Stand als Wahrheit im Cache und der nächste Schreibvorgang überschrieb die Einstellungen.
+  const data = (await readJsonStore<Store>(fileFor(userId), 'Lied-Einstellungen')) ?? {};
+  cache.set(userId, data);
+  return data;
 }
 
-/** `serialized` vermeidet doppeltes JSON.stringify, wenn der Aufrufer schon serialisiert hat. */
+/**
+ * `serialized` vermeidet doppeltes JSON.stringify, wenn der Aufrufer schon serialisiert hat.
+ * Der Cache wird **erst nach** erfolgreichem Schreiben gesetzt (#273) – vorher zeigte er bei einem
+ * Schreibfehler einen Stand, der nie auf der Platte lag. `putSettings` arbeitet ohnehin auf einer Kopie.
+ */
 async function write(userId: number, store: Store, serialized?: string): Promise<void> {
+  await writeJsonStore(fileFor(userId), serialized ?? JSON.stringify(store));
   cache.set(userId, store);
-  await fs.mkdir(config.annotationsPath, { recursive: true });
-  const file = fileFor(userId);
-  const tmp = `${file}.tmp`;
-  await fs.writeFile(tmp, serialized ?? JSON.stringify(store), 'utf-8');
-  await fs.rename(tmp, file);
 }
 
 async function withLock<T>(userId: number, fn: () => Promise<T>): Promise<T> {
