@@ -15,7 +15,7 @@
 
 - `GET  /api/health` → `{status, env}` (öffentlich, für Reverse-Proxy/Monitoring)
 - `GET  /api/update-check` → neueste veröffentlichte Version (liest GitHub-Release; für den In-App-Hinweis)
-- `GET  /api/site-config` → `{ appName, description, orgName }` (öffentlich, für Login/Mehr)
+- `GET  /api/site-config` → öffentlich `{ appName, description, orgName, links }` plus leere `musicianGroupIds`/`noteRoles`; **angemeldet die vollständige Konfiguration** (die internen Gruppen-/Rollen-IDs gelangen so nicht unauthentifiziert nach außen)
 - `PUT  /api/site-config` → Gemeinde-Name/Anmerkungs-Zuweisungen speichern (nur Admin, Zod-validiert)
 - `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt signiertes Session-Cookie
 - `POST /api/auth/logout` → Session + ChurchTools-Session beenden

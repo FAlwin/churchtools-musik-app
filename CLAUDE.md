@@ -145,7 +145,7 @@ Light/Dark). Alle Design-Tokens in `styles/_variables.scss` (Single Source); `ap
 **Einziger anpassbarer Wert:** der **Gemeinde-Name** (`orgName`) – ein ChurchTools-**Admin** ändert ihn
 im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site.json` (Volume,
 `SITE_CONFIG_PATH`). Admin-Recht über `ADMIN_PERMISSION` (Default `churchcore:administer persons`).
-`SiteConfig` (`shared/types`) ist auf `{ appName(fest), description(fest), orgName }` geschrumpft.
+`SiteConfig` (`shared/types`) hat sechs Felder: `appName`(fest), `description`(fest), `orgName`, `links`, `musicianGroupIds` und `noteRoles?`. Nur die ersten drei sind reine Anzeige-Werte.
 
 **Navigation:** untere Tab-Bar `Termine`/`Lieder`/`Mehr` (`components/TabBar.tsx`), Detailseiten
 (Setlist, Chart) als Vollbild-Push. Routing in `App.tsx` über `tab` + `view` (rechteabhängig).
@@ -374,6 +374,32 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
+- **CODE-CHECK 05.08.2026 (nach v2.16.0): Qualität Note 1,7 „professionell, in Teilen
+  herausragend", Sicherheit 0 kritische / 0 hohe Funde.** Gelobt: 0× `any`, 0× `@ts-ignore`, nur 5
+  Non-null-Assertions im Produktionscode; Kommentare durchweg mit _warum_ + Issue-Nummer; die
+  Dopplungs-Disziplin bei Schlüsseln (`shared/keys`), PDF-Optionen und Einstellungs-Umrechnung
+  wirklich gelöst; SSRF doppelt zu, Path-Traversal ausgeschlossen, CSP ohne `unsafe-inline`,
+  Rate-Limit-Schlüssel nicht manipulierbar; **jede Route einzeln geprüft – der „Custom-Route vor
+  Sub-Router"-Footgun existiert hier nicht**; keine versionierten Geheimnisse (ganze Historie, neun
+  Token-Muster).
+  **Kritik: viermal dieselbe Lehre nicht angewandt – „vorübergehend ≠ ungültig" (#270).** Vier hohe
+  Funde: #273 (`read()` cacht `{}` bei JEDEM Lesefehler → der nächste Schreibvorgang überschreibt die
+  Kontodatei; `write()` setzt den Cache außerdem VOR dem Schreiben), #274 (Download-Fehler wird zu
+  einem leeren Lied, und `Setlist.tsx:212` filtert es dann stumm aus der Sammel-PDF), #275 (dem
+  Zwilling `client/services/userSettings.ts` fehlen DREI Härtungen, die `annotations.ts` hat – grep:
+  19 Treffer dort, 0 hier; Folge: offline geänderte Tonart ist nach App-Neustart still weg), #276
+  („Teilen abschalten" meldet Erfolg ohne zu speichern – privatsphäre-relevant). Mittel: #277, #278
+  (`shared/` wird nicht gelintet), #279 (ESLint 8 EOL, keine typbewussten Regeln), #280
+  (`churchtools.ts` 870 Z. aufteilen). Niedrig: #281 (**#268 ist unvollständig – ein Cookie ohne
+  `s:`-Präfix landet nur in `req.cookies`, empirisch mit `cookie-parser` nachgestellt**), #282
+  (`canUseGlobalNotes` wird aus dem Rechte-Cache überbrückt, obwohl es Lesezugriff auf FREMDE
+  Anmerkungen gibt – #249-Begründung nicht übertragen), #283 (Sammel).
+  **Zwei Agenten-Behauptungen selbst nachgeprüft und korrigiert:** „unsigniertes Cookie = dauerhafte
+  401-Sackgasse" ist überzeichnet (ein Login überschreibt es – Ballast, kein Bypass), und
+  „`shared/keys` wird nicht typgeprüft" ist falsch (`tsc --listFiles` zeigt die Datei in BEIDEN
+  Builds; es fehlt nur der Lint). **Drei veraltete Aussagen in `testkonzept.md` und eine falsche
+  `SiteConfig`-Angabe in CLAUDE.md + api-referenz.md dabei korrigiert** – in genau der Datei, die vor
+  dieser Fehlerklasse warnt.
 - **Aktuell (03.08.2026): v2.16.0 PRODUKTIV LIVE - verifiziert.** Digest
   `sha256:f8e177c6...` auf `:2`/`:2.16`/`:2.16.0`/`:latest` (amd64+arm64), GitHub-Release LATEST.
   Verifikation am ausgelieferten Bundle: `v2.16.0` im `index`-Chunk, `2.15.0` = **0 Treffer**, die in
@@ -630,6 +656,13 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
       Sicherheits-Review nachgeprüft, ohne den Wert auszugeben). Er trägt die vollen persönlichen
       ChurchTools-Rechte. Die Datei ist korrekt gitignoriert und war nie im Repo – das Risiko ist rein
       lokal (Geräteverlust, Backup). **Zu tun: Token in ChurchTools widerrufen, Zeile leeren.**
+- [ ] **Funde aus dem Code-Check 05.08.2026 abarbeiten** – vier hohe (#273, #274, #275, #276), vier
+      mittlere (#277, #278, #279, #280), drei niedrige (#281, #282, #283). Die vier hohen sind
+      viermal dieselbe Lehre („vorübergehend ≠ ungültig") und der sinnvollste nächste Schritt.
+- [ ] **#196 auf dem NAS anwenden** – der einzige Punkt mit realem aktuellem Risiko: solange die
+      Test-Instanz auf allen Interfaces lauscht und ohne `COOKIE_SECURE` läuft, wandert das
+      Sitzungs-Cookie unverschlüsselt durchs LAN. **Braucht vorher einen Reverse Proxy auf die
+      Test-Domain** – sonst sperrt `COOKIE_SECURE=true` alle aus.
 - [x] Test-Service-Konto/Token #1012 in ChurchTools gelöscht (14.06.2026)
 - [x] White-Label (Farb-Anpassung) verworfen → feste CT-Version (Redesign live, 19.06.2026)
 - [x] Verteilung an andere Gemeinden (Selbst-Hosting) – abgeschlossen (öffentlich, MIT, `INSTALL.md`)
