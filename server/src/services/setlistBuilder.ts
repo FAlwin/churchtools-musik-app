@@ -415,7 +415,10 @@ async function runSongUsage(cookie: string): Promise<Record<number, SongUsage>> 
 
   const usage: Record<number, SongUsage> = {};
   const eventIds = new Set<number>();
+  /** Termine mit einem echten Fehler (403/500) – die machen die Statistik unvollständig. */
   let skipped = 0;
+  /** Termine ganz ohne Ablaufplan (404) – normal, kein Mangel. Nur zur Einordnung im Log. */
+  let ohneAblauf = 0;
   await mapLimit(events, 8, async (ev) => {
     // Notbremse: Sobald ChurchTools gebremst hat, keine weiteren Anfragen mehr starten. Es laufen
     // höchstens noch die 8 begonnenen aus – statt weiterer ~240 in ein erschöpftes Limit.
@@ -435,9 +438,15 @@ async function runSongUsage(cookie: string): Promise<Record<number, SongUsage>> 
         overloaded = true;
         return;
       }
+      // Ein 404 heißt „dieser Termin hat gar keinen Ablaufplan" und ist der NORMALFALL: Im
+      // 4-Jahres-Fenster liegen Gebetstreffen, Sitzungen und alles andere ohne Lieder. Er darf die
+      // Statistik NICHT als unvollständig ausweisen (#300). Der erste Betriebslauf zeigte 175 von 223
+      // Terminen ohne Ablauf – als „übersprungen" gezählt stand dauerhaft `vollständig=false` da, und
+      // eine Warnung, die immer leuchtet, wird ignoriert.
+      if (e instanceof HttpError && e.status === 404) ohneAblauf++;
       // Andere Fehler (403/500) überspringen nur diesen Termin und brechen den Lauf NICHT ab – sonst
       // würde ein dauerhaft unlesbarer Termin die Statistik für immer blockieren.
-      skipped++;
+      else skipped++;
       skipMissingAgenda('getSongUsageMap', e);
     }
   });
@@ -449,8 +458,9 @@ async function runSongUsage(cookie: string): Promise<Record<number, SongUsage>> 
   usageCache = { at: Date.now(), data: usage, eventIds };
   usageRetryAfter = 0;
   console.warn(
-    `[songUsage] Lauf beendet: ${eventIds.size} Termine, ${skipped} übersprungen, ` +
-      `vollständig=${skipped === 0}, ${((Date.now() - started) / 1000).toFixed(1)} s`,
+    `[songUsage] Lauf beendet: ${eventIds.size} mit Ablauf, ${ohneAblauf} ohne (normal), ` +
+      `${skipped} fehlerhaft, vollständig=${skipped === 0}, ` +
+      `${((Date.now() - started) / 1000).toFixed(1)} s`,
   );
   return usage;
 }
