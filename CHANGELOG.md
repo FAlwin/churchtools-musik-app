@@ -52,6 +52,14 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   begründet abgeschaltet. Ein echter Fund dabei: `?songs=…` wurde an **drei** Stellen als String
   behandelt, obwohl Express dort auch ein Array oder Objekt liefert – jetzt EINE geprüfte Stelle
   (`utils/songIdsQuery.ts`). (#279)
+- **ESLint 8 → 9, und aus vier Konfigurationen wurde eine** (`eslint.config.mjs` im
+  Wurzelverzeichnis). ESLint 8 war am Ende des Supports. Vorher lag in jedem Paket eine fast
+  identische Regelliste – `no-explicit-any` stand viermal da, und ob beim Ergänzen alle vier
+  angefasst wurden, war Disziplin. `npm run lint` prüft jetzt in einem Lauf auch `scripts/`, das
+  bisher niemand geprüft hatte (dort steckten sieben Fehler). Dabei kam heraus, dass fünf
+  `eslint-disable no-console` im Server wirkungslos waren, weil die Regel nie aktiv war – sie ist es
+  jetzt. Außerdem sind die beiden bekannten Schwachstellen in der Build-Kette (`brace-expansion`,
+  `fast-uri`) mit dem Update verschwunden: `npm audit` meldet **0**. (#279)
 - **`shared/` und `e2e/` werden jetzt mitgeprüft.** Beide fielen aus dem Lint heraus – `shared/` ohne
   `lint`-Skript (der Workspace wurde stillschweigend übersprungen) und ohne ESLint-Konfiguration, `e2e/`
   weil Client und Server nur ihr eigenes `src` prüfen. Betroffen war damit genau das Paket, das seit

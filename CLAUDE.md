@@ -75,9 +75,22 @@ churchtools-musik-app/
   klein und präzise; pro abgeschlossenem Teilschritt ein Commit
 - **Formatierung macht Prettier, nicht die Hand** (#198): `npm run format` vor dem Commit; die CI
   prüft es mit `npm run format:check` und schlägt sonst fehl. Wichtig zu wissen: **ESLint prüft
-  Formatierung NICHT** – `eslint-config-prettier` schaltet alle Formatregeln ab. Vor diesem Schritt
-  war der Stil deshalb unbemerkt auseinandergelaufen (86 Dateien). Betroffen sind
-  `ts/tsx/scss/json/md`, also auch `CHANGELOG.md` und die `docs/`.
+  Formatierung NICHT** – `eslint-config-prettier` schaltet alle Formatregeln ab (steht in
+  `eslint.config.mjs` deshalb ZULETZT). Vor diesem Schritt war der Stil unbemerkt auseinandergelaufen
+  (86 Dateien). Betroffen sind `ts/tsx/scss/json/md`, also auch `CHANGELOG.md` und die `docs/`.
+- **ESLint: EINE Flat Config im Wurzelverzeichnis** (`eslint.config.mjs`, ESLint 9 – #279). Vorher lagen
+  vier fast identische `.eslintrc.cjs` in `client/`, `server/`, `shared/` und `e2e/`; `no-explicit-any`
+  stand viermal da. `npm run lint` = `eslint .` prüft jetzt **alles**, auch `shared/`, `e2e/` und
+  `scripts/` (die fielen vorher stillschweigend heraus). Zu wissen:
+  - **Typbewusste Regeln sind an** (`recommendedTypeChecked`). Damit greifen `no-floating-promises`
+    und `no-misused-promises` – ein vergessenes `void`/`await` ist ein Fehler, keine Stilfrage.
+  - **`no-console` gilt im Server** (`warn`/`error` erlaubt, `console.log` pro Stelle freizugeben).
+  - Bewusste Ausnahmen, jeweils im Config-Kommentar begründet: `checksVoidReturn.attributes` aus
+    (React-Idiom `onClick={async …}`), in Testdateien die `no-unsafe-*`-Familie aus (feuert auf
+    `JSON.parse`/Mocks), Tooling- und Sonden-Dateien ohne Typprüfung.
+  - ⚠️ **ESLint 9 meldet ungenutzte `eslint-disable`-Kommentare von selbst.** Dadurch fielen fünf
+    wirkungslose `no-console`-Ausnahmen auf – die Regel war gar nicht aktiv. Ein Disable ohne aktive
+    Regel ist Deko; jetzt zeigt der Lauf das.
 
 ### Frontend
 

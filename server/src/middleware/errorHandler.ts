@@ -27,7 +27,6 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     res.status(err.status).json({ error: err.message });
     return;
   }
-  // eslint-disable-next-line no-console
   console.error('Unerwarteter Fehler:', err);
   res.status(500).json({ error: 'Interner Serverfehler' });
 };
