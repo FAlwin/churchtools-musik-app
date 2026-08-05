@@ -399,7 +399,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
     werden (vorher wurde jede nicht-ok-Antwort zu 502) – die Zeile stand **zweimal** wortgleich, also
     neu der Helfer `fileDownloadError`. Das Lied trägt jetzt `chordproFailed`; Chart-Ansicht meldet es,
     „Als PDF teilen" fragt nach.
-  - **#275** Dem Zwilling `client/services/userSettings.ts` fehlten **drei** Härtungen aus
+  - **#275** Dem Zwilling `client/src/services/userSettings.ts` fehlten **drei** Härtungen aus
     `annotations.ts` (grep: 19 Treffer dort, 0 hier). Sie werden jetzt **geteilt**, nicht nachgebaut:
     neu `services/pendingKeys.ts` (Merker in localStorage) und `services/appHidden.ts`
     (`visibilitychange`/`pagehide`); `annotations.ts` wurde auf beide umgestellt, sonst wäre es die
@@ -411,16 +411,16 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
     ⚠️ **Gelernt:** `userSettings.flush.test.ts` und `.reset.test.ts` brauchen jetzt
     `@vitest-environment jsdom` – seit `pushSetting` den Merker schreibt, gibt es ohne jsdom
     „localStorage is not defined".
-- **ALLE Code-Check-Funde abgearbeitet (05.08.2026) außer #280 – in `main`, NICHT in Prod.**
+- **v2.16.1 VORBEREITET (05.08.2026): alle Code-Check-Funde außer #280 – in `main`, Prod läuft v2.16.0.**
   Reihenfolge der PRs: #285 (#273), #286 (#276), #287 (#274), #288 (#275), #289 (#281/#282),
   #290 (#277/#278/#279 Teil 1), #291 (#279 Teil 2), #292 (#283). Tests **Client 420 / Server 254 /
   5 E2E**, 59 manuelle Testfälle, `npm audit` = **0** (auch mit Dev-Abhängigkeiten).
   Neue geteilte Bausteine, die dabei entstanden sind – bei Änderungen IMMER dort ansetzen, nicht
   danebenbauen:
-  - `server/services/jsonStore.ts` – Lesen/Schreiben ALLER JSON-Ablagen. Nur `ENOENT` heißt „leer".
-  - `client/services/pendingKeys.ts` – Merker für ausstehende Uploads (Anmerkungen UND Einstellungen).
-  - `client/services/appHidden.ts` – `visibilitychange`/`pagehide` an einer Stelle.
-  - `server/utils/songIdsQuery.ts` – `?songs=…` auswerten (Express liefert dort auch Arrays/Objekte).
+  - `server/src/services/jsonStore.ts` – Lesen/Schreiben ALLER JSON-Ablagen. Nur `ENOENT` heißt „leer".
+  - `client/src/services/pendingKeys.ts` – Merker für ausstehende Uploads (Anmerkungen UND Einstellungen).
+  - `client/src/services/appHidden.ts` – `visibilitychange`/`pagehide` an einer Stelle.
+  - `server/src/utils/songIdsQuery.ts` – `?songs=…` auswerten (Express liefert dort auch Arrays/Objekte).
   - `fileDownloadError` in `churchtools.ts` – 404 bleibt 404, alles andere 502.
   - `eslint.config.mjs` – EINE Flat Config statt vier (siehe Konventionen).
     ⚠️ **Zwei Lehren aus diesem Durchgang, die über das Projekt hinausgehen:**
@@ -443,7 +443,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   Funde: #273 (`read()` cacht `{}` bei JEDEM Lesefehler → der nächste Schreibvorgang überschreibt die
   Kontodatei; `write()` setzt den Cache außerdem VOR dem Schreiben), #274 (Download-Fehler wird zu
   einem leeren Lied, und `Setlist.tsx:212` filtert es dann stumm aus der Sammel-PDF), #275 (dem
-  Zwilling `client/services/userSettings.ts` fehlen DREI Härtungen, die `annotations.ts` hat – grep:
+  Zwilling `client/src/services/userSettings.ts` fehlen DREI Härtungen, die `annotations.ts` hat – grep:
   19 Treffer dort, 0 hier; Folge: offline geänderte Tonart ist nach App-Neustart still weg), #276
   („Teilen abschalten" meldet Erfolg ohne zu speichern – privatsphäre-relevant). Mittel: #277, #278
   (`shared/` wird nicht gelintet), #279 (ESLint 8 EOL, keine typbewussten Regeln), #280

@@ -7,6 +7,17 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.16.1] – 2026-08-05
+
+Wartungs-Release: **sieben Fehler behoben, alle aus dem Code-Check nach v2.16.0** – dazu die
+Codeprüfung deutlich verschärft. Bei sechs der sieben Fehler ging es darum, dass ein
+**vorübergehendes** Problem (ChurchTools antwortet nicht, Netz weg, Datei nicht lesbar) als
+**endgültig** behandelt wurde: Daten galten als leer, Erfolg wurde gemeldet, wo nichts gespeichert
+war.
+
+An der Bedienung ändert sich nichts – die geführte Einführung bleibt unverändert. Neu sind nur
+Meldungen, die man hoffentlich nie sieht.
+
 ### Behoben
 
 - **Eine ohne Netz geänderte Einstellung übersteht jetzt auch das Schließen der App.** Wer im
