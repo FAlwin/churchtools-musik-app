@@ -80,7 +80,6 @@ export function Coachmarks({ steps, onClose }: CoachmarksProps) {
       window.removeEventListener('resize', remeasure);
       window.removeEventListener('orientationchange', remeasure);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, steps]);
 
   function close() {

@@ -9,7 +9,6 @@
     ".": "./types/index.ts"
   },
   "scripts": {
-    "build": "tsc --noEmit",
-    "lint": "eslint . --ext .ts --max-warnings=0"
+    "build": "tsc --noEmit"
   }
 }

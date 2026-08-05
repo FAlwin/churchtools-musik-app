@@ -32,7 +32,6 @@ export async function readJsonStore<T>(file: string, was: string): Promise<T | n
     raw = await fs.readFile(file, 'utf-8');
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    // eslint-disable-next-line no-console
     console.error(`${was}: Lesen von ${file} fehlgeschlagen:`, e instanceof Error ? e.message : e);
     throw new HttpError(
       500,
@@ -44,7 +43,6 @@ export async function readJsonStore<T>(file: string, was: string): Promise<T | n
   } catch (e) {
     // Bewusst laut: Eine beschädigte Datei darf NICHT als „leer" durchgehen, sonst überschreibt der
     // nächste Speichervorgang den Rest. Lieber ein sichtbarer Fehler und ein Blick aufs Volume.
-    // eslint-disable-next-line no-console
     console.error(
       `${was}: ${file} ist beschädigt (kein gültiges JSON):`,
       e instanceof Error ? e.message : e,

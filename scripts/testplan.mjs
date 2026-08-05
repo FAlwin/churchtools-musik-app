@@ -59,7 +59,7 @@ function ladeFaelle() {
   return faelle;
 }
 
-/** Sehr einfacher Glob: `*` steht für „beliebig, auch /". Reicht für Pfad-Präfixe und `**​/x`. */
+/** Sehr einfacher Glob: `*` steht für „beliebig, auch Schrägstrich". Reicht für Pfad-Präfixe. */
 function passt(muster, datei) {
   if (!muster.includes('*'))
     return datei === muster || datei.startsWith(muster.replace(/\/$/, '') + '/');

@@ -1,0 +1,13 @@
+{
+  // Eigenes Projekt für die E2E-Tests (#279): Ohne tsconfig fielen sie in das ESLint-Standardprojekt,
+  // in dem die Typen nur halb auflösen – dort meldete die Prüfung dann Dinge, die keine Fehler sind
+  // (z. B. eine „unnötige" Zusicherung, die in Wahrheit nötig ist). Echter Code verdient echte Typen.
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["**/*.ts"]
+}
