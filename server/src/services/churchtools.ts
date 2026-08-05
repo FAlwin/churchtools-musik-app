@@ -633,8 +633,8 @@ export async function fetchFileBytes(
   }
 }
 
-/** Holt ein CSRF-Token (für schreibende Anfragen mit Cookie-Session nötig). */
-async function getCsrfToken(cookie: string): Promise<string> {
+/** Ein einzelner Versuch, ein CSRF-Token zu holen. */
+async function fetchCsrfTokenOnce(cookie: string): Promise<string> {
   const res = await fetch(`${BASE}/api/csrftoken`, {
     signal: ctSignal(),
     headers: { Cookie: cookie, Accept: 'application/json' },
@@ -648,6 +648,41 @@ async function getCsrfToken(cookie: string): Promise<string> {
   const json = (await res.json()) as { data?: string };
   return json.data ?? '';
 }
+
+/** Pause zwischen den beiden Versuchen (#294). Klein genug, dass es beim Speichern nicht auffällt. */
+export const CSRF_RETRY_DELAY_MS = 300;
+
+/**
+ * Holt ein CSRF-Token für schreibende Anfragen – mit **einem** automatischen Wiederholversuch (#294).
+ *
+ * Jede Schreibaktion (Ablauf speichern, Lied hochladen, …) holt zuerst dieses Token. Scheiterte das
+ * eine Mal – ein kurzer ChurchTools-Schluckauf, ein Netz-Aussetzer –, brach der ganze Speichervorgang
+ * ab und der Nutzer sah „CSRF-Token konnte nicht geholt werden" und musste **selbst** noch einmal auf
+ * Speichern tippen (real aufgetreten beim Bearbeiten eines Ablaufeintrags). Im Gottesdienst ist das
+ * genau der falsche Moment für Rätselraten.
+ *
+ * Das Token-Holen ist ein reiner GET ohne Nebenwirkung – ein zweiter Versuch ist also gefahrlos.
+ * Dieselbe Lehre wie #245/#270 („vorübergehend ≠ ungültig“), hier auf dem Schreibpfad. **Bewusst nur
+ * das Token wird wiederholt, NICHT der eigentliche Schreibvorgang danach** – der ist nicht überall
+ * idempotent (ein Datei-Upload würde sonst doppelt laufen).
+ *
+ * Ein **401/403** (tote Session) wird NICHT wiederholt: Das ändert sich beim zweiten Versuch nicht und
+ * würde nur den Weg zum Login verzögern.
+ */
+async function getCsrfToken(cookie: string): Promise<string> {
+  try {
+    return await fetchCsrfTokenOnce(cookie);
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 401) throw e; // tote Session → nicht wiederholen
+    // Alles andere ist vorübergehend: einmal kurz warten und erneut versuchen. Klappt es wieder
+    // nicht, fliegt der Fehler des ZWEITEN Versuchs (der aktuelle Zustand, nicht der alte).
+    await new Promise((r) => setTimeout(r, CSRF_RETRY_DELAY_MS));
+    return await fetchCsrfTokenOnce(cookie);
+  }
+}
+
+/** Nur für Tests: den Schreibpfad an seiner empfindlichsten Stelle (Token-Holen) prüfbar machen. */
+export const __getCsrfTokenForTests = getCsrfToken;
 
 /** Lädt eine .chordpro-Datei an ein Arrangement hoch (ersetzt vorhandene gleichen Namens nicht automatisch). */
 export async function uploadChordpro(
