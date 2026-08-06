@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
@@ -11,7 +12,8 @@ const ACTIVE_STALE_MS = 1000 * 30;
 
 /** Lädt die Gottesdienste mit Setlist (Standardfenster: ~1 Woche zurück bis 6 Wochen voraus). */
 export function useServices(enabled: boolean, poll = true) {
-  return useQuery({
+  const qc = useQueryClient();
+  const query = useQuery({
     queryKey: ['services'],
     queryFn: () => api.getServices(),
     enabled,
@@ -33,6 +35,35 @@ export function useServices(enabled: boolean, poll = true) {
      */
     refetchInterval: poll ? 60_000 : false,
   });
+
+  /**
+   * Wird der Takt wieder eingeschaltet, EINMAL sofort nachladen – und zwar hier, direkt neben dem
+   * Takt selbst.
+   *
+   * Ohne das wäre #306 ein Rückschritt: React Query startet beim Wiedereinschalten nur den Timer neu
+   * und holt **nicht** von sich aus. Nach zehn Minuten im Liederheft sähe man also eine zehn Minuten
+   * alte Terminliste, und das noch bis zu 60 Sekunden lang. Vorher lief der Takt durch – die Liste war
+   * nie älter als eine Minute. (Empirisch nachgestellt: verborgen → zurück ergab 0 zusätzliche
+   * Aufrufe.)
+   *
+   * Die Zeile steht bewusst im Hook und nicht beim Aufrufer: „Takt pausiert" und „beim Zurückkommen
+   * frisch" sind zwei Hälften EINER Regel. Getrennt abgelegt, vergisst sie der nächste Aufrufer.
+   *
+   * ⚠️ Bewusst über den QueryClient statt über `query.refetch`: React Query merkt sich, welche Felder
+   * des Ergebnisses während des Renderns gelesen werden, und benachrichtigt danach NUR noch bei deren
+   * Änderung. Würde hier `refetch` herausgezogen, gälte allein `refetch` als beobachtet – neue Daten
+   * lösten dann in Komponenten, die sonst nichts lesen, kein Rendern mehr aus. Ein Test hat genau das
+   * gezeigt (Abfrage blieb ewig `pending`).
+   */
+  const taktLiefVorher = useRef(poll);
+  useEffect(() => {
+    if (poll && !taktLiefVorher.current && enabled) {
+      void qc.refetchQueries({ queryKey: ['services'], exact: true });
+    }
+    taktLiefVorher.current = poll;
+  }, [poll, enabled, qc]);
+
+  return query;
 }
 
 /**

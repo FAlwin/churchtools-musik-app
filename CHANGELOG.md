@@ -20,8 +20,9 @@ An der Bedienung ändert sich nichts.
   jeden Termin **zwei** Dinge – den Ablauf und den Untertitel –, und das im Minutentakt, auch wenn man
   die Liste gar nicht ansah (etwa im Liederheft). Jetzt wird der Untertitel zehn Minuten
   zwischengespeichert, und der Takt läuft nur noch, wenn die Terminliste sichtbar ist. Für ein Gerät
-  im Liederheft entfallen damit rund 17 ChurchTools-Anfragen pro Minute. An der Bedienung ändert sich
-  nichts: Öffnet man die Liste, wird sofort aktualisiert. (#306)
+  im Liederheft entfallen damit rund 17 ChurchTools-Anfragen pro Minute. Damit das kein Rückschritt
+  ist, wird die Liste beim Zurückwechseln **einmal sofort** neu geladen – sie ist also nie älter, als
+  sie vorher war. (#306)
 
 ### Intern
 
@@ -32,9 +33,12 @@ An der Bedienung ändert sich nichts.
 - Zwei Bausteine zusammengeführt, bevor eine dritte Kopie entstand: der Zwischenspeicher mit
   Verfallszeit (`ttlMemo`, vorher handgeschrieben in `versionMemo`) und die Konto-Kennung für
   Speicher-Schlüssel (`accountKey`, stand wortgleich an zwei Stellen).
-- Zwei Erkundungs-Skripte für ChurchTools: eines misst das Anfrage-Limit (nur auf ausdrückliche
-  Bestätigung, Stopp beim ersten Drosseln), eines prüft, welche Felder die Termin-Liste liefert.
-- **Tests: Client 431 · Server 311 · 5 E2E** (vorher 428 · 296 · 5).
+- Ein Erkundungs-Skript, das misst, wie viele Termine überhaupt einen Ablaufplan haben (nur lesend).
+  Es hat die Zahlen geliefert, mit denen der Merker für „Termine ohne Lieder" bewusst verworfen wurde.
+- **Skripte werden jetzt mitgeprüft.** `server/scripts/` stand nicht in der TypeScript-Prüfung und war
+  darum still verrottet: Zwei alte Testskripte riefen längst gelöschte Funktionen auf. Sie sind
+  entfernt, der Ordner wird geprüft – mit Gegenprobe, dass die Prüfung auch wirklich fehlschlägt.
+- **Tests: Client 433 · Server 311 · 5 E2E** (vorher 428 · 294 · 5).
 
 ## [2.16.1] – 2026-08-06
 
