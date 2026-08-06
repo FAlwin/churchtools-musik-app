@@ -189,7 +189,7 @@ Testdatei); die Literale stehen nur noch als zweite Absicherung des Formats dane
 
 Alles, was Finger, Stift, iOS-Tastatur oder echte Netztrennung braucht, steht als Testfall in
 [`docs/tests/`](../tests/README.md) – mit Schritten, erwartetem Ergebnis und dem Feld **Betrifft**,
-über das `npm run testplan` vor einem Release die betroffenen Fälle auswählt. Aktuell 59 Fälle,
+über das `npm run testplan` vor einem Release die betroffenen Fälle auswählt. Aktuell 60 Fälle,
 davon 12 „immer prüfen".
 
 ## Regel für neue Fehler

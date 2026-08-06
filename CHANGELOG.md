@@ -39,7 +39,7 @@ direkt hierher; alles aus v2.16.2 ist enthalten.
 ## [2.16.2] – 2026-08-06
 
 > ⚠️ **Getaggt, aber nie ausgeliefert.** Enthielt den unter v2.16.3 behobenen Rückschritt bei der
-> Frische der Terminliste. In Produktion läuft v2.16.1; ausgeliefert wird v2.16.3.
+> Frische der Terminliste. Produktion ging von v2.16.1 direkt auf v2.16.3.
 
 Kleines Nachfass-Release zu v2.16.1: Es senkt die **Dauerlast** auf ChurchTools deutlich – den Posten,
 der sich nach dem letzten Release als der größere herausgestellt hat.

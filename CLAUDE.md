@@ -17,8 +17,8 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.3 GETAGGT**,
-  Prod-Deploy durch Alwin – bis dahin läuft dort v2.16.1. **v2.16.2 wird übersprungen**, siehe unten).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.3 PRODUKTIV LIVE**,
+  verifiziert. **v2.16.2 wurde übersprungen**, siehe unten).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -445,7 +445,13 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   ⚠️ **ChurchTools' Limit ist weiterhin unbekannt** – deshalb steht im Code KEINE geratene Rate.
   Klärung per Anfrage an ChurchTools oder mit `server/scripts/probe-ratelimit.ts` (Messung an der
   echten Instanz – nur wochentags abends, stoppt beim ersten 429, Trockenlauf ohne `--ja-ich-will`).
-- **v2.16.3 GETAGGT (06.08.2026) – Prod-Deploy offen. v2.16.2 wird übersprungen.**
+- **v2.16.3 PRODUKTIV LIVE ✅ (06.08.2026, verifiziert). v2.16.2 wurde übersprungen.**
+  Digest `sha256:bacc1775…` (direkt aus der GHCR-Registry gelesen, amd64+arm64, Tag `2` zeigt darauf).
+  **Verifikation am ausgelieferten Bundle** – zwei unabhängige Belege: `v2.16.3` steht im
+  `index`-Chunk (aus `VITE_APP_VERSION`, beim Bauen eingebrannt), `2.16.1` und `2.16.2` = **0
+  Treffer**; und der Fix selbst ist drin (`refetchQueries({queryKey:["services"],exact:!0})` – eine
+  Zeile, die es vorher nirgends gab). Die zweite Probe ist die bessere: Eine Versionsnummer kann aus
+  einem Cache stammen, eine vorher nicht existierende Codezeile nicht.
 
   **⚠️ Die Lehre dieses Releases: erst die Release-Prüfung, DANN taggen.** v2.16.2 war getaggt, bevor
   die Prüfung durch war – und die fand danach einen Rückschritt, den #306 selbst eingebaut hatte:

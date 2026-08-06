@@ -141,3 +141,26 @@ sollst nicht wischen, neu laden oder die App wechseln müssen.
 - **Historie:** #159
 
 </details>
+
+### TF-ABLAUF-08 · Nach dem Liederheft ist die Terminliste sofort aktuell
+
+**Das muss passieren:** Auch nach einer längeren Pause im Liederheft zeigt die Terminliste beim
+Zurückwechseln **sofort** den aktuellen Stand – kein alter Titel, keine alte Uhrzeit, kein Warten von
+bis zu einer Minute. Kurzes Nachladen ist normal und gewollt.
+
+1. Unten auf **Termine** tippen und sich merken, was beim nächsten Gottesdienst steht.
+2. Einen Termin öffnen und ins **Liederheft** wechseln. Dort mindestens **fünf Minuten** bleiben
+   (Gerät nicht sperren, App nicht wechseln – sonst greift eine andere Auffrischung).
+3. In dieser Zeit in ChurchTools am nächsten Gottesdienst etwas ändern, das man in der Liste sieht –
+   z. B. ein Lied hinzufügen.
+4. Unten wieder auf **Termine** tippen und **sofort** hinsehen.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `client/src/hooks/useServices.ts`, `client/src/App.tsx`
+- **Automatisiert:** teilweise – `client/src/hooks/useServices.poll.test.tsx` prüft den Hook; die
+  Verdrahtung Tab/Ansicht → Takt in `App.tsx` deckt kein Test ab, genau die ist hier gemeint
+- **Historie:** #306 (v2.16.2 pausierte den Takt, ohne beim Zurückkommen nachzuladen – in v2.16.3 behoben)
+
+</details>
