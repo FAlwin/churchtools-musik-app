@@ -19,18 +19,19 @@ direkt hierher; alles aus v2.16.2 ist enthalten.
   Minutentakt pausiert, solange man die Liste nicht sieht – aber nicht dafür gesorgt, dass beim
   Zurückkommen nachgeladen wird. Nach zehn Minuten im Liederheft hätte man zehn Minuten alte Termine
   gesehen, und das noch bis zu einer Minute lang. Jetzt wird beim Wechsel zurück **einmal sofort**
-  neu geladen: Die Liste ist nie älter, als sie vor v2.16.2 war – bei deutlich weniger Anfragen. (#306)
+  neu geladen – man wartet also höchstens eine Netzrunde statt bis zu zehn Minuten, bei deutlich
+  weniger Anfragen als vor v2.16.2. (#306)
 
 ### Intern
 
 - **Skripte werden jetzt mitgeprüft.** `server/scripts/` stand nicht in der TypeScript-Prüfung und war
-  darum still verrottet: Zwei alte Testskripte riefen längst gelöschte Funktionen auf (21 bzw. 11
-  Fehler). Sie sind entfernt, der Ordner wird geprüft – mit Gegenprobe, dass die Prüfung auch wirklich
-  fehlschlagen kann.
+  darum still verrottet: `test-pipeline.ts` (12 Fehler) und `test-editor.ts` (2) riefen längst
+  gelöschte Funktionen auf. Sie sind entfernt, der Ordner wird geprüft – mit Gegenprobe, dass die
+  Prüfung auch wirklich fehlschlagen kann.
 - Ein doppeltes Erkundungs-Skript entfernt, das dieselbe Frage beantwortete wie ein bereits
   ausgeführtes und nie gelaufen war.
 - Mehrere Falschaussagen in der Doku berichtigt: Skript-Zuordnung und Testzahlen im CHANGELOG, ein
-  Selbstwiderspruch in `CLAUDE.md` (eine „wirksamste offene Optimierung", die 60 Zeilen weiter unten
+  Selbstwiderspruch in `CLAUDE.md` (eine „wirksamste offene Optimierung", die wenige Absätze weiter
   bereits bewusst verworfen war), die OpenAPI-Aussage jetzt korrekt als Spezifikation **und**
   empirischer Lauf ausgewiesen, `api-referenz.md` von Stand v2.15.0 auf v2.16.3.
 - **Tests: Client 433 · Server 311 · 5 E2E** (vorher 428 · 294 · 5).
@@ -38,7 +39,7 @@ direkt hierher; alles aus v2.16.2 ist enthalten.
 ## [2.16.2] – 2026-08-06
 
 > ⚠️ **Getaggt, aber nie ausgeliefert.** Enthielt den unter v2.16.3 behobenen Rückschritt bei der
-> Frische der Terminliste. In Produktion lief durchgehend v2.16.1, danach v2.16.3.
+> Frische der Terminliste. In Produktion läuft v2.16.1; ausgeliefert wird v2.16.3.
 
 Kleines Nachfass-Release zu v2.16.1: Es senkt die **Dauerlast** auf ChurchTools deutlich – den Posten,
 der sich nach dem letzten Release als der größere herausgestellt hat.
