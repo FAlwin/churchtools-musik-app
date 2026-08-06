@@ -7,12 +7,41 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.16.3] – 2026-08-06
+
+**Korrektur-Release zu v2.16.2.** v2.16.2 wurde getaggt, aber nie ausgeliefert – die Release-Prüfung
+fand danach einen Rückschritt, den v2.16.2 selbst eingebaut hatte. Wer von v2.16.1 kommt, springt
+direkt hierher; alles aus v2.16.2 ist enthalten.
+
+### Behoben
+
+- **Die Terminliste ist beim Zurückwechseln wieder sofort aktuell.** v2.16.2 hatte den
+  Minutentakt pausiert, solange man die Liste nicht sieht – aber nicht dafür gesorgt, dass beim
+  Zurückkommen nachgeladen wird. Nach zehn Minuten im Liederheft hätte man zehn Minuten alte Termine
+  gesehen, und das noch bis zu einer Minute lang. Jetzt wird beim Wechsel zurück **einmal sofort**
+  neu geladen: Die Liste ist nie älter, als sie vor v2.16.2 war – bei deutlich weniger Anfragen. (#306)
+
+### Intern
+
+- **Skripte werden jetzt mitgeprüft.** `server/scripts/` stand nicht in der TypeScript-Prüfung und war
+  darum still verrottet: Zwei alte Testskripte riefen längst gelöschte Funktionen auf (21 bzw. 11
+  Fehler). Sie sind entfernt, der Ordner wird geprüft – mit Gegenprobe, dass die Prüfung auch wirklich
+  fehlschlagen kann.
+- Ein doppeltes Erkundungs-Skript entfernt, das dieselbe Frage beantwortete wie ein bereits
+  ausgeführtes und nie gelaufen war.
+- Mehrere Falschaussagen in der Doku berichtigt: Skript-Zuordnung und Testzahlen im CHANGELOG, ein
+  Selbstwiderspruch in `CLAUDE.md` (eine „wirksamste offene Optimierung", die 60 Zeilen weiter unten
+  bereits bewusst verworfen war), die OpenAPI-Aussage jetzt korrekt als Spezifikation **und**
+  empirischer Lauf ausgewiesen, `api-referenz.md` von Stand v2.15.0 auf v2.16.3.
+- **Tests: Client 433 · Server 311 · 5 E2E** (vorher 428 · 294 · 5).
+
 ## [2.16.2] – 2026-08-06
+
+> ⚠️ **Getaggt, aber nie ausgeliefert.** Enthielt den unter v2.16.3 behobenen Rückschritt bei der
+> Frische der Terminliste. In Produktion lief durchgehend v2.16.1, danach v2.16.3.
 
 Kleines Nachfass-Release zu v2.16.1: Es senkt die **Dauerlast** auf ChurchTools deutlich – den Posten,
 der sich nach dem letzten Release als der größere herausgestellt hat.
-
-An der Bedienung ändert sich nichts.
 
 ### Geändert
 
@@ -20,9 +49,7 @@ An der Bedienung ändert sich nichts.
   jeden Termin **zwei** Dinge – den Ablauf und den Untertitel –, und das im Minutentakt, auch wenn man
   die Liste gar nicht ansah (etwa im Liederheft). Jetzt wird der Untertitel zehn Minuten
   zwischengespeichert, und der Takt läuft nur noch, wenn die Terminliste sichtbar ist. Für ein Gerät
-  im Liederheft entfallen damit rund 17 ChurchTools-Anfragen pro Minute. Damit das kein Rückschritt
-  ist, wird die Liste beim Zurückwechseln **einmal sofort** neu geladen – sie ist also nie älter, als
-  sie vorher war. (#306)
+  im Liederheft entfallen damit rund 17 ChurchTools-Anfragen pro Minute. (#306)
 
 ### Intern
 
@@ -35,10 +62,6 @@ An der Bedienung ändert sich nichts.
   Speicher-Schlüssel (`accountKey`, stand wortgleich an zwei Stellen).
 - Ein Erkundungs-Skript, das misst, wie viele Termine überhaupt einen Ablaufplan haben (nur lesend).
   Es hat die Zahlen geliefert, mit denen der Merker für „Termine ohne Lieder" bewusst verworfen wurde.
-- **Skripte werden jetzt mitgeprüft.** `server/scripts/` stand nicht in der TypeScript-Prüfung und war
-  darum still verrottet: Zwei alte Testskripte riefen längst gelöschte Funktionen auf. Sie sind
-  entfernt, der Ordner wird geprüft – mit Gegenprobe, dass die Prüfung auch wirklich fehlschlägt.
-- **Tests: Client 433 · Server 311 · 5 E2E** (vorher 428 · 294 · 5).
 
 ## [2.16.1] – 2026-08-06
 
