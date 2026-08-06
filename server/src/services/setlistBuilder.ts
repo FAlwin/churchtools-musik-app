@@ -40,12 +40,6 @@ function skipMissingAgenda(context: string, e: unknown): void {
   console.warn(`${context}: Ablauf-Abruf fehlgeschlagen (Termin übersprungen):`, e);
 }
 
-/**
- * Marker für von uns verwaltete, benannte Versionen: „<Titel> — <Name> (App).chordpro".
- * Das `(App)`-Kürzel erkennt unsere Dateien zuverlässig (kein Verwechseln mit Originaldateien,
- * die zufällig einen Bindestrich enthalten) und ist – anders als das frühere `(ECG)` – nicht
- * gemeindespezifisch. Alt-Bestand mit `(ECG)` wird weiterhin erkannt (siehe versionNameOf).
- */
 /** Fingerabdruck der aktuellen Setlist eines Termins (leichter Abruf, ohne ChordPro zu laden). */
 export async function getSetlistFingerprint(cookie: string, eventId: number): Promise<string> {
   const agenda = await getAgenda(cookie, eventId);

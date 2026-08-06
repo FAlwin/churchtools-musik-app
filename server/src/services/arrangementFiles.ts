@@ -28,6 +28,11 @@ export function versionSlug(name: string): string {
 
 /**
  * Erkennt am Namen, ob eine Datei eine von uns verwaltete Version ist, und liefert deren Namen.
+ *
+ * Das `(App)`-Kürzel erkennt unsere Dateien zuverlässig – ein Originalname, der zufällig einen
+ * Bindestrich enthält, wird nicht verwechselt – und ist, anders als das frühere `(ECG)`, nicht
+ * gemeindespezifisch.
+ *
  * Aktueller Marker „— <Name> (App).chordpro"; abwärtskompatibel:
  *  - „— <Name> (ECG).chordpro" (Bestandsdateien mit dem früheren, gemeindespezifischen Kürzel)
  *  - „— Bearbeitet.chordpro" / „— ECG.chordpro" (ganz alte namenlose Varianten → Name „Bearbeitet").

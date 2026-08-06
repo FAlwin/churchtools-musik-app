@@ -14,11 +14,6 @@ import { disintegrate } from '../utils/disintegrate';
 import styles from '../pages/Setlist.module.scss';
 
 /**
- * „Voller Ablauf": alle Punkte mit Uhrzeit, Dauer, Notiz und Zuständigen (wie in ChurchTools,
- * aber aufgeräumt). Lieder sind antippbar (→ Charts). Die Uhrzeit (`item.time`) ist bereits
- * serverseitig korrekt: in ChurchTools ausgeblendete Punkte (Auge) liefern keine Zeit.
- */
-/**
  * Zeile eines entfernten Ablaufpunkts (#161 Etappe B): kurz durchgestrichen sichtbar, dann
  * „poof"-Zerfall à la iOS – die Zeile wird abfotografiert, in Partikel zerlegt (utils/disintegrate)
  * und die echte Zeile fällt zusammen. Fällt html2canvas aus, wird einfach ausgeblendet.

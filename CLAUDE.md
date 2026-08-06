@@ -458,6 +458,15 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   wortgleich stehen, obwohl der Kommentar an `csrfWriteDenied` selbst davor warnte. Jetzt Helfer
   `schreibe`; ein Test prüft die Regel für **jede der sieben einzeln** (Gegenprobe: umgeht EINE
   Funktion den Helfer, fällt genau ihr Test).
+  **Beim Durchlesen der erzeugten Module gefunden** (Compiler und Tests belegen nur das Verhalten,
+  nichts über Kommentare): `forgetSession` räumte drei Speicher, aber nicht den laufenden
+  Token-Abruf – ein Abmelden mitten im Holen schrieb das Token danach doch noch hinein. Dazu vier
+  Doku-Aussagen, die nicht mehr stimmten (u. a. „weil sieben Schreibfunktionen …" bei genau einem
+  Aufrufer, und `logout` **und** `forgetSession` beanspruchten beide, DIE Stelle zu sein).
+  **Daraus eine neue Dauerprüfung: `npm run doc-check`** findet verwaiste Doc-Kommentare (zwei Blöcke
+  direkt hintereinander = der obere beschreibt etwas, das nicht mehr darunter steht). Projektweit
+  **sieben** solcher Stellen gefunden, die schlimmste beschrieb über `DisintegratingRow` eine ganz
+  andere Komponente. Diese Fehlerklasse ist unsichtbar für Compiler und Tests – deshalb jetzt in der CI.
   ⚠️ **Fallstrick beim Aufteilen: `vi.mock('./altesModul.js')` zeigt danach ins Leere, ohne dass ein
   Test rot wird.** Fünf Testdateien waren betroffen; eine brauchte zwei Mocks, weil ihre zwei Symbole
   in verschiedene Module gingen. Nach jedem Aufteilen also `grep` auf den alten Modulnamen – auch in

@@ -13,12 +13,6 @@ import { createHash } from 'node:crypto';
 import type { CtAgendaItem } from './ctTypes.js';
 
 /**
- * Fingerabdruck einer Setlist (#143): stabile Signatur aus Lied, Arrangement, Tonart UND
- * Reihenfolge der Lied-Punkte. Ändert sich eines davon (Lied neu/raus, umsortiert, Tonart),
- * ändert sich der Fingerabdruck. Nicht-Lieder (Überschriften, Begrüßung …) zählen bewusst nicht.
- * Rein & testbar; muss auf denselben Roh-Agenda-Daten laufen wie beim „gesehen"-Merken.
- */
-/**
  * Inhalts-Signatur EINES Ablaufpunkts (#143/#161) – OHNE die id (die ist der Schlüssel). Erfasst
  * Titel, Typ, Lied+Arrangement+Tonart, Verantwortliche, Dauer, Notiz. Änderungen daran = Punkt
  * inhaltlich geändert.
@@ -29,6 +23,12 @@ export function agendaItemSignature(i: CtAgendaItem): string {
   return `${i.title}#${i.type ?? ''}#${song}#${resp}#${i.duration ?? ''}#${i.note ?? ''}`;
 }
 
+/**
+ * Fingerabdruck einer Setlist (#143): stabile Signatur aus Lied, Arrangement, Tonart UND
+ * Reihenfolge der Lied-Punkte. Ändert sich eines davon (Lied neu/raus, umsortiert, Tonart),
+ * ändert sich der Fingerabdruck. Nicht-Lieder (Überschriften, Begrüßung …) zählen bewusst nicht.
+ * Rein & testbar; muss auf denselben Roh-Agenda-Daten laufen wie beim „gesehen"-Merken.
+ */
 export function setlistFingerprint(items: CtAgendaItem[]): string {
   // „Struktur + Details" (#143): jede Ablaufänderung schlägt an – Reihenfolge (Array-Position),
   // Punkte hinzu/raus/umbenannt, Lied/Tonart, Verantwortliche, Dauer, Notiz.

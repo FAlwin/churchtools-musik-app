@@ -23,6 +23,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   größte hat 244 Zeilen. Dabei kam heraus, dass **sieben Schreibfunktionen dasselbe Ritual
   wortgleich enthielten** (Token holen, mitschicken, Ablehnung melden) – das steht jetzt einmal,
   und ein Test prüft die Regel für jede der sieben einzeln.
+- **Sieben verwaiste Beschreibungen im Quelltext richtiggestellt** – Kommentare, die über einer
+  Funktion standen, die sie gar nicht beschreiben (entsteht, wenn jemand später einen Block
+  dazwischenschiebt). Neu `npm run doc-check`, jetzt Teil der CI: Zwei Doc-Kommentare direkt
+  hintereinander lassen die Prüfung fehlschlagen.
 - Drei weitere handgeschriebene Zwischenspeicher auf den gemeinsamen Baustein `ttlMemo` umgestellt
   (Konto-ID, Rechte, CSRF-Token). Dieselbe Map, dieselbe Ablaufprüfung, dasselbe Aufräumen stand
   viermal im Code – ein Kommentar verwies sogar ausdrücklich auf die Vorlage. Zwei der drei hatten

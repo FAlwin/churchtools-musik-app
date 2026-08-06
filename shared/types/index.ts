@@ -191,11 +191,6 @@ export interface AuthStatus {
   };
 }
 
-/**
- * Feste ChurchTools-Version: Aussehen (Farben/Logo) ist fix. Veränderbar bleibt
- * nur der Name der Gemeinde (Admin, über die Einstellungen). Wird vom Server aus
- * `site.json` gelesen/geschrieben.
- */
 /** Frei konfigurierbarer externer Link (z. B. zu einem anderen Gemeinde-Angebot). */
 export interface SiteLink {
   /** Stabile ID (für React-Keys und Umsortieren). */
@@ -208,6 +203,11 @@ export interface SiteLink {
   showOnLogin: boolean;
 }
 
+/**
+ * Feste ChurchTools-Version: Aussehen (Farben/Logo) ist fix. Veränderbar bleibt
+ * nur der Name der Gemeinde (Admin, über die Einstellungen). Wird vom Server aus
+ * `site.json` gelesen/geschrieben.
+ */
 export interface SiteConfig {
   /** Voller App-Name (fest). */
   appName: string;
