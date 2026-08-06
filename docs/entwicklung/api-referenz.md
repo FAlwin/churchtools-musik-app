@@ -2,7 +2,7 @@
 
 > Referenz der Endpunkte, die das Express-Backend dem Client anbietet (ausgelagert aus `CLAUDE.md`).
 > ChurchTools-spezifische Schreib-/Lese-Eigenheiten stehen weiterhin in `CLAUDE.md`.
-> Stand: v2.15.0. Alle `/api/...`-Routen erfordern eine gültige Session – **außer** `health`,
+> Stand: v2.16.2. Alle `/api/...`-Routen erfordern eine gültige Session – **außer** `health`,
 > `site-config` (GET), `update-check` und dem kompletten `auth/`-Router (`login`, `logout`, `me`;
 > `me` antwortet ohne Session bewusst mit `{authenticated:false}`).
 >
@@ -31,7 +31,7 @@
 
 ## Termine / Ablauf
 
-- `GET  /api/services?from=&to=` → `Service[]` (nur mit Setlist; Default-Fenster -7d…+42d; enthält `setlistChanged`-Markierung je Konto)
+- `GET  /api/services?from=&to=` → `Service[]` (nur mit Setlist; Default-Fenster -7d…+42d; enthält `setlistChanged`-Markierung je Konto). Der Termin-**Untertitel** kommt aus einem 10-Minuten-Memo je Konto+Kalender+Termin (#306) – er war die Hälfte der Dauerlast. Ein Fehler wird bewusst NICHT gemerkt.
 - `GET  /api/services/:eventId/setlist` → kompletter Ablauf (`AgendaItem[]`, Lieder mit `chordpro` + `versions[]` + documents[]; geänderte/entfernte Punkte markiert)
 - `GET  /api/services/:eventId/setlist/version` → billiger Fingerabdruck (sha256) des Ablaufs für den Live-Abgleich (8s-Poll; Server-5s-Memo je Event)
 - `POST /api/services/:eventId/seen` → aktuellen Ablauf-Stand als „gesehen"-Basislinie merken (steuert den „geändert"-Hinweis, #143/#161)

@@ -190,7 +190,8 @@ export default function App() {
   // Live-Abgleich des geöffneten Ablaufs + „gesehen"-Basislinie beim Verlassen –
   // Details in hooks/useSetlistLiveSync.ts.
   // Takt nachziehen, sobald sich die Ansicht ändert (#306). Ein Render Verzug ist bei 60 Sekunden
-  // ohne Belang.
+  // ohne Belang. Das Frischholen beim Zurückkehren macht `useServices` selbst – es gehört neben den
+  // Takt, nicht hierher.
   useEffect(() => {
     setPollServices(tab === 'termine' && view === null);
   }, [tab, view]);

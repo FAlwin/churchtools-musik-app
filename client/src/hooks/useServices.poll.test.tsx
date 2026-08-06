@@ -20,14 +20,18 @@ vi.mock('../services/churchtoolsApi', () => ({ getServices: vi.fn() }));
 const api = await import('../services/churchtoolsApi');
 const { useServices } = await import('./useServices');
 
+/**
+ * Der Client wird je Test EINMAL angelegt, nicht im Wrapper: Stünde `new QueryClient()` im
+ * Wrapper-Rumpf, bekäme jedes `rerender` einen frischen Client – die Abfrage würde neu montiert und
+ * lüde von selbst nach. Der Rückkehr-Test unten wäre dann grün, ohne irgendetwas zu beweisen.
+ */
+let qc: QueryClient;
 function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
-  });
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
 }
 
 beforeEach(() => {
+  qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
   // Fake-Timer VON ANFANG AN: React Query legt den Takt-Timer beim ersten Rendern an. Schaltet man
   // erst danach um, läuft er unter echten Timern weiter und Vorspulen wirkt nicht – der Test wäre
   // dann grün, ohne etwas zu beweisen (genau das ist der ersten Fassung passiert).
@@ -56,12 +60,50 @@ describe('useServices – Takt nur bei sichtbarer Liste (#306)', () => {
     expect(api.getServices).toHaveBeenCalledTimes(1); // … aber kein Takt
   });
 
+  it('Rückkehr zur Liste lädt SOFORT nach – nicht erst nach 60 Sekunden', async () => {
+    // Die zweite Hälfte von #306. React Query startet beim Wiedereinschalten nur den Timer neu und
+    // holt NICHT von sich aus – ohne das Nachladen im Hook zeigte die Liste nach zehn Minuten im
+    // Liederheft zehn Minuten alte Daten, und das noch bis zu 60 s lang. Vorher lief der Takt durch.
+    const { rerender } = renderHook(({ p }) => useServices(true, p), {
+      wrapper,
+      initialProps: { p: false },
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(api.getServices).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(5 * 60_000); // fünf Minuten „im Liederheft"
+    expect(api.getServices).toHaveBeenCalledTimes(1);
+
+    rerender({ p: true }); // zurück auf die Terminliste
+    await vi.advanceTimersByTimeAsync(0);
+    expect(api.getServices).toHaveBeenCalledTimes(2); // sofort – nicht in 60 Sekunden
+  });
+
+  it('bleibt die Liste sichtbar, löst das kein zusätzliches Laden aus', async () => {
+    // Gegenrichtung: Nur der WECHSEL verborgen→sichtbar darf nachladen. Löste jedes Render aus,
+    // wäre die Ersparnis dahin.
+    const { rerender } = renderHook(({ p }) => useServices(true, p), {
+      wrapper,
+      initialProps: { p: true },
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(api.getServices).toHaveBeenCalledTimes(1);
+
+    rerender({ p: true });
+    rerender({ p: true });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(api.getServices).toHaveBeenCalledTimes(1);
+  });
+
   it('ohne Takt bleibt die Abfrage AKTIV – die Daten werden weiter gebraucht', async () => {
     // Wichtige Abgrenzung: `enabled` auf false zu setzen wäre falsch. `useAppNav` findet damit nach
     // einem Kaltstart den gespeicherten Gottesdienst wieder, und die Offline-Vorbereitung hängt
     // ebenfalls daran.
     const { result } = renderHook(() => useServices(true, false), { wrapper });
-    await vi.advanceTimersByTimeAsync(0);
+    // Etwas mehr als 0 vorspulen: React verteilt das Rendern nach dem aufgelösten Versprechen über
+    // den Scheduler, und der hängt unter Fake-Timern selbst an einem Timer.
+    await vi.advanceTimersByTimeAsync(100);
     expect(result.current.data).toEqual([]);
+    expect(result.current.isSuccess).toBe(true);
   });
 });
