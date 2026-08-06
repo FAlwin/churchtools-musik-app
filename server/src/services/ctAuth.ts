@@ -82,8 +82,9 @@ export async function getUserId(cookie: string): Promise<number> {
  * **ALLE cookie-basierten Speicher, nicht nur einer.** Vorher stand hier allein `userIdCache` – die
  * beiden anderen (Rechte, CSRF-Token) hängen am selben Cookie und blieben nach dem Abmelden stehen.
  * Genau die Fehlerklasse „die Regel gilt für A, B, C, C fehlt": Ein abgemeldetes Cookie hätte bis zu
- * fünf Minuten lang noch gecachte Rechte geliefert, ohne ChurchTools zu fragen. Kommt eine vierte
- * Sitzungs-Ablage dazu, gehört sie **hierhin**.
+ * fünf Minuten lang noch gecachte Rechte geliefert, ohne ChurchTools zu fragen. Welche Speicher das
+ * sind, weiß seit #280 `forgetSession` in `ctSessionMemos.ts` – **dort** wird eine neue eingetragen,
+ * nicht hier.
  */
 export async function logout(cookie: string): Promise<void> {
   forgetSession(cookie);

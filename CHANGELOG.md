@@ -27,7 +27,7 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   (Konto-ID, Rechte, CSRF-Token). Dieselbe Map, dieselbe Ablaufprüfung, dasselbe Aufräumen stand
   viermal im Code – ein Kommentar verwies sogar ausdrücklich auf die Vorlage. Zwei der drei hatten
   **keinerlei Tests**; die gibt es jetzt (`churchtools.sessionMemos.test.ts`).
-- **Tests: Client 433 · Server 345 · 5 E2E** (vorher 433 · 311 · 5).
+- **Tests: Client 433 · Server 347 · 5 E2E** (vorher 433 · 311 · 5).
 
 ## [2.16.3] – 2026-08-06
 

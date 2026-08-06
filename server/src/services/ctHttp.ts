@@ -79,10 +79,6 @@ export async function readLimited(res: Response, maxBytes: number): Promise<Buff
 }
 
 /**
- * Zeitüberschreitungen als 504 melden, nicht als 500 (#248): Der Fehler liegt beim Upstream, und der
- * Client soll „später nochmal" unterscheiden können von „echter Fehler".
- */
-/**
  * Nicht-ok-Antwort eines Datei-Downloads in einen Fehler übersetzen (#274).
  *
  * **404 bleibt 404**: Die Datei ist in ChurchTools wirklich weg, „leer" ist dann die Wahrheit. Alles
@@ -96,6 +92,10 @@ export function fileDownloadError(status: number): never {
   throw new HttpError(status === 404 ? 404 : 502, `Datei-Download fehlgeschlagen (${status}).`);
 }
 
+/**
+ * Zeitüberschreitungen als 504 melden, nicht als 500 (#248): Der Fehler liegt beim Upstream, und der
+ * Client soll „später nochmal" unterscheiden können von „echter Fehler".
+ */
 export function asGatewayError(e: unknown, was: string): never {
   if (e instanceof HttpError) throw e;
   if (isTimeout(e)) {

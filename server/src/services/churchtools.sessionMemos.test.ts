@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getUserId, logout } from './ctAuth.js';
 import { getCapabilitiesCached } from './ctCapabilities.js';
-import { __resetSessionMemosForTests } from './ctSessionMemos.js';
+import { __resetSessionMemosForTests, forgetSession } from './ctSessionMemos.js';
+import { __getCsrfTokenForTests as getCsrfToken } from './ctCsrf.js';
 
 /**
- * Drei Speicher hängen am Session-Cookie: Konto-ID (12 h), Rechte (5 min) und CSRF-Token (1 min).
+ * Vier Dinge hängen am Session-Cookie: Konto-ID (12 h), Rechte (5 min), CSRF-Token (1 min) und der
+ * gerade laufende Token-Abruf.
  *
  * Zwei von ihnen – Konto-ID und Rechte – hatten **gar keine Tests**, obwohl sie mit #306 auf den
  * gemeinsamen `ttlMemo`-Baustein umgestellt wurden. Ungetesteten Code umzubauen ist der übliche Weg
@@ -146,5 +148,53 @@ describe('Abmelden leert ALLE sitzungsgebundenen Speicher', () => {
 
     await getUserId('cookie-b');
     expect(z.whoami).toBe(2); // b kam weiterhin aus dem Speicher
+  });
+});
+
+describe('Abmelden WÄHREND ein Token geholt wird (#280)', () => {
+  it('das Token landet danach NICHT im Speicher', async () => {
+    // Der Sonderfall, der die Zusage des Moduls sonst unterläuft: `forgetSession` räumt auf, aber der
+    // schon laufende Abruf schriebe sein Ergebnis danach hinein – ein totes Cookie hätte eine Minute
+    // lang ein gültiges Token. Praktisch harmlos (ChurchTools nimmt das Cookie ohnehin nicht mehr),
+    // aber „forgetSession kennt alle" wäre schlicht nicht wahr.
+    let freigeben: (() => void) | null = null;
+    const wartet = new Promise<void>((r) => (freigeben = r));
+    let geholt = 0;
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      geholt++;
+      await wartet; // erster Abruf hängt, bis der Test ihn freigibt
+      return new Response(JSON.stringify({ data: `token-${geholt}` }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    const laufend = getCsrfToken('cookie-a');
+    await Promise.resolve(); // Abruf hat begonnen und steht im Inflight-Speicher
+    forgetSession('cookie-a'); // ← das Abmelden mittendrin
+    freigeben!();
+    await laufend;
+
+    // Wäre das Token gemerkt worden, käme es jetzt aus dem Speicher und `geholt` bliebe bei 1.
+    await getCsrfToken('cookie-a');
+    expect(geholt).toBe(2);
+  });
+
+  it('ohne Abmelden bleibt das Token liegen – die Gegenrichtung', async () => {
+    let geholt = 0;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      geholt++;
+      return Promise.resolve(
+        new Response(JSON.stringify({ data: `token-${geholt}` }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    });
+
+    await getCsrfToken('cookie-b');
+    await getCsrfToken('cookie-b');
+    expect(geholt).toBe(1);
   });
 });

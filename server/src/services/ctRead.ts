@@ -14,7 +14,6 @@ export function getEvents(cookie: string, from: string, to: string): Promise<CtE
   return ctGet<CtEvent[]>(cookie, `/api/events?from=${from}&to=${to}`);
 }
 
-/** Liest den Untertitel eines Kalender-Termins (z.B. „Kennenlernabend"); null bei Fehler. */
 /**
  * Untertitel-Memo (#306) – halbiert die Kosten der Terminliste.
  *
@@ -38,6 +37,7 @@ export function __clearSubtitleMemo(): void {
   subtitleMemo.clear();
 }
 
+/** Liest den Untertitel eines Kalender-Termins (z.B. „Kennenlernabend"); null bei Fehler. */
 export async function getAppointmentSubtitle(
   cookie: string,
   calendarId: string,
