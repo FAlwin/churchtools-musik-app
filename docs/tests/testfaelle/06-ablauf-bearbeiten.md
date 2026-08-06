@@ -28,7 +28,7 @@ bei jedem Testlauf mit dabei.
 <details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
-- **Betrifft:** `server/src/services/agendaPayload.ts`, `server/src/services/churchtools.ts`, `client/src/components/ItemActionSheet.tsx`, `client/src/components/SongPicker.tsx`
+- **Betrifft:** `server/src/services/agendaPayload.ts`, `server/src/services/ctWrite.ts`, `client/src/components/ItemActionSheet.tsx`, `client/src/components/SongPicker.tsx`
 - **Automatisiert:** teilweise – `server/src/services/agendaPayload.test.ts`
 - **Historie:** –
 

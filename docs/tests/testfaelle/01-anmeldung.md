@@ -63,7 +63,7 @@ Neuanmelden raus.
 <details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
-- **Betrifft:** `client/src/services/api.ts`, `client/src/App.tsx`, `server/src/middleware/session.ts`, `server/src/services/churchtools.ts`
+- **Betrifft:** `client/src/services/api.ts`, `client/src/App.tsx`, `server/src/middleware/session.ts`, `server/src/services/ctAuth.ts`
 - **Automatisiert:** teilweise – `client/src/services/api.session401.test.ts`
 - **Historie:** #186, #104, #149
 

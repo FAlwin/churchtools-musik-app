@@ -131,7 +131,7 @@ Staging prüfen – ein Fehlschlag zeigt sich erst beim Start, nicht beim Bauen.
 ## Entzogene Team-Notizen-Rechte greifen mit bis zu 5 Minuten Verzögerung _(27.07.2026, #199)_
 
 `getCapabilities` merkt sich die Rechte eines Kontos bis zu 5 Minuten (`capsMemo` in
-`server/src/services/churchtools.ts`). Wird jemandem der Zugriff auf Team-Notizen in ChurchTools
+`server/src/services/ctCapabilities.ts`). Wird jemandem der Zugriff auf Team-Notizen in ChurchTools
 entzogen, kann er sie in diesem Fenster noch sehen.
 
 **Bewusst in Kauf genommen.** Der Cache ist die Antwort auf ein reales Problem: ChurchTools liefert
@@ -148,8 +148,9 @@ Vier Caches leben **im Arbeitsspeicher des Server-Prozesses**, alle in `services
 | Wo                                 | Was                                          | Lebensdauer |
 | ---------------------------------- | -------------------------------------------- | ----------- |
 | `versionMemo.ts`                   | Ablauf-Fingerabdruck je Termin **und Konto** | 5 s         |
-| `churchtools.ts` (`userIdCache`)   | Konto-ID zum Session-Cookie                  | Sitzung     |
-| `churchtools.ts` (`capsMemo`)      | Rechte eines Kontos                          | 5 min       |
+| `ctSessionMemos.ts` (Konto-ID)     | Konto-ID zum Session-Cookie                  | 12 h        |
+| `ctSessionMemos.ts` (Rechte)       | Rechte eines Kontos                          | 5 min       |
+| `ctSessionMemos.ts` (CSRF-Token)   | Schreib-Token einer Sitzung                  | 1 min       |
 | `setlistBuilder.ts` (`usageCache`) | org-weite Lied-Statistik                     | 1 h         |
 
 **Bewusst so.** Die App läuft als **eine** Container-Instanz auf dem NAS; ein geteilter Speicher

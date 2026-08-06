@@ -58,7 +58,7 @@ churchtools-musik-app/
 │   └── src/
 │       ├── routes/          # nur Routing
 │       ├── controllers/     # Request/Response-Handling
-│       ├── services/        # Geschäftslogik (churchtools.ts) – HTTP-unabhängig
+│       ├── services/        # Geschäftslogik (ct*.ts, #280) – HTTP-unabhängig
 │       ├── middleware/      # errorHandler, Auth, Rate-Limit
 │       ├── types/           # server-spezifische Typen
 │       └── utils/           # Hilfsfunktionen
@@ -445,6 +445,26 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   ⚠️ **ChurchTools' Limit ist weiterhin unbekannt** – deshalb steht im Code KEINE geratene Rate.
   Klärung per Anfrage an ChurchTools oder mit `server/scripts/probe-ratelimit.ts` (Messung an der
   echten Instanz – nur wochentags abends, stoppt beim ersten 429, Trockenlauf ohne `--ja-ich-will`).
+- **In `main` nach v2.16.3 (NICHT in Prod): #280 – der letzte Monolith ist aufgeteilt.**
+  `churchtools.ts` (1137 Z.) → neun Module, größtes 244 Z., Abhängigkeiten nur in eine Richtung:
+  `ctTypes`/`ctHttp`/`ctSessionMemos` als Wurzeln, darüber `ctAuth`/`ctRead`/`ctFiles`/`ctCsrf`,
+  darüber `ctCapabilities` (→ ctAuth) und `ctWrite` (→ ctCsrf, ctRead). **In ZWEI Schritten:** erst
+  aufteilen mit `churchtools.ts` als Re-Export – dann laufen alle Tests unverändert weiter und
+  beweisen, dass die Oberfläche gleich blieb; erst danach den Re-Export auflösen, wobei der Compiler
+  jede der 27 Importstellen zeigt. **Diesen Zwischenschritt beim nächsten Mal wieder so machen** –
+  fällt ein Test, ist sofort klar, ob es am Schnitt oder am Import liegt.
+  **Der Fund dabei:** Die Issue-Frage „baut ein herausgelöster Block eine Regel NACH?" war mit **ja**
+  zu beantworten – sieben Schreibfunktionen hatten Token-Holen, Kopfzeile und Ablehnungs-Behandlung
+  wortgleich stehen, obwohl der Kommentar an `csrfWriteDenied` selbst davor warnte. Jetzt Helfer
+  `schreibe`; ein Test prüft die Regel für **jede der sieben einzeln** (Gegenprobe: umgeht EINE
+  Funktion den Helfer, fällt genau ihr Test).
+  ⚠️ **Fallstrick beim Aufteilen: `vi.mock('./altesModul.js')` zeigt danach ins Leere, ohne dass ein
+  Test rot wird.** Fünf Testdateien waren betroffen; eine brauchte zwei Mocks, weil ihre zwei Symbole
+  in verschiedene Module gingen. Nach jedem Aufteilen also `grep` auf den alten Modulnamen – auch in
+  Tests. Vorher ungetestet und jetzt abgesichert: `getActiveMemberships` (filtert Ausgetretene – die
+  Liste entscheidet über Bearbeitungsrechte mit) und `getAllSongs` (blättert). Tests **Server 322 →
+  345**, an `main` gemessen.
+
 - **In `main` nach v2.16.3 (NICHT in Prod): die Lehre aus #306 auf alle Speicher übertragen.**
   Beim `/festhalten` nach dem Deploy zeigte die Dopplungs-Suche, dass ich `ttlMemo` zwar herausgezogen,
   die Lehre aber nur auf `versionMemo` übertragen hatte – **drei weitere** handgeschriebene TTL-Maps
@@ -515,7 +535,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   - `client/src/services/pendingKeys.ts` – Merker für ausstehende Uploads (Anmerkungen UND Einstellungen).
   - `client/src/services/appHidden.ts` – `visibilitychange`/`pagehide` an einer Stelle.
   - `server/src/utils/songIdsQuery.ts` – `?songs=…` auswerten (Express liefert dort auch Arrays/Objekte).
-  - `fileDownloadError` in `churchtools.ts` – 404 bleibt 404, alles andere 502.
+  - `fileDownloadError` in `ctHttp.ts` – 404 bleibt 404, alles andere 502.
   - `eslint.config.mjs` – EINE Flat Config statt vier (siehe Konventionen).
     ⚠️ **Zwei Lehren aus diesem Durchgang, die über das Projekt hinausgehen:**
   1. **Sobald mehrere unabhängige Zustände zu EINEM zusammengelegt werden, wird die Reihenfolge der
@@ -751,7 +771,7 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
 ## Berechtigungsmodell (Capabilities)
 
 - Server liest beim Login `/api/permissions/global` (Modul `churchservice`) → `parseCapabilities`
-  (`server/src/services/churchtools.ts`) leitet ab: `canViewSongs`/`canViewAgendas`/`canEditSongs`/
+  (`server/src/services/ctCapabilities.ts`) leitet ab: `canViewSongs`/`canViewAgendas`/`canEditSongs`/
   `canEditAgendas` (aus `view/edit songcategory|agenda`) + `isAdmin` (aus `ADMIN_PERMISSION`, Default
   `churchcore:administer persons`; **Admin ⇒ alles**). Die Fähigkeiten steuern die Client-UI (`App.tsx`,
   Tabs/Knöpfe); serverseitig erzwungen wird `requireSession` (alle Datenrouten) + `requireAdmin`

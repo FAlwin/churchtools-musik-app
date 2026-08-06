@@ -39,7 +39,7 @@ Menü.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `server/src/services/churchtools.ts`, `server/src/controllers/teamNotesController.ts`, `client/src/pages/ChordChart.tsx`
+- **Betrifft:** `server/src/services/ctCapabilities.ts`, `server/src/controllers/teamNotesController.ts`, `client/src/pages/ChordChart.tsx`
 - **Automatisiert:** teilweise – `server/src/services/churchtools.capabilities.test.ts`
 - **Historie:** #149, #152
 

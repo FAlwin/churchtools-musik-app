@@ -17,11 +17,17 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Intern
 
+- **Der letzte Monolith ist aufgeteilt (#280).** `churchtools.ts` vereinte auf 1137 Zeilen das
+  HTTP-Fundament, die Anmeldung, die Rechte-Policy, alle Rohdaten-Typen und zehn
+  Schreiboperationen. Jetzt neun Module, deren Abhängigkeiten nur in eine Richtung zeigen; das
+  größte hat 244 Zeilen. Dabei kam heraus, dass **sieben Schreibfunktionen dasselbe Ritual
+  wortgleich enthielten** (Token holen, mitschicken, Ablehnung melden) – das steht jetzt einmal,
+  und ein Test prüft die Regel für jede der sieben einzeln.
 - Drei weitere handgeschriebene Zwischenspeicher auf den gemeinsamen Baustein `ttlMemo` umgestellt
   (Konto-ID, Rechte, CSRF-Token). Dieselbe Map, dieselbe Ablaufprüfung, dasselbe Aufräumen stand
   viermal im Code – ein Kommentar verwies sogar ausdrücklich auf die Vorlage. Zwei der drei hatten
   **keinerlei Tests**; die gibt es jetzt (`churchtools.sessionMemos.test.ts`).
-- **Tests: Client 433 · Server 322 · 5 E2E** (vorher 433 · 311 · 5).
+- **Tests: Client 433 · Server 345 · 5 E2E** (vorher 433 · 311 · 5).
 
 ## [2.16.3] – 2026-08-06
 
