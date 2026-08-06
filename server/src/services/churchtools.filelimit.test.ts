@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { readLimited, downloadFileText, fetchFileBytes } from './churchtools.js';
+import { downloadFileText, fetchFileBytes } from './ctFiles.js';
+import { readLimited } from './ctHttp.js';
 import { HttpError } from '../middleware/errorHandler.js';
 
 /**

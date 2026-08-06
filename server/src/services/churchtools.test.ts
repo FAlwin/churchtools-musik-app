@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import {
-  fileIdFromUrl,
-  extractSessionCookie,
-  parseCapabilities,
-  computeTeamNotesAllowed,
-} from './churchtools.js';
+import { extractSessionCookie } from './ctAuth.js';
+import { computeTeamNotesAllowed, parseCapabilities } from './ctCapabilities.js';
+import { fileIdFromUrl } from './ctFiles.js';
 import type { NoteRolePerm } from '@shared/types/index';
 
 describe('fileIdFromUrl', () => {

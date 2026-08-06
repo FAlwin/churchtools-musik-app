@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto';
 import { HttpError } from './errorHandler.js';
 import { config } from '../config.js';
-import { getCapabilities } from '../services/churchtools.js';
+import { getCapabilities } from '../services/ctCapabilities.js';
 import { ctCookie } from '../utils/ctCookie.js';
 
 const COOKIE_NAME = 'ct_session';

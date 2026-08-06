@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getActiveMemberships, getAllSongs } from './churchtools.js';
+import { getActiveMemberships } from './ctCapabilities.js';
+import { getAllSongs } from './ctRead.js';
 
 /**
  * Zwei Abrufe, die bis #280 **ohne jedes Testnetz** waren – und beide haben mehr Logik, als der Name

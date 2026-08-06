@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { getUserId } from '../services/churchtools.js';
+import { getUserId } from '../services/ctAuth.js';
 import * as store from '../services/userSettings.js';
 import { ctCookie } from '../utils/ctCookie.js';
 import { songIdsFromQuery } from '../utils/songIdsQuery.js';

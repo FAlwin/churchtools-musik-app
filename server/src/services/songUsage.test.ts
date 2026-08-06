@@ -4,8 +4,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // `importOriginal`, damit `isCtOverloaded` und `CtOverloadedError` die ECHTEN sind (#300): Mit einem
 // leeren Mock waeren sie `undefined`, und die Notbremse-Tests wuerden an der Attrappe scheitern statt
 // am Verhalten. Nur die zwei ChurchTools-Abrufe sind ersetzt.
-vi.mock('./churchtools.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./churchtools.js')>()),
+vi.mock('./ctRead.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./ctRead.js')>()),
   getEvents: vi.fn(),
   getAgenda: vi.fn(),
 }));
@@ -15,7 +15,8 @@ import {
   invalidateSongUsageCache,
   __resetSongUsageForTests,
 } from './setlistBuilder.js';
-import { getEvents, getAgenda, CtOverloadedError } from './churchtools.js';
+import { CtOverloadedError } from './ctHttp.js';
+import { getAgenda, getEvents } from './ctRead.js';
 import { HttpError } from '../middleware/errorHandler.js';
 
 const mockedGetEvents = vi.mocked(getEvents);

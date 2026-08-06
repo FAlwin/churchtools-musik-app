@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { CtArrangementFile, CtAgendaItem } from './churchtools.js';
+import type { CtAgendaItem, CtArrangementFile } from './ctTypes.js';
 import { versionSlug, versionNameOf, versionFileName, documentsOf } from './arrangementFiles.js';
 import { metaValue } from './chordproMeta.js';
 import { setlistFingerprint, diffAgendaItems } from './agendaDiff.js';

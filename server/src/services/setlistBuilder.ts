@@ -10,21 +10,12 @@ import type {
   SongLibraryEntry,
   SongVersion,
 } from '@shared/types/index';
-import {
-  getAgenda,
-  getEvents,
-  getAppointmentSubtitle,
-  getSong,
-  getAllSongs,
-  downloadFileText,
-  uploadChordpro,
-  deleteFile,
-  fileIdFromUrl,
-  isCtOverloaded,
-  CtOverloadedError,
-  type CtAgendaSong,
-} from './churchtools.js';
-import type { CtArrangementFile, CtSong } from './churchtools.js';
+import { downloadFileText, fileIdFromUrl } from './ctFiles.js';
+import { CtOverloadedError, isCtOverloaded } from './ctHttp.js';
+import { getAgenda, getAllSongs, getAppointmentSubtitle, getEvents, getSong } from './ctRead.js';
+import type { CtAgendaSong } from './ctTypes.js';
+import { deleteFile, uploadChordpro } from './ctWrite.js';
+import type { CtArrangementFile, CtSong } from './ctTypes.js';
 import {
   versionSlug,
   versionNameOf,

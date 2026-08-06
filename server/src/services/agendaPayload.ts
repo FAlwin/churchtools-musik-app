@@ -12,7 +12,7 @@
  * **unwiderruflich auf `text` herab** – die Lied-Verknüpfung ist weg. Deshalb MUSS die
  * Verknüpfung als **top-level `arrangementId`** mitgeschickt werden, zusammen mit `type: 'song'`.
  */
-import type { CtAgendaItem } from './churchtools.js';
+import type { CtAgendaItem } from './ctTypes.js';
 
 export interface AgendaItemOverrides {
   title?: string;

@@ -10,8 +10,8 @@
  * Alles rein und ohne Netzzugriff – deshalb direkt testbar.
  */
 import type { SongDocument } from '@shared/types/index';
-import { fileIdFromUrl } from './churchtools.js';
-import type { CtArrangementFile } from './churchtools.js';
+import { fileIdFromUrl } from './ctFiles.js';
+import type { CtArrangementFile } from './ctTypes.js';
 
 const VERSION_TAG = '(App)';
 

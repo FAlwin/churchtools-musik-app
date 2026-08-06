@@ -6,7 +6,7 @@
 import type { Request, Response } from 'express';
 import { HttpError } from '../middleware/errorHandler.js';
 import { getSiteConfig, saveSiteConfig, siteConfigSchema } from '../services/siteConfig.js';
-import { getGroups, getGroupRoles } from '../services/churchtools.js';
+import { getGroupRoles, getGroups } from '../services/ctCapabilities.js';
 import { readSession, isSessionExpired } from '../middleware/session.js';
 import { ctCookie } from '../utils/ctCookie.js';
 

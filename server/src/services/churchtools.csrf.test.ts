@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import {
-  __getCsrfTokenForTests as getCsrfToken,
-  __resetCsrfCacheForTests,
-  deleteFile,
-} from './churchtools.js';
+import { __getCsrfTokenForTests as getCsrfToken } from './ctCsrf.js';
+import { __resetCsrfCacheForTests } from './ctSessionMemos.js';
+import { deleteFile } from './ctWrite.js';
 
 /**
  * #294: Das CSRF-Token wird beim Speichern automatisch EINMAL nachgefasst.

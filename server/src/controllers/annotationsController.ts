@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { getUserId } from '../services/churchtools.js';
+import { getUserId } from '../services/ctAuth.js';
 
 /**
  * Eigene Konto-ID – bevorzugt aus dem signierten Session-Cookie (#149), sonst per whoami (#199).

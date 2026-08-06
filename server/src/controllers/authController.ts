@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import * as ct from '../services/churchtools.js';
+import { login, logout, whoami } from '../services/ctAuth.js';
 import { setSession, clearSession, readSession, isSessionExpired } from '../middleware/session.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import type { AuthStatus } from '@shared/types/index';
@@ -15,7 +15,7 @@ const loginSchema = z.object({
 /** POST /api/auth/login – meldet bei ChurchTools an und setzt das Session-Cookie. */
 export async function postLogin(req: Request, res: Response): Promise<void> {
   const { email, password } = loginSchema.parse(req.body);
-  const { cookie, user } = await ct.login(email, password);
+  const { cookie, user } = await login(email, password);
   // Konto-ID wandert mit ins signierte Cookie (#149): Der Rechte-Cache kann damit auch
   // überbrücken, wenn `whoami` während eines ChurchTools-Aussetzers nicht antwortet.
   setSession(res, cookie, Date.now(), user.id);
@@ -30,7 +30,7 @@ export async function postLogin(req: Request, res: Response): Promise<void> {
  */
 export async function postLogout(req: Request, res: Response): Promise<void> {
   const session = readSession(req);
-  if (session) await ct.logout(session.ctCookie);
+  if (session) await logout(session.ctCookie);
   clearSession(res);
   res.json({ authenticated: false } satisfies AuthStatus);
 }
@@ -44,7 +44,7 @@ export async function getMe(req: Request, res: Response): Promise<void> {
     return;
   }
   try {
-    const user = await ct.whoami(session.ctCookie);
+    const user = await whoami(session.ctCookie);
     res.json({ authenticated: true, user } satisfies AuthStatus);
   } catch (e) {
     // NUR ein ausdrückliches 401 von ChurchTools heißt „diese Anmeldung ist tot" → Cookie verwerfen.

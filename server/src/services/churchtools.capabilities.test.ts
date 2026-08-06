@@ -2,19 +2,19 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vite
 import os from 'node:os';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
-import type { UserCapabilities } from './churchtools.js';
+import type { UserCapabilities } from '@shared/types/index';
 
 // Ablageort des Rechte-Caches VOR dem Modul-Import setzen (config.ts liest beim Import).
 const cacheFile = path.join(os.tmpdir(), `capbridge-test-${process.pid}.json`);
 process.env.CAPABILITIES_CACHE_PATH = cacheFile;
 
-type Ct = typeof import('./churchtools.js');
+type Ct = typeof import('./ctCapabilities.js');
 type Cache = typeof import('./capabilitiesCache.js');
 let ct: Ct;
 let cache: Cache;
 
 beforeAll(async () => {
-  ct = await import('./churchtools.js');
+  ct = await import('./ctCapabilities.js');
   cache = await import('./capabilitiesCache.js');
 });
 

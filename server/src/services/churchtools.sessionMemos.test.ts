@@ -1,10 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  getUserId,
-  getCapabilitiesCached,
-  logout,
-  __resetSessionMemosForTests,
-} from './churchtools.js';
+import { getUserId, logout } from './ctAuth.js';
+import { getCapabilitiesCached } from './ctCapabilities.js';
+import { __resetSessionMemosForTests } from './ctSessionMemos.js';
 
 /**
  * Drei Speicher hängen am Session-Cookie: Konto-ID (12 h), Rechte (5 min) und CSRF-Token (1 min).

@@ -14,7 +14,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { config } from '../config.js';
-import type { UserCapabilities } from './churchtools.js';
+import type { UserCapabilities } from '@shared/types/index';
 
 /**
  * Wie lange ein gemerkter Rechtestand als vertrauenswürdig gilt. Danach wird er nicht mehr zum

@@ -10,7 +10,7 @@
  * Roh-Agenda-Daten laufen wie beim „gesehen"-Merken, sonst meldet die App Änderungen, die keine sind.
  */
 import { createHash } from 'node:crypto';
-import type { CtAgendaItem } from './churchtools.js';
+import type { CtAgendaItem } from './ctTypes.js';
 
 /**
  * Fingerabdruck einer Setlist (#143): stabile Signatur aus Lied, Arrangement, Tonart UND
