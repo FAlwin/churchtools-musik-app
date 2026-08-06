@@ -17,8 +17,8 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.3 GETAGGT**,
-  Prod-Deploy durch Alwin – bis dahin läuft dort v2.16.1. **v2.16.2 wird übersprungen**, siehe unten).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.3 PRODUKTIV LIVE**,
+  verifiziert. **v2.16.2 wurde übersprungen**, siehe unten).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -445,7 +445,27 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   ⚠️ **ChurchTools' Limit ist weiterhin unbekannt** – deshalb steht im Code KEINE geratene Rate.
   Klärung per Anfrage an ChurchTools oder mit `server/scripts/probe-ratelimit.ts` (Messung an der
   echten Instanz – nur wochentags abends, stoppt beim ersten 429, Trockenlauf ohne `--ja-ich-will`).
-- **v2.16.3 GETAGGT (06.08.2026) – Prod-Deploy offen. v2.16.2 wird übersprungen.**
+- **In `main` nach v2.16.3 (NICHT in Prod): die Lehre aus #306 auf alle Speicher übertragen.**
+  Beim `/festhalten` nach dem Deploy zeigte die Dopplungs-Suche, dass ich `ttlMemo` zwar herausgezogen,
+  die Lehre aber nur auf `versionMemo` übertragen hatte – **drei weitere** handgeschriebene TTL-Maps
+  standen weiter in `churchtools.ts` (Konto-ID, Rechte, CSRF-Token), eine davon mit dem Kommentar
+  „wie `userIdCache`" als Beleg fürs Abschreiben. Alle drei laufen jetzt über den Baustein.
+  **Dabei ein echter Fund, den erst der Compiler zeigte:** `logout` räumte nur die Konto-ID; Rechte
+  und CSRF-Token hingen am selben Cookie und blieben stehen – ein abgemeldetes Cookie hätte bis zu
+  fünf Minuten gecachte Rechte geliefert, ohne ChurchTools zu fragen. Im Alltag nicht erreichbar (die
+  App-Sitzung endet beim Abmelden), aber wieder „die Regel gilt für A, B, C – C fehlt". Es gibt jetzt
+  **eine** Stelle `forgetSession(cookie)`, die alle Sitzungs-Speicher kennt.
+  Zwei der drei Speicher hatten **keinerlei Tests** – neu: `churchtools.sessionMemos.test.ts`
+  (9 Fälle). Drei getrennte Gegenproben, jede lässt genau ihren Teil fallen (1 / 3 / 1 Test).
+  Tests **Client 433 / Server 322 / 5 E2E**, 60 manuelle Fälle.
+
+- **v2.16.3 PRODUKTIV LIVE ✅ (06.08.2026, verifiziert). v2.16.2 wurde übersprungen.**
+  Digest `sha256:bacc1775…` (direkt aus der GHCR-Registry gelesen, amd64+arm64, Tag `2` zeigt darauf).
+  **Verifikation am ausgelieferten Bundle** – zwei unabhängige Belege: `v2.16.3` steht im
+  `index`-Chunk (aus `VITE_APP_VERSION`, beim Bauen eingebrannt), `2.16.1` und `2.16.2` = **0
+  Treffer**; und der Fix selbst ist drin (`refetchQueries({queryKey:["services"],exact:!0})` – eine
+  Zeile, die es vorher nirgends gab). Die zweite Probe ist die bessere: Eine Versionsnummer kann aus
+  einem Cache stammen, eine vorher nicht existierende Codezeile nicht.
 
   **⚠️ Die Lehre dieses Releases: erst die Release-Prüfung, DANN taggen.** v2.16.2 war getaggt, bevor
   die Prüfung durch war – und die fand danach einen Rückschritt, den #306 selbst eingebaut hatte:

@@ -7,6 +7,22 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **Beim Abmelden werden jetzt alle Daten der Sitzung verworfen.** Der Server merkt sich zu jeder
+  Anmeldung drei Dinge kurzzeitig: Konto-Nummer, Berechtigungen und ein Sicherheits-Token. Beim
+  Abmelden wurde bisher nur das erste weggeworfen – die Berechtigungen blieben bis zu fünf Minuten
+  stehen. Im Alltag fiel das nicht auf, weil die App-Sitzung beim Abmelden ohnehin endet; sauber war
+  es nicht.
+
+### Intern
+
+- Drei weitere handgeschriebene Zwischenspeicher auf den gemeinsamen Baustein `ttlMemo` umgestellt
+  (Konto-ID, Rechte, CSRF-Token). Dieselbe Map, dieselbe Ablaufprüfung, dasselbe Aufräumen stand
+  viermal im Code – ein Kommentar verwies sogar ausdrücklich auf die Vorlage. Zwei der drei hatten
+  **keinerlei Tests**; die gibt es jetzt (`churchtools.sessionMemos.test.ts`).
+- **Tests: Client 433 · Server 322 · 5 E2E** (vorher 433 · 311 · 5).
+
 ## [2.16.3] – 2026-08-06
 
 **Korrektur-Release zu v2.16.2.** v2.16.2 wurde getaggt, aber nie ausgeliefert – die Release-Prüfung
@@ -39,7 +55,7 @@ direkt hierher; alles aus v2.16.2 ist enthalten.
 ## [2.16.2] – 2026-08-06
 
 > ⚠️ **Getaggt, aber nie ausgeliefert.** Enthielt den unter v2.16.3 behobenen Rückschritt bei der
-> Frische der Terminliste. In Produktion läuft v2.16.1; ausgeliefert wird v2.16.3.
+> Frische der Terminliste. Produktion ging von v2.16.1 direkt auf v2.16.3.
 
 Kleines Nachfass-Release zu v2.16.1: Es senkt die **Dauerlast** auf ChurchTools deutlich – den Posten,
 der sich nach dem letzten Release als der größere herausgestellt hat.
