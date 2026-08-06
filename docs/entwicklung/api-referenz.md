@@ -2,7 +2,7 @@
 
 > Referenz der Endpunkte, die das Express-Backend dem Client anbietet (ausgelagert aus `CLAUDE.md`).
 > ChurchTools-spezifische Schreib-/Lese-Eigenheiten stehen weiterhin in `CLAUDE.md`.
-> Stand: v2.16.2. Alle `/api/...`-Routen erfordern eine gültige Session – **außer** `health`,
+> Stand: v2.16.3. Alle `/api/...`-Routen erfordern eine gültige Session – **außer** `health`,
 > `site-config` (GET), `update-check` und dem kompletten `auth/`-Router (`login`, `logout`, `me`;
 > `me` antwortet ohne Session bewusst mit `{authenticated:false}`).
 >

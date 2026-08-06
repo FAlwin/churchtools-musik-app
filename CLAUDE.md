@@ -17,8 +17,8 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.2 GETAGGT**,
-  Prod-Deploy durch Alwin – bis dahin läuft dort v2.16.1).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.3 GETAGGT**,
+  Prod-Deploy durch Alwin – bis dahin läuft dort v2.16.1. **v2.16.2 wird übersprungen**, siehe unten).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -432,7 +432,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   4-Jahres-Fenster, davon nur **48 mit Ablaufplan**, Laufzeit **2,3 s**. Daraus drei Folgerungen:
   (1) Der Burst ist kleiner/schneller als gedacht – eine ausgehende Drossel wäre womöglich schädlicher
   als hilfreich. (2) **78 % der Anfragen gehen an Termine ganz ohne Lieder** – das klingt nach der
-  großen Optimierung, wurde nach Gegenrechnung aber verworfen (siehe v2.16.2 weiter unten). (3) Die **Grundlast**
+  großen Optimierung, wurde nach Gegenrechnung aber verworfen (siehe v2.16.3 weiter unten). (3) Die **Grundlast**
   (~180 Anfragen/min bei 5 Geräten) ist der größere Posten als der Burst.
 - **Davor getaggt (06.08.2026).** 14 Issues: alle
   Code-Check-Funde außer #280, plus die vier, die erst beim Testen auf der Instanz auffielen: #294
@@ -445,7 +445,25 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   ⚠️ **ChurchTools' Limit ist weiterhin unbekannt** – deshalb steht im Code KEINE geratene Rate.
   Klärung per Anfrage an ChurchTools oder mit `server/scripts/probe-ratelimit.ts` (Messung an der
   echten Instanz – nur wochentags abends, stoppt beim ersten 429, Trockenlauf ohne `--ja-ich-will`).
-- **v2.16.2 GETAGGT (06.08.2026) – Prod-Deploy offen.** Senkt die **Grundlast**, die sich nach v2.16.1
+- **v2.16.3 GETAGGT (06.08.2026) – Prod-Deploy offen. v2.16.2 wird übersprungen.**
+
+  **⚠️ Die Lehre dieses Releases: erst die Release-Prüfung, DANN taggen.** v2.16.2 war getaggt, bevor
+  die Prüfung durch war – und die fand danach einen Rückschritt, den #306 selbst eingebaut hatte:
+  Der pausierte Takt wurde beim Zurückwechseln **nicht** nachgeholt (React Query startet dabei nur den
+  Timer neu). Die Terminliste konnte nach einem Ausflug ins Liederheft zehn Minuten alt sein, während
+  der CHANGELOG „wird sofort aktualisiert" behauptete. Empirisch nachgestellt: 0 zusätzliche Aufrufe.
+  Wieder **eine Regel in zwei Hälften** – „Takt pausiert" und „beim Zurückkommen frisch" standen
+  getrennt; die zweite Hälfte fehlte schlicht. Sie liegt jetzt IM Hook neben dem Takt.
+  Dabei ein **React-Query-Fallstrick**: Wer während des Renderns ein Feld des Query-Ergebnisses
+  anfasst (hier `refetch`), macht genau dieses Feld zum einzigen beobachteten – Datenänderungen lösen
+  danach **kein Rendern** mehr aus. Ein Test blieb dadurch ewig `pending`. Nachladen deshalb über den
+  QueryClient, ohne das Ergebnis anzufassen.
+  Und: **`server/scripts/` stand nicht in der TypeScript-Prüfung** und war still verrottet (zwei
+  Testskripte riefen gelöschte Funktionen auf, 21 bzw. 11 Fehler) → entfernt, Ordner wird geprüft,
+  Gegenprobe mit Absichtsfehler bestätigt exit 2. Ein Skript hatte ich zudem **ungelesen
+  mitcommittet** – entfernt.
+
+- **Inhalt von v2.16.2 (in v2.16.3 enthalten).** Senkt die **Grundlast**, die sich nach v2.16.1
   als der größere Posten herausstellte (~180 CT-Anfragen/Minute bei 5 Geräten gegenüber 224 pro
   Stunde beim Statistik-Burst): **#306** – Termin-Untertitel 10 min gemerkt (Poll kostet `1 + N` statt
   `1 + 2N`) und der 60-Sekunden-Takt läuft nur noch bei **sichtbarer** Terminliste; der Kommentar
