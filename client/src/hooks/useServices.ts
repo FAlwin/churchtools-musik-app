@@ -10,7 +10,7 @@ import { ApiError } from '../services/api';
 const ACTIVE_STALE_MS = 1000 * 30;
 
 /** Lädt die Gottesdienste mit Setlist (Standardfenster: ~1 Woche zurück bis 6 Wochen voraus). */
-export function useServices(enabled: boolean) {
+export function useServices(enabled: boolean, poll = true) {
   return useQuery({
     queryKey: ['services'],
     queryFn: () => api.getServices(),
@@ -18,10 +18,20 @@ export function useServices(enabled: boolean) {
     staleTime: ACTIVE_STALE_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    // Sanftes Polling, solange die Liste sichtbar ist (Hintergrund-Tabs pollen nicht): So
-    // erscheint der „Ablauf geändert"-Punkt auch auf einem unberührt daliegenden Gerät von
-    // selbst (#143). 60 s = guter Kompromiss; jede Runde kostet ~2 CT-Abrufe je Termin im Fenster.
-    refetchInterval: 60_000,
+    /**
+     * Sanftes Polling, damit der „Ablauf geändert"-Punkt auch auf einem unberührt daliegenden Gerät
+     * von selbst erscheint (#143).
+     *
+     * **`poll` steuert es seit #306.** Der frühere Kommentar behauptete „solange die Liste sichtbar
+     * ist" – das stimmte nicht: Pausiert wurde nur, wenn der ganze Browser-Tab in den Hintergrund
+     * ging. Im Liederheft lief der 60-Sekunden-Takt weiter, obwohl die Terminliste gar nicht zu sehen
+     * war. Und **jede Runde kostet rund `1 + 2 × Termine` ChurchTools-Anfragen** (~17 im
+     * Standardfenster) – bei fünf Geräten im Gottesdienst die größte Dauerlast der App.
+     *
+     * Die Abfrage bleibt aktiviert (`enabled`), nur der Takt entfällt: `useAppNav` und die
+     * Offline-Vorbereitung brauchen die Daten weiterhin.
+     */
+    refetchInterval: poll ? 60_000 : false,
   });
 }
 

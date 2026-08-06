@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import {
@@ -31,6 +30,7 @@ import {
 import { getSeenSetlists, markSeenSetlist } from '../services/seenSetlists.js';
 import type { AgendaServiceOption, SongArrangementOption } from '@shared/types/index';
 import { ctCookie } from '../utils/ctCookie.js';
+import { accountKey } from '../middleware/session.js';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -51,7 +51,12 @@ export async function getServices(req: Request, res: Response): Promise<void> {
   const def = defaultWindow();
   const from = dateSchema.parse(req.query.from) ?? def.from;
   const to = dateSchema.parse(req.query.to) ?? def.to;
-  const withHashes = await getServicesWithSetlists(cookie, from, to);
+  const withHashes = await getServicesWithSetlists(
+    cookie,
+    from,
+    to,
+    accountKey(req.ctUserId, cookie),
+  );
   // „Geändert"-Badge je Konto (#143): mit dem zuletzt gesehenen Fingerabdruck vergleichen. Ohne
   // gemerkten Stand (nie geöffnet) gilt NICHT als geändert. userId best effort aus dem Cookie
   // (seit #149) – fehlt sie, wird ohne Badge ausgeliefert (Komfort-Feature, kein harter Fehler).
@@ -79,8 +84,7 @@ export async function getSetlistVersion(req: Request, res: Response): Promise<vo
   // Bei Alt-Cookies ohne Konto-ID nicht das rohe Session-Cookie als Map-Schlüssel halten (#215),
   // sondern nur dessen Fingerabdruck – gleiche Trennschärfe, ohne das Geheimnis zusätzlich im
   // Speicher zu spiegeln.
-  const who =
-    req.ctUserId ?? `c${createHash('sha256').update(ctCookie(req)).digest('hex').slice(0, 16)}`;
+  const who = accountKey(req.ctUserId, ctCookie(req));
   const memoKey = `${eventId}|${who}`;
   const memoized = getMemoizedVersion(memoKey);
   if (memoized !== null) {

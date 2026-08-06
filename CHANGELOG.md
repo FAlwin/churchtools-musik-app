@@ -7,6 +7,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **Die App fragt ChurchTools deutlich seltener.** Die Terminliste holte bei jeder Aktualisierung für
+  jeden Termin **zwei** Dinge – den Ablauf und den Untertitel –, und das im Minutentakt, auch wenn man
+  die Liste gar nicht ansah (etwa im Liederheft). Jetzt wird der Untertitel zehn Minuten
+  zwischengespeichert, und der Takt läuft nur noch, wenn die Terminliste sichtbar ist. Für ein Gerät
+  im Liederheft entfallen damit rund 17 ChurchTools-Anfragen pro Minute. An der Bedienung ändert sich
+  nichts: Öffnet man die Liste, wird sofort aktualisiert. (#306)
+
 ## [2.16.1] – 2026-08-06
 
 Wartungs-Release: **elf Fehler behoben** – dazu die Codeprüfung deutlich verschärft.

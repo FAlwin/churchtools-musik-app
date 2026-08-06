@@ -110,8 +110,22 @@ export function dropUnusableSessionCookie(req: Request, res: Response, next: Nex
 export function sessionRateKey(req: Request): string | null {
   const session = readSession(req);
   if (!session) return null;
-  if (session.userId != null) return `u${session.userId}`;
-  return `c${createHash('sha256').update(session.ctCookie).digest('hex').slice(0, 16)}`;
+  return accountKey(session.userId, session.ctCookie);
+}
+
+/**
+ * Stabile, kurze Kennung eines Kontos für Schlüssel in Speicher-Maps (#306).
+ *
+ * Bevorzugt die ChurchTools-Konto-ID; nur bei Alt-Cookies ohne ID ein sha256-Fingerprint des Cookies
+ * – **nie das Cookie selbst**, das wäre eine weitere Kopie des Geheimnisses im Speicher (#194/N1).
+ *
+ * Steht hier an EINER Stelle, weil die Ableitung vorher wortgleich zweimal existierte
+ * (`sessionRateKey` und der Ablauf-Fingerabdruck im `setlistController`) – und mit dem
+ * Untertitel-Memo wäre sie zum dritten Mal entstanden.
+ */
+export function accountKey(userId: number | null | undefined, ctCookieValue: string): string {
+  if (userId != null) return `u${userId}`;
+  return `c${createHash('sha256').update(ctCookieValue).digest('hex').slice(0, 16)}`;
 }
 
 /** Nur für Tests: prüfen, dass ein Wert wirklich verschlüsselt ist (und nicht im Klartext liegt). */
