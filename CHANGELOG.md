@@ -7,6 +7,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.16.2] – 2026-08-06
+
+Kleines Nachfass-Release zu v2.16.1: Es senkt die **Dauerlast** auf ChurchTools deutlich – den Posten,
+der sich nach dem letzten Release als der größere herausgestellt hat.
+
+An der Bedienung ändert sich nichts.
+
 ### Geändert
 
 - **Die App fragt ChurchTools deutlich seltener.** Die Terminliste holte bei jeder Aktualisierung für
@@ -15,6 +22,19 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   zwischengespeichert, und der Takt läuft nur noch, wenn die Terminliste sichtbar ist. Für ein Gerät
   im Liederheft entfallen damit rund 17 ChurchTools-Anfragen pro Minute. An der Bedienung ändert sich
   nichts: Öffnet man die Liste, wird sofort aktualisiert. (#306)
+
+### Intern
+
+- **Die Protokollzeile der Lied-Statistik zählt richtig.** Termine ohne Ablaufplan – im
+  Vier-Jahres-Fenster der Normalfall – galten als „übersprungen" und ließen dauerhaft
+  `vollständig=false` im Protokoll stehen. Eine Warnung, die immer leuchtet, wird ignoriert; und
+  dieselbe Zahl sollte später einmal anzeigen, wenn die Statistik wirklich unvollständig ist. (#304)
+- Zwei Bausteine zusammengeführt, bevor eine dritte Kopie entstand: der Zwischenspeicher mit
+  Verfallszeit (`ttlMemo`, vorher handgeschrieben in `versionMemo`) und die Konto-Kennung für
+  Speicher-Schlüssel (`accountKey`, stand wortgleich an zwei Stellen).
+- Zwei Erkundungs-Skripte für ChurchTools: eines misst das Anfrage-Limit (nur auf ausdrückliche
+  Bestätigung, Stopp beim ersten Drosseln), eines prüft, welche Felder die Termin-Liste liefert.
+- **Tests: Client 431 · Server 311 · 5 E2E** (vorher 428 · 296 · 5).
 
 ## [2.16.1] – 2026-08-06
 

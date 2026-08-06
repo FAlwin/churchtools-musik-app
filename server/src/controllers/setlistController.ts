@@ -84,6 +84,11 @@ export async function getSetlistVersion(req: Request, res: Response): Promise<vo
   // Bei Alt-Cookies ohne Konto-ID nicht das rohe Session-Cookie als Map-Schlüssel halten (#215),
   // sondern nur dessen Fingerabdruck – gleiche Trennschärfe, ohne das Geheimnis zusätzlich im
   // Speicher zu spiegeln.
+  //
+  // Hinweis zum Umbau in #306: Vorher stand die Ableitung hier von Hand und lieferte bei bekannter
+  // Konto-ID die NACKTE Zahl (`42|1500`); `accountKey` liefert `u42|1500`. Das ist folgenlos – das
+  // Memo lebt nur im Arbeitsspeicher und verfällt nach fünf Sekunden, es gibt also nichts zu
+  // migrieren. Genannt sei es trotzdem, weil „verhaltensgleich" hier nicht ganz stimmt.
   const who = accountKey(req.ctUserId, ctCookie(req));
   const memoKey = `${eventId}|${who}`;
   const memoized = getMemoizedVersion(memoKey);
