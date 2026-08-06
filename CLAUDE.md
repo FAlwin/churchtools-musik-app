@@ -17,8 +17,8 @@
   Ersetzt WorshipTools Charts. ChurchTools bleibt einzige Datenquelle.
 - **Für wen:** Worship-Team der ECG Donrath (Musiker + Bandleiter), oft wenig technikaffin.
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
-  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.1 PRODUKTIV**, am
-  ausgelieferten Bundle verifiziert).
+  extern unter `https://musik.ecg-donrath.de` live (Stand 06.08.2026: **v2.16.2 GETAGGT**,
+  Prod-Deploy durch Alwin – bis dahin läuft dort v2.16.1).
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 
 ## Tech-Stack
@@ -442,11 +442,27 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   Reihenfolge der PRs: #285 (#273), #286 (#276), #287 (#274), #288 (#275), #289 (#281/#282),
   #290 (#277/#278/#279 Teil 1), #291 (#279 Teil 2), #292 (#283), #295 (#294), #297 (#296),
   #299 (#298), #301 (#300). Tests **Client 428 / Server 294 / 5 E2E**, 59 manuelle Testfälle.
-  ⚠️ **Noch offen und wichtig:** Die **Grundlast** ist unangetastet – bei 5 Geräten ~180
-  ChurchTools-Anfragen/Minute (Termin-Polling 60 s, Ablauf-Abgleich 8 s). Und **ChurchTools' Limit ist
-  unbekannt**: deshalb steht im Code KEINE geratene Rate. Klärung per Anfrage an ChurchTools oder mit
-  `server/scripts/probe-ratelimit.ts` (Messung an der echten Instanz – nur wochentags abends, stoppt
-  beim ersten 429, Trockenlauf ohne `--ja-ich-will`).
+  ⚠️ **ChurchTools' Limit ist weiterhin unbekannt** – deshalb steht im Code KEINE geratene Rate.
+  Klärung per Anfrage an ChurchTools oder mit `server/scripts/probe-ratelimit.ts` (Messung an der
+  echten Instanz – nur wochentags abends, stoppt beim ersten 429, Trockenlauf ohne `--ja-ich-will`).
+- **v2.16.2 GETAGGT (06.08.2026) – Prod-Deploy offen.** Senkt die **Grundlast**, die sich nach v2.16.1
+  als der größere Posten herausstellte (~180 CT-Anfragen/Minute bei 5 Geräten gegenüber 224 pro
+  Stunde beim Statistik-Burst): **#306** – Termin-Untertitel 10 min gemerkt (Poll kostet `1 + N` statt
+  `1 + 2N`) und der 60-Sekunden-Takt läuft nur noch bei **sichtbarer** Terminliste; der Kommentar
+  behauptete das vorher, tatsächlich pausierte nur der Browser beim Tab-Wechsel und im Liederheft lief
+  er weiter. Wirkung: Gerät auf der Liste ~17 → ~9 Anfragen/min, Gerät im Liederheft ~17 → **0**.
+  Dazu **#304** (die Protokollzeile zählte Termine ohne Ablaufplan als Fehler → dauerhaft
+  `vollständig=false`; eine Warnung, die immer leuchtet, wird ignoriert).
+  Neue geteilte Bausteine: `services/ttlMemo.ts` (Zwischenspeicher mit Verfallszeit – stand vorher
+  handgeschrieben in `versionMemo`) und `accountKey` in `middleware/session.ts` (Konto-Kennung für
+  Speicher-Schlüssel, stand wortgleich an zwei Stellen). Tests **Client 431 / Server 311 / 5 E2E**.
+  **BEWUSST VERWORFEN:** ein Merker für „Termine ohne Lieder" (78 % der Statistik-Anfragen gehen an
+  solche). Er spart ~150 Anfragen/Stunde gegen bis zu 10.800/Stunde Grundlast – **~1,4 %**, bei
+  dauerhaftem Risiko, dass nachgetragene Lieder still verschwinden. Und ChurchTools liefert kein
+  Kennzeichen dafür: **belegt an der öffentlichen OpenAPI-Spezifikation der Instanz**
+  (`/system/runtime/swagger/openapi.json`, HTTP 200 ohne Anmeldung – ab jetzt DIE Quelle für
+  CT-API-Fragen; `?include=` kennt nur `eventServices`). Dort steht auch: Bei `from`/`to` werden
+  `page`/`limit` ignoriert → **die Terminliste wird nicht still gekürzt**.
   Neue geteilte Bausteine, die dabei entstanden sind – bei Änderungen IMMER dort ansetzen, nicht
   danebenbauen:
   - `server/src/services/jsonStore.ts` – Lesen/Schreiben ALLER JSON-Ablagen. Nur `ENOENT` heißt „leer".
