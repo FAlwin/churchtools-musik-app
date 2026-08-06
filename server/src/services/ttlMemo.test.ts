@@ -62,6 +62,25 @@ describe('createTtlMemo', () => {
     expect(m.get('neu')).toBe('z');
   });
 
+  it('delete wirft genau einen Eintrag weg, die anderen bleiben', () => {
+    // Für das CSRF-Token (#298): Ein abgelehnter Schreibvorgang darf nur das eigene Token verwerfen,
+    // nicht die Token aller anderen Sitzungen.
+    const m = createTtlMemo<string>(1000);
+    m.set('a', 'eins');
+    m.set('b', 'zwei');
+    m.delete('a');
+    expect(m.get('a')).toBeUndefined();
+    expect(m.get('b')).toBe('zwei');
+  });
+
+  it('delete auf einen unbekannten Schlüssel tut nichts (und wirft nicht)', () => {
+    const m = createTtlMemo<string>(1000);
+    m.set('a', 'eins');
+    m.delete('gibtsnicht');
+    expect(m.get('a')).toBe('eins');
+    expect(m.size).toBe(1);
+  });
+
   it('clear leert alles', () => {
     const m = createTtlMemo<string>(1000);
     m.set('a', 'wert');

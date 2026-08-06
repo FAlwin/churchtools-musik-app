@@ -259,30 +259,43 @@ export async function whoami(cookie: string): Promise<ChurchToolsUser> {
 
 // Cookie → ChurchTools-Person-ID, gecacht mit 12-h-Auffrischung – spart whoami-Abrufe je Anmerkung
 // und prüft periodisch, ob das Cookie noch gilt (unabhängig von der App-Cookie-Lebensdauer).
-const userIdCache = new Map<string, { id: number; at: number }>();
+const USER_ID_TTL_MS = 12 * 3_600_000;
+const userIdMemo = createTtlMemo<number>(USER_ID_TTL_MS);
 
 /** Liefert die ChurchTools-Person-ID zum Session-Cookie (gecacht). */
 export async function getUserId(cookie: string): Promise<number> {
-  const c = userIdCache.get(cookie);
-  if (c && Date.now() - c.at < 12 * 3_600_000) return c.id;
-  // Abgelaufene Fremd-Einträge bei dieser Gelegenheit räumen (sonst wächst die Map über Monate).
-  for (const [k, v] of userIdCache) {
-    if (Date.now() - v.at >= 12 * 3_600_000) userIdCache.delete(k);
-  }
+  const hit = userIdMemo.get(cookie);
+  if (hit !== undefined) return hit;
   const me = await whoami(cookie);
-  userIdCache.set(cookie, { id: me.id, at: Date.now() });
+  userIdMemo.set(cookie, me.id);
   return me.id;
+}
+
+/**
+ * Alles vergessen, was an EINEM Session-Cookie hängt – die eine Stelle, die alle Sitzungs-Speicher
+ * kennt. Wer einen neuen hinzufügt, trägt ihn hier ein; sonst überlebt er das Abmelden.
+ */
+function forgetSession(cookie: string): void {
+  userIdMemo.delete(cookie);
+  capsMemo.delete(cookie);
+  csrfCache.delete(cookie);
 }
 
 /**
  * Beendet die ChurchTools-Session serverseitig (best effort). Ohne diesen Aufruf bliebe die
  * CT-Session nach dem App-Logout bis zu ihrem eigenen Ablauf gültig – ein je abgegriffenes
  * Cookie wäre trotz „Abmelden" weiter nutzbar. Fehler werden bewusst geschluckt (der Logout in
- * der App soll auch klappen, wenn ChurchTools gerade nicht erreichbar ist); der Cache-Eintrag
- * zum Cookie wird in jedem Fall entfernt.
+ * der App soll auch klappen, wenn ChurchTools gerade nicht erreichbar ist); die Cache-Einträge
+ * zum Cookie werden in jedem Fall entfernt.
+ *
+ * **ALLE cookie-basierten Speicher, nicht nur einer.** Vorher stand hier allein `userIdCache` – die
+ * beiden anderen (Rechte, CSRF-Token) hängen am selben Cookie und blieben nach dem Abmelden stehen.
+ * Genau die Fehlerklasse „die Regel gilt für A, B, C, C fehlt": Ein abgemeldetes Cookie hätte bis zu
+ * fünf Minuten lang noch gecachte Rechte geliefert, ohne ChurchTools zu fragen. Kommt eine vierte
+ * Sitzungs-Ablage dazu, gehört sie **hierhin**.
  */
 export async function logout(cookie: string): Promise<void> {
-  userIdCache.delete(cookie);
+  forgetSession(cookie);
   try {
     await fetch(`${BASE}/api/logout`, {
       signal: ctSignal(),
@@ -412,8 +425,8 @@ export function computeTeamNotesAllowed(
 // Die Fremd-Lese-Endpunkte (Team-Notizen) prüfen das Nutzungsrecht bei JEDER Anfrage. Ein
 // Live-Gang zu ChurchTools pro Anfrage wäre teuer UND anfällig für CT-Aussetzer (genau so sind
 // in der ersten Team-Notizen-Version sporadisch „alle Notizen weg"-Effekte entstanden).
-const capsMemo = new Map<string, { caps: UserCapabilities; at: number }>();
 const CAPS_MEMO_TTL_MS = 5 * 60_000;
+const capsMemo = createTtlMemo<UserCapabilities>(CAPS_MEMO_TTL_MS);
 
 /** Capabilities mit 5-Minuten-Memo je Session – für häufige Rechte-Checks (Team-Notizen). */
 export async function getCapabilitiesCached(
@@ -421,13 +434,9 @@ export async function getCapabilitiesCached(
   knownUserId: number | null = null,
 ): Promise<UserCapabilities> {
   const hit = capsMemo.get(cookie);
-  if (hit && Date.now() - hit.at < CAPS_MEMO_TTL_MS) return hit.caps;
-  // Abgelaufene Fremd-Einträge bei dieser Gelegenheit räumen (Map wächst sonst über Wochen).
-  for (const [k, v] of capsMemo) {
-    if (Date.now() - v.at >= CAPS_MEMO_TTL_MS) capsMemo.delete(k);
-  }
+  if (hit !== undefined) return hit;
   const caps = await getCapabilities(cookie, knownUserId);
-  capsMemo.set(cookie, { caps, at: Date.now() });
+  capsMemo.set(cookie, caps);
   return caps;
 }
 
@@ -808,7 +817,7 @@ async function fetchCsrfTokenWithRetry(cookie: string): Promise<string> {
  * per Ziehen) und macht ein abgelaufenes Token praktisch unmöglich.
  */
 const CSRF_TTL_MS = 60_000;
-const csrfCache = new Map<string, { token: string; at: number }>();
+const csrfCache = createTtlMemo<string>(CSRF_TTL_MS);
 /** Laufende Abrufe je Cookie – damit parallele Schreibvorgänge EINEN GET teilen, nicht je einen. */
 const csrfInflight = new Map<string, Promise<string>>();
 
@@ -850,7 +859,7 @@ function invalidateCsrfToken(cookie: string): void {
  */
 async function getCsrfToken(cookie: string): Promise<string> {
   const hit = csrfCache.get(cookie);
-  if (hit && Date.now() - hit.at < CSRF_TTL_MS) return hit.token;
+  if (hit !== undefined) return hit;
 
   const laufend = csrfInflight.get(cookie);
   if (laufend) return laufend; // parallelen Schreibvorgang mitnutzen statt zweiten GET auslösen
@@ -858,12 +867,7 @@ async function getCsrfToken(cookie: string): Promise<string> {
   const abruf = (async () => {
     try {
       const token = await fetchCsrfTokenWithRetry(cookie);
-      csrfCache.set(cookie, { token, at: Date.now() });
-      // Abgelaufene Fremd-Einträge bei dieser Gelegenheit räumen (wie `userIdCache`) – sonst wächst
-      // die Map über die Laufzeit mit jeder je angemeldeten Sitzung.
-      for (const [k, v] of csrfCache) {
-        if (Date.now() - v.at >= CSRF_TTL_MS) csrfCache.delete(k);
-      }
+      csrfCache.set(cookie, token);
       return token;
     } finally {
       csrfInflight.delete(cookie);
@@ -887,6 +891,14 @@ function csrfWriteDenied(cookie: string, meldung: string): never {
 export const __getCsrfTokenForTests = getCsrfToken;
 /** Nur für Tests: Token-Cache leeren, damit jeder Fall bei null anfängt. */
 export function __resetCsrfCacheForTests(): void {
+  csrfCache.clear();
+  csrfInflight.clear();
+}
+
+/** Nur für Tests: alle sitzungsgebundenen Speicher leeren (Konto-ID, Rechte, CSRF-Token). */
+export function __resetSessionMemosForTests(): void {
+  userIdMemo.clear();
+  capsMemo.clear();
   csrfCache.clear();
   csrfInflight.clear();
 }

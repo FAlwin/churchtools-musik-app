@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #306: **85 Testdateien** –
-**55 Client (433 Tests)** + **30 Server (311 Tests)** mit Vitest + **5 Playwright-E2E** (Render-Smoke + voller Auth-Flow).
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach #306: **86 Testdateien** –
+**55 Client (433 Tests)** + **31 Server (322 Tests)** mit Vitest + **5 Playwright-E2E** (Render-Smoke + voller Auth-Flow).
 
 ## Umfang
 

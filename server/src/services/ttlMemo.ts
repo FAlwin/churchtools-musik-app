@@ -19,6 +19,11 @@ export interface TtlMemo<T> {
   /** Gemerkter Wert, oder `undefined`, wenn nichts (mehr) da ist. `null` ist ein gültiger Wert. */
   get(key: string): T | undefined;
   set(key: string, value: T): void;
+  /**
+   * Einen einzelnen Eintrag verwerfen. Gebraucht vom CSRF-Token (#298): Lehnt ChurchTools einen
+   * Schreibvorgang ab, muss genau dieses Token weg – der Rest darf stehen bleiben.
+   */
+  delete(key: string): void;
   clear(): void;
   /** Nur für Tests: wie viele Einträge liegen gerade drin (nach dem Aufräumen). */
   readonly size: number;
@@ -41,6 +46,9 @@ export function createTtlMemo<T>(ttlMs: number): TtlMemo<T> {
         if (now - v.at >= ttlMs) memo.delete(k);
       }
       memo.set(key, { value, at: now });
+    },
+    delete(key) {
+      memo.delete(key);
     },
     clear() {
       memo.clear();
