@@ -11,28 +11,22 @@
  *
  * ⚠️ Prozesslokal – siehe „Ein Prozess, ein Zustand" in `docs/entwicklung/entscheidungen.md`.
  */
+import { createTtlMemo } from './ttlMemo.js';
 
 const TTL_MS = 5_000;
 
-const memo = new Map<string, { hash: string; at: number }>();
+// Nutzt den gemeinsamen Baustein (#306) – die Map samt TTL-Prüfung und Aufräumen stand vorher hier
+// von Hand und wäre für das Untertitel-Memo ein zweites Mal entstanden.
+const memo = createTtlMemo<string>(TTL_MS);
 
 /** Gemerkter Fingerabdruck, sofern er noch frisch genug ist. */
 export function getMemoizedVersion(key: string): string | null {
-  const hit = memo.get(key);
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.hash;
-  return null;
+  return memo.get(key) ?? null;
 }
 
-/**
- * Fingerabdruck merken. Räumt dabei abgelaufene Einträge weg – ohne das wüchse die Map über
- * Wochen mit längst vergangenen Terminen voll.
- */
+/** Fingerabdruck merken (räumt dabei Abgelaufenes weg). */
 export function rememberVersion(key: string, hash: string): void {
-  const now = Date.now();
-  for (const [k, v] of memo) {
-    if (now - v.at >= TTL_MS) memo.delete(k);
-  }
-  memo.set(key, { hash, at: now });
+  memo.set(key, hash);
 }
 
 /** Nur für Tests: Memo leeren. */

@@ -80,6 +80,8 @@ export async function getServicesWithSetlists(
   cookie: string,
   from: string,
   to: string,
+  /** Konto-Kennung (`accountKey`) – nur für das Untertitel-Memo, das je Konto trennt (#199/#306). */
+  account: string,
 ): Promise<{ service: Service; hash: string }[]> {
   const events = await getEvents(cookie, from, to);
   // mapLimit liefert in Fertigstellungs-Reihenfolge → Start-Zeitpunkt (ISO inkl. Uhrzeit)
@@ -93,7 +95,7 @@ export async function getServicesWithSetlists(
       const [agenda, subtitle] = await Promise.all([
         getAgenda(cookie, ev.id),
         calId && ev.appointmentId
-          ? getAppointmentSubtitle(cookie, calId, ev.appointmentId)
+          ? getAppointmentSubtitle(cookie, calId, ev.appointmentId, account)
           : Promise.resolve(null),
       ]);
       const items = agenda.items ?? [];

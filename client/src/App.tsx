@@ -130,7 +130,12 @@ export default function App() {
 
   // servicesQuery hängt nicht vom Navigations-Zustand ab → vor useAppNav, das die Terminliste
   // braucht, um den gespeicherten Gottesdienst nach einem Kaltstart wiederzufinden.
-  const servicesQuery = useServices(auth.isAuthenticated && canViewAgendas);
+  // Der 60-Sekunden-Takt der Terminliste läuft nur, wenn man sie auch sieht (#306). Er kostet ~17
+  // ChurchTools-Anfragen je Runde und lief bisher auch im Liederheft weiter. Der kleine Umweg über
+  // einen Zustand ist nötig, weil `useAppNav` (das `tab`/`view` liefert) selbst die Termindaten
+  // braucht – die Abfrage muss also vorher stehen.
+  const [pollServices, setPollServices] = useState(true);
+  const servicesQuery = useServices(auth.isAuthenticated && canViewAgendas, pollServices);
   // Hält den nächsten Gottesdienst automatisch offline bereit (falls in den Einstellungen aktiv).
   useOfflineAutoSync(servicesQuery.data);
   // Offline-Zustand: Liedersammlung braucht das Netz (Charts werden je Lied geladen) → Tab wird
@@ -184,6 +189,12 @@ export default function App() {
 
   // Live-Abgleich des geöffneten Ablaufs + „gesehen"-Basislinie beim Verlassen –
   // Details in hooks/useSetlistLiveSync.ts.
+  // Takt nachziehen, sobald sich die Ansicht ändert (#306). Ein Render Verzug ist bei 60 Sekunden
+  // ohne Belang.
+  useEffect(() => {
+    setPollServices(tab === 'termine' && view === null);
+  }, [tab, view]);
+
   const inSetlistView = view?.type === 'setlist' && !!service;
   const inSetlistChart = view?.type === 'chart' && view.source === 'setlist' && !!service;
   const { chartOutdated, reloadAblauf, dismissChartOutdated } = useSetlistLiveSync({
