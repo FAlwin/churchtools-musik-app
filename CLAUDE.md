@@ -454,14 +454,19 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   der CHANGELOG „wird sofort aktualisiert" behauptete. Empirisch nachgestellt: 0 zusätzliche Aufrufe.
   Wieder **eine Regel in zwei Hälften** – „Takt pausiert" und „beim Zurückkommen frisch" standen
   getrennt; die zweite Hälfte fehlte schlicht. Sie liegt jetzt IM Hook neben dem Takt.
-  Dabei ein **React-Query-Fallstrick**: Wer während des Renderns ein Feld des Query-Ergebnisses
-  anfasst (hier `refetch`), macht genau dieses Feld zum einzigen beobachteten – Datenänderungen lösen
-  danach **kein Rendern** mehr aus. Ein Test blieb dadurch ewig `pending`. Nachladen deshalb über den
-  QueryClient, ohne das Ergebnis anzufassen.
-  Und: **`server/scripts/` stand nicht in der TypeScript-Prüfung** und war still verrottet (zwei
-  Testskripte riefen gelöschte Funktionen auf, 21 bzw. 11 Fehler) → entfernt, Ordner wird geprüft,
-  Gegenprobe mit Absichtsfehler bestätigt exit 2. Ein Skript hatte ich zudem **ungelesen
-  mitcommittet** – entfernt.
+  Dabei ein **React-Query-Fallstrick**: Solange von einem Query-Ergebnis **kein** Feld gelesen wird,
+  meldet der Observer jede Änderung. Sobald während des Renderns eines gelesen wird, kommt es in ein
+  kumulatives `trackedProps`-Set (`queryObserver.js`, `shouldNotifyListeners`) – und danach lösen nur
+  noch Änderungen an **getrackten** Feldern ein Rendern aus. Wird nur `refetch` gelesen (eine stabile
+  Referenz, die sich nie ändert), rendert die Komponente nie wieder. Ein Test blieb dadurch ewig
+  `pending`. Nachladen deshalb über den QueryClient, ohne das Ergebnis anzufassen.
+  Und: **`server/scripts/` stand nicht in der TypeScript-Prüfung** und war still verrottet
+  (`test-pipeline.ts` 12 Fehler, `test-editor.ts` 2 – gelöschte Funktionen aufgerufen) → entfernt,
+  Ordner wird geprüft, Gegenprobe mit Absichtsfehler bestätigt exit 2. Ein Skript hatte ich zudem
+  **ungelesen mitcommittet** – entfernt. Tests jetzt **Client 433 / Server 311 / 5 E2E**.
+  ⚠️ Beim Zählen von Fehlern IMMER die Projektprüfung nehmen (`npm run build`), nicht ein
+  freistehendes `tsc` auf die Einzeldatei – das meldet zusätzliche Auflösungsfehler (21 statt 12) und
+  hätte hier eine falsche Zahl in den CHANGELOG getragen.
 
 - **Inhalt von v2.16.2 (in v2.16.3 enthalten).** Senkt die **Grundlast**, die sich nach v2.16.1
   als der größere Posten herausstellte (~180 CT-Anfragen/Minute bei 5 Geräten gegenüber 224 pro
@@ -473,7 +478,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   `vollständig=false`; eine Warnung, die immer leuchtet, wird ignoriert).
   Neue geteilte Bausteine: `services/ttlMemo.ts` (Zwischenspeicher mit Verfallszeit – stand vorher
   handgeschrieben in `versionMemo`) und `accountKey` in `middleware/session.ts` (Konto-Kennung für
-  Speicher-Schlüssel, stand wortgleich an zwei Stellen). Tests **Client 433 / Server 311 / 5 E2E**.
+  Speicher-Schlüssel, stand wortgleich an zwei Stellen). Tests damals **Client 431 / Server 311 / 5 E2E**.
   **BEWUSST VERWORFEN:** ein Merker für „Termine ohne Lieder" (78 % der Statistik-Anfragen gehen an
   solche). Er spart ~150 Anfragen/Stunde gegen bis zu 10.800/Stunde Grundlast – **~1,4 %**, bei
   dauerhaftem Risiko, dass nachgetragene Lieder still verschwinden. Und ChurchTools liefert kein
