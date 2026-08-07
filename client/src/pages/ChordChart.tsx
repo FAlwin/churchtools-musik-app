@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SetlistSong } from '@shared/types/index';
 import { Screen } from '../components/Screen';
 import { KeyPicker } from '../components/KeyPicker';
@@ -18,8 +18,12 @@ import {
   resumePendingAnnotations,
 } from '../services/annotations';
 import { VIEW_NS } from '../services/teamNotes';
-import { ANNO_ZOOM_NS } from '@shared/keys/index';
-import { drawKeyForOwner, zoomKeyBaseForOwner, viewKeyForOwner } from '../utils/streamKeys';
+import {
+  drawKeyForPage,
+  pageLabelFor,
+  viewKeyForPage,
+  zoomKeyBaseForPage,
+} from '../utils/chartPageKeys';
 import { ChartAppearanceMenu } from '../components/ChartAppearanceMenu';
 import { SongMenu } from '../components/SongMenu';
 import { SharersSheet } from '../components/SharersSheet';
@@ -30,9 +34,8 @@ import {
   pullSettings,
   resumePendingSettings,
 } from '../services/userSettings';
-import { parseChordPro } from '../utils/chordpro';
-import { availableVersions, versionText } from '../utils/songVersions';
-import { shiftKey } from '../utils/transpose';
+import { versionText } from '../utils/songVersions';
+import { deriveActiveSongView } from '../utils/activeSongView';
 import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
 import type { SetlistPageOwner } from '../utils/chordPdf';
 import { pdfOptionsForSong } from '../utils/chartPdfOptions';
@@ -359,70 +362,50 @@ export function ChordChart({
   if (visibleSongIdx.size === 0) visibleSongIdx.add(activeSongIdx);
 
   // ── abgeleitete Werte des AKTIVEN Lieds ──
-  const curKey = set.key || song.targetKey;
-  const shapeKey = shiftKey(curKey, -set.capo);
-  // Versionen: Original + benannte; aktuell gewählte ableiten.
-  const versions = availableVersions(song);
-  const currentVersion = versions.find((v) => v.key === set.versionKey) ?? versions[0];
-  const isOriginal = currentVersion.key === 'original';
-  const hasVersions = song.versions.length > 0;
-  const displayedChordpro = currentVersion.text;
-  const sections = parseChordPro(displayedChordpro);
-  const editorTemplate = `{title: ${song.title}}\n{key: ${song.targetKey || song.originalKey || 'C'}}\n\n{comment: Vers 1}\n[${song.targetKey || 'C'}]Hier Text mit Akkorden eingeben\n\n{comment: Chorus}\n`;
+  // Rein und getestet in `utils/activeSongView` (#314): Tonart, Kapo-Griffe, Versionen, gewähltes
+  // Dokument, Editor-Vorlage und die Info-Zeile im Kopf.
+  const {
+    curKey,
+    shapeKey,
+    versions,
+    currentVersion,
+    isOriginal,
+    hasVersions,
+    displayedChordpro,
+    sections,
+    editorTemplate,
+    activeDoc,
+    headInfo,
+  } = deriveActiveSongView(song, set);
 
-  const activeDoc =
-    set.viewSource === 'chords'
-      ? null
-      : (song.documents.find((d) => d.fileId === set.viewSource) ?? null);
-
-  // Anmerkungs-/Zoom-Schlüssel je Strom-Seite. Akkord-Seiten hängen an Lied+Version UND
-  // Darstellungsart: „Nur Text" hat eine EIGENE Notiz-Ebene (`_lyr`-Segment) – Bestandsnotizen
-  // ohne Segment sind „Akkorde & Text" (abwärtskompatibel). Dokumente hängen an der Datei-ID.
-  // WICHTIG: Die Darstellungsart kommt aus dem VERÖFFENTLICHTEN Schnappschuss (publishedSettings),
-  // nicht aus den Live-Einstellungen – die Notiz-Ebene wechselt exakt mit den sichtbaren Seiten,
-  // nicht schon während des asynchronen Neuaufbaus (sonst: Notizen „vor dem Text", Stift schreibt
-  // in die falsche Ebene).
-  // Die Schlüssel selbst baut `utils/streamKeys` aus der geteilten Grammatik (#250) – hier wird nur
-  // entschieden, WELCHE Darstellungsart gilt: die des veröffentlichten Schnappschusses.
-  const isLyr = (songId: number): boolean =>
-    (publishedSettings[songId] ?? effSettings[songId] ?? DEFAULT_SETTINGS).lyricsOnly;
-  const drawKeyFor = (page: number): string | null => {
-    const o = owners[page];
-    return o ? drawKeyForOwner(o, isLyr(o.songId)) : null;
-  };
-  // „Notizen von …": Schlüssel der angesehenen fremden Ebene je Seite (nur Akkord-Seiten;
-  // stabile Identität für PageDeck-Effekte). Die Versions-Schlüssel stammen aus der Ansicht der
-  // angesehenen Person (effSettings) und passen daher zu ihren Anmerkungs-Schlüsseln.
+  // Anmerkungs-/Zoom-Schlüssel je Strom-Seite. Die Regeln – welche Darstellungsart gilt, wann es
+  // KEINEN Schlüssel gibt – stehen rein und getestet in `utils/chartPageKeys` (#314); hier nur die
+  // Verdrahtung an die aktuellen Daten.
+  const drawKeyFor = (page: number): string | null =>
+    drawKeyForPage(page, owners, publishedSettings, effSettings);
+  const zoomKeyBaseFor = (page: number): string =>
+    zoomKeyBaseForPage(page, owners, publishedSettings, effSettings);
+  const pageLabel = (activePg: number, pageIdx: number): string | null =>
+    pageLabelFor(activePg, pageIdx, owners);
+  // „Notizen von …": stabile Identität für die PageDeck-Effekte, deshalb `useCallback`.
+  // `viewingId` gehört bewusst in die Abhängigkeiten, obwohl er im Schlüssel nicht vorkommt: Beim
+  // Wechsel auf eine andere Person mit derselben Ebene bliebe die Funktion sonst identisch, und
+  // PageDeck bekäme kein Signal, den Ansichts-Spiegel neu zu lesen.
   const viewingId = viewing?.id ?? null;
   const viewingSongId = viewing?.songId ?? null;
   const viewingLyr = viewing?.lyr ?? false;
   const viewKeyFor = useCallback(
-    (page: number): string | null => {
-      if (viewingId == null || viewingSongId == null) return null;
-      const o = owners[page];
-      if (!o) return null;
-      return viewKeyForOwner(
-        o,
-        { songId: viewingSongId, versionKey: o.versionKey, lyr: viewingLyr },
+    (page: number): string | null =>
+      viewKeyForPage(
+        page,
+        owners,
+        viewingId == null || viewingSongId == null
+          ? null
+          : { songId: viewingSongId, lyr: viewingLyr },
         VIEW_NS,
-      );
-    },
+      ),
     [owners, viewingId, viewingSongId, viewingLyr],
   );
-  const zoomKeyBaseFor = (page: number): string => {
-    const o = owners[page];
-    // Ohne Besitzer (z. B. während des Neuaufbaus) ein eigener, harmloser Schlüssel je Seitenzahl.
-    if (!o) return `${ANNO_ZOOM_NS}p${page}`;
-    return zoomKeyBaseForOwner(o, isLyr(o.songId));
-  };
-  // Seiten-Hinweis nur bei mehrseitigen Einheiten (Lied/Dokument): „Seite x / y".
-  const pageLabel = (activePg: number, pageIdx: number): string | null => {
-    const cur = owners[activePg] ?? owners[pageIdx];
-    if (!cur) return null;
-    const unitPages = owners.filter((o) => o.songIdx === cur.songIdx).length;
-    if (unitPages <= 1) return null;
-    return `Seite ${cur.localPage + 1} / ${unitPages}`;
-  };
 
   /**
    * „Als PDF teilen" – das aktive Lied als einzelne PDF.
@@ -478,19 +461,6 @@ export function ChordChart({
 
   const nextSong = activeSongIdx < songs.length - 1 ? songs[activeSongIdx + 1] : null;
 
-  // Info-Zeile im Kopf-Button: Tonart/Capo/Version/Tempo bzw. Dokument-Hinweis – je nach Anzeige.
-  const headInfo: ReactNode[] = [];
-  if (activeDoc) {
-    headInfo.push(activeDoc.type === 'pdf' ? 'PDF' : 'Bild');
-  } else {
-    if (!set.lyricsOnly) headInfo.push(<span className={styles.infoKey}>{curKey}</span>);
-    if (set.lyricsOnly) headInfo.push('Nur Text');
-    if (!set.lyricsOnly && set.capo > 0)
-      headInfo.push(<span className={styles.infoCapo}>Capo {set.capo}</span>);
-    if (hasVersions) headInfo.push(currentVersion.name);
-    if (song.bpm !== null) headInfo.push(`♩ ${song.bpm}`);
-  }
-
   return (
     <Screen className={styles.chartScreen}>
       <>
@@ -515,10 +485,16 @@ export function ChordChart({
               </span>
               {headInfo.length > 0 && (
                 <span className={styles.menuInfo}>
-                  {headInfo.map((node, i) => (
+                  {headInfo.map((part, i) => (
                     <span key={i} className={styles.menuInfoPart}>
                       {i > 0 && <span className={styles.menuInfoDot}>·</span>}
-                      {node}
+                      {part.art === 'plain' ? (
+                        part.text
+                      ) : (
+                        <span className={part.art === 'key' ? styles.infoKey : styles.infoCapo}>
+                          {part.text}
+                        </span>
+                      )}
                     </span>
                   ))}
                 </span>

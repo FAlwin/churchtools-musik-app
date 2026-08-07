@@ -38,7 +38,7 @@ export function setLsSong(base: string, songId: number, value: string | null): v
 }
 
 /** Eine auswählbare Version inkl. Original (immer erste Auswahl). */
-interface ResolvedVersion {
+export interface ResolvedVersion {
   key: string;
   name: string;
   text: string;
