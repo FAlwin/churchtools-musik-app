@@ -19,9 +19,13 @@ const MAX_FLASHES_PER_SECOND = 3;
 /**
  * Plausibles Tempo. Außerhalb wird gar nicht gepulst: Werte wie 0 oder 5000 sind Datenfehler aus
  * ChurchTools, und ein Puls daraus wäre entweder unsichtbar oder ein Stroboskop.
+ *
+ * Exportiert, weil `tapTempo` denselben Bereich braucht – ein durch Antippen ermitteltes Tempo
+ * landet am Ende in ChurchTools. Es gibt ihn bewusst nur EINMAL, damit Puls und Antippen nicht
+ * unterschiedliche Vorstellungen davon bekommen, was ein Tempo ist.
  */
-const MIN_BPM = 20;
-const MAX_BPM = 300;
+export const MIN_BPM = 20;
+export const MAX_BPM = 300;
 
 /** Lässt sich aus diesem Tempo überhaupt ein sinnvoller Puls bauen? */
 export function isPulsable(bpm: number | null | undefined): bpm is number {
