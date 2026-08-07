@@ -8,9 +8,14 @@ client/dist/
 server/dist/
 
 # Environment / Secrets
+# ALLE .env-Varianten ignorieren, NUR die Vorlagen nicht. Vorher waren die Namen einzeln
+# aufgezählt (.env, .env.local, .env.*.local) – eine neue Variante wie `.env.churchtools-test`
+# wäre damit ungeschützt im öffentlichen Repo gelandet. Beim Anlegen genau dieser Datei ist es
+# aufgefallen; die Regel deckt jetzt auch alles ab, was künftig dazukommt.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
 
 # Logs
 *.log
