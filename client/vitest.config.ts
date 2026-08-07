@@ -22,6 +22,9 @@ export default defineConfig({
     // ihre Umgebung per `// @vitest-environment jsdom`-Docblock selbst.
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
+    // Baut gerenderte Komponenten/Hooks nach jedem Test ab – ohne das bleiben sie samt ihrer
+    // window-Listener am Leben und mischen sich in spätere Tests ein (#314).
+    setupFiles: ['./src/test-setup.ts'],
     coverage: {
       provider: 'v8',
       include: ['src/utils/**', 'src/components/**', 'src/hooks/**', 'src/services/**'],

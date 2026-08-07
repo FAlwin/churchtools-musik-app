@@ -12,11 +12,6 @@ import { useLandscape } from '../hooks/useLandscape';
 import { Coachmarks } from '../components/Coachmarks';
 import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
 import { Icon } from '../components/icons';
-import {
-  migrateLocalAnnotations,
-  pullAnnotations,
-  resumePendingAnnotations,
-} from '../services/annotations';
 import { VIEW_NS } from '../services/teamNotes';
 import {
   drawKeyForPage,
@@ -29,22 +24,17 @@ import { SongMenu } from '../components/SongMenu';
 import { SharersSheet } from '../components/SharersSheet';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import {
-  migrateLocalSettings,
-  pullSettings,
-  resumePendingSettings,
-} from '../services/userSettings';
-import { versionText } from '../utils/songVersions';
 import { deriveActiveSongView } from '../utils/activeSongView';
-import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
-import type { SetlistPageOwner } from '../utils/chordPdf';
+import { generateChordPdf } from '../utils/chordPdf';
 import { pdfOptionsForSong } from '../utils/chartPdfOptions';
 import { sharePdf } from '../utils/sharePdf';
-import { DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
-import { logoTightUrl } from '../utils/logoAsset';
+import { DEFAULT_SETTINGS } from '../utils/chartSettings';
 import { useTeamNotesImport } from '../hooks/useTeamNotesImport';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
+import { useAppLogo } from '../hooks/useAppLogo';
+import { useChartStream } from '../hooks/useChartStream';
+import { useChartSync, useResyncAfterEditor } from '../hooks/useChartSync';
 import { useSetlistPages } from '../hooks/useSetlistPages';
 import type { DrawTool } from '../types/index';
 import styles from './ChordChart.module.scss';
@@ -91,31 +81,24 @@ export function ChordChart({
     )
     .join(',');
 
-  // Anmerkungen pro Konto: bestehende Geräte-Anmerkungen einmalig hochladen, dann die
-  // Server-Anmerkungen dieser Lieder in den lokalen Cache holen und Anzeige neu laden.
-  const [syncTick, setSyncTick] = useState(0);
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const ids = songs.map((s) => s.id);
-      // Reihenfolge ist wichtig: Erst die beim letzten Mal NICHT durchgegangenen Uploads nachholen
-      // (#256 Anmerkungen, #275 Einstellungen) und bestehende lokale Daten einmalig hochladen – DANN
-      // den Server-Stand holen. Andernfalls überschreibt der Pull genau das, was noch hochzuladen ist.
-      await Promise.all([resumePendingAnnotations(), resumePendingSettings()]);
-      await Promise.all([migrateLocalAnnotations(), migrateLocalSettings()]);
-      await Promise.all([pullAnnotations(ids), pullSettings(ids)]);
-      // Team-Notizen: wer teilt Anmerkungen zu diesen Liedern? (nur für Berechtigte)
-      if (canUseGlobalNotes) refreshSharers();
-      if (cancelled) return;
-      // Einstellungen aus dem (jetzt gespiegelten) localStorage neu übernehmen.
-      reloadSettings();
-      setSyncTick((t) => t + 1);
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songsSig]);
+  const [drawMode, setDrawMode] = useState(false);
+  /**
+   * Auffrischen im Hintergrund (Erst-Sync, 30-s-/60-s-Takt, Rückkehr zur App) – in `useChartSync`.
+   *
+   * Die Liste der Teilenden gehört zum Erst-Sync, `refreshSharers` entsteht aber erst weiter unten
+   * in `useTeamNotesImport`, das seinerseits `setSyncTick` von hier braucht. Der Rückruf zeigt
+   * deshalb über eine Ref auf die dann vorhandene Funktion; gelesen wird sie erst im Effekt, also
+   * lange nach dem Render.
+   */
+  const teamNotizenNachlauf = useRef<(() => void) | null>(null);
+  const { syncTick, setSyncTick, bumpSync } = useChartSync({
+    songs,
+    songsSig,
+    drawMode,
+    onReload,
+    reloadSettings,
+    onAfterInitialPull: () => teamNotizenNachlauf.current?.(),
+  });
 
   /**
    * EIN Zustand für alle Auswahl-Overlays statt fünf Booleans (#283).
@@ -130,7 +113,6 @@ export function ChordChart({
   /** Ein Overlay umschalten (nochmal derselbe Knopf schließt es). */
   const toggleOverlay = (o: 'appearance' | 'menu') => setOverlay((cur) => (cur === o ? null : o));
 
-  const [drawMode, setDrawMode] = useState(false);
   const { toast, showToast } = useToast();
   // ── Team-Notizen (#124, PCO-Modell): „Notizen von …" ansehen + übernehmen ──
   // Ganzer Ansehen-/Import-Zustand samt abgeleiteter effSettings gekapselt in useTeamNotesImport.
@@ -162,6 +144,9 @@ export function ChordChart({
     setDrawMode,
     showToast,
   });
+  // Erst jetzt steht `refreshSharers` – der Erst-Sync greift über die Ref darauf zu (siehe oben).
+  teamNotizenNachlauf.current = canUseGlobalNotes ? refreshSharers : null;
+
   // Geführte Einführung Chart-Ansicht (#Onboarding, Gruppe 2): startet beim ersten Öffnen, sobald
   // die Seiten gerendert sind (dann existieren die hervorzuhebenden Elemente).
   const [chartTour, setChartTour] = useState(false);
@@ -172,116 +157,11 @@ export function ChordChart({
   const [streamZoomed, setStreamZoomed] = useState(false); // eine sichtbare Seite (Strom oder Dokument) ist reingezoomt
   const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → PageDeck setzt sichtbaren Zoom zurück
 
-  // App-Logo für die PDF-Kopfzeile (oben rechts) einmalig vorladen. Quelle ist die eingebettete
-  // Data-URI (logoAsset) → auch offline sofort da (loser public-Pfad wurde offline nicht gecacht).
-  const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setLogoImg(img);
-    img.src = logoTightUrl;
-  }, []);
-
-  // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
-  const liveRef = useRef({ songs, drawMode, onReload, lastReturn: 0 });
-  liveRef.current.songs = songs;
-  liveRef.current.drawMode = drawMode;
-  liveRef.current.onReload = onReload;
-  useEffect(() => {
-    // Anmerkungen (pro Konto) regelmäßig vom Server holen – pausiert im Zeichenmodus/Hintergrund.
-    async function refreshAnno() {
-      if (document.hidden || liveRef.current.drawMode) return;
-      await pullAnnotations(liveRef.current.songs.map((s) => s.id));
-      setSyncTick((t) => t + 1);
-    }
-    // Beim Zurückkehren zur App: Anmerkungen, Einstellungen UND Versionen (Setlist) auffrischen.
-    async function onReturn() {
-      if (document.hidden) return;
-      const now = Date.now();
-      if (now - liveRef.current.lastReturn < 2000) return; // focus+visibility entprellen
-      liveRef.current.lastReturn = now;
-      const list = liveRef.current.songs;
-      if (!liveRef.current.drawMode) {
-        await Promise.all([
-          pullAnnotations(list.map((s) => s.id)),
-          pullSettings(list.map((s) => s.id)),
-        ]);
-        reloadSettings();
-        setSyncTick((t) => t + 1);
-      }
-      liveRef.current.onReload?.();
-    }
-    // Inhalt (Ablauf/Liedtexte) alle 60 s still nachladen – ersetzt den früheren
-    // „Aktualisieren"-Knopf: Änderungen erscheinen auch, wenn das Gerät die ganze Zeit offen im
-    // Lied bleibt (z. B. iPad auf der Bühne). Neu gezeichnet wird nur bei echten Änderungen
-    // (songsSig); offline scheitert das Nachladen lautlos.
-    function refreshContent() {
-      if (document.hidden || liveRef.current.drawMode) return;
-      liveRef.current.onReload?.();
-    }
-    const id = setInterval(() => void refreshAnno(), 30000);
-    const idContent = setInterval(() => void refreshContent(), 60000);
-    // `onReturn` ist async → in einen void-Wrapper, damit kein unbehandeltes Promise entsteht (#279).
-    const onReturnSync = (): void => void onReturn();
-    window.addEventListener('focus', onReturnSync);
-    document.addEventListener('visibilitychange', onReturnSync);
-    return () => {
-      clearInterval(id);
-      clearInterval(idContent);
-      window.removeEventListener('focus', onReturnSync);
-      document.removeEventListener('visibilitychange', onReturnSync);
-    };
-    // `reloadSettings` hat eine stabile Identität (useCallback über eine Ref) – die Intervalle und
-    // Listener werden dadurch NICHT erneut angemeldet.
-  }, [reloadSettings]);
-
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
-  // Der Aufbau lief bis #197 in einem useMemo, also MITTEN IM RENDER: Bei jeder Änderung von
-  // Tonart/Spalten/Schrift stand die Oberfläche, bis das komplette Liederheft neu erzeugt war (auf
-  // einem älteren iPad deutlich spürbar – das Menü blieb offen, nichts reagierte).
-  // Jetzt außerhalb des Renders in einem Effekt: Erst zeichnet der Browser (Menü schließt, Gesten
-  // laufen weiter), danach wird gebaut. Bis das neue Ergebnis da ist, bleibt das ALTE stehen –
-  // deshalb State statt Memo, sonst blitzte zwischendurch eine leere Ansicht auf.
-  // Ehrlich: jsPDF bleibt synchron, der Aufbau blockiert also weiterhin kurz den Hauptthread –
-  // nur eben NACH dem Zeichnen. Ihn ganz auszulagern bräuchte einen Web Worker (eigenes Thema).
-  const [stream, setStream] = useState<{ data: ArrayBuffer; owners: SetlistPageOwner[] } | null>(
-    null,
-  );
-  useEffect(() => {
-    if (songs.length === 0) {
-      setStream(null);
-      return;
-    }
-    let cancelled = false;
-    const build = (): void => {
-      if (cancelled) return;
-      const songsForPdf = songs.map((s) => {
-        const st = effSettings[s.id] ?? loadSettings(s);
-        return { ...s, chordpro: versionText(s, st.versionKey), versionKey: st.versionKey };
-      });
-      const { doc, owners } = generateSetlistPdfWithOwners(songsForPdf, (s) =>
-        pdfOptionsForSong(s, effSettings[s.id] ?? loadSettings(s), logoImg),
-      );
-      // Zwischenzeitlich hat sich die Eingabe geändert → dieses Ergebnis ist veraltet, verwerfen.
-      if (cancelled) return;
-      setStream({ data: doc.output('arraybuffer'), owners });
-    };
-    // Nach dem Zeichnen bauen; `requestIdleCallback` lässt Eingaben zuerst durch, der Timeout
-    // sorgt dafür, dass es auch bei Dauerlast zügig passiert. Ältere Safari-Versionen kennen
-    // rIC nicht – dort genügt ein Timeout 0 (auch das läuft erst nach dem Zeichnen).
-    let cancelScheduled: () => void;
-    if (typeof window.requestIdleCallback === 'function') {
-      const h = window.requestIdleCallback(build, { timeout: 300 });
-      cancelScheduled = () => window.cancelIdleCallback(h);
-    } else {
-      const h = window.setTimeout(build, 0);
-      cancelScheduled = () => window.clearTimeout(h);
-    }
-    return () => {
-      cancelled = true;
-      cancelScheduled();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songsSig, effSettings, logoImg]);
+  // Aufbau in `useChartStream` – bewusst NACH dem Zeichnen, mit stehenbleibendem
+  // altem Ergebnis (#197).
+  const logo = useAppLogo();
+  const stream = useChartStream({ songs, songsSig, settings: effSettings, logo });
 
   // Durchgehender Strom: Akkord- UND Dokument-Seiten in Setlist-Reihenfolge zu EINER Seiten-Liste
   // (jedes Lied steuert je nach viewSource seine Akkorde ODER sein hochgeladenes Dokument bei).
@@ -418,7 +298,7 @@ export function ChordChart({
   const shareCurrentAsPdf = (): void => {
     const doc = generateChordPdf(
       { ...song, chordpro: displayedChordpro },
-      pdfOptionsForSong(song, set, logoImg),
+      pdfOptionsForSong(song, set, logo),
     );
     void sharePdf(doc, song.title);
   };
@@ -449,15 +329,8 @@ export function ChordChart({
   // Tastatur-Navigation aussetzen, solange Editor oder Zeichenmodus offen sind.
   navBlockedRef.current = showEditor || drawMode;
 
-  // Beim SCHLIESSEN des Editors die Chart-Ansicht neu ausrichten (syncTick): Der Editor-Overlay
-  // (fixed, Tastatur/visualViewport) kann den Zoom der dahinterliegenden Seiten verschieben →
-  // beim Zurückkommen sonst „steckende" Seite. syncTick stellt gespeicherten Zoom wieder her bzw.
-  // setzt auf Fit.
-  const prevShowEditor = useRef(showEditor);
-  useEffect(() => {
-    if (prevShowEditor.current && !showEditor) setSyncTick((t) => t + 1);
-    prevShowEditor.current = showEditor;
-  }, [showEditor]);
+  // Beim SCHLIESSEN des Editors die Anzeige neu ausrichten (Begründung im Hook).
+  useResyncAfterEditor(showEditor, bumpSync);
 
   const nextSong = activeSongIdx < songs.length - 1 ? songs[activeSongIdx + 1] : null;
 
