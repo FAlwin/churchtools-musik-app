@@ -1,4 +1,10 @@
 import { test, expect } from '@playwright/test';
+import {
+  TOUR_CHART,
+  TOUR_SETLIST,
+  TOUR_SETLIST_EDIT,
+  TOUR_TERMINE,
+} from '../client/src/utils/onboarding';
 
 /**
  * Voller Auth-Flow gegen den ChurchTools-Stub (#174): Anmelden → Termin → Ablauf → Chart → Anmerkung
@@ -17,7 +23,12 @@ import { test, expect } from '@playwright/test';
  * Für den Flow-Test wird sie deshalb vorab als gesehen markiert – dass sie beim ERSTEN Mal erscheint,
  * prüft ein eigener Test.
  */
-const TOUREN = ['termine-v2', 'chart-v2', 'setlist-v1', 'setlist-edit-v1'];
+// BEWUSST an der Quelle geholt statt als Literale hingeschrieben: Hier standen die Versionen
+// ('chart-v2' …) einmal von Hand. Als #319 die Chart-Tour auf v3 hob, zeigte dieser Test auf eine
+// Version, die es nicht mehr gab – die Einführung erschien und fing die Klicks ab. Genau die
+// Fehlerklasse, vor der die Projektregeln warnen: Tests gegen die ERZEUGER, nicht gegen Literale.
+// Der Typ-Import in `onboarding.ts` wird beim Übersetzen entfernt, es kommt also kein React mit.
+const TOUREN = [TOUR_TERMINE, TOUR_CHART, TOUR_SETLIST, TOUR_SETLIST_EDIT];
 
 test.describe('Auth-Flow mit ChurchTools-Stub', () => {
   test('Anmelden, Termin öffnen, Chart sehen, anmerken – die Anmerkung geht zum Konto', async ({

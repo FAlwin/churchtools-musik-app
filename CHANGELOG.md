@@ -17,6 +17,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
+- **Ein Tipp in die Mitte blendet die Leisten aus (#319).** Kopf- und Fußzeile verschwinden, das
+  Liedblatt bekommt die ganze Fläche – nützlich auf dem Notenständer. Ein weiterer Tipp holt sie
+  zurück; beim ersten Mal sagt ein kurzer Hinweis, wie. Die Ränder blättern weiter wie bisher, und
+  im Anmerkungsmodus passiert nichts – dort gehört der Finger dem Stift. Beim Öffnen des
+  Liederhefts sind die Leisten immer da.
 - **Tempo-Puls zum Einzählen (#145).** Neben der Tempo-Angabe im Kopf pulst auf Wunsch ein kleiner
   Punkt im Takt des Lieds – lautlos, zum Einzählen, wenn kein Schlagzeuger da ist. Der Schalter `♩`
   sitzt oben rechts und erscheint nur, wenn im Lied ein Tempo hinterlegt ist. Beim Öffnen des
@@ -66,7 +71,7 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   unverschlüsselt. Sie ist jetzt nur noch über eine eigene HTTPS-Adresse erreichbar. Für den
   Selbstbetrieb ist der Weg dorthin in `docs/betrieb/DEPLOYMENT.md` (Abschnitt 6) beschrieben,
   samt vier Prüfungen, mit denen sich nachweisen lässt, dass die Härtung wirklich greift.
-- **Tests: Client 550 · Server 347 · 5 E2E** (vorher 433 · 311 · 5).
+- **Tests: Client 565 · Server 347 · 5 E2E** (vorher 433 · 311 · 5).
 
 ## [2.16.3] – 2026-08-06
 

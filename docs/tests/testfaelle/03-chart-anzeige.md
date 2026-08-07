@@ -204,3 +204,34 @@ einem Lied ohne Tempo erscheint der Knopf gar nicht erst.
 - **Historie:** #145
 
 </details>
+
+### TF-CHART-10 · Tipp in die Mitte blendet die Leisten aus
+
+**Das brauchst du:** Ein iPad oder Handy, ein Lied mit mehreren Seiten.
+
+**Das muss passieren:** Ein Tipp in die **Mitte** des Blattes blendet Kopf- und Fußzeile aus – das
+Blatt bekommt die ganze Fläche und wird sichtbar größer. Beim **ersten** Mal erscheint kurz der
+Hinweis „Leisten ausgeblendet – nochmal in die Mitte tippen holt sie zurück." Ein weiterer Tipp
+holt sie zurück. Die Ränder blättern weiter wie bisher.
+
+1. Ein Lied öffnen, in die **Mitte** tippen → Leisten weg, Hinweis erscheint.
+2. Nochmal in die Mitte tippen → Leisten zurück.
+3. Am **linken** und **rechten** Rand tippen → es wird geblättert, die Leisten bleiben wie sie sind.
+4. Ins **Querformat** drehen, in die rechte Bildhälfte (aber nicht an den Rand) tippen → Leisten
+   weg **und** die Kopfzeile bezieht sich auf das rechte Lied.
+5. Mit zwei Fingern hineinzoomen, dann in die Mitte tippen → die Vergrößerung darf nicht verloren
+   gehen.
+6. **Anmerkungsmodus** einschalten und in die Mitte tippen → es passiert nichts (der Finger gehört
+   dem Stift).
+7. Das Liederheft verlassen und neu öffnen → die Leisten sind wieder da.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/hooks/usePageNavigation.ts`, `client/src/pages/ChordChart.tsx`, `client/src/components/PageDeck.tsx`, `client/src/utils/onboarding.ts`
+- **Automatisiert:** teilweise – `client/src/hooks/usePageNavigation.test.ts` (Zonen, Zeichenmodus,
+  der nach einem Touch nachgereichte Klick). Von Hand bleiben der Eindruck am Gerät und Punkt 5:
+  ob die Vergrößerung den Wechsel der Fläche übersteht, zeigt nur das echte Zoomen.
+- **Historie:** #319
+
+</details>

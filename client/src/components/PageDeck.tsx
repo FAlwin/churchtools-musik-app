@@ -63,6 +63,8 @@ interface PageDeckProps {
   onPageIndex: (i: number) => void;
   activePage: number;
   onActivePage: (i: number) => void;
+  /** Tipp in die Mitte – die Chart-Ansicht blendet damit ihre Leisten aus/ein (#319). */
+  onMiddleTap?: () => void;
 
   drawMode: boolean;
   drawColor: string;
@@ -111,6 +113,7 @@ export function PageDeck({
   onPageIndex,
   activePage,
   onActivePage,
+  onMiddleTap,
   drawMode,
   drawColor,
   setDrawColor,
@@ -486,6 +489,7 @@ export function PageDeck({
     drawMode,
     onPageIndex,
     onActivePage,
+    onMiddleTap,
   });
 
   const slots: number[] = [];
