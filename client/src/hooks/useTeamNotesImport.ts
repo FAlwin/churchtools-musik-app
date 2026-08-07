@@ -76,6 +76,13 @@ export function useTeamNotesImport({
   useEffect(() => () => clearViewMirror(), []);
 
   // Während des Ansehens gelten NUR für das angesehene Lied die Einstellungen der angesehenen Person.
+  //
+  // Die Prüfung auf `viewing.songId` ist heute ein Gürtel zum Hosenträger: `viewLevel` legt
+  // `viewSettings` immer mit GENAU EINEM Lied an, der Rückfall auf `settings` täte es also auch.
+  // Sie bleibt trotzdem stehen und ist bewusst hier erwähnt (#314): Würde `viewSettings` je mehrere
+  // Lieder enthalten – etwa weil `loadViewMirror` für den ganzen Ablauf lädt –, griffe das Ansehen
+  // ohne diese Zeile still auf alle Lieder durch. Ein Test kann das nicht festhalten, solange der
+  // Fall nicht herstellbar ist; deshalb der Hinweis.
   const effSettings: Record<number, SongSettings> =
     viewing && viewSettings
       ? Object.fromEntries(
