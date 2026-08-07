@@ -134,11 +134,24 @@ export function useZoomPersistence({
    *  - **Kein `zoomedSlots`-Vorbehalt.** Der Merker wird in `onTransformed` gepflegt und kann in
    *    genau diesem Moment veraltet sein – dann passierte gar nichts, und das war der gemeldete
    *    Fehler. Auf einer nicht vergrößerten Seite ist `resetTransform` ohnehin wirkungslos.
+   *
+   * **Und auch kein `gestureSlot`-Vorbehalt** – anders als bei den Wiederherstell-Effekten. Der
+   * Grund für die Sperre (#33) ist „einen LAUFENDEN Pinch nicht abwürgen"; hier kann gar keiner
+   * laufen: Ausgelöst wird das Einpassen ausschließlich vom Tipp in die Mitte, und ein Tipp mit
+   * einem Finger und ein Pinch mit zweien schließen sich aus. Gemessen ist die Sperre nach dem
+   * Zoomen aber noch **rund eine halbe Sekunde** gesetzt (`onZoomStop` kommt ~200 ms nach dem
+   * letzten Rad-/Finger-Ereignis, dazu 350 ms Nachlauf) – wer direkt nach dem Vergrößern in die
+   * Mitte tippte, bekam deshalb gar kein Einpassen. Genau der gemeldete Fall. Die Sperre wird
+   * hier stattdessen freigegeben: Der Tipp hat die Geste beendet.
    */
   function fitVisibleZoom() {
+    gestureSlot.current = null;
     for (let j = 0; j < perView; j++) {
-      if (gestureSlot.current === j) continue; // laufenden Pinch nie abbrechen (#33)
-      transformRefs[j].current?.resetTransform(150);
+      // `setTransform(0, 0, 1, 0)` statt `resetTransform(150)`: gemessen blieb der Zoom bei
+      // `resetTransform` **unverändert** stehen (1,96 vorher wie nachher). Die Bibliothek fährt den
+      // Wert über eine Animation zurück – und genau in diesem Moment ändert sich die Größe der
+      // Fläche, was die laufende Animation verwirft. Ohne Animation gibt es nichts zu verwerfen.
+      transformRefs[j].current?.setTransform(0, 0, 1, 0);
     }
   }
 
