@@ -9,13 +9,20 @@ interface UsePageNavigationParams {
   drawMode: boolean;
   onPageIndex: (i: number) => void;
   onActivePage: (i: number) => void;
+  /**
+   * Tipp in die MITTE (#319) – blendet Kopf- und Fußzeile aus bzw. wieder ein.
+   *
+   * Optional, weil das Blättern auch ohne funktionieren muss: `PageDeck` wird nicht nur von der
+   * Chart-Ansicht benutzt.
+   */
+  onMiddleTap?: () => void;
 }
 
 /**
  * Blättern per Wisch und Tipp (#193 – vorher inline in `PageDeck`).
  *
- * Drei Zonen: linkes Fünftel zurück, rechtes Fünftel weiter, Mitte wählt im Querformat die
- * angetippte Hälfte als aktive Seite. Ein Wisch braucht ≥45 px und muss deutlich waagerechter als
+ * Drei Zonen: linkes Fünftel zurück, rechtes Fünftel weiter, Mitte blendet die Leisten aus bzw.
+ * wieder ein (#319) und wählt im Querformat zusätzlich die angetippte Hälfte als aktive Seite. Ein Wisch braucht ≥45 px und muss deutlich waagerechter als
  * senkrecht sein, ein Tipp darf sich kaum bewegen (<12 px) – dazwischen passiert nichts, damit ein
  * abgebrochener Wisch nicht als Tipp durchgeht.
  *
@@ -29,6 +36,7 @@ export function usePageNavigation({
   drawMode,
   onPageIndex,
   onActivePage,
+  onMiddleTap,
 }: UsePageNavigationParams) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressClick = useRef(false);
@@ -59,8 +67,13 @@ export function usePageNavigation({
       go(1); // rechter Rand → weiter
       return;
     }
+    // Mitte: Kopf- und Fußzeile aus-/einblenden (#319) – in BEIDEN Ausrichtungen, damit die
+    // Bedienung sich nicht mit dem Drehen ändert.
+    onMiddleTap?.();
     if (perView < 2) return;
-    const slot = fx < 0.5 ? 0 : 1; // Mitte: angetippte Hälfte wird aktiv
+    // Im Querformat macht derselbe Tipp zusätzlich die angetippte Hälfte aktiv. Beides zusammen
+    // ist gewollt: Die Kopfzeile bezieht sich danach auf das Lied, das man gerade angesehen hat.
+    const slot = fx < 0.5 ? 0 : 1;
     const target = pageIndex + slot;
     if (target < pageCount) onActivePage(target);
   }

@@ -11,7 +11,13 @@ import { PageDeck } from '../components/PageDeck';
 import { useSongSettings } from '../hooks/useSongSettings';
 import { useLandscape } from '../hooks/useLandscape';
 import { Coachmarks } from '../components/Coachmarks';
-import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
+import {
+  CHART_STEPS,
+  HINT_VOLLBILD,
+  TOUR_CHART,
+  isTourDone,
+  markTourDone,
+} from '../utils/onboarding';
 import { VIEW_NS } from '../services/teamNotes';
 import {
   drawKeyForPage,
@@ -156,6 +162,14 @@ export function ChordChart({
   // Tempo-Puls (#145): bewusst NICHT gemerkt – er ist ein Werkzeug zum Einzählen, keine Ansicht.
   // Beim Öffnen des Liederhefts ist er immer aus, damit im Gottesdienst nichts unerwartet blinkt.
   const [bpmPulse, setBpmPulse] = useState(false);
+  /**
+   * Vollbild: Kopf- und Fußzeile ausgeblendet (#319). Ein Tipp in die Mitte schaltet um.
+   *
+   * Bewusst NICHT gemerkt – wie der Tempo-Puls ein Werkzeug für den Moment. Wer das Liederheft neu
+   * öffnet, findet die Leisten wieder vor; sonst stünde man beim nächsten Mal vor einem Blatt ohne
+   * jede Bedienung und wüsste nicht, warum.
+   */
+  const [leistenAus, setLeistenAus] = useState(false);
   const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → PageDeck setzt sichtbaren Zoom zurück
 
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
@@ -333,30 +347,52 @@ export function ChordChart({
   // Beim SCHLIESSEN des Editors die Anzeige neu ausrichten (Begründung im Hook).
   useResyncAfterEditor(showEditor, bumpSync);
 
+  /**
+   * Tipp in die Mitte: Leisten aus-/einblenden (#319).
+   *
+   * Beim ERSTEN Ausblenden ein einmaliger Hinweis – mit ausgeblendeten Leisten ist auch der
+   * Zurück-Knopf weg, und dass ein weiterer Tipp sie zurückholt, sieht man dem Blatt nicht an.
+   */
+  const leistenUmschalten = () => {
+    const wirdAusgeblendet = !leistenAus;
+    setLeistenAus(wirdAusgeblendet);
+    // Der Hinweis steht BEWUSST außerhalb der `setLeistenAus`-Aktualisierung. Solche Funktionen
+    // müssen frei von Nebenwirkungen sein – React ruft sie unter Umständen mehrfach auf und darf
+    // Ergebnisse verwerfen. Als Merker und Toast noch darin standen, **erschien der Hinweis nie**
+    // (empirisch beim Durchklicken festgestellt; welcher der beiden Mechanismen genau griff, wurde
+    // nicht weiter untersucht – die Regel gilt so oder so).
+    if (wirdAusgeblendet && !isTourDone(HINT_VOLLBILD)) {
+      markTourDone(HINT_VOLLBILD);
+      showToast('Leisten ausgeblendet – nochmal in die Mitte tippen holt sie zurück.');
+    }
+  };
+
   const nextSong = activeSongIdx < songs.length - 1 ? songs[activeSongIdx + 1] : null;
 
   return (
     <Screen className={styles.chartScreen}>
       <>
-        <ChartHeader
-          songTitle={song.title}
-          headInfo={headInfo}
-          menuOpen={overlay === 'menu'}
-          appearanceOpen={overlay === 'appearance'}
-          viewing={viewing !== null}
-          showsDocument={activeDoc !== null}
-          canUseGlobalNotes={canUseGlobalNotes}
-          drawMode={drawMode}
-          zoomed={streamZoomed}
-          bpmPulse={bpmPulse}
-          onToggleBpmPulse={() => setBpmPulse((p) => !p)}
-          onBack={onBack}
-          onToggleMenu={() => toggleOverlay('menu')}
-          onToggleAppearance={() => toggleOverlay('appearance')}
-          onResetZoom={() => setResetZoomSignal((n) => n + 1)}
-          onToggleTeamNotes={() => (viewing ? stopViewing() : openSharers())}
-          onToggleDraw={() => setDrawMode((d) => !d)}
-        />
+        {!leistenAus && (
+          <ChartHeader
+            songTitle={song.title}
+            headInfo={headInfo}
+            menuOpen={overlay === 'menu'}
+            appearanceOpen={overlay === 'appearance'}
+            viewing={viewing !== null}
+            showsDocument={activeDoc !== null}
+            canUseGlobalNotes={canUseGlobalNotes}
+            drawMode={drawMode}
+            zoomed={streamZoomed}
+            bpmPulse={bpmPulse}
+            onToggleBpmPulse={() => setBpmPulse((p) => !p)}
+            onBack={onBack}
+            onToggleMenu={() => toggleOverlay('menu')}
+            onToggleAppearance={() => toggleOverlay('appearance')}
+            onResetZoom={() => setResetZoomSignal((n) => n + 1)}
+            onToggleTeamNotes={() => (viewing ? stopViewing() : openSharers())}
+            onToggleDraw={() => setDrawMode((d) => !d)}
+          />
+        )}
 
         {viewing && (
           <ViewingBanner
@@ -414,6 +450,7 @@ export function ChordChart({
               setDrawTool={setDrawTool}
               drawColors={DRAW_COLORS}
               syncTick={syncTick}
+              onMiddleTap={leistenUmschalten}
               onZoomedChange={setStreamZoomed}
               resetZoomSignal={resetZoomSignal}
             />
@@ -454,16 +491,18 @@ export function ChordChart({
           />
         )}
 
-        <ChartFooter
-          songCount={songs.length}
-          visibleSongIdx={visibleSongIdx}
-          nextSongTitle={nextSong?.title ?? null}
-          atStart={atStart}
-          atEnd={atEnd}
-          onPrev={prev}
-          onNext={next}
-          onGoToSong={goToSong}
-        />
+        {!leistenAus && (
+          <ChartFooter
+            songCount={songs.length}
+            visibleSongIdx={visibleSongIdx}
+            nextSongTitle={nextSong?.title ?? null}
+            atStart={atStart}
+            atEnd={atEnd}
+            onPrev={prev}
+            onNext={next}
+            onGoToSong={goToSong}
+          />
+        )}
 
         {viewing && (
           <ImportPreviewBar

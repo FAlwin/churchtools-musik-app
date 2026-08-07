@@ -8,9 +8,19 @@ const PREFIX = 'worship:onboard-';
 // termine-v2: Schritt „geändert"-Hinweis (#143) ergänzt – Version erhöht, damit Bestandsnutzer
 // den neuen Schritt beim ersten Öffnen nach dem Update sehen.
 export const TOUR_TERMINE = 'termine-v2';
-// chart-v2: Schritt „Team-Anmerkungen" (#124) ergänzt – Version erhöht, damit Bestandsnutzer
-// den neuen Schritt beim ersten Öffnen nach dem Update sehen.
-export const TOUR_CHART = 'chart-v2';
+// chart-v3: Der Tipp in die Mitte blendet jetzt die Leisten aus (#319) – die Geste findet man
+// sonst nicht von selbst. Version erhöht, damit Bestandsnutzer den geänderten Schritt sehen.
+// (chart-v2 hatte den Schritt „Team-Anmerkungen" (#124) ergänzt.)
+export const TOUR_CHART = 'chart-v3';
+
+/**
+ * Einmaliger Hinweis, wenn die Leisten zum ersten Mal ausgeblendet werden (#319).
+ *
+ * Ohne ihn kann man feststecken: Mit ausgeblendeten Leisten ist auch der Zurück-Knopf weg, und
+ * dass ein weiterer Tipp in die Mitte sie zurückholt, sieht man dem Blatt nicht an. Nutzt bewusst
+ * dieselbe Merker-Mechanik wie die Touren, statt eine zweite daneben zu bauen.
+ */
+export const HINT_VOLLBILD = 'hinweis-vollbild';
 export const TOUR_SETLIST = 'setlist-v1';
 export const TOUR_SETLIST_EDIT = 'setlist-edit-v1';
 
@@ -76,7 +86,7 @@ export const CHART_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="chart-blaettern"]',
     title: 'Blättern & Zoomen',
-    body: 'Wische seitwärts, um zwischen den Seiten zu blättern. Mit zwei Fingern zoomst du rein und wieder heraus.',
+    body: 'Wische seitwärts, um zwischen den Seiten zu blättern. Mit zwei Fingern zoomst du rein und wieder heraus. Ein Tipp in die Mitte blendet die Leisten aus – dann hat das Blatt die ganze Fläche.',
   },
   {
     selector: '[data-tour="chart-lied"]',
