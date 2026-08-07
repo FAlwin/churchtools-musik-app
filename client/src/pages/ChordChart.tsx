@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SetlistSong } from '@shared/types/index';
 import { Screen } from '../components/Screen';
-import { KeyPicker } from '../components/KeyPicker';
-import { CapoPicker } from '../components/CapoPicker';
-import { SectionTransposeSheet } from '../components/SectionTransposeSheet';
+import { ChartHeader } from '../components/ChartHeader';
+import { ChartFooter } from '../components/ChartFooter';
+import { ChartOverlays } from '../components/ChartOverlays';
+import { ImportPreviewBar, ViewingBanner } from '../components/ChartTeamNotesBars';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
 import { PageDeck } from '../components/PageDeck';
@@ -11,7 +12,6 @@ import { useSongSettings } from '../hooks/useSongSettings';
 import { useLandscape } from '../hooks/useLandscape';
 import { Coachmarks } from '../components/Coachmarks';
 import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
-import { Icon } from '../components/icons';
 import { VIEW_NS } from '../services/teamNotes';
 import {
   drawKeyForPage,
@@ -19,8 +19,6 @@ import {
   viewKeyForPage,
   zoomKeyBaseForPage,
 } from '../utils/chartPageKeys';
-import { ChartAppearanceMenu } from '../components/ChartAppearanceMenu';
-import { SongMenu } from '../components/SongMenu';
 import { SharersSheet } from '../components/SharersSheet';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -337,192 +335,55 @@ export function ChordChart({
   return (
     <Screen className={styles.chartScreen}>
       <>
-        {/* Header */}
-        <div className={styles.hdr}>
-          <button className={styles.ibtn} onClick={onBack} aria-label="Zurück">
-            <Icon name="chev-left" size={22} stroke={2.4} />
-          </button>
-          <div className={styles.center}>
-            <button
-              className={styles.menuBtn}
-              data-tour="chart-lied"
-              onClick={() => !viewing && toggleOverlay('menu')}
-              aria-haspopup="menu"
-              aria-expanded={overlay === 'menu'}
-            >
-              <span className={styles.menuTitleRow}>
-                <span className={styles.songTitle}>{song.title}</span>
-                <span className={styles.menuChevron} aria-hidden="true">
-                  ▾
-                </span>
-              </span>
-              {headInfo.length > 0 && (
-                <span className={styles.menuInfo}>
-                  {headInfo.map((part, i) => (
-                    <span key={i} className={styles.menuInfoPart}>
-                      {i > 0 && <span className={styles.menuInfoDot}>·</span>}
-                      {part.art === 'plain' ? (
-                        part.text
-                      ) : (
-                        <span className={part.art === 'key' ? styles.infoKey : styles.infoCapo}>
-                          {part.text}
-                        </span>
-                      )}
-                    </span>
-                  ))}
-                </span>
-              )}
-            </button>
-          </div>
-          <div className={styles.right}>
-            {!activeDoc && !viewing && (
-              <button
-                className={`${styles.toolBtn}${overlay === 'appearance' ? ' ' + styles.on : ''}`}
-                data-tour="chart-aussehen"
-                onClick={() => toggleOverlay('appearance')}
-                title="Aussehen"
-              >
-                Aa
-              </button>
-            )}
-            {streamZoomed && (
-              <button
-                className={styles.toolBtn}
-                onClick={() => setResetZoomSignal((n) => n + 1)}
-                title="Zoom zurücksetzen"
-                aria-label="Zoom zurücksetzen"
-              >
-                <Icon name="zoom-reset" size={18} stroke={2} />
-              </button>
-            )}
-            {/* Team-Notizen: geteilte Anmerkungen anderer ansehen (nur Berechtigte). */}
-            {canUseGlobalNotes && !activeDoc && (
-              <button
-                className={`${styles.toolBtn}${viewing ? ' ' + styles.on : ''}`}
-                data-tour="chart-team"
-                onClick={() => (viewing ? stopViewing() : openSharers())}
-                title="Notizen von …"
-                aria-label="Notizen von anderen ansehen"
-              >
-                <Icon name="people" size={18} stroke={2} />
-              </button>
-            )}
-            {!viewing && (
-              <button
-                className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
-                data-tour="chart-anmerken"
-                onClick={() => setDrawMode((d) => !d)}
-                title="Anmerkungen"
-              >
-                <Icon name="pencil" size={18} stroke={2.2} />
-              </button>
-            )}
-          </div>
-        </div>
+        <ChartHeader
+          songTitle={song.title}
+          headInfo={headInfo}
+          menuOpen={overlay === 'menu'}
+          appearanceOpen={overlay === 'appearance'}
+          viewing={viewing !== null}
+          showsDocument={activeDoc !== null}
+          canUseGlobalNotes={canUseGlobalNotes}
+          drawMode={drawMode}
+          zoomed={streamZoomed}
+          onBack={onBack}
+          onToggleMenu={() => toggleOverlay('menu')}
+          onToggleAppearance={() => toggleOverlay('appearance')}
+          onResetZoom={() => setResetZoomSignal((n) => n + 1)}
+          onToggleTeamNotes={() => (viewing ? stopViewing() : openSharers())}
+          onToggleDraw={() => setDrawMode((d) => !d)}
+        />
 
-        {/* „Notizen von …"-Banner: man sieht gerade die geteilte Ebene einer anderen Person. */}
-        {viewing &&
-          (() => {
-            const vName =
-              versions.find((v) => v.key === viewing.versionKey)?.name ?? viewing.versionKey;
-            const otherVersion =
-              (settings[song.id]?.versionKey ?? 'original') !== viewing.versionKey;
-            return (
-              <div className={styles.viewBar}>
-                <Icon name="people" size={15} stroke={2} />
-                <span className={styles.viewBarText}>
-                  Notizen von {viewing.name}
-                  {' · '}
-                  {otherVersion ? <strong>Version „{vName}"</strong> : <>Version „{vName}"</>}
-                  {' · '}
-                  {viewing.lyr ? 'Nur Text' : 'Akkorde & Text'}
-                </span>
-              </div>
-            );
-          })()}
-
-        {/* Aussehen-Menü (pro aktivem Lied: Schriftgröße, Spalten) */}
-        {overlay === 'appearance' && (
-          <ChartAppearanceMenu
-            fontSize={set.fontSize}
-            cols={set.cols}
-            onFontSize={(fontSize) => updateSetting(song.id, { fontSize })}
-            onCols={(cols) => updateSetting(song.id, { cols })}
-            onClose={() => setOverlay(null)}
+        {viewing && (
+          <ViewingBanner
+            personName={viewing.name}
+            versionName={
+              versions.find((v) => v.key === viewing.versionKey)?.name ?? viewing.versionKey
+            }
+            otherVersion={(settings[song.id]?.versionKey ?? 'original') !== viewing.versionKey}
+            lyricsOnly={viewing.lyr}
           />
         )}
 
-        {/* Lied-Menü (über den Titel) */}
-        {overlay === 'menu' && (
-          <SongMenu
-            song={song}
-            set={set}
-            curKey={curKey}
-            sections={sections}
-            versions={versions}
-            currentVersion={currentVersion}
-            isOriginal={isOriginal}
-            hasVersions={hasVersions}
-            canEditSong={canEditSong}
-            onClose={() => setOverlay(null)}
-            onOpenKeyPicker={() => setOverlay('key')}
-            onOpenCapoPicker={() => setOverlay('capo')}
-            onOpenSectionTranspose={() => setOverlay('sec')}
-            onSharePdf={shareCurrentAsPdf}
-            onEditCurrent={openEditCurrent}
-            onNewVersion={openNewVersion}
-            onDeleteVersion={() => setConfirmDelEdited(true)}
-            onChange={(patch) => updateSetting(song.id, patch)}
-            onSelectVersion={(versionKey) => selectVersion(song.id, versionKey)}
-          />
-        )}
-
-        {/* Tonart-Picker */}
-        {overlay === 'key' && (
-          <KeyPicker
-            currentKey={curKey}
-            defaultKey={song.targetKey}
-            isCustom={set.key !== null}
-            onPick={(k) => {
-              updateSetting(song.id, { key: k });
-              setOverlay(null);
-            }}
-            onReset={() => {
-              updateSetting(song.id, { key: null });
-              setOverlay(null);
-            }}
-            onClose={() => setOverlay(null)}
-          />
-        )}
-
-        {/* Kapo-Picker */}
-        {overlay === 'capo' && (
-          <CapoPicker
-            capo={set.capo}
-            shapeKey={shapeKey}
-            soundingKey={curKey}
-            onPick={(c) => {
-              updateSetting(song.id, { capo: c });
-              setOverlay(null);
-            }}
-            onClose={() => setOverlay(null)}
-          />
-        )}
-
-        {overlay === 'sec' && (
-          <SectionTransposeSheet
-            sections={sections}
-            value={set.secShift}
-            onChange={(index, semitones) => {
-              const nextShift = { ...set.secShift };
-              if (semitones === 0) delete nextShift[index];
-              else nextShift[index] = semitones;
-              updateSetting(song.id, { secShift: nextShift });
-            }}
-            onReset={() => updateSetting(song.id, { secShift: {} })}
-            onClose={() => setOverlay(null)}
-          />
-        )}
+        <ChartOverlays
+          overlay={overlay}
+          onOverlay={setOverlay}
+          song={song}
+          set={set}
+          curKey={curKey}
+          shapeKey={shapeKey}
+          sections={sections}
+          versions={versions}
+          currentVersion={currentVersion}
+          isOriginal={isOriginal}
+          hasVersions={hasVersions}
+          canEditSong={canEditSong}
+          onSetting={(patch) => updateSetting(song.id, patch)}
+          onSelectVersion={(versionKey) => selectVersion(song.id, versionKey)}
+          onSharePdf={shareCurrentAsPdf}
+          onEditCurrent={openEditCurrent}
+          onNewVersion={openNewVersion}
+          onDeleteVersion={() => setConfirmDelEdited(true)}
+        />
 
         {/* Anzeige-Bereich: EIN durchgehender Strom (Akkorde + Dokumente gemischt) */}
         <div className={styles.chartArea} data-tour="chart-blaettern">
@@ -588,92 +449,25 @@ export function ChordChart({
           />
         )}
 
-        {/* Footer */}
-        <div className={styles.ftr}>
-          <button
-            className={styles.navBtn}
-            onClick={prev}
-            disabled={atStart}
-            aria-label="Zurück / vorige Seite"
-          >
-            <Icon name="chev-left" size={22} stroke={2.4} />
-          </button>
-          <div className={styles.ftrCenter}>
-            {songs.length > 1 && (
-              <div className={styles.dots}>
-                {songs.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`${styles.dot}${visibleSongIdx.has(i) ? ' ' + styles.on : ''}`}
-                    onClick={() => goToSong(i)}
-                  />
-                ))}
-              </div>
-            )}
-            {nextSong ? (
-              <div className={styles.ftrInfo}>
-                <span className={styles.ftrNext}>Nächstes Lied: {nextSong.title}</span>
-              </div>
-            ) : songs.length > 1 ? (
-              <div className={styles.ftrInfo}>
-                <span className={styles.ftrSong}>Letztes Lied</span>
-              </div>
-            ) : null}
-          </div>
-          <button
-            className={styles.navBtn}
-            onClick={next}
-            disabled={atEnd}
-            aria-label="Weiter / nächste Seite"
-          >
-            <Icon name="chev-right" size={22} stroke={2.4} />
-          </button>
-        </div>
+        <ChartFooter
+          songCount={songs.length}
+          visibleSongIdx={visibleSongIdx}
+          nextSongTitle={nextSong?.title ?? null}
+          atStart={atStart}
+          atEnd={atEnd}
+          onPrev={prev}
+          onNext={next}
+          onGoToSong={goToSong}
+        />
 
-        {/* Team-Notizen: EINE Leiste steuert das Ansehen. „Ansehen" = nur seine Ebene lesend;
-            „Zusammenführen"/„Ersetzen" zeigen live die Vorschau, „Übernehmen" schreibt dann wirklich. */}
         {viewing && (
-          <div className={styles.previewBar}>
-            <span className={styles.pvSegWrap}>
-              <button
-                className={`${styles.pvSeg}${viewMode === 'view' ? ' ' + styles.pvSegOn : ''}`}
-                onClick={() => setViewMode('view')}
-              >
-                Ansehen
-              </button>
-              <button
-                className={`${styles.pvSeg}${viewMode === 'merge' ? ' ' + styles.pvSegOn : ''}`}
-                onClick={() => setViewMode('merge')}
-              >
-                Zusammenführen
-              </button>
-              <button
-                className={`${styles.pvSeg}${viewMode === 'replace' ? ' ' + styles.pvSegOn : ''}`}
-                onClick={() => setViewMode('replace')}
-              >
-                Ersetzen
-              </button>
-            </span>
-            {viewMode !== 'view' && (
-              <>
-                <span className={styles.pvDivider} />
-                <button className={styles.pvGo} onClick={() => void importFrom(viewMode)}>
-                  Übernehmen
-                </button>
-              </>
-            )}
-            <button
-              className={styles.pvIcon}
-              onClick={openSharers}
-              title="Andere Person / Ebene"
-              aria-label="Andere Person oder Ebene wählen"
-            >
-              <Icon name="people" size={18} stroke={2} />
-            </button>
-            <button className={styles.pvCancel} onClick={stopViewing}>
-              Fertig
-            </button>
-          </div>
+          <ImportPreviewBar
+            mode={viewMode}
+            onMode={setViewMode}
+            onImport={(m) => void importFrom(m)}
+            onPickOther={openSharers}
+            onStop={stopViewing}
+          />
         )}
 
         {/* „Notizen von …": Stufe 1 = Person wählen, Stufe 2 = ihre Ebene (Version + Darstellung). */}
