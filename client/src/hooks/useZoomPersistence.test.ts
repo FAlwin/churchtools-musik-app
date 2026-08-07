@@ -26,14 +26,19 @@ const { useZoomPersistence } = await import('./useZoomPersistence');
 /** Eine Zoom-Ebene, die mitschreibt, ob sie zurückgesetzt wurde. */
 function ebene() {
   const resetTransform = vi.fn();
+  const setTransform = vi.fn();
   const ref = {
     current: {
       resetTransform,
-      setTransform: vi.fn(),
+      setTransform,
       instance: { transformState: { scale: 1.8, positionX: 0, positionY: 0 } },
     } as unknown as ReactZoomPanPinchRef,
   };
-  return { ref: ref as MutableRefObject<ReactZoomPanPinchRef | null>, resetTransform };
+  return {
+    ref: ref as MutableRefObject<ReactZoomPanPinchRef | null>,
+    resetTransform,
+    setTransform,
+  };
 }
 
 function starte(zoomedSlots: [boolean, boolean] = [true, false]) {
@@ -95,7 +100,7 @@ describe('resetVisibleZoom – merken oder vergessen', () => {
     zoomSpeichern(result, args);
     result.current.fitVisibleZoom();
     // Eingepasst wurde trotzdem …
-    expect(a.resetTransform).toHaveBeenCalled();
+    expect(a.setTransform).toHaveBeenCalledWith(0, 0, 1, 0);
     // … aber der bewusst gesetzte Zoom ist noch da.
     expect(result.current.loadZoom(0)?.scale).toBe(1.8);
   });
@@ -107,13 +112,28 @@ describe('fitVisibleZoom – ohne Vorbehalt', () => {
     // im Moment des Umschaltens veraltet sein – dann passierte gar nichts.
     const { result, a } = starte([false, false]);
     result.current.fitVisibleZoom();
-    expect(a.resetTransform).toHaveBeenCalled();
+    expect(a.setTransform).toHaveBeenCalledWith(0, 0, 1, 0);
   });
 
-  it('bricht einen laufenden Pinch nicht ab (#33)', () => {
+  it('passt OHNE Animation ein – eine animierte Rückfahrt wird vom Größenwechsel verworfen', () => {
+    // Gemessen im Browser: `resetTransform(150)` ließ den Zoom auf 1,96 stehen, vorher wie nachher.
+    // Die Bibliothek fährt den Wert über eine Animation zurück, und genau in dem Moment ändert sich
+    // die Größe der Fläche und verwirft sie. Deshalb Dauer 0 – und **kein** `resetTransform` mehr.
+    const { result, a } = starte();
+    result.current.fitVisibleZoom();
+    expect(a.setTransform).toHaveBeenCalledWith(0, 0, 1, 0);
+    expect(a.resetTransform).not.toHaveBeenCalled();
+  });
+
+  it('passt auch direkt nach einer Geste ein und gibt die Sperre frei (#319)', () => {
+    // Anders als die Wiederherstell-Effekte: Die Sperre aus #33 soll einen LAUFENDEN Pinch schützen,
+    // hier kann keiner laufen (ein Tipp mit einem Finger, ein Pinch mit zweien). Gemessen steht sie
+    // nach dem Zoomen noch rund eine halbe Sekunde – wer sofort danach in die Mitte tippte, bekam
+    // gar kein Einpassen. Genau der gemeldete Fall.
     const { result, a, args } = starte();
     args.gestureSlot.current = 0;
     result.current.fitVisibleZoom();
-    expect(a.resetTransform).not.toHaveBeenCalled();
+    expect(a.setTransform).toHaveBeenCalledWith(0, 0, 1, 0);
+    expect(args.gestureSlot.current).toBeNull();
   });
 });
