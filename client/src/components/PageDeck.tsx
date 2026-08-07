@@ -78,8 +78,18 @@ interface PageDeckProps {
   onZoomedChange?: (zoomed: boolean) => void;
   /** Erhöht sich, wenn der Reset-Knopf der Kopfleiste gedrückt wird → sichtbaren Zoom zurücksetzen. */
   resetZoomSignal?: number;
-  /** Nur einpassen (Leisten umgeschaltet) – gespeicherter Zoom bleibt (#319). */
-  fitZoomSignal?: number;
+  /**
+   * Zählt hoch, wenn sich die verfügbare FLÄCHE ändert, ohne dass sich die Seiten ändern – heute
+   * das Aus-/Einblenden der Leisten (#319).
+   *
+   * Eine per Geste vergrößerte Seite wird daraufhin eingepasst, ohne dass der gespeicherte Zoom
+   * vergessen wird.
+   *
+   * ⚠️ NICHT in den `TransformWrapper`-key aufnehmen: Ein Remount baut auch die Zeichenflächen neu
+   * auf, und die Seite fiel dabei gemessen auf 150 px zusammen. Der Wechsel Hoch-/Querformat darf
+   * das, weil dort ohnehin alles neu gerendert wird – hier nicht.
+   */
+  layoutEpoch?: number;
 }
 
 // Stabiler Default für `viewKeyFor` (kein Ansehen).
@@ -125,7 +135,7 @@ export function PageDeck({
   syncTick = 0,
   onZoomedChange,
   resetZoomSignal = 0,
-  fitZoomSignal = 0,
+  layoutEpoch = 0,
 }: PageDeckProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   // Inline-Texteingabe direkt auf der Seite (blinkender Cursor statt separater Leiste).
@@ -173,7 +183,7 @@ export function PageDeck({
     transformRefs,
     onZoomedChange,
     resetZoomSignal,
-    fitZoomSignal,
+    fitZoomSignal: layoutEpoch,
   });
 
   // ── Schlüssel der beteiligten Seiten ──

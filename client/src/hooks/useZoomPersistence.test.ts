@@ -90,13 +90,30 @@ describe('resetVisibleZoom – merken oder vergessen', () => {
     expect(result.current.loadZoom(0)).toBeNull();
   });
 
-  it('BEHÄLT ihn mit keepStored – beim Umschalten der Leisten (#319)', () => {
+  it('BEHÄLT ihn beim Einpassen – Leisten umschalten ist kein Zurücknehmen (#319)', () => {
     const { result, a, args } = starte();
     zoomSpeichern(result, args);
-    result.current.resetVisibleZoom({ keepStored: true });
+    result.current.fitVisibleZoom();
     // Eingepasst wurde trotzdem …
     expect(a.resetTransform).toHaveBeenCalled();
     // … aber der bewusst gesetzte Zoom ist noch da.
     expect(result.current.loadZoom(0)?.scale).toBe(1.8);
+  });
+});
+
+describe('fitVisibleZoom – ohne Vorbehalt', () => {
+  it('passt AUCH ein, wenn der Merker die Seite nicht als vergrößert führt', () => {
+    // Genau das war der gemeldete Fehler: `zoomedSlots` wird in `onTransformed` gepflegt und kann
+    // im Moment des Umschaltens veraltet sein – dann passierte gar nichts.
+    const { result, a } = starte([false, false]);
+    result.current.fitVisibleZoom();
+    expect(a.resetTransform).toHaveBeenCalled();
+  });
+
+  it('bricht einen laufenden Pinch nicht ab (#33)', () => {
+    const { result, a, args } = starte();
+    args.gestureSlot.current = 0;
+    result.current.fitVisibleZoom();
+    expect(a.resetTransform).not.toHaveBeenCalled();
   });
 });
