@@ -20,7 +20,7 @@ entsprechend verschoben.
 <details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
-- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/components/SongMenu.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/transpose.ts`, `client/src/components/KeyPicker.tsx`, `client/src/components/CapoPicker.tsx`, `client/src/utils/chordPdf.ts`, `client/src/hooks/useSongSettings.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/components/SongMenu.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/transpose.ts`, `client/src/components/KeyPicker.tsx`, `client/src/components/CapoPicker.tsx`, `client/src/utils/chordPdf.ts`, `client/src/hooks/useSongSettings.ts`, `client/src/utils/activeSongView.ts`, `client/src/components/ChartOverlays.tsx`
 - **Automatisiert:** teilweise – `client/src/utils/transpose.test.ts`, `client/src/hooks/useSongSettings.test.tsx`
 - **Historie:** –
 
@@ -51,7 +51,7 @@ Tonart auf dem Blatt.
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/songVersions.ts`, `client/src/hooks/useSongSettings.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/songVersions.ts`, `client/src/hooks/useSongSettings.ts`, `client/src/utils/activeSongView.ts`
 - **Automatisiert:** ja – `client/src/hooks/useSongSettings.test.tsx`
 - **Historie:** –
 
@@ -74,7 +74,7 @@ Akkorden zurückspringen. Nach Schritt 6 sind dieselbe Version und wieder das PD
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/songVersions.ts`, `client/src/hooks/useSongSettings.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/songVersions.ts`, `client/src/hooks/useSongSettings.ts`, `client/src/utils/activeSongView.ts`, `client/src/hooks/useChartEditor.ts`
 - **Automatisiert:** ja – `client/src/hooks/useSongSettings.test.tsx`
 - **Historie:** –
 
@@ -94,7 +94,7 @@ bleibt vollständig.
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/chordPdf.ts`, `client/src/utils/chartPdfOptions.ts`, `client/src/hooks/useSongSettings.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/chordPdf.ts`, `client/src/utils/chartPdfOptions.ts`, `client/src/hooks/useSongSettings.ts`, `client/src/utils/activeSongView.ts`, `client/src/utils/chartPageKeys.ts`
 - **Automatisiert:** teilweise – `client/src/utils/chordPdf.test.ts`
 - **Historie:** –
 
@@ -115,7 +115,7 @@ ist wieder alles einheitlich.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/SectionTransposeSheet.tsx`, `client/src/utils/chartSettings.ts`, `client/src/pages/ChordChart.tsx`, `client/src/utils/chordPdf.ts`, `client/src/hooks/useSongSettings.ts`
+- **Betrifft:** `client/src/components/SectionTransposeSheet.tsx`, `client/src/utils/chartSettings.ts`, `client/src/pages/ChordChart.tsx`, `client/src/utils/chordPdf.ts`, `client/src/hooks/useSongSettings.ts`, `client/src/components/ChartOverlays.tsx`
 - **Automatisiert:** nein
 - **Historie:** #16
 
@@ -163,7 +163,7 @@ eine andere Tonart als auf dem Blatt – bei Kapo 2 zwei Halbtöne zu hoch.
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartPdfOptions.ts`, `client/src/utils/songPdfOpts.ts`, `client/src/utils/sharePdf.ts`, `client/src/utils/chordPdf.ts`
+- **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartPdfOptions.ts`, `client/src/utils/songPdfOpts.ts`, `client/src/utils/sharePdf.ts`, `client/src/utils/chordPdf.ts`, `client/src/hooks/useAppLogo.ts`
 - **Automatisiert:** teilweise – `client/src/utils/chartPdfOptions.test.ts` (die Rechnung inkl. Kapo und der Weg über den Speicher); von Hand bleibt der Teilen-Dialog des Geräts und das Ansehen der fertigen Datei
 - **Historie:** #239
 
@@ -194,7 +194,7 @@ Sammel-Pause ein).
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/services/userSettings.ts`, `client/src/services/pendingKeys.ts`, `client/src/services/appHidden.ts`, `client/src/pages/ChordChart.tsx`
+- **Betrifft:** `client/src/services/userSettings.ts`, `client/src/services/pendingKeys.ts`, `client/src/services/appHidden.ts`, `client/src/pages/ChordChart.tsx`, `client/src/hooks/useChartSync.ts`
 - **Automatisiert:** teilweise – `client/src/services/userSettings.pending.test.ts` (Merker, Abgleich-Schutz, Flush beim Weglegen) und `client/src/services/pendingKeys.test.ts`; von Hand bleiben der echte Flugmodus, das echte Beenden durch iOS und das Zusammenspiel zweier Geräte
 - **Historie:** #275 (Vorbild: #245/#256 bei den Anmerkungen)
 
