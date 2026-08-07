@@ -862,11 +862,22 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
 
 ## Offene Punkte (optional)
 
-- [ ] ⚠️ **Login-Token aus lokaler Dev-`.env` entfernen – NICHT erledigt (Stand 31.07.2026).** Der
-      Haken hier war falsch: `CHURCHTOOLS_LOGIN_TOKEN` ist in der lokalen `.env` **gefüllt** (im
-      Sicherheits-Review nachgeprüft, ohne den Wert auszugeben). Er trägt die vollen persönlichen
-      ChurchTools-Rechte. Die Datei ist korrekt gitignoriert und war nie im Repo – das Risiko ist rein
-      lokal (Geräteverlust, Backup). **Zu tun: Token in ChurchTools widerrufen, Zeile leeren.**
+- [x] **Login-Token in der lokalen Dev-`.env`: bewusste Entscheidung, er BLEIBT (07.08.2026).**
+      `CHURCHTOOLS_LOGIN_TOKEN` ist gefüllt (256 Zeichen, im Sicherheits-Review nachgeprüft, ohne den
+      Wert auszugeben) und trägt die vollen persönlichen ChurchTools-Rechte.
+      **Warum er bleibt:** Die sieben `server/scripts/probe-*.ts` brauchen ihn, und die haben echte
+      Erkenntnisse gebracht – dass das Uhrzeit-Ausblenden in `startTimes[eventId]` steckt (drei
+      falsche Annahmen widerlegt) und die Rate-Limit-Messung nach #300.
+      **Wie groß das Risiko wirklich ist – geprüft, nicht vermutet:** `.env` steht in `.gitignore`
+      (Zeile 11), war in der **gesamten Historie über alle Branches nie eingecheckt**, und
+      `.env.example` enthält nur den leeren Namen. Das Repo liegt auf der lokalen Platte, **nicht** in
+      einem synchronisierten Ordner. Das Risiko ist damit rein lokal: Geräteverlust, unverschlüsseltes
+      Backup, Schadsoftware mit Dateizugriff. **Nicht** GitHub, **nicht** NAS.
+      ⚠️ **Merksatz: Bei Verlust, Reparatur oder Verkauf des Macs zuerst den Token in ChurchTools
+      widerrufen** (Profil → Sicherheit → Login-Token). Ein neuer ist in einer Minute erzeugt.
+      _Historie: Am 31.07.2026 stand hier „zu tun: widerrufen"; die Memory vom 26.06.2026 sagte „kann
+      bleiben". Diese Uneinigkeit wurde mehrfach als feststehende Aufgabe weitergetragen – jetzt
+      einmal entschieden, damit Doku und Wirklichkeit übereinstimmen._
 - [x] **Funde aus dem Code-Check 05.08.2026 abgearbeitet** (07.08.2026) – vier hohe (#273, #274,
       #275, #276), vier mittlere (#277, #278, #279, #280), drei niedrige (#281, #282, #283), alle
       geschlossen. Die vier hohen waren viermal dieselbe Lehre („vorübergehend ≠ ungültig").
