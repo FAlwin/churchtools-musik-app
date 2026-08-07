@@ -219,8 +219,9 @@ holt sie zurück. Die Ränder blättern weiter wie bisher.
 3. Am **linken** und **rechten** Rand tippen → es wird geblättert, die Leisten bleiben wie sie sind.
 4. Ins **Querformat** drehen, in die rechte Bildhälfte (aber nicht an den Rand) tippen → Leisten
    weg **und** die Kopfzeile bezieht sich auf das rechte Lied.
-5. Mit zwei Fingern hineinzoomen, dann in die Mitte tippen → die Vergrößerung darf nicht verloren
-   gehen.
+5. Mit zwei Fingern hineinzoomen, dann in die Mitte tippen → die Seite wird **neu eingepasst**
+   (nichts ragt hinter die Leisten). Danach zu einem anderen Lied und wieder zurück blättern → die
+   Vergrößerung ist **wieder da**, sie wurde nur eingepasst, nicht verworfen.
 6. **Anmerkungsmodus** einschalten und in die Mitte tippen → es passiert nichts (der Finger gehört
    dem Stift).
 7. Das Liederheft verlassen und neu öffnen → die Leisten sind wieder da.
@@ -228,10 +229,11 @@ holt sie zurück. Die Ränder blättern weiter wie bisher.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/hooks/usePageNavigation.ts`, `client/src/pages/ChordChart.tsx`, `client/src/components/PageDeck.tsx`, `client/src/utils/onboarding.ts`
+- **Betrifft:** `client/src/hooks/usePageNavigation.ts`, `client/src/pages/ChordChart.tsx`, `client/src/components/PageDeck.tsx`, `client/src/utils/onboarding.ts`, `client/src/hooks/useZoomPersistence.ts`, `client/src/hooks/useZoomOrchestration.ts`
 - **Automatisiert:** teilweise – `client/src/hooks/usePageNavigation.test.ts` (Zonen, Zeichenmodus,
-  der nach einem Touch nachgereichte Klick). Von Hand bleiben der Eindruck am Gerät und Punkt 5:
-  ob die Vergrößerung den Wechsel der Fläche übersteht, zeigt nur das echte Zoomen.
+  der nach einem Touch nachgereichte Klick), dazu `useZoomPersistence.test.ts` und
+  `useZoomOrchestration.test.ts` (einpassen ohne vergessen). Von Hand bleiben der Eindruck am Gerät
+  und Punkt 5 – ob es sich beim echten Pinch richtig anfühlt, zeigt nur das Gerät.
 - **Historie:** #319
 
 </details>

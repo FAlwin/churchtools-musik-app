@@ -171,6 +171,9 @@ export function ChordChart({
    */
   const [leistenAus, setLeistenAus] = useState(false);
   const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → PageDeck setzt sichtbaren Zoom zurück
+  // Erhöhen → PageDeck passt die sichtbaren Seiten neu ein, OHNE den gespeicherten Zoom zu
+  // löschen (#319 – die Leisten wurden umgeschaltet, die Fläche hat eine neue Höhe).
+  const [fitZoomSignal, setFitZoomSignal] = useState(0);
 
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
   // Aufbau in `useChartStream` – bewusst NACH dem Zeichnen, mit stehenbleibendem
@@ -365,6 +368,14 @@ export function ChordChart({
       markTourDone(HINT_VOLLBILD);
       showToast('Leisten ausgeblendet – nochmal in die Mitte tippen holt sie zurück.');
     }
+    // Die Anzeigefläche ändert ihre HÖHE – eine vergrößerte Seite muss neu eingepasst werden,
+    // sonst ragt der Text hinter die Fußzeile (genau der gemeldete Fehler).
+    //
+    // BEWUSST NICHT `bumpSync()`: Das löst `restoreVisibleZoom` aus, und das wendet einen
+    // GESPEICHERTEN Zoom erneut an – also wieder eine Größe, die in die neue Fläche nicht passt.
+    // Und bewusst nicht `resetZoomSignal`: Das löscht den gespeicherten Zoom, was hier zu viel
+    // wäre – der Nutzer hat ihn nicht zurückgenommen, sondern nur die Leisten umgeschaltet.
+    setFitZoomSignal((n) => n + 1);
   };
 
   const nextSong = activeSongIdx < songs.length - 1 ? songs[activeSongIdx + 1] : null;
@@ -451,6 +462,7 @@ export function ChordChart({
               drawColors={DRAW_COLORS}
               syncTick={syncTick}
               onMiddleTap={leistenUmschalten}
+              fitZoomSignal={fitZoomSignal}
               onZoomedChange={setStreamZoomed}
               resetZoomSignal={resetZoomSignal}
             />

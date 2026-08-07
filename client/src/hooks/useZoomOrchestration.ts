@@ -20,6 +20,12 @@ interface UseZoomOrchestrationParams {
   onZoomedChange?: (zoomed: boolean) => void;
   /** Erhöht sich, wenn der Reset-Knopf gedrückt wurde. */
   resetZoomSignal: number;
+  /**
+   * Signal „nur einpassen" (#319): Beim Aus-/Einblenden der Leisten ändert sich die Höhe der
+   * Anzeigefläche. Anders als `resetZoomSignal` bleibt ein gespeicherter Zoom dabei erhalten – der
+   * Nutzer hat ihn nicht zurückgenommen, sondern nur die Leisten umgeschaltet.
+   */
+  fitZoomSignal?: number;
 }
 
 /** Die Zoom-bezogenen Eigenschaften einer `TransformWrapper`-Ebene. */
@@ -59,6 +65,7 @@ export function useZoomOrchestration({
   transformRefs,
   onZoomedChange,
   resetZoomSignal,
+  fitZoomSignal = 0,
 }: UseZoomOrchestrationParams) {
   // Letzter Zoom-Faktor je Slot – um „aktives Herauszoomen" von programmatischem Reset zu unterscheiden.
   const lastScale = useRef<[number, number]>([1, 1]);
@@ -136,6 +143,15 @@ export function useZoomOrchestration({
     lastResetSignal.current = resetZoomSignal;
     zoomRef.current.resetVisibleZoom();
   }, [resetZoomSignal, zoomRef]);
+
+  // Nur einpassen, nichts löschen (#319 – Leisten umgeschaltet, die Fläche hat eine neue Höhe).
+  // Ein rAF dazwischen, damit die neue Höhe schon im Layout steht, bevor eingepasst wird.
+  const lastFitSignal = useRef(fitZoomSignal);
+  useEffect(() => {
+    if (fitZoomSignal === lastFitSignal.current) return;
+    lastFitSignal.current = fitZoomSignal;
+    requestAnimationFrame(() => zoomRef.current.resetVisibleZoom({ keepStored: true }));
+  }, [fitZoomSignal, zoomRef]);
 
   /** Zoom-Eigenschaften der Ebene für Slot `j`. */
   function paneProps(j: number): ZoomPaneProps {

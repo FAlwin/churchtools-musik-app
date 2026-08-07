@@ -114,11 +114,22 @@ export function useZoomPersistence({
   }
 
   // Notausgang: sichtbare reingezoomte Seiten auf Normalgröße zurücksetzen UND ihren Speicher löschen.
-  function resetVisibleZoom() {
+  /**
+   * Sichtbare Seiten auf Einpassen zurücksetzen.
+   *
+   * Ohne `keepStored` wird der gespeicherte Zoom mitgelöscht – das ist die Absicht des Zoom-Knopfs
+   * in der Kopfzeile. Mit `keepStored` bleibt er erhalten (#319, Leisten umschalten).
+   */
+  function resetVisibleZoom(opts?: { keepStored?: boolean }) {
     for (let j = 0; j < perView; j++) {
       if (!zoomedSlots[j]) continue;
       transformRefs[j].current?.resetTransform(150);
-      clearStoredZoom(pageIndex + j);
+      // `keepStored` (#319): Beim Aus-/Einblenden der Leisten ändert sich die HÖHE der Anzeigefläche.
+      // Die sichtbare Seite muss dann neu eingepasst werden – der bewusst gespeicherte Zoom soll
+      // aber NICHT verloren gehen, denn der Nutzer hat ihn nicht zurückgenommen, sondern nur die
+      // Leisten umgeschaltet. Beim Zoom-Knopf in der Kopfzeile ist es umgekehrt: Dort IST das
+      // Löschen die Absicht.
+      if (!opts?.keepStored) clearStoredZoom(pageIndex + j);
     }
     gestureSlot.current = null;
   }
