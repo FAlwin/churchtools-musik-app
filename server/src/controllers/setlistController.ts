@@ -25,8 +25,10 @@ import {
   reorderAgenda,
   setAgendaItemHidden,
   updateAgendaItem,
+  updateArrangementTempo,
 } from '../services/ctWrite.js';
 import { getSeenSetlists, markSeenSetlist } from '../services/seenSetlists.js';
+import { MAX_BPM, MIN_BPM } from '@shared/tempo/index';
 import type { AgendaServiceOption, SongArrangementOption } from '@shared/types/index';
 import { ctCookie } from '../utils/ctCookie.js';
 import { accountKey } from '../middleware/session.js';
@@ -307,6 +309,35 @@ export async function postVersion(req: Request, res: Response): Promise<void> {
   const { arrangementId, name, text } = createVersionSchema.parse(req.body);
   const version = await createVersion(ctCookie(req), songId, arrangementId, name, text);
   res.json(version);
+}
+
+/**
+ * Grenzen aus `@shared/tempo` – dieselben, die im Client über den Speichern-Knopf entscheiden.
+ * Abgeschrieben waren sie hier schon einmal (`.min(20).max(300)`); dann prüfen zwei Stellen
+ * denselben Bereich und die Frage ist nur, wann sie auseinanderlaufen.
+ */
+export const tempoSchema = z.object({
+  tempo: z.coerce.number().int().min(MIN_BPM).max(MAX_BPM),
+});
+
+/**
+ * PUT /api/songs/:songId/arrangements/:arrangementId/tempo – Tempo eines Arrangements setzen.
+ *
+ * Der Endpunkt ist BEWUSST schmal – er kann nur das Tempo. Ein allgemeines „Arrangement ändern"
+ * wäre gefährlicher, als es klingt: `PUT` ersetzt in ChurchTools den ganzen Datensatz, ein
+ * unvollständiger Rumpf löscht Tonart und Dauer (siehe `arrangementPayload.ts`). Was der Server
+ * nicht anbietet, kann auch niemand versehentlich aufrufen.
+ *
+ * Der Wert kommt vom Antippen und landet in ChurchTools – dort gilt er für ALLE.
+ */
+export async function putArrangementTempo(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const arrangementId = idSchema.parse(req.params.arrangementId);
+  const { tempo } = tempoSchema.parse(req.body);
+  // Rechte erzwingt ChurchTools selbst – das Cookie des Nutzers geht durch, wie beim Bearbeiten
+  // der ChordPro-Versionen. Ein 401/403 kommt als 403 zurück.
+  await updateArrangementTempo(ctCookie(req), songId, arrangementId, tempo);
+  res.json({ tempo });
 }
 
 const updateVersionSchema = z.object({

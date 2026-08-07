@@ -66,10 +66,25 @@ export interface CtArrangement {
   name: string;
   key: string | null;
   keyOfArrangement: string | null;
-  bpm: number | null;
+  /**
+   * Tempo als ABGELEITETER Wert – ChurchTools liefert es je nach Endpunkt als Zahl ODER als
+   * Zeichenkette (`"120"`), und es ist **nicht beschreibbar**. Geschrieben wird `tempo`.
+   */
+  bpm: number | string | null;
   beat: string | null;
   isDefault?: boolean;
   files: CtArrangementFile[];
+
+  // ── Felder, die beim SCHREIBEN erhalten bleiben müssen ──────────────────────────────
+  // `PUT` auf ein Arrangement ersetzt den ganzen Datensatz: Alles, was nicht mitgeschickt wird,
+  // ist danach `null`. An der Test-Instanz gemessen (08.08.2026) löschte ein `PUT { name, bpm }`
+  // Tonart, zweite Tonart und Dauer in einem Zug. Sie stehen deshalb hier – nicht weil die App sie
+  // anzeigt, sondern weil sie sie zurückschreiben MUSS. Siehe `arrangementPayload.ts`.
+  /** Das beschreibbare Tempo (Zahl). */
+  tempo?: number | null;
+  duration?: number | null;
+  description?: string | null;
+  note?: string | null;
 }
 
 export interface CtSong {

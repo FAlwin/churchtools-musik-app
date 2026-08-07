@@ -194,6 +194,15 @@
   animation: fadeIn 0.14s ease both;
 }
 
+/**
+ * Das Tempo-Menue hat mit „Aus / Einzaehlen / Dauerhaft" die laengste Knopfreihe der App und
+ * braucht etwas mehr Platz. BEWUSST als eigene Klasse zusaetzlich zu `.appMenu`, statt dessen
+ * `min-width` zu erhoehen: Das Aussehen-Menue teilt sich die Klasse und soll unveraendert bleiben.
+ */
+.tempoMenu {
+  min-width: 300px;
+}
+
 .appRow {
   display: flex;
   align-items: center;
@@ -266,6 +275,9 @@
 
 .segBtn {
   flex: 1;
+  // Ohne `min-width: 0` schrumpfen Flex-Kinder nie unter ihre Textbreite – „Dauerhaft" im
+  // Tempo-Menue lief dadurch rechts aus dem Kasten heraus. Gilt fuer beide Menues gleichermassen.
+  min-width: 0;
   height: 44px;
   border-radius: 10px;
   border: 1.5px solid var(--border);
@@ -1051,4 +1063,43 @@
   font-size: 13px;
   padding: 6px 4px;
   cursor: pointer;
+}
+
+// ── Tempo-Menü (#145 Folge) ────────────────────────────────────────────────────────────
+// Erklärender Zwischentext im Menü. Gebraucht für den einen Satz, der wirklich wichtig ist:
+// dass das Speichern des Tempos für ALLE gilt.
+.menuHint {
+  margin-top: 10px;
+  font-family: var(--ui);
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text2);
+}
+
+// Der einzige Knopf im Menü, der etwas in ChurchTools ändert – und deshalb als einziger farbig
+// gefüllt. Alles darüber gehört nur dem Gerät.
+.menuGo {
+  margin-top: 8px;
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+}
+
+.menuError {
+  margin-top: 8px;
+  font-family: var(--ui);
+  font-size: 12px;
+  color: var(--red, #bb2946);
 }

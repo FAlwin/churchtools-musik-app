@@ -9,9 +9,10 @@
  */
 import { HttpError } from '../middleware/errorHandler.js';
 import { agendaItemWritePayload } from './agendaPayload.js';
+import { arrangementWritePayload } from './arrangementPayload.js';
 import { csrfWriteDenied, getCsrfToken } from './ctCsrf.js';
 import { BASE, CT_FILE_TIMEOUT_MS, ctSignal } from './ctHttp.js';
-import { getAgenda } from './ctRead.js';
+import { getAgenda, getSong } from './ctRead.js';
 import type { CtAgendaItem } from './ctTypes.js';
 
 /** Fehlermeldung, wenn ChurchTools das Ändern des Ablaufs verweigert – siebenmal derselbe Satz. */
@@ -225,5 +226,36 @@ export async function deleteFile(cookie: string, fileId: number): Promise<void> 
     verweigert: 'Keine Berechtigung zum Löschen in ChurchTools.',
     fehler: 'Löschen in ChurchTools fehlgeschlagen',
     okBei404: true, // schon weg ist auch weg
+  });
+}
+
+/**
+ * Setzt das Tempo eines Arrangements in ChurchTools.
+ *
+ * **Lesen–ändern–schreiben, und das ist keine Stilfrage:** `PUT` auf ein Arrangement ersetzt den
+ * ganzen Datensatz – alles Nicht-Gesendete wird `null`. An der Test-Instanz gemessen löschte ein
+ * `PUT { name, bpm }` in einem Zug Tonart, zweite Tonart und Dauer. Deshalb wird das Arrangement
+ * zuerst frisch gelesen und der Payload daraus gebaut (`arrangementWritePayload`).
+ *
+ * Geschrieben wird `tempo` (Zahl); das gelesene `bpm` ist abgeleitet und nicht beschreibbar.
+ *
+ * **Rechte:** wie bei den ChordPro-Versionen – das Cookie des Nutzers geht durch, ChurchTools
+ * entscheidet. Ein 401/403 wird über `csrfWriteDenied` gemeldet (und verwirft das Token, #298).
+ */
+export async function updateArrangementTempo(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+  tempo: number,
+): Promise<void> {
+  const song = await getSong(cookie, songId); // frische Live-Daten – NIE aus einem Cache
+  const arr = song.arrangements.find((a) => a.id === arrangementId);
+  if (!arr) throw new HttpError(404, 'Arrangement nicht gefunden.');
+
+  await schreibe(cookie, `/api/songs/${songId}/arrangements/${arrangementId}`, {
+    method: 'PUT',
+    json: arrangementWritePayload(arr, { tempo }),
+    verweigert: 'Keine Berechtigung, das Tempo in ChurchTools zu ändern.',
+    fehler: 'Tempo speichern fehlgeschlagen',
   });
 }

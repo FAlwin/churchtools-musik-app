@@ -164,6 +164,7 @@ export function deleteAgendaItem(eventId: number, itemId: number): Promise<{ ok:
 }
 
 /** Legt eine neue benannte Version eines Songs in ChurchTools an. */
+
 export function createVersion(
   songId: number,
   arrangementId: number,
@@ -198,5 +199,22 @@ export function deleteVersion(
   return apiFetch(`/api/songs/${songId}/versions/${encodeURIComponent(versionKey)}`, {
     method: 'DELETE',
     body: JSON.stringify({ arrangementId }),
+  });
+}
+
+/**
+ * Setzt das Tempo eines Arrangements in ChurchTools.
+ *
+ * ⚠️ Das gilt für ALLE, die das Lied öffnen – auch rückwirkend für vergangene Gottesdienste. Anders
+ * als die Anzeige-Einstellungen (Tonart, Spalten, Schrift), die bewusst persönlich bleiben.
+ */
+export function setArrangementTempo(
+  songId: number,
+  arrangementId: number,
+  tempo: number,
+): Promise<{ tempo: number }> {
+  return apiFetch(`/api/songs/${songId}/arrangements/${arrangementId}/tempo`, {
+    method: 'PUT',
+    body: JSON.stringify({ tempo }),
   });
 }

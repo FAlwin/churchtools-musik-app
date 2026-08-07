@@ -3,5 +3,8 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["types/**/*.ts", "keys/**/*.ts"]
+  // Bewusst ein Sammel-Muster statt einer Ordnerliste: Bei "types/**, keys/**" fiel ein neu
+  // angelegtes shared/tempo/ heraus und der Lint brach mit "not found by the project service".
+  // Eine handgepflegte Liste vergisst man genau einmal.
+  "include": ["**/*.ts"]
 }

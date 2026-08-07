@@ -7,6 +7,7 @@ import {
   getSetlistVersion,
   markSetlistSeen,
   postVersion,
+  putArrangementTempo,
   putVersion,
   deleteVersionCtrl,
   getFile,
@@ -42,6 +43,7 @@ router.post('/services/:eventId/agenda/items', asyncHandler(postAgendaItem));
 router.put('/services/:eventId/agenda/items/:itemId', asyncHandler(putAgendaItem));
 router.put('/services/:eventId/agenda/items/:itemId/hidden', asyncHandler(putAgendaItemHidden));
 router.delete('/services/:eventId/agenda/items/:itemId', asyncHandler(deleteAgendaItemCtrl));
+router.put('/songs/:songId/arrangements/:arrangementId/tempo', asyncHandler(putArrangementTempo));
 router.post('/songs/:songId/versions', asyncHandler(postVersion));
 router.put('/songs/:songId/versions/:versionKey', asyncHandler(putVersion));
 router.delete('/songs/:songId/versions/:versionKey', asyncHandler(deleteVersionCtrl));
