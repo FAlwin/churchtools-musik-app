@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SetlistSong } from '@shared/types/index';
 import { Screen } from '../components/Screen';
-import { KeyPicker } from '../components/KeyPicker';
-import { CapoPicker } from '../components/CapoPicker';
-import { SectionTransposeSheet } from '../components/SectionTransposeSheet';
+import { ChartHeader } from '../components/ChartHeader';
+import { ChartFooter } from '../components/ChartFooter';
+import { ChartOverlays } from '../components/ChartOverlays';
+import { ImportPreviewBar, ViewingBanner } from '../components/ChartTeamNotesBars';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
 import { PageDeck } from '../components/PageDeck';
@@ -11,37 +12,27 @@ import { useSongSettings } from '../hooks/useSongSettings';
 import { useLandscape } from '../hooks/useLandscape';
 import { Coachmarks } from '../components/Coachmarks';
 import { CHART_STEPS, TOUR_CHART, isTourDone, markTourDone } from '../utils/onboarding';
-import { Icon } from '../components/icons';
-import {
-  migrateLocalAnnotations,
-  pullAnnotations,
-  resumePendingAnnotations,
-} from '../services/annotations';
 import { VIEW_NS } from '../services/teamNotes';
-import { ANNO_ZOOM_NS } from '@shared/keys/index';
-import { drawKeyForOwner, zoomKeyBaseForOwner, viewKeyForOwner } from '../utils/streamKeys';
-import { ChartAppearanceMenu } from '../components/ChartAppearanceMenu';
-import { SongMenu } from '../components/SongMenu';
+import {
+  drawKeyForPage,
+  pageLabelFor,
+  viewKeyForPage,
+  zoomKeyBaseForPage,
+} from '../utils/chartPageKeys';
 import { SharersSheet } from '../components/SharersSheet';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import {
-  migrateLocalSettings,
-  pullSettings,
-  resumePendingSettings,
-} from '../services/userSettings';
-import { parseChordPro } from '../utils/chordpro';
-import { availableVersions, versionText } from '../utils/songVersions';
-import { shiftKey } from '../utils/transpose';
-import { generateChordPdf, generateSetlistPdfWithOwners } from '../utils/chordPdf';
-import type { SetlistPageOwner } from '../utils/chordPdf';
+import { deriveActiveSongView } from '../utils/activeSongView';
+import { generateChordPdf } from '../utils/chordPdf';
 import { pdfOptionsForSong } from '../utils/chartPdfOptions';
 import { sharePdf } from '../utils/sharePdf';
-import { DEFAULT_SETTINGS, loadSettings } from '../utils/chartSettings';
-import { logoTightUrl } from '../utils/logoAsset';
+import { DEFAULT_SETTINGS } from '../utils/chartSettings';
 import { useTeamNotesImport } from '../hooks/useTeamNotesImport';
 import { useChartNavigation } from '../hooks/useChartNavigation';
 import { useChartEditor } from '../hooks/useChartEditor';
+import { useAppLogo } from '../hooks/useAppLogo';
+import { useChartStream } from '../hooks/useChartStream';
+import { useChartSync, useResyncAfterEditor } from '../hooks/useChartSync';
 import { useSetlistPages } from '../hooks/useSetlistPages';
 import type { DrawTool } from '../types/index';
 import styles from './ChordChart.module.scss';
@@ -88,31 +79,24 @@ export function ChordChart({
     )
     .join(',');
 
-  // Anmerkungen pro Konto: bestehende Geräte-Anmerkungen einmalig hochladen, dann die
-  // Server-Anmerkungen dieser Lieder in den lokalen Cache holen und Anzeige neu laden.
-  const [syncTick, setSyncTick] = useState(0);
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const ids = songs.map((s) => s.id);
-      // Reihenfolge ist wichtig: Erst die beim letzten Mal NICHT durchgegangenen Uploads nachholen
-      // (#256 Anmerkungen, #275 Einstellungen) und bestehende lokale Daten einmalig hochladen – DANN
-      // den Server-Stand holen. Andernfalls überschreibt der Pull genau das, was noch hochzuladen ist.
-      await Promise.all([resumePendingAnnotations(), resumePendingSettings()]);
-      await Promise.all([migrateLocalAnnotations(), migrateLocalSettings()]);
-      await Promise.all([pullAnnotations(ids), pullSettings(ids)]);
-      // Team-Notizen: wer teilt Anmerkungen zu diesen Liedern? (nur für Berechtigte)
-      if (canUseGlobalNotes) refreshSharers();
-      if (cancelled) return;
-      // Einstellungen aus dem (jetzt gespiegelten) localStorage neu übernehmen.
-      reloadSettings();
-      setSyncTick((t) => t + 1);
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songsSig]);
+  const [drawMode, setDrawMode] = useState(false);
+  /**
+   * Auffrischen im Hintergrund (Erst-Sync, 30-s-/60-s-Takt, Rückkehr zur App) – in `useChartSync`.
+   *
+   * Die Liste der Teilenden gehört zum Erst-Sync, `refreshSharers` entsteht aber erst weiter unten
+   * in `useTeamNotesImport`, das seinerseits `setSyncTick` von hier braucht. Der Rückruf zeigt
+   * deshalb über eine Ref auf die dann vorhandene Funktion; gelesen wird sie erst im Effekt, also
+   * lange nach dem Render.
+   */
+  const teamNotizenNachlauf = useRef<(() => void) | null>(null);
+  const { syncTick, setSyncTick, bumpSync } = useChartSync({
+    songs,
+    songsSig,
+    drawMode,
+    onReload,
+    reloadSettings,
+    onAfterInitialPull: () => teamNotizenNachlauf.current?.(),
+  });
 
   /**
    * EIN Zustand für alle Auswahl-Overlays statt fünf Booleans (#283).
@@ -127,7 +111,6 @@ export function ChordChart({
   /** Ein Overlay umschalten (nochmal derselbe Knopf schließt es). */
   const toggleOverlay = (o: 'appearance' | 'menu') => setOverlay((cur) => (cur === o ? null : o));
 
-  const [drawMode, setDrawMode] = useState(false);
   const { toast, showToast } = useToast();
   // ── Team-Notizen (#124, PCO-Modell): „Notizen von …" ansehen + übernehmen ──
   // Ganzer Ansehen-/Import-Zustand samt abgeleiteter effSettings gekapselt in useTeamNotesImport.
@@ -159,6 +142,9 @@ export function ChordChart({
     setDrawMode,
     showToast,
   });
+  // Erst jetzt steht `refreshSharers` – der Erst-Sync greift über die Ref darauf zu (siehe oben).
+  teamNotizenNachlauf.current = canUseGlobalNotes ? refreshSharers : null;
+
   // Geführte Einführung Chart-Ansicht (#Onboarding, Gruppe 2): startet beim ersten Öffnen, sobald
   // die Seiten gerendert sind (dann existieren die hervorzuhebenden Elemente).
   const [chartTour, setChartTour] = useState(false);
@@ -169,116 +155,11 @@ export function ChordChart({
   const [streamZoomed, setStreamZoomed] = useState(false); // eine sichtbare Seite (Strom oder Dokument) ist reingezoomt
   const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → PageDeck setzt sichtbaren Zoom zurück
 
-  // App-Logo für die PDF-Kopfzeile (oben rechts) einmalig vorladen. Quelle ist die eingebettete
-  // Data-URI (logoAsset) → auch offline sofort da (loser public-Pfad wurde offline nicht gecacht).
-  const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setLogoImg(img);
-    img.src = logoTightUrl;
-  }, []);
-
-  // Auto-Auffrischung: aktuelle Werte in einer Ref, damit der Effekt stabil bleibt.
-  const liveRef = useRef({ songs, drawMode, onReload, lastReturn: 0 });
-  liveRef.current.songs = songs;
-  liveRef.current.drawMode = drawMode;
-  liveRef.current.onReload = onReload;
-  useEffect(() => {
-    // Anmerkungen (pro Konto) regelmäßig vom Server holen – pausiert im Zeichenmodus/Hintergrund.
-    async function refreshAnno() {
-      if (document.hidden || liveRef.current.drawMode) return;
-      await pullAnnotations(liveRef.current.songs.map((s) => s.id));
-      setSyncTick((t) => t + 1);
-    }
-    // Beim Zurückkehren zur App: Anmerkungen, Einstellungen UND Versionen (Setlist) auffrischen.
-    async function onReturn() {
-      if (document.hidden) return;
-      const now = Date.now();
-      if (now - liveRef.current.lastReturn < 2000) return; // focus+visibility entprellen
-      liveRef.current.lastReturn = now;
-      const list = liveRef.current.songs;
-      if (!liveRef.current.drawMode) {
-        await Promise.all([
-          pullAnnotations(list.map((s) => s.id)),
-          pullSettings(list.map((s) => s.id)),
-        ]);
-        reloadSettings();
-        setSyncTick((t) => t + 1);
-      }
-      liveRef.current.onReload?.();
-    }
-    // Inhalt (Ablauf/Liedtexte) alle 60 s still nachladen – ersetzt den früheren
-    // „Aktualisieren"-Knopf: Änderungen erscheinen auch, wenn das Gerät die ganze Zeit offen im
-    // Lied bleibt (z. B. iPad auf der Bühne). Neu gezeichnet wird nur bei echten Änderungen
-    // (songsSig); offline scheitert das Nachladen lautlos.
-    function refreshContent() {
-      if (document.hidden || liveRef.current.drawMode) return;
-      liveRef.current.onReload?.();
-    }
-    const id = setInterval(() => void refreshAnno(), 30000);
-    const idContent = setInterval(() => void refreshContent(), 60000);
-    // `onReturn` ist async → in einen void-Wrapper, damit kein unbehandeltes Promise entsteht (#279).
-    const onReturnSync = (): void => void onReturn();
-    window.addEventListener('focus', onReturnSync);
-    document.addEventListener('visibilitychange', onReturnSync);
-    return () => {
-      clearInterval(id);
-      clearInterval(idContent);
-      window.removeEventListener('focus', onReturnSync);
-      document.removeEventListener('visibilitychange', onReturnSync);
-    };
-    // `reloadSettings` hat eine stabile Identität (useCallback über eine Ref) – die Intervalle und
-    // Listener werden dadurch NICHT erneut angemeldet.
-  }, [reloadSettings]);
-
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
-  // Der Aufbau lief bis #197 in einem useMemo, also MITTEN IM RENDER: Bei jeder Änderung von
-  // Tonart/Spalten/Schrift stand die Oberfläche, bis das komplette Liederheft neu erzeugt war (auf
-  // einem älteren iPad deutlich spürbar – das Menü blieb offen, nichts reagierte).
-  // Jetzt außerhalb des Renders in einem Effekt: Erst zeichnet der Browser (Menü schließt, Gesten
-  // laufen weiter), danach wird gebaut. Bis das neue Ergebnis da ist, bleibt das ALTE stehen –
-  // deshalb State statt Memo, sonst blitzte zwischendurch eine leere Ansicht auf.
-  // Ehrlich: jsPDF bleibt synchron, der Aufbau blockiert also weiterhin kurz den Hauptthread –
-  // nur eben NACH dem Zeichnen. Ihn ganz auszulagern bräuchte einen Web Worker (eigenes Thema).
-  const [stream, setStream] = useState<{ data: ArrayBuffer; owners: SetlistPageOwner[] } | null>(
-    null,
-  );
-  useEffect(() => {
-    if (songs.length === 0) {
-      setStream(null);
-      return;
-    }
-    let cancelled = false;
-    const build = (): void => {
-      if (cancelled) return;
-      const songsForPdf = songs.map((s) => {
-        const st = effSettings[s.id] ?? loadSettings(s);
-        return { ...s, chordpro: versionText(s, st.versionKey), versionKey: st.versionKey };
-      });
-      const { doc, owners } = generateSetlistPdfWithOwners(songsForPdf, (s) =>
-        pdfOptionsForSong(s, effSettings[s.id] ?? loadSettings(s), logoImg),
-      );
-      // Zwischenzeitlich hat sich die Eingabe geändert → dieses Ergebnis ist veraltet, verwerfen.
-      if (cancelled) return;
-      setStream({ data: doc.output('arraybuffer'), owners });
-    };
-    // Nach dem Zeichnen bauen; `requestIdleCallback` lässt Eingaben zuerst durch, der Timeout
-    // sorgt dafür, dass es auch bei Dauerlast zügig passiert. Ältere Safari-Versionen kennen
-    // rIC nicht – dort genügt ein Timeout 0 (auch das läuft erst nach dem Zeichnen).
-    let cancelScheduled: () => void;
-    if (typeof window.requestIdleCallback === 'function') {
-      const h = window.requestIdleCallback(build, { timeout: 300 });
-      cancelScheduled = () => window.cancelIdleCallback(h);
-    } else {
-      const h = window.setTimeout(build, 0);
-      cancelScheduled = () => window.clearTimeout(h);
-    }
-    return () => {
-      cancelled = true;
-      cancelScheduled();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songsSig, effSettings, logoImg]);
+  // Aufbau in `useChartStream` – bewusst NACH dem Zeichnen, mit stehenbleibendem
+  // altem Ergebnis (#197).
+  const logo = useAppLogo();
+  const stream = useChartStream({ songs, songsSig, settings: effSettings, logo });
 
   // Durchgehender Strom: Akkord- UND Dokument-Seiten in Setlist-Reihenfolge zu EINER Seiten-Liste
   // (jedes Lied steuert je nach viewSource seine Akkorde ODER sein hochgeladenes Dokument bei).
@@ -359,70 +240,50 @@ export function ChordChart({
   if (visibleSongIdx.size === 0) visibleSongIdx.add(activeSongIdx);
 
   // ── abgeleitete Werte des AKTIVEN Lieds ──
-  const curKey = set.key || song.targetKey;
-  const shapeKey = shiftKey(curKey, -set.capo);
-  // Versionen: Original + benannte; aktuell gewählte ableiten.
-  const versions = availableVersions(song);
-  const currentVersion = versions.find((v) => v.key === set.versionKey) ?? versions[0];
-  const isOriginal = currentVersion.key === 'original';
-  const hasVersions = song.versions.length > 0;
-  const displayedChordpro = currentVersion.text;
-  const sections = parseChordPro(displayedChordpro);
-  const editorTemplate = `{title: ${song.title}}\n{key: ${song.targetKey || song.originalKey || 'C'}}\n\n{comment: Vers 1}\n[${song.targetKey || 'C'}]Hier Text mit Akkorden eingeben\n\n{comment: Chorus}\n`;
+  // Rein und getestet in `utils/activeSongView` (#314): Tonart, Kapo-Griffe, Versionen, gewähltes
+  // Dokument, Editor-Vorlage und die Info-Zeile im Kopf.
+  const {
+    curKey,
+    shapeKey,
+    versions,
+    currentVersion,
+    isOriginal,
+    hasVersions,
+    displayedChordpro,
+    sections,
+    editorTemplate,
+    activeDoc,
+    headInfo,
+  } = deriveActiveSongView(song, set);
 
-  const activeDoc =
-    set.viewSource === 'chords'
-      ? null
-      : (song.documents.find((d) => d.fileId === set.viewSource) ?? null);
-
-  // Anmerkungs-/Zoom-Schlüssel je Strom-Seite. Akkord-Seiten hängen an Lied+Version UND
-  // Darstellungsart: „Nur Text" hat eine EIGENE Notiz-Ebene (`_lyr`-Segment) – Bestandsnotizen
-  // ohne Segment sind „Akkorde & Text" (abwärtskompatibel). Dokumente hängen an der Datei-ID.
-  // WICHTIG: Die Darstellungsart kommt aus dem VERÖFFENTLICHTEN Schnappschuss (publishedSettings),
-  // nicht aus den Live-Einstellungen – die Notiz-Ebene wechselt exakt mit den sichtbaren Seiten,
-  // nicht schon während des asynchronen Neuaufbaus (sonst: Notizen „vor dem Text", Stift schreibt
-  // in die falsche Ebene).
-  // Die Schlüssel selbst baut `utils/streamKeys` aus der geteilten Grammatik (#250) – hier wird nur
-  // entschieden, WELCHE Darstellungsart gilt: die des veröffentlichten Schnappschusses.
-  const isLyr = (songId: number): boolean =>
-    (publishedSettings[songId] ?? effSettings[songId] ?? DEFAULT_SETTINGS).lyricsOnly;
-  const drawKeyFor = (page: number): string | null => {
-    const o = owners[page];
-    return o ? drawKeyForOwner(o, isLyr(o.songId)) : null;
-  };
-  // „Notizen von …": Schlüssel der angesehenen fremden Ebene je Seite (nur Akkord-Seiten;
-  // stabile Identität für PageDeck-Effekte). Die Versions-Schlüssel stammen aus der Ansicht der
-  // angesehenen Person (effSettings) und passen daher zu ihren Anmerkungs-Schlüsseln.
+  // Anmerkungs-/Zoom-Schlüssel je Strom-Seite. Die Regeln – welche Darstellungsart gilt, wann es
+  // KEINEN Schlüssel gibt – stehen rein und getestet in `utils/chartPageKeys` (#314); hier nur die
+  // Verdrahtung an die aktuellen Daten.
+  const drawKeyFor = (page: number): string | null =>
+    drawKeyForPage(page, owners, publishedSettings, effSettings);
+  const zoomKeyBaseFor = (page: number): string =>
+    zoomKeyBaseForPage(page, owners, publishedSettings, effSettings);
+  const pageLabel = (activePg: number, pageIdx: number): string | null =>
+    pageLabelFor(activePg, pageIdx, owners);
+  // „Notizen von …": stabile Identität für die PageDeck-Effekte, deshalb `useCallback`.
+  // `viewingId` gehört bewusst in die Abhängigkeiten, obwohl er im Schlüssel nicht vorkommt: Beim
+  // Wechsel auf eine andere Person mit derselben Ebene bliebe die Funktion sonst identisch, und
+  // PageDeck bekäme kein Signal, den Ansichts-Spiegel neu zu lesen.
   const viewingId = viewing?.id ?? null;
   const viewingSongId = viewing?.songId ?? null;
   const viewingLyr = viewing?.lyr ?? false;
   const viewKeyFor = useCallback(
-    (page: number): string | null => {
-      if (viewingId == null || viewingSongId == null) return null;
-      const o = owners[page];
-      if (!o) return null;
-      return viewKeyForOwner(
-        o,
-        { songId: viewingSongId, versionKey: o.versionKey, lyr: viewingLyr },
+    (page: number): string | null =>
+      viewKeyForPage(
+        page,
+        owners,
+        viewingId == null || viewingSongId == null
+          ? null
+          : { songId: viewingSongId, lyr: viewingLyr },
         VIEW_NS,
-      );
-    },
+      ),
     [owners, viewingId, viewingSongId, viewingLyr],
   );
-  const zoomKeyBaseFor = (page: number): string => {
-    const o = owners[page];
-    // Ohne Besitzer (z. B. während des Neuaufbaus) ein eigener, harmloser Schlüssel je Seitenzahl.
-    if (!o) return `${ANNO_ZOOM_NS}p${page}`;
-    return zoomKeyBaseForOwner(o, isLyr(o.songId));
-  };
-  // Seiten-Hinweis nur bei mehrseitigen Einheiten (Lied/Dokument): „Seite x / y".
-  const pageLabel = (activePg: number, pageIdx: number): string | null => {
-    const cur = owners[activePg] ?? owners[pageIdx];
-    if (!cur) return null;
-    const unitPages = owners.filter((o) => o.songIdx === cur.songIdx).length;
-    if (unitPages <= 1) return null;
-    return `Seite ${cur.localPage + 1} / ${unitPages}`;
-  };
 
   /**
    * „Als PDF teilen" – das aktive Lied als einzelne PDF.
@@ -435,7 +296,7 @@ export function ChordChart({
   const shareCurrentAsPdf = (): void => {
     const doc = generateChordPdf(
       { ...song, chordpro: displayedChordpro },
-      pdfOptionsForSong(song, set, logoImg),
+      pdfOptionsForSong(song, set, logo),
     );
     void sharePdf(doc, song.title);
   };
@@ -466,214 +327,63 @@ export function ChordChart({
   // Tastatur-Navigation aussetzen, solange Editor oder Zeichenmodus offen sind.
   navBlockedRef.current = showEditor || drawMode;
 
-  // Beim SCHLIESSEN des Editors die Chart-Ansicht neu ausrichten (syncTick): Der Editor-Overlay
-  // (fixed, Tastatur/visualViewport) kann den Zoom der dahinterliegenden Seiten verschieben →
-  // beim Zurückkommen sonst „steckende" Seite. syncTick stellt gespeicherten Zoom wieder her bzw.
-  // setzt auf Fit.
-  const prevShowEditor = useRef(showEditor);
-  useEffect(() => {
-    if (prevShowEditor.current && !showEditor) setSyncTick((t) => t + 1);
-    prevShowEditor.current = showEditor;
-  }, [showEditor]);
+  // Beim SCHLIESSEN des Editors die Anzeige neu ausrichten (Begründung im Hook).
+  useResyncAfterEditor(showEditor, bumpSync);
 
   const nextSong = activeSongIdx < songs.length - 1 ? songs[activeSongIdx + 1] : null;
-
-  // Info-Zeile im Kopf-Button: Tonart/Capo/Version/Tempo bzw. Dokument-Hinweis – je nach Anzeige.
-  const headInfo: ReactNode[] = [];
-  if (activeDoc) {
-    headInfo.push(activeDoc.type === 'pdf' ? 'PDF' : 'Bild');
-  } else {
-    if (!set.lyricsOnly) headInfo.push(<span className={styles.infoKey}>{curKey}</span>);
-    if (set.lyricsOnly) headInfo.push('Nur Text');
-    if (!set.lyricsOnly && set.capo > 0)
-      headInfo.push(<span className={styles.infoCapo}>Capo {set.capo}</span>);
-    if (hasVersions) headInfo.push(currentVersion.name);
-    if (song.bpm !== null) headInfo.push(`♩ ${song.bpm}`);
-  }
 
   return (
     <Screen className={styles.chartScreen}>
       <>
-        {/* Header */}
-        <div className={styles.hdr}>
-          <button className={styles.ibtn} onClick={onBack} aria-label="Zurück">
-            <Icon name="chev-left" size={22} stroke={2.4} />
-          </button>
-          <div className={styles.center}>
-            <button
-              className={styles.menuBtn}
-              data-tour="chart-lied"
-              onClick={() => !viewing && toggleOverlay('menu')}
-              aria-haspopup="menu"
-              aria-expanded={overlay === 'menu'}
-            >
-              <span className={styles.menuTitleRow}>
-                <span className={styles.songTitle}>{song.title}</span>
-                <span className={styles.menuChevron} aria-hidden="true">
-                  ▾
-                </span>
-              </span>
-              {headInfo.length > 0 && (
-                <span className={styles.menuInfo}>
-                  {headInfo.map((node, i) => (
-                    <span key={i} className={styles.menuInfoPart}>
-                      {i > 0 && <span className={styles.menuInfoDot}>·</span>}
-                      {node}
-                    </span>
-                  ))}
-                </span>
-              )}
-            </button>
-          </div>
-          <div className={styles.right}>
-            {!activeDoc && !viewing && (
-              <button
-                className={`${styles.toolBtn}${overlay === 'appearance' ? ' ' + styles.on : ''}`}
-                data-tour="chart-aussehen"
-                onClick={() => toggleOverlay('appearance')}
-                title="Aussehen"
-              >
-                Aa
-              </button>
-            )}
-            {streamZoomed && (
-              <button
-                className={styles.toolBtn}
-                onClick={() => setResetZoomSignal((n) => n + 1)}
-                title="Zoom zurücksetzen"
-                aria-label="Zoom zurücksetzen"
-              >
-                <Icon name="zoom-reset" size={18} stroke={2} />
-              </button>
-            )}
-            {/* Team-Notizen: geteilte Anmerkungen anderer ansehen (nur Berechtigte). */}
-            {canUseGlobalNotes && !activeDoc && (
-              <button
-                className={`${styles.toolBtn}${viewing ? ' ' + styles.on : ''}`}
-                data-tour="chart-team"
-                onClick={() => (viewing ? stopViewing() : openSharers())}
-                title="Notizen von …"
-                aria-label="Notizen von anderen ansehen"
-              >
-                <Icon name="people" size={18} stroke={2} />
-              </button>
-            )}
-            {!viewing && (
-              <button
-                className={`${styles.toolBtn}${drawMode ? ' ' + styles.on : ''}`}
-                data-tour="chart-anmerken"
-                onClick={() => setDrawMode((d) => !d)}
-                title="Anmerkungen"
-              >
-                <Icon name="pencil" size={18} stroke={2.2} />
-              </button>
-            )}
-          </div>
-        </div>
+        <ChartHeader
+          songTitle={song.title}
+          headInfo={headInfo}
+          menuOpen={overlay === 'menu'}
+          appearanceOpen={overlay === 'appearance'}
+          viewing={viewing !== null}
+          showsDocument={activeDoc !== null}
+          canUseGlobalNotes={canUseGlobalNotes}
+          drawMode={drawMode}
+          zoomed={streamZoomed}
+          onBack={onBack}
+          onToggleMenu={() => toggleOverlay('menu')}
+          onToggleAppearance={() => toggleOverlay('appearance')}
+          onResetZoom={() => setResetZoomSignal((n) => n + 1)}
+          onToggleTeamNotes={() => (viewing ? stopViewing() : openSharers())}
+          onToggleDraw={() => setDrawMode((d) => !d)}
+        />
 
-        {/* „Notizen von …"-Banner: man sieht gerade die geteilte Ebene einer anderen Person. */}
-        {viewing &&
-          (() => {
-            const vName =
-              versions.find((v) => v.key === viewing.versionKey)?.name ?? viewing.versionKey;
-            const otherVersion =
-              (settings[song.id]?.versionKey ?? 'original') !== viewing.versionKey;
-            return (
-              <div className={styles.viewBar}>
-                <Icon name="people" size={15} stroke={2} />
-                <span className={styles.viewBarText}>
-                  Notizen von {viewing.name}
-                  {' · '}
-                  {otherVersion ? <strong>Version „{vName}"</strong> : <>Version „{vName}"</>}
-                  {' · '}
-                  {viewing.lyr ? 'Nur Text' : 'Akkorde & Text'}
-                </span>
-              </div>
-            );
-          })()}
-
-        {/* Aussehen-Menü (pro aktivem Lied: Schriftgröße, Spalten) */}
-        {overlay === 'appearance' && (
-          <ChartAppearanceMenu
-            fontSize={set.fontSize}
-            cols={set.cols}
-            onFontSize={(fontSize) => updateSetting(song.id, { fontSize })}
-            onCols={(cols) => updateSetting(song.id, { cols })}
-            onClose={() => setOverlay(null)}
+        {viewing && (
+          <ViewingBanner
+            personName={viewing.name}
+            versionName={
+              versions.find((v) => v.key === viewing.versionKey)?.name ?? viewing.versionKey
+            }
+            otherVersion={(settings[song.id]?.versionKey ?? 'original') !== viewing.versionKey}
+            lyricsOnly={viewing.lyr}
           />
         )}
 
-        {/* Lied-Menü (über den Titel) */}
-        {overlay === 'menu' && (
-          <SongMenu
-            song={song}
-            set={set}
-            curKey={curKey}
-            sections={sections}
-            versions={versions}
-            currentVersion={currentVersion}
-            isOriginal={isOriginal}
-            hasVersions={hasVersions}
-            canEditSong={canEditSong}
-            onClose={() => setOverlay(null)}
-            onOpenKeyPicker={() => setOverlay('key')}
-            onOpenCapoPicker={() => setOverlay('capo')}
-            onOpenSectionTranspose={() => setOverlay('sec')}
-            onSharePdf={shareCurrentAsPdf}
-            onEditCurrent={openEditCurrent}
-            onNewVersion={openNewVersion}
-            onDeleteVersion={() => setConfirmDelEdited(true)}
-            onChange={(patch) => updateSetting(song.id, patch)}
-            onSelectVersion={(versionKey) => selectVersion(song.id, versionKey)}
-          />
-        )}
-
-        {/* Tonart-Picker */}
-        {overlay === 'key' && (
-          <KeyPicker
-            currentKey={curKey}
-            defaultKey={song.targetKey}
-            isCustom={set.key !== null}
-            onPick={(k) => {
-              updateSetting(song.id, { key: k });
-              setOverlay(null);
-            }}
-            onReset={() => {
-              updateSetting(song.id, { key: null });
-              setOverlay(null);
-            }}
-            onClose={() => setOverlay(null)}
-          />
-        )}
-
-        {/* Kapo-Picker */}
-        {overlay === 'capo' && (
-          <CapoPicker
-            capo={set.capo}
-            shapeKey={shapeKey}
-            soundingKey={curKey}
-            onPick={(c) => {
-              updateSetting(song.id, { capo: c });
-              setOverlay(null);
-            }}
-            onClose={() => setOverlay(null)}
-          />
-        )}
-
-        {overlay === 'sec' && (
-          <SectionTransposeSheet
-            sections={sections}
-            value={set.secShift}
-            onChange={(index, semitones) => {
-              const nextShift = { ...set.secShift };
-              if (semitones === 0) delete nextShift[index];
-              else nextShift[index] = semitones;
-              updateSetting(song.id, { secShift: nextShift });
-            }}
-            onReset={() => updateSetting(song.id, { secShift: {} })}
-            onClose={() => setOverlay(null)}
-          />
-        )}
+        <ChartOverlays
+          overlay={overlay}
+          onOverlay={setOverlay}
+          song={song}
+          set={set}
+          curKey={curKey}
+          shapeKey={shapeKey}
+          sections={sections}
+          versions={versions}
+          currentVersion={currentVersion}
+          isOriginal={isOriginal}
+          hasVersions={hasVersions}
+          canEditSong={canEditSong}
+          onSetting={(patch) => updateSetting(song.id, patch)}
+          onSelectVersion={(versionKey) => selectVersion(song.id, versionKey)}
+          onSharePdf={shareCurrentAsPdf}
+          onEditCurrent={openEditCurrent}
+          onNewVersion={openNewVersion}
+          onDeleteVersion={() => setConfirmDelEdited(true)}
+        />
 
         {/* Anzeige-Bereich: EIN durchgehender Strom (Akkorde + Dokumente gemischt) */}
         <div className={styles.chartArea} data-tour="chart-blaettern">
@@ -739,92 +449,25 @@ export function ChordChart({
           />
         )}
 
-        {/* Footer */}
-        <div className={styles.ftr}>
-          <button
-            className={styles.navBtn}
-            onClick={prev}
-            disabled={atStart}
-            aria-label="Zurück / vorige Seite"
-          >
-            <Icon name="chev-left" size={22} stroke={2.4} />
-          </button>
-          <div className={styles.ftrCenter}>
-            {songs.length > 1 && (
-              <div className={styles.dots}>
-                {songs.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`${styles.dot}${visibleSongIdx.has(i) ? ' ' + styles.on : ''}`}
-                    onClick={() => goToSong(i)}
-                  />
-                ))}
-              </div>
-            )}
-            {nextSong ? (
-              <div className={styles.ftrInfo}>
-                <span className={styles.ftrNext}>Nächstes Lied: {nextSong.title}</span>
-              </div>
-            ) : songs.length > 1 ? (
-              <div className={styles.ftrInfo}>
-                <span className={styles.ftrSong}>Letztes Lied</span>
-              </div>
-            ) : null}
-          </div>
-          <button
-            className={styles.navBtn}
-            onClick={next}
-            disabled={atEnd}
-            aria-label="Weiter / nächste Seite"
-          >
-            <Icon name="chev-right" size={22} stroke={2.4} />
-          </button>
-        </div>
+        <ChartFooter
+          songCount={songs.length}
+          visibleSongIdx={visibleSongIdx}
+          nextSongTitle={nextSong?.title ?? null}
+          atStart={atStart}
+          atEnd={atEnd}
+          onPrev={prev}
+          onNext={next}
+          onGoToSong={goToSong}
+        />
 
-        {/* Team-Notizen: EINE Leiste steuert das Ansehen. „Ansehen" = nur seine Ebene lesend;
-            „Zusammenführen"/„Ersetzen" zeigen live die Vorschau, „Übernehmen" schreibt dann wirklich. */}
         {viewing && (
-          <div className={styles.previewBar}>
-            <span className={styles.pvSegWrap}>
-              <button
-                className={`${styles.pvSeg}${viewMode === 'view' ? ' ' + styles.pvSegOn : ''}`}
-                onClick={() => setViewMode('view')}
-              >
-                Ansehen
-              </button>
-              <button
-                className={`${styles.pvSeg}${viewMode === 'merge' ? ' ' + styles.pvSegOn : ''}`}
-                onClick={() => setViewMode('merge')}
-              >
-                Zusammenführen
-              </button>
-              <button
-                className={`${styles.pvSeg}${viewMode === 'replace' ? ' ' + styles.pvSegOn : ''}`}
-                onClick={() => setViewMode('replace')}
-              >
-                Ersetzen
-              </button>
-            </span>
-            {viewMode !== 'view' && (
-              <>
-                <span className={styles.pvDivider} />
-                <button className={styles.pvGo} onClick={() => void importFrom(viewMode)}>
-                  Übernehmen
-                </button>
-              </>
-            )}
-            <button
-              className={styles.pvIcon}
-              onClick={openSharers}
-              title="Andere Person / Ebene"
-              aria-label="Andere Person oder Ebene wählen"
-            >
-              <Icon name="people" size={18} stroke={2} />
-            </button>
-            <button className={styles.pvCancel} onClick={stopViewing}>
-              Fertig
-            </button>
-          </div>
+          <ImportPreviewBar
+            mode={viewMode}
+            onMode={setViewMode}
+            onImport={(m) => void importFrom(m)}
+            onPickOther={openSharers}
+            onStop={stopViewing}
+          />
         )}
 
         {/* „Notizen von …": Stufe 1 = Person wählen, Stufe 2 = ihre Ebene (Version + Darstellung). */}

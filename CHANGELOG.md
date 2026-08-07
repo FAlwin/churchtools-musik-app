@@ -31,7 +31,26 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   (Konto-ID, Rechte, CSRF-Token). Dieselbe Map, dieselbe Ablaufprüfung, dasselbe Aufräumen stand
   viermal im Code – ein Kommentar verwies sogar ausdrücklich auf die Vorlage. Zwei der drei hatten
   **keinerlei Tests**; die gibt es jetzt (`churchtools.sessionMemos.test.ts`).
-- **Tests: Client 433 · Server 347 · 5 E2E** (vorher 433 · 311 · 5).
+- **Auch der letzte Monolith im Client ist aufgeteilt (#314).** `ChordChart.tsx` hatte 860 Zeilen
+  und **keinen einzigen Test** – und enthielt dabei die Entscheidung, auf welcher Ebene ein
+  gezeichneter Strich landet. Ein Fehler dort heißt: Notizen am falschen Lied, an der falschen
+  Version oder in der falschen Darstellungsart, bemerkt erst im Gottesdienst; genau das waren #199
+  und #250. Jetzt 503 Zeilen, und diese Entscheidung steht als reine, geprüfte Funktion in
+  `utils/chartPageKeys.ts`. Dazu neu: `utils/activeSongView.ts`, die Hooks `useChartSync`,
+  `useChartStream`, `useAppLogo` und die Komponenten `ChartHeader`, `ChartFooter`, `ChartOverlays`,
+  `ChartTeamNotesBars`. Am Verhalten ändert sich nichts – im Browser durchgeklickt.
+- **Die drei bereits ausgelagerten Chart-Hooks haben jetzt Tests** (`useChartNavigation`,
+  `useChartEditor`, `useTeamNotesImport`). Sie waren seit Längerem eigene Dateien, aber ohne Netz –
+  darunter die Querformat-Grenze („die letzte Seite darf nie allein links stehen") und die einzige
+  Stelle der App, die fremde Daten in die eigenen schreibt.
+- **Beim Aufteilen fiel auf, dass das App-Logo an drei Stellen vorgeladen wurde** – obwohl es dafür
+  längst `loadAppLogo` gab, und nur diese Fassung den Fehlerfall behandelt. Jetzt gehen alle
+  darüber.
+- **Gerenderte Komponenten werden nach jedem Test wieder abgebaut.** Ohne das blieben sie samt
+  ihrer Ereignis-Listener am Leben und mischten sich in spätere Tests derselben Datei ein – ein
+  Test zählte dadurch acht Aufrufe statt einem. Betraf alle sieben Dateien mit `renderHook`,
+  deshalb einmal zentral in `src/test-setup.ts`.
+- **Tests: Client 528 · Server 347 · 5 E2E** (vorher 433 · 311 · 5).
 
 ## [2.16.3] – 2026-08-06
 

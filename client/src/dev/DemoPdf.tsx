@@ -3,7 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import '../pdfSetup';
 import type { SetlistSong } from '@shared/types/index';
 import { generateChordPdf } from '../utils/chordPdf';
-import { logoTightUrl } from '../utils/logoAsset';
+import { useAppLogo } from '../hooks/useAppLogo';
 
 /**
  * NUR Entwicklung (?demo=pdf): erzeugt aus einem Mock-Lied eine PDF und rendert sie via pdfjs
@@ -62,14 +62,10 @@ export function DemoPdf() {
   const [semitones, setSemitones] = useState(0);
   const [lyricsOnly, setLyricsOnly] = useState(false);
   const [pages, setPages] = useState(0);
-  const [logo, setLogo] = useState<HTMLImageElement | null>(null);
+  // Vorladen über `useAppLogo` – dieselbe Stelle wie in der Chart-Ansicht (#314). Hier stand
+  // vorher eine eigene Handschrift des Vorladens, ohne `onerror`.
+  const logo = useAppLogo();
   const host = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setLogo(img);
-    img.src = logoTightUrl;
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
