@@ -1,4 +1,6 @@
 import type { HeadInfoPart } from '../utils/activeSongView';
+import { isPulsable } from '../utils/bpmPulse';
+import { BpmPulse } from './BpmPulse';
 import { Icon } from './icons';
 import styles from '../pages/ChordChart.module.scss';
 
@@ -29,6 +31,9 @@ interface ChartHeaderProps {
   drawMode: boolean;
   /** Eine sichtbare Seite ist reingezoomt. */
   zoomed: boolean;
+  /** Läuft der Tempo-Puls? (#145) */
+  bpmPulse: boolean;
+  onToggleBpmPulse: () => void;
   onBack: () => void;
   onToggleMenu: () => void;
   onToggleAppearance: () => void;
@@ -47,6 +52,8 @@ export function ChartHeader({
   canUseGlobalNotes,
   drawMode,
   zoomed,
+  bpmPulse,
+  onToggleBpmPulse,
   onBack,
   onToggleMenu,
   onToggleAppearance,
@@ -54,6 +61,12 @@ export function ChartHeader({
   onToggleTeamNotes,
   onToggleDraw,
 }: ChartHeaderProps) {
+  // Der Puls-Schalter erscheint nur, wenn das aktive Lied ein brauchbares Tempo mitbringt. Die Zahl
+  // steckt schon in der Info-Zeile – sie hier ein zweites Mal aus dem Lied zu holen, wären zwei
+  // Wege zu derselben Angabe.
+  const tempo = headInfo.find((p): p is Extract<HeadInfoPart, { art: 'bpm' }> => p.art === 'bpm');
+  const kannPulsen = tempo !== undefined && isPulsable(tempo.bpm);
+
   return (
     <div className={styles.hdr}>
       <button className={styles.ibtn} onClick={onBack} aria-label="Zurück">
@@ -78,13 +91,15 @@ export function ChartHeader({
               {headInfo.map((part, i) => (
                 <span key={i} className={styles.menuInfoPart}>
                   {i > 0 && <span className={styles.menuInfoDot}>·</span>}
-                  {part.art === 'plain' ? (
-                    part.text
-                  ) : (
-                    <span className={part.art === 'key' ? styles.infoKey : styles.infoCapo}>
+                  {part.art === 'key' && <span className={styles.infoKey}>{part.text}</span>}
+                  {part.art === 'capo' && <span className={styles.infoCapo}>{part.text}</span>}
+                  {part.art === 'bpm' && (
+                    <>
                       {part.text}
-                    </span>
+                      <BpmPulse bpm={part.bpm} active={bpmPulse} />
+                    </>
                   )}
+                  {part.art === 'plain' && part.text}
                 </span>
               ))}
             </span>
@@ -100,6 +115,19 @@ export function ChartHeader({
             title="Aussehen"
           >
             Aa
+          </button>
+        )}
+        {/* Tempo-Puls (#145) – nur, wenn im Lied ein brauchbares Tempo gepflegt ist. Beschriftung
+            ist wie bei „Aa" reiner Text, kein Symbol; der Puls selbst sitzt unten beim Tempo. */}
+        {kannPulsen && !viewing && (
+          <button
+            className={`${styles.toolBtn}${bpmPulse ? ' ' + styles.on : ''}`}
+            onClick={onToggleBpmPulse}
+            title="Tempo-Puls"
+            aria-label="Tempo-Puls zum Einzählen"
+            aria-pressed={bpmPulse}
+          >
+            ♩
           </button>
         )}
         {zoomed && (

@@ -153,6 +153,9 @@ export function ChordChart({
   const [drawColor, setDrawColor] = useState('#0062ac'); // Standard-Anmerkungsfarbe: Blau
   const [drawTool, setDrawTool] = useState<DrawTool>('pen');
   const [streamZoomed, setStreamZoomed] = useState(false); // eine sichtbare Seite (Strom oder Dokument) ist reingezoomt
+  // Tempo-Puls (#145): bewusst NICHT gemerkt – er ist ein Werkzeug zum Einzählen, keine Ansicht.
+  // Beim Öffnen des Liederhefts ist er immer aus, damit im Gottesdienst nichts unerwartet blinkt.
+  const [bpmPulse, setBpmPulse] = useState(false);
   const [resetZoomSignal, setResetZoomSignal] = useState(0); // erhöhen → PageDeck setzt sichtbaren Zoom zurück
 
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
@@ -345,6 +348,8 @@ export function ChordChart({
           canUseGlobalNotes={canUseGlobalNotes}
           drawMode={drawMode}
           zoomed={streamZoomed}
+          bpmPulse={bpmPulse}
+          onToggleBpmPulse={() => setBpmPulse((p) => !p)}
           onBack={onBack}
           onToggleMenu={() => toggleOverlay('menu')}
           onToggleAppearance={() => toggleOverlay('appearance')}
