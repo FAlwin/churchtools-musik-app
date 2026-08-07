@@ -7,6 +7,26 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Neu
+
+- **Ein Menü für alles rund ums Tempo (#145).** Der ♩-Knopf oben rechts öffnet jetzt ein Menü statt
+  nur den Puls zu schalten. Darin:
+  - **Sichtbarer Puls** – wie bisher, der lautlose Punkt neben der Tempo-Angabe.
+  - **Klick** – ein hörbares Ticken, entweder **einmal einzählen** (einen Takt lang, dann hört es
+    von selbst auf) oder **dauerhaft**. Die Eins ist höher und lauter. Der Takt kommt von der
+    Audio-Uhr, nicht vom Bildtakt: Ein verspäteter Bildaufbau fällt dem Auge nicht auf, dem Ohr
+    sofort.
+  - **Tempo antippen** – im Takt mitzutippen ermittelt das Tempo. Wer darf, **speichert es in
+    ChurchTools** – dann sehen es alle, die das Lied öffnen. Ein einzelner Ausrutscher verzieht das
+    Ergebnis kaum, und nach einer Pause beginnt ein neuer Versuch.
+
+  Puls und Klick sind bewusst **nicht gemerkt**: Beim Öffnen des Liederhefts sind beide aus. Ein
+  Gerät, das im Gottesdienst von selbst losklickt, wäre eine Panne. Der ♩-Knopf erscheint jetzt
+  auch bei Liedern **ohne** hinterlegtes Tempo – genau dort will man eins nachtragen.
+
+  Am iPhone kann der physische Stummschalter den Klick verstummen lassen; das ist eine Eigenheit
+  von iOS und lässt sich aus der App heraus nicht umgehen. Der sichtbare Puls läuft weiter.
+
 ### Behoben
 
 - **Vollbild: Text wurde verdeckt (#319).** Beim Aus- und Einblenden der Leisten ändert sich die

@@ -182,25 +182,28 @@ sichtbar, bis die neuen fertig sind. Die App darf nicht mehrere Sekunden stehen.
 Metronom (eine Handy-App genügt). Wenn möglich zusätzlich ein Lied **ohne** Tempo.
 
 **Das muss passieren:** Neben der Tempo-Angabe (`♩ 72`) pulst ein kleiner blauer Punkt – genau im
-Takt des Lieds. Er ist **lautlos**. Die Kopfzeile darf dabei nicht wackeln oder umbrechen. Bei
-einem Lied ohne Tempo erscheint der Knopf gar nicht erst.
+Takt des Lieds. Er ist **lautlos**. Die Kopfzeile darf dabei nicht wackeln oder umbrechen.
 
 1. Ein Lied mit Tempo öffnen.
-2. Oben rechts auf **♩** tippen – der Knopf wird blau, der Punkt beginnt zu pulsen.
+2. Oben rechts auf **♩** tippen → das Tempo-Menü geht auf. Unter **Sichtbarer Puls** auf **An** –
+   der Punkt beginnt zu pulsen, der ♩-Knopf färbt sich.
 3. Das Metronom auf dasselbe Tempo stellen und **eine halbe Minute mitlaufen lassen**. Punkt und
    Metronom müssen zusammenbleiben – nicht auseinanderdriften.
 4. Zum nächsten Lied blättern: Der Puls übernimmt dessen Tempo.
-5. Zu einem Lied ohne Tempo blättern: Der Knopf verschwindet.
+5. Zu einem Lied **ohne** Tempo blättern: Der Punkt ist weg und im Menü steht „kein Tempo"; **An**
+   und die Klick-Knöpfe sind ausgegraut. Der ♩-Knopf selbst bleibt da – über ihn trägt man ja
+   gerade ein fehlendes Tempo nach.
 6. Das Liederheft verlassen und neu öffnen: Der Puls ist **aus**.
 
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/BpmPulse.tsx`, `client/src/utils/bpmPulse.ts`, `client/src/components/ChartHeader.tsx`, `client/src/utils/activeSongView.ts`
+- **Betrifft:** `client/src/components/BpmPulse.tsx`, `client/src/utils/bpmPulse.ts`, `client/src/components/ChartHeader.tsx`, `client/src/components/TempoMenu.tsx`, `client/src/utils/activeSongView.ts`
 - **Automatisiert:** teilweise – `client/src/utils/bpmPulse.test.ts` und
   `client/src/components/BpmPulse.test.tsx` (Taktrate mit selbst gesteuerten Frames, auch über 144
-  Schläge hinweg). Von Hand bleibt der Abgleich gegen ein echtes Metronom und der Eindruck auf dem
-  Gerät – ob der Punkt beim Spielen hilft, ohne vom Blatt abzulenken.
+  Schläge hinweg), dazu `client/src/components/TempoMenu.test.tsx` (was gesperrt ist und was nicht).
+  Von Hand bleibt der Abgleich gegen ein echtes Metronom und der Eindruck auf dem Gerät – ob der
+  Punkt beim Spielen hilft, ohne vom Blatt abzulenken.
 - **Historie:** #145
 
 </details>
@@ -245,5 +248,43 @@ holt sie zurück. Die Ränder blättern weiter wie bisher.
   aussagt. Von Hand bleibt der Eindruck am Gerät: ob es sich beim echten Pinch richtig anfühlt,
   zeigt nur das Gerät.
 - **Historie:** #319
+
+</details>
+### TF-CHART-11 · Klick und Tempo antippen
+
+**Das brauchst du:** Ein Lied mit Tempo, ein Metronom, und ein Konto, das Lieder in ChurchTools
+bearbeiten darf. Zusätzlich ein Lied **ohne** hinterlegtes Tempo.
+
+**Das muss passieren:** Der Klick liegt hörbar auf demselben Schlag wie der sichtbare Puls und
+driftet auch nach einer Minute nicht weg. Das angetippte Tempo landet in ChurchTools – und **nur**
+das; Tonart, Taktart und Dauer des Arrangements bleiben unverändert.
+
+1. Lied mit Tempo öffnen, auf **♩**, unter **Klick** auf **Dauerhaft** → es tickt, die Eins ist
+   höher und lauter. Der ♩-Knopf färbt sich.
+2. Metronom danebenlegen und **eine Minute** laufen lassen → kein Auseinanderdriften.
+3. Auf **Einzählen** stellen → es klickt **einen Takt** lang und hört von selbst auf; das Menü
+   springt danach zurück auf **Aus**.
+4. Am iPhone den **physischen Stummschalter** umlegen → der Klick verstummt womöglich. Das ist eine
+   Eigenheit von iOS und kein Fehler; der sichtbare Puls läuft weiter.
+5. **Tempo antippen:** Viermal im Takt auf **Tippen** → daneben steht ein Tempo. Weiter tippen →
+   der Wert wird ruhiger. **Zurück** verwirft ihn wieder.
+6. Ein Tempo antippen und **in ChurchTools speichern** → kurze Rückmeldung, die Kopfzeile zeigt das
+   neue `♩`. **Danach in ChurchTools nachsehen:** Tonart, Taktart und Dauer des Arrangements müssen
+   unverändert sein. (Ein `PUT` ersetzt dort den ganzen Datensatz – deshalb dieser Punkt.)
+7. Mit einem Konto **ohne** Bearbeitungsrecht dasselbe: Der Speichern-Knopf erscheint nicht,
+   stattdessen der Hinweis auf die fehlende Berechtigung.
+8. Lied **ohne** Tempo öffnen, ein Tempo antippen und speichern → ab jetzt hat das Lied ein Tempo,
+   Puls und Klick sind nicht mehr ausgegraut.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch (Punkt 6 schreibt in ChurchTools)
+- **Betrifft:** `client/src/components/TempoMenu.tsx`, `client/src/hooks/useMetronome.ts`, `client/src/utils/metronome.ts`, `client/src/utils/tapTempo.ts`, `server/src/services/arrangementPayload.ts`, `server/src/services/ctWrite.ts`
+- **Automatisiert:** teilweise – `metronome.test.ts`, `tapTempo.test.ts`, `useMetronome.test.ts`
+  (Audio-Uhr mit gestellter Zeit), `TempoMenu.test.tsx` und `arrangementPayload.test.ts` (der Test
+  auf **Erhalt**: nichts nebenbei löschen). Von Hand bleiben der Klang, der Abgleich gegen ein
+  echtes Metronom, der iOS-Stummschalter und Punkt 6 – ob in ChurchTools wirklich nur das Tempo
+  anders ist, zeigt nur der Blick dorthin.
+- **Historie:** #145
 
 </details>

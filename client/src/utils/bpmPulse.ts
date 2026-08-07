@@ -17,15 +17,13 @@
 const MAX_FLASHES_PER_SECOND = 3;
 
 /**
- * Plausibles Tempo. Außerhalb wird gar nicht gepulst: Werte wie 0 oder 5000 sind Datenfehler aus
- * ChurchTools, und ein Puls daraus wäre entweder unsichtbar oder ein Stroboskop.
- *
- * Exportiert, weil `tapTempo` denselben Bereich braucht – ein durch Antippen ermitteltes Tempo
- * landet am Ende in ChurchTools. Es gibt ihn bewusst nur EINMAL, damit Puls und Antippen nicht
- * unterschiedliche Vorstellungen davon bekommen, was ein Tempo ist.
+ * Plausibles Tempo – re-exportiert aus `@shared/tempo`, weil auch der SERVER den Bereich braucht:
+ * Er prüft ihn, bevor er ein angetipptes Tempo nach ChurchTools schreibt. Die Zahlen stehen deshalb
+ * bewusst nur EINMAL, jenseits der Prozessgrenze. Der Re-Export hier bleibt, damit die bestehenden
+ * Importe (`bpmPulse`, `tapTempo`) nicht umgeschrieben werden müssen.
  */
-export const MIN_BPM = 20;
-export const MAX_BPM = 300;
+export { MAX_BPM, MIN_BPM } from '@shared/tempo/index';
+import { MAX_BPM, MIN_BPM } from '@shared/tempo/index';
 
 /** Lässt sich aus diesem Tempo überhaupt ein sinnvoller Puls bauen? */
 export function isPulsable(bpm: number | null | undefined): bpm is number {

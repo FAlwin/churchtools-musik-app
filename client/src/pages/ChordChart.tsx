@@ -4,6 +4,7 @@ import { Screen } from '../components/Screen';
 import { ChartHeader } from '../components/ChartHeader';
 import { ChartFooter } from '../components/ChartFooter';
 import { ChartOverlays } from '../components/ChartOverlays';
+import { TempoMenu } from '../components/TempoMenu';
 import { ImportPreviewBar, ViewingBanner } from '../components/ChartTeamNotesBars';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
@@ -39,6 +40,8 @@ import { useChartEditor } from '../hooks/useChartEditor';
 import { useAppLogo } from '../hooks/useAppLogo';
 import { useChartStream } from '../hooks/useChartStream';
 import { useChartSync, useResyncAfterEditor } from '../hooks/useChartSync';
+import { useMetronome, type KlickModus } from '../hooks/useMetronome';
+import { setArrangementTempo } from '../services/churchtoolsApi';
 import { useSetlistPages } from '../hooks/useSetlistPages';
 import type { DrawTool } from '../types/index';
 import styles from './ChordChart.module.scss';
@@ -111,11 +114,12 @@ export function ChordChart({
    * den es nicht geben darf (zwei Overlays gleichzeitig offen). Mit einem Feld ist er nicht mehr
    * ausdrückbar, und beim Öffnen des einen ist das andere automatisch zu.
    */
-  const [overlay, setOverlay] = useState<'key' | 'capo' | 'sec' | 'appearance' | 'menu' | null>(
-    null,
-  );
+  const [overlay, setOverlay] = useState<
+    'key' | 'capo' | 'sec' | 'appearance' | 'menu' | 'tempo' | null
+  >(null);
   /** Ein Overlay umschalten (nochmal derselbe Knopf schließt es). */
-  const toggleOverlay = (o: 'appearance' | 'menu') => setOverlay((cur) => (cur === o ? null : o));
+  const toggleOverlay = (o: 'appearance' | 'menu' | 'tempo') =>
+    setOverlay((cur) => (cur === o ? null : o));
 
   const { toast, showToast } = useToast();
   // ── Team-Notizen (#124, PCO-Modell): „Notizen von …" ansehen + übernehmen ──
@@ -162,6 +166,9 @@ export function ChordChart({
   // Tempo-Puls (#145): bewusst NICHT gemerkt – er ist ein Werkzeug zum Einzählen, keine Ansicht.
   // Beim Öffnen des Liederhefts ist er immer aus, damit im Gottesdienst nichts unerwartet blinkt.
   const [bpmPulse, setBpmPulse] = useState(false);
+  // Hörbarer Klick – wie der Puls bewusst NICHT gemerkt. Ein Gerät, das beim Öffnen von selbst
+  // losklickt, wäre im Gottesdienst eine Panne.
+  const [klickModus, setKlickModus] = useState<KlickModus>('aus');
   /**
    * Vollbild: Kopf- und Fußzeile ausgeblendet (#319). Ein Tipp in die Mitte schaltet um.
    *
@@ -276,6 +283,15 @@ export function ChordChart({
     activeDoc,
     headInfo,
   } = deriveActiveSongView(song, set);
+
+  // Hörbarer Klick auf der Audio-Uhr. Endet er von selbst (Einzählen fertig), zieht der Modus nach –
+  // sonst stünde das Menü weiter auf „Einzählen", obwohl längst nichts mehr klingt.
+  useMetronome({
+    bpm: song.bpm,
+    timeSig: song.timeSig,
+    modus: klickModus,
+    onEnde: () => setKlickModus('aus'),
+  });
 
   // Anmerkungs-/Zoom-Schlüssel je Strom-Seite. Die Regeln – welche Darstellungsart gilt, wann es
   // KEINEN Schlüssel gibt – stehen rein und getestet in `utils/chartPageKeys` (#314); hier nur die
@@ -396,7 +412,9 @@ export function ChordChart({
             drawMode={drawMode}
             zoomed={streamZoomed}
             bpmPulse={bpmPulse}
-            onToggleBpmPulse={() => setBpmPulse((p) => !p)}
+            tempoOpen={overlay === 'tempo'}
+            tempoAktiv={bpmPulse || klickModus !== 'aus'}
+            onToggleTempo={() => toggleOverlay('tempo')}
             onBack={onBack}
             onToggleMenu={() => toggleOverlay('menu')}
             onToggleAppearance={() => toggleOverlay('appearance')}
@@ -417,8 +435,30 @@ export function ChordChart({
           />
         )}
 
+        {overlay === 'tempo' && (
+          <TempoMenu
+            bpm={song.bpm}
+            puls={bpmPulse}
+            onPuls={setBpmPulse}
+            klick={klickModus}
+            onKlick={setKlickModus}
+            darfSpeichern={canEditSong}
+            onSpeichern={async (tempo) => {
+              await setArrangementTempo(song.id, song.arrangementId, tempo);
+              // Der Ablauf wird neu geladen, damit das neue Tempo überall steht – auch in der
+              // Info-Zeile und im Puls.
+              onReload?.();
+              showToast(`Tempo ♩ ${tempo} in ChurchTools gespeichert.`);
+            }}
+            onClose={() => setOverlay(null)}
+          />
+        )}
+
         <ChartOverlays
-          overlay={overlay}
+          // Das Tempo-Menü ist bewusst KEIN `ChartOverlay`: Es teilt sich zwar die Regel „höchstens
+          // eines offen", hat aber eine ganz andere Bedienung. Deshalb hier herausgefiltert, statt
+          // den Typ dort aufzuweichen.
+          overlay={overlay === 'tempo' ? null : overlay}
           onOverlay={setOverlay}
           song={song}
           set={set}

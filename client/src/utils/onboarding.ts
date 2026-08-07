@@ -8,10 +8,13 @@ const PREFIX = 'worship:onboard-';
 // termine-v2: Schritt „geändert"-Hinweis (#143) ergänzt – Version erhöht, damit Bestandsnutzer
 // den neuen Schritt beim ersten Öffnen nach dem Update sehen.
 export const TOUR_TERMINE = 'termine-v2';
+// chart-v4: Der ♩-Knopf oeffnet jetzt ein MENUE (#145 Folge) statt nur den Puls zu schalten – und
+// er ist neuerdings auch bei Liedern OHNE gepflegtes Tempo da, weil man genau dort eins antippen
+// will. Beides sieht man dem Knopf nicht an, also gehoert es in die Einfuehrung.
 // chart-v3: Der Tipp in die Mitte blendet jetzt die Leisten aus (#319) – die Geste findet man
 // sonst nicht von selbst. Version erhöht, damit Bestandsnutzer den geänderten Schritt sehen.
 // (chart-v2 hatte den Schritt „Team-Anmerkungen" (#124) ergänzt.)
-export const TOUR_CHART = 'chart-v3';
+export const TOUR_CHART = 'chart-v4';
 
 /**
  * Einmaliger Hinweis, wenn die Leisten zum ersten Mal ausgeblendet werden (#319).
@@ -97,6 +100,11 @@ export const CHART_STEPS: CoachStep[] = [
     selector: '[data-tour="chart-aussehen"]',
     title: 'Darstellung',
     body: 'Hier passt du Schriftgröße und Spaltenzahl an.',
+  },
+  {
+    selector: '[data-tour="chart-tempo"]',
+    title: 'Tempo',
+    body: 'Hinter der Note steckt alles zum Tempo: ein sichtbarer Puls zum Einzählen, ein hörbarer Klick (einmal einzählen oder dauerhaft) und „Tempo antippen". Tippe im Takt mit – das gefundene Tempo kannst du in ChurchTools speichern, dann sehen es alle.',
   },
   {
     selector: '[data-tour="chart-anmerken"]',
