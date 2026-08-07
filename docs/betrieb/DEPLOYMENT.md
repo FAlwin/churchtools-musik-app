@@ -95,6 +95,80 @@ So wird `https://musik.deine-gemeinde.de` erreichbar. Reihenfolge wichtig:
 
 ---
 
+## 6. Test-Instanz danebenstellen (optional)
+
+Eine zweite Instanz aus `deploy/docker-compose.staging.yml`, um neue Versionen abzunehmen, bevor sie
+in Produktion gehen. Sie läuft auf Port **3002** und hat ein eigenes Volume.
+
+**Sie braucht denselben Weg wie die Live-App: eigene Adresse, eigenes Zertifikat, eigener Reverse
+Proxy.** Das ist keine Kür (#196): Die Compose-Datei bindet den Port bewusst nur an `127.0.0.1` und
+setzt `COOKIE_SECURE` standardmäßig auf `true`. Ohne HTTPS davor ist die Instanz weder erreichbar
+noch anmeldbar. Der Grund: **Im Sitzungs-Cookie steckt die ChurchTools-Anmeldung.** Lauscht der Port
+im ganzen WLAN und fehlt das Secure-Flag, läuft sie unverschlüsselt durchs Netz.
+
+Die Schritte spiegeln Abschnitt 3, mit drei Unterschieden: anderer Name, anderes Zertifikat,
+**Ziel-Port 3002 statt 3001**. Portweiterleitung im Router (80/443) ist schon da.
+
+**6a) DNS:** In eurer Zone einen zweiten Eintrag anlegen – am einfachsten den vorhandenen für die
+Live-App ansehen und einen identischen mit dem Namen `musik-test` erstellen (Typ **CNAME**, gleicher
+Wert, gleicher abschließender Punkt, gleiche TTL). Danach prüfen:
+
+```bash
+nslookup musik-test.deine-gemeinde.de
+```
+
+**6b) Zertifikat:** NAS → Systemsteuerung → Sicherheit → Zertifikat → **Hinzufügen** → _Neues
+Zertifikat_ → **Von Let's Encrypt**, Domäne `musik-test.deine-gemeinde.de`. Muss **nach** 6a
+passieren – Let's Encrypt ruft das NAS über diesen Namen auf.
+
+**6c) Reverse Proxy:** NAS → Anmeldeportal → Erweitert → **Reverse Proxy** → Erstellen.
+Quelle: HTTPS, `musik-test.deine-gemeinde.de`, Port 443 → Ziel: HTTP, `localhost`, Port **3002**.
+
+> ⚠️ Die **3002** ist der einzige Unterschied zur Live-App. Ein Zahlendreher führt auf die
+> Live-App – und das fällt nicht auf, weil der Bildschirm gleich aussieht.
+
+**6d) Zertifikat zuweisen:** Sicherheit → Zertifikat → **Einstellungen** → Zeile
+`musik-test.deine-gemeinde.de` → das neue Zertifikat wählen → Speichern. **Der Schritt, der am
+häufigsten vergessen wird** – ohne ihn liefert das NAS sein Standardzertifikat aus.
+
+**6e) Projekt erstellen:** Container Manager → Projekt → Erstellen, Name exakt `worship-charts-test`
+(der Volume-Name hängt daran), mit einer eigenen Test-`.env`.
+
+### Nachprüfen, ob die Härtung wirklich greift
+
+Vier Prüfungen, jede unabhängig – die Reihenfolge ist die der wahrscheinlichsten Fehler:
+
+```bash
+# 1. Port darf im LAN NICHT mehr antworten
+nc -z <NAS-IP> 3002 && echo "offen – Härtung greift nicht" || echo "geschlossen"
+
+# 2. Über HTTPS muss die App trotzdem kommen
+curl -s -o /dev/null -w "%{http_code}\n" https://musik-test.deine-gemeinde.de/
+
+# 3. Hängt dahinter die TEST-Instanz? (Version im ausgelieferten Bundle)
+curl -s https://musik-test.deine-gemeinde.de/ | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js'
+#    → diese Datei laden und nach 'staging-' suchen; die Live-App meldet stattdessen 'v2.x.y'
+
+# 4. Ist COOKIE_SECURE aktiv? Antwort auf ein absichtlich kaputtes Cookie ansehen
+curl -si -H 'Cookie: ct_session=kaputt' \
+  https://musik-test.deine-gemeinde.de/api/auth/me | grep -i set-cookie
+#    → muss 'Secure' enthalten
+```
+
+Prüfung 4 ist die belastbarste: Das `Secure` im Lösch-Cookie ist eine **Antwort des Servers**, die
+unmittelbar an der Umgebungsvariablen hängt – das kann kein Zwischenspeicher vortäuschen.
+
+Zum Schluss einmal **anmelden**. Mit `COOKIE_SECURE=true` klappt das nur noch über die HTTPS-Adresse,
+nicht mehr über `http://` oder die NAS-IP – genau das ist der Zweck.
+
+> **Wenn die Testseite aus dem WLAN nicht lädt, über Mobilfunk aber schon:** Dann schickt euer Router
+> Anfragen aus dem eigenen Netz nicht an die eigene öffentliche Adresse zurück. Abhilfe ist ein
+> **lokaler DNS-Eintrag** für `musik-test`, der direkt auf die NAS-IP zeigt. Bei der ECG war das
+> nicht nötig – für die Live-Adresse existiert ein solcher Eintrag, für die Test-Adresse nicht, und
+> sie ist trotzdem aus dem WLAN erreichbar.
+
+---
+
 ## Updates richtig einspielen (wichtig!)
 
 Beim normalen „Erstellen" verwendet Docker manchmal einen alten Zwischenstand (Cache) –

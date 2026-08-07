@@ -23,7 +23,20 @@ services:
       ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
     ports:
       # links = Host-Port (bei Bedarf ändern), rechts = im Container fest auf 3001.
-      # Extern bindet ihr das üblicherweise hinter einen Reverse Proxy mit HTTPS.
+      #
+      # Hier BEWUSST auf allen Schnittstellen (anders als `docker-compose.prod.yml`, die nur an
+      # 127.0.0.1 bindet): Diese Datei ist der einfache Einstieg – ohne Reverse Proxy erreicht sonst
+      # niemand die App, und alle wären ausgesperrt.
+      #
+      # ⚠️ Sobald ihr einen Reverse Proxy mit HTTPS davorsetzt, stellt beides um (#196). Sonst
+      # bleibt die App ZUSÄTZLICH über unverschlüsseltes HTTP im LAN erreichbar, und das
+      # Sitzungs-Cookie – darin steckt die ChurchTools-Anmeldung – trägt kein `Secure`-Flag:
+      #
+      #   ports:      - '127.0.0.1:3001:3001'
+      #   environment: COOKIE_SECURE: "true"
+      #
+      # Schritt für Schritt samt Prüfungen, ob es wirklich greift:
+      # docs/betrieb/DEPLOYMENT.md, Abschnitt 3 (Live) bzw. 6 (Test-Instanz).
       - '3001:3001'
     volumes:
       # Persistente Einstellungen (u. a. der Gemeindename). NICHT löschen –

@@ -50,6 +50,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   ihrer Ereignis-Listener am Leben und mischten sich in spätere Tests derselben Datei ein – ein
   Test zählte dadurch acht Aufrufe statt einem. Betraf alle sieben Dateien mit `renderHook`,
   deshalb einmal zentral in `src/test-setup.ts`.
+- **Die Härtung der Test-Instanz ist jetzt wirklich angewendet (#196).** Die Änderungen lagen seit
+  Anfang August im Repo, auf dem NAS lief aber noch die alte Fassung – die Test-Instanz lauschte
+  weiter im ganzen WLAN, und das Sitzungs-Cookie mit der ChurchTools-Anmeldung lief dabei
+  unverschlüsselt. Sie ist jetzt nur noch über eine eigene HTTPS-Adresse erreichbar. Für den
+  Selbstbetrieb ist der Weg dorthin in `docs/betrieb/DEPLOYMENT.md` (Abschnitt 6) beschrieben,
+  samt vier Prüfungen, mit denen sich nachweisen lässt, dass die Härtung wirklich greift.
 - **Tests: Client 528 · Server 347 · 5 E2E** (vorher 433 · 311 · 5).
 
 ## [2.16.3] – 2026-08-06

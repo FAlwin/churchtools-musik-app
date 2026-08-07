@@ -81,8 +81,8 @@ Rückgabewert `hasAnnotations` in `usePageDraw`, der die Sperre einmal steuerte,
 konnte.
 
 **Die Begründung der alten Entscheidung gilt aber weiter:** Anmerkungen sind pixelbasiert (PNG pro
-Seite), und der Anmerkungs-Schlüssel (`drawKeyFor` in `pages/ChordChart.tsx`) enthält **weder `cols`
-noch `fontSize`**. Ein Wechsel der Spaltenzahl baut die PDF neu → vorhandene Striche liegen danach
+Seite), und der Anmerkungs-Schlüssel (`drawKeyForPage` in `utils/chartPageKeys.ts`, seit #314 – davor
+inline in `pages/ChordChart.tsx`) enthält **weder `cols` noch `fontSize`**. Ein Wechsel der Spaltenzahl baut die PDF neu → vorhandene Striche liegen danach
 verschoben.
 
 **Warum trotzdem keine Sperre:** Das Ändern der Schriftgröße ist die häufigste Einstellung überhaupt

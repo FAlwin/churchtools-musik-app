@@ -488,6 +488,33 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   (9 Fälle). Drei getrennte Gegenproben, jede lässt genau ihren Teil fallen (1 / 3 / 1 Test).
   Tests **Client 433 / Server 322 / 5 E2E**, 60 manuelle Fälle.
 
+- **In `main` nach v2.16.3 (NICHT in Prod): #314 – auch der letzte Monolith im CLIENT ist aufgeteilt.**
+  `ChordChart.tsx` 860 → 503 Zeilen. Der Grund war nicht die Zeilenzahl: Die Datei hatte **keinen
+  einzigen Test** und enthielt dabei die Entscheidung, auf welcher Ebene ein gezeichneter Strich
+  landet – genau dort saßen #199 und #250. Diese Entscheidung steht jetzt rein und geprüft in
+  `utils/chartPageKeys.ts`; dazu `utils/activeSongView.ts`, die Hooks `useChartSync`/`useChartStream`/
+  `useAppLogo` und vier Komponenten (`ChartHeader`, `ChartFooter`, `ChartOverlays`,
+  `ChartTeamNotesBars`). `headInfo` liefert seither **Daten statt ReactNode** – vorher hing die
+  Ableitung am Stylesheet und war nur mit gerendertem Baum prüfbar.
+  **Drei Funde nebenbei:** (1) Das App-Logo wurde an **drei** Stellen vorgeladen, obwohl es dafür
+  längst `loadAppLogo()` gibt – und nur diese Fassung behandelt `onerror`; der neue Hook wäre die
+  dritte Kopie geworden. Gefunden nur, weil die Issue-Auflage „baut ein herausgelöster Block eine
+  Regel nach?" wirklich abgearbeitet wurde. (2) **Testing Library räumte nie auf**, weil das Projekt
+  bewusst ohne `globals: true` läuft: Jeder in einem Test montierte Hook blieb samt seiner
+  `window`-Listener am Leben, ein `dispatchEvent` später löste sie alle mit aus – ein Test zählte
+  **acht** Aufrufe statt einem. Betraf alle sieben Dateien mit `renderHook` → einmal zentral in
+  `client/src/test-setup.ts` + `setupFiles`. (3) Elf »Betrifft«-Zeilen im Testplan zeigten auf
+  `pages/ChordChart.tsx` für Logik, die längst woanders liegt; `--pruefen` blieb grün, weil die Datei
+  ja noch existiert – **die Prüfung sieht nur, ob ein Pfad da ist, nicht ob er noch stimmt.**
+  Die drei bereits ausgelagerten, aber ungetesteten Hooks haben jetzt ein Netz (`useChartNavigation`
+  14, `useChartEditor` 10, `useTeamNotesImport` 12). **14 Gegenproben, jede Regel einzeln
+  zurückgenommen** – eine blieb leer, und die war die lehrreichste: Die Prüfung
+  `s.id === viewing.songId` ist heute unerreichbar, weil `viewSettings` immer nur ein Lied enthält.
+  **Meine Diagnose war falsch, nicht der Test schwach**; sie bleibt als Absicherung stehen, ist aber
+  im Code UND im Test als nicht festhaltbar ausgewiesen, statt eine Absicherung zu behaupten.
+  Zusätzlich **im Browser durchgeklickt** (`?demo=chart`, Auflage aus #283).
+  Tests **Client 528 / Server 347 / 5 E2E**, 60 manuelle Fälle.
+
 - **v2.16.3 PRODUKTIV LIVE ✅ (06.08.2026, verifiziert). v2.16.2 wurde übersprungen.**
   Digest `sha256:bacc1775…` (direkt aus der GHCR-Registry gelesen, amd64+arm64, Tag `2` zeigt darauf).
   **Verifikation am ausgelieferten Bundle** – zwei unabhängige Belege: `v2.16.3` steht im
@@ -600,8 +627,8 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   mehr auslesbar; abwärtskompatibel, niemand wird abgemeldet), Schlüssel-Grammatik in `shared/keys`
   (#250) und ein **E2E-Auth-Flow gegen einen ChurchTools-Stub** (#174: Anmelden → Termin → Chart →
   Anmerkung → `PUT` mit 200). ⚠️ Beim Deploy: `SESSION_SECRET` unverändert lassen (der
-  Verschlüsselungsschlüssel wird daraus abgeleitet). **#196 bleibt offen** – die Compose-Härtung liegt
-  im Repo, das Anwenden auf dem NAS (Reverse Proxy für Staging!) steht aus.
+  Verschlüsselungsschlüssel wird daraus abgeleitet). #196 blieb damals offen (die Compose-Härtung lag
+  im Repo, das Anwenden auf dem NAS stand aus) – **am 07.08.2026 erledigt**, siehe unten.
 - **Davor (31.07.2026): v2.15.0 PRODUKTIV LIVE ✅ – verifiziert.** `/api/health` ok/production,
   Version **2.15.0** im ausgelieferten `index`-Bundle (`2.14.2` = 0 Treffer), der in v2.15.0 neue Text
   „Lieder konnten nicht geladen werden." im `AllSongs`-Chunk, die Menü-Texte der drei neuen
@@ -646,8 +673,12 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 - **Redesign live (19.06.2026):** ChurchTools-Look ist auf `main` und **produktiv** unter
   `https://musik.ecg-donrath.de`. (Aktuelle Testzahlen stehen NUR in `docs/entwicklung/testkonzept.md` –
   hier bewusst keine Zahl, damit sie nicht doppelt gepflegt werden muss.)
-- **Test-Instanz dauerhaft (seit 25.06.2026):** `worship-charts-test` (`:3002`) läuft image-basiert
+- **Test-Instanz dauerhaft (seit 25.06.2026):** `worship-charts-test` läuft image-basiert
   mit **Auto-Deploy** (Staging-Image) – Abnahme neuer Features vor dem Prod-Release.
+  **Seit 07.08.2026 (#196) nur noch über `https://musik-test.ecg-donrath.de`** – Port 3002 ist an
+  `127.0.0.1` gebunden, davor liegt ein Synology-Reverse-Proxy mit eigenem Let's-Encrypt-Zertifikat.
+  Über `http://<NAS-IP>:3002` ist sie **nicht mehr** erreichbar (und wäre es, würde `COOKIE_SECURE`
+  die Anmeldung verhindern).
 - **Verteilung an andere Gemeinden:** abgeschlossen (öffentliches Repo, MIT, GHCR-Images, `deploy/`-Paket
   mit Setup-Skripten). Selbst-Hosting-Anleitung: `INSTALL.md` + `UPDATE.md`.
 - **🔴 CODE-CHECK 31.07.2026 (nach v2.15.0): Qualität professionell, Note 2 · Sicherheit 0 kritische,
@@ -836,13 +867,16 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
       Sicherheits-Review nachgeprüft, ohne den Wert auszugeben). Er trägt die vollen persönlichen
       ChurchTools-Rechte. Die Datei ist korrekt gitignoriert und war nie im Repo – das Risiko ist rein
       lokal (Geräteverlust, Backup). **Zu tun: Token in ChurchTools widerrufen, Zeile leeren.**
-- [ ] **Funde aus dem Code-Check 05.08.2026 abarbeiten** – vier hohe (#273, #274, #275, #276), vier
-      mittlere (#277, #278, #279, #280), drei niedrige (#281, #282, #283). Die vier hohen sind
-      viermal dieselbe Lehre („vorübergehend ≠ ungültig") und der sinnvollste nächste Schritt.
-- [ ] **#196 auf dem NAS anwenden** – der einzige Punkt mit realem aktuellem Risiko: solange die
-      Test-Instanz auf allen Interfaces lauscht und ohne `COOKIE_SECURE` läuft, wandert das
-      Sitzungs-Cookie unverschlüsselt durchs LAN. **Braucht vorher einen Reverse Proxy auf die
-      Test-Domain** – sonst sperrt `COOKIE_SECURE=true` alle aus.
+- [x] **Funde aus dem Code-Check 05.08.2026 abgearbeitet** (07.08.2026) – vier hohe (#273, #274,
+      #275, #276), vier mittlere (#277, #278, #279, #280), drei niedrige (#281, #282, #283), alle
+      geschlossen. Die vier hohen waren viermal dieselbe Lehre („vorübergehend ≠ ungültig").
+- [x] **#196 auf dem NAS angewendet** (07.08.2026) – Reverse Proxy
+      `musik-test.ecg-donrath.de` → `localhost:3002` samt Let's-Encrypt-Zertifikat, Compose auf dem
+      NAS auf den Stand aus PR #264 gebracht (sie war sogar älter als #130 – die `name:`-Zeile
+      fehlte), Projekt neu erstellt. **Belegt statt behauptet:** Port 3002 im LAN geschlossen,
+      HTTPS liefert 200, ausgeliefertes Bundle meldet `staging-…` (Live meldet `v2.16.3`), und die
+      Antwort auf ein absichtlich kaputtes Cookie trägt `Secure` – identisch zur Live-App als
+      Vergleichsprobe. Anmeldung von Alwin bestätigt.
 - [x] Test-Service-Konto/Token #1012 in ChurchTools gelöscht (14.06.2026)
 - [x] White-Label (Farb-Anpassung) verworfen → feste CT-Version (Redesign live, 19.06.2026)
 - [x] Verteilung an andere Gemeinden (Selbst-Hosting) – abgeschlossen (öffentlich, MIT, `INSTALL.md`)

@@ -27,12 +27,12 @@ ChurchTools ist Datenquelle).
 
 ## Umgebungen
 
-| Umgebung  | Datenquelle                           | Zweck                                                                                                                                                     |
-| --------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dev       | ChurchTools (über persönlichen Login) | lokale Entwicklung (`npm run dev`)                                                                                                                        |
-| Unit-Test | keine – reine Logik                   | automatisierte Unit-Tests (`npm test`)                                                                                                                    |
-| Staging   | ChurchTools                           | NAS-Test-Instanz `:3002` (`:staging`-Image, Auto-Deploy bei Push auf `main` **und** `feature/**`; es gibt nur EINE Instanz – jeder Push überschreibt sie) |
-| Prod      | ChurchTools                           | NAS, intern `:3001` + extern `musik.ecg-donrath.de` (`:latest`/`:2`, Deploy bei Tag)                                                                      |
+| Umgebung  | Datenquelle                           | Zweck                                                                                                                                                                                                                                     |
+| --------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dev       | ChurchTools (über persönlichen Login) | lokale Entwicklung (`npm run dev`)                                                                                                                                                                                                        |
+| Unit-Test | keine – reine Logik                   | automatisierte Unit-Tests (`npm test`)                                                                                                                                                                                                    |
+| Staging   | ChurchTools                           | NAS-Test-Instanz, extern `musik-test.ecg-donrath.de` (intern `:3002`, nur an `127.0.0.1` gebunden – #196). `:staging`-Image, Auto-Deploy bei Push auf `main` **und** `feature/**`; es gibt nur EINE Instanz – jeder Push überschreibt sie |
+| Prod      | ChurchTools                           | NAS, intern `:3001` + extern `musik.ecg-donrath.de` (`:latest`/`:2`, Deploy bei Tag)                                                                                                                                                      |
 
 Vor einem Tag lokal `npm run build` + `npm test` grün, dann auf der Staging-Instanz abnehmen
 (Auto-Deploy via GHCR), erst danach taggen. Setup/Deployment: `INSTALL.md`,
