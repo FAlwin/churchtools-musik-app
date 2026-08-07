@@ -1,0 +1,49 @@
+// Der Tempo-Puls neben der Tempo-Angabe (#145).
+//
+// Bewusst klein und in der Textfarbe der Info-Zeile: Er sitzt auf dem Liedblatt, das während des
+// Gottesdienstes gelesen wird – er soll beim Einzählen helfen, nicht den Blick ziehen.
+//
+// Die Größe ist FEST (kein Wachsen des Elements): Der Puls steht in einer Zeile mit dem Tempo, und
+// ein wachsendes Element würde die Zeile bei jedem Schlag umbrechen lassen. Vergrößert wird nur die
+// gezeichnete Fläche über `transform` – das verschiebt nichts drumherum.
+
+.punkt {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  // Ruhezustand: fast unsichtbar. Der Blitz hebt sich dadurch deutlich ab, ohne dass der Punkt in
+  // den Pausen stört.
+  opacity: 0.25;
+  animation: schlag 220ms ease-out;
+  will-change: transform, opacity;
+}
+
+@keyframes schlag {
+  0% {
+    opacity: 1;
+    transform: scale(1.6);
+  }
+  100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+}
+
+// Wer weniger Bewegung möchte, bekommt denselben Takt ohne das Größerwerden – nur die Helligkeit
+// wechselt. Den Puls ganz abzuschalten wäre falsch: Er ist die Funktion selbst, nicht Zierrat.
+@media (prefers-reduced-motion: reduce) {
+  .punkt {
+    animation-name: schlagRuhig;
+  }
+
+  @keyframes schlagRuhig {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.25;
+    }
+  }
+}

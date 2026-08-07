@@ -16,10 +16,17 @@ import { shiftKey } from './transpose';
  * nur mit gerendertem Baum prüfen. Die Zuordnung Art → Klasse macht jetzt die Kopfzeile.
  */
 
-/** Ein Teil der Info-Zeile im Kopf-Knopf. `art` entscheidet nur über die Darstellung. */
+/**
+ * Ein Teil der Info-Zeile im Kopf-Knopf. `art` entscheidet nur über die Darstellung.
+ *
+ * `bpm` trägt den Zahlenwert zusätzlich zum Text: Der Tempo-Puls (#145) sitzt neben dieser Angabe
+ * und braucht die Zahl, nicht die Beschriftung. Ihn aus `„♩ 72"` zurückzuparsen wäre eine zweite
+ * Fassung derselben Information.
+ */
 export type HeadInfoPart =
   | { art: 'key'; text: string }
   | { art: 'capo'; text: string }
+  | { art: 'bpm'; text: string; bpm: number }
   | { art: 'plain'; text: string };
 
 export interface ActiveSongView {
@@ -70,7 +77,7 @@ export function deriveActiveSongView(song: SetlistSong, set: SongSettings): Acti
     else headInfo.push({ art: 'key', text: curKey });
     if (!set.lyricsOnly && set.capo > 0) headInfo.push({ art: 'capo', text: `Capo ${set.capo}` });
     if (hasVersions) headInfo.push({ art: 'plain', text: currentVersion.name });
-    if (song.bpm !== null) headInfo.push({ art: 'plain', text: `♩ ${song.bpm}` });
+    if (song.bpm !== null) headInfo.push({ art: 'bpm', text: `♩ ${song.bpm}`, bpm: song.bpm });
   }
 
   return {

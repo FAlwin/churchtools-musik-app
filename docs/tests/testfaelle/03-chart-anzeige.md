@@ -175,3 +175,32 @@ sichtbar, bis die neuen fertig sind. Die App darf nicht mehrere Sekunden stehen.
 - **Historie:** #197
 
 </details>
+
+### TF-CHART-09 · Der Tempo-Puls schlägt im Takt des Lieds
+
+**Das brauchst du:** Ein Lied, bei dem in ChurchTools ein **Tempo** hinterlegt ist, und ein
+Metronom (eine Handy-App genügt). Wenn möglich zusätzlich ein Lied **ohne** Tempo.
+
+**Das muss passieren:** Neben der Tempo-Angabe (`♩ 72`) pulst ein kleiner blauer Punkt – genau im
+Takt des Lieds. Er ist **lautlos**. Die Kopfzeile darf dabei nicht wackeln oder umbrechen. Bei
+einem Lied ohne Tempo erscheint der Knopf gar nicht erst.
+
+1. Ein Lied mit Tempo öffnen.
+2. Oben rechts auf **♩** tippen – der Knopf wird blau, der Punkt beginnt zu pulsen.
+3. Das Metronom auf dasselbe Tempo stellen und **eine halbe Minute mitlaufen lassen**. Punkt und
+   Metronom müssen zusammenbleiben – nicht auseinanderdriften.
+4. Zum nächsten Lied blättern: Der Puls übernimmt dessen Tempo.
+5. Zu einem Lied ohne Tempo blättern: Der Knopf verschwindet.
+6. Das Liederheft verlassen und neu öffnen: Der Puls ist **aus**.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/components/BpmPulse.tsx`, `client/src/utils/bpmPulse.ts`, `client/src/components/ChartHeader.tsx`, `client/src/utils/activeSongView.ts`
+- **Automatisiert:** teilweise – `client/src/utils/bpmPulse.test.ts` und
+  `client/src/components/BpmPulse.test.tsx` (Taktrate mit selbst gesteuerten Frames, auch über 144
+  Schläge hinweg). Von Hand bleibt der Abgleich gegen ein echtes Metronom und der Eindruck auf dem
+  Gerät – ob der Punkt beim Spielen hilft, ohne vom Blatt abzulenken.
+- **Historie:** #145
+
+</details>

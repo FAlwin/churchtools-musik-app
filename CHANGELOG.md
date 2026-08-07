@@ -15,6 +15,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   stehen. Im Alltag fiel das nicht auf, weil die App-Sitzung beim Abmelden ohnehin endet; sauber war
   es nicht.
 
+### Neu
+
+- **Tempo-Puls zum Einzählen (#145).** Neben der Tempo-Angabe im Kopf pulst auf Wunsch ein kleiner
+  Punkt im Takt des Lieds – lautlos, zum Einzählen, wenn kein Schlagzeuger da ist. Der Schalter `♩`
+  sitzt oben rechts und erscheint nur, wenn im Lied ein Tempo hinterlegt ist. Beim Öffnen des
+  Liederhefts ist er immer aus, damit im Gottesdienst nichts unerwartet blinkt. Bei sehr schnellen
+  Liedern (über 180 Schläge) pulst jeder zweite Schlag – schneller zu blinken gilt als Auslöser für
+  photosensitive Anfälle. Wer am Gerät „Bewegung reduzieren" eingestellt hat, bekommt denselben
+  Takt ohne das Größerwerden.
+
 ### Intern
 
 - **Der letzte Monolith ist aufgeteilt (#280).** `churchtools.ts` vereinte auf 1137 Zeilen das
@@ -56,7 +66,7 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   unverschlüsselt. Sie ist jetzt nur noch über eine eigene HTTPS-Adresse erreichbar. Für den
   Selbstbetrieb ist der Weg dorthin in `docs/betrieb/DEPLOYMENT.md` (Abschnitt 6) beschrieben,
   samt vier Prüfungen, mit denen sich nachweisen lässt, dass die Härtung wirklich greift.
-- **Tests: Client 528 · Server 347 · 5 E2E** (vorher 433 · 311 · 5).
+- **Tests: Client 550 · Server 347 · 5 E2E** (vorher 433 · 311 · 5).
 
 ## [2.16.3] – 2026-08-06
 
