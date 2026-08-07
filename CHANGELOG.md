@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.17.0] – 2026-08-07
+
 ### Behoben
 
 - **Beim Abmelden werden jetzt alle Daten der Sitzung verworfen.** Der Server merkt sich zu jeder
@@ -50,7 +52,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   und **keinen einzigen Test** – und enthielt dabei die Entscheidung, auf welcher Ebene ein
   gezeichneter Strich landet. Ein Fehler dort heißt: Notizen am falschen Lied, an der falschen
   Version oder in der falschen Darstellungsart, bemerkt erst im Gottesdienst; genau das waren #199
-  und #250. Jetzt 503 Zeilen, und diese Entscheidung steht als reine, geprüfte Funktion in
+  und #250. Jetzt 503 Zeilen – mit dem Vollbild oben aus demselben Release 547 –, und diese
+  Entscheidung steht als reine, geprüfte Funktion in
   `utils/chartPageKeys.ts`. Dazu neu: `utils/activeSongView.ts`, die Hooks `useChartSync`,
   `useChartStream`, `useAppLogo` und die Komponenten `ChartHeader`, `ChartFooter`, `ChartOverlays`,
   `ChartTeamNotesBars`. Am Verhalten ändert sich nichts – im Browser durchgeklickt.
@@ -63,14 +66,18 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   darüber.
 - **Gerenderte Komponenten werden nach jedem Test wieder abgebaut.** Ohne das blieben sie samt
   ihrer Ereignis-Listener am Leben und mischten sich in spätere Tests derselben Datei ein – ein
-  Test zählte dadurch acht Aufrufe statt einem. Betraf alle sieben Dateien mit `renderHook`,
-  deshalb einmal zentral in `src/test-setup.ts`.
+  Test zählte dadurch acht Aufrufe statt einem. Betraf **jede** Datei mit `renderHook`, deshalb
+  einmal zentral in `src/test-setup.ts` statt in jeder einzelnen.
 - **Die Härtung der Test-Instanz ist jetzt wirklich angewendet (#196).** Die Änderungen lagen seit
   Anfang August im Repo, auf dem NAS lief aber noch die alte Fassung – die Test-Instanz lauschte
   weiter im ganzen WLAN, und das Sitzungs-Cookie mit der ChurchTools-Anmeldung lief dabei
   unverschlüsselt. Sie ist jetzt nur noch über eine eigene HTTPS-Adresse erreichbar. Für den
   Selbstbetrieb ist der Weg dorthin in `docs/betrieb/DEPLOYMENT.md` (Abschnitt 6) beschrieben,
   samt vier Prüfungen, mit denen sich nachweisen lässt, dass die Härtung wirklich greift.
+- **Lücke in `.gitignore` geschlossen.** Bisher waren die Namen einzeln aufgezählt (`.env`,
+  `.env.local`, `.env.*.local`). Eine neue Variante – etwa eine zweite Zugangsdatei – fiel durchs
+  Raster und wäre samt Zugangsdaten im Repo gelandet. Jetzt greift die Regel für alle `.env.*`
+  außer den Vorlagen. Betrifft alle, die den Quellcode selbst betreiben.
 - **Tests: Client 565 · Server 347 · 5 E2E** (vorher 433 · 311 · 5).
 
 ## [2.16.3] – 2026-08-06
