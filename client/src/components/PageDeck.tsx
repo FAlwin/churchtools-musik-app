@@ -78,6 +78,8 @@ interface PageDeckProps {
   onZoomedChange?: (zoomed: boolean) => void;
   /** Erhöht sich, wenn der Reset-Knopf der Kopfleiste gedrückt wird → sichtbaren Zoom zurücksetzen. */
   resetZoomSignal?: number;
+  /** Nur einpassen (Leisten umgeschaltet) – gespeicherter Zoom bleibt (#319). */
+  fitZoomSignal?: number;
 }
 
 // Stabiler Default für `viewKeyFor` (kein Ansehen).
@@ -123,6 +125,7 @@ export function PageDeck({
   syncTick = 0,
   onZoomedChange,
   resetZoomSignal = 0,
+  fitZoomSignal = 0,
 }: PageDeckProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   // Inline-Texteingabe direkt auf der Seite (blinkender Cursor statt separater Leiste).
@@ -170,6 +173,7 @@ export function PageDeck({
     transformRefs,
     onZoomedChange,
     resetZoomSignal,
+    fitZoomSignal,
   });
 
   // ── Schlüssel der beteiligten Seiten ──

@@ -7,6 +7,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **Vollbild: Text wurde verdeckt.** Beim Aus- und Einblenden der Leisten ändert sich die Höhe der
+  Anzeigefläche – eine vergrößerte Seite behielt aber ihre alte Größe und ragte dann hinter die
+  Fußzeile. Sie wird jetzt neu eingepasst. Ein bewusst gesetzter Zoom geht dabei **nicht** verloren:
+  Er kommt zurück, sobald man wieder auf die Seite blättert. (Gemeldet direkt nach v2.17.0.)
+
 ## [2.17.0] – 2026-08-07
 
 ### Behoben
