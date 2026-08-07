@@ -459,12 +459,35 @@ export function PageDeck({
     composePane,
   });
 
-  // Text-Ebene exakt auf die dargestellte Seiten-Canvas legen (ein leeres div mit nur aspect-ratio
-  // kollabiert im Grid auf 0×0 → Text ließe sich nicht platzieren). Per ResizeObserver mitführen.
+  // Zwei Dinge in einem Durchgang, weil das zweite auf dem ersten aufbaut:
+  //
+  //  1. **Die Seite in ihren Rahmen deckeln – in PIXELN, nicht in Prozent (#319).**
+  //     Im Stylesheet steht `max-width/max-height: 100%`. Das greift beim Vergrößern des Rahmens,
+  //     beim VERKLEINERN aber nicht mehr verlässlich: Gemessen behielt die Seite nach dem
+  //     Ausblenden der Leisten ihre Breite (990 px) und leitete daraus über das Seitenverhältnis
+  //     1400 px Höhe ab – in einem Rahmen von 1220 px. Der Liedtext ragte hinter die Fußzeile.
+  //     Ein Deckel in Pixeln hängt an keiner Prozent-Auflösung und greift in beide Richtungen.
+  //     (`object-fit: contain` wäre die elegantere Lösung, verbietet sich aber: Dann wäre das
+  //     Element so groß wie der Rahmen und die Zeichnung nur hineingelegt – die Anmerkungs-Ebene
+  //     läge nicht mehr deckungsgleich auf dem Notenblatt.)
+  //
+  //  2. **Text-Ebene exakt auf die dargestellte Seite legen.** Ein leeres div mit nur
+  //     `aspect-ratio` kollabiert im Grid auf 0×0 → Text ließe sich nicht platzieren. Muss NACH
+  //     dem Deckeln passieren, sonst übernimmt sie die zu große Höhe.
   useEffect(() => {
     function sync() {
       for (let j = 0; j < perView; j++) {
         const a = annoRefs[j].current;
+        const rahmen = a?.parentElement;
+        if (a && rahmen) {
+          const hoehe = `${rahmen.clientHeight}px`;
+          const breite = `${rahmen.clientWidth}px`;
+          for (const el of [contentRefs[j].current, a, overlayRefs[j].current]) {
+            if (!el) continue;
+            el.style.maxHeight = hoehe;
+            el.style.maxWidth = breite;
+          }
+        }
         const l = layerRefs[j].current;
         if (a && l) {
           l.style.width = `${a.clientWidth}px`;
@@ -477,9 +500,12 @@ export function PageDeck({
     for (let j = 0; j < perView; j++) {
       const a = annoRefs[j].current;
       if (a) ro.observe(a);
+      // Den RAHMEN mitbeobachten: Ändert sich die verfügbare Fläche (Leisten aus/ein, Drehen),
+      // meldet sich die Seite selbst nicht – sie behält ja ihre Größe. Genau das war der Fehler.
+      if (a?.parentElement) ro.observe(a.parentElement);
     }
     return () => ro.disconnect();
-  }, [perView, loading, pages, pageIndex, annoRefs, layerRefs]);
+  }, [perView, loading, pages, pageIndex, annoRefs, layerRefs, contentRefs, overlayRefs]);
 
   // Aktive Seite im sichtbaren Fenster halten
   useEffect(() => {

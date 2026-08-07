@@ -9,10 +9,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Behoben
 
-- **Vollbild: Text wurde verdeckt.** Beim Aus- und Einblenden der Leisten ändert sich die Höhe der
-  Anzeigefläche – eine vergrößerte Seite behielt aber ihre alte Größe und ragte dann hinter die
-  Fußzeile. Sie wird jetzt neu eingepasst. Ein bewusst gesetzter Zoom geht dabei **nicht** verloren:
-  Er kommt zurück, sobald man wieder auf die Seite blättert. (Gemeldet direkt nach v2.17.0.)
+- **Vollbild: Text wurde verdeckt (#319).** Beim Aus- und Einblenden der Leisten ändert sich die
+  Höhe der Anzeigefläche – die Seite behielt aber ihre alte Größe und ragte dann hinter die
+  Fußzeile. Sie wird jetzt neu eingepasst, auch wenn man direkt nach dem Zoomen tippt. Ein bewusst
+  gesetzter Zoom geht dabei **nicht** verloren: Er kommt zurück, sobald man wieder auf die Seite
+  blättert. Am deutlichsten war das in einem hohen Fenster am großen Bildschirm; am Handy im
+  Hochformat begrenzt die Breite und der Fehler blieb unsichtbar. (Gemeldet direkt nach v2.17.0;
+  zwei Anläufe davor griffen nicht, weil die Ursache eine dreifache war und nicht nur der Zoom.)
 
 ## [2.17.0] – 2026-08-07
 

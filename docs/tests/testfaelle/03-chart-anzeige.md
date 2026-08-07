@@ -222,18 +222,28 @@ holt sie zurück. Die Ränder blättern weiter wie bisher.
 5. Mit zwei Fingern hineinzoomen, dann in die Mitte tippen → die Seite wird **neu eingepasst**
    (nichts ragt hinter die Leisten). Danach zu einem anderen Lied und wieder zurück blättern → die
    Vergrößerung ist **wieder da**, sie wurde nur eingepasst, nicht verworfen.
-6. **Anmerkungsmodus** einschalten und in die Mitte tippen → es passiert nichts (der Finger gehört
+   **Sofort** nach dem Zoomen tippen, ohne Pause – auch dann muss eingepasst werden. Genau dieser
+   Fall ging schief: Die Sperre gegen das Abwürgen einer laufenden Pinch-Geste stand noch rund eine
+   halbe Sekunde nach dem Loslassen.
+6. **Am großen Bildschirm, Fenster hoch und schmal** (nicht am Handy!): einmal in die Mitte tippen
+   und wieder zurück → die Seite muss am Ende wieder in die Fläche passen. Nur in einem hohen
+   Fenster ist die Seite höhenbegrenzt; im Hochformat am Handy begrenzt die Breite und der Fehler
+   bleibt unsichtbar.
+7. **Anmerkungsmodus** einschalten und in die Mitte tippen → es passiert nichts (der Finger gehört
    dem Stift).
-7. Das Liederheft verlassen und neu öffnen → die Leisten sind wieder da.
+8. Das Liederheft verlassen und neu öffnen → die Leisten sind wieder da.
 
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
 - **Betrifft:** `client/src/hooks/usePageNavigation.ts`, `client/src/pages/ChordChart.tsx`, `client/src/components/PageDeck.tsx`, `client/src/utils/onboarding.ts`, `client/src/hooks/useZoomPersistence.ts`, `client/src/hooks/useZoomOrchestration.ts`
-- **Automatisiert:** teilweise – `client/src/hooks/usePageNavigation.test.ts` (Zonen, Zeichenmodus,
-  der nach einem Touch nachgereichte Klick), dazu `useZoomPersistence.test.ts` und
-  `useZoomOrchestration.test.ts` (einpassen ohne vergessen). Von Hand bleiben der Eindruck am Gerät
-  und Punkt 5 – ob es sich beim echten Pinch richtig anfühlt, zeigt nur das Gerät.
+- **Automatisiert:** weitgehend – `client/src/hooks/usePageNavigation.test.ts` (Zonen,
+  Zeichenmodus, der nach einem Touch nachgereichte Klick), dazu `useZoomPersistence.test.ts` und
+  `useZoomOrchestration.test.ts` (einpassen ohne vergessen). **Punkt 5 und 6 deckt
+  `e2e/chart-fullscreen.spec.ts` ab** – bewusst als E2E, weil es um echte Geometrie geht
+  (gerenderte Seiten, CSS, Zoom-Bibliothek) und die Messung nur in einem hohen Fenster etwas
+  aussagt. Von Hand bleibt der Eindruck am Gerät: ob es sich beim echten Pinch richtig anfühlt,
+  zeigt nur das Gerät.
 - **Historie:** #319
 
 </details>
