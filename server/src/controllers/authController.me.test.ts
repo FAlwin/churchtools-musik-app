@@ -14,13 +14,13 @@ import { HttpError } from '../middleware/errorHandler.js';
  * wirklich eine Ausnahme fliegt, ist damit gestiegen. Dieselbe Lehre wie #249 (Rechte-Cache) und #245
  * (Anmerkungs-Upload): **vorübergehend ≠ ungültig.**
  */
-vi.mock('../services/churchtools.js', () => ({
+vi.mock('../services/ctAuth.js', () => ({
   whoami: vi.fn(),
   logout: vi.fn(),
   login: vi.fn(),
 }));
 
-const ct = await import('../services/churchtools.js');
+const ct = await import('../services/ctAuth.js');
 const { getMe } = await import('./authController.js');
 
 /** Gültiges Bestands-Cookie im Klartext – so muss `readSession` es lesen können. */

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
-import type { UserCapabilities } from './churchtools.js';
+import type { UserCapabilities } from '@shared/types/index';
 
 // Temporären Ablageort setzen, BEVOR das Modul (und damit config.ts) importiert wird.
 const cacheFile = path.join(os.tmpdir(), `capcache-test-${process.pid}.json`);

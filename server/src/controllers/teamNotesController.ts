@@ -6,7 +6,8 @@
  */
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { getCapabilitiesCached, getUserId, whoami } from '../services/churchtools.js';
+import { getUserId, whoami } from '../services/ctAuth.js';
+import { getCapabilitiesCached } from '../services/ctCapabilities.js';
 import { setSharing, isSharing, listSharers } from '../services/sharing.js';
 import * as annotations from '../services/annotations.js';
 import { getSettings } from '../services/userSettings.js';

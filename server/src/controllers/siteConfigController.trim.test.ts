@@ -21,7 +21,7 @@ vi.mock('../services/siteConfig.js', () => ({
   saveSiteConfig: vi.fn(),
   siteConfigSchema: { safeParse: vi.fn() },
 }));
-vi.mock('../services/churchtools.js', () => ({ getGroups: vi.fn(), getGroupRoles: vi.fn() }));
+vi.mock('../services/ctCapabilities.js', () => ({ getGroups: vi.fn(), getGroupRoles: vi.fn() }));
 
 const readSession = vi.fn();
 const isSessionExpired = vi.fn();

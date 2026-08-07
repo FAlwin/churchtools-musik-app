@@ -8,14 +8,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  * Test an der **Verdrahtung** und nicht nur an `metaValue`: Es war ja gerade die fehlende
  * Verdrahtung, die den Fehler ausgemacht hat.
  */
-vi.mock('./churchtools.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./churchtools.js')>()),
+// Zwei Module, weil `getSong` (lesen) und `downloadFileText` (Dateien) seit #280 getrennt liegen.
+vi.mock('./ctRead.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./ctRead.js')>()),
   getSong: vi.fn(),
+}));
+vi.mock('./ctFiles.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./ctFiles.js')>()),
   downloadFileText: vi.fn(),
 }));
 
 import { getSongChart } from './setlistBuilder.js';
-import { getSong, downloadFileText, type CtSong } from './churchtools.js';
+import { downloadFileText } from './ctFiles.js';
+import { getSong } from './ctRead.js';
+import type { CtSong } from './ctTypes.js';
 import { HttpError } from '../middleware/errorHandler.js';
 
 const mockedGetSong = vi.mocked(getSong);

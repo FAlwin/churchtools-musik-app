@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ChurchTools-Modul mocken: getAgendaItems soll OHNE echtes ChurchTools getestet werden.
-vi.mock('./churchtools.js', () => ({
+vi.mock('./ctRead.js', () => ({
   getAgenda: vi.fn(),
 }));
 
 import { getAgendaItems } from './setlistBuilder.js';
 import { agendaItemSignature } from './agendaDiff.js';
-import { getAgenda, type CtAgendaItem } from './churchtools.js';
+import { getAgenda } from './ctRead.js';
+import type { CtAgendaItem } from './ctTypes.js';
 
 const mockedGetAgenda = vi.mocked(getAgenda);
 const EVENT = 1500;

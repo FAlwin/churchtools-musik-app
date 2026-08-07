@@ -10,21 +10,12 @@ import type {
   SongLibraryEntry,
   SongVersion,
 } from '@shared/types/index';
-import {
-  getAgenda,
-  getEvents,
-  getAppointmentSubtitle,
-  getSong,
-  getAllSongs,
-  downloadFileText,
-  uploadChordpro,
-  deleteFile,
-  fileIdFromUrl,
-  isCtOverloaded,
-  CtOverloadedError,
-  type CtAgendaSong,
-} from './churchtools.js';
-import type { CtArrangementFile, CtSong } from './churchtools.js';
+import { downloadFileText, fileIdFromUrl } from './ctFiles.js';
+import { CtOverloadedError, isCtOverloaded } from './ctHttp.js';
+import { getAgenda, getAllSongs, getAppointmentSubtitle, getEvents, getSong } from './ctRead.js';
+import type { CtAgendaSong } from './ctTypes.js';
+import { deleteFile, uploadChordpro } from './ctWrite.js';
+import type { CtArrangementFile, CtSong } from './ctTypes.js';
 import {
   versionSlug,
   versionNameOf,
@@ -49,12 +40,6 @@ function skipMissingAgenda(context: string, e: unknown): void {
   console.warn(`${context}: Ablauf-Abruf fehlgeschlagen (Termin übersprungen):`, e);
 }
 
-/**
- * Marker für von uns verwaltete, benannte Versionen: „<Titel> — <Name> (App).chordpro".
- * Das `(App)`-Kürzel erkennt unsere Dateien zuverlässig (kein Verwechseln mit Originaldateien,
- * die zufällig einen Bindestrich enthalten) und ist – anders als das frühere `(ECG)` – nicht
- * gemeindespezifisch. Alt-Bestand mit `(ECG)` wird weiterhin erkannt (siehe versionNameOf).
- */
 /** Fingerabdruck der aktuellen Setlist eines Termins (leichter Abruf, ohne ChordPro zu laden). */
 export async function getSetlistFingerprint(cookie: string, eventId: number): Promise<string> {
   const agenda = await getAgenda(cookie, eventId);

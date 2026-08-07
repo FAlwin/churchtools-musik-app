@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { agendaItemWritePayload } from './agendaPayload.js';
-import type { CtAgendaItem } from './churchtools.js';
+import type { CtAgendaItem } from './ctTypes.js';
 
 /**
  * #212: Der riskanteste Schreibpfad des Projekts. ChurchTools ignoriert ein verschachteltes

@@ -1,5 +1,5 @@
 import type { Service } from '@shared/types/index';
-import type { CtEvent } from '../services/churchtools.js';
+import type { CtEvent } from '../services/ctTypes.js';
 
 const TZ = 'Europe/Berlin';
 const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];

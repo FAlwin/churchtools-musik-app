@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getEvents, CtOverloadedError, isCtOverloaded, parseRetryAfter } from './churchtools.js';
+import { CtOverloadedError, isCtOverloaded, parseRetryAfter } from './ctHttp.js';
+import { getEvents } from './ctRead.js';
 import { HttpError } from '../middleware/errorHandler.js';
 
 /**

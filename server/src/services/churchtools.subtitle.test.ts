@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getAppointmentSubtitle, __clearSubtitleMemo } from './churchtools.js';
+import { __clearSubtitleMemo, getAppointmentSubtitle } from './ctRead.js';
 
 /**
  * #306: Der Untertitel-Abruf war die HÄLFTE der Dauerlast der Terminliste.

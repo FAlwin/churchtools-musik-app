@@ -29,6 +29,8 @@ jobs:
 
       - name: Lint
         run: npm run lint
+      - name: Verwaiste Doc-Kommentare
+        run: npm run doc-check
 
       - name: Build
         run: npm run build

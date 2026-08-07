@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import {
-  __getCsrfTokenForTests as getCsrfToken,
-  __resetCsrfCacheForTests,
-  deleteFile,
-} from './churchtools.js';
+import { __getCsrfTokenForTests as getCsrfToken } from './ctCsrf.js';
+import { __resetSessionMemosForTests } from './ctSessionMemos.js';
+import { deleteFile } from './ctWrite.js';
 
 /**
  * #294: Das CSRF-Token wird beim Speichern automatisch EINMAL nachgefasst.
@@ -35,7 +33,7 @@ function jsonRes(body: unknown, status = 200): Response {
 
 // Seit #298 wird das Token zwischengespeichert – ohne Reset würde jeder Test ab dem zweiten aus dem
 // Cache des vorigen bedient und bewiese nichts (die 5 vorhandenen Tests fielen prompt genau darum).
-beforeEach(() => __resetCsrfCacheForTests());
+beforeEach(() => __resetSessionMemosForTests());
 
 afterEach(() => {
   vi.useRealTimers();
