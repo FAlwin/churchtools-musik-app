@@ -62,7 +62,9 @@ Seite vergrößert hängen bleiben.
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/hooks/useLandscape.ts`, `client/src/components/PageDeck.tsx`, `client/src/hooks/usePageCanvases.ts`
-- **Automatisiert:** teilweise – `client/src/hooks/usePageCanvases.test.tsx`, Drehen nicht
+- **Automatisiert:** teilweise – `client/src/hooks/usePageCanvases.test.tsx` und seit #314
+  `client/src/hooks/useChartNavigation.test.ts` (die Regel „nie eine Seite allein links", auch beim
+  Schrumpfen des Stroms); das Drehen selbst und die PDF-Seiten bleiben von Hand
 - **Historie:** #20, #52
 
 </details>

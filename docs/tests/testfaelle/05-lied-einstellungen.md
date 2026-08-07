@@ -22,6 +22,8 @@ entsprechend verschoben.
 - **Priorität:** kritisch
 - **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/components/SongMenu.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/transpose.ts`, `client/src/components/KeyPicker.tsx`, `client/src/components/CapoPicker.tsx`, `client/src/utils/chordPdf.ts`, `client/src/hooks/useSongSettings.ts`, `client/src/utils/activeSongView.ts`, `client/src/components/ChartOverlays.tsx`
 - **Automatisiert:** teilweise – `client/src/utils/transpose.test.ts`, `client/src/hooks/useSongSettings.test.tsx`
+  und seit #314 `client/src/utils/activeSongView.test.ts` (Kapo wird ABGEZOGEN – „klingt A, Kapo 2 →
+  Griff G"; dazu die Info-Zeile im Kopf)
 - **Historie:** –
 
 </details>
@@ -95,7 +97,10 @@ bleibt vollständig.
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/pages/ChordChart.tsx`, `client/src/utils/chartSettings.ts`, `client/src/utils/chordPdf.ts`, `client/src/utils/chartPdfOptions.ts`, `client/src/hooks/useSongSettings.ts`, `client/src/utils/activeSongView.ts`, `client/src/utils/chartPageKeys.ts`
-- **Automatisiert:** teilweise – `client/src/utils/chordPdf.test.ts`
+- **Automatisiert:** teilweise – `client/src/utils/chordPdf.test.ts` und seit #314
+  `client/src/utils/chartPageKeys.test.ts`: dass „Nur Text" eine EIGENE Notiz-Ebene hat und der
+  Wechsel erst mit den sichtbaren Seiten greift (nicht schon beim Umschalten). Von Hand bleibt, dass
+  der Umbruch auf dem Gerät gut aussieht.
 - **Historie:** –
 
 </details>
