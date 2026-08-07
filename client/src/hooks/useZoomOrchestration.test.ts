@@ -14,6 +14,7 @@ import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
  * keiner Umgebung hängt.
  */
 const resetVisibleZoom = vi.fn();
+const fitVisibleZoom = vi.fn();
 const restoreVisibleZoom = vi.fn();
 vi.mock('./useZoomPersistence', () => ({
   useZoomPersistence: () => ({
@@ -22,6 +23,7 @@ vi.mock('./useZoomPersistence', () => ({
     persistZoom: vi.fn(),
     clearStoredZoom: vi.fn(),
     resetVisibleZoom: (...a: unknown[]) => resetVisibleZoom(...a),
+    fitVisibleZoom: () => fitVisibleZoom(),
     restoreVisibleZoom: (...a: unknown[]) => restoreVisibleZoom(...a),
   }),
 }));
@@ -85,6 +87,7 @@ describe('useZoomOrchestration – die beiden Zoom-Signale', () => {
     rerender({ resetZoomSignal: 0, fitZoomSignal: 0 });
     frameZustellen();
     expect(resetVisibleZoom).not.toHaveBeenCalled();
+    expect(fitVisibleZoom).not.toHaveBeenCalled();
   });
 
   it('der Zoom-Knopf setzt zurück UND vergisst (ohne keepStored)', () => {
@@ -95,31 +98,28 @@ describe('useZoomOrchestration – die beiden Zoom-Signale', () => {
     expect(resetVisibleZoom).toHaveBeenCalledWith();
   });
 
-  it('das Einpass-Signal passt ein und MERKT SICH den Zoom (keepStored)', () => {
+  it('das Einpass-Signal ruft das EINPASSEN – nicht das Zurücksetzen', () => {
     const { rerender } = starte();
-    resetVisibleZoom.mockClear();
     rerender({ resetZoomSignal: 0, fitZoomSignal: 1 });
     frameZustellen();
-    expect(resetVisibleZoom).toHaveBeenCalledTimes(1);
-    expect(resetVisibleZoom).toHaveBeenCalledWith({ keepStored: true });
+    expect(fitVisibleZoom).toHaveBeenCalledTimes(1);
+    expect(resetVisibleZoom).not.toHaveBeenCalled(); // sonst wäre der Zoom vergessen
   });
 
   it('passt erst NACH einem Frame ein – die neue Höhe muss im Layout stehen', () => {
     const { rerender } = starte();
-    resetVisibleZoom.mockClear();
     rerender({ resetZoomSignal: 0, fitZoomSignal: 1 });
-    expect(resetVisibleZoom).not.toHaveBeenCalled(); // noch nicht
+    expect(fitVisibleZoom).not.toHaveBeenCalled(); // noch nicht
     frameZustellen();
-    expect(resetVisibleZoom).toHaveBeenCalledTimes(1);
+    expect(fitVisibleZoom).toHaveBeenCalledTimes(1);
   });
 
   it('reagiert auf jedes weitere Umschalten erneut', () => {
     const { rerender } = starte();
-    resetVisibleZoom.mockClear();
     for (const n of [1, 2, 3]) {
       rerender({ resetZoomSignal: 0, fitZoomSignal: n });
       frameZustellen();
     }
-    expect(resetVisibleZoom).toHaveBeenCalledTimes(3);
+    expect(fitVisibleZoom).toHaveBeenCalledTimes(3);
   });
 });

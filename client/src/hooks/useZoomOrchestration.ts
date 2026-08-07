@@ -150,7 +150,7 @@ export function useZoomOrchestration({
   useEffect(() => {
     if (fitZoomSignal === lastFitSignal.current) return;
     lastFitSignal.current = fitZoomSignal;
-    requestAnimationFrame(() => zoomRef.current.resetVisibleZoom({ keepStored: true }));
+    requestAnimationFrame(() => zoomRef.current.fitVisibleZoom());
   }, [fitZoomSignal, zoomRef]);
 
   /** Zoom-Eigenschaften der Ebene für Slot `j`. */

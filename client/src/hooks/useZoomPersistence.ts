@@ -114,24 +114,32 @@ export function useZoomPersistence({
   }
 
   // Notausgang: sichtbare reingezoomte Seiten auf Normalgröße zurücksetzen UND ihren Speicher löschen.
-  /**
-   * Sichtbare Seiten auf Einpassen zurücksetzen.
-   *
-   * Ohne `keepStored` wird der gespeicherte Zoom mitgelöscht – das ist die Absicht des Zoom-Knopfs
-   * in der Kopfzeile. Mit `keepStored` bleibt er erhalten (#319, Leisten umschalten).
-   */
-  function resetVisibleZoom(opts?: { keepStored?: boolean }) {
+  function resetVisibleZoom() {
     for (let j = 0; j < perView; j++) {
       if (!zoomedSlots[j]) continue;
       transformRefs[j].current?.resetTransform(150);
-      // `keepStored` (#319): Beim Aus-/Einblenden der Leisten ändert sich die HÖHE der Anzeigefläche.
-      // Die sichtbare Seite muss dann neu eingepasst werden – der bewusst gespeicherte Zoom soll
-      // aber NICHT verloren gehen, denn der Nutzer hat ihn nicht zurückgenommen, sondern nur die
-      // Leisten umgeschaltet. Beim Zoom-Knopf in der Kopfzeile ist es umgekehrt: Dort IST das
-      // Löschen die Absicht.
-      if (!opts?.keepStored) clearStoredZoom(pageIndex + j);
+      clearStoredZoom(pageIndex + j);
     }
     gestureSlot.current = null;
+  }
+
+  /**
+   * Sichtbare Seiten einpassen, OHNE den gespeicherten Zoom zu vergessen (#319).
+   *
+   * Gebraucht, wenn sich die verfügbare FLÄCHE ändert (Leisten aus-/einblenden): Eine vergrößerte
+   * Seite ragt sonst hinter die Leisten. Zwei Unterschiede zu `resetVisibleZoom`, beide wichtig:
+   *
+   *  - **Der Speicher bleibt.** Der Nutzer hat den Zoom nicht zurückgenommen, er hat nur die
+   *    Leisten umgeschaltet; beim nächsten Blättern auf die Seite kommt er zurück.
+   *  - **Kein `zoomedSlots`-Vorbehalt.** Der Merker wird in `onTransformed` gepflegt und kann in
+   *    genau diesem Moment veraltet sein – dann passierte gar nichts, und das war der gemeldete
+   *    Fehler. Auf einer nicht vergrößerten Seite ist `resetTransform` ohnehin wirkungslos.
+   */
+  function fitVisibleZoom() {
+    for (let j = 0; j < perView; j++) {
+      if (gestureSlot.current === j) continue; // laufenden Pinch nie abbrechen (#33)
+      transformRefs[j].current?.resetTransform(150);
+    }
   }
 
   /**
@@ -163,6 +171,7 @@ export function useZoomPersistence({
     persistZoom,
     clearStoredZoom,
     resetVisibleZoom,
+    fitVisibleZoom,
     restoreVisibleZoom,
   };
 }
