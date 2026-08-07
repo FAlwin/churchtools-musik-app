@@ -31,6 +31,27 @@ import { HttpError } from '../middleware/errorHandler.js';
 import { mapEventToService } from '../utils/mapEvent.js';
 
 /**
+ * Tempo aus ChurchTools in eine Zahl bringen – oder `null`.
+ *
+ * ChurchTools liefert `bpm` je nach Endpunkt als Zahl ODER als Zeichenkette (`"120"`); der Typ
+ * behauptete bisher `number`. Ohne Umrechnung stünde in `SetlistSong.bpm` zur Laufzeit ein Text,
+ * obwohl dort `number` steht – und alles, was mit `typeof === 'number'` prüft, hielte das Lied
+ * für tempolos. Genau das trifft den Tempo-Puls (#145): Der Knopf wäre schlicht nicht erschienen.
+ *
+ * Aufgefallen, weil der Typ beim Erweitern von `CtArrangement` ehrlich gemacht wurde und der
+ * Compiler daraufhin ZWEI Stellen zeigte. Die Umrechnung steht deshalb einmal hier, nicht zweimal
+ * daneben.
+ */
+function alsTempoZahl(wert: number | string | null | undefined): number | null {
+  if (typeof wert === 'number') return Number.isFinite(wert) ? wert : null;
+  if (typeof wert === 'string') {
+    const n = Number(wert.trim());
+    return wert.trim() !== '' && Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+/**
  * Beim Sammeln über viele Termine ist ein fehlender Ablaufplan (404) normal und wird still
  * übersprungen. Ein anderer Fehler (CT-500, Netz-Aussetzer) darf NICHT unbemerkt Termine aus der
  * Liste/Statistik fallen lassen – daher einmal pro Vorkommen warnen.
@@ -169,7 +190,7 @@ async function buildSong(
     author: metaValue(source, 'artist') ?? song.author ?? '',
     originalKey,
     targetKey,
-    bpm: agendaSong.bpm ?? arr?.bpm ?? null,
+    bpm: alsTempoZahl(agendaSong.bpm ?? arr?.bpm),
     timeSig,
     ccli: song.ccli ?? null,
     chordpro,
@@ -523,7 +544,7 @@ export async function getSongChart(
       title: song.name,
       arrangement: arr.name,
       key: arr.keyOfArrangement ?? arr.key ?? null,
-      bpm: arr.bpm ?? null,
+      bpm: alsTempoZahl(arr.bpm),
     },
     song,
   );

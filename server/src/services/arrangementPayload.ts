@@ -54,7 +54,7 @@ const ZU_ERHALTEN = [
  * `null` ab, und ein Feld, das schon leer ist, muss nicht geleert werden.
  */
 export function arrangementWritePayload(
-  arr: CtArrangement & Record<string, unknown>,
+  arr: CtArrangement,
   overrides: ArrangementOverrides = {},
 ): Record<string, unknown> {
   const body: Record<string, unknown> = {};
