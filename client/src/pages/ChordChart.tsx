@@ -170,6 +170,14 @@ export function ChordChart({
   // losklickt, wäre im Gottesdienst eine Panne.
   const [klickModus, setKlickModus] = useState<KlickModus>('aus');
   /**
+   * Im Tempo-Menü eingestelltes Tempo. `null` heißt „wie im Lied".
+   *
+   * Der Wert liegt HIER und nicht im Menü, weil Puls und Klick ihm folgen müssen: Wer ein Tempo
+   * antippt, soll es erst hören und dann speichern. Läge er im Menü, klänge der Klick weiter im
+   * alten Tempo, während das Menü ein neues anzeigt.
+   */
+  const [tempoWert, setTempoWert] = useState<number | null>(null);
+  /**
    * Vollbild: Kopf- und Fußzeile ausgeblendet (#319). Ein Tipp in die Mitte schaltet um.
    *
    * Bewusst NICHT gemerkt – wie der Tempo-Puls ein Werkzeug für den Moment. Wer das Liederheft neu
@@ -284,10 +292,26 @@ export function ChordChart({
     headInfo,
   } = deriveActiveSongView(song, set);
 
+  /**
+   * Wirksames Tempo: das eingestellte, sonst das aus ChurchTools. Steht EINMAL hier und wird von
+   * Kopfzeile, Puls, Klick und Menü gemeinsam benutzt – jede Stelle, die stattdessen selbst
+   * `tempoWert ?? song.bpm` rechnete, wäre eine Kopie dieser Regel.
+   */
+  const wirksamesTempo = tempoWert ?? song.bpm;
+
+  // Beim Liedwechsel zurück auf „wie im Lied". Ein eingestelltes Tempo gehört zu DIESEM Lied; es
+  // beim Blättern mitzunehmen hieße, das nächste Lied stillschweigend im falschen Takt zu klicken.
+  const liedZuvor = useRef(song.id);
+  useEffect(() => {
+    if (liedZuvor.current === song.id) return;
+    liedZuvor.current = song.id;
+    setTempoWert(null);
+  }, [song.id]);
+
   // Hörbarer Klick auf der Audio-Uhr. Endet er von selbst (Einzählen fertig), zieht der Modus nach –
   // sonst stünde das Menü weiter auf „Einzählen", obwohl längst nichts mehr klingt.
   useMetronome({
-    bpm: song.bpm,
+    bpm: wirksamesTempo,
     timeSig: song.timeSig,
     modus: klickModus,
     onEnde: () => setKlickModus('aus'),
@@ -412,6 +436,7 @@ export function ChordChart({
             drawMode={drawMode}
             zoomed={streamZoomed}
             bpmPulse={bpmPulse}
+            pulsBpm={wirksamesTempo}
             tempoOpen={overlay === 'tempo'}
             tempoAktiv={bpmPulse || klickModus !== 'aus'}
             onToggleTempo={() => toggleOverlay('tempo')}
@@ -437,7 +462,9 @@ export function ChordChart({
 
         {overlay === 'tempo' && (
           <TempoMenu
-            bpm={song.bpm}
+            liedTempo={song.bpm}
+            wert={tempoWert}
+            onWert={setTempoWert}
             puls={bpmPulse}
             onPuls={setBpmPulse}
             klick={klickModus}
@@ -445,10 +472,12 @@ export function ChordChart({
             darfSpeichern={canEditSong}
             onSpeichern={async (tempo) => {
               await setArrangementTempo(song.id, song.arrangementId, tempo);
-              // Der Ablauf wird neu geladen, damit das neue Tempo überall steht – auch in der
-              // Info-Zeile und im Puls.
+              // Der Ablauf wird neu geladen, damit das neue Tempo überall steht. Danach ist das
+              // eingestellte Tempo KEINE Abweichung mehr – der Merker gehört zurück auf „wie im
+              // Lied", sonst bliebe der Speichern-Knopf aktiv und böte dasselbe nochmal an.
               onReload?.();
-              showToast(`Tempo ♩ ${tempo} in ChurchTools gespeichert.`);
+              setTempoWert(null);
+              showToast(`Tempo ${tempo} in ChurchTools gespeichert.`);
             }}
             onClose={() => setOverlay(null)}
           />

@@ -32,9 +32,15 @@ interface ChartHeaderProps {
   zoomed: boolean;
   /** Läuft der Tempo-Puls? (#145) – färbt den Punkt neben der Tempo-Angabe. */
   bpmPulse: boolean;
+  /**
+   * EINGESTELLTES Tempo (aus dem Tempo-Menü). Weicht es vom gespeicherten ab, gilt es hier: Anzeige
+   * und Puls folgen dem, was gerade eingestellt ist – sonst zeigte die Kopfzeile eine Zahl und der
+   * Puls schlüge eine andere. `null` heißt „wie im Lied".
+   */
+  pulsBpm: number | null;
   /** Ist das Tempo-Menü offen? */
   tempoOpen: boolean;
-  /** Läuft irgendetwas Tempo-Bezogenes (Puls oder Klick)? Färbt den ♩-Knopf. */
+  /** Läuft irgendetwas Tempo-Bezogenes (Puls oder Klick)? Färbt den Metronom-Knopf. */
   tempoAktiv: boolean;
   onToggleTempo: () => void;
   onBack: () => void;
@@ -56,6 +62,7 @@ export function ChartHeader({
   drawMode,
   zoomed,
   bpmPulse,
+  pulsBpm,
   tempoOpen,
   tempoAktiv,
   onToggleTempo,
@@ -94,8 +101,16 @@ export function ChartHeader({
                   {part.art === 'capo' && <span className={styles.infoCapo}>{part.text}</span>}
                   {part.art === 'bpm' && (
                     <>
-                      {part.text}
-                      <BpmPulse bpm={part.bpm} active={bpmPulse} />
+                      <Icon
+                        name="metronome"
+                        size={15}
+                        stroke={1.9}
+                        className={styles.infoMetronom}
+                      />
+                      {pulsBpm ?? part.bpm}
+                      {/* Der Puls läuft mit dem EINGESTELLTEN Tempo, nicht mit dem gespeicherten –
+                          sonst tickte es anders, als das Menü anzeigt, sobald man eins antippt. */}
+                      <BpmPulse bpm={pulsBpm ?? part.bpm} active={bpmPulse} />
                     </>
                   )}
                   {part.art === 'plain' && part.text}
@@ -130,7 +145,7 @@ export function ChartHeader({
             aria-label="Tempo: Puls, Klick und Tempo antippen"
             aria-expanded={tempoOpen}
           >
-            ♩
+            <Icon name="metronome" size={20} stroke={1.9} />
           </button>
         )}
         {zoomed && (

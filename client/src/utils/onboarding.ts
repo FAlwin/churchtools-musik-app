@@ -8,9 +8,12 @@ const PREFIX = 'worship:onboard-';
 // termine-v2: Schritt „geändert"-Hinweis (#143) ergänzt – Version erhöht, damit Bestandsnutzer
 // den neuen Schritt beim ersten Öffnen nach dem Update sehen.
 export const TOUR_TERMINE = 'termine-v2';
-// chart-v4: Der ♩-Knopf oeffnet jetzt ein MENUE (#145 Folge) statt nur den Puls zu schalten – und
-// er ist neuerdings auch bei Liedern OHNE gepflegtes Tempo da, weil man genau dort eins antippen
-// will. Beides sieht man dem Knopf nicht an, also gehoert es in die Einfuehrung.
+// chart-v4: Der Tempo-Knopf oeffnet jetzt ein MENUE (#145 Folge) statt nur den Puls zu schalten –
+// und er ist neuerdings auch bei Liedern OHNE gepflegtes Tempo da, weil man genau dort eins
+// antippen will. Beides sieht man dem Knopf nicht an, also gehoert es in die Einfuehrung.
+// Der Text wurde beim Umbau des Menues (Metronom-Symbol, ein gemeinsamer Tempo-Wert) NACHGEZOGEN,
+// ohne die Version zu erhoehen: chart-v4 war nie in Produktion (dort laeuft v2.16.3), es hat sie
+// also niemand ausser auf Staging gesehen. Waere sie draussen gewesen, muesste hier v5 stehen.
 // chart-v3: Der Tipp in die Mitte blendet jetzt die Leisten aus (#319) – die Geste findet man
 // sonst nicht von selbst. Version erhöht, damit Bestandsnutzer den geänderten Schritt sehen.
 // (chart-v2 hatte den Schritt „Team-Anmerkungen" (#124) ergänzt.)
@@ -104,7 +107,7 @@ export const CHART_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="chart-tempo"]',
     title: 'Tempo',
-    body: 'Hinter der Note steckt alles zum Tempo: ein sichtbarer Puls zum Einzählen, ein hörbarer Klick (einmal einzählen oder dauerhaft) und „Tempo antippen". Tippe im Takt mit – das gefundene Tempo kannst du in ChurchTools speichern, dann sehen es alle.',
+    body: 'Hinter dem Metronom steckt alles zum Tempo. Oben stellst du es ein – mit − und +, durch Eintippen oder indem du im Takt mittippst. Darunter ein sichtbarer Puls und ein hörbarer Klick (starten oder einen Takt einzählen); beide gelten nur für dich. Nur der Knopf ganz unten speichert das Tempo in ChurchTools – dann sehen es alle.',
   },
   {
     selector: '[data-tour="chart-anmerken"]',
