@@ -136,6 +136,16 @@
   color: var(--blue);
 }
 
+/**
+ * Metronom vor der Tempo-Zahl. `vertical-align` statt Flex, weil die Info-Zeile ein Textfluss ist –
+ * ein Flex-Container hier würde die Trennpunkte zwischen den Teilen mit umbrechen.
+ */
+.infoMetronom {
+  vertical-align: -2px;
+  margin-right: 3px;
+  color: var(--text3);
+}
+
 .right {
   display: flex;
   align-items: center;
@@ -195,12 +205,16 @@
 }
 
 /**
- * Das Tempo-Menue hat mit „Aus / Einzaehlen / Dauerhaft" die laengste Knopfreihe der App und
- * braucht etwas mehr Platz. BEWUSST als eigene Klasse zusaetzlich zu `.appMenu`, statt dessen
- * `min-width` zu erhoehen: Das Aussehen-Menue teilt sich die Klasse und soll unveraendert bleiben.
+ * Das Tempo-Menue braucht mehr Platz als das Aussehen-Menue. BEWUSST als eigene Klasse zusaetzlich
+ * zu `.appMenu`, statt dessen `min-width` zu erhoehen: Das Aussehen-Menue teilt sich die Klasse und
+ * soll unveraendert bleiben.
+ *
+ * **`width` und nicht `min-width`.** Mit `min-width` bestimmte der laengste Inhalt die Breite –
+ * und der Speichern-Knopf („♩ 295 in ChurchTools speichern") ist mal da und mal nicht. Das Menue
+ * wurde beim Antippen breiter UND hoeher und sprang unter dem Finger weg.
  */
 .tempoMenu {
-  min-width: 300px;
+  width: 320px;
 }
 
 .appRow {
@@ -1068,12 +1082,99 @@
 // ── Tempo-Menü (#145 Folge) ────────────────────────────────────────────────────────────
 // Erklärender Zwischentext im Menü. Gebraucht für den einen Satz, der wirklich wichtig ist:
 // dass das Speichern des Tempos für ALLE gilt.
+//
+// **Feste Höhe für zwei Zeilen.** Der Text wechselt je nach Lage (Berechtigung, Abweichung,
+// Fehler). Ohne feste Höhe wüchse das Menü beim Antippen unter dem Finger weg – genau das war
+// gemeldet. Zwei Zeilen fasst den längsten Satz; darüber wird abgeschnitten statt geschoben.
 .menuHint {
   margin-top: 10px;
   font-family: var(--ui);
   font-size: 12px;
   line-height: 1.35;
   color: var(--text2);
+  height: calc(2 * 1.35 * 12px);
+  overflow: hidden;
+}
+
+// Beschriftungs-Zeile mit einer Nebenhandlung rechts („Zurücksetzen"). Der Knopf ist IMMER da,
+// nur abgeblendet – ein Knopf, der erscheint und verschwindet, verschöbe wieder alles darunter.
+.menuLblRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.menuLink {
+  border: none;
+  background: none;
+  padding: 0 4px;
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+}
+
+// Die Tempo-Zeile: −, Zahl, +, Antippen. Das Feld nimmt den Rest der Breite; die vier Elemente
+// stehen dadurch bei jedem Wert an derselben Stelle.
+.tempoRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 10px;
+}
+
+.tempoInput {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 18px;
+  text-align: center;
+  // Ziffern gleicher Breite: Sonst wandert die Zahl beim Zählen von 99 auf 100 sichtbar hin und her.
+  font-variant-numeric: tabular-nums;
+
+  &:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+}
+
+// Quadratischer Knopf für ein Symbol. Bewusst nicht `flex: 1` wie `.segBtn` – ein Symbol soll
+// nicht mitwachsen, sonst steht ein winziges Plus in der Mitte einer breiten Fläche.
+.iconBtn {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+
+  &.on {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
 }
 
 // Der einzige Knopf im Menü, der etwas in ChurchTools ändert – und deshalb als einziger farbig
@@ -1082,6 +1183,10 @@
   margin-top: 8px;
   width: 100%;
   height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   border: none;
   border-radius: 10px;
   background: var(--blue);
@@ -1097,9 +1202,8 @@
   }
 }
 
+// Wird ZUSAETZLICH zu `.menuHint` gesetzt, nicht anstelle – dieselbe Zeile, nur in Rot. Als
+// eigenes Element haette der Fehler die Hinweiszeile nach unten geschoben und den Rahmen gesprengt.
 .menuError {
-  margin-top: 8px;
-  font-family: var(--ui);
-  font-size: 12px;
   color: var(--red, #bb2946);
 }

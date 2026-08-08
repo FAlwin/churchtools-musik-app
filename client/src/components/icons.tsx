@@ -32,6 +32,11 @@ export type IconName =
   | 'trash'
   | 'heading'
   | 'plus'
+  | 'minus'
+  | 'metronome'
+  | 'tap'
+  | 'play'
+  | 'pause'
   | 'marker'
   | 'eraser'
   | 'eye'
@@ -278,6 +283,49 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
       return (
         <svg {...p}>
           <path d="M12 5v14M5 12h14" />
+        </svg>
+      );
+    case 'minus':
+      return (
+        <svg {...p}>
+          <path d="M5 12h14" />
+        </svg>
+      );
+    // Metronom statt Viertelnote (#145): Das ♩ ist die richtige Schreibweise für eine Tempo-ANGABE,
+    // sagt als Knopf aber nicht, dass dahinter etwas zum Mitlaufen steckt. Gehäuse, Standfuß,
+    // Pendel und Gewicht – vier Striche, die jeder Musiker sofort liest.
+    case 'metronome':
+      return (
+        <svg {...p}>
+          {/* Trapez statt Dreieck und ein Pendel, das OBEN herausragt: Genau diese zwei Merkmale
+              machen das Metronom auch bei 13 px noch erkennbar. Als reines Dreieck las es sich wie
+              ein Warnzeichen. */}
+          <path d="M10.6 5.2h2.8L18.5 20.5h-13z" />
+          <path d="M7.4 16h9.2" />
+          <path d="m11.4 18 4.4-15.4" />
+          <path d="m12.6 13.8 2.6.8" />
+        </svg>
+      );
+    // „Antippen": ein Finger, der auf eine Fläche tippt. Der erste Versuch waren ein Punkt und zwei
+    // Bögen – das las sich als Klammerausdruck „(•)" und nicht als Geste. Die Hand ist eindeutig.
+    case 'tap':
+      return (
+        <svg {...p}>
+          <path d="M11 12.2V5.4a1.6 1.6 0 0 1 3.2 0v6.2" />
+          <path d="M14.2 10.4a1.5 1.5 0 0 1 3 0v1.2" />
+          <path d="M17.2 11.2a1.5 1.5 0 0 1 3 0v3.2a5.6 5.6 0 0 1-5.6 5.6h-1.4a4 4 0 0 1-3.1-1.5l-3-3.7a1.6 1.6 0 0 1 2.4-2.1l1.5 1.4" />
+        </svg>
+      );
+    case 'play':
+      return (
+        <svg {...p}>
+          <path d="M7.5 4.8 19 12 7.5 19.2Z" />
+        </svg>
+      );
+    case 'pause':
+      return (
+        <svg {...p}>
+          <path d="M9 5v14M15 5v14" />
         </svg>
       );
     case 'marker':

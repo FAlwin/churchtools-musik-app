@@ -3,9 +3,9 @@
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
 zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach dem Tempo-Menü (#145): **107 Testdateien** –
-**72 Client (629 Tests)** + **35 Server (362 Tests)** mit Vitest + **7 Playwright-E2E in 3 Dateien**
-(Render-Smoke, voller Auth-Flow, Vollbild-Geometrie). Die Zahlen sind mit `npm run test` und
-`npx playwright test --list` ausgezählt, nicht fortgeschrieben.
+**72 Client (643 Tests)** + **35 Server (362 Tests)** mit Vitest + **9 Playwright-E2E in 4 Dateien**
+(Render-Smoke, voller Auth-Flow, Vollbild-Geometrie, Tempo-Menü-Geometrie). Die Zahlen sind mit
+`npm run test` und `npx playwright test --list` ausgezählt, nicht fortgeschrieben.
 
 ## Umfang
 
@@ -17,6 +17,7 @@ zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach dem Tempo-Menü (#14
 | E2E Render-Smoke (ohne Login)                | aktiv (CI-Job `e2e`) | Playwright                   | `e2e/chart-smoke.spec.ts` (`?demo=chart`)     |
 | E2E voller Auth-Flow (Login→Sync)            | aktiv (CI-Job `e2e`) | Playwright + CT-Stub         | `e2e/auth-flow.spec.ts` + `e2e/ct-stub.mjs`   |
 | E2E Vollbild-Geometrie (#319)                | aktiv (CI-Job `e2e`) | Playwright                   | `e2e/chart-fullscreen.spec.ts`                |
+| E2E Tempo-Menü-Geometrie (#145)              | aktiv (CI-Job `e2e`) | Playwright                   | `e2e/chart-tempo.spec.ts`                     |
 
 **Befehle:** `npm test` (alle Vitest), `npm run test:cov` (mit Coverage),
 `npm run test:watch` (Watch-Modus, im Client), `npm run test:e2e` (Playwright).

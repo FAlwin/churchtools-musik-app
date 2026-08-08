@@ -106,7 +106,14 @@ describe('deriveActiveSongView – Info-Zeile im Kopf', () => {
   it('nennt Version und Tempo in dieser Reihenfolge, wenn beides da ist', () => {
     const s = song({ bpm: 72, versions: [{ key: 'akustik', name: 'Akustik', text: 'x' }] });
     const info = deriveActiveSongView(s, set({ versionKey: 'akustik' })).headInfo;
-    expect(info.map((p) => p.text)).toEqual(['D', 'Akustik', '♩ 72']);
+    expect(info.map((p) => p.art)).toEqual(['key', 'plain', 'bpm']);
+    // Der Tempo-Teil trägt bewusst KEINE fertige Beschriftung: Symbol und Zahl setzt die Kopfzeile,
+    // und angezeigt wird dort ggf. das im Tempo-Menü eingestellte Tempo statt dieses hier.
+    expect(info.filter((p) => p.art !== 'bpm').map((p) => (p as { text: string }).text)).toEqual([
+      'D',
+      'Akustik',
+    ]);
+    expect(info).toContainEqual({ art: 'bpm', bpm: 72 });
   });
 
   it('zeigt bei einem Dokument nur dessen Art – Tonart und Kapo gelten dort nicht', () => {
