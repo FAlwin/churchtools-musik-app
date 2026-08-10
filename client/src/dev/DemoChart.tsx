@@ -10,6 +10,10 @@ function song(id: number, title: string, key: string, chordpro: string): Setlist
   return {
     id,
     arrangementId: id,
+    // Zwei Arrangements, damit die Vorführung zeigt, was im Alltag der interessante Fall ist:
+    // Bei genau einem erscheint die Angabe absichtlich nicht.
+    arrangementName: 'Akustik',
+    arrangementCount: 2,
     title,
     author: 'Demo',
     originalKey: key,

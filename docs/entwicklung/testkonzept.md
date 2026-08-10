@@ -2,9 +2,10 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach dem Tempo-Menü (#145): **108 Testdateien** –
-**73 Client (718 Tests)** + **35 Server (362 Tests)** mit Vitest + **9 Playwright-E2E in 4 Dateien**
-(Render-Smoke, voller Auth-Flow, Vollbild-Geometrie, Tempo-Menü-Geometrie). Die Zahlen sind mit
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach dem Arrangement-Unterbau (#320): **110 Testdateien** –
+**75 Client (754 Tests)** + **35 Server (367 Tests)** mit Vitest + **10 Playwright-E2E in 5 Dateien**
+(Render-Smoke, voller Auth-Flow, Vollbild-Geometrie, Tempo-Menü-Geometrie,
+Arrangement-Migration). Die Zahlen sind mit
 `npm run test` und `npx playwright test --list` ausgezählt, nicht fortgeschrieben.
 
 ## Umfang
@@ -18,6 +19,7 @@ zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach dem Tempo-Menü (#14
 | E2E voller Auth-Flow (Login→Sync)            | aktiv (CI-Job `e2e`) | Playwright + CT-Stub         | `e2e/auth-flow.spec.ts` + `e2e/ct-stub.mjs`   |
 | E2E Vollbild-Geometrie (#319)                | aktiv (CI-Job `e2e`) | Playwright                   | `e2e/chart-fullscreen.spec.ts`                |
 | E2E Tempo-Menü-Geometrie (#145)              | aktiv (CI-Job `e2e`) | Playwright                   | `e2e/chart-tempo.spec.ts`                     |
+| E2E Arrangement-Migration (#320)             | aktiv (CI-Job `e2e`) | Playwright                   | `e2e/chart-arrangement-notizen.spec.ts`       |
 
 **Befehle:** `npm test` (alle Vitest), `npm run test:cov` (mit Coverage),
 `npm run test:watch` (Watch-Modus, im Client), `npm run test:e2e` (Playwright).

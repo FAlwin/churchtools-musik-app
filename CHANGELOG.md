@@ -7,7 +7,22 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Neu
+
+- **Das Arrangement steht in der Info-Zeile (#320).** Hat ein Lied in ChurchTools mehrere
+  Arrangements („Band", „Akustik" …), sieht man jetzt im Liederheft, welches gerade gilt – neben
+  Tonart und Tempo. Bei genau einem erscheint **nichts**: Der Name unterscheidet dann nichts und
+  wäre nur Lärm auf einem Blatt, das im Gottesdienst gelesen wird.
+
+  Am Arrangement hängen Tonart, Tempo, Taktart und die Dateien – es ist also nicht bloß ein
+  Etikett. Bisher war es in der App unsichtbar. Das **Umschalten** kommt als nächster Schritt.
+
 ### Behoben
+
+- **Zeigte ein Ablaufpunkt auf ein gelöschtes Arrangement, passte die gemeldete Nummer nicht zum
+  gezeigten Blatt.** Der Server fällt in diesem Fall auf das erste Arrangement zurück, meldete aber
+  weiter die Nummer aus dem Ablauf. Bisher kosmetisch – seit die Anmerkungs-Schlüssel diese Nummer
+  tragen, hätten die Notizen unter einer falschen gelegen.
 
 - **Die Zählweise folgte nicht aufs zweite Gerät.** Neu in v2.18.0 – und dabei war sie die einzige
   Lied-Einstellung, die nicht mit dem Konto wanderte: Tonart, Kapo, Spalten und Schriftgröße tun es

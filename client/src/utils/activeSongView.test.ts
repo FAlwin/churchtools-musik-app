@@ -135,3 +135,37 @@ describe('deriveActiveSongView – Editor-Vorlage', () => {
     expect(t).toContain('{key: C}');
   });
 });
+
+describe('Arrangement in der Info-Zeile (#320)', () => {
+  it('nennt es, wenn das Lied mehrere hat', () => {
+    const s = song({ arrangementName: 'Akustik', arrangementCount: 2 });
+    expect(deriveActiveSongView(s, set()).headInfo).toContainEqual({
+      art: 'plain',
+      text: 'Akustik',
+    });
+  });
+
+  it('schweigt bei genau einem – der Name unterscheidet dann nichts', () => {
+    // „Bei nur einem Arrangement erscheint nichts zusätzlich" – kein Bedienelement und keine Angabe
+    // ohne Zweck. Die Zeile steht auf einem Blatt, das im Gottesdienst gelesen wird.
+    const s = song({ arrangementName: 'Standard', arrangementCount: 1 });
+    expect(deriveActiveSongView(s, set()).headInfo.map((p) => p.art)).not.toContain('plain');
+  });
+
+  it('schweigt auch, wenn der Name fehlt', () => {
+    const s = song({ arrangementName: '', arrangementCount: 3 });
+    expect(deriveActiveSongView(s, set()).headInfo.map((p) => p.art)).not.toContain('plain');
+  });
+
+  it('steht VOR der Version – die Version liegt IM Arrangement', () => {
+    const s = song({
+      arrangementName: 'Akustik',
+      arrangementCount: 2,
+      versions: [{ key: 'leise', name: 'Leise', text: 'x' }],
+    });
+    const texte = deriveActiveSongView(s, set({ versionKey: 'leise' }))
+      .headInfo.filter((p) => p.art === 'plain')
+      .map((p) => (p as { text: string }).text);
+    expect(texte).toEqual(['Akustik', 'Leise']);
+  });
+});

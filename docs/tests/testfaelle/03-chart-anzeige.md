@@ -354,3 +354,55 @@ ChurchTools.
 - **Historie:** #145
 
 </details>
+
+### TF-CHART-13 · Das Arrangement steht in der Info-Zeile
+
+**Das brauchst du:** Ein Lied, das in ChurchTools **mehrere Arrangements** hat, und eines mit nur
+einem.
+
+**Das muss passieren:** Bei mehreren Arrangements steht der Name des geltenden in der Info-Zeile –
+zwischen Tonart und Tempo. Bei genau einem steht dort **nichts** zusätzlich.
+
+1. Lied mit **mehreren** Arrangements öffnen → der Name des geltenden erscheint (z. B.
+   `G · Akustik · ♩ 72`).
+2. Lied mit **einem** Arrangement öffnen → keine zusätzliche Angabe.
+3. Hat das Lied auch eine eigene **Version**, steht das Arrangement **davor** – die Versionen sind
+   ChordPro-Dateien innerhalb eines Arrangements, die Reihenfolge spiegelt die Schachtelung.
+4. **Deine Anmerkungen** sind unverändert da (siehe TF-CHART-14).
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `shared/types/index.ts`, `server/src/services/setlistBuilder.ts`, `client/src/utils/activeSongView.ts`
+- **Automatisiert:** ja – `client/src/utils/activeSongView.test.ts` (zeigen/schweigen, Reihenfolge)
+- **Historie:** #320
+
+</details>
+
+### TF-CHART-14 · Anmerkungen überleben das Arrangement im Schlüssel
+
+**Das muss passieren:** Alle bestehenden Notizen sind nach dem Update **sofort da** – ohne
+Aufblitzen, ohne Nachladen.
+
+1. Ein Lied öffnen, auf dem du schon **gemalt und Text gesetzt** hast → alles unverändert da.
+2. Beide **Darstellungsarten** prüfen (Akkorde & Text sowie „Nur Text") – eigene Ebenen.
+3. Ein **mehrseitiges** Lied durchblättern, auch im Querformat.
+4. Ein Lied mit eigener **Version** prüfen.
+5. **Zoom:** hineinzoomen, wegblättern, zurück → derselbe Ausschnitt.
+6. **Team-Notizen** eines Kollegen ansehen → unverändert.
+
+Fehlt irgendwo etwas: **nichts weiter tun und melden.** Es ist nichts verloren – die alten
+Schlüssel liegen unverändert daneben, es wurde kopiert und nicht umbenannt.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** kritisch (Nutzerdaten)
+- **Betrifft:** `shared/keys/index.ts`, `client/src/utils/arrangementMigration.ts`, `client/src/utils/streamKeys.ts`, `client/src/utils/annotationKeys.ts`, `client/src/pages/ChordChart.tsx`
+- **Automatisiert:** weitgehend – `arrangementMigration.test.ts` (was kopiert wird, nichts
+  überschreiben, wiederholbar), `annoKeyGrammatik.test.ts` (Erzeuger gegen Prüfmuster),
+  `annotations.keys.test.ts` (Segment im Schlüssel), `e2e/chart-arrangement-notizen.spec.ts` (die
+  Naht: läuft die Migration beim Öffnen wirklich). Von Hand bleibt der Blick auf **echte**
+  Anmerkungen – die Testdaten sind erfunden.
+- **Historie:** #320
+
+</details>
