@@ -71,6 +71,16 @@ export function useZoomOrchestration({
   // Letzter Zoom-Faktor je Slot – um „aktives Herauszoomen" von programmatischem Reset zu unterscheiden.
   const lastScale = useRef<[number, number]>([1, 1]);
   const gestureSlot = useRef<number | null>(null);
+  /**
+   * Welche Seiten sind frisch eingepasst? (#319)
+   *
+   * Ohne diesen Merker macht jeder spaetere Abgleich das Einpassen wieder zunichte: Der beim Pinch
+   * gespeicherte Zoom wird erneut angewandt, obwohl der Nutzer inzwischen die Leisten umgeschaltet
+   * hat. Im Protokoll von Alwin lagen zwischen Einpassen (3760 ms) und Rueckkehr des alten Werts
+   * (30078 ms, der 30-Sekunden-Abgleich) knapp eine halbe Minute – deshalb war es so schwer zu
+   * fassen.
+   */
+  const eingepasst = useRef<Set<string>>(new Set());
   const gestureEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Welche sichtbaren Seiten gerade reingezoomt sind (auch geladener Zoom) → steuert
   // Wisch-Navigation und den Zoom-Reset-Knopf.
@@ -83,6 +93,7 @@ export function useZoomOrchestration({
     transformRefs,
     lastScale,
     gestureSlot,
+    eingepasst,
     zoomedSlots,
   });
   // Die Funktionen entstehen je Render neu (sie hängen an `zoomKeyBaseFor`, das der Aufrufer inline

@@ -52,6 +52,7 @@ function starte(zoomedSlots: [boolean, boolean] = [true, false]) {
     lastScale: { current: [1, 1] } as MutableRefObject<[number, number]>,
     gestureSlot: { current: null } as MutableRefObject<number | null>,
     zoomedSlots,
+    eingepasst: { current: new Set<string>() } as MutableRefObject<Set<string>>,
   };
   return { ...renderHook(() => useZoomPersistence(args)), a, b, args };
 }
@@ -73,21 +74,23 @@ describe('resetVisibleZoom – einpassen', () => {
   });
 });
 
-describe('resetVisibleZoom – merken oder vergessen', () => {
-  /**
-   * Einen gespeicherten Zoom über den ECHTEN Weg anlegen: `persistZoom` sichert nur während einer
-   * laufenden Geste (`gestureSlot`) – genau so entsteht ein gespeicherter Zoom im Betrieb.
-   */
-  function zoomSpeichern(
-    result: { current: ReturnType<typeof useZoomPersistence> },
-    args: { gestureSlot: { current: number | null } },
-  ) {
-    args.gestureSlot.current = 0; // Nutzer pincht gerade auf Slot 0
-    result.current.persistZoom(0);
-    args.gestureSlot.current = null; // Geste vorbei
-    expect(result.current.loadZoom(0)).not.toBeNull();
-  }
+/**
+ * Einen gespeicherten Zoom über den ECHTEN Weg anlegen: `persistZoom` sichert nur während einer
+ * laufenden Geste (`gestureSlot`) – genau so entsteht ein gespeicherter Zoom im Betrieb.
+ *
+ * Steht auf Modulebene, weil zwei Blöcke sie brauchen (seit #319 auch der zum Einpassen).
+ */
+function zoomSpeichern(
+  result: { current: ReturnType<typeof useZoomPersistence> },
+  args: { gestureSlot: { current: number | null } },
+) {
+  args.gestureSlot.current = 0; // Nutzer pincht gerade auf Slot 0
+  result.current.persistZoom(0);
+  args.gestureSlot.current = null; // Geste vorbei
+  expect(result.current.loadZoom(0)).not.toBeNull();
+}
 
+describe('resetVisibleZoom – merken oder vergessen', () => {
   it('vergisst den gespeicherten Zoom – das ist die Absicht des Zoom-Knopfs', () => {
     const { result, args } = starte();
     zoomSpeichern(result, args);
@@ -135,5 +138,50 @@ describe('fitVisibleZoom – ohne Vorbehalt', () => {
     result.current.fitVisibleZoom();
     expect(a.setTransform).toHaveBeenCalledWith(0, 0, 1, 0);
     expect(args.gestureSlot.current).toBeNull();
+  });
+});
+
+describe('Einpassen haelt – bis der Nutzer selbst wieder zoomt (#319)', () => {
+  it('ein spaeterer Abgleich holt den gespeicherten Zoom NICHT zurueck', () => {
+    // Der gemeldete Fehler, im Protokoll belegt: Tipp bei 3755 ms, eingepasst bei 3760 ms – und bei
+    // 30078 ms holte der 30-Sekunden-Abgleich die alten 1,722 zurueck. Das Einpassen hielt also nur
+    // bis zum naechsten Abgleich.
+    const { result, a, args } = starte();
+    zoomSpeichern(result, args);
+    result.current.fitVisibleZoom();
+    a.setTransform.mockClear();
+
+    result.current.restoreVisibleZoom({ fitUnsaved: true });
+    expect(a.setTransform).not.toHaveBeenCalled();
+  });
+
+  it('der gespeicherte Zoom bleibt aber erhalten – er gilt beim Zurueckblaettern wieder', () => {
+    const { result, args } = starte();
+    zoomSpeichern(result, args);
+    result.current.fitVisibleZoom();
+    expect(result.current.loadZoom(0)?.scale).toBe(1.8);
+  });
+
+  it('zoomt der Nutzer selbst wieder, gewinnt SEIN Wert', () => {
+    const { result, a, args } = starte();
+    zoomSpeichern(result, args);
+    result.current.fitVisibleZoom();
+    // Neue Geste: Der Merker faellt weg, ab jetzt gilt wieder das Gespeicherte.
+    zoomSpeichern(result, args);
+    a.setTransform.mockClear();
+    result.current.restoreVisibleZoom({ fitUnsaved: true });
+    expect(a.setTransform).toHaveBeenCalled();
+  });
+
+  it('gilt nur fuer DIESE Seite – auf einer anderen wird normal wiederhergestellt', () => {
+    // Der Merker haengt am Zoom-Schluessel. Blaettert man weiter, gilt dort ein anderer.
+    const { result, a, args } = starte();
+    zoomSpeichern(result, args);
+    result.current.fitVisibleZoom();
+    args.pageIndex = 1;
+    a.setTransform.mockClear();
+    // Auf Seite 1 gibt es nichts Gespeichertes – aber auch keinen Merker, der das Laden verhindert.
+    result.current.restoreVisibleZoom({ fitUnsaved: true });
+    expect(result.current.loadZoom(0)?.scale).toBe(1.8);
   });
 });
