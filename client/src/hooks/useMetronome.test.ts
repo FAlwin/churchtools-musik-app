@@ -61,9 +61,17 @@ function laufen(sekunden: number) {
   }
 }
 
-function starte(modus: KlickModus, bpm: number | null = 120, timeSig: string | null = '4/4') {
+function starte(
+  modus: KlickModus,
+  bpm: number | null = 120,
+  timeSig: string | null = '4/4',
+  taktStartMs: number | null = null,
+) {
   const onEnde = vi.fn();
-  return { ...renderHook(() => useMetronome({ bpm, timeSig, modus, onEnde })), onEnde };
+  return {
+    ...renderHook(() => useMetronome({ bpm, timeSig, modus, taktStartMs, onEnde })),
+    onEnde,
+  };
 }
 
 beforeEach(() => {
@@ -71,6 +79,9 @@ beforeEach(() => {
   geplant = [];
   geschlossen = 0;
   vi.useFakeTimers();
+  // `performance.now()` an dieselbe gestellte Uhr hängen (in ms): Der Klick rechnet den Nullpunkt
+  // des gemeinsamen Rasters von dort auf die Audio-Uhr um; mit echter Zeit wäre der Versatz Zufall.
+  vi.spyOn(performance, 'now').mockImplementation(() => uhr * 1000);
   vi.stubGlobal('AudioContext', FakeAudioContext);
 });
 
@@ -185,5 +196,58 @@ describe('useMetronome – aufhören', () => {
     const vorher = geplant.length;
     laufen(2);
     expect(geplant).toHaveLength(vorher);
+  });
+});
+
+describe('useMetronome – gemeinsames Raster mit dem sichtbaren Puls', () => {
+  it('steigt in ein LAUFENDES Raster ein, statt bei sich selbst anzufangen', () => {
+    // Das Raster läuft seit 1,2 s (Nullpunkt 0 ms), 120 bpm = 0,5 s je Schlag. Der Klick darf
+    // deshalb nicht bei 1,2 s beginnen, sondern erst beim nächsten Rasterschlag: 1,5 s.
+    // Genau das war gemeldet – Puls und Klick liefen sonst um 0,3 s versetzt.
+    uhr = 1.2;
+    starte('dauerhaft', 120, '4/4', 0);
+    laufen(1);
+    expect(geplant.length).toBeGreaterThan(0);
+    expect(geplant[0].zeit).toBeCloseTo(1.5, 3);
+  });
+
+  it('legt jeden Klick auf einen Rasterschlag – auch nach mehreren Sekunden', () => {
+    uhr = 1.2;
+    starte('dauerhaft', 120, '4/4', 0);
+    laufen(3);
+    for (const g of geplant) {
+      const schlag = g.zeit / beatTimeSec(1, 120);
+      expect(Math.abs(schlag - Math.round(schlag))).toBeLessThan(1e-6);
+    }
+  });
+
+  it('betont die Eins des RASTERS, nicht den eigenen ersten Klick', () => {
+    // Einstieg bei Schlag 3 (1,5 s): Der erste Klick ist die Vier des Takts und darf NICHT betont
+    // sein; betont ist erst Schlag 4 bei 2,0 s.
+    uhr = 1.2;
+    starte('dauerhaft', 120, '4/4', 0);
+    laufen(1.2);
+    expect(geplant[0].zeit).toBeCloseTo(1.5, 3);
+    expect(geplant[0].frequenz).toBe(800);
+    expect(geplant[1].zeit).toBeCloseTo(2.0, 3);
+    expect(geplant[1].frequenz).toBe(1600);
+  });
+
+  it('beginnt das Einzählen auf einer EINS, nicht mitten im Takt', () => {
+    // Einstieg bei Schlag 3 → aufgerundet auf Schlag 4 = 2,0 s, und der ist betont.
+    uhr = 1.2;
+    starte('einzaehlen', 120, '4/4', 0);
+    laufen(1.2);
+    expect(geplant[0].zeit).toBeCloseTo(2.0, 3);
+    expect(geplant[0].frequenz).toBe(1600);
+  });
+
+  it('zählt auch beim Einstieg volle zwei Takte ein, nicht weniger', () => {
+    uhr = 1.2;
+    const { onEnde } = starte('einzaehlen', 120, '4/4', 0);
+    laufen(6);
+    // Zwei Takte à vier Schläge, beginnend bei Schlag 4.
+    expect(geplant.length).toBe(8);
+    expect(onEnde).toHaveBeenCalled();
   });
 });

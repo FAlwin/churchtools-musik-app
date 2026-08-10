@@ -3,7 +3,7 @@
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
 zusätzlich manuell (bzw. auf Staging) geprüft. Stand nach dem Tempo-Menü (#145): **107 Testdateien** –
-**72 Client (643 Tests)** + **35 Server (362 Tests)** mit Vitest + **9 Playwright-E2E in 4 Dateien**
+**72 Client (665 Tests)** + **35 Server (362 Tests)** mit Vitest + **9 Playwright-E2E in 4 Dateien**
 (Render-Smoke, voller Auth-Flow, Vollbild-Geometrie, Tempo-Menü-Geometrie). Die Zahlen sind mit
 `npm run test` und `npx playwright test --list` ausgezählt, nicht fortgeschrieben.
 

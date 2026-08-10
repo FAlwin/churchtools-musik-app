@@ -54,15 +54,45 @@ export function beatTimeSec(beatIndex: number, bpm: number): number {
 }
 
 /**
+ * Der erste Schlag, der NACH `verstrichenMs` im laufenden Raster liegt.
+ *
+ * Gebraucht, wenn der Klick zu einem bereits laufenden Puls dazukommt (#145): Er darf dann nicht
+ * bei null anfangen, sondern muss ins bestehende Raster einsteigen – sonst schlagen Auge und Ohr
+ * verschieden, und genau das war gemeldet.
+ */
+export function erstesSchlagAb(verstrichenMs: number, bpm: number): number {
+  if (verstrichenMs <= 0) return 0;
+  return Math.ceil(verstrichenMs / ((60 * 1000) / bpm));
+}
+
+/**
+ * Ab welchem Schlag darf das EINZÄHLEN beginnen, wenn das Raster schon läuft?
+ *
+ * Nicht irgendwo mitten im Takt: Einzählen heißt „eins, zwei, drei, vier", und das ergibt nur ab
+ * einer Eins einen Sinn. Deshalb wird auf den nächsten Taktanfang aufgerundet. Läuft noch nichts,
+ * ist `abIndex` null und das Ergebnis ebenfalls – dann fängt es sofort an.
+ */
+export function einzaehlStart(abIndex: number, beatsProTakt: number): number {
+  if (beatsProTakt <= 0) return abIndex;
+  return Math.ceil(abIndex / beatsProTakt) * beatsProTakt;
+}
+
+/**
  * Ist der Klick nach diesem Schlag fertig?
  *
  * Nur im Einzähl-Betrieb; dauerhaft läuft er bis zum Abschalten. Das Ende ist bewusst hier und
  * nicht im Ton-Code: Es ist eine Regel, keine Ausgabe.
+ *
+ * `startIndex` ist der Schlag, bei dem DIESES Einzählen begonnen hat. Seit der Klick in ein schon
+ * laufendes Raster einsteigen kann (gemeinsamer Takt mit dem Puls), ist der nicht mehr zwangsläufig
+ * null – gezählt werden muss trotzdem ab dem eigenen Anfang, sonst wäre das Einzählen je nachdem,
+ * wann man es drückt, zu kurz oder käme gar nicht erst zustande.
  */
 export function countInDone(
   beatIndex: number,
   timeSig: string | null | undefined,
   modus: 'einzaehlen' | 'dauerhaft',
+  startIndex = 0,
 ): boolean {
-  return modus === 'einzaehlen' && beatIndex >= countInBeats(timeSig);
+  return modus === 'einzaehlen' && beatIndex - startIndex >= countInBeats(timeSig);
 }

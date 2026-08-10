@@ -189,11 +189,14 @@ genau im Takt des Lieds. Er ist **lautlos**. Die Kopfzeile darf dabei nicht wack
    **An** – der Punkt beginnt zu pulsen, der Metronom-Knopf färbt sich.
 3. Das Metronom auf dasselbe Tempo stellen und **eine halbe Minute mitlaufen lassen**. Punkt und
    Metronom müssen zusammenbleiben – nicht auseinanderdriften.
-4. Zum nächsten Lied blättern: Der Puls übernimmt dessen Tempo.
-5. Zu einem Lied **ohne** Tempo blättern: Der Punkt ist weg, das Feld im Menü ist leer, **An** und
+4. **Die Eins ist markiert:** Jeder vierte Blitz (im Dreivierteltakt jeder dritte) zieht sich
+   deutlich weiter auf als die übrigen. Ohne das sagt der Puls nur, wie schnell es geht, nicht wo
+   der Takt anfängt.
+5. Zum nächsten Lied blättern: Der Puls übernimmt dessen Tempo.
+6. Zu einem Lied **ohne** Tempo blättern: Der Punkt ist weg, das Feld im Menü ist leer, **An** und
    die Klick-Knöpfe sind ausgegraut. Der Metronom-Knopf selbst bleibt da – über ihn trägt man ja
    gerade ein fehlendes Tempo nach.
-6. Das Liederheft verlassen und neu öffnen: Der Puls ist **aus**.
+7. Das Liederheft verlassen und neu öffnen: Der Puls ist **aus**.
 
 <details><summary>Technisches</summary>
 
@@ -250,6 +253,7 @@ holt sie zurück. Die Ränder blättern weiter wie bisher.
 - **Historie:** #319
 
 </details>
+
 ### TF-CHART-11 · Tempo einstellen, Klick und Antippen
 
 **Das brauchst du:** Ein Lied mit Tempo, ein Metronom, und ein Konto, das Lieder in ChurchTools
@@ -269,32 +273,37 @@ Tempo also, bevor man es speichert. **Das Menü darf dabei nie seine Größe ode
    das Feld springt auf den geltenden Wert zurück.
 5. Auf **▶︎** tippen → es tickt, die Eins ist höher und lauter, das Symbol wird zu **⏸**. Nochmal
    tippen hält an. Metronom danebenlegen und **eine Minute** laufen lassen → kein Auseinanderdriften.
-6. **Einzählen** → es klickt **einen Takt** lang und hört von selbst auf.
-7. Am iPhone den **physischen Stummschalter** umlegen → der Klick verstummt womöglich. Das ist eine
+6. **Gleichlauf – der wichtigste Punkt:** Erst nur den **Puls** einschalten, ein paar Sekunden
+   laufen lassen, **dann** den Klick dazuschalten. Blitz und Klick müssen **zusammenfallen**, und
+   die betonte Eins muss bei beiden auf demselben Schlag liegen. Danach umgekehrt: erst Klick, dann
+   Puls. (Vorher hatte jeder seine eigene Uhr und beide liefen versetzt.) Auch **Einzählen** nach
+   laufendem Puls prüfen – es muss auf einer Eins beginnen, nicht mitten im Takt.
+7. **Einzählen** → es klickt **einen Takt** lang und hört von selbst auf.
+8. Am iPhone den **physischen Stummschalter** umlegen → der Klick verstummt womöglich. Das ist eine
    Eigenheit von iOS und kein Fehler; der sichtbare Puls läuft weiter.
-8. **Antippen:** viermal im Takt auf das **Hand-Symbol** → die Zahl folgt deinem Takt. Weiter tippen
+9. **Antippen:** viermal im Takt auf das **Hand-Symbol** → die Zahl folgt deinem Takt. Weiter tippen
    macht sie ruhiger. **Zurücksetzen** führt zurück auf das Tempo aus ChurchTools.
-9. Ein Tempo einstellen und **speichern** → kurze Rückmeldung, die Kopfzeile zeigt den neuen Wert,
-   Speichern ist danach wieder ausgegraut. **Anschließend in ChurchTools nachsehen:** Tonart,
-   Taktart und Dauer des Arrangements müssen unverändert sein. (Ein `PUT` ersetzt dort den ganzen
-   Datensatz – deshalb dieser Punkt.)
-10. Mit einem Konto **ohne** Bearbeitungsrecht: Der Speichern-Knopf ist ausgegraut und der Hinweis
+10. Ein Tempo einstellen und **speichern** → kurze Rückmeldung, die Kopfzeile zeigt den neuen Wert,
+    Speichern ist danach wieder ausgegraut. **Anschließend in ChurchTools nachsehen:** Tonart,
+    Taktart und Dauer des Arrangements müssen unverändert sein. (Ein `PUT` ersetzt dort den ganzen
+    Datensatz – deshalb dieser Punkt.)
+11. Mit einem Konto **ohne** Bearbeitungsrecht: Der Speichern-Knopf ist ausgegraut und der Hinweis
     nennt die fehlende Berechtigung. Einstellen, Puls und Klick gehen trotzdem.
-11. Lied **ohne** Tempo öffnen: Feld leer, Ton gesperrt. Auf **+** tippen → es beginnt bei 120.
+12. Lied **ohne** Tempo öffnen: Feld leer, Ton gesperrt. Auf **+** tippen → es beginnt bei 120.
     Speichern → ab jetzt hat das Lied ein Tempo, Puls und Klick sind frei.
-12. Ein Tempo einstellen und **zum nächsten Lied blättern** → dort gilt wieder das Tempo dieses
+13. Ein Tempo einstellen und **zum nächsten Lied blättern** → dort gilt wieder das Tempo dieses
     Lieds, nicht das eingestellte.
 
 <details><summary>Technisches</summary>
 
-- **Priorität:** hoch (Punkt 9 schreibt in ChurchTools)
+- **Priorität:** hoch (Punkt 10 schreibt in ChurchTools)
 - **Betrifft:** `client/src/components/TempoMenu.tsx`, `client/src/pages/ChordChart.tsx`, `client/src/hooks/useMetronome.ts`, `client/src/utils/metronome.ts`, `client/src/utils/tapTempo.ts`, `server/src/services/arrangementPayload.ts`, `server/src/services/ctWrite.ts`
 - **Automatisiert:** weitgehend – `metronome.test.ts`, `tapTempo.test.ts`, `useMetronome.test.ts`
   (Audio-Uhr mit gestellter Zeit), `TempoMenu.test.tsx` (alle vier Wege zum Wert, und dass
   Hinweiszeile und Speichern-Knopf IMMER im Baum stehen – das ist die Mechanik hinter der festen
   Größe) und `arrangementPayload.test.ts` (der Test auf **Erhalt**: nichts nebenbei löschen). Von
   Hand bleiben der Klang, der Abgleich gegen ein echtes Metronom, der iOS-Stummschalter, die
-  gemessene Größe am Gerät und Punkt 9 – ob in ChurchTools wirklich nur das Tempo anders ist, zeigt
+  gemessene Größe am Gerät und Punkt 10 – ob in ChurchTools wirklich nur das Tempo anders ist, zeigt
   nur der Blick dorthin.
 - **Historie:** #145
 

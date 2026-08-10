@@ -308,12 +308,38 @@ export function ChordChart({
     setTempoWert(null);
   }, [song.id]);
 
+  /**
+   * Nullpunkt des gemeinsamen Takt-Rasters, in `performance.now()`-Millisekunden.
+   *
+   * Puls und Klick hatten je eine eigene Uhr – wer sie nacheinander einschaltete, bekam zwei
+   * Nullpunkte und damit zwei Takte. Jetzt gibt es EINEN, gesetzt beim Einschalten des ersten von
+   * beiden und gelöscht, wenn keiner mehr läuft. Der Zweite steigt in das laufende Raster ein,
+   * statt bei sich selbst anzufangen.
+   *
+   * Beim TEMPOWECHSEL wird das Raster neu gesetzt: Aus einem festen Nullpunkt und einer neuen
+   * Schlagdauer folgte sonst ein Sprung mitten im Takt. Ein Metronom fängt bei neuem Tempo neu an.
+   */
+  const [taktStart, setTaktStart] = useState<number | null>(null);
+  const taktLaeuft = bpmPulse || klickModus !== 'aus';
+  const taktTempo = useRef(wirksamesTempo);
+  useEffect(() => {
+    if (!taktLaeuft) {
+      setTaktStart(null);
+      return;
+    }
+    setTaktStart((bisher) =>
+      bisher === null || taktTempo.current !== wirksamesTempo ? performance.now() : bisher,
+    );
+    taktTempo.current = wirksamesTempo;
+  }, [taktLaeuft, wirksamesTempo]);
+
   // Hörbarer Klick auf der Audio-Uhr. Endet er von selbst (Einzählen fertig), zieht der Modus nach –
   // sonst stünde das Menü weiter auf „Einzählen", obwohl längst nichts mehr klingt.
   useMetronome({
     bpm: wirksamesTempo,
     timeSig: song.timeSig,
     modus: klickModus,
+    taktStartMs: taktStart,
     onEnde: () => setKlickModus('aus'),
   });
 
@@ -437,6 +463,8 @@ export function ChordChart({
             zoomed={streamZoomed}
             bpmPulse={bpmPulse}
             pulsBpm={wirksamesTempo}
+            taktStartMs={taktStart}
+            timeSig={song.timeSig}
             tempoOpen={overlay === 'tempo'}
             tempoAktiv={bpmPulse || klickModus !== 'aus'}
             onToggleTempo={() => toggleOverlay('tempo')}

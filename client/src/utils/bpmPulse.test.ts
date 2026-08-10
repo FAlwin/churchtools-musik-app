@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { beatsPerFlash, flashIndexAt, isPulsable, msPerBeat } from './bpmPulse';
+import { beatIndexOfFlash, beatsPerFlash, flashIndexAt, isPulsable, msPerBeat } from './bpmPulse';
 
 /**
  * #145: Der Puls hat genau zwei Arten, falsch zu sein – und beide sind reine Rechnung.
@@ -82,5 +82,24 @@ describe('beatsPerFlash – nicht schneller als drei Blitze je Sekunde (WCAG 2.3
     const proBlitz = msPerBeat(bpm) * 2;
     expect(flashIndexAt(proBlitz - 1, bpm)).toBe(0);
     expect(flashIndexAt(proBlitz, bpm)).toBe(1);
+  });
+});
+
+describe('beatIndexOfFlash – welcher Schlag steckt hinter dem Blitz', () => {
+  it('ist unterhalb der Blitzgrenze derselbe', () => {
+    expect(beatIndexOfFlash(0, 120)).toBe(0);
+    expect(beatIndexOfFlash(5, 120)).toBe(5);
+  });
+
+  it('zählt darüber in Zweierschritten – nur jeder zweite Schlag blitzt', () => {
+    expect(beatIndexOfFlash(1, 200)).toBe(2);
+    expect(beatIndexOfFlash(3, 200)).toBe(6);
+  });
+
+  it('hängt an derselben Grenze wie die Blitzrate – nicht an einer zweiten Zahl', () => {
+    // Sonst könnten Blitzrate und Schlagzuordnung auseinanderlaufen und die Eins säße falsch.
+    for (const bpm of [179, 180, 181, 300]) {
+      expect(beatIndexOfFlash(1, bpm)).toBe(beatsPerFlash(bpm));
+    }
   });
 });

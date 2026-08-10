@@ -24,6 +24,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   angetipptes Tempo erst und speichert es dann. Beim Blättern zum nächsten Lied gilt wieder dessen
   Tempo.
 
+  **Beide teilen sich einen Takt.** Wer den Puls laufen lässt und den Klick dazuschaltet, bekommt
+  Blitz und Ton auf demselben Schlag – und die betonte Eins an derselben Stelle. Der Klick steigt
+  dafür in das laufende Raster ein, statt bei sich selbst anzufangen; „Einzählen" wartet dabei auf
+  den nächsten Taktanfang, weil „eins, zwei, drei, vier" nur ab einer Eins Sinn ergibt. Auch der
+  **sichtbare Puls markiert jetzt die Eins** – ein deutlich weiterer Blitz zu Beginn jedes Takts.
+  Ohne ihn sagt er nur, wie schnell es geht, nicht wo der Takt anfängt.
+
   Beides ist bewusst **nicht gemerkt**: Beim Öffnen des Liederhefts sind Puls und Klick aus. Ein
   Gerät, das im Gottesdienst von selbst losklickt, wäre eine Panne. Der Metronom-Knopf erscheint
   jetzt auch bei Liedern **ohne** hinterlegtes Tempo – genau dort will man eins nachtragen.

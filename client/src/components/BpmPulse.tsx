@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { flashIndexAt, isPulsable } from '../utils/bpmPulse';
+import { beatIndexOfFlash, flashIndexAt, isPulsable } from '../utils/bpmPulse';
+import { beatsPerBar, isAccent } from '../utils/metronome';
 import styles from './BpmPulse.module.scss';
 
 /**
@@ -17,21 +18,34 @@ import styles from './BpmPulse.module.scss';
  * denselben Takt ohne das Größerwerden – nur die Helligkeit wechselt. Den Puls ganz abzuschalten
  * wäre falsch: Er IST die Funktion, nicht Zierrat, und eine sanfte Helligkeitsänderung ist genau
  * das, was diese Einstellung erlaubt.
+ *
+ * **Die Eins ist markiert** – größer und kräftiger als die übrigen Schläge. Ohne sie sagt der Puls
+ * nur, WIE SCHNELL es geht, nicht WO der Takt anfängt; genau darum geht es beim Einzählen. Der
+ * hörbare Klick macht dasselbe mit einem höheren Ton, und beide entscheiden es mit derselben
+ * Funktion (`isAccent`), damit sie nicht auseinanderlaufen können.
+ *
+ * **Der Nullpunkt kommt von außen** (`taktStartMs`): Puls und Klick teilen sich ein Raster. Vorher
+ * startete jeder seine eigene Uhr beim Einschalten – wer sie nacheinander anschaltete, hatte zwei
+ * Takte nebeneinander.
  */
 interface BpmPulseProps {
   /** Tempo des aktiven Lieds. */
   bpm: number | null;
   /** Läuft der Puls gerade? */
   active: boolean;
+  /** Nullpunkt des gemeinsamen Takt-Rasters (`performance.now()`-ms). `null` = eigener Start. */
+  taktStartMs: number | null;
+  /** Taktart des Lieds – entscheidet, welcher Schlag die betonte Eins ist. */
+  timeSig: string | null;
 }
 
-export function BpmPulse({ bpm, active }: BpmPulseProps) {
+export function BpmPulse({ bpm, active, taktStartMs, timeSig }: BpmPulseProps) {
   const [flash, setFlash] = useState(0);
   const laeuft = active && isPulsable(bpm);
 
   useEffect(() => {
     if (!laeuft) return;
-    const start = performance.now();
+    const start = taktStartMs ?? performance.now();
     let handle = 0;
     let letzter = -1;
 
@@ -45,16 +59,18 @@ export function BpmPulse({ bpm, active }: BpmPulseProps) {
     };
     handle = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(handle);
-  }, [laeuft, bpm]);
+  }, [laeuft, bpm, taktStartMs]);
 
   if (!laeuft) return null;
+
+  const betont = isAccent(beatIndexOfFlash(flash, bpm), beatsPerBar(timeSig));
 
   return (
     <span
       // Der Schlüssel erzwingt bei jedem Blitz ein frisches Element – so startet die CSS-Animation
       // neu. Ohne das liefe sie nach dem ersten Blitz einfach durch.
       key={flash}
-      className={styles.punkt}
+      className={`${styles.punkt}${betont ? ' ' + styles.eins : ''}`}
       aria-hidden="true"
     />
   );
