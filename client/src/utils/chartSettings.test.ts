@@ -14,6 +14,8 @@ import {
 const song = (over: Partial<SetlistSong> = {}): SetlistSong => ({
   id: 5,
   arrangementId: 1,
+  arrangementName: 'Standard',
+  arrangementCount: 1,
   title: 'Test',
   author: '',
   originalKey: 'C',

@@ -44,6 +44,8 @@ const DEMO_CHORDPRO = `{title: Welch ein Freund ist unser Jesus}
 const SONG: SetlistSong = {
   id: 999001,
   arrangementId: 999001,
+  arrangementName: 'Standard',
+  arrangementCount: 1,
   title: 'Welch ein Freund ist unser Jesus',
   author: 'Demo',
   originalKey: 'G',

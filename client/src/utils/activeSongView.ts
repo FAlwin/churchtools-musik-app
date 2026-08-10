@@ -77,6 +77,18 @@ export function deriveActiveSongView(song: SetlistSong, set: SongSettings): Acti
     if (set.lyricsOnly) headInfo.push({ art: 'plain', text: 'Nur Text' });
     else headInfo.push({ art: 'key', text: curKey });
     if (!set.lyricsOnly && set.capo > 0) headInfo.push({ art: 'capo', text: `Capo ${set.capo}` });
+    /**
+     * Das Arrangement – **nur bei mehr als einem** (#320).
+     *
+     * Bei genau einem ist der Name keine Auskunft, sondern Lärm auf einem Blatt, das im
+     * Gottesdienst gelesen wird: Er unterscheidet nichts. Genau dann sagt das Issue auch, dass
+     * nichts Zusätzliches erscheinen soll.
+     *
+     * Steht VOR der Version, weil es die größere Klammer ist: Die Versionen sind ChordPro-Dateien
+     * INNERHALB eines Arrangements. Die Reihenfolge in der Zeile spiegelt damit die Schachtelung.
+     */
+    if (song.arrangementCount > 1 && song.arrangementName)
+      headInfo.push({ art: 'plain', text: song.arrangementName });
     if (hasVersions) headInfo.push({ art: 'plain', text: currentVersion.name });
     if (song.bpm !== null) headInfo.push({ art: 'bpm', bpm: song.bpm });
   }

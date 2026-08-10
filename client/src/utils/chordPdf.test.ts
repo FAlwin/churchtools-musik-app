@@ -20,6 +20,8 @@ function song(over: Partial<SetlistSong> & { chordpro: string }): SetlistSong {
   return {
     id: 1,
     arrangementId: 1,
+    arrangementName: 'Standard',
+    arrangementCount: 1,
     title: 'Testlied',
     author: 'Autor',
     originalKey: 'C',

@@ -182,7 +182,18 @@ async function buildSong(
 
   return {
     id: agendaSong.songId,
-    arrangementId: agendaSong.arrangementId,
+    /**
+     * Die ID des WIRKLICH benutzten Arrangements, nicht die aus dem Ablaufpunkt.
+     *
+     * Beides fällt normalerweise zusammen. Zeigt der Ablaufpunkt aber auf ein Arrangement, das es in
+     * ChurchTools nicht mehr gibt, fällt `arr` oben auf das erste zurück – der Inhalt käme dann von
+     * einem anderen Arrangement, als die ID behauptet. Bis #320 war das kosmetisch; seit die
+     * Anmerkungs-Schlüssel die ID tragen, lägen die Notizen unter einer Nummer, die zum gezeigten
+     * Blatt nicht passt.
+     */
+    arrangementId: arr?.id ?? agendaSong.arrangementId,
+    arrangementName: arr?.name ?? agendaSong.arrangement ?? '',
+    arrangementCount: song.arrangements.length,
     // `{title}`/`{artist}` aus der Datei gehen vor – genau wie Tonart und Taktart darüber (#236).
     // Wirkt damit in Kopfzeile, Ablaufplan, Blatt und PDF. Die Bibliothek „Alle Lieder" bleibt
     // beim ChurchTools-Namen: `getSongLibrary` hat keinen ChordPro-Text (siehe Kommentar dort).

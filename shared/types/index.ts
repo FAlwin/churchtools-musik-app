@@ -37,6 +37,16 @@ export interface SetlistSong {
   id: number;
   /** Arrangement-ID in ChurchTools */
   arrangementId: number;
+  /** Name des geltenden Arrangements („Band", „Akustik" …) – Teil der Info-Zeile (#320). */
+  arrangementName: string;
+  /**
+   * Wie viele Arrangements hat das Lied insgesamt?
+   *
+   * Damit entscheidet die Anzeige, ob überhaupt etwas zu zeigen ist: Bei genau einem Arrangement ist
+   * der Name keine Auskunft, sondern Lärm auf einem Blatt, das im Gottesdienst gelesen wird. Die
+   * Zahl kommt mit, damit dafür kein zweiter Abruf nötig ist.
+   */
+  arrangementCount: number;
   title: string;
   author: string;
   /** Standardtonart der .chordpro-Datei */
