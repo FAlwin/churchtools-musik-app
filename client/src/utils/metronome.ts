@@ -24,17 +24,110 @@ export const COUNT_IN_BARS = 2;
  * verständlich; ein falsch geratener wäre schlimmer. Wer 6/8 in Zweiern fühlt, nimmt den Klick eben
  * als Achtel.
  */
-export function beatsPerBar(timeSig: string | null | undefined): number {
-  if (!timeSig) return DEFAULT_BEATS_PER_BAR;
-  const m = /^\s*(\d{1,2})\s*\/\s*\d{1,2}\s*$/.exec(timeSig);
-  if (!m) return DEFAULT_BEATS_PER_BAR;
+export function taktartTeile(
+  timeSig: string | null | undefined,
+): { zaehler: number; nenner: number } | null {
+  if (!timeSig) return null;
+  const m = /^\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*$/.exec(timeSig);
+  if (!m) return null;
   const zaehler = Number(m[1]);
-  return zaehler >= 1 && zaehler <= 16 ? zaehler : DEFAULT_BEATS_PER_BAR;
+  const nenner = Number(m[2]);
+  if (zaehler < 1 || zaehler > 16) return null;
+  return { zaehler, nenner };
 }
 
-/** Wie viele Schläge dauert das Einzählen? */
-export function countInBeats(timeSig: string | null | undefined): number {
-  return COUNT_IN_BARS * beatsPerBar(timeSig);
+export function beatsPerBar(timeSig: string | null | undefined): number {
+  return taktartTeile(timeSig)?.zaehler ?? DEFAULT_BEATS_PER_BAR;
+}
+
+/**
+ * Wie viele Grundschläge werden zu EINEM gezählten Schlag zusammengefasst? (#145)
+ *
+ * Der Grund: Ein 6/8-Stück zählt man in Zweiern (zwei punktierte Viertel), nicht als sechs Achtel;
+ * ein schnelles 4/4 zählt man in Halben. Beides ist dieselbe Frage, und sie hat genau eine Zahl als
+ * Antwort. Aus ihr folgt alles Weitere: das Klick-Tempo (Grundtempo geteilt durch sie) und die
+ * Länge des Takts in gezählten Schlägen – und damit, wo die Eins sitzt.
+ *
+ * Mehr als 3 gibt es bewusst nicht: Alles darüber ist keine Zählweise mehr, sondern ein anderes
+ * Stück.
+ */
+export const ZAEHLWEISEN = [1, 2, 3] as const;
+
+/**
+ * Vorschlag aus der Taktart.
+ *
+ * **Nur zusammengesetzte Achteltaktarten** (6/8, 9/8, 12/8) bekommen Dreiergruppen – dort ist es
+ * die Regel und nicht die Ausnahme. Alles andere bleibt bei Einzelschlägen.
+ *
+ * Bewusst NICHT nach dem Tempo entschieden („schnelles 4/4 in Halben"): Das wäre eine Automatik,
+ * die beim Verstellen des Tempos plötzlich die Zählweise umwirft. Für diesen Fall gibt es den
+ * Umschalter – eine Vermutung, die man nicht kommen sieht, ist schlimmer als eine Einstellung.
+ */
+export function autoZaehlweise(timeSig: string | null | undefined): number {
+  const t = taktartTeile(timeSig);
+  if (!t) return 1;
+  return t.nenner === 8 && t.zaehler > 3 && t.zaehler % 3 === 0 ? 3 : 1;
+}
+
+/**
+ * Die Zählweise, die WIRKLICH gilt: die gewählte, sonst der Vorschlag aus der Taktart.
+ *
+ * Steht hier und nicht an den zwei Stellen, die sie brauchen (Liederheft und Tempo-Menü). Als
+ * `gewaehlt ?? autoZaehlweise(timeSig)` war sie schon einmal doppelt ausgeschrieben – und genau bei
+ * solchen Paaren wird später eines nachgezogen und das andere nicht. Dann zeigte das Menü eine
+ * andere Zählweise an, als geklickt wird.
+ */
+export function wirksameZaehlweise(
+  gewaehlt: number | null,
+  timeSig: string | null | undefined,
+): number {
+  return gewaehlt ?? autoZaehlweise(timeSig);
+}
+
+/**
+ * Welche Zählweisen ergeben in dieser Taktart überhaupt einen Takt?
+ *
+ * Nur Teiler der Schläge je Takt: 4/4 lässt sich in Einzelnen und Zweiern zählen, aber nicht in
+ * Dreiern – daraus folgte ein Takt von 1⅓ gezählten Schlägen, und die Eins säße irgendwo. Was
+ * keinen Takt ergibt, wird gar nicht erst angeboten.
+ */
+export function moeglicheZaehlweisen(timeSig: string | null | undefined): number[] {
+  const proTakt = beatsPerBar(timeSig);
+  return ZAEHLWEISEN.filter((z) => proTakt % z === 0);
+}
+
+/** Länge des Takts in GEZÄHLTEN Schlägen. Bei einer unmöglichen Zählweise bleibt es beim Grundtakt. */
+export function gezaehlteSchlaegeProTakt(
+  timeSig: string | null | undefined,
+  zaehlweise: number,
+): number {
+  const proTakt = beatsPerBar(timeSig);
+  if (zaehlweise < 1 || proTakt % zaehlweise !== 0) return proTakt;
+  return proTakt / zaehlweise;
+}
+
+/**
+ * Das Tempo, in dem geklickt und gepulst wird.
+ *
+ * Die gespeicherte Zahl meint IMMER die Grundschläge (die notierte Zählzeit) – sie bedeutet damit
+ * für jeden dasselbe, unabhängig davon, wie er zählt. Die Zählweise ist eine persönliche Sache und
+ * steht nicht in ChurchTools; hinge die gespeicherte Zahl an ihr, hätte dasselbe Lied für zwei
+ * Leute unterschiedliche Tempi.
+ */
+export function gezaehltesTempo(bpm: number | null, zaehlweise: number): number | null {
+  if (bpm === null || zaehlweise < 1) return bpm;
+  return bpm / zaehlweise;
+}
+
+/**
+ * Wie viele Schläge dauert das Einzählen?
+ *
+ * Nimmt die GEZÄHLTEN Schläge je Takt, nicht die Taktart-Zeichenkette: Wer in Dreiergruppen zählt,
+ * zählt zwei Takte à zwei ein und nicht à sechs. Die Umrechnung passiert einmal weiter oben, damit
+ * sie nicht in jeder Funktion erneut stattfindet.
+ */
+export function countInBeats(schlaegeProTakt: number): number {
+  return COUNT_IN_BARS * schlaegeProTakt;
 }
 
 /**
@@ -90,9 +183,40 @@ export function einzaehlStart(abIndex: number, beatsProTakt: number): number {
  */
 export function countInDone(
   beatIndex: number,
-  timeSig: string | null | undefined,
+  schlaegeProTakt: number,
   modus: 'einzaehlen' | 'dauerhaft',
   startIndex = 0,
 ): boolean {
-  return modus === 'einzaehlen' && beatIndex - startIndex >= countInBeats(timeSig);
+  return modus === 'einzaehlen' && beatIndex - startIndex >= countInBeats(schlaegeProTakt);
+}
+
+/**
+ * Alles, was Puls und Klick brauchen – aus dem gespeicherten Tempo, der Taktart und der gewählten
+ * Zählweise. **Die einzige Stelle, an der diese drei Werte zusammen entstehen.**
+ *
+ * Vorher standen die drei Ableitungen einzeln im Liederheft. Jede für sich war richtig, aber keine
+ * war geprüft – die Gegenprobe „Klick ignoriert die Zählweise" liess sich zurücknehmen, ohne dass
+ * ein Test fiel. Als eine Funktion sind sie prüfbar, und es gibt nur einen Ort, an dem sie
+ * auseinanderlaufen könnten: hier.
+ */
+export interface TaktRaster {
+  /** Die wirklich geltende Zählweise (gewählt oder aus der Taktart). */
+  zaehlweise: number;
+  /** Tempo, in dem geklickt und gepulst wird. */
+  klickTempo: number | null;
+  /** Länge des Takts in gezählten Schlägen – bestimmt, wo die Eins sitzt. */
+  schlaegeProTakt: number;
+}
+
+export function taktRaster(
+  bpm: number | null,
+  timeSig: string | null | undefined,
+  gewaehlteZaehlweise: number | null,
+): TaktRaster {
+  const zaehlweise = wirksameZaehlweise(gewaehlteZaehlweise, timeSig);
+  return {
+    zaehlweise,
+    klickTempo: gezaehltesTempo(bpm, zaehlweise),
+    schlaegeProTakt: gezaehlteSchlaegeProTakt(timeSig, zaehlweise),
+  };
 }

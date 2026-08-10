@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MAX_BPM, MIN_BPM, isPulsable } from '../utils/bpmPulse';
 import { tempoAusTipps } from '../utils/tapTempo';
+import { gezaehltesTempo, moeglicheZaehlweisen, wirksameZaehlweise } from '../utils/metronome';
 import { Icon } from './icons';
 import type { KlickModus } from '../hooks/useMetronome';
 import styles from '../pages/ChordChart.module.scss';
@@ -28,6 +29,11 @@ interface TempoMenuProps {
   /** Eingestelltes Tempo. `null` heißt „wie im Lied". Damit laufen Puls und Klick. */
   wert: number | null;
   onWert: (bpm: number | null) => void;
+  /** Taktart des Lieds – bestimmt Vorschlag und mögliche Zählweisen. */
+  timeSig: string | null;
+  /** Gewählte Zählweise, `null` = aus der Taktart abgeleitet. */
+  zaehlweise: number | null;
+  onZaehlweise: (z: number | null) => void;
   /** Läuft der sichtbare Puls? */
   puls: boolean;
   onPuls: (an: boolean) => void;
@@ -49,7 +55,14 @@ interface TempoMenuProps {
  */
 const START_OHNE_TEMPO = 120;
 
-/** Auf den erlaubten Bereich begrenzen. Die Grenzen kommen aus `@shared/tempo`. */
+/**
+ * Auf den erlaubten Bereich begrenzen. Die Grenzen kommen aus `@shared/tempo`.
+ *
+ * Gedeckelt wird der Wert, der GESPEICHERT wird – die Grundschläge –, nicht das gezählte Tempo:
+ * Genau diese Zahl prüft auch der Server, und genau sie bekommen später andere zu sehen. In
+ * Dreiergruppen sind damit höchstens 100 gezählte Schläge je Minute erreichbar (300 ÷ 3); das ist
+ * musikalisch reichlich und macht die Grenze nicht von einer persönlichen Einstellung abhängig.
+ */
 function begrenzen(bpm: number): number {
   return Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(bpm)));
 }
@@ -58,6 +71,9 @@ export function TempoMenu({
   liedTempo,
   wert,
   onWert,
+  timeSig,
+  zaehlweise,
+  onZaehlweise,
   puls,
   onPuls,
   klick,
@@ -68,6 +84,10 @@ export function TempoMenu({
 }: TempoMenuProps) {
   const gilt = wert ?? liedTempo;
   const abweichend = gilt !== null && gilt !== liedTempo;
+
+  const zw = wirksameZaehlweise(zaehlweise, timeSig);
+  const moeglich = moeglicheZaehlweisen(timeSig);
+  const gezaehlt = gezaehltesTempo(gilt, zw);
 
   // Die Tipp-Zeitpunkte sind KEIN Zustand: Sie lösen kein Neuzeichnen aus, das ermittelte Tempo
   // schon. In einer Ref bleiben sie über Renders erhalten, ohne bei jedem Tipp zu rendern.
@@ -116,7 +136,10 @@ export function TempoMenu({
   const antippen = () => {
     tipps.current = [...tipps.current, performance.now()].slice(-16);
     const t = tempoAusTipps(tipps.current);
-    if (t !== null) setzen(t);
+    // Getippt wird in GEZÄHLTEN Schlägen – wer in Dreiergruppen mittippt, meint punktierte Viertel.
+    // Gespeichert werden aber die Grundschläge, deshalb hier zurückgerechnet. Ohne das stünde nach
+    // dem Mittippen eines 6/8-Stücks ein Drittel des richtigen Tempos in ChurchTools.
+    if (t !== null) setzen(t * zw);
   };
 
   const zuruecksetzen = () => {
@@ -145,16 +168,21 @@ export function TempoMenu({
   };
 
   const laeuftDauerhaft = klick === 'dauerhaft';
-  const tonMoeglich = isPulsable(gilt);
+  const tonMoeglich = isPulsable(gezaehlt);
 
   /** Was unter der Trennlinie steht. Immer EINE Zeile, damit der Rahmen nicht springt. */
   const hinweis = fehler
     ? fehler
-    : !darfSpeichern
-      ? 'Zum Ändern in ChurchTools fehlt dir die Berechtigung – der Wert gilt nur hier.'
-      : abweichend
-        ? 'Speichern setzt das Tempo in ChurchTools – für alle, die dieses Lied öffnen.'
-        : 'Puls und Klick gelten nur für dich – gespeichert wird davon nichts.';
+    : // Bei gröberer Zählweise steht im Feld etwas anderes, als man hört – das muss dastehen, sonst
+      // wirkt es wie ein Fehler. Die Zahl im Feld sind IMMER die Grundschläge, so steht sie auch in
+      // ChurchTools und bedeutet damit für jeden dasselbe.
+      zw > 1 && gezaehlt !== null
+      ? `${gilt} Grundschläge – gezählt wird ${Math.round(gezaehlt)}/min in ${zw === 2 ? 'Zweier' : 'Dreier'}gruppen.`
+      : !darfSpeichern
+        ? 'Zum Ändern in ChurchTools fehlt dir die Berechtigung – der Wert gilt nur hier.'
+        : abweichend
+          ? 'Speichern setzt das Tempo in ChurchTools – für alle, die dieses Lied öffnen.'
+          : 'Puls und Klick gelten nur für dich – gespeichert wird davon nichts.';
 
   return (
     <>
@@ -200,6 +228,32 @@ export function TempoMenu({
           >
             <Icon name="tap" size={20} stroke={1.9} />
           </button>
+        </div>
+
+        <div className={styles.menuLbl}>Zählweise</div>
+        <div className={styles.segGroup}>
+          <button
+            className={`${styles.segBtn}${zaehlweise === null ? ' ' + styles.on : ''}`}
+            onClick={() => onZaehlweise(null)}
+            title="Aus der Taktart ableiten"
+          >
+            Auto
+          </button>
+          {/* Nur Teiler der Taktlänge anbieten: 4/4 in Dreiern ergäbe einen Takt von 1⅓ gezählten
+              Schlägen, und die Eins säße irgendwo. Was keinen Takt ergibt, steht gar nicht erst da. */}
+          {([1, 2, 3] as const).map((z) => (
+            <button
+              key={z}
+              className={`${styles.segBtn}${zaehlweise === z ? ' ' + styles.on : ''}`}
+              onClick={() => onZaehlweise(z)}
+              disabled={!moeglich.includes(z)}
+              title={
+                z === 1 ? 'Jeden Schlag zählen' : z === 2 ? 'Je zwei Schläge' : 'Je drei Schläge'
+              }
+            >
+              {z === 1 ? 'Einzeln' : z === 2 ? 'Zweier' : 'Dreier'}
+            </button>
+          ))}
         </div>
 
         <div className={styles.menuLbl}>Sichtbarer Puls</div>

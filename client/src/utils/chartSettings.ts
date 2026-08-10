@@ -1,4 +1,5 @@
 import type { SetlistSong } from '@shared/types/index';
+import { ZAEHLWEISEN } from './metronome';
 import {
   lsVersion,
   lsSong,
@@ -16,6 +17,15 @@ export interface SongSettings {
   fontSize: number;
   lyricsOnly: boolean;
   secShift: Record<number, number>;
+  /**
+   * Zählweise: Wie viele Grundschläge werden zu einem gezählten Schlag zusammengefasst? (#145)
+   * `null` = aus der Taktart abgeleitet (6/8 & Co. in Dreiergruppen, sonst einzeln).
+   *
+   * Persönlich wie Tonart und Kapo, nicht wie Spalten und Schrift – deshalb wird sie beim
+   * Übernehmen fremder Notizen bewusst NICHT mitgenommen (siehe `useTeamNotesImport`): Wie jemand
+   * ein Stück zählt, ist seine Sache und nicht Teil der geteilten Ansicht.
+   */
+  zaehlweise: number | null;
   /** Schlüssel der gewählten Version ('original' oder Slug) – Einstellungen gelten je Version. */
   versionKey: string;
   viewSource: 'chords' | number; // 'chords' oder fileId eines hochgeladenen Dokuments
@@ -28,6 +38,7 @@ export const DEFAULT_SETTINGS: SongSettings = {
   fontSize: 20,
   lyricsOnly: false,
   secShift: {},
+  zaehlweise: null,
   versionKey: 'original',
   viewSource: 'chords',
 };
@@ -91,6 +102,10 @@ function buildSettings(
     fontSize: intOr(get('fs'), DEFAULT_SETTINGS.fontSize),
     lyricsOnly: get('lyrics') === '1',
     secShift: parseSecShift(get('secshift')),
+    // 0 gibt es nicht – ein unbekannter oder kaputter Wert heißt „aus der Taktart ableiten".
+    zaehlweise: ZAEHLWEISEN.includes(intOr(get('zaehl'), 0) as 1 | 2 | 3)
+      ? intOr(get('zaehl'), 0)
+      : null,
     versionKey,
   };
 }

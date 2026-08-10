@@ -195,7 +195,8 @@ genau im Takt des Lieds. Er ist **lautlos**. Die Kopfzeile darf dabei nicht wack
 5. Zum nächsten Lied blättern: Der Puls übernimmt dessen Tempo.
 6. Zu einem Lied **ohne** Tempo blättern: Der Punkt ist weg, das Feld im Menü ist leer, **An** und
    die Klick-Knöpfe sind ausgegraut. Der Metronom-Knopf selbst bleibt da – über ihn trägt man ja
-   gerade ein fehlendes Tempo nach.
+   gerade ein fehlendes Tempo nach. **Dort ein Tempo antippen, ohne zu speichern** → Zahl und Puls
+   erscheinen sofort in der Kopfzeile. (Vorher sah man bis zum Speichern gar nichts.)
 7. Das Liederheft verlassen und neu öffnen: Der Puls ist **aus**.
 
 <details><summary>Technisches</summary>
@@ -305,6 +306,47 @@ Tempo also, bevor man es speichert. **Das Menü darf dabei nie seine Größe ode
   Hand bleiben der Klang, der Abgleich gegen ein echtes Metronom, der iOS-Stummschalter, die
   gemessene Größe am Gerät und Punkt 10 – ob in ChurchTools wirklich nur das Tempo anders ist, zeigt
   nur der Blick dorthin.
+- **Historie:** #145
+
+</details>
+
+### TF-CHART-12 · Zählweise (6/8 und schnelles 4/4)
+
+**Das brauchst du:** Ein Lied im **6/8** und ein schnelles Lied im **4/4**, dazu ein Metronom.
+Wenn möglich auch eins im 3/4.
+
+**Das muss passieren:** Die Zählweise legt fest, was ein Schlag ist. Sie ändert **nicht**, was in
+ChurchTools steht – die Zahl im Feld sind immer die Grundschläge (bei 6/8 die Achtel).
+
+1. **6/8-Lied öffnen**, Metronom-Menü auf. Unter **Zählweise** steht **Auto** – und darunter der
+   Hinweis, dass in Dreiergruppen gezählt wird, mit beiden Zahlen (z. B. „120 Grundschläge –
+   gezählt wird 40/min in Dreiergruppen").
+2. Puls und Klick starten → **zwei** Schläge je Takt, nicht sechs, und die Eins fällt auf den
+   Taktanfang. Gegen ein Metronom in punktierten Vierteln prüfen.
+3. Auf **Einzeln** stellen → jetzt sechs Schläge je Takt, dreimal so schnell.
+4. **Schnelles 4/4-Lied**: **Zweier** wählen → halb so viele Schläge, Eins alle zwei. **Dreier** ist
+   ausgegraut – im 4/4 geht das nicht auf.
+5. Im **3/4** ist umgekehrt **Zweier** ausgegraut und **Dreier** wählbar (ein Schlag je Takt, wie
+   ein schneller Walzer).
+6. **Antippen mit Zählweise:** Im 6/8 auf Dreiergruppen stellen und in punktierten Vierteln
+   mittippen → im Feld erscheint das **Dreifache** dessen, was du getippt hast. Das ist richtig: Du
+   hast gezählte Schläge getippt, gespeichert werden Grundschläge.
+7. **Merken:** Zählweise umstellen, Lied verlassen, wieder öffnen → die Einstellung ist noch da.
+   Bei einem anderen Lied gilt wieder dessen eigene.
+8. **Auf dem Handy im Querformat** das Menü öffnen → es passt auf den Bildschirm und lässt sich
+   scrollen; der Speichern-Knopf ist erreichbar.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/utils/metronome.ts`, `client/src/components/TempoMenu.tsx`, `client/src/utils/chartSettings.ts`, `client/src/hooks/useSongSettings.ts`, `client/src/pages/ChordChart.tsx`
+- **Automatisiert:** weitgehend – `metronome.test.ts` (`autoZaehlweise`, `moeglicheZaehlweisen`,
+  `gezaehltesTempo`, `taktRaster`), `TempoMenu.test.tsx` (gesperrte Knöpfe, Rückrechnung beim
+  Antippen, beide Zahlen im Hinweis), `chartSettings.test.ts` (Speichern je Version, Unsinn
+  verwerfen), `ChartHeader.test.tsx` (angezeigte vs. gepulste Zahl). **Von Hand bleibt die
+  Verdrahtung im Liederheft** – dass `ChordChart` die gerechneten Werte wirklich an Puls und Klick
+  weitergibt, prüft kein Test; Punkt 2 und 3 decken das ab. Dazu der Klang und der Abgleich gegen
+  ein echtes Metronom.
 - **Historie:** #145
 
 </details>

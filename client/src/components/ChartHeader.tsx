@@ -38,10 +38,12 @@ interface ChartHeaderProps {
    * Puls schlüge eine andere. `null` heißt „wie im Lied".
    */
   pulsBpm: number | null;
+  /** GEZÄHLTES Tempo – damit schlägt der Puls (bei Dreiergruppen ein Drittel des angezeigten). */
+  klickBpm: number | null;
   /** Nullpunkt des gemeinsamen Takt-Rasters (`performance.now()`-ms) – Puls und Klick teilen ihn. */
   taktStartMs: number | null;
-  /** Taktart des aktiven Lieds – der Puls markiert damit die Eins. */
-  timeSig: string | null;
+  /** Länge des Takts in GEZÄHLTEN Schlägen – der Puls markiert damit die Eins. */
+  schlaegeProTakt: number;
   /** Ist das Tempo-Menü offen? */
   tempoOpen: boolean;
   /** Läuft irgendetwas Tempo-Bezogenes (Puls oder Klick)? Färbt den Metronom-Knopf. */
@@ -67,8 +69,9 @@ export function ChartHeader({
   zoomed,
   bpmPulse,
   pulsBpm,
+  klickBpm,
   taktStartMs,
-  timeSig,
+  schlaegeProTakt,
   tempoOpen,
   tempoAktiv,
   onToggleTempo,
@@ -79,6 +82,34 @@ export function ChartHeader({
   onToggleTeamNotes,
   onToggleDraw,
 }: ChartHeaderProps) {
+  /**
+   * Tempo-Angabe samt Puls. Als Funktion, weil sie an ZWEI Stellen gebraucht wird: im Teil, den das
+   * Lied mitbringt, und – wenn das Lied gar keins hat – als eigener Teil für ein nur eingestelltes.
+   * Zweimal ausgeschrieben wäre genau die Art Dopplung, bei der später eine Hälfte nachgezogen wird
+   * und die andere nicht.
+   */
+  const tempoAnzeige = (bpm: number) => (
+    <>
+      <Icon name="metronome" size={15} stroke={1.9} className={styles.infoMetronom} />
+      {bpm}
+      {/* Angezeigt werden die GRUNDSCHLÄGE (so steht es auch in ChurchTools), gepulst wird im
+          GEZÄHLTEN Tempo: Wer in Dreiergruppen zählt, sieht zwei Blitze je Takt und nicht sechs. */}
+      <BpmPulse
+        bpm={klickBpm ?? bpm}
+        active={bpmPulse}
+        taktStartMs={taktStartMs}
+        schlaegeProTakt={schlaegeProTakt}
+      />
+    </>
+  );
+
+  /**
+   * Hat das Lied selbst ein Tempo? Wenn nicht, steht in `headInfo` kein Tempo-Teil – dann fehlten
+   * bislang Anzeige UND Puls, obwohl im Menü längst eins eingestellt war und der Klick damit lief.
+   * Gemeldet: „Der Puls wird erst sichtbar, wenn ich in ChurchTools gespeichert habe."
+   */
+  const hatEigenesTempo = headInfo.some((p) => p.art === 'bpm');
+
   return (
     <div className={styles.hdr}>
       <button className={styles.ibtn} onClick={onBack} aria-label="Zurück">
@@ -98,35 +129,25 @@ export function ChartHeader({
               ▾
             </span>
           </span>
-          {headInfo.length > 0 && (
+          {/* Auch dann zeigen, wenn das Lied selbst nichts mitbringt, aber ein Tempo eingestellt
+              ist – sonst verschwände die frisch angetippte Angabe samt Puls wieder. */}
+          {(headInfo.length > 0 || pulsBpm !== null) && (
             <span className={styles.menuInfo}>
               {headInfo.map((part, i) => (
                 <span key={i} className={styles.menuInfoPart}>
                   {i > 0 && <span className={styles.menuInfoDot}>·</span>}
                   {part.art === 'key' && <span className={styles.infoKey}>{part.text}</span>}
                   {part.art === 'capo' && <span className={styles.infoCapo}>{part.text}</span>}
-                  {part.art === 'bpm' && (
-                    <>
-                      <Icon
-                        name="metronome"
-                        size={15}
-                        stroke={1.9}
-                        className={styles.infoMetronom}
-                      />
-                      {pulsBpm ?? part.bpm}
-                      {/* Der Puls läuft mit dem EINGESTELLTEN Tempo, nicht mit dem gespeicherten –
-                          sonst tickte es anders, als das Menü anzeigt, sobald man eins antippt. */}
-                      <BpmPulse
-                        bpm={pulsBpm ?? part.bpm}
-                        active={bpmPulse}
-                        taktStartMs={taktStartMs}
-                        timeSig={timeSig}
-                      />
-                    </>
-                  )}
+                  {part.art === 'bpm' && tempoAnzeige(pulsBpm ?? part.bpm)}
                   {part.art === 'plain' && part.text}
                 </span>
               ))}
+              {!hatEigenesTempo && pulsBpm !== null && (
+                <span className={styles.menuInfoPart}>
+                  {headInfo.length > 0 && <span className={styles.menuInfoDot}>·</span>}
+                  {tempoAnzeige(pulsBpm)}
+                </span>
+              )}
             </span>
           )}
         </button>

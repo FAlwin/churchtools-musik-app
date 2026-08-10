@@ -41,6 +41,7 @@ import { useAppLogo } from '../hooks/useAppLogo';
 import { useChartStream } from '../hooks/useChartStream';
 import { useChartSync, useResyncAfterEditor } from '../hooks/useChartSync';
 import { useMetronome, type KlickModus } from '../hooks/useMetronome';
+import { taktRaster } from '../utils/metronome';
 import { setArrangementTempo } from '../services/churchtoolsApi';
 import { useSetlistPages } from '../hooks/useSetlistPages';
 import type { DrawTool } from '../types/index';
@@ -299,6 +300,16 @@ export function ChordChart({
    */
   const wirksamesTempo = tempoWert ?? song.bpm;
 
+  /**
+   * Zählweise und was daraus folgt (#145).
+   *
+   * Die gespeicherte Tempo-Zahl meint IMMER die Grundschläge – gezählt wird aber unter Umständen
+   * gröber (6/8 in Dreiergruppen, schnelles 4/4 in Halben). Beide Rechnungen stehen EINMAL hier;
+   * Puls und Klick bekommen fertig das gezählte Tempo und die gezählte Taktlänge, statt jeder für
+   * sich aus Taktart und Zählweise dasselbe abzuleiten.
+   */
+  const { klickTempo, schlaegeProTakt } = taktRaster(wirksamesTempo, song.timeSig, set.zaehlweise);
+
   // Beim Liedwechsel zurück auf „wie im Lied". Ein eingestelltes Tempo gehört zu DIESEM Lied; es
   // beim Blättern mitzunehmen hieße, das nächste Lied stillschweigend im falschen Takt zu klicken.
   const liedZuvor = useRef(song.id);
@@ -336,8 +347,8 @@ export function ChordChart({
   // Hörbarer Klick auf der Audio-Uhr. Endet er von selbst (Einzählen fertig), zieht der Modus nach –
   // sonst stünde das Menü weiter auf „Einzählen", obwohl längst nichts mehr klingt.
   useMetronome({
-    bpm: wirksamesTempo,
-    timeSig: song.timeSig,
+    bpm: klickTempo,
+    schlaegeProTakt,
     modus: klickModus,
     taktStartMs: taktStart,
     onEnde: () => setKlickModus('aus'),
@@ -463,8 +474,9 @@ export function ChordChart({
             zoomed={streamZoomed}
             bpmPulse={bpmPulse}
             pulsBpm={wirksamesTempo}
+            klickBpm={klickTempo}
             taktStartMs={taktStart}
-            timeSig={song.timeSig}
+            schlaegeProTakt={schlaegeProTakt}
             tempoOpen={overlay === 'tempo'}
             tempoAktiv={bpmPulse || klickModus !== 'aus'}
             onToggleTempo={() => toggleOverlay('tempo')}
@@ -493,6 +505,9 @@ export function ChordChart({
             liedTempo={song.bpm}
             wert={tempoWert}
             onWert={setTempoWert}
+            timeSig={song.timeSig}
+            zaehlweise={set.zaehlweise}
+            onZaehlweise={(z) => updateSetting(song.id, { zaehlweise: z })}
             puls={bpmPulse}
             onPuls={setBpmPulse}
             klick={klickModus}

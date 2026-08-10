@@ -24,6 +24,19 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   angetipptes Tempo erst und speichert es dann. Beim Blättern zum nächsten Lied gilt wieder dessen
   Tempo.
 
+  **Die Zählweise lässt sich einstellen.** Ein 6/8-Stück zählt man in Dreiergruppen (zwei
+  punktierte Viertel je Takt) und nicht als sechs Achtel; ein schnelles 4/4 zählt man in Zweiern.
+  Beides ist dieselbe Frage, und im Menü steht dafür eine Reihe: **Auto · Einzeln · Zweier ·
+  Dreier**. „Auto" schlägt bei 6/8, 9/8 und 12/8 Dreiergruppen vor, sonst Einzelschläge; angeboten
+  wird nur, was in der Taktart aufgeht (4/4 lässt sich nicht in Dreiern zählen). Die Einstellung
+  gilt **pro Lied** und bleibt erhalten.
+
+  **Die Tempo-Zahl bedeutet dabei immer dasselbe:** die Grundschläge, also die notierte Zählzeit –
+  bei 6/8 die Achtel. So steht sie auch in ChurchTools und heißt für jeden dasselbe, egal wie er
+  zählt. Wer in Dreiergruppen mittippt, muss nichts umrechnen: Die App tut es. Damit die beiden
+  Zahlen nicht verwirren, nennt das Menü sie dann beide („120 Grundschläge – gezählt wird 40/min in
+  Dreiergruppen").
+
   **Beide teilen sich einen Takt.** Wer den Puls laufen lässt und den Klick dazuschaltet, bekommt
   Blitz und Ton auf demselben Schlag – und die betonte Eins an derselben Stelle. Der Klick steigt
   dafür in das laufende Raster ein, statt bei sich selbst anzufangen; „Einzählen" wartet dabei auf
@@ -37,6 +50,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
   Am iPhone kann der physische Stummschalter den Klick verstummen lassen; das ist eine Eigenheit
   von iOS und lässt sich aus der App heraus nicht umgehen. Der sichtbare Puls läuft weiter.
+
+- **Tempo-Anzeige und Puls erscheinen auch ohne gespeichertes Tempo.** Bislang hing beides an dem,
+  was in ChurchTools stand: Bei einem Lied ohne Tempo konnte man zwar eines antippen und der Klick
+  lief damit – zu sehen war aber nichts, bis man gespeichert hatte.
 
 ### Behoben
 

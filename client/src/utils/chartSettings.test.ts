@@ -184,3 +184,33 @@ describe('settingsForLevel – dieselbe Umrechnung wie loadSettings (#247)', () 
     expect(ausTabelle.fontSize).toBe(vomGeraet.fontSize);
   });
 });
+
+describe('loadSettings – Zählweise (#145)', () => {
+  it('ohne gespeicherten Wert bleibt sie offen (= aus der Taktart ableiten)', () => {
+    expect(loadSettings(song()).zaehlweise).toBeNull();
+  });
+
+  it('liest eine gespeicherte Zählweise', () => {
+    localStorage.setItem('worship_zaehl_5_original', '3');
+    expect(loadSettings(song()).zaehlweise).toBe(3);
+  });
+
+  it('gilt je Version – eine andere Version hat ihre eigene', () => {
+    localStorage.setItem('worship_zaehl_5_akustik', '2');
+    expect(loadSettings(song(), 'akustik').zaehlweise).toBe(2);
+    expect(loadSettings(song(), 'original').zaehlweise).toBeNull();
+  });
+
+  it('verwirft Unsinn, statt daraus einen Takt zu bauen', () => {
+    // Eine 0 oder 7 als Zählweise gäbe ein Klick-Tempo von unendlich bzw. einen Takt, der nirgends
+    // aufgeht. Unbekanntes heißt „ableiten", nicht „irgendwas".
+    for (const roh of ['0', '7', '-1', 'drei', '']) {
+      localStorage.setItem('worship_zaehl_5_original', roh);
+      expect(loadSettings(song()).zaehlweise).toBeNull();
+    }
+  });
+
+  it('steht auch in den Standardwerten', () => {
+    expect(DEFAULT_SETTINGS.zaehlweise).toBeNull();
+  });
+});
