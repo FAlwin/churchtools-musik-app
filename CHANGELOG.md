@@ -5,7 +5,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
-## [Unreleased]
+## [2.18.0] – 2026-08-10
 
 ### Neu
 
@@ -14,9 +14,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   - **Das Tempo einstellen** – eine Zahl, vier Wege dorthin: **−** und **+**, direkt **eintippen**
     oder im Takt **mittippen**. „Zurücksetzen" führt zurück auf das Tempo aus ChurchTools.
   - **Sichtbarer Puls** – der lautlose Punkt neben der Tempo-Angabe.
-  - **Klick** – ein hörbares Ticken. **▶︎** startet und wird zu **⏸**, „Einzählen" klickt einen Takt
-    und hört von selbst auf. Die Eins ist höher und lauter. Der Takt kommt von der Audio-Uhr, nicht
-    vom Bildtakt: Ein verspäteter Bildaufbau fällt dem Auge nicht auf, dem Ohr sofort.
+  - **Klick** – ein hörbares Ticken. **▶︎** startet und wird zu **⏸**, „Einzählen" klickt **zwei
+    Takte** und hört von selbst auf. Die Eins ist höher und lauter. Der Takt kommt von der
+    Audio-Uhr, nicht vom Bildtakt: Ein verspäteter Bildaufbau fällt dem Auge nicht auf, dem Ohr
+    sofort.
   - **In ChurchTools speichern** – wer darf, legt das eingestellte Tempo dort ab; dann sehen es
     alle, die das Lied öffnen.
 
@@ -27,10 +28,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   **Wie viele Schläge je Takt gezählt werden, lässt sich einstellen.** Ein 6/8-Stück zählt man in
   Zweien und nicht als sechs Achtel; ein schnelles 4/4 zählt man in Zweien statt in Vieren. Im Menü
   steht dafür eine Reihe, und auf den Knöpfen steht die Zahl, die dabei herauskommt: bei 6/8 also
-  **6 · 3 · 2**, bei 4/4 nur **4 · 2**. „Auto" schlägt bei 6/8, 9/8 und 12/8 die Zweier-Zählung
-  vor, sonst jeden Schlag. Was in der Taktart nicht aufgeht, trägt einen Strich und ist gesperrt.
+  **6 · 3 · 2**, bei 4/4 nur **4 · 2**. „Auto" fasst bei 6/8, 9/8 und 12/8 je drei Achtel zusammen
+  (also 2, 3 bzw. 4 Schläge je Takt), sonst zählt es jeden Schlag. Was in der Taktart nicht aufgeht, trägt einen Strich und ist gesperrt.
   Darunter steht immer, wie schnell es dann tickt („klickt 40 ×/min"). Die Einstellung gilt **pro
-  Lied** und bleibt erhalten.
+  Lied und je Version** – wie Tonart und Spaltenzahl – und bleibt erhalten.
 
   Die Zahl im Tempo-Feld bleibt davon unberührt – sie geht so nach ChurchTools und bedeutet dort
   für jeden dasselbe, egal wie er zählt. Wer gröber mitzählt und mittippt, muss nichts umrechnen:

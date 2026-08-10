@@ -279,7 +279,8 @@ Tempo also, bevor man es speichert. **Das Menü darf dabei nie seine Größe ode
    die betonte Eins muss bei beiden auf demselben Schlag liegen. Danach umgekehrt: erst Klick, dann
    Puls. (Vorher hatte jeder seine eigene Uhr und beide liefen versetzt.) Auch **Einzählen** nach
    laufendem Puls prüfen – es muss auf einer Eins beginnen, nicht mitten im Takt.
-7. **Einzählen** → es klickt **einen Takt** lang und hört von selbst auf.
+7. **Einzählen** → es klickt **zwei Takte** lang und hört von selbst auf (im 4/4 also acht
+   Schläge). Nachzählen – „hört von selbst auf" allein sagt nicht, ob es die richtige Länge war.
 8. Am iPhone den **physischen Stummschalter** umlegen → der Klick verstummt womöglich. Das ist eine
    Eigenheit von iOS und kein Fehler; der sichtbare Puls läuft weiter.
 9. **Antippen:** viermal im Takt auf das **Hand-Symbol** → die Zahl folgt deinem Takt. Weiter tippen
