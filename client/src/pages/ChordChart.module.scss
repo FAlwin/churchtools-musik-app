@@ -1113,6 +1113,16 @@
 
 // Beschriftungs-Zeile mit einer Nebenhandlung rechts („Zurücksetzen"). Der Knopf ist IMMER da,
 // nur abgeblendet – ein Knopf, der erscheint und verschwindet, verschöbe wieder alles darunter.
+// Die Klick-Rate unter „Schläge je Takt". Immer sichtbar – auch wenn sie dem Tempo oben entspricht.
+// Kleiner und blasser als die Beschriftungen: eine Auskunft, keine Bedienung.
+.menuKlickrate {
+  padding: 0 4px 10px;
+  font-family: var(--ui);
+  font-size: 12px;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+
 .menuLblRow {
   display: flex;
   align-items: baseline;

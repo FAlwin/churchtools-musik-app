@@ -310,39 +310,42 @@ Tempo also, bevor man es speichert. **Das Menü darf dabei nie seine Größe ode
 
 </details>
 
-### TF-CHART-12 · Zählweise (6/8 und schnelles 4/4)
+### TF-CHART-12 · Schläge je Takt (6/8 und schnelles 4/4)
 
 **Das brauchst du:** Ein Lied im **6/8** und ein schnelles Lied im **4/4**, dazu ein Metronom.
 Wenn möglich auch eins im 3/4.
 
-**Das muss passieren:** Die Zählweise legt fest, was ein Schlag ist. Sie ändert **nicht**, was in
-ChurchTools steht – die Zahl im Feld sind immer die Grundschläge (bei 6/8 die Achtel).
+**Das muss passieren:** Auf den Knöpfen steht, wie viele Schläge du je Takt zählst – und darunter,
+wie schnell es dann tickt. Die Zahl im Tempo-Feld ändert sich dabei **nicht**; sie geht so nach
+ChurchTools.
 
-1. **6/8-Lied öffnen**, Metronom-Menü auf. Unter **Zählweise** steht **Auto** – und darunter der
-   Hinweis, dass in Dreiergruppen gezählt wird, mit beiden Zahlen (z. B. „120 Grundschläge –
-   gezählt wird 40/min in Dreiergruppen").
+1. **6/8-Lied öffnen**, Metronom-Menü auf. Unter **Schläge je Takt** stehen **Auto · 6 · 3 · 2**,
+   „Auto" ist gewählt. Darunter steht „klickt … ×/min".
 2. Puls und Klick starten → **zwei** Schläge je Takt, nicht sechs, und die Eins fällt auf den
-   Taktanfang. Gegen ein Metronom in punktierten Vierteln prüfen.
-3. Auf **Einzeln** stellen → jetzt sechs Schläge je Takt, dreimal so schnell.
-4. **Schnelles 4/4-Lied**: **Zweier** wählen → halb so viele Schläge, Eins alle zwei. **Dreier** ist
-   ausgegraut – im 4/4 geht das nicht auf.
-5. Im **3/4** ist umgekehrt **Zweier** ausgegraut und **Dreier** wählbar (ein Schlag je Takt, wie
-   ein schneller Walzer).
-6. **Antippen mit Zählweise:** Im 6/8 auf Dreiergruppen stellen und in punktierten Vierteln
-   mittippen → im Feld erscheint das **Dreifache** dessen, was du getippt hast. Das ist richtig: Du
-   hast gezählte Schläge getippt, gespeichert werden Grundschläge.
-7. **Merken:** Zählweise umstellen, Lied verlassen, wieder öffnen → die Einstellung ist noch da.
-   Bei einem anderen Lied gilt wieder dessen eigene.
+   Taktanfang. Gegen ein Metronom prüfen.
+3. Auf **6** stellen → sechs Schläge je Takt, dreimal so schnell. Die Zeile darunter zeigt die neue
+   Rate; die Zahl im Tempo-Feld bleibt gleich.
+4. **Schnelles 4/4-Lied**: Dort stehen nur **Auto · 4 · 2**, der vierte Knopf trägt einen **Strich**
+   und ist gesperrt – im 4/4 lässt sich nicht in Dreiern zählen.
+5. Im **3/4** ist es umgekehrt: 3 und 1 sind wählbar, der Zweier trägt den Strich.
+6. **Antippen:** Im 6/8 auf **2** stellen und in Zweien mittippen → im Feld erscheint das
+   **Dreifache** dessen, was du getippt hast, und „klickt …" nennt genau deine Tipp-Rate. Das ist
+   richtig: Gespeichert wird das Tempo des Lieds, gezählt hast du gröber.
+7. **Merken:** Umstellen, Lied verlassen, wieder öffnen → die Einstellung ist noch da. Bei einem
+   anderen Lied gilt wieder dessen eigene.
 8. **Auf dem Handy im Querformat** das Menü öffnen → es passt auf den Bildschirm und lässt sich
    scrollen; der Speichern-Knopf ist erreichbar.
+9. **Der Hinweis unten wechselt NICHT** mit der Einstellung – er sagt immer nur etwas übers
+   Speichern. (Vorher stand dort je nach Knopf etwas anderes, das war nicht zu verstehen.)
 
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
 - **Betrifft:** `client/src/utils/metronome.ts`, `client/src/components/TempoMenu.tsx`, `client/src/utils/chartSettings.ts`, `client/src/hooks/useSongSettings.ts`, `client/src/pages/ChordChart.tsx`
 - **Automatisiert:** weitgehend – `metronome.test.ts` (`autoZaehlweise`, `moeglicheZaehlweisen`,
-  `gezaehltesTempo`, `taktRaster`), `TempoMenu.test.tsx` (gesperrte Knöpfe, Rückrechnung beim
-  Antippen, beide Zahlen im Hinweis), `chartSettings.test.ts` (Speichern je Version, Unsinn
+  `gezaehltesTempo`, `taktRaster`), `TempoMenu.test.tsx` (Beschriftung mit der gezählten Zahl,
+  Strich bei Unmöglichem, Klick-Rate immer sichtbar, Rückrechnung beim Antippen, das Wort
+  „Grundschläge" kommt nirgends vor), `chartSettings.test.ts` (Speichern je Version, Unsinn
   verwerfen), `ChartHeader.test.tsx` (angezeigte vs. gepulste Zahl). **Von Hand bleibt die
   Verdrahtung im Liederheft** – dass `ChordChart` die gerechneten Werte wirklich an Puls und Klick
   weitergibt, prüft kein Test; Punkt 2 und 3 decken das ab. Dazu der Klang und der Abgleich gegen

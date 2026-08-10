@@ -24,18 +24,17 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   angetipptes Tempo erst und speichert es dann. Beim Blättern zum nächsten Lied gilt wieder dessen
   Tempo.
 
-  **Die Zählweise lässt sich einstellen.** Ein 6/8-Stück zählt man in Dreiergruppen (zwei
-  punktierte Viertel je Takt) und nicht als sechs Achtel; ein schnelles 4/4 zählt man in Zweiern.
-  Beides ist dieselbe Frage, und im Menü steht dafür eine Reihe: **Auto · Einzeln · Zweier ·
-  Dreier**. „Auto" schlägt bei 6/8, 9/8 und 12/8 Dreiergruppen vor, sonst Einzelschläge; angeboten
-  wird nur, was in der Taktart aufgeht (4/4 lässt sich nicht in Dreiern zählen). Die Einstellung
-  gilt **pro Lied** und bleibt erhalten.
+  **Wie viele Schläge je Takt gezählt werden, lässt sich einstellen.** Ein 6/8-Stück zählt man in
+  Zweien und nicht als sechs Achtel; ein schnelles 4/4 zählt man in Zweien statt in Vieren. Im Menü
+  steht dafür eine Reihe, und auf den Knöpfen steht die Zahl, die dabei herauskommt: bei 6/8 also
+  **6 · 3 · 2**, bei 4/4 nur **4 · 2**. „Auto" schlägt bei 6/8, 9/8 und 12/8 die Zweier-Zählung
+  vor, sonst jeden Schlag. Was in der Taktart nicht aufgeht, trägt einen Strich und ist gesperrt.
+  Darunter steht immer, wie schnell es dann tickt („klickt 40 ×/min"). Die Einstellung gilt **pro
+  Lied** und bleibt erhalten.
 
-  **Die Tempo-Zahl bedeutet dabei immer dasselbe:** die Grundschläge, also die notierte Zählzeit –
-  bei 6/8 die Achtel. So steht sie auch in ChurchTools und heißt für jeden dasselbe, egal wie er
-  zählt. Wer in Dreiergruppen mittippt, muss nichts umrechnen: Die App tut es. Damit die beiden
-  Zahlen nicht verwirren, nennt das Menü sie dann beide („120 Grundschläge – gezählt wird 40/min in
-  Dreiergruppen").
+  Die Zahl im Tempo-Feld bleibt davon unberührt – sie geht so nach ChurchTools und bedeutet dort
+  für jeden dasselbe, egal wie er zählt. Wer gröber mitzählt und mittippt, muss nichts umrechnen:
+  Die App tut es.
 
   **Beide teilen sich einen Takt.** Wer den Puls laufen lässt und den Klick dazuschaltet, bekommt
   Blitz und Ton auf demselben Schlag – und die betonte Eins an derselben Stelle. Der Klick steigt
