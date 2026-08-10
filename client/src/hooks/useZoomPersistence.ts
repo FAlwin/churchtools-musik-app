@@ -1,4 +1,5 @@
 import type { MutableRefObject } from 'react';
+import { diag } from '../utils/diagnose';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { pushField } from '../services/annotations';
 import { deviceClass } from '../utils/deviceClass';
@@ -147,6 +148,11 @@ export function useZoomPersistence({
   function fitVisibleZoom() {
     gestureSlot.current = null;
     for (let j = 0; j < perView; j++) {
+      diag(
+        `    fit Slot ${j}: Ebene ${transformRefs[j].current ? 'da' : 'FEHLT'}, Skala vorher ${
+          transformRefs[j].current?.instance?.transformState?.scale ?? '?'
+        }`,
+      );
       // `setTransform(0, 0, 1, 0)` statt `resetTransform(150)`: gemessen blieb der Zoom bei
       // `resetTransform` **unverändert** stehen (1,96 vorher wie nachher). Die Bibliothek fährt den
       // Wert über eine Animation zurück – und genau in diesem Moment ändert sich die Größe der
@@ -169,6 +175,7 @@ export function useZoomPersistence({
       const ref = transformRefs[j].current;
       if (!ref) continue;
       const saved = loadZoom(pageIndex + j);
+      diag(`    restore Slot ${j}: gespeichert ${saved ? String(saved.scale) : 'nein'}`);
       if (saved) {
         ref.setTransform(saved.x, saved.y, saved.scale, 0);
       } else if (fitUnsaved) {
