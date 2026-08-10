@@ -38,6 +38,10 @@ interface ChartHeaderProps {
    * Puls schlüge eine andere. `null` heißt „wie im Lied".
    */
   pulsBpm: number | null;
+  /** Nullpunkt des gemeinsamen Takt-Rasters (`performance.now()`-ms) – Puls und Klick teilen ihn. */
+  taktStartMs: number | null;
+  /** Taktart des aktiven Lieds – der Puls markiert damit die Eins. */
+  timeSig: string | null;
   /** Ist das Tempo-Menü offen? */
   tempoOpen: boolean;
   /** Läuft irgendetwas Tempo-Bezogenes (Puls oder Klick)? Färbt den Metronom-Knopf. */
@@ -63,6 +67,8 @@ export function ChartHeader({
   zoomed,
   bpmPulse,
   pulsBpm,
+  taktStartMs,
+  timeSig,
   tempoOpen,
   tempoAktiv,
   onToggleTempo,
@@ -110,7 +116,12 @@ export function ChartHeader({
                       {pulsBpm ?? part.bpm}
                       {/* Der Puls läuft mit dem EINGESTELLTEN Tempo, nicht mit dem gespeicherten –
                           sonst tickte es anders, als das Menü anzeigt, sobald man eins antippt. */}
-                      <BpmPulse bpm={pulsBpm ?? part.bpm} active={bpmPulse} />
+                      <BpmPulse
+                        bpm={pulsBpm ?? part.bpm}
+                        active={bpmPulse}
+                        taktStartMs={taktStartMs}
+                        timeSig={timeSig}
+                      />
                     </>
                   )}
                   {part.art === 'plain' && part.text}

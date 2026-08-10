@@ -6,6 +6,8 @@ import {
   beatsPerBar,
   countInBeats,
   countInDone,
+  einzaehlStart,
+  erstesSchlagAb,
   isAccent,
 } from './metronome';
 
@@ -92,5 +94,58 @@ describe('countInDone – wann der Ton von selbst aufhört', () => {
   it('hört im Dauerbetrieb NIE von selbst auf', () => {
     expect(countInDone(8, '4/4', 'dauerhaft')).toBe(false);
     expect(countInDone(10_000, '4/4', 'dauerhaft')).toBe(false);
+  });
+});
+
+describe('erstesSchlagAb – in ein laufendes Raster einsteigen', () => {
+  it('fängt bei null an, wenn noch nichts läuft', () => {
+    expect(erstesSchlagAb(0, 120)).toBe(0);
+    expect(erstesSchlagAb(-50, 120)).toBe(0);
+  });
+
+  it('nimmt den NÄCHSTEN Schlag, nie den schon vergangenen', () => {
+    // 120 bpm = 500 ms je Schlag. Nach 600 ms ist Schlag 1 vorbei, der nächste ist 2.
+    expect(erstesSchlagAb(600, 120)).toBe(2);
+    expect(erstesSchlagAb(1400, 120)).toBe(3);
+  });
+
+  it('trifft einen Schlag genau, ohne ihn zu überspringen', () => {
+    expect(erstesSchlagAb(1000, 120)).toBe(2);
+  });
+});
+
+describe('einzaehlStart – Einzählen beginnt auf einer Eins', () => {
+  it('rundet auf den nächsten Taktanfang auf', () => {
+    // 4/4: aus Schlag 5 wird 8, aus 9 wird 12.
+    expect(einzaehlStart(5, 4)).toBe(8);
+    expect(einzaehlStart(9, 4)).toBe(12);
+  });
+
+  it('lässt einen Taktanfang, wo er ist', () => {
+    expect(einzaehlStart(8, 4)).toBe(8);
+    expect(einzaehlStart(0, 4)).toBe(0);
+  });
+
+  it('rechnet mit der echten Taktart, nicht immer mit vier', () => {
+    expect(einzaehlStart(4, 3)).toBe(6);
+  });
+});
+
+describe('countInDone – gezählt wird ab dem EIGENEN Anfang', () => {
+  it('zählt ohne Einstieg wie bisher ab null', () => {
+    // 4/4, zwei Takte = 8 Schläge.
+    expect(countInDone(7, '4/4', 'einzaehlen')).toBe(false);
+    expect(countInDone(8, '4/4', 'einzaehlen')).toBe(true);
+  });
+
+  it('zählt beim Einstieg mitten im Raster ab dem Startschlag', () => {
+    // Bei Schlag 12 eingestiegen: fertig erst bei 20, nicht schon bei 8.
+    expect(countInDone(12, '4/4', 'einzaehlen', 12)).toBe(false);
+    expect(countInDone(19, '4/4', 'einzaehlen', 12)).toBe(false);
+    expect(countInDone(20, '4/4', 'einzaehlen', 12)).toBe(true);
+  });
+
+  it('endet dauerhaft nie von selbst, egal wo eingestiegen wurde', () => {
+    expect(countInDone(500, '4/4', 'dauerhaft', 12)).toBe(false);
   });
 });

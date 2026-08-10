@@ -47,3 +47,40 @@
     }
   }
 }
+
+// Die betonte Eins: derselbe Punkt, nur deutlich weiter aufgezogen. Bewusst NICHT über eine andere
+// Farbe – die Info-Zeile hat schon Blau für die Tonart und Kapo, ein dritter Farbton dort wäre
+// Lärm. Und bewusst nicht über eine andere Elementgröße: Vergrößert wird nur die gezeichnete
+// Fläche (`transform`), sonst bräche die Zeile bei jedem Taktanfang um.
+.eins {
+  animation-name: schlagEins;
+}
+
+@keyframes schlagEins {
+  0% {
+    opacity: 1;
+    transform: scale(2.6);
+  }
+  100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  // Ohne Bewegung bleibt nur die Helligkeit, um die Eins abzuheben – sie klingt langsamer ab als
+  // die übrigen Schläge und ist dadurch als Taktanfang zu erkennen.
+  .eins {
+    animation-name: schlagEinsRuhig;
+    animation-duration: 420ms;
+  }
+
+  @keyframes schlagEinsRuhig {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.25;
+    }
+  }
+}

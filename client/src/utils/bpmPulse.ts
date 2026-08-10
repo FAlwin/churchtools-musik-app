@@ -54,3 +54,19 @@ export function flashIndexAt(elapsedMs: number, bpm: number): number {
   if (elapsedMs <= 0) return 0;
   return Math.floor(elapsedMs / (msPerBeat(bpm) * beatsPerFlash(bpm)));
 }
+
+/**
+ * Welcher SCHLAG gehört zu diesem Blitz?
+ *
+ * Unterhalb von 180 bpm dasselbe; darüber wird nur jeder zweite Schlag geblitzt, dann ist der
+ * dritte Blitz der sechste Schlag. Gebraucht wird die Unterscheidung für die Betonung: Ob die Eins
+ * markiert wird, hängt am SCHLAG im Takt, nicht daran, der wievielte Blitz es war.
+ *
+ * **Bekannte Grenze:** Über 180 bpm in einer ungeraden Taktart (3/4) fallen geblitzte Schläge und
+ * Taktanfänge nur bei jedem zweiten Takt zusammen – die Eins wird dann seltener markiert. Das ist
+ * die Folge der Blitzgrenze aus WCAG 2.3.1 und in Kauf genommen: Ein 3/4-Stück jenseits von 180
+ * fühlt man ohnehin in Takten und nicht in Schlägen.
+ */
+export function beatIndexOfFlash(flashIndex: number, bpm: number): number {
+  return flashIndex * beatsPerFlash(bpm);
+}

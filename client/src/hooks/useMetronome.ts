@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { isPulsable } from '../utils/bpmPulse';
-import { beatTimeSec, beatsPerBar, countInDone, isAccent } from '../utils/metronome';
+import {
+  beatTimeSec,
+  beatsPerBar,
+  countInDone,
+  einzaehlStart,
+  erstesSchlagAb,
+  isAccent,
+} from '../utils/metronome';
 
 /**
  * Der hörbare Klick (#145 Folge-Wunsch) – geplant auf der **Audio-Uhr**, nicht auf dem Bildtakt.
@@ -18,6 +25,12 @@ import { beatTimeSec, beatsPerBar, countInDone, isAccent } from '../utils/metron
  * **iOS:** Ton startet erst nach einer Berührung – der Tipp auf den Schalter liefert sie. Der
  * physische Stummschalter des Geräts kann Web-Audio trotzdem stummschalten; das ist eine Eigenheit
  * von iOS und lässt sich aus der App heraus nicht umgehen.
+ *
+ * **Gemeinsames Raster mit dem sichtbaren Puls.** Beide hatten ihre eigene Uhr – der Puls
+ * `performance.now()`, der Klick die Audio-Uhr, die beim Erzeugen des Kontexts bei null anfängt.
+ * Wer sie nacheinander einschaltete, bekam zwei Nullpunkte und damit zwei Takte; gemeldet nach dem
+ * Staging-Test. Jetzt bekommt der Klick den Nullpunkt des Rasters (`taktStartMs`, in
+ * `performance.now()`-Zeit) und rechnet ihn auf seine eigene Uhr um.
  */
 
 /** Wie weit im Voraus geplant wird. Großzügig genug, um einen verschluckten Timer zu überbrücken. */
@@ -33,11 +46,32 @@ interface UseMetronomeArgs {
   bpm: number | null;
   timeSig: string | null;
   modus: KlickModus;
+  /**
+   * Nullpunkt des gemeinsamen Takt-Rasters in `performance.now()`-Millisekunden. `null` heißt „noch
+   * keins" – dann beginnt der Klick bei sich selbst.
+   */
+  taktStartMs: number | null;
   /** Wird gerufen, wenn der Klick von selbst endet (Einzählen fertig) – die Anzeige zieht nach. */
   onEnde?: () => void;
 }
 
-export function useMetronome({ bpm, timeSig, modus, onEnde }: UseMetronomeArgs): void {
+/**
+ * Den Nullpunkt des Rasters auf die Audio-Uhr umrechnen.
+ *
+ * `getOutputTimestamp()` liefert beide Uhren im selben Augenblick und ist damit der genaue Weg.
+ * Wo es fehlt (ältere Safari-Stände), wird der Zusammenhang aus den beiden Werten gebildet, die
+ * unmittelbar nacheinander gelesen werden – ein paar Millisekunden Ungenauigkeit, aber kein
+ * Auseinanderdriften: Der Versatz wird EINMAL bestimmt, nicht je Schlag.
+ */
+function audioZeitFuer(ctx: AudioContext, perfMs: number): number {
+  const stempel = ctx.getOutputTimestamp?.();
+  if (stempel && typeof stempel.contextTime === 'number' && stempel.performanceTime) {
+    return stempel.contextTime + (perfMs - stempel.performanceTime) / 1000;
+  }
+  return ctx.currentTime + (perfMs - performance.now()) / 1000;
+}
+
+export function useMetronome({ bpm, timeSig, modus, taktStartMs, onEnde }: UseMetronomeArgs): void {
   // Der Rückruf darf sich ändern, ohne den laufenden Takt neu aufzubauen.
   const endeRef = useRef(onEnde);
   endeRef.current = onEnde;
@@ -68,20 +102,40 @@ export function useMetronome({ bpm, timeSig, modus, onEnde }: UseMetronomeArgs):
     // iOS/Safari starten angehalten; der Tipp auf den Schalter ist die nötige Berührung.
     void ctx.resume();
 
-    const start = ctx.currentTime + 0.05; // kleiner Vorlauf, damit der erste Klick nicht abgeschnitten wird
     const proTakt = beatsPerBar(timeSig);
-    let naechster = 0; // Index des nächsten noch NICHT eingeplanten Schlags
+
+    // Nullpunkt des gemeinsamen Rasters auf der Audio-Uhr. Ohne Raster (Klick als Erstes
+    // eingeschaltet) ist es der jetzige Augenblick, mit kleinem Vorlauf, damit der erste Klick nicht
+    // abgeschnitten wird.
+    const rasterNull =
+      taktStartMs === null ? ctx.currentTime + 0.05 : audioZeitFuer(ctx, taktStartMs);
+
+    // In ein LAUFENDES Raster einsteigen: erst der nächste noch nicht vergangene Schlag. Beim
+    // Einzählen zusätzlich auf den nächsten Taktanfang – „eins, zwei, drei, vier" ergibt nur ab
+    // einer Eins einen Sinn.
+    const verstrichenMs = Math.max(0, (ctx.currentTime + 0.05 - rasterNull) * 1000);
+    const abSchlag = erstesSchlagAb(verstrichenMs, bpm);
+    const ersterSchlag = modus === 'einzaehlen' ? einzaehlStart(abSchlag, proTakt) : abSchlag;
+
+    let naechster = ersterSchlag; // Index des nächsten noch NICHT eingeplanten Schlags
     let beendet = false;
 
     const planen = () => {
       if (beendet) return;
-      while (start + beatTimeSec(naechster, bpm) < ctx.currentTime + VORLAUF_S) {
-        if (countInDone(naechster, timeSig, modus === 'einzaehlen' ? 'einzaehlen' : 'dauerhaft')) {
+      while (rasterNull + beatTimeSec(naechster, bpm) < ctx.currentTime + VORLAUF_S) {
+        if (
+          countInDone(
+            naechster,
+            timeSig,
+            modus === 'einzaehlen' ? 'einzaehlen' : 'dauerhaft',
+            ersterSchlag,
+          )
+        ) {
           beendet = true;
           endeRef.current?.();
           return;
         }
-        klick(ctx, start + beatTimeSec(naechster, bpm), isAccent(naechster, proTakt));
+        klick(ctx, rasterNull + beatTimeSec(naechster, bpm), isAccent(naechster, proTakt));
         naechster++;
       }
     };
@@ -95,5 +149,5 @@ export function useMetronome({ bpm, timeSig, modus, onEnde }: UseMetronomeArgs):
       // Audio-Einheit wach und kostet Strom. Bereits eingeplante Klicks verstummen dabei.
       void ctx.close();
     };
-  }, [laeuft, bpm, timeSig, modus, klick]);
+  }, [laeuft, bpm, timeSig, modus, taktStartMs, klick]);
 }
