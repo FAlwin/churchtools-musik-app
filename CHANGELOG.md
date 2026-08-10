@@ -7,6 +7,19 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **Nach dem Vollbild-Umschalten sprang der alte Zoom zurück (#319).** Das Einpassen funktionierte –
+  aber ein späterer Hintergrund-Abgleich stellte den zuvor gepinchten Zoom wieder her, auf derselben
+  Seite und ohne Zutun. Bis zu einer halben Minute später sah es dann aus, als hätte das Umschalten
+  nicht gewirkt.
+
+  Ursache war eine Entscheidung aus dem ursprünglichen Vollbild-Fix: Das Einpassen behält den
+  gemerkten Zoom bewusst, damit er beim Zurückblättern wieder gilt. Nur galt er eben auch sofort
+  wieder. Jetzt merkt sich die App, welche Seite frisch eingepasst wurde, und lässt sie in Ruhe –
+  bis man selbst wieder pincht oder auf eine andere Seite blättert. Beide Zusagen bleiben damit
+  erhalten.
+
 ### Neu
 
 - **Das Arrangement lässt sich umschalten (#320).** Hat ein Lied mehrere, stehen sie im Lied-Menü

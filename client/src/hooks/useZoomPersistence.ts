@@ -23,6 +23,14 @@ interface UseZoomPersistenceParams {
   lastScale: MutableRefObject<[number, number]>;
   /** Slot einer laufenden Pinch-/Pan-Geste (nur echte Gesten werden gesichert). */
   gestureSlot: MutableRefObject<number | null>;
+  /**
+   * Zoom-Schlüssel der Seiten, die seit dem letzten Pinch EINGEPASST wurden (#319).
+   *
+   * Über den Schlüssel und nicht über die Slot-Nummer: Blättert man weiter, gilt dort ein anderer
+   * Schlüssel, der Merker greift also nicht mehr – genau wie gewünscht. Und ein neuer Pinch räumt
+   * ihn weg, damit die frische Absicht des Nutzers gewinnt.
+   */
+  eingepasst: MutableRefObject<Set<string>>;
   /** Welche sichtbaren Slots gerade reingezoomt sind. */
   zoomedSlots: [boolean, boolean];
 }
@@ -47,6 +55,7 @@ export function useZoomPersistence({
   lastScale,
   gestureSlot,
   zoomedSlots,
+  eingepasst,
 }: UseZoomPersistenceParams) {
   const zoomKeyFor = (page: number): string =>
     `${zoomKeyBaseFor(page)}_d${deviceClass()}${perView}`;
@@ -94,6 +103,8 @@ export function useZoomPersistence({
     // zurückgeschrieben („bei allen Liedern gleich"). gestureSlot ist eine Ref → schon das ERSTE
     // onTransformed der Geste sieht den korrekten Slot (kein State-Timing-Loch).
     if (gestureSlot.current !== slot) return;
+    // Der Nutzer zoomt gerade selbst – ab jetzt gilt wieder sein Wert, nicht das Einpassen.
+    eingepasst.current.delete(zoomKeyFor(pageIndex + slot));
     const t = transformRefs[slot].current?.instance?.transformState;
     if (!t) return;
     const page = pageIndex + slot;
@@ -148,6 +159,9 @@ export function useZoomPersistence({
   function fitVisibleZoom() {
     gestureSlot.current = null;
     for (let j = 0; j < perView; j++) {
+      // Merken, dass DIESE Seite eingepasst wurde – sonst holt der naechste Abgleich den
+      // gespeicherten Zoom zurueck und macht das Einpassen rueckgaengig (siehe `restoreVisibleZoom`).
+      eingepasst.current.add(zoomKeyFor(pageIndex + j));
       diag(
         `    fit Slot ${j}: Ebene ${transformRefs[j].current ? 'da' : 'FEHLT'}, Skala vorher ${
           transformRefs[j].current?.instance?.transformState?.scale ?? '?'
@@ -174,6 +188,13 @@ export function useZoomPersistence({
       if (gestureSlot.current === j) continue;
       const ref = transformRefs[j].current;
       if (!ref) continue;
+      // Frisch eingepasst? Dann NICHT zurueckholen. Ohne das machte jeder spaetere Abgleich das
+      // Einpassen wieder zunichte – gemessen im Protokoll: Tipp bei 3755 ms, eingepasst bei
+      // 3760 ms, und bei 30078 ms holte der 30-Sekunden-Abgleich die 1,722 zurueck.
+      if (eingepasst.current.has(zoomKeyFor(pageIndex + j))) {
+        diag(`    restore Slot ${j}: uebersprungen (frisch eingepasst)`);
+        continue;
+      }
       const saved = loadZoom(pageIndex + j);
       diag(`    restore Slot ${j}: gespeichert ${saved ? String(saved.scale) : 'nein'}`);
       if (saved) {
