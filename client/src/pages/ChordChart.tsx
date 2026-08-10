@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SetlistSong } from '@shared/types/index';
 import { Screen } from '../components/Screen';
 import { ChartHeader } from '../components/ChartHeader';
@@ -42,6 +42,7 @@ import { useChartStream } from '../hooks/useChartStream';
 import { useChartSync, useResyncAfterEditor } from '../hooks/useChartSync';
 import { useMetronome, type KlickModus } from '../hooks/useMetronome';
 import { taktRaster } from '../utils/metronome';
+import { arrangementMigrationAnwenden } from '../utils/arrangementMigration';
 import { setArrangementTempo } from '../services/churchtoolsApi';
 import { useSetlistPages } from '../hooks/useSetlistPages';
 import type { DrawTool } from '../types/index';
@@ -80,6 +81,22 @@ export function ChordChart({
 }: ChordChartProps) {
   // Anzeige-Einstellungen aller Lieder – Halten und Speichern liegt in useSongSettings (#198).
   const { settings, updateSetting, selectVersion, reloadSettings } = useSongSettings(songs);
+
+  /**
+   * Bestandsnotizen dem geltenden Arrangement zuschlagen (#320).
+   *
+   * **In einem `useMemo` und nicht in einem `useEffect`** – bewusst: Effekte laufen NACH dem ersten
+   * Zeichnen. Die Seiten stünden dann einen Wimpernschlag lang ohne die Notizen da, weil die App
+   * seit dem Arrangement-Segment unter dem neuen Schlüssel sucht und der Bestand noch unter dem
+   * alten liegt. Der Vorgang ist rein lokal, synchron und idempotent (ein zweiter Lauf findet
+   * nichts mehr) – damit ist er an dieser Stelle unbedenklich.
+   *
+   * Läuft über ALLE Lieder des Ablaufs, nicht nur das offene: Der Strom zeigt im Querformat auch
+   * Seiten des Nachbarlieds.
+   */
+  useMemo(() => {
+    for (const s of songs) arrangementMigrationAnwenden(s.id, s.arrangementId);
+  }, [songs]);
   // Signatur über den INHALT aller Versionen → der Strom wird neu erzeugt, sobald sich ein Lied-Text
   // ändert (z. B. nach dem Bearbeiten/Anlegen einer Version), nicht nur bei geänderter Lied-Liste.
   const songsSig = songs

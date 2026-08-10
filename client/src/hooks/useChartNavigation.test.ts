@@ -27,6 +27,7 @@ function owners(proLied: number[]): StreamOwner[] {
         songIdx,
         songId: 100 + songIdx,
         localPage: p,
+        arrangementId: 45,
         kind: 'chord',
         versionKey: 'original',
       });

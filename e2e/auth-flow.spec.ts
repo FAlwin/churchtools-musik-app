@@ -1,3 +1,4 @@
+import { ANNO_KEY_RE } from '../shared/keys/index';
 import { test, expect } from '@playwright/test';
 import {
   TOUR_CHART,
@@ -83,10 +84,16 @@ test.describe('Auth-Flow mit ChurchTools-Stub', () => {
     await page.mouse.up();
 
     const request = await syncPut;
-    // Der Schlüssel muss der Lied-/Versions-Grammatik folgen (#250) – sonst lehnt der Server ihn ab.
-    expect(decodeURIComponent(request.url())).toMatch(
-      /\/api\/annotations\/song\d+_v[a-z0-9-]+_\d+/i,
-    );
+    // Der Schlüssel muss der Grammatik folgen (#250) – sonst lehnt der Server ihn ab.
+    //
+    // Geprüft gegen das GETEILTE Muster und nicht gegen eine hier hingeschriebene Regex: Die stand
+    // hier bis #320 und kannte das Arrangement-Segment nicht. Sie hätte bei jeder Erweiterung der
+    // Grammatik fehlgeschlagen, obwohl nichts kaputt war – oder, schlimmer, eine echte Drift
+    // durchgelassen, wenn sie zu locker gewesen wäre.
+    const key = decodeURIComponent(request.url()).replace(/^.*\/api\/annotations\//, '');
+    expect(key).toMatch(ANNO_KEY_RE);
+    // Und das Arrangement ist wirklich drin – sonst landeten Notizen zweier Fassungen aufeinander.
+    expect(key).toMatch(/_a\d+_/);
 
     const antwort = await request.response();
     expect(antwort?.status()).toBe(200);

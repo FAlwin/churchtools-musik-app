@@ -24,6 +24,7 @@ const owner = (over: Partial<StreamOwner> = {}): StreamOwner => ({
   localPage: 0,
   kind: 'chord',
   versionKey: 'original',
+  arrangementId: 45,
   ...over,
 });
 

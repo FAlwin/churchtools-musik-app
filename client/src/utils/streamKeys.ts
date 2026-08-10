@@ -17,7 +17,13 @@ export function drawKeyForOwner(owner: StreamOwner, lyricsOnly: boolean): string
     ANNO_DRAW_NS +
     (owner.kind === 'doc'
       ? docPageKey(owner.fileId as number, owner.localPage)
-      : songPageKey(owner.songId, owner.versionKey, lyricsOnly, owner.localPage))
+      : songPageKey(
+          owner.songId,
+          owner.versionKey,
+          lyricsOnly,
+          owner.localPage,
+          owner.arrangementId,
+        ))
   );
 }
 
@@ -30,13 +36,26 @@ export function zoomKeyBaseForOwner(owner: StreamOwner, lyricsOnly: boolean): st
     ANNO_ZOOM_NS +
     (owner.kind === 'doc'
       ? docPageKey(owner.fileId as number, owner.localPage)
-      : songPageKey(owner.songId, owner.versionKey, lyricsOnly, owner.localPage))
+      : songPageKey(
+          owner.songId,
+          owner.versionKey,
+          lyricsOnly,
+          owner.localPage,
+          owner.arrangementId,
+        ))
   );
 }
 
 /**
  * Schlüssel der ANGESEHENEN fremden Ebene (Team-Notizen) – oder `null`, wenn diese Seite nicht dazu
  * gehört. Nur Akkord-Seiten; Dokument-Anmerkungen werden nicht geteilt.
+ *
+ * **Bewusst OHNE Arrangement-Segment (#320, offen für Schritt 3):** Hier wird der Schlüssel einer
+ * FREMDEN Ebene zusammengebaut. Welches Arrangement die andere Person benutzt hat, weiß diese
+ * Funktion nicht – `viewing` trägt es nicht. Das eigene einzusetzen wäre schlimmer als keines: Man
+ * suchte dann unter einem Schlüssel, den es bei ihr gar nicht gibt, und sähe ihre Striche nie.
+ * Ohne Segment findet man weiterhin ihren Bestand; erst wenn sie arrangement-genau zeichnet, fehlt
+ * etwas. Die saubere Lösung braucht das Arrangement in `viewing` – das ist Schritt 3.
  */
 export function viewKeyForOwner(
   owner: StreamOwner,

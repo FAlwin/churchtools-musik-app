@@ -66,3 +66,30 @@ export function arrangementKopien(
   }
   return kopien;
 }
+
+/**
+ * Die Kopien wirklich anlegen. Gibt zurück, wie viele es waren.
+ *
+ * **Muss laufen, BEVOR Seiten gezeichnet werden.** Seit die Schlüssel das Arrangement tragen, sucht
+ * die App unter dem neuen – der Bestand liegt unter dem alten. Ohne diesen Schritt sähe ein
+ * Bestandsnutzer seine Notizen als verschwunden an.
+ *
+ * Idempotent: Ein zweiter Lauf findet nichts mehr (siehe `arrangementKopien`). Deshalb braucht es
+ * keinen Merker, der irgendwann nicht mehr zum Zustand passt – der Speicher selbst ist der Merker.
+ */
+export function arrangementMigrationAnwenden(songId: number, arrangementId: number): number {
+  const vorhanden: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k) vorhanden.push(k);
+  }
+  const kopien = arrangementKopien(vorhanden, songId, arrangementId);
+  for (const { von, nach } of kopien) {
+    const wert = localStorage.getItem(von);
+    // Erst prüfen, dann schreiben: Ein zwischenzeitlich entfernter Schlüssel darf keinen leeren
+    // Eintrag hinterlassen – der sähe wie „hier wurde bewusst nichts gezeichnet" aus und würde
+    // späteres Nachziehen blockieren.
+    if (wert !== null) localStorage.setItem(nach, wert);
+  }
+  return kopien.length;
+}
