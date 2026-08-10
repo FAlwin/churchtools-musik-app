@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SetlistSong } from '@shared/types/index';
+import { SETTINGS_BASES, SETTINGS_KEY_RE } from '@shared/keys/index';
 import {
   loadSecShift,
   loadSettings,
@@ -214,5 +215,41 @@ describe('loadSettings – Zählweise (#145)', () => {
 
   it('steht auch in den Standardwerten', () => {
     expect(DEFAULT_SETTINGS.zaehlweise).toBeNull();
+  });
+});
+
+describe('loadSettings – gewähltes Arrangement (#320)', () => {
+  it('ohne gespeicherten Wert gilt das aus dem Ablauf', () => {
+    expect(loadSettings(song({ arrangementCount: 2 })).arrangementId).toBeNull();
+  });
+
+  it('liest eine gespeicherte Wahl', () => {
+    localStorage.setItem('worship_arr_5', '77');
+    expect(loadSettings(song({ arrangementCount: 2 })).arrangementId).toBe(77);
+  });
+
+  it('gilt pro LIED, nicht je Version – die Versionen liegen IM Arrangement', () => {
+    localStorage.setItem('worship_arr_5', '77');
+    expect(loadSettings(song({ arrangementCount: 2 }), 'akustik').arrangementId).toBe(77);
+  });
+
+  it('ignoriert die Wahl, wenn das Lied nur ein Arrangement hat', () => {
+    // Wurde in ChurchTools eines gelöscht, zeigte eine gemerkte Nummer ins Leere: Der Server fiele
+    // auf ein anderes zurück und die Anzeige behauptete etwas, das nicht mehr stimmt.
+    localStorage.setItem('worship_arr_5', '77');
+    expect(loadSettings(song({ arrangementCount: 1 })).arrangementId).toBeNull();
+  });
+
+  it('verwirft Unsinn', () => {
+    for (const roh of ['0', '-3', 'abc', '']) {
+      localStorage.setItem('worship_arr_5', roh);
+      expect(loadSettings(song({ arrangementCount: 2 })).arrangementId).toBeNull();
+    }
+  });
+
+  it('wandert mit dem Konto – der Name steht in SETTINGS_BASES', () => {
+    // Genau das fehlte heute bei der Zählweise: Die Einstellung blieb still auf einem Gerät liegen.
+    expect(SETTINGS_BASES).toContain('arr');
+    expect(SETTINGS_KEY_RE.test('worship_arr_5')).toBe(true);
   });
 });

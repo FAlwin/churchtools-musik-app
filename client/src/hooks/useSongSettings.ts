@@ -53,6 +53,9 @@ export function useSongSettings(songs: SetlistSong[]) {
           next.zaehlweise === null ? null : String(next.zaehlweise),
         );
       if ('viewSource' in patch) setLsSong('view', songId, String(next.viewSource));
+      // Pro LIED, nicht je Version: Die Versionen liegen im Arrangement (siehe `SongSettings`).
+      if ('arrangementId' in patch)
+        setLsSong('arr', songId, next.arrangementId === null ? null : String(next.arrangementId));
       if ('secShift' in patch) {
         const has = Object.keys(next.secShift).length > 0;
         setLsVersion('secshift', songId, vk, has ? JSON.stringify(next.secShift) : null);
