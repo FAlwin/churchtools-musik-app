@@ -1,3 +1,4 @@
+import { SETTINGS_BASES, SETTINGS_KEY_RE, SETTINGS_SONGID_RE } from '@shared/keys/index';
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
@@ -194,5 +195,63 @@ describe('Lesefehler zerstört keine Einstellungen (#273)', () => {
 
   it('fehlende Datei bleibt der normale Leerfall', async () => {
     await expect(mod.getSettings(6203, [])).resolves.toEqual({});
+  });
+});
+
+describe('SETTINGS_BASES – eine Liste, kein zweites Vorkommen (#145)', () => {
+  it('lässt JEDEN Namen der Liste durch – beide Muster stammen aus derselben Quelle', () => {
+    // Der eigentliche Fehler war nicht ein fehlender Name, sondern eine ZWEITE Liste: Beim
+    // Hinzufügen der Zählweise wurde keine von beiden nachgezogen, und die Einstellung blieb
+    // still auf einem Gerät liegen. Dieser Test läuft über die Liste selbst – ein künftiger Name
+    // ist damit automatisch mitgeprüft, statt hier von Hand nachgetragen werden zu müssen.
+    for (const base of SETTINGS_BASES) {
+      const proLied = `worship_${base}_5`;
+      const proVersion = `worship_${base}_5_original`;
+      expect(SETTINGS_KEY_RE.test(proLied), proLied).toBe(true);
+      expect(SETTINGS_KEY_RE.test(proVersion), proVersion).toBe(true);
+      expect(proVersion.match(SETTINGS_SONGID_RE)?.[1], proVersion).toBe('5');
+    }
+  });
+
+  it('enthält die Zählweise – sie fehlte und wurde deshalb nie synchronisiert', () => {
+    expect(SETTINGS_BASES).toContain('zaehl');
+  });
+
+  it('lässt Unbekanntes weiter draußen', () => {
+    for (const k of ['worship_unsinn_5', 'worship_key_abc', 'worship_5', 'key_5']) {
+      expect(SETTINGS_KEY_RE.test(k), k).toBe(false);
+    }
+  });
+});
+
+describe('getSettings – jede erlaubte Einstellung findet ihr Lied wieder (#145)', () => {
+  it('gibt zu Lied 5 ALLE Namen der Liste zurück, nicht nur die alten', () => {
+    // Das ist der Weg, auf dem sich die Dopplung bemerkbar macht: `getSettings` filtert über
+    // `songIdOf`. Erkennt das Muster einen Namen nicht, fällt die Einstellung beim Abrufen STILL
+    // heraus – gespeichert ist sie, zurück kommt sie nie. Genau so verschwand die Zählweise.
+    //
+    // Die Schleife läuft über SETTINGS_BASES: Ein künftiger Name ist damit automatisch mitgeprüft.
+    const user = newUser();
+    return (async () => {
+      const eintraege: Record<string, string> = {};
+      for (const base of SETTINGS_BASES) eintraege[`worship_${base}_5_original`] = 'x';
+      await mod.putSettings(user, eintraege);
+
+      const zurueck = await mod.getSettings(user, [5]);
+      for (const base of SETTINGS_BASES) {
+        expect(Object.keys(zurueck), `worship_${base}_5_original fehlt`).toContain(
+          `worship_${base}_5_original`,
+        );
+      }
+    })();
+  });
+
+  it('lässt die Einstellungen anderer Lieder weiterhin draußen', async () => {
+    const user = newUser();
+    await mod.putSettings(user, {
+      worship_zaehl_5_original: '3',
+      worship_zaehl_9_original: '2',
+    });
+    expect(Object.keys(await mod.getSettings(user, [5]))).toEqual(['worship_zaehl_5_original']);
   });
 });
