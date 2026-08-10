@@ -379,6 +379,38 @@ zwischen Tonart und Tempo. Bei genau einem steht dort **nichts** zusätzlich.
 
 </details>
 
+### TF-CHART-15 · Arrangement umschalten
+
+**Das brauchst du:** Ein Lied mit **mehreren** Arrangements, deren Tonart oder Tempo sich
+unterscheiden.
+
+**Das muss passieren:** Der Wechsel gilt **nur für dich** – in ChurchTools ändert sich nichts.
+
+1. Lied öffnen, auf den **Titel** tippen → unter **Arrangement** stehen alle, das geltende mit
+   Haken. Es steht **über** der Version.
+2. Ein anderes wählen → das Blatt wird neu geladen, Tonart und Tempo in der Info-Zeile wechseln mit.
+3. **In ChurchTools nachsehen:** Der Ablauf ist **unverändert**. Ein anderes Teammitglied sieht
+   weiterhin das ursprüngliche Arrangement.
+4. Lied verlassen und wieder öffnen → deine Wahl gilt noch. Auf einem **zweiten Gerät** anmelden →
+   sie ist auch dort da.
+5. Zurück auf das Arrangement aus dem **Ablauf** wählen → gilt wieder; danach ändert das Team den
+   Ablauf, und die App folgt (die Wahl wurde als „keine eigene" gemerkt, nicht als Nummer).
+6. **Anmerkungen:** Auf einem Arrangement malen, umschalten → das andere hat seine eigenen Notizen.
+   Zurückschalten → die ersten sind wieder da.
+7. Bei einem Lied mit nur **einem** Arrangement erscheint der Abschnitt gar nicht.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `client/src/hooks/useArrangementUeberschreibung.ts`, `client/src/components/SongMenu.tsx`, `client/src/utils/chartSettings.ts`, `client/src/pages/ChordChart.tsx`
+- **Automatisiert:** weitgehend – `SongMenu.test.tsx` (zeigen/schweigen, „keine Wahl"),
+  `chartSettings.test.ts` (Speichern, Konto-Sync), und `e2e/chart-arrangement-wechsel.spec.ts` gegen
+  den ChurchTools-Stub: die ganze Kette Menü → Einstellung → Abruf → Ersetzung, inklusive Neustart.
+  Von Hand bleiben Punkt 3 (der Blick nach ChurchTools) und Punkt 4 auf einem zweiten Gerät.
+- **Historie:** #320
+
+</details>
+
 ### TF-CHART-14 · Anmerkungen überleben das Arrangement im Schlüssel
 
 **Das muss passieren:** Alle bestehenden Notizen sind nach dem Update **sofort da** – ohne

@@ -9,6 +9,21 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
+- **Das Arrangement lässt sich umschalten (#320).** Hat ein Lied mehrere, stehen sie im Lied-Menü
+  unter **Arrangement** – über der Version, weil die Versionen ChordPro-Dateien _innerhalb_ eines
+  Arrangements sind. Mit dem Wechsel gelten Tonart, Tempo und Dateien des neuen.
+
+  **Der Wechsel gilt nur für dich.** In ChurchTools wird nichts geändert – ein Tippen im
+  Gottesdienst stellt nicht den Ablauf des ganzen Teams um. Wer die andere Fassung für alle
+  festlegen will, tut das beim Bearbeiten des Ablaufs. Die Wahl bleibt erhalten und folgt dir aufs
+  zweite Gerät; die Wahl zurück auf das Arrangement aus dem Ablauf wird als „keine eigene Wahl"
+  gemerkt – ändert das Team den Ablauf später, folgt die App wieder.
+
+  **Deine Anmerkungen gehören ab jetzt zum Arrangement.** Zwei Arrangements können je eine Version
+  „Akustik" haben – gleicher Name, anderes Notenblatt. Bestehende Notizen wurden dem Arrangement
+  zugeschlagen, das beim ersten Öffnen gilt; **kopiert, nicht verschoben**, der alte Stand bleibt
+  als Sicherung liegen.
+
 - **Das Arrangement steht in der Info-Zeile (#320).** Hat ein Lied in ChurchTools mehrere
   Arrangements („Band", „Akustik" …), sieht man jetzt im Liederheft, welches gerade gilt – neben
   Tonart und Tempo. Bei genau einem erscheint **nichts**: Der Name unterscheidet dann nichts und

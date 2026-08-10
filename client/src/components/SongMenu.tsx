@@ -2,13 +2,13 @@
  * Lied-Menü der Chart-Ansicht (#198 – vorher inline in `pages/ChordChart.tsx`, ~190 Zeilen JSX).
  *
  * Vier Gruppen: Tonart/Kapo/Abschnitte, Teilen/Bearbeiten, **Anzeige** (Akkorde & Text · Nur Text ·
- * hochgeladene Dokumente) und **Version**.
+ * hochgeladene Dokumente), **Arrangement** und **Version**.
  *
  * Das Menü **schließt sich selbst** nach jeder Auswahl. Vorher stand `setShowSongMenu(false)` elf Mal
  * in den Klick-Handlern; ein vergessener Aufruf hätte das Menü offen über der Änderung stehen lassen.
  * Die Rückrufe hier sind reine Aktionen und müssen sich um das Schließen nicht kümmern.
  */
-import type { SetlistSong, ChordProSection } from '@shared/types/index';
+import type { SetlistSong, ChordProSection, SongArrangementOption } from '@shared/types/index';
 import type { SongSettings } from '../utils/chartSettings';
 import { Icon } from '../components/icons';
 import { hasStoredNotesForLevel as hasOwnNotes } from '../utils/annotationKeys';
@@ -27,6 +27,10 @@ interface SongMenuProps {
   curKey: string;
   /** Abschnitte des angezeigten Textes – ohne sie gibt es nichts zu transponieren/teilen. */
   sections: ChordProSection[];
+  /** Alle Arrangements des Lieds (#320). Bei nur einem erscheint nichts. */
+  arrangements: SongArrangementOption[];
+  /** Arrangement, das im ABLAUF steht – die Wahl darauf bedeutet „keine eigene Wahl". */
+  ablaufArrangementId: number;
   versions: VersionChoice[];
   currentVersion: VersionChoice;
   isOriginal: boolean;
@@ -49,6 +53,8 @@ export function SongMenu({
   set,
   curKey,
   sections,
+  arrangements,
+  ablaufArrangementId,
   versions,
   currentVersion,
   isOriginal,
@@ -160,6 +166,37 @@ export function SongMenu({
             {set.viewSource === d.fileId && <span className={styles.mmCheck}>✓</span>}
           </button>
         ))}
+
+        {/* Arrangement (#320) – NUR bei mehr als einem. Steht VOR der Version, weil es die größere
+            Klammer ist: Die Versionen sind ChordPro-Dateien innerhalb eines Arrangements.
+            Der Wechsel gilt **nur für mich**; in ChurchTools wird nichts geändert. Deshalb steht
+            hier auch kein Hinweis auf ein Speichern – es gibt keines. */}
+        {arrangements.length > 1 && (
+          <>
+            <div className={styles.menuLbl} style={{ marginTop: 6 }}>
+              Arrangement
+            </div>
+            {arrangements.map((a) => (
+              <button
+                key={a.arrangementId}
+                className={`${styles.mmItem}${a.arrangementId === song.arrangementId ? ' ' + styles.on : ''}`}
+                onClick={pick(() =>
+                  // Das Arrangement aus dem Ablauf wird als „keine Wahl" gespeichert, nicht als
+                  // seine Nummer: Ändert das Team den Ablauf später, folgt die App wieder – statt an
+                  // einer Nummer festzuhalten, die einmal die richtige war.
+                  onChange({
+                    arrangementId: a.arrangementId === ablaufArrangementId ? null : a.arrangementId,
+                  }),
+                )}
+              >
+                <span>{a.arrangementName}</span>
+                {a.arrangementId === song.arrangementId && (
+                  <span className={styles.mmCheck}>✓</span>
+                )}
+              </button>
+            ))}
+          </>
+        )}
 
         {showsChords && (hasVersions || canEditSong) && (
           <>

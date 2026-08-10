@@ -1,4 +1,4 @@
-import type { ChordProSection, SetlistSong } from '@shared/types/index';
+import type { ChordProSection, SetlistSong, SongArrangementOption } from '@shared/types/index';
 import type { ResolvedVersion } from '../utils/songVersions';
 import type { SongSettings } from '../utils/chartSettings';
 import { CapoPicker } from './CapoPicker';
@@ -26,6 +26,10 @@ interface ChartOverlaysProps {
   set: SongSettings;
   /** Klingende Tonart. */
   curKey: string;
+  /** Alle Arrangements des Lieds (#320) – zum Umschalten im Lied-Menü. */
+  arrangements: SongArrangementOption[];
+  /** Arrangement aus dem Ablauf – die Wahl darauf heißt „keine eigene Wahl". */
+  ablaufArrangementId: number;
   /** Gegriffene Tonart (Kapo abgezogen). */
   shapeKey: string;
   sections: ChordProSection[];
@@ -51,6 +55,8 @@ export function ChartOverlays({
   curKey,
   shapeKey,
   sections,
+  arrangements,
+  ablaufArrangementId,
   versions,
   currentVersion,
   isOriginal,
@@ -84,6 +90,8 @@ export function ChartOverlays({
         set={set}
         curKey={curKey}
         sections={sections}
+        arrangements={arrangements}
+        ablaufArrangementId={ablaufArrangementId}
         versions={versions}
         currentVersion={currentVersion}
         isOriginal={isOriginal}
