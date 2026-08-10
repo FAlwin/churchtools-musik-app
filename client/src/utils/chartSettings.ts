@@ -18,6 +18,17 @@ export interface SongSettings {
   lyricsOnly: boolean;
   secShift: Record<number, number>;
   /**
+   * Selbst gewähltes Arrangement, `null` = das aus dem Ablauf (#320).
+   *
+   * Gilt **pro Lied und nicht je Version** – anders als alles andere hier. Das ist kein Versehen:
+   * Die Versionen sind Dateien INNERHALB eines Arrangements. Eine Einstellung je Version könnte das
+   * Arrangement also nicht wechseln, ohne sich selbst den Boden zu entziehen.
+   *
+   * Der Wechsel gilt nur für mich; in ChurchTools wird nichts geändert. Das war die Entscheidung zu
+   * #320: Ein Tippen im Gottesdienst darf nicht den Ablauf des ganzen Teams umstellen.
+   */
+  arrangementId: number | null;
+  /**
    * Zählweise: Wie viele Grundschläge werden zu einem gezählten Schlag zusammengefasst? (#145)
    * `null` = aus der Taktart abgeleitet (6/8 & Co. in Dreiergruppen, sonst einzeln).
    *
@@ -38,6 +49,7 @@ export const DEFAULT_SETTINGS: SongSettings = {
   fontSize: 20,
   lyricsOnly: false,
   secShift: {},
+  arrangementId: null,
   zaehlweise: null,
   versionKey: 'original',
   viewSource: 'chords',
@@ -93,7 +105,7 @@ function buildSettings(
   src: SettingSource,
   songId: number,
   versionKey: string,
-): Omit<SongSettings, 'viewSource' | 'lyricsOnly'> & { lyricsOnly: boolean } {
+): Omit<SongSettings, 'viewSource' | 'lyricsOnly' | 'arrangementId'> & { lyricsOnly: boolean } {
   const get = (base: string): string | null => readVersioned(src, base, songId, versionKey);
   return {
     key: get('key') || null,
@@ -122,7 +134,20 @@ export function loadSettings(
     savedView && !Number.isNaN(savedId) && song.documents.some((d) => d.fileId === savedId)
       ? savedId
       : 'chords';
-  return { ...buildSettings(fromLocalStorage, song.id, versionKey), viewSource };
+  /**
+   * Gewähltes Arrangement – pro Lied, wie `viewSource`, und **nur wenn es das Lied noch hat**.
+   *
+   * Die Prüfung gegen `arrangementCount` ist wichtig: Wird ein Arrangement in ChurchTools gelöscht,
+   * zeigte eine gemerkte Nummer ins Leere. Der Server fiele auf ein anderes zurück, und die Anzeige
+   * behauptete etwas, das nicht mehr stimmt. Ohne die Nummer gilt schlicht wieder das aus dem
+   * Ablauf. Genau prüfen können wir sie hier nicht (die Liste liegt nicht vor) – aber ein Lied mit
+   * nur einem Arrangement braucht überhaupt keine Wahl.
+   */
+  const savedArr = lsSong('arr', song.id);
+  const arrId = savedArr ? Number(savedArr) : NaN;
+  const arrangementId =
+    Number.isInteger(arrId) && arrId > 0 && song.arrangementCount > 1 ? arrId : null;
+  return { ...buildSettings(fromLocalStorage, song.id, versionKey), viewSource, arrangementId };
 }
 
 /** secShift-Rohwert (JSON) sicher parsen; ignoriert Ungültiges/0-Werte. */
@@ -159,5 +184,9 @@ export function settingsForLevel(
     ...buildSettings(fromMap, song.id, versionKey),
     lyricsOnly,
     viewSource: 'chords',
+    // Beim Ansehen fremder Notizen gilt IMMER das Arrangement aus dem Ablauf: Welches der Kollege
+    // gewählt hatte, steht nicht in den geteilten Daten – seine Wahl war eine persönliche. Eine
+    // geratene Nummer wäre schlimmer als keine.
+    arrangementId: null,
   };
 }

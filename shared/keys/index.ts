@@ -112,6 +112,7 @@ export const SETTINGS_BASES = [
   'ver',
   'view',
   'zaehl',
+  'arr',
 ] as const;
 
 /**
