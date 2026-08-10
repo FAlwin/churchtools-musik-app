@@ -42,6 +42,8 @@ import { useChartStream } from '../hooks/useChartStream';
 import { useChartSync, useResyncAfterEditor } from '../hooks/useChartSync';
 import { useMetronome, type KlickModus } from '../hooks/useMetronome';
 import { taktRaster } from '../utils/metronome';
+import { diag } from '../utils/diagnose';
+import { DiagOverlay } from '../components/DiagOverlay';
 import { arrangementMigrationAnwenden } from '../utils/arrangementMigration';
 import { useArrangementUeberschreibung } from '../hooks/useArrangementUeberschreibung';
 import { setArrangementTempo } from '../services/churchtoolsApi';
@@ -498,6 +500,7 @@ export function ChordChart({
     // GESPEICHERTEN Zoom erneut an – also wieder eine Größe, die in die neue Fläche nicht passt.
     // Und bewusst nicht `resetZoomSignal`: Das löscht den gespeicherten Zoom, was hier zu viel
     // wäre – der Nutzer hat ihn nicht zurückgenommen, sondern nur die Leisten umgeschaltet.
+    diag(`Tipp Mitte -> Leisten ${wirdAusgeblendet ? 'aus' : 'an'}`);
     setLayoutEpoch((n) => n + 1);
   };
 
@@ -571,6 +574,7 @@ export function ChordChart({
           />
         )}
 
+        <DiagOverlay />
         <ChartOverlays
           arrangements={arrangements.data ?? []}
           ablaufArrangementId={ablaufArrangement}
