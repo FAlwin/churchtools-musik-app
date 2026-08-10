@@ -13,8 +13,22 @@ import { ANNO_DRAW_NS, levelPrefix } from '@shared/keys/index';
 /** Präfix der EIGENEN (privaten) Anmerkungen – aus der geteilten Grammatik (#250). */
 export const OWN_DRAW_PREFIX = ANNO_DRAW_NS;
 
-/** Basis-Schlüssel einer Ebenen-Seite (ohne Namensraum-Präfix, ohne `_text`). */
-const LEVEL_PAGE_RE = /^song\d+_v([a-z0-9-]+)(_lyr)?_(\d+)$/i;
+/**
+ * Basis-Schlüssel einer Ebenen-Seite (ohne Namensraum-Präfix, ohne `_text`).
+ *
+ * Das Arrangement-Segment (#320) ist erlaubt, wird aber NICHT ausgewertet: Diese Auflistung
+ * beantwortet „auf welchen Ebenen hat jemand Notizen", und eine Ebene ist hier Version +
+ * Darstellungsart. Wichtig ist, dass arrangement-genaue Schlüssel überhaupt **gesehen** werden –
+ * ohne das Segment im Muster fielen sie stillschweigend heraus und die Notizen eines Kollegen
+ * wären in der Auswahl unsichtbar.
+ *
+ * Dass zwei Arrangements dabei zu einer Ebene verschmelzen, ist die offene Frage von Schritt 3.
+ * Solange die Migration nur KOPIERT, sind es dieselben Seiten, und die Vereinigung ändert nichts.
+ *
+ * Damit ist es das DRITTE Muster über dieselbe Grammatik (nach `ANNO_KEY_RE` und dem Muster in
+ * `arrangementMigration`). Beim Erweitern des Schlüssels sind alle drei zu prüfen.
+ */
+const LEVEL_PAGE_RE = /^song\d+(?:_a\d+)?_v([a-z0-9-]+)(_lyr)?_(\d+)$/i;
 
 /** Präfix aller Seiten EINER Ebene (Version + Darstellungsart) eines Lieds – ohne Namensraum. */
 export function levelPagePrefix(songId: number, versionKey: string, lyr: boolean): string {

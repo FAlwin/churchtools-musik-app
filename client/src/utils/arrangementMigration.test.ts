@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { arrangementKopien } from './arrangementMigration';
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it } from 'vitest';
+import { arrangementKopien, arrangementMigrationAnwenden } from './arrangementMigration';
 import { ANNO_DRAW_NS, ANNO_ZOOM_NS, songPageKey } from '@shared/keys/index';
 
 /**
@@ -80,5 +81,38 @@ describe('arrangementKopien – was NICHT passieren darf', () => {
     const ersterLauf = arrangementKopien([alt], 12, 45);
     const danach = [alt, ...ersterLauf.map((k) => k.nach)];
     expect(arrangementKopien(danach, 12, 45)).toEqual([]);
+  });
+});
+
+describe('arrangementMigrationAnwenden – am echten Speicher', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('legt die Kopie an und lässt das Original stehen', () => {
+    const alt = draw(12, 'original', false, 3);
+    localStorage.setItem(alt, '[[1,2]]');
+    expect(arrangementMigrationAnwenden(12, 45)).toBe(1);
+    expect(localStorage.getItem(draw(12, 'original', false, 3, 45))).toBe('[[1,2]]');
+    // Verlustfrei: Der Bestand bleibt als Sicherung liegen.
+    expect(localStorage.getItem(alt)).toBe('[[1,2]]');
+  });
+
+  it('ist idempotent – der Speicher selbst ist der Merker', () => {
+    localStorage.setItem(draw(12, 'original', false, 3), '[[1,2]]');
+    expect(arrangementMigrationAnwenden(12, 45)).toBe(1);
+    expect(arrangementMigrationAnwenden(12, 45)).toBe(0);
+  });
+
+  it('überschreibt vorhandene Notizen dieses Arrangements nicht', () => {
+    localStorage.setItem(draw(12, 'original', false, 3), 'ALT');
+    localStorage.setItem(draw(12, 'original', false, 3, 45), 'NEU');
+    expect(arrangementMigrationAnwenden(12, 45)).toBe(0);
+    expect(localStorage.getItem(draw(12, 'original', false, 3, 45))).toBe('NEU');
+  });
+
+  it('trägt für ein zweites Arrangement eigene Kopien nach', () => {
+    localStorage.setItem(draw(12, 'original', false, 3), '[[1,2]]');
+    arrangementMigrationAnwenden(12, 45);
+    expect(arrangementMigrationAnwenden(12, 46)).toBe(1);
+    expect(localStorage.getItem(draw(12, 'original', false, 3, 46))).toBe('[[1,2]]');
   });
 });

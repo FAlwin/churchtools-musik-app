@@ -8,6 +8,8 @@ export interface StreamOwner {
   localPage: number;
   kind: 'chord' | 'doc';
   versionKey: string;
+  /** Arrangement, aus dem diese Seite stammt (#320) – Teil des Anmerkungs-Schlüssels. */
+  arrangementId: number;
   fileId?: number;
   docType?: 'pdf' | 'image';
 }
@@ -60,6 +62,7 @@ export function composeStream<T>({ songs, settings, chordBySong, docPages }: Com
           songIdx: si,
           songId: song.id,
           localPage,
+          arrangementId: song.arrangementId,
           kind: 'doc',
           versionKey: 'doc',
           fileId: doc.fileId,
@@ -74,7 +77,14 @@ export function composeStream<T>({ songs, settings, chordBySong, docPages }: Com
 
     for (const [localPage, { canvas, versionKey }] of (chordBySong.get(si) ?? []).entries()) {
       pages.push(canvas);
-      owners.push({ songIdx: si, songId: song.id, localPage, kind: 'chord', versionKey });
+      owners.push({
+        songIdx: si,
+        songId: song.id,
+        localPage,
+        kind: 'chord',
+        versionKey,
+        arrangementId: song.arrangementId,
+      });
     }
   });
 

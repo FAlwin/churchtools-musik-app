@@ -22,6 +22,7 @@ const chordOwner = (over: Partial<StreamOwner> = {}): StreamOwner => ({
   localPage: 0,
   kind: 'chord',
   versionKey: 'original',
+  arrangementId: 45,
   ...over,
 });
 
@@ -30,6 +31,7 @@ const docOwner = (over: Partial<StreamOwner> = {}): StreamOwner => ({
   songId: 12,
   localPage: 0,
   kind: 'doc',
+  arrangementId: 45,
   versionKey: 'doc',
   fileId: 98765,
   docType: 'pdf',
@@ -156,5 +158,40 @@ describe('KEY_RE – das Format (Literale als zweite Absicherung)', () => {
     for (const k of ['', 'foo', 'song12_0', 'song12_lyr_0', '98765_0']) {
       expect(KEY_RE.test(k)).toBe(false);
     }
+  });
+});
+
+describe('Arrangement im Schlüssel (#320)', () => {
+  it('eigene Striche und Zoom tragen das Arrangement', () => {
+    // Ohne das Segment lägen nach einem Wechsel die Striche der Band-Fassung auf den Seiten der
+    // Akustik-Fassung – die Versionen liegen als Dateien IM Arrangement.
+    const o = chordOwner({ arrangementId: 45 });
+    expect(drawKeyForOwner(o, false)).toContain('_a45_');
+    expect(zoomKeyBaseForOwner(o, false)).toContain('_a45_');
+  });
+
+  it('unterscheidet zwei Arrangements mit derselben Version', () => {
+    const a = drawKeyForOwner(chordOwner({ arrangementId: 45 }), false);
+    const b = drawKeyForOwner(chordOwner({ arrangementId: 46 }), false);
+    expect(a).not.toBe(b);
+  });
+
+  it('die ANGESEHENE fremde Ebene traegt es bewusst NICHT', () => {
+    // Welches Arrangement die andere Person benutzt hat, weiß diese Funktion nicht. Das eigene
+    // einzusetzen wäre schlimmer als keines: Man suchte unter einem Schlüssel, den es bei ihr nicht
+    // gibt, und sähe ihre Striche nie. Offen für Schritt 3 – hier festgehalten, damit die
+    // Entscheidung nicht unbemerkt kippt.
+    const key = viewKeyForOwner(
+      chordOwner({ arrangementId: 45 }),
+      { songId: 12, versionKey: 'original', lyr: false },
+      'worship_teamview_',
+    );
+    expect(key).not.toContain('_a45_');
+  });
+
+  it('Dokument-Seiten bleiben ohne Arrangement – sie haengen an der Datei', () => {
+    expect(drawKeyForOwner(docOwner({ arrangementId: 45, fileId: 4711 }), false)).not.toContain(
+      '_a45_',
+    );
   });
 });
