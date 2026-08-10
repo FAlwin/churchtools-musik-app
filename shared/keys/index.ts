@@ -28,12 +28,31 @@ export const ANNO_ZOOM_NS = 'worship_doczoom_';
 
 // ── Ebene + Seite (das, was auch der Server sieht) ───────────────────────────
 /**
- * Ebenen-Präfix eines Lieds: alle Seiten EINER Version + Darstellungsart.
+ * Ebenen-Präfix eines Lieds: alle Seiten EINER Version + Darstellungsart – und seit #320 auch EINES
+ * Arrangements.
+ *
+ * **Warum das Arrangement dazugehört:** Die ChordPro-Versionen liegen als Dateien IM Arrangement.
+ * Zwei Arrangements können also je eine Version „Akustik" haben – gleicher Versions-Schlüssel,
+ * anderes Notenblatt. Ohne das Segment lägen die Striche aus der Band-Fassung auf den Seiten der
+ * Akustik-Fassung, sobald man umschaltet.
+ *
+ * **`arrangementId` ist optional, und das ist Absicht:** Ohne Angabe entsteht der ALTE Schlüssel.
+ * So bleibt jeder Bestand gültig, und der Aufrufer entscheidet, ob er schon arrangement-genau
+ * arbeitet. Das Segment steht direkt hinter dem Lied (`song12_a45_voriginal_…`) und nicht am Ende –
+ * hinten hängt beim Zoom bereits das Layout-Segment (`_dlarge2`), zwei wandernde Enden wären eine
+ * Fehlerquelle mehr.
+ *
  * `_lyr` ist die eigene Notiz-Ebene der Darstellung „Nur Text"; ohne Segment = „Akkorde & Text"
  * (so bleiben Bestandsnotizen von vor dieser Unterscheidung gültig).
  */
-export function levelPrefix(songId: number, versionKey: string, lyricsOnly: boolean): string {
-  return `song${songId}_v${versionKey}${lyricsOnly ? '_lyr' : ''}_`;
+export function levelPrefix(
+  songId: number,
+  versionKey: string,
+  lyricsOnly: boolean,
+  arrangementId?: number | null,
+): string {
+  const arr = arrangementId != null ? `_a${arrangementId}` : '';
+  return `song${songId}${arr}_v${versionKey}${lyricsOnly ? '_lyr' : ''}_`;
 }
 
 /** Schlüssel einer konkreten Lied-Seite (ohne Namensraum). */
@@ -42,8 +61,9 @@ export function songPageKey(
   versionKey: string,
   lyricsOnly: boolean,
   page: number,
+  arrangementId?: number | null,
 ): string {
-  return `${levelPrefix(songId, versionKey, lyricsOnly)}${page}`;
+  return `${levelPrefix(songId, versionKey, lyricsOnly, arrangementId)}${page}`;
 }
 
 /**
@@ -67,7 +87,7 @@ export function zoomLayoutSuffix(deviceClass: 'phone' | 'large', perView: number
  * Das abschließende Layout-Segment MUSS erlaubt sein, sonst wird der Querformat-Zoom nie
  * synchronisiert. Dokument-Schlüssel passen absichtlich nicht – sie bleiben lokal.
  */
-export const ANNO_KEY_RE = /^song\d+_v[a-z0-9-]+(?:_lyr)?_\d+(?:_d(?:phone|large)\d?)?$/i;
+export const ANNO_KEY_RE = /^song\d+(?:_a\d+)?_v[a-z0-9-]+(?:_lyr)?_\d+(?:_d(?:phone|large)\d?)?$/i;
 
 /**
  * Die Namen aller Einstellungen, die zum Konto synchronisiert werden – **die einzige Liste**.
