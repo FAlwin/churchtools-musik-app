@@ -21,6 +21,10 @@ import { diagAn, diagHoeren, diagZeilen } from '../utils/diagnose';
  */
 export function DiagOverlay() {
   const [, neu] = useState(0);
+  // Zugeklappt bedienbar: Das Feld lag ueber den Knoepfen der gefuehrten Einfuehrung, dadurch war
+  // sie nicht wegzuklicken – der Test kam gar nicht erst zustande. Gemeldet: „ich kann es nicht
+  // testen weil die einführung an ist."
+  const [zu, setZu] = useState(false);
 
   useEffect(() => {
     if (!diagAn) return;
@@ -38,7 +42,7 @@ export function DiagOverlay() {
         left: 0,
         right: 0,
         bottom: 0,
-        maxHeight: '38vh',
+        maxHeight: zu ? 26 : '38vh',
         overflowY: 'auto',
         background: 'rgba(0,0,0,.86)',
         color: '#0f0',
@@ -48,8 +52,22 @@ export function DiagOverlay() {
         whiteSpace: 'pre',
       }}
     >
-      <div style={{ color: '#ff0' }}>
-        DIAGNOSE AN · jetzt pinchen und in die Mitte tippen ({zeilen.length} Zeilen)
+      <div style={{ color: '#ff0', display: 'flex', gap: 10, alignItems: 'center' }}>
+        <button
+          onClick={() => setZu((z) => !z)}
+          style={{
+            font: 'inherit',
+            color: '#ff0',
+            background: '#333',
+            border: '1px solid #666',
+            borderRadius: 4,
+            padding: '0 8px',
+            cursor: 'pointer',
+          }}
+        >
+          {zu ? 'aufklappen ▲' : 'zuklappen ▼'}
+        </button>
+        <span>DIAGNOSE AN · {zeilen.length} Zeilen</span>
       </div>
       {zeilen.map((z, i) => (
         <div key={i}>
