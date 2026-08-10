@@ -40,8 +40,33 @@ const SONG = {
         },
       ],
     },
+    // Zweites Arrangement (#320): Ohne eines liesse sich das Umschalten nicht pruefen – und die
+    // Auswahl erscheint absichtlich erst ab zwei. Eigene Tonart und eigene Datei, damit im Test
+    // sichtbar ist, DASS das andere Blatt geladen wurde und nicht nur der Name wechselte.
+    {
+      id: 9002,
+      name: 'Unplugged',
+      isDefault: false,
+      key: 'D',
+      keyOfArrangement: 'D',
+      bpm: 96,
+      beat: '3/4',
+      files: [
+        {
+          name: 'Testlied aus ChurchTools.chordpro',
+          fileUrl: `http://localhost:${PORT}/?q=public/filedownload&id=77002`,
+        },
+      ],
+    },
   ],
 };
+
+const CHORDPRO_UNPLUGGED = `{title: Testlied aus ChurchTools}
+{key: D}
+
+{comment: Vers 1 Unplugged}
+[D]Leise Zeile aus dem [A]Stub
+`;
 
 const CHORDPRO = `{title: Testlied aus ChurchTools}
 {key: G}
@@ -125,7 +150,9 @@ const server = createServer((req, res) => {
   // Datei-Download (ChordPro) – ChurchTools liefert das über einen Query-Pfad aus.
   if (url.searchParams.get('q') === 'public/filedownload') {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end(CHORDPRO);
+    // Datei 77002 gehoert zum zweiten Arrangement und hat einen anderen Text: So belegt der Test,
+    // dass beim Umschalten wirklich ein anderes Blatt geladen wird.
+    res.end(url.searchParams.get('id') === '77002' ? CHORDPRO_UNPLUGGED : CHORDPRO);
     return;
   }
 

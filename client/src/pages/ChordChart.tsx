@@ -43,8 +43,10 @@ import { useChartSync, useResyncAfterEditor } from '../hooks/useChartSync';
 import { useMetronome, type KlickModus } from '../hooks/useMetronome';
 import { taktRaster } from '../utils/metronome';
 import { arrangementMigrationAnwenden } from '../utils/arrangementMigration';
+import { useArrangementUeberschreibung } from '../hooks/useArrangementUeberschreibung';
 import { setArrangementTempo } from '../services/churchtoolsApi';
 import { useSetlistPages } from '../hooks/useSetlistPages';
+import { useSongArrangements } from '../hooks/useServices';
 import type { DrawTool } from '../types/index';
 import styles from './ChordChart.module.scss';
 
@@ -72,7 +74,7 @@ interface ChordChartProps {
  * Die angetippte Hälfte ist „aktiv" und bestimmt, worauf Kopfzeile/Menüs wirken.
  */
 export function ChordChart({
-  songs,
+  songs: songsAusAblauf,
   startIndex,
   onBack,
   onReload,
@@ -80,7 +82,17 @@ export function ChordChart({
   canUseGlobalNotes = false,
 }: ChordChartProps) {
   // Anzeige-Einstellungen aller Lieder – Halten und Speichern liegt in useSongSettings (#198).
-  const { settings, updateSetting, selectVersion, reloadSettings } = useSongSettings(songs);
+  const { settings, updateSetting, selectVersion, reloadSettings } =
+    useSongSettings(songsAusAblauf);
+
+  /**
+   * Ein selbst gewähltes Arrangement einsetzen (#320).
+   *
+   * Ab hier heißt die Liste wieder `songs` – alles darunter arbeitet unverändert mit dem, was
+   * WIRKLICH gilt, und muss nichts von der Überschreibung wissen. Während des Ladens (und bei einem
+   * Fehlschlag) bleibt es beim Eintrag aus dem Ablauf, damit die Seiten nicht verschwinden.
+   */
+  const songs = useArrangementUeberschreibung(songsAusAblauf, settings);
 
   /**
    * Bestandsnotizen dem geltenden Arrangement zuschlagen (#320).
@@ -266,6 +278,22 @@ export function ChordChart({
 
   const activeSongIdx = owners[activeIdx]?.songIdx ?? 0;
   const song = songs[activeSongIdx] ?? songs[songs.length - 1];
+
+  /**
+   * Die Arrangements des AKTIVEN Lieds – nur geladen, wenn es überhaupt mehrere hat (#320).
+   *
+   * Nicht für alle Lieder des Ablaufs auf einmal: Das wären bei einem Gottesdienst mit acht Liedern
+   * acht Abrufe für ein Menü, das man vielleicht nie öffnet. Die Zahl steht schon im Lied
+   * (`arrangementCount`), die Namen holt erst der Bedarf.
+   */
+  const arrangements = useSongArrangements(song.arrangementCount > 1 ? song.id : null);
+
+  /**
+   * Welches Arrangement steht im ABLAUF? Die Wahl darauf wird als „keine eigene Wahl" gespeichert –
+   * ändert das Team den Ablauf später, folgt die App wieder, statt an einer Nummer festzuhalten,
+   * die einmal die richtige war.
+   */
+  const ablaufArrangement = songsAusAblauf[activeSongIdx]?.arrangementId ?? song.arrangementId;
   const set = effSettings[song.id] ?? DEFAULT_SETTINGS;
   // Ansehen gilt pro Lied: Blättert man zu einem anderen Lied, endet es automatisch.
   useEffect(() => {
@@ -544,6 +572,8 @@ export function ChordChart({
         )}
 
         <ChartOverlays
+          arrangements={arrangements.data ?? []}
+          ablaufArrangementId={ablaufArrangement}
           // Das Tempo-Menü ist bewusst KEIN `ChartOverlay`: Es teilt sich zwar die Regel „höchstens
           // eines offen", hat aber eine ganz andere Bedienung. Deshalb hier herausgefiltert, statt
           // den Typ dort aufzuweichen.

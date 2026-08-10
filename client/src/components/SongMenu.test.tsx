@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import type { SetlistSong } from '@shared/types/index';
+import type { SetlistSong, SongArrangementOption } from '@shared/types/index';
 import { DEFAULT_SETTINGS, type SongSettings } from '../utils/chartSettings';
 import { SongMenu } from './SongMenu';
 import styles from '../pages/ChordChart.module.scss';
@@ -35,7 +35,14 @@ const VERSIONS = [
   { key: 'akustik', name: 'Akustik' },
 ];
 
-function setup(over: { song?: SetlistSong; set?: Partial<SongSettings>; canEdit?: boolean } = {}) {
+function setup(
+  over: {
+    song?: SetlistSong;
+    set?: Partial<SongSettings>;
+    canEdit?: boolean;
+    arrangements?: SongArrangementOption[];
+  } = {},
+) {
   const handlers = {
     onClose: vi.fn(),
     onOpenKeyPicker: vi.fn(),
@@ -54,6 +61,8 @@ function setup(over: { song?: SetlistSong; set?: Partial<SongSettings>; canEdit?
       song={over.song ?? song()}
       set={set}
       curKey="C"
+      arrangements={over.arrangements ?? []}
+      ablaufArrangementId={1}
       sections={[{ type: 'verse', label: 'Vers 1', lines: [] }] as never}
       versions={VERSIONS}
       currentVersion={VERSIONS.find((v) => v.key === set.versionKey) ?? VERSIONS[0]}
@@ -157,5 +166,41 @@ describe('CSS-Modul erreichbar', () => {
     const cls = (screen.getByText('Transponieren').parentElement as HTMLElement).className;
     expect(cls).toBeTruthy();
     expect(cls).not.toContain('undefined');
+  });
+});
+
+describe('SongMenu – Arrangement umschalten (#320)', () => {
+  // Namen bewusst NICHT „Akustik": Die Test-Vorlage hat schon eine VERSION dieses Namens, und die
+  // Verwechslung ist genau der Unterschied, den die Oberfläche erkennbar machen soll – Versionen
+  // sind ChordPro-Dateien INNERHALB eines Arrangements.
+  const arrs = [
+    { arrangementId: 1, arrangementName: 'Band', key: null, bpm: null, isDefault: true },
+    { arrangementId: 2, arrangementName: 'Unplugged', key: null, bpm: null, isDefault: false },
+  ] as unknown as SongArrangementOption[];
+
+  it('zeigt die Auswahl bei mehreren Arrangements', () => {
+    setup({ arrangements: arrs, song: song({ arrangementId: 1 }) });
+    expect(screen.getByText('Arrangement')).toBeTruthy();
+    expect(screen.getByText('Band')).toBeTruthy();
+    expect(screen.getByText('Unplugged')).toBeTruthy();
+  });
+
+  it('zeigt bei nur einem NICHTS – kein Bedienelement ohne Zweck', () => {
+    setup({ arrangements: [arrs[0]], song: song({ arrangementId: 1 }) });
+    expect(screen.queryByText('Arrangement')).toBeNull();
+  });
+
+  it('merkt eine Abweichung als Nummer', () => {
+    const props = setup({ arrangements: arrs, song: song({ arrangementId: 1 }) });
+    screen.getByText('Unplugged').click();
+    expect(props.onChange).toHaveBeenCalledWith({ arrangementId: 2 });
+  });
+
+  it('merkt die Wahl auf das Ablauf-Arrangement als „keine Wahl"', () => {
+    // Sonst hielte die App an einer Nummer fest, die einmal die richtige war: Ändert das Team den
+    // Ablauf später, soll die App wieder folgen.
+    const props = setup({ arrangements: arrs, song: song({ arrangementId: 2 }) });
+    screen.getByText('Band').click();
+    expect(props.onChange).toHaveBeenCalledWith({ arrangementId: null });
   });
 });

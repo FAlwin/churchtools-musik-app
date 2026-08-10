@@ -37,6 +37,8 @@ function renderMenu(spy: { onClose: () => void; onOpenKeyPicker: () => void }) {
       set={SETTINGS}
       curKey="G"
       sections={[{ name: 'Vers 1', lines: [] } as never]}
+      arrangements={[]}
+      ablaufArrangementId={1}
       versions={[VERSION]}
       currentVersion={VERSION}
       isOriginal
