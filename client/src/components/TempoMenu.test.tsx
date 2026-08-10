@@ -285,36 +285,61 @@ describe('TempoMenu – Puls und Klick gehören nur mir', () => {
   });
 });
 
-describe('TempoMenu – Zählweise', () => {
-  it('bietet nur an, was in dieser Taktart einen Takt ergibt', () => {
-    zeige({ timeSig: '4/4' });
-    expect(knopf('Einzeln').hasAttribute('disabled')).toBe(false);
-    expect(knopf('Zweier').hasAttribute('disabled')).toBe(false);
-    // 4/4 in Dreiern ergäbe 1⅓ Schläge je Takt – gar nicht erst anklickbar.
-    expect(knopf('Dreier').hasAttribute('disabled')).toBe(true);
+describe('TempoMenu – Schläge je Takt', () => {
+  it('beschriftet die Knöpfe mit dem, was man ZÄHLT', () => {
+    // Im 6/8: sechs Achtel, drei Paare oder zwei Dreiergruppen. „Einzeln/Zweier/Dreier" stand
+    // vorher da und sagte nichts darüber, was danach passiert – es war nicht zu verstehen.
+    zeige({ timeSig: '6/8' });
+    for (const n of ['6', '3', '2']) expect(knopf(`${n} Schläge je Takt`)).toBeTruthy();
   });
 
-  it('sperrt im Dreivierteltakt die Zweier statt der Dreier', () => {
-    zeige({ timeSig: '3/4' });
-    expect(knopf('Zweier').hasAttribute('disabled')).toBe(true);
-    expect(knopf('Dreier').hasAttribute('disabled')).toBe(false);
+  it('zeigt im Viervierteltakt andere Zahlen als im 6/8', () => {
+    zeige({ timeSig: '4/4' });
+    expect(knopf('4 Schläge je Takt')).toBeTruthy();
+    expect(knopf('2 Schläge je Takt')).toBeTruthy();
+  });
+
+  it('sperrt, was in dieser Taktart nicht aufgeht', () => {
+    zeige({ timeSig: '4/4' });
+    expect(knopf('4 Schläge je Takt').hasAttribute('disabled')).toBe(false);
+    expect(knopf('2 Schläge je Takt').hasAttribute('disabled')).toBe(false);
+    // 4/4 in Dreiern ergäbe 1⅓ Schläge je Takt. Der Knopf trägt dann einen Strich statt einer Zahl
+    // und ist gesperrt – stehen bleibt er, damit man sieht, dass es ihn gibt.
+    const gesperrt = knopf('in dieser Taktart nicht möglich');
+    expect(gesperrt.hasAttribute('disabled')).toBe(true);
+    expect(gesperrt.textContent).toBe('–');
   });
 
   it('meldet die Wahl nach oben und lässt sich auf Auto zurückstellen', () => {
     const props = zeige({ timeSig: '6/8' });
-    fireEvent.click(knopf('Zweier'));
+    fireEvent.click(knopf('3 Schläge je Takt'));
     expect(props.onZaehlweise).toHaveBeenCalledWith(2);
     fireEvent.click(knopf('Auto'));
     expect(props.onZaehlweise).toHaveBeenCalledWith(null);
   });
 
-  it('nennt bei gröberer Zählweise beide Zahlen – sonst wirkt es wie ein Fehler', () => {
-    // Im Feld stehen die Grundschläge (so steht es in ChurchTools), gehört wird ein Drittel davon.
+  it('nennt die Klick-Rate IMMER – auch wenn sie dem Tempo entspricht', () => {
+    // Vorher erschien hier nur bei gröberer Zählweise ein Satz, und der wechselte mit dem Knopf.
+    // Eine Zeile, die kommt und geht, ist schlimmer als eine, die immer dasteht.
+    zeige({ liedTempo: 120, timeSig: '4/4', zaehlweise: 1 });
+    expect(screen.getByText('klickt 120 ×/min')).toBeTruthy();
+  });
+
+  it('nennt sie auch bei gröberer Zählweise – dort weicht sie vom Feld ab', () => {
     zeige({ liedTempo: 120, timeSig: '6/8', zaehlweise: 3 });
     expect(feld().value).toBe('120');
-    expect(
-      screen.getByText(/120 Grundschläge – gezählt wird 40\/min in Dreiergruppen/),
-    ).toBeTruthy();
+    expect(screen.getByText('klickt 40 ×/min')).toBeTruthy();
+  });
+
+  it('sagt es, wenn gar kein Tempo eingestellt ist', () => {
+    zeige({ liedTempo: null });
+    expect(screen.getByText('kein Tempo eingestellt')).toBeTruthy();
+  });
+
+  it('spricht das Wort „Grundschläge" nirgends aus', () => {
+    // Die Unterscheidung ist intern. Sie stand im Menü und war nicht zu verstehen – gemeldet.
+    zeige({ liedTempo: 120, timeSig: '6/8', zaehlweise: 3 });
+    expect(document.body.textContent).not.toContain('Grundschläge');
   });
 
   it('rechnet ein angetipptes Tempo auf Grundschläge zurück', () => {

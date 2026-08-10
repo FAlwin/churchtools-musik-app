@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { MAX_BPM, MIN_BPM, isPulsable } from '../utils/bpmPulse';
 import { tempoAusTipps } from '../utils/tapTempo';
-import { gezaehltesTempo, moeglicheZaehlweisen, wirksameZaehlweise } from '../utils/metronome';
+import {
+  gezaehlteSchlaegeProTakt,
+  gezaehltesTempo,
+  moeglicheZaehlweisen,
+  wirksameZaehlweise,
+} from '../utils/metronome';
 import { Icon } from './icons';
 import type { KlickModus } from '../hooks/useMetronome';
 import styles from '../pages/ChordChart.module.scss';
@@ -173,16 +178,11 @@ export function TempoMenu({
   /** Was unter der Trennlinie steht. Immer EINE Zeile, damit der Rahmen nicht springt. */
   const hinweis = fehler
     ? fehler
-    : // Bei gröberer Zählweise steht im Feld etwas anderes, als man hört – das muss dastehen, sonst
-      // wirkt es wie ein Fehler. Die Zahl im Feld sind IMMER die Grundschläge, so steht sie auch in
-      // ChurchTools und bedeutet damit für jeden dasselbe.
-      zw > 1 && gezaehlt !== null
-      ? `${gilt} Grundschläge – gezählt wird ${Math.round(gezaehlt)}/min in ${zw === 2 ? 'Zweier' : 'Dreier'}gruppen.`
-      : !darfSpeichern
-        ? 'Zum Ändern in ChurchTools fehlt dir die Berechtigung – der Wert gilt nur hier.'
-        : abweichend
-          ? 'Speichern setzt das Tempo in ChurchTools – für alle, die dieses Lied öffnen.'
-          : 'Puls und Klick gelten nur für dich – gespeichert wird davon nichts.';
+    : !darfSpeichern
+      ? 'Zum Ändern in ChurchTools fehlt dir die Berechtigung – der Wert gilt nur hier.'
+      : abweichend
+        ? 'Speichern setzt das Tempo in ChurchTools – für alle, die dieses Lied öffnen.'
+        : 'Puls und Klick gelten nur für dich – gespeichert wird davon nichts.';
 
   return (
     <>
@@ -230,7 +230,15 @@ export function TempoMenu({
           </button>
         </div>
 
-        <div className={styles.menuLbl}>Zählweise</div>
+        {/* **Auf den Knöpfen steht, was man ZÄHLT – nicht, wie gruppiert wird.** Erst hieß es
+            „Einzeln / Zweier / Dreier"; das sagt nichts darüber, was danach passiert, und war
+            nicht zu verstehen. Jetzt steht dort die Zahl der Schläge je Takt, die dabei
+            herauskommt: bei 6/8 also 6, 3 oder 2 – bei 4/4 nur 4 oder 2.
+
+            Angeboten wird nur, was in der Taktart aufgeht: 4/4 in Dreiern ergäbe 1⅓ Schläge je
+            Takt, und die Eins säße irgendwo. Der Knopf bleibt trotzdem stehen, nur gesperrt – so
+            sieht man, dass es ihn gibt. */}
+        <div className={styles.menuLbl}>Schläge je Takt</div>
         <div className={styles.segGroup}>
           <button
             className={`${styles.segBtn}${zaehlweise === null ? ' ' + styles.on : ''}`}
@@ -239,21 +247,31 @@ export function TempoMenu({
           >
             Auto
           </button>
-          {/* Nur Teiler der Taktlänge anbieten: 4/4 in Dreiern ergäbe einen Takt von 1⅓ gezählten
-              Schlägen, und die Eins säße irgendwo. Was keinen Takt ergibt, steht gar nicht erst da. */}
           {([1, 2, 3] as const).map((z) => (
             <button
               key={z}
               className={`${styles.segBtn}${zaehlweise === z ? ' ' + styles.on : ''}`}
               onClick={() => onZaehlweise(z)}
               disabled={!moeglich.includes(z)}
-              title={
-                z === 1 ? 'Jeden Schlag zählen' : z === 2 ? 'Je zwei Schläge' : 'Je drei Schläge'
+              aria-label={
+                moeglich.includes(z)
+                  ? `${gezaehlteSchlaegeProTakt(timeSig, z)} Schläge je Takt`
+                  : 'in dieser Taktart nicht möglich'
               }
             >
-              {z === 1 ? 'Einzeln' : z === 2 ? 'Zweier' : 'Dreier'}
+              {/* Ein Strich statt einer Zahl, wenn es nicht aufgeht: Im 4/4 fiele die Dreier-Wahl
+                  sonst auf denselben Wert wie die Einzel-Wahl zurück – zwei Knöpfe mit einer 4,
+                  einer davon gesperrt. Das wäre schlimmer als gar keine Zahl. */}
+              {moeglich.includes(z) ? gezaehlteSchlaegeProTakt(timeSig, z) : '–'}
             </button>
           ))}
+        </div>
+        {/* IMMER da, bei jeder Einstellung – auch wenn die Zahl dieselbe ist wie oben im Feld.
+            Vorher erschien hier nur bei gröberer Zählweise ein Satz, und der wechselte dann auch
+            noch mit dem Knopf: „bei einzeln steht ein anderer Hinweis als bei auto, zweier und
+            dreier". Eine Zeile, die kommt und geht, ist schlimmer als eine, die immer dasteht. */}
+        <div className={styles.menuKlickrate}>
+          {gezaehlt === null ? 'kein Tempo eingestellt' : `klickt ${Math.round(gezaehlt)} ×/min`}
         </div>
 
         <div className={styles.menuLbl}>Sichtbarer Puls</div>
