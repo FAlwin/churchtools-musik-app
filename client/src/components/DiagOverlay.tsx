@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { diagAn, diagHoeren, diagZeilen } from '../utils/diagnose';
 
 /**
@@ -6,6 +7,15 @@ import { diagAn, diagHoeren, diagZeilen } from '../utils/diagnose';
  *
  * Bewusst eine schlichte Liste ohne Gestaltung: Sie soll ablesbar und vorlesbar sein, nicht schön.
  * Die **Zeitabstände** sind die Auskunft, deshalb steht die Millisekunde vorn.
+ *
+ * **Als Portal direkt an den Seitenkörper.** Der erste Anlauf hing das Feld in den Baum der
+ * Chart-Ansicht – und blieb unsichtbar: Dort liegt es unter der Zoom-Ebene, und ein
+ * `position: fixed` bezieht sich innerhalb eines transformierten Vorfahren nicht mehr auf das
+ * Fenster, sondern auf diesen Vorfahren; dazu schneidet die Fläche über. Am Körper kann nichts
+ * dazwischenkommen.
+ *
+ * Zeigt außerdem SOFORT eine Kopfzeile mit der Version – sonst bleibt „ich sehe nichts" doppeldeutig
+ * (falscher Stand? Schalter vergessen? nichts passiert?).
  *
  * Vorübergehend – fliegt mit der Klärung des Zoom-Fehlers wieder raus.
  */
@@ -21,7 +31,7 @@ export function DiagOverlay() {
   if (!diagAn) return null;
   const zeilen = diagZeilen();
 
-  return (
+  return createPortal(
     <div
       style={{
         position: 'fixed',
@@ -38,12 +48,15 @@ export function DiagOverlay() {
         whiteSpace: 'pre',
       }}
     >
-      {zeilen.length === 0 ? 'Diagnose läuft – jetzt pinchen und in die Mitte tippen.' : null}
+      <div style={{ color: '#ff0' }}>
+        DIAGNOSE AN · jetzt pinchen und in die Mitte tippen ({zeilen.length} Zeilen)
+      </div>
       {zeilen.map((z, i) => (
         <div key={i}>
           {String(z.ms).padStart(6)} ms {z.text}
         </div>
       ))}
-    </div>
+    </div>,
+    document.body,
   );
 }
