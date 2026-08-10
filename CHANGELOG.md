@@ -5,6 +5,17 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Behoben
+
+- **Die Zählweise folgte nicht aufs zweite Gerät.** Neu in v2.18.0 – und dabei war sie die einzige
+  Lied-Einstellung, die nicht mit dem Konto wanderte: Tonart, Kapo, Spalten und Schriftgröße tun es
+  längst. Gespeichert war sie, beim Abrufen fiel sie still heraus. Ursache war eine
+  **Positivliste der Einstellungs-Namen, die zweimal im Code stand** – beim Hinzufügen wurde keine
+  von beiden nachgezogen. Jetzt gibt es sie einmal, und ein Test läuft über die Liste selbst: Ein
+  künftiger Name ist damit automatisch mitgeprüft.
+
 ## [2.18.0] – 2026-08-10
 
 ### Neu

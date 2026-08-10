@@ -39,11 +39,17 @@ export function withinSettingsLimits(entryCount: number, totalBytes: number): bo
  * Schlüssel **stillschweigend verwerfen** – die Einstellungen wären dann geräteübergreifend weg.
  * Liegt in @shared/keys und wird von Client UND Server geteilt (#250) – hier nur re-exportiert.
  */
-import { SETTINGS_KEY_RE } from '@shared/keys/index';
+import { SETTINGS_KEY_RE, SETTINGS_SONGID_RE } from '@shared/keys/index';
 export { SETTINGS_KEY_RE };
-/** Lied-ID aus einem Einstellungs-Schlüssel ziehen. */
+/**
+ * Lied-ID aus einem Einstellungs-Schlüssel ziehen.
+ *
+ * Muster aus `@shared/keys` – hier stand die Namensliste ein zweites Mal wortgleich, obwohl der
+ * Kommentar über dem Import genau das Gegenteil behauptete. Beim Hinzufügen der Zählweise wurde
+ * keine der beiden nachgezogen.
+ */
 function songIdOf(key: string): number | null {
-  const m = key.match(/^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_(\d+)/);
+  const m = key.match(SETTINGS_SONGID_RE);
   return m ? Number(m[1]) : null;
 }
 

@@ -70,14 +70,43 @@ export function zoomLayoutSuffix(deviceClass: 'phone' | 'large', perView: number
 export const ANNO_KEY_RE = /^song\d+_v[a-z0-9-]+(?:_lyr)?_\d+(?:_d(?:phone|large)\d?)?$/i;
 
 /**
+ * Die Namen aller Einstellungen, die zum Konto synchronisiert werden – **die einzige Liste**.
+ *
+ * Sie stand zweimal: hier im Prüfmuster und ein zweites Mal inline in `songIdOf` des Servers, direkt
+ * unter dem Kommentar „liegt in @shared/keys … hier nur re-exportiert". Genau daran ist es dann
+ * aufgefallen: Beim Hinzufügen der Zählweise (`zaehl`, #145) wurde **keine** der beiden Listen
+ * erweitert – die Einstellung blieb still auf einem Gerät liegen, während Tonart und Spalten
+ * mitwandern. Wer hier etwas ergänzt, ergänzt es überall.
+ *
+ * Eine Einstellung, die NICHT hier steht, funktioniert lokal weiter und wird nur nicht
+ * synchronisiert. Das ist der gefährliche Fall: Es fällt niemandem auf, bis jemand das Gerät
+ * wechselt.
+ */
+export const SETTINGS_BASES = [
+  'key',
+  'capo',
+  'cols',
+  'fs',
+  'lyrics',
+  'secshift',
+  'ver',
+  'view',
+  'zaehl',
+] as const;
+
+/**
  * Gültige Einstellungs-Schlüssel (Konto-Sync).
  *
  * Bewusst **nicht** `…_\d+$`: Das hätte die versionsbezogenen Schlüssel
  * (`worship_key_12_akustik`) still verworfen und Einstellungen geräteübergreifend gelöscht (#215).
  * Der End-Anker ist trotzdem nötig, sonst kommt `worship_key_1<Müll>` durch.
  */
-export const SETTINGS_KEY_RE =
-  /^worship_(?:key|capo|cols|fs|lyrics|secshift|ver|view)_\d+(?:_[a-z0-9-]+){0,2}$/;
+export const SETTINGS_KEY_RE = new RegExp(
+  `^worship_(?:${SETTINGS_BASES.join('|')})_\\d+(?:_[a-z0-9-]+){0,2}$`,
+);
+
+/** Nur der Anfang eines Einstellungs-Schlüssels bis zur Lied-ID – für `songIdOf` auf dem Server. */
+export const SETTINGS_SONGID_RE = new RegExp(`^worship_(?:${SETTINGS_BASES.join('|')})_(\\d+)`);
 
 /** Alte (versionslose) Schlüssel auf das aktuelle Schema heben: `song12_3` → `song12_voriginal_3`. */
 export function normalizeAnnoKey(key: string): string {
