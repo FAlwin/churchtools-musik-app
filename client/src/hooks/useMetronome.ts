@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef } from 'react';
 import { isPulsable } from '../utils/bpmPulse';
 import {
   beatTimeSec,
-  beatsPerBar,
   countInDone,
   einzaehlStart,
   erstesSchlagAb,
@@ -43,8 +42,10 @@ const KLICK_S = 0.03;
 export type KlickModus = 'aus' | 'einzaehlen' | 'dauerhaft';
 
 interface UseMetronomeArgs {
+  /** GEZÄHLTES Tempo – bei Dreiergruppen also ein Drittel des gespeicherten (#145). */
   bpm: number | null;
-  timeSig: string | null;
+  /** Länge des Takts in GEZÄHLTEN Schlägen. Entscheidet, wo die betonte Eins liegt. */
+  schlaegeProTakt: number;
   modus: KlickModus;
   /**
    * Nullpunkt des gemeinsamen Takt-Rasters in `performance.now()`-Millisekunden. `null` heißt „noch
@@ -71,7 +72,13 @@ function audioZeitFuer(ctx: AudioContext, perfMs: number): number {
   return ctx.currentTime + (perfMs - performance.now()) / 1000;
 }
 
-export function useMetronome({ bpm, timeSig, modus, taktStartMs, onEnde }: UseMetronomeArgs): void {
+export function useMetronome({
+  bpm,
+  schlaegeProTakt,
+  modus,
+  taktStartMs,
+  onEnde,
+}: UseMetronomeArgs): void {
   // Der Rückruf darf sich ändern, ohne den laufenden Takt neu aufzubauen.
   const endeRef = useRef(onEnde);
   endeRef.current = onEnde;
@@ -102,7 +109,7 @@ export function useMetronome({ bpm, timeSig, modus, taktStartMs, onEnde }: UseMe
     // iOS/Safari starten angehalten; der Tipp auf den Schalter ist die nötige Berührung.
     void ctx.resume();
 
-    const proTakt = beatsPerBar(timeSig);
+    const proTakt = schlaegeProTakt;
 
     // Nullpunkt des gemeinsamen Rasters auf der Audio-Uhr. Ohne Raster (Klick als Erstes
     // eingeschaltet) ist es der jetzige Augenblick, mit kleinem Vorlauf, damit der erste Klick nicht
@@ -126,7 +133,7 @@ export function useMetronome({ bpm, timeSig, modus, taktStartMs, onEnde }: UseMe
         if (
           countInDone(
             naechster,
-            timeSig,
+            proTakt,
             modus === 'einzaehlen' ? 'einzaehlen' : 'dauerhaft',
             ersterSchlag,
           )
@@ -149,5 +156,5 @@ export function useMetronome({ bpm, timeSig, modus, taktStartMs, onEnde }: UseMe
       // Audio-Einheit wach und kostet Strom. Bereits eingeplante Klicks verstummen dabei.
       void ctx.close();
     };
-  }, [laeuft, bpm, timeSig, modus, taktStartMs, klick]);
+  }, [laeuft, bpm, schlaegeProTakt, modus, taktStartMs, klick]);
 }

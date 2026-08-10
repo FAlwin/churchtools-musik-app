@@ -29,6 +29,8 @@ afterEach(() => vi.restoreAllMocks());
 
 interface Optionen {
   liedTempo?: number | null;
+  timeSig?: string | null;
+  zaehlweise?: number | null;
   darfSpeichern?: boolean;
   onSpeichern?: (tempo: number) => Promise<void>;
   klick?: 'aus' | 'einzaehlen' | 'dauerhaft';
@@ -45,6 +47,7 @@ function zeige(o: Optionen = {}) {
     onSpeichern: o.onSpeichern ?? vi.fn().mockResolvedValue(undefined),
     onPuls: vi.fn(),
     onKlick: vi.fn(),
+    onZaehlweise: vi.fn(),
     onClose: vi.fn(),
   };
   function Huelle() {
@@ -54,6 +57,9 @@ function zeige(o: Optionen = {}) {
         liedTempo={props.liedTempo}
         wert={wert}
         onWert={setWert}
+        timeSig={o.timeSig === undefined ? '4/4' : o.timeSig}
+        zaehlweise={o.zaehlweise ?? null}
+        onZaehlweise={props.onZaehlweise}
         puls={false}
         onPuls={props.onPuls}
         klick={o.klick ?? 'aus'}
@@ -276,5 +282,71 @@ describe('TempoMenu – Puls und Klick gehören nur mir', () => {
     expect(knopf('Tempo erhöhen').hasAttribute('disabled')).toBe(false);
     expect(knopf(/Tempo antippen/).hasAttribute('disabled')).toBe(false);
     expect(feld().hasAttribute('disabled')).toBe(false);
+  });
+});
+
+describe('TempoMenu – Zählweise', () => {
+  it('bietet nur an, was in dieser Taktart einen Takt ergibt', () => {
+    zeige({ timeSig: '4/4' });
+    expect(knopf('Einzeln').hasAttribute('disabled')).toBe(false);
+    expect(knopf('Zweier').hasAttribute('disabled')).toBe(false);
+    // 4/4 in Dreiern ergäbe 1⅓ Schläge je Takt – gar nicht erst anklickbar.
+    expect(knopf('Dreier').hasAttribute('disabled')).toBe(true);
+  });
+
+  it('sperrt im Dreivierteltakt die Zweier statt der Dreier', () => {
+    zeige({ timeSig: '3/4' });
+    expect(knopf('Zweier').hasAttribute('disabled')).toBe(true);
+    expect(knopf('Dreier').hasAttribute('disabled')).toBe(false);
+  });
+
+  it('meldet die Wahl nach oben und lässt sich auf Auto zurückstellen', () => {
+    const props = zeige({ timeSig: '6/8' });
+    fireEvent.click(knopf('Zweier'));
+    expect(props.onZaehlweise).toHaveBeenCalledWith(2);
+    fireEvent.click(knopf('Auto'));
+    expect(props.onZaehlweise).toHaveBeenCalledWith(null);
+  });
+
+  it('nennt bei gröberer Zählweise beide Zahlen – sonst wirkt es wie ein Fehler', () => {
+    // Im Feld stehen die Grundschläge (so steht es in ChurchTools), gehört wird ein Drittel davon.
+    zeige({ liedTempo: 120, timeSig: '6/8', zaehlweise: 3 });
+    expect(feld().value).toBe('120');
+    expect(
+      screen.getByText(/120 Grundschläge – gezählt wird 40\/min in Dreiergruppen/),
+    ).toBeTruthy();
+  });
+
+  it('rechnet ein angetipptes Tempo auf Grundschläge zurück', () => {
+    // In Dreiergruppen mitgetippt: 1000 ms Abstand sind 60 GEZÄHLTE Schläge – gespeichert gehören
+    // die Grundschläge, also 180. Ohne die Rückrechnung stünde ein Drittel des richtigen Tempos in
+    // ChurchTools.
+    zeige({ liedTempo: 60, timeSig: '6/8', zaehlweise: 3 });
+    tippen(MIN_TIPPS, 1000);
+    expect(feld().value).toBe('180');
+  });
+
+  it('begrenzt auf die GESPEICHERTE Zahl, nicht auf die gezählte', () => {
+    // 500 ms in Dreiergruppen wären 360 Grundschläge – über der Obergrenze. Gedeckelt wird der Wert,
+    // der nach ChurchTools geht und dort geprüft wird; in Dreiergruppen sind damit höchstens
+    // 100 gezählte Schläge je Minute erreichbar. Das ist gewollt: Die Grenze bewacht die Zahl, die
+    // andere später zu sehen bekommen.
+    zeige({ liedTempo: 60, timeSig: '6/8', zaehlweise: 3 });
+    tippen(MIN_TIPPS, 500);
+    expect(feld().value).toBe(String(MAX_BPM));
+  });
+
+  it('lässt bei Einzelschlägen alles wie es war', () => {
+    zeige({ liedTempo: 60, timeSig: '4/4', zaehlweise: 1 });
+    tippen(MIN_TIPPS, 500);
+    expect(feld().value).toBe('120');
+  });
+
+  it('sperrt den Ton, wenn das GEZÄHLTE Tempo zu langsam wird', () => {
+    // 30 Grundschläge in Dreiergruppen = 10 gezählte je Minute – darunter pulst nichts mehr.
+    zeige({ liedTempo: 30, timeSig: '6/8', zaehlweise: 3 });
+    expect(knopf('An').hasAttribute('disabled')).toBe(true);
+    // Das Einstellen bleibt frei – sonst käme man aus dem Zustand nicht heraus.
+    expect(knopf('Tempo erhöhen').hasAttribute('disabled')).toBe(false);
   });
 });

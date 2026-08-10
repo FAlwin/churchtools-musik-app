@@ -45,6 +45,13 @@ export function useSongSettings(songs: SetlistSong[]) {
       if ('cols' in patch) setLsVersion('cols', songId, vk, String(next.cols));
       if ('fontSize' in patch) setLsVersion('fs', songId, vk, String(next.fontSize));
       if ('lyricsOnly' in patch) setLsVersion('lyrics', songId, vk, next.lyricsOnly ? '1' : '0');
+      if ('zaehlweise' in patch)
+        setLsVersion(
+          'zaehl',
+          songId,
+          vk,
+          next.zaehlweise === null ? null : String(next.zaehlweise),
+        );
       if ('viewSource' in patch) setLsSong('view', songId, String(next.viewSource));
       if ('secShift' in patch) {
         const has = Object.keys(next.secShift).length > 0;

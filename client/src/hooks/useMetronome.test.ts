@@ -64,12 +64,12 @@ function laufen(sekunden: number) {
 function starte(
   modus: KlickModus,
   bpm: number | null = 120,
-  timeSig: string | null = '4/4',
+  schlaegeProTakt = 4,
   taktStartMs: number | null = null,
 ) {
   const onEnde = vi.fn();
   return {
-    ...renderHook(() => useMetronome({ bpm, timeSig, modus, taktStartMs, onEnde })),
+    ...renderHook(() => useMetronome({ bpm, schlaegeProTakt, modus, taktStartMs, onEnde })),
     onEnde,
   };
 }
@@ -140,7 +140,7 @@ describe('useMetronome – der Takt', () => {
 
 describe('useMetronome – die betonte Eins', () => {
   it('betont jeden Taktanfang und sonst nichts', () => {
-    starte('dauerhaft', 120, '4/4');
+    starte('dauerhaft', 120, 4);
     laufen(3);
     const hoch = geplant[0].frequenz;
     const tief = geplant[1].frequenz;
@@ -151,7 +151,7 @@ describe('useMetronome – die betonte Eins', () => {
   });
 
   it('folgt der Taktart – im Dreier liegt die Betonung anders', () => {
-    starte('dauerhaft', 120, '3/4');
+    starte('dauerhaft', 120, 3);
     laufen(3);
     const hoch = geplant[0].frequenz;
     expect(geplant[3].frequenz).toBe(hoch); // vierter Schlag = neue Eins
@@ -161,20 +161,20 @@ describe('useMetronome – die betonte Eins', () => {
 
 describe('useMetronome – Einzählen hört von selbst auf', () => {
   it('klickt zwei Takte und meldet dann das Ende', () => {
-    const { onEnde } = starte('einzaehlen', 120, '4/4');
+    const { onEnde } = starte('einzaehlen', 120, 4);
     laufen(6);
     expect(geplant).toHaveLength(8); // 2 Takte à 4 Schläge
     expect(onEnde).toHaveBeenCalledTimes(1);
   });
 
   it('richtet sich dabei nach der Taktart', () => {
-    starte('einzaehlen', 120, '3/4');
+    starte('einzaehlen', 120, 3);
     laufen(6);
     expect(geplant).toHaveLength(6);
   });
 
   it('hört im Dauerbetrieb NICHT auf', () => {
-    const { onEnde } = starte('dauerhaft', 120, '4/4');
+    const { onEnde } = starte('dauerhaft', 120, 4);
     laufen(8);
     expect(geplant.length).toBeGreaterThan(8);
     expect(onEnde).not.toHaveBeenCalled();
@@ -205,7 +205,7 @@ describe('useMetronome – gemeinsames Raster mit dem sichtbaren Puls', () => {
     // deshalb nicht bei 1,2 s beginnen, sondern erst beim nächsten Rasterschlag: 1,5 s.
     // Genau das war gemeldet – Puls und Klick liefen sonst um 0,3 s versetzt.
     uhr = 1.2;
-    starte('dauerhaft', 120, '4/4', 0);
+    starte('dauerhaft', 120, 4, 0);
     laufen(1);
     expect(geplant.length).toBeGreaterThan(0);
     expect(geplant[0].zeit).toBeCloseTo(1.5, 3);
@@ -213,7 +213,7 @@ describe('useMetronome – gemeinsames Raster mit dem sichtbaren Puls', () => {
 
   it('legt jeden Klick auf einen Rasterschlag – auch nach mehreren Sekunden', () => {
     uhr = 1.2;
-    starte('dauerhaft', 120, '4/4', 0);
+    starte('dauerhaft', 120, 4, 0);
     laufen(3);
     for (const g of geplant) {
       const schlag = g.zeit / beatTimeSec(1, 120);
@@ -225,7 +225,7 @@ describe('useMetronome – gemeinsames Raster mit dem sichtbaren Puls', () => {
     // Einstieg bei Schlag 3 (1,5 s): Der erste Klick ist die Vier des Takts und darf NICHT betont
     // sein; betont ist erst Schlag 4 bei 2,0 s.
     uhr = 1.2;
-    starte('dauerhaft', 120, '4/4', 0);
+    starte('dauerhaft', 120, 4, 0);
     laufen(1.2);
     expect(geplant[0].zeit).toBeCloseTo(1.5, 3);
     expect(geplant[0].frequenz).toBe(800);
@@ -236,7 +236,7 @@ describe('useMetronome – gemeinsames Raster mit dem sichtbaren Puls', () => {
   it('beginnt das Einzählen auf einer EINS, nicht mitten im Takt', () => {
     // Einstieg bei Schlag 3 → aufgerundet auf Schlag 4 = 2,0 s, und der ist betont.
     uhr = 1.2;
-    starte('einzaehlen', 120, '4/4', 0);
+    starte('einzaehlen', 120, 4, 0);
     laufen(1.2);
     expect(geplant[0].zeit).toBeCloseTo(2.0, 3);
     expect(geplant[0].frequenz).toBe(1600);
@@ -244,7 +244,7 @@ describe('useMetronome – gemeinsames Raster mit dem sichtbaren Puls', () => {
 
   it('zählt auch beim Einstieg volle zwei Takte ein, nicht weniger', () => {
     uhr = 1.2;
-    const { onEnde } = starte('einzaehlen', 120, '4/4', 0);
+    const { onEnde } = starte('einzaehlen', 120, 4, 0);
     laufen(6);
     // Zwei Takte à vier Schläge, beginnend bei Schlag 4.
     expect(geplant.length).toBe(8);

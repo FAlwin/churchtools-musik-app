@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { beatIndexOfFlash, flashIndexAt, isPulsable } from '../utils/bpmPulse';
-import { beatsPerBar, isAccent } from '../utils/metronome';
+import { isAccent } from '../utils/metronome';
 import styles from './BpmPulse.module.scss';
 
 /**
@@ -35,11 +35,11 @@ interface BpmPulseProps {
   active: boolean;
   /** Nullpunkt des gemeinsamen Takt-Rasters (`performance.now()`-ms). `null` = eigener Start. */
   taktStartMs: number | null;
-  /** Taktart des Lieds – entscheidet, welcher Schlag die betonte Eins ist. */
-  timeSig: string | null;
+  /** Länge des Takts in GEZÄHLTEN Schlägen – entscheidet, welcher Blitz die betonte Eins ist. */
+  schlaegeProTakt: number;
 }
 
-export function BpmPulse({ bpm, active, taktStartMs, timeSig }: BpmPulseProps) {
+export function BpmPulse({ bpm, active, taktStartMs, schlaegeProTakt }: BpmPulseProps) {
   const [flash, setFlash] = useState(0);
   const laeuft = active && isPulsable(bpm);
 
@@ -63,7 +63,7 @@ export function BpmPulse({ bpm, active, taktStartMs, timeSig }: BpmPulseProps) {
 
   if (!laeuft) return null;
 
-  const betont = isAccent(beatIndexOfFlash(flash, bpm), beatsPerBar(timeSig));
+  const betont = isAccent(beatIndexOfFlash(flash, bpm), schlaegeProTakt);
 
   return (
     <span

@@ -68,28 +68,28 @@ afterEach(() => {
 describe('BpmPulse – wann er überhaupt erscheint', () => {
   it('zeigt nichts, solange er ausgeschaltet ist', () => {
     const { container } = render(
-      <BpmPulse bpm={72} active={false} taktStartMs={null} timeSig="4/4" />,
+      <BpmPulse bpm={72} active={false} taktStartMs={null} schlaegeProTakt={4} />,
     );
     expect(container.querySelector('span')).toBeNull();
   });
 
   it('zeigt nichts, wenn im Lied kein Tempo gepflegt ist', () => {
     const { container } = render(
-      <BpmPulse bpm={null} active={true} taktStartMs={null} timeSig="4/4" />,
+      <BpmPulse bpm={null} active={true} taktStartMs={null} schlaegeProTakt={4} />,
     );
     expect(container.querySelector('span')).toBeNull();
   });
 
   it('zeigt nichts bei einem unsinnigen Tempo aus ChurchTools', () => {
     const { container } = render(
-      <BpmPulse bpm={5000} active={true} taktStartMs={null} timeSig="4/4" />,
+      <BpmPulse bpm={5000} active={true} taktStartMs={null} schlaegeProTakt={4} />,
     );
     expect(container.querySelector('span')).toBeNull();
   });
 
   it('erscheint, sobald er eingeschaltet wird', () => {
     const { container } = render(
-      <BpmPulse bpm={72} active={true} taktStartMs={null} timeSig="4/4" />,
+      <BpmPulse bpm={72} active={true} taktStartMs={null} schlaegeProTakt={4} />,
     );
     expect(container.querySelector('span')).not.toBeNull();
   });
@@ -98,19 +98,23 @@ describe('BpmPulse – wann er überhaupt erscheint', () => {
 describe('BpmPulse – der Takt stimmt', () => {
   it('blitzt bei 72 bpm sechsmal in fünf Sekunden', () => {
     const { container } = render(
-      <BpmPulse bpm={72} active={true} taktStartMs={null} timeSig="4/4" />,
+      <BpmPulse bpm={72} active={true} taktStartMs={null} schlaegeProTakt={4} />,
     );
     expect(blitzeZaehlen(container, 5000)).toBe(6);
   });
 
   it('blitzt bei 120 bpm doppelt so oft wie bei 60', () => {
-    const langsam = render(<BpmPulse bpm={60} active={true} taktStartMs={null} timeSig="4/4" />);
+    const langsam = render(
+      <BpmPulse bpm={60} active={true} taktStartMs={null} schlaegeProTakt={4} />,
+    );
     const a = blitzeZaehlen(langsam.container, 4000);
     langsam.unmount();
 
     jetzt = 0;
     warteschlange = [];
-    const schnell = render(<BpmPulse bpm={120} active={true} taktStartMs={null} timeSig="4/4" />);
+    const schnell = render(
+      <BpmPulse bpm={120} active={true} taktStartMs={null} schlaegeProTakt={4} />,
+    );
     const b = blitzeZaehlen(schnell.container, 4000);
 
     expect(a).toBe(4);
@@ -122,7 +126,7 @@ describe('BpmPulse – der Takt stimmt', () => {
     // aus der verstrichenen Zeit abgeleitet steht der Blitz exakt am 144. Schlag.
     const bpm = 72;
     const { container } = render(
-      <BpmPulse bpm={bpm} active={true} taktStartMs={null} timeSig="4/4" />,
+      <BpmPulse bpm={bpm} active={true} taktStartMs={null} schlaegeProTakt={4} />,
     );
     const vorGrenze = 144 * msPerBeat(bpm) - 20;
     laufenLassen(vorGrenze);
@@ -134,7 +138,7 @@ describe('BpmPulse – der Takt stimmt', () => {
   it('blitzt bei sehr schnellen Liedern nur jeden zweiten Schlag (WCAG 2.3.1)', () => {
     // 240 bpm = 4 Schläge/s. Geblitzt wird halbiert → 2/s, also 8 in vier Sekunden.
     const { container } = render(
-      <BpmPulse bpm={240} active={true} taktStartMs={null} timeSig="4/4" />,
+      <BpmPulse bpm={240} active={true} taktStartMs={null} schlaegeProTakt={4} />,
     );
     expect(blitzeZaehlen(container, 4000)).toBe(8);
   });
@@ -143,16 +147,16 @@ describe('BpmPulse – der Takt stimmt', () => {
 describe('BpmPulse – aufhören', () => {
   it('hält an, sobald er ausgeschaltet wird', () => {
     const { container, rerender } = render(
-      <BpmPulse bpm={72} active={true} taktStartMs={null} timeSig="4/4" />,
+      <BpmPulse bpm={72} active={true} taktStartMs={null} schlaegeProTakt={4} />,
     );
-    rerender(<BpmPulse bpm={72} active={false} taktStartMs={null} timeSig="4/4" />);
+    rerender(<BpmPulse bpm={72} active={false} taktStartMs={null} schlaegeProTakt={4} />);
     expect(container.querySelector('span')).toBeNull();
     expect(abgebrochen.length).toBeGreaterThan(0);
   });
 
   it('meldet den Frame-Takt beim Verlassen ab', () => {
     const { unmount } = render(
-      <BpmPulse bpm={72} active={true} taktStartMs={null} timeSig="4/4" />,
+      <BpmPulse bpm={72} active={true} taktStartMs={null} schlaegeProTakt={4} />,
     );
     unmount();
     expect(abgebrochen.length).toBeGreaterThan(0);
@@ -175,20 +179,26 @@ describe('BpmPulse – die Eins ist markiert', () => {
   }
 
   it('markiert im Viervierteltakt jeden vierten Schlag', () => {
-    const { container } = render(<BpmPulse bpm={120} active taktStartMs={null} timeSig="4/4" />);
+    const { container } = render(
+      <BpmPulse bpm={120} active taktStartMs={null} schlaegeProTakt={4} />,
+    );
     // 120 bpm = 500 ms je Schlag; knapp neun Schläge.
     const folge = blitzeMitBetonung(container, msPerBeat(120) * 8.5);
     expect(folge.slice(0, 9)).toEqual([true, false, false, false, true, false, false, false, true]);
   });
 
-  it('richtet sich nach der Taktart – im Dreivierteltakt jeder dritte', () => {
-    const { container } = render(<BpmPulse bpm={120} active taktStartMs={null} timeSig="3/4" />);
+  it('richtet sich nach der Taktlänge – bei drei Schlägen je Takt jeder dritte', () => {
+    const { container } = render(
+      <BpmPulse bpm={120} active taktStartMs={null} schlaegeProTakt={3} />,
+    );
     const folge = blitzeMitBetonung(container, msPerBeat(120) * 6.5);
     expect(folge.slice(0, 7)).toEqual([true, false, false, true, false, false, true]);
   });
 
-  it('nimmt ohne brauchbare Taktart den Viervierteltakt', () => {
-    const { container } = render(<BpmPulse bpm={120} active taktStartMs={null} timeSig={null} />);
+  it('markiert bei vier Schlägen je Takt jeden vierten', () => {
+    const { container } = render(
+      <BpmPulse bpm={120} active taktStartMs={null} schlaegeProTakt={4} />,
+    );
     const folge = blitzeMitBetonung(container, msPerBeat(120) * 4.5);
     expect(folge.slice(0, 5)).toEqual([true, false, false, false, true]);
   });
@@ -199,7 +209,7 @@ describe('BpmPulse – gemeinsames Raster mit dem Klick', () => {
     // Der Puls wird 250 ms NACH dem Nullpunkt eingeschaltet – also mitten zwischen zwei Schlägen
     // (120 bpm = 500 ms). Der erste Blitz muss deshalb schon nach 250 ms kommen, nicht nach 500.
     jetzt = 250;
-    const { container } = render(<BpmPulse bpm={120} active taktStartMs={0} timeSig="4/4" />);
+    const { container } = render(<BpmPulse bpm={120} active taktStartMs={0} schlaegeProTakt={4} />);
     const ersterKnoten = container.querySelector('span');
     laufenLassen(260);
     expect(container.querySelector('span')).not.toBe(ersterKnoten);
@@ -207,7 +217,9 @@ describe('BpmPulse – gemeinsames Raster mit dem Klick', () => {
 
   it('ohne Nullpunkt startet er bei sich selbst', () => {
     jetzt = 250;
-    const { container } = render(<BpmPulse bpm={120} active taktStartMs={null} timeSig="4/4" />);
+    const { container } = render(
+      <BpmPulse bpm={120} active taktStartMs={null} schlaegeProTakt={4} />,
+    );
     const ersterKnoten = container.querySelector('span');
     // Nach 260 ms ist die eigene erste Schlagdauer (500 ms) noch nicht um.
     laufenLassen(260);

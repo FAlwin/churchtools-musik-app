@@ -107,7 +107,7 @@ export const CHART_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="chart-tempo"]',
     title: 'Tempo',
-    body: 'Hinter dem Metronom steckt alles zum Tempo. Oben stellst du es ein – mit − und +, durch Eintippen oder indem du im Takt mittippst. Darunter ein sichtbarer Puls und ein hörbarer Klick (starten oder einen Takt einzählen); beide gelten nur für dich. Nur der Knopf ganz unten speichert das Tempo in ChurchTools – dann sehen es alle.',
+    body: 'Hinter dem Metronom steckt alles zum Tempo. Oben stellst du es ein – mit − und +, durch Eintippen oder indem du im Takt mittippst. Mit der Zählweise legst du fest, was ein Schlag ist: ein 6/8-Stück zählt man in Dreiergruppen, ein schnelles 4/4 in Zweiern. Darunter ein sichtbarer Puls und ein hörbarer Klick; beide gelten nur für dich. Nur der Knopf ganz unten speichert das Tempo in ChurchTools – dann sehen es alle.',
   },
   {
     selector: '[data-tour="chart-anmerken"]',
