@@ -136,7 +136,7 @@ export function SongMenu({
         >
           <span>
             Akkorde &amp; Text
-            {hasOwnNotes(song.id, set.versionKey, false) && (
+            {hasOwnNotes(song.id, set.versionKey, false, song.arrangementId) && (
               <Icon name="pencil" size={12} className={styles.mmNote} />
             )}
           </span>
@@ -148,7 +148,7 @@ export function SongMenu({
         >
           <span>
             Nur Text
-            {hasOwnNotes(song.id, set.versionKey, true) && (
+            {hasOwnNotes(song.id, set.versionKey, true, song.arrangementId) && (
               <Icon name="pencil" size={12} className={styles.mmNote} />
             )}
           </span>
@@ -211,7 +211,8 @@ export function SongMenu({
               >
                 <span>
                   {v.name}
-                  {(hasOwnNotes(song.id, v.key, false) || hasOwnNotes(song.id, v.key, true)) && (
+                  {(hasOwnNotes(song.id, v.key, false, song.arrangementId) ||
+                    hasOwnNotes(song.id, v.key, true, song.arrangementId)) && (
                     <Icon name="pencil" size={12} className={styles.mmNote} />
                   )}
                 </span>

@@ -14,8 +14,8 @@ beforeEach(() => localStorage.clear());
 
 describe('levelPagePrefix / levelKeyOf', () => {
   it('baut den Ebenen-Präfix mit und ohne _lyr', () => {
-    expect(levelPagePrefix(7, 'orig', false)).toBe('song7_vorig_');
-    expect(levelPagePrefix(7, 'orig', true)).toBe('song7_vorig_lyr_');
+    expect(levelPagePrefix(7, 'orig', false, null)).toBe('song7_vorig_');
+    expect(levelPagePrefix(7, 'orig', true, null)).toBe('song7_vorig_lyr_');
   });
   it('levelKeyOf unterscheidet Darstellungsart', () => {
     expect(levelKeyOf({ versionKey: 'orig', lyr: false, arrangementId: null })).toBe('|orig|0');
@@ -25,20 +25,20 @@ describe('levelPagePrefix / levelKeyOf', () => {
 
 describe('hasStoredNotesForLevel', () => {
   it('true bei nicht-leeren Strichen/Texten, false bei leer/fehlend', () => {
-    expect(hasStoredNotesForLevel(1, 'orig', false)).toBe(false);
+    expect(hasStoredNotesForLevel(1, 'orig', false, null)).toBe(false);
     localStorage.setItem(`${OWN_DRAW_PREFIX}song1_vorig_0_text`, '[]');
-    expect(hasStoredNotesForLevel(1, 'orig', false)).toBe(false); // leer zählt nicht
+    expect(hasStoredNotesForLevel(1, 'orig', false, null)).toBe(false); // leer zählt nicht
     localStorage.setItem(`${OWN_DRAW_PREFIX}song1_vorig_0`, 'data:image/png;base64,AAAA');
-    expect(hasStoredNotesForLevel(1, 'orig', false)).toBe(true);
+    expect(hasStoredNotesForLevel(1, 'orig', false, null)).toBe(true);
   });
   it('trennt Darstellungsarten und ignoriert Zoom-Suffixe', () => {
     localStorage.setItem(`${OWN_DRAW_PREFIX}song1_vorig_lyr_0`, 'x');
-    expect(hasStoredNotesForLevel(1, 'orig', true)).toBe(true);
-    expect(hasStoredNotesForLevel(1, 'orig', false)).toBe(false);
+    expect(hasStoredNotesForLevel(1, 'orig', true, null)).toBe(true);
+    expect(hasStoredNotesForLevel(1, 'orig', false, null)).toBe(false);
     // Zoom-Schlüssel derselben Ebene darf NICHT als Anmerkung zählen.
     localStorage.clear();
     localStorage.setItem(`${OWN_DRAW_PREFIX}song1_vorig_0_dlarge2`, '{"scale":2}');
-    expect(hasStoredNotesForLevel(1, 'orig', false)).toBe(false);
+    expect(hasStoredNotesForLevel(1, 'orig', false, null)).toBe(false);
   });
 });
 
@@ -75,5 +75,25 @@ describe('levelsUnderNamespace', () => {
     const levels = levelsUnderNamespace(NS);
     expect(levels).toHaveLength(2);
     expect(levels.some((l) => l.arrangementId === null)).toBe(true);
+  });
+});
+
+describe('hasStoredNotesForLevel – der Stift-Marker findet arrangement-genaue Notizen', () => {
+  it('findet Notizen, die MIT Arrangement gespeichert sind', () => {
+    // Genau das ging nach #320 still verloren: Der Marker suchte unter `song1_vorig_`, gespeichert
+    // wird aber `song1_a45_vorig_`. Der Stift verschwand – ohne Fehlermeldung, ohne dass ein Test
+    // fiel. Aufgefallen erst beim Aufräumen, weil `levelPagePrefix` die Angabe nicht durchreichte.
+    localStorage.setItem(`${OWN_DRAW_PREFIX}song1_a45_vorig_0`, '[[1,2]]');
+    expect(hasStoredNotesForLevel(1, 'orig', false, 45)).toBe(true);
+  });
+
+  it('verwechselt zwei Arrangements nicht', () => {
+    localStorage.setItem(`${OWN_DRAW_PREFIX}song1_a45_vorig_0`, '[[1,2]]');
+    expect(hasStoredNotesForLevel(1, 'orig', false, 46)).toBe(false);
+  });
+
+  it('findet Bestandsnotizen ohne Arrangement weiterhin', () => {
+    localStorage.setItem(`${OWN_DRAW_PREFIX}song1_vorig_0`, '[[1,2]]');
+    expect(hasStoredNotesForLevel(1, 'orig', false, null)).toBe(true);
   });
 });

@@ -30,19 +30,46 @@ export const OWN_DRAW_PREFIX = ANNO_DRAW_NS;
  * zu einer Ebene, fände man die Striche eines Kollegen nicht, sobald er ein anderes Arrangement
  * gewählt hat: Der Schlüssel, unter dem gesucht wird, gäbe es bei ihm nicht.
  *
- * Damit ist es das DRITTE Muster über dieselbe Grammatik (nach `ANNO_KEY_RE` und dem Muster in
- * `arrangementMigration`). Beim Erweitern des Schlüssels sind alle drei zu prüfen.
+ * **Beim Erweitern des Schlüssels sind FÜNF Stellen zu prüfen** – und das war die Lehre dieses
+ * Umbaus: Ich hatte drei gezählt, weil ich nur nach MUSTERN gesucht hatte (`song\d+`). Erzeuger
+ * fallen bei einer Regex-Suche nicht auf, und genau dort saßen die beiden übersehenen Fälle.
+ *
+ *  1. `ANNO_KEY_RE` in `@shared/keys` – was der Server beim Konto-Sync durchlässt
+ *  2. `LEVEL_PAGE_RE` hier – welche Ebenen überhaupt gefunden werden
+ *  3. das Suchmuster in `arrangementMigration` – findet absichtlich Schlüssel OHNE Segment
+ *  4. `useTeamNotesImport` – setzte den Schlüssel von Hand zusammen, nutzt jetzt `songPageKey`
+ *  5. `levelPagePrefix` hier – reichte das Arrangement nicht durch; der Stift-Marker im Lied-Menü
+ *     verschwand dadurch still
+ *
+ * Wer etwas ändert: `grep -rn 'song\${'` für die Erzeuger, nicht nur nach den Mustern suchen.
  */
 const LEVEL_PAGE_RE = /^song\d+(?:_a(\d+))?_v([a-z0-9-]+)(_lyr)?_(\d+)$/i;
 
-/** Präfix aller Seiten EINER Ebene (Version + Darstellungsart) eines Lieds – ohne Namensraum. */
-export function levelPagePrefix(songId: number, versionKey: string, lyr: boolean): string {
-  return levelPrefix(songId, versionKey, lyr);
+/**
+ * Präfix aller Seiten EINER Ebene (Arrangement + Version + Darstellungsart) – ohne Namensraum.
+ *
+ * `arrangementId` ist NICHT optional-mit-Default, sondern muss übergeben werden: Genau hier fehlte
+ * sie nach #320 und der Stift-Marker im Lied-Menü verschwand still, weil er unter dem alten
+ * Schlüssel suchte, während die Notizen längst mit Arrangement gespeichert werden. Ein Pflichtwert
+ * lässt den Übersetzer nachfragen, statt lautlos das Falsche zu tun.
+ */
+export function levelPagePrefix(
+  songId: number,
+  versionKey: string,
+  lyr: boolean,
+  arrangementId: number | null,
+): string {
+  return levelPrefix(songId, versionKey, lyr, arrangementId);
 }
 
 /** Hat das Konto eigene, nicht-leere Anmerkungen (Striche ODER Texte) auf dieser Ebene? */
-export function hasStoredNotesForLevel(songId: number, versionKey: string, lyr: boolean): boolean {
-  const prefix = OWN_DRAW_PREFIX + levelPagePrefix(songId, versionKey, lyr);
+export function hasStoredNotesForLevel(
+  songId: number,
+  versionKey: string,
+  lyr: boolean,
+  arrangementId: number | null,
+): boolean {
+  const prefix = OWN_DRAW_PREFIX + levelPagePrefix(songId, versionKey, lyr, arrangementId);
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
     if (!k || !k.startsWith(prefix)) continue;
