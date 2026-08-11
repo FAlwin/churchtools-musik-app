@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
-import { diag } from '../utils/diagnose';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { useZoomPersistence, type ZoomState } from './useZoomPersistence';
 import { useLatestRef } from './useLatestRef';
@@ -95,7 +94,6 @@ export function useZoomOrchestration({
     if (gestureEndTimer.current) clearTimeout(gestureEndTimer.current);
     gestureSlot.current = null;
     lastScale.current = [1, 1]; // Merker der Vorseite verwerfen (sonst löscht ein Mini-Pinch fälschlich)
-    diag(`  Seite/Spalten gewechselt, loading=${String(loading)}`);
     if (loading) return;
     requestAnimationFrame(() => zoomRef.current.restoreVisibleZoom({ fitUnsaved: true }));
   }, [pageIndex, perView, loading, zoomRef]);
@@ -116,7 +114,6 @@ export function useZoomOrchestration({
   useEffect(() => {
     if (pages === pagesSeen.current) return;
     pagesSeen.current = pages;
-    diag(`  SEITEN neu aufgebaut (${pages.length} St.), loading=${String(loading)}`);
     if (loading) return;
     requestAnimationFrame(() => zoomRef.current.restoreVisibleZoom({ fitUnsaved: false }));
   }, [pages, loading, zoomRef]);
@@ -128,7 +125,6 @@ export function useZoomOrchestration({
   useEffect(() => {
     if (syncTick === syncSeen.current) return;
     syncSeen.current = syncTick;
-    diag('  syncTick -> restore(fitUnsaved)');
     requestAnimationFrame(() => zoomRef.current.restoreVisibleZoom({ fitUnsaved: true }));
   }, [syncTick, zoomRef]);
 

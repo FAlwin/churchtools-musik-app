@@ -43,8 +43,6 @@ import { useChartStream } from '../hooks/useChartStream';
 import { useChartSync, useResyncAfterEditor } from '../hooks/useChartSync';
 import { useMetronome, type KlickModus } from '../hooks/useMetronome';
 import { taktRaster } from '../utils/metronome';
-import { diag } from '../utils/diagnose';
-import { DiagOverlay } from '../components/DiagOverlay';
 import { arrangementMigrationAnwenden } from '../utils/arrangementMigration';
 import {
   useArrangementUeberschreibung,
@@ -511,7 +509,6 @@ export function ChordChart({
    */
   const leistenUmschalten = () => {
     const wirdAusgeblendet = !leistenAus;
-    diag(`Tipp Mitte -> Leisten ${wirdAusgeblendet ? 'aus' : 'an'} (Zoom bleibt)`);
     setLeistenAus(wirdAusgeblendet);
     // Der Hinweis steht BEWUSST außerhalb der `setLeistenAus`-Aktualisierung. Solche Funktionen
     // müssen frei von Nebenwirkungen sein – React ruft sie unter Umständen mehrfach auf und darf
@@ -606,7 +603,6 @@ export function ChordChart({
           />
         )}
 
-        <DiagOverlay />
         <ChartOverlays
           arrangements={arrangements.data ?? []}
           ablaufArrangementId={ablaufArrangement}
