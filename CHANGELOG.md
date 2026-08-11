@@ -14,12 +14,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   **„Notenblatt aus SongSelect holen …"**. ChurchTools holt es dann bei CCLI – **in der Tonart des
   Arrangements**, denn CCLI transponiert beim Herunterladen.
 
-  **Ein vorhandenes Notenblatt dieses Arrangements wird ersetzt**, nicht danebengelegt: Zwei
-  ChordPro-Dateien im selben Arrangement heißen gleich, und dann entscheidet der Zufall, welche
-  Tonart angezeigt wird. Deine eigenen Versionen bleiben unangetastet.
+  **Der Knopf erscheint nur, wenn das Arrangement noch kein Notenblatt hat.** Ist schon eines da,
+  gäbe es nichts zu holen – er würde es durch dasselbe ersetzen. Zum Auffrischen bleibt der Weg über
+  ChurchTools.
 
-  Verschiedene Tonarten gehören deshalb in **verschiedene Arrangements** – dort holt jedes seine
-  eigene Fassung.
+  Zum Transponieren braucht man ihn übrigens **nicht**: Die App rechnet die Tonart selbst um, sofort
+  und ohne Netz. Verschiedene Tonarten gehören in **verschiedene Arrangements** – dort holt jedes
+  seine eigene Fassung.
 
 ### Neu
 
