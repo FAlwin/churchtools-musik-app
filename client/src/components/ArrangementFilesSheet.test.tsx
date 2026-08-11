@@ -221,15 +221,31 @@ describe('ArrangementFilesSheet – aus SongSelect holen', () => {
     expect(screen.queryByText(/SongSelect/)).toBeNull();
   });
 
-  it('zeigt ihn, wenn beides da ist, und meldet den Klick', () => {
-    const h = setup({ songSelect: { songNumber: 4328979, laeuft: false } });
+  /** Ein Arrangement ohne Notenblatt – der Fall, in dem der Knopf wirklich etwas bringt. */
+  const OHNE_NOTENBLATT = DATEIEN.filter((f) => f.kind !== 'chordpro-original');
+
+  it('zeigt ihn, wenn noch kein Notenblatt da ist, und meldet den Klick', () => {
+    const h = setup({
+      songSelect: { songNumber: 4328979, laeuft: false },
+      files: OHNE_NOTENBLATT,
+    });
     screen.getByText('Notenblatt aus SongSelect holen …').click();
     expect(h.onSongSelect).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Von Alwin gefragt: „Wofür laden wir das Notenblatt? ChordPro war doch schon da?" – und er hatte
+   * recht. Liegt schon eines im Arrangement, ersetzt der Knopf es durch dasselbe. Er tut nichts und
+   * lädt trotzdem zum Drücken ein.
+   */
+  it('zeigt ihn NICHT, wenn schon ein Notenblatt im Arrangement liegt', () => {
+    setup({ songSelect: { songNumber: 4328979, laeuft: false } }); // DATEIEN enthält das Original
+    expect(screen.queryByText(/SongSelect/)).toBeNull();
+  });
+
   it('ist während des Holens beschäftigt und nicht anklickbar', () => {
     // Sonst löst ein zweiter Tipp denselben Abruf noch einmal aus – und der ist nicht idempotent.
-    setup({ songSelect: { songNumber: 4328979, laeuft: true } });
+    setup({ songSelect: { songNumber: 4328979, laeuft: true }, files: OHNE_NOTENBLATT });
     expect(screen.getByText<HTMLButtonElement>('Wird geholt …').disabled).toBe(true);
     expect(screen.queryByText('Notenblatt aus SongSelect holen …')).toBeNull();
   });

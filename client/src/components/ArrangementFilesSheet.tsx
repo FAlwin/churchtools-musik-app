@@ -70,6 +70,19 @@ export function ArrangementFilesSheet({
   /** Die Liste ist erst dann echt, wenn nichts dazwischenkommt – sonst hätte „hinzufügen" kein Ziel. */
   const listeDa = !laedt && !angehalten && !fehler;
 
+  /**
+   * Aus SongSelect holen wird **nur angeboten, wenn noch kein Notenblatt da ist** (Entscheidung
+   * Alwin, 11.08.2026).
+   *
+   * Warum: Liegt schon ein ChordPro im Arrangement, ersetzt der Knopf es durch dasselbe – er tut
+   * also nichts und lädt trotzdem zum Drücken ein. Genau das ist passiert: Alwin hat ihn bei einem
+   * Lied gedrückt, das längst ein Blatt hatte, und danach zu Recht gefragt, wofür das gut sei.
+   *
+   * Ein Knopf, der im Normalfall nichts bewirkt, macht die Liste nicht reicher, sondern unklarer.
+   * Zum Auffrischen bleibt der Weg über ChurchTools – dort gehört er hin, denn er ist selten.
+   */
+  const hatNotenblatt = files.some((f) => f.kind === 'chordpro-original');
+
   return (
     <Sheet
       title={arrangementName ? `Dateien – ${arrangementName}` : 'Dateien'}
@@ -146,7 +159,7 @@ export function ArrangementFilesSheet({
           {/* Aus SongSelect holen – nur mit Lizenz UND CCLI-Nummer (#322). Steht unter dem
               Hochladen, weil es der seltenere Weg ist: Man holt einmal und lädt danach eigene
               Dateien dazu. */}
-          {songSelect && (
+          {songSelect && !hatNotenblatt && (
             <button
               className={styles.importBtn}
               onClick={onSongSelect}
