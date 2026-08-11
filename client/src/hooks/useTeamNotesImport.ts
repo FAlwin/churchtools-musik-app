@@ -60,6 +60,14 @@ export function useTeamNotesImport({
     songId: number;
     versionKey: string;
     lyr: boolean;
+    /**
+     * Arrangement der angesehenen Ebene (#320, 3c) – `null` bei Bestandsnotizen ohne Segment.
+     *
+     * Es MUSS das des Kollegen sein, nicht das eigene: Gesucht wird unter SEINEM Schlüssel. Setzte
+     * man hier das eigene ein, suchte man unter einem Schlüssel, den es bei ihm nicht gibt, und sähe
+     * seine Striche nie.
+     */
+    arrangementId: number | null;
   } | null>(null);
   // Wähler-Zwischenschritt: Person angetippt → ihre Ebenen (Version + Darstellung) zur Auswahl.
   const [pickerPerson, setPickerPerson] = useState<{ id: number; name: string } | null>(null);
@@ -108,12 +116,17 @@ export function useTeamNotesImport({
   }
 
   /** Eine konkrete Ebene (Version + Darstellungsart) der Person ansehen. */
-  function viewLevel(songId: number, versionKey: string, lyr: boolean) {
+  function viewLevel(
+    songId: number,
+    versionKey: string,
+    lyr: boolean,
+    arrangementId: number | null,
+  ) {
     if (!pickerPerson) return;
     const target = songs.find((x) => x.id === songId);
     if (!target) return;
     setViewSettings({ [songId]: settingsForLevel(target, viewRaw ?? {}, versionKey, lyr) });
-    setViewing({ ...pickerPerson, songId, versionKey, lyr });
+    setViewing({ ...pickerPerson, songId, versionKey, lyr, arrangementId });
     setViewMode('view');
     setDrawMode(false);
     setShowSharers(false);
@@ -147,7 +160,10 @@ export function useTeamNotesImport({
     const songId = viewing.songId;
     // Übernommen wird die GERADE ANGESEHENE Ebene (= das, was die Vorschau zeigt).
     const level = mirrorGroups().find(
-      (g) => g.versionKey === viewing.versionKey && g.lyr === viewing.lyr,
+      (g) =>
+        g.versionKey === viewing.versionKey &&
+        g.lyr === viewing.lyr &&
+        g.arrangementId === viewing.arrangementId,
     );
     if (!level) return;
     {

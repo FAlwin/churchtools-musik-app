@@ -13,8 +13,8 @@ import { SharersSheet } from './SharersSheet';
  */
 const PERSON = { id: 3, name: 'Anna' };
 const LEVELS = [
-  { versionKey: 'original', lyr: false, pages: [0, 1] },
-  { versionKey: 'akustik', lyr: true, pages: [2] },
+  { versionKey: 'original', lyr: false, arrangementId: null, pages: [0, 1] },
+  { versionKey: 'akustik', lyr: true, arrangementId: null, pages: [2] },
 ];
 
 function setup(
@@ -79,6 +79,7 @@ describe('SharersSheet – Stufe 2: Ebene wählen', () => {
     expect(h.onPickLevel).toHaveBeenCalledWith({
       versionKey: 'akustik',
       lyr: true,
+      arrangementId: null,
       pages: [2],
     });
   });

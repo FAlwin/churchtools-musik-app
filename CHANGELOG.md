@@ -5,6 +5,16 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Behoben
+
+- **Team-Notizen: Die Striche eines Kollegen sind auch dann zu finden, wenn er ein anderes
+  Arrangement gewählt hat (#320).** Seit v2.19.0 gehören Anmerkungen zum Arrangement – beim Ansehen
+  fremder Notizen fehlte diese Angabe aber noch, und man suchte unter einem Schlüssel, den es beim
+  Kollegen nicht gab. In der Ebenen-Auswahl stehen zwei Arrangements mit gleichnamigen Versionen
+  jetzt getrennt, statt zu einer Ebene zu verschmelzen.
+
 ## [2.19.0] – 2026-08-11
 
 ### Behoben

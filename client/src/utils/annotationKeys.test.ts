@@ -18,8 +18,8 @@ describe('levelPagePrefix / levelKeyOf', () => {
     expect(levelPagePrefix(7, 'orig', true)).toBe('song7_vorig_lyr_');
   });
   it('levelKeyOf unterscheidet Darstellungsart', () => {
-    expect(levelKeyOf({ versionKey: 'orig', lyr: false })).toBe('orig|0');
-    expect(levelKeyOf({ versionKey: 'orig', lyr: true })).toBe('orig|1');
+    expect(levelKeyOf({ versionKey: 'orig', lyr: false, arrangementId: null })).toBe('|orig|0');
+    expect(levelKeyOf({ versionKey: 'orig', lyr: true, arrangementId: null })).toBe('|orig|1');
   });
 });
 
@@ -51,7 +51,29 @@ describe('levelsUnderNamespace', () => {
     const levels = levelsUnderNamespace(NS);
     const chords = levels.find((l) => !l.lyr);
     const lyrics = levels.find((l) => l.lyr);
-    expect(chords).toEqual({ versionKey: 'orig', lyr: false, pages: [0, 2] });
-    expect(lyrics).toEqual({ versionKey: 'orig', lyr: true, pages: [1] });
+    expect(chords).toEqual({ versionKey: 'orig', lyr: false, arrangementId: null, pages: [0, 2] });
+    expect(lyrics).toEqual({ versionKey: 'orig', lyr: true, arrangementId: null, pages: [1] });
+  });
+
+  it('trennt zwei Arrangements mit demselben Versionsnamen (#320, 3c)', () => {
+    // Der Grund für den ganzen Schritt: Die ChordPro-Versionen liegen als Dateien IM Arrangement.
+    // Zwei Arrangements können je eine „Akustik" haben – gleicher Versions-Schlüssel, anderes
+    // Notenblatt. Verschmölzen sie hier zu einer Ebene, fände man die Striche des Kollegen nicht.
+    localStorage.clear();
+    localStorage.setItem(`${NS}song1_a45_vakustik_0`, 'x');
+    localStorage.setItem(`${NS}song1_a46_vakustik_1`, 'x');
+    const levels = levelsUnderNamespace(NS);
+    expect(levels).toHaveLength(2);
+    expect(levels.find((l) => l.arrangementId === 45)?.pages).toEqual([0]);
+    expect(levels.find((l) => l.arrangementId === 46)?.pages).toEqual([1]);
+  });
+
+  it('hält Bestandsnotizen ohne Segment getrennt von arrangement-genauen', () => {
+    localStorage.clear();
+    localStorage.setItem(`${NS}song1_vakustik_0`, 'x');
+    localStorage.setItem(`${NS}song1_a45_vakustik_0`, 'x');
+    const levels = levelsUnderNamespace(NS);
+    expect(levels).toHaveLength(2);
+    expect(levels.some((l) => l.arrangementId === null)).toBe(true);
   });
 });

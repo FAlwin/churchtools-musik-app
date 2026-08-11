@@ -435,6 +435,8 @@ export function ChordChart({
   const viewingId = viewing?.id ?? null;
   const viewingSongId = viewing?.songId ?? null;
   const viewingLyr = viewing?.lyr ?? false;
+  // SEIN Arrangement (#320, 3c) – gesucht wird unter dem Schlüssel des Kollegen, nicht dem eigenen.
+  const viewingArr = viewing?.arrangementId ?? null;
   const viewKeyFor = useCallback(
     (page: number): string | null =>
       viewKeyForPage(
@@ -442,10 +444,10 @@ export function ChordChart({
         owners,
         viewingId == null || viewingSongId == null
           ? null
-          : { songId: viewingSongId, lyr: viewingLyr },
+          : { songId: viewingSongId, lyr: viewingLyr, arrangementId: viewingArr },
         VIEW_NS,
       ),
-    [owners, viewingId, viewingSongId, viewingLyr],
+    [owners, viewingId, viewingSongId, viewingLyr, viewingArr],
   );
 
   /**
@@ -727,7 +729,7 @@ export function ChordChart({
             versionName={(key) => versions.find((v) => v.key === key)?.name ?? key}
             levelKey={groupKeyOf}
             onPickPerson={(p) => void openPersonLevels(p, song.id)}
-            onPickLevel={(g) => viewLevel(song.id, g.versionKey, g.lyr)}
+            onPickLevel={(g) => viewLevel(song.id, g.versionKey, g.lyr, g.arrangementId)}
             onBackToPersons={() => setPickerPerson(null)}
             onClose={() => setShowSharers(false)}
           />

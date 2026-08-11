@@ -25,10 +25,15 @@ export const OWN_DRAW_PREFIX = ANNO_DRAW_NS;
  * Dass zwei Arrangements dabei zu einer Ebene verschmelzen, ist die offene Frage von Schritt 3.
  * Solange die Migration nur KOPIERT, sind es dieselben Seiten, und die Vereinigung ändert nichts.
  *
+ * Das Arrangement wird jetzt AUSGEWERTET (#320, Schritt 3c): Zwei Arrangements können je eine
+ * Version „Akustik" haben – gleicher Versions-Schlüssel, anderes Notenblatt. Verschmolzen sie hier
+ * zu einer Ebene, fände man die Striche eines Kollegen nicht, sobald er ein anderes Arrangement
+ * gewählt hat: Der Schlüssel, unter dem gesucht wird, gäbe es bei ihm nicht.
+ *
  * Damit ist es das DRITTE Muster über dieselbe Grammatik (nach `ANNO_KEY_RE` und dem Muster in
  * `arrangementMigration`). Beim Erweitern des Schlüssels sind alle drei zu prüfen.
  */
-const LEVEL_PAGE_RE = /^song\d+(?:_a\d+)?_v([a-z0-9-]+)(_lyr)?_(\d+)$/i;
+const LEVEL_PAGE_RE = /^song\d+(?:_a(\d+))?_v([a-z0-9-]+)(_lyr)?_(\d+)$/i;
 
 /** Präfix aller Seiten EINER Ebene (Version + Darstellungsart) eines Lieds – ohne Namensraum. */
 export function levelPagePrefix(songId: number, versionKey: string, lyr: boolean): string {
@@ -54,12 +59,22 @@ export function hasStoredNotesForLevel(songId: number, versionKey: string, lyr: 
 interface AnnotationLevel {
   versionKey: string;
   lyr: boolean;
+  /** Arrangement der Ebene, `null` bei Bestandsnotizen ohne Segment. */
+  arrangementId: number | null;
   pages: number[];
 }
 
-/** Stabiler Gruppen-Schlüssel einer Ebene (Version + Darstellungsart). */
-export const levelKeyOf = (g: { versionKey: string; lyr: boolean }): string =>
-  `${g.versionKey}|${g.lyr ? '1' : '0'}`;
+/**
+ * Stabiler Gruppen-Schlüssel einer Ebene (Arrangement + Version + Darstellungsart).
+ *
+ * Das Arrangement gehört dazu, weil zwei Arrangements dieselben Versionsnamen haben können. Ohne es
+ * lägen die Seiten zweier verschiedener Notenblätter in einer Gruppe.
+ */
+export const levelKeyOf = (g: {
+  versionKey: string;
+  lyr: boolean;
+  arrangementId: number | null;
+}): string => `${g.arrangementId ?? ''}|${g.versionKey}|${g.lyr ? '1' : '0'}`;
 
 /**
  * Alle Ebenen (Version + Darstellungsart) mit ihren Seiten unter einem Namensraum-Präfix
@@ -73,13 +88,22 @@ export function levelsUnderNamespace(nsPrefix: string): AnnotationLevel[] {
     const base = k.slice(nsPrefix.length).replace(/_text$/, '');
     const m = LEVEL_PAGE_RE.exec(base);
     if (!m) continue;
-    const gk = levelKeyOf({ versionKey: m[1], lyr: !!m[2] });
+    const gk = levelKeyOf({
+      arrangementId: m[1] ? Number(m[1]) : null,
+      versionKey: m[2],
+      lyr: !!m[3],
+    });
     if (!map.has(gk)) map.set(gk, new Set());
-    map.get(gk)!.add(Number(m[3]));
+    map.get(gk)!.add(Number(m[4]));
   }
   return [...map.entries()].map(([gk, pages]) => {
-    const [versionKey, lyr] = gk.split('|');
-    return { versionKey, lyr: lyr === '1', pages: [...pages].sort((a, b) => a - b) };
+    const [arr, versionKey, lyr] = gk.split('|');
+    return {
+      arrangementId: arr === '' ? null : Number(arr),
+      versionKey,
+      lyr: lyr === '1',
+      pages: [...pages].sort((a, b) => a - b),
+    };
   });
 }
 

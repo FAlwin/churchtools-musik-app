@@ -67,7 +67,7 @@ async function anseheStufe(
   await act(async () => {
     await result.current.openPersonLevels({ id: 5, name: 'Anna' }, songId);
   });
-  act(() => result.current.viewLevel(songId, versionKey, lyr));
+  act(() => result.current.viewLevel(songId, versionKey, lyr, null));
 }
 
 beforeEach(() => {

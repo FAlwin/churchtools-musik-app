@@ -103,20 +103,24 @@ describe('viewKeyForPage – die angesehene fremde Ebene', () => {
 
   it('gibt null für Seiten zurück, die nicht zum angesehenen Lied gehören', () => {
     const owners = [owner({ songId: 12 }), owner({ songId: 34, songIdx: 1 })];
-    expect(viewKeyForPage(1, owners, { songId: 12, lyr: false }, 'view_')).toBeNull();
+    expect(
+      viewKeyForPage(1, owners, { songId: 12, lyr: false, arrangementId: null }, 'view_'),
+    ).toBeNull();
   });
 
   it('nimmt die Darstellungsart der ANGESEHENEN Person, nicht den eigenen Schnappschuss', () => {
     const owners = [owner()];
     // Eigener Schnappschuss sagt „Akkorde & Text", angesehen wird ihre „Nur Text"-Ebene.
-    const key = viewKeyForPage(0, owners, { songId: 12, lyr: true }, 'view_');
+    const key = viewKeyForPage(0, owners, { songId: 12, lyr: true, arrangementId: null }, 'view_');
     expect(key).toContain('_lyr_');
     expect(key?.startsWith('view_')).toBe(true);
   });
 
   it('teilt keine Dokument-Anmerkungen (nur Akkord-Seiten)', () => {
     const owners = [owner({ kind: 'doc', fileId: 777 })];
-    expect(viewKeyForPage(0, owners, { songId: 12, lyr: false }, 'view_')).toBeNull();
+    expect(
+      viewKeyForPage(0, owners, { songId: 12, lyr: false, arrangementId: null }, 'view_'),
+    ).toBeNull();
   });
 });
 
