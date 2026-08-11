@@ -28,18 +28,21 @@ const CT_TIMEOUT_MS = 15_000;
 export const CT_FILE_TIMEOUT_MS = 60_000;
 
 /**
- * Obergrenze für durchgereichte Dateien (#248).
+ * Obergrenze für Dateien (#248) – **die Zahl selbst liegt seit #321 in `@shared/dateien`.**
  *
- * Der Datei-Proxy hält die Datei **komplett im Speicher**. Ein versehentlich in ChurchTools
- * hochgeladener Scan von mehreren hundert MB würde den Container umlegen – und damit die App für
- * ALLE gleichzeitig. 50 MB liegen weit über jedem realen Liedblatt oder Notensatz.
+ * Sie gilt in beide Richtungen: Der Datei-Proxy hält eine Datei **komplett im Speicher**, ein
+ * versehentlich in ChurchTools hochgeladener Scan von mehreren hundert MB würde den Container umlegen
+ * – und damit die App für ALLE gleichzeitig. 50 MB liegen weit über jedem realen Liedblatt.
+ *
+ * Warum im geteilten Verzeichnis: Der Client muss dieselbe Grenze kennen, um NICHT erst 50 MB durchs
+ * Netz zu schicken und dann abgelehnt zu werden. Zwei Zahlen wären zwei Wahrheiten.
  *
  * Bewusst **nur für Dateien**, nicht für die JSON-Antworten der CT-API (`ctGet`): Dort bestimmt die
  * Datenmenge der Gemeinde die Größe – ein paar hundert Lieder oder Ablaufpunkte –, und es gibt keinen
  * Weg, sie von außen aufzublähen. Ein Limit dort wäre Aufwand ohne Schutzgewinn. Dateien dagegen sind
  * beliebige Uploads.
  */
-export const MAX_FILE_BYTES = 50 * 1024 * 1024;
+export { MAX_FILE_BYTES } from '@shared/dateien/index';
 
 /** Ein Abbruch-Signal mit Zeitgrenze – die Zahlen stehen nur oben. */
 export function ctSignal(ms: number = CT_TIMEOUT_MS): AbortSignal {

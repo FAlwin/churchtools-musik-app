@@ -14,6 +14,7 @@ export const TOUR_TERMINE = 'termine-v2';
 // Der Text wurde beim Umbau des Menues (Metronom-Symbol, ein gemeinsamer Tempo-Wert) NACHGEZOGEN,
 // ohne die Version zu erhoehen: chart-v4 war nie in Produktion (dort laeuft v2.16.3), es hat sie
 // also niemand ausser auf Staging gesehen. Waere sie draussen gewesen, muesste hier v5 stehen.
+// Ebenso der Schritt „Lied-Optionen" (Dateiverwaltung, #321) – gleiche Begruendung.
 // Aus demselben Grund wurde der Schritt „Notizen von anderen" nachgezogen (Umschalter fuer
 // Arrangement/Version in der Leiste): chart-v4 ist weiterhin nur auf Staging gelaufen.
 // chart-v3: Der Tipp in die Mitte blendet jetzt die Leisten aus (#319) – die Geste findet man
@@ -99,7 +100,7 @@ export const CHART_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="chart-lied"]',
     title: 'Lied-Optionen',
-    body: 'Tippe auf den Titel, um die Tonart zu ändern, eine Version zu wählen oder zu transponieren.',
+    body: 'Tippe auf den Titel, um die Tonart zu ändern, eine Version zu wählen oder zu transponieren. Unter „Dateien …" verwaltest du die Notenblätter des Arrangements.',
   },
   {
     selector: '[data-tour="chart-aussehen"]',

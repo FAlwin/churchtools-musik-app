@@ -1,15 +1,22 @@
 /**
- * „Dateien" – die Dateien eines Arrangements sehen und herunterladen (#321, Schritt 3).
+ * „Dateien" – die Dateien eines Arrangements sehen, herunterladen, hinzufügen und löschen (#321).
  *
  * **Die Liste ist flach und zeigt alles** (Entscheidung Alwin, 11.08.2026): das Original-ChordPro,
  * die von der App verwalteten Versionen, PDFs und Bilder – und alles Übrige, das die App bisher
- * nirgends anzeigte (`.docx`, `.mp3`). Die Art bestimmt nur das Symbol, sie sortiert und schützt
- * nichts.
+ * nirgends anzeigte (`.docx`, `.mp3`). Die Art bestimmt nur das Symbol und den Zusatz; sie sortiert
+ * nichts und schützt nichts.
  *
- * Hochladen und Löschen kommen in Schritt 4; deshalb steht hier noch kein Knopf dafür.
+ * **Zwei Knöpfe je Zeile, und das ist Absicht:** Die Zeile selbst lädt herunter, der Papierkorb
+ * rechts löscht. Ein Löschen als Wischgeste wäre auf einem Notenpult im Gottesdienst zu leicht
+ * ausgelöst – dort wischt man zum Umblättern.
+ *
+ * Die Texte je Art und die Prüfung vor dem Hochladen liegen in `utils/dateiVerwaltung`: Sie sind rein
+ * und damit prüfbar, und der Wortlaut der Rückfrage ist bei einer flachen Liste die einzige Bremse.
  */
-import type { ArrangementFileEntry, ArrangementFileKind } from '@shared/types/index';
+import { useRef } from 'react';
+import type { ArrangementFileEntry } from '@shared/types/index';
 import { dateiGroesse } from '../utils/dateiGroesse';
+import { DATEI_ART, DATEI_SYMBOL } from '../utils/dateiVerwaltung';
 import { Sheet } from './Sheet';
 import { Icon } from './icons';
 import styles from '../pages/ChordChart.module.scss';
@@ -30,30 +37,13 @@ interface ArrangementFilesSheetProps {
   angehalten: boolean;
   /** Fehlermeldung, falls die Liste nicht geladen werden konnte. */
   fehler: string | null;
+  /** Läuft gerade ein Upload? Dann ist der Knopf beschäftigt statt anklickbar. */
+  laedtHoch: boolean;
   onDownload: (file: ArrangementFileEntry) => void;
+  onUpload: (datei: File) => void;
+  onDelete: (file: ArrangementFileEntry) => void;
   onClose: () => void;
 }
-
-/**
- * Das Symbol je Art. Bewusst dieselben Zeichen wie im Lied-Menü bei den Dokumenten (📄 / 🖼️) –
- * eine Datei soll in beiden Listen gleich aussehen.
- */
-const SYMBOL: Record<ArrangementFileKind, string> = {
-  'chordpro-original': '🎵',
-  'chordpro-version': '🎵',
-  pdf: '📄',
-  image: '🖼️',
-  other: '📎',
-};
-
-/** Was eine Datei IST – der Zusatz unter dem Namen, damit die vier Klassen unterscheidbar sind. */
-const ART: Record<ArrangementFileKind, string> = {
-  'chordpro-original': 'ChordPro – daraus entsteht das Notenblatt',
-  'chordpro-version': 'ChordPro – von der App verwaltete Version',
-  pdf: 'PDF',
-  image: 'Bild',
-  other: 'Datei',
-};
 
 export function ArrangementFilesSheet({
   arrangementName,
@@ -61,9 +51,16 @@ export function ArrangementFilesSheet({
   laedt,
   angehalten,
   fehler,
+  laedtHoch,
   onDownload,
+  onUpload,
+  onDelete,
   onClose,
 }: ArrangementFilesSheetProps) {
+  const dateiFeld = useRef<HTMLInputElement>(null);
+  /** Die Liste ist erst dann echt, wenn nichts dazwischenkommt – sonst hätte „hinzufügen" kein Ziel. */
+  const listeDa = !laedt && !angehalten && !fehler;
+
   return (
     <Sheet
       title={arrangementName ? `Dateien – ${arrangementName}` : 'Dateien'}
@@ -84,25 +81,63 @@ export function ArrangementFilesSheet({
           „konnte nicht laden" sind für den Nutzer zwei völlig verschiedene Aussagen (#270). */}
       {!laedt && !angehalten && fehler && <p className={styles.pickHint}>{fehler}</p>}
 
-      {!laedt && !angehalten && !fehler && files.length === 0 && (
+      {listeDa && files.length === 0 && (
         <p className={styles.pickHint}>In diesem Arrangement liegen keine Dateien.</p>
       )}
 
-      {!laedt &&
-        !angehalten &&
-        !fehler &&
+      {listeDa &&
         files.map((f) => (
-          <button key={f.fileId} className={styles.pickRow} onClick={() => onDownload(f)}>
-            <span aria-hidden="true">{SYMBOL[f.kind]}</span>
-            <span className={styles.pickLevel}>
-              <span className={styles.pickName}>{f.name}</span>
-              <span className={styles.pickSub}>
-                {ART[f.kind]} · {dateiGroesse(f.size)}
+          <div key={f.fileId} className={styles.fileRow}>
+            <button
+              className={styles.pickRow}
+              onClick={() => onDownload(f)}
+              title="Auf das Gerät laden"
+            >
+              <span aria-hidden="true">{DATEI_SYMBOL[f.kind]}</span>
+              <span className={styles.pickLevel}>
+                <span className={styles.pickName}>{f.name}</span>
+                <span className={styles.pickSub}>
+                  {DATEI_ART[f.kind]} · {dateiGroesse(f.size)}
+                </span>
               </span>
-            </span>
-            <Icon name="download" size={16} stroke={2} className={styles.pickChev} />
-          </button>
+              <Icon name="download" size={16} stroke={2} className={styles.pickChev} />
+            </button>
+            <button
+              className={styles.fileDel}
+              onClick={() => onDelete(f)}
+              title={`„${f.name}" löschen`}
+              aria-label={`„${f.name}" löschen`}
+            >
+              <Icon name="trash" size={16} stroke={2} />
+            </button>
+          </div>
         ))}
+
+      {/* Hinzufügen nur, wenn die Liste wirklich vorliegt: Ohne sie wüsste die Prüfung nicht, ob es
+          den Namen schon gibt – und würde stillschweigend ein Doppel anlegen. */}
+      {listeDa && (
+        <>
+          <input
+            ref={dateiFeld}
+            type="file"
+            hidden
+            onChange={(e) => {
+              const datei = e.target.files?.[0];
+              // Das Feld wird geleert, damit dieselbe Datei ein zweites Mal ausgewählt werden kann –
+              // ohne das feuert `change` beim gleichen Namen nicht erneut.
+              e.target.value = '';
+              if (datei) onUpload(datei);
+            }}
+          />
+          <button
+            className={styles.importBtn}
+            onClick={() => dateiFeld.current?.click()}
+            disabled={laedtHoch}
+          >
+            {laedtHoch ? 'Wird hochgeladen …' : 'Datei hinzufügen …'}
+          </button>
+        </>
+      )}
     </Sheet>
   );
 }

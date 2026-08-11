@@ -915,6 +915,31 @@
   flex: 1;
   font-weight: 500;
 }
+/* Eine Zeile der Dateiliste (#321): links die ganze Zeile zum Herunterladen, rechts der
+   Papierkorb. Der Rahmen trägt die Trennlinie, damit sie über die volle Breite läuft und nicht
+   zwischen den beiden Knöpfen aufhört. */
+.fileRow {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--hair);
+}
+.fileRow .pickRow {
+  border-top: none;
+}
+.fileDel {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+}
+.fileDel:active {
+  color: var(--red, #bb2946);
+}
+
 /* Eine Ebenen-Zeile im Wähler „Notizen von …": Arrangement oben, Version/Anzeige darunter.
    Zwei Zeilen, weil eine einzeilige Aufzählung mit Punkten nicht erkennen ließ, was was ist. */
 .pickLevel {
