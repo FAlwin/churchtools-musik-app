@@ -9,6 +9,20 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
+- **Das Notenblatt lässt sich aus CCLI SongSelect holen (#322).** Hat ein Lied eine CCLI-Nummer und
+  eure Gemeinde die SongSelect-Integration, steht in „Dateien …" ein zweiter Knopf:
+  **„Notenblatt aus SongSelect holen …"**. ChurchTools holt es dann bei CCLI – **in der Tonart des
+  Arrangements**, denn CCLI transponiert beim Herunterladen.
+
+  **Ein vorhandenes Notenblatt dieses Arrangements wird ersetzt**, nicht danebengelegt: Zwei
+  ChordPro-Dateien im selben Arrangement heißen gleich, und dann entscheidet der Zufall, welche
+  Tonart angezeigt wird. Deine eigenen Versionen bleiben unangetastet.
+
+  Verschiedene Tonarten gehören deshalb in **verschiedene Arrangements** – dort holt jedes seine
+  eigene Fassung.
+
+### Neu
+
 - **Die Dateien eines Liedes lassen sich in der App verwalten (#321).** Im Lied-Menü gibt es
   **„Dateien …"** – dort stehen alle Dateien des Arrangements: das Notenblatt als ChordPro, die
   Versionen, PDFs und Bilder. **Auch Dateien, die die App bisher gar nicht zeigte** (z. B. eine

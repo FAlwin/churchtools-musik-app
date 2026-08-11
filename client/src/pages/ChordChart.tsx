@@ -74,6 +74,8 @@ interface ChordChartProps {
   canEditSong?: boolean;
   /** Darf Team-Notizen nutzen (eigene teilen + geteilte anderer ansehen)? */
   canUseGlobalNotes?: boolean;
+  /** Hat die Gemeinde CCLI SongSelect? (#322) Ohne das erscheint der Einstieg gar nicht. */
+  canUseCcli?: boolean;
 }
 
 /**
@@ -88,6 +90,7 @@ export function ChordChart({
   onReload,
   canEditSong = false,
   canUseGlobalNotes = false,
+  canUseCcli = false,
 }: ChordChartProps) {
   // Anzeige-Einstellungen aller Lieder – Halten und Speichern liegt in useSongSettings (#198).
   const { settings, updateSetting, selectVersion, reloadSettings } =
@@ -130,6 +133,8 @@ export function ChordChart({
     .join(',');
 
   const [drawMode, setDrawMode] = useState(false);
+  /** Rückfrage vor dem Holen aus SongSelect (#322) – es ersetzt ein vorhandenes Notenblatt. */
+  const [songSelectFrage, setSongSelectFrage] = useState(false);
   /**
    * Auffrischen im Hintergrund (Erst-Sync, 30-s-/60-s-Takt, Rückkehr zur App) – in `useChartSync`.
    *
@@ -803,10 +808,36 @@ export function ChordChart({
                 : null
             }
             laedtHoch={datei.laedtHoch}
+            /**
+             * Aus SongSelect holen nur, wenn beides da ist: das Recht der Gemeinde (`canUseCcli`)
+             * UND eine CCLI-Nummer am Lied. Ohne die Nummer wüsste CCLI nicht, welches Lied gemeint
+             * ist; ohne das Recht scheitert der Aufruf immer.
+             */
+            songSelect={
+              canUseCcli && song.ccli
+                ? { songNumber: Number(song.ccli), laeuft: datei.holtChordPro }
+                : null
+            }
             onDownload={(f) => void datei.herunterladen(f)}
             onUpload={datei.dateiGewaehlt}
             onDelete={datei.setLoeschDatei}
+            onSongSelect={() => setSongSelectFrage(true)}
             onClose={() => setOverlay(null)}
+          />
+        )}
+
+        {/* Die Rückfrage nennt die FOLGE: Ein vorhandenes Notenblatt wird ersetzt, und die Tonart
+            kommt aus dem Arrangement (CCLI transponiert beim Herunterladen). */}
+        {songSelectFrage && song.ccli && (
+          <ConfirmDialog
+            title="Notenblatt aus SongSelect holen?"
+            message={`Für „${song.title}" (CCLI ${song.ccli}) wird das Notenblatt bei CCLI geholt und in „${song.arrangementName}" abgelegt – in der Tonart des Arrangements. Ein vorhandenes Notenblatt dieses Arrangements wird dabei ERSETZT; deine eigenen Versionen bleiben.`}
+            confirmLabel="Holen"
+            onConfirm={() => {
+              setSongSelectFrage(false);
+              void datei.chordProHolen(Number(song.ccli));
+            }}
+            onCancel={() => setSongSelectFrage(false)}
           />
         )}
 

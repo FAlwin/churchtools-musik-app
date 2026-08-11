@@ -35,7 +35,13 @@ const DATEIEN: ArrangementFileEntry[] = [
 ];
 
 function setup(over: Partial<Parameters<typeof ArrangementFilesSheet>[0]> = {}) {
-  const h = { onDownload: vi.fn(), onUpload: vi.fn(), onDelete: vi.fn(), onClose: vi.fn() };
+  const h = {
+    onDownload: vi.fn(),
+    onUpload: vi.fn(),
+    onDelete: vi.fn(),
+    onSongSelect: vi.fn(),
+    onClose: vi.fn(),
+  };
   render(
     <ArrangementFilesSheet
       arrangementName="Test"
@@ -44,6 +50,7 @@ function setup(over: Partial<Parameters<typeof ArrangementFilesSheet>[0]> = {}) 
       angehalten={false}
       fehler={null}
       laedtHoch={false}
+      songSelect={null}
       {...h}
       {...over}
     />,
@@ -198,5 +205,38 @@ describe('ArrangementFilesSheet – Hochladen und Löschen (#321, Schritt 4)', (
     // Sonst wäre ein leeres Arrangement eine Sackgasse – genau dort will man die erste Datei ablegen.
     setup({ files: [] });
     expect(screen.getByText('Datei hinzufügen …')).toBeTruthy();
+  });
+});
+
+/**
+ * #322, Schritt 9: „Notenblatt aus SongSelect holen".
+ *
+ * Der Einstieg erscheint **nur**, wenn beides da ist – die SongSelect-Lizenz der Gemeinde und eine
+ * CCLI-Nummer am Lied. Ein Knopf, der ohne eines von beidem immer scheitert, ist schlimmer als
+ * keiner. Deshalb ist `songSelect` eine Angabe, die auch `null` sein darf, und kein Ja/Nein.
+ */
+describe('ArrangementFilesSheet – aus SongSelect holen', () => {
+  it('zeigt den Knopf nicht ohne Lizenz oder CCLI-Nummer', () => {
+    setup({ songSelect: null });
+    expect(screen.queryByText(/SongSelect/)).toBeNull();
+  });
+
+  it('zeigt ihn, wenn beides da ist, und meldet den Klick', () => {
+    const h = setup({ songSelect: { songNumber: 4328979, laeuft: false } });
+    screen.getByText('Notenblatt aus SongSelect holen …').click();
+    expect(h.onSongSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it('ist während des Holens beschäftigt und nicht anklickbar', () => {
+    // Sonst löst ein zweiter Tipp denselben Abruf noch einmal aus – und der ist nicht idempotent.
+    setup({ songSelect: { songNumber: 4328979, laeuft: true } });
+    expect(screen.getByText<HTMLButtonElement>('Wird geholt …').disabled).toBe(true);
+    expect(screen.queryByText('Notenblatt aus SongSelect holen …')).toBeNull();
+  });
+
+  it('erscheint nicht, solange die Liste nicht vorliegt', () => {
+    // Ohne die Liste wüsste niemand, ob schon ein Notenblatt da ist, das ersetzt würde.
+    setup({ songSelect: { songNumber: 4328979, laeuft: false }, files: [], laedt: true });
+    expect(screen.queryByText(/SongSelect/)).toBeNull();
   });
 });

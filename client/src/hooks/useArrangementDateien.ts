@@ -13,6 +13,7 @@ import {
   deleteSongFile,
   getArrangementFiles,
   getSongFileBlob,
+  holeChordProAusSongSelect,
   uploadArrangementFile,
 } from '../services/churchtoolsApi';
 import { shareOrDownload } from '../utils/shareFile';
@@ -104,6 +105,27 @@ export function useArrangementDateien({ songId, arrangementId, aktiv, showToast,
     if (datei) void hochladen(datei);
   };
 
+  /**
+   * Das Notenblatt aus SongSelect holen (#322).
+   *
+   * **Ersetzt** ein vorhandenes Original-ChordPro – deshalb fragt die Oberfläche vorher, und deshalb
+   * steht die Folge im Text der Rückfrage. Der Server erledigt die Reihenfolge (erst holen, dann das
+   * alte löschen); hier zählt nur, dass ein Fehlschlag **benannt** wird.
+   */
+  const [holtChordPro, setHoltChordPro] = useState(false);
+  const chordProHolen = async (songNumber: number): Promise<void> => {
+    setHoltChordPro(true);
+    try {
+      await holeChordProAusSongSelect(songId, arrangementId, songNumber);
+      showToast('Notenblatt aus SongSelect geholt.');
+      auffrischen();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Das Holen aus SongSelect ist fehlgeschlagen.');
+    } finally {
+      setHoltChordPro(false);
+    }
+  };
+
   const loeschenBestaetigen = async (): Promise<void> => {
     const f = loeschDatei;
     setLoeschDatei(null);
@@ -125,6 +147,8 @@ export function useArrangementDateien({ songId, arrangementId, aktiv, showToast,
     uploadWarnung,
     setUploadWarnung,
     herunterladen,
+    holtChordPro,
+    chordProHolen,
     dateiGewaehlt,
     warnungBestaetigen,
     loeschenBestaetigen,

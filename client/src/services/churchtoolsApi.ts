@@ -209,6 +209,24 @@ export function uploadArrangementFile(
   );
 }
 
+/**
+ * Das Notenblatt aus CCLI SongSelect ins Arrangement holen (#322).
+ *
+ * **Ersetzt ein vorhandenes Original-ChordPro** – pro Arrangement gehört genau eines hin, sonst
+ * entscheidet die Reihenfolge von ChurchTools, welche Tonart angezeigt wird. Gibt die frische
+ * Dateiliste zurück.
+ */
+export function holeChordProAusSongSelect(
+  songId: number,
+  arrangementId: number,
+  songNumber: number,
+): Promise<ArrangementFileEntry[]> {
+  return apiFetch<ArrangementFileEntry[]>(
+    `/api/songs/${songId}/arrangements/${arrangementId}/songselect/chordpro`,
+    { method: 'POST', body: JSON.stringify({ songNumber }) },
+  );
+}
+
 /** Löscht eine Datei des Lieds (#321). Der Server prüft, dass sie wirklich zu ihm gehört. */
 export function deleteSongFile(songId: number, fileId: number): Promise<void> {
   return apiFetch<void>(`/api/songs/${songId}/files/${fileId}`, { method: 'DELETE' });

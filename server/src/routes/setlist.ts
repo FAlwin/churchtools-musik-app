@@ -26,6 +26,9 @@ import {
   getArrangementFiles,
   postArrangementFile,
   deleteArrangementFileCtrl,
+  getSongSelectSearch,
+  getSongSelectByNumber,
+  postSongSelectChordPro,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -68,5 +71,18 @@ router.post(
   asyncHandler(postArrangementFile),
 );
 router.delete('/songs/:songId/files/:fileId', asyncHandler(deleteArrangementFileCtrl));
+
+/**
+ * CCLI SongSelect (#322) – nur lesend. Beide Aufrufe gehen über ChurchTools weiter zu CCLI und
+ * dauern spürbar (~800 ms gemessen); sie ändern aber nichts.
+ */
+router.get('/songselect/search', asyncHandler(getSongSelectSearch));
+router.get('/songselect/songs/:songNumber', asyncHandler(getSongSelectByNumber));
+// Der einzige SCHREIBENDE SongSelect-Weg: holt das Notenblatt ins Arrangement und ersetzt dabei ein
+// vorhandenes Original-ChordPro (pro Arrangement genau eines, Begruendung am Dienst).
+router.post(
+  '/songs/:songId/arrangements/:arrangementId/songselect/chordpro',
+  asyncHandler(postSongSelectChordPro),
+);
 
 export default router;

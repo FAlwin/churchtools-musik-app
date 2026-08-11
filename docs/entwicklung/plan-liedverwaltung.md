@@ -1,6 +1,9 @@
 # Umsetzungsplan – Liedverwaltung in der App (#321, #322)
 
-> Status: **Entwurf, 11.08.2026. Noch nichts umgesetzt.**
+> Status: **11.08.2026 – Teil 1 gebaut (Schritte 1–4), Teil 2 neu geschrieben.**
+> Die Neufassung von Teil 2 kommt aus einem Fund vom selben Tag: **SongSelect ist doch machbar**,
+> über ChurchTools als Vermittler (siehe `churchtools-songselect.md`). Das ändert #322 grundlegend –
+> aus „Formular zum Abtippen" wird „Lied aus CCLI holen".
 > Ziel: Dateien eines Arrangements und die Stammdaten eines Lieds in der App pflegen – ohne den
 > Umweg über die ChurchTools-Weboberfläche.
 > Der Schreibweg zu ChurchTools ist **erprobt** (die ChordPro-Versionen laufen bereits darüber). Es
@@ -116,52 +119,101 @@ Dateien – Arrangement „Test"
 | Upload bricht ab    | Kein automatischer zweiter Versuch (nicht idempotent!), melden    |
 | Datei war schon weg | `okBei404` – „schon gelöscht" ist kein Fehler                     |
 
-## 5. Teil 2 – Lieder anlegen und Stammdaten (#322)
+## 5. Teil 2 – Lieder anlegen, mit SongSelect (#322)
 
-Machbarkeit ist geklärt (07.08.2026 gegen die **Test-Instanz**, CT 3.135.1). **Erst nach Teil 1**,
-weil ein neu angelegtes Lied als Erstes eine Datei braucht — der Weg dorthin entsteht in Teil 1.
+**Diese Fassung ersetzt die vom Vormittag.** Dort stand: „SongSelect-Import nicht machbar – CCLI gibt
+die Datenbank nur zertifizierten Partnern frei." Das war richtig und beantwortete trotzdem die
+falsche Frage. Alwins Idee – **die App als Fernbedienung für ChurchTools** – umgeht sie: ChurchTools
+ist der zertifizierte Partner, die Gemeinde hat das Abo, unsere App löst nur aus.
 
-### 5.1 Vor dem Bau zu klären (Fragen an Alwin, wenn Teil 1 steht)
+Gemessen am 11.08.2026, Einzelheiten in [`churchtools-songselect.md`](./churchtools-songselect.md):
+
+| Was                      | Aufruf                          | Ändert etwas? |
+| ------------------------ | ------------------------------- | ------------- |
+| Nach Titel suchen        | `getCCLISongsMatchingTitle`     | nein          |
+| Per CCLI-Nummer abfragen | `getCCLISongData`               | nein          |
+| ChordPro holen           | `getCCLIChordPro` (mit Tonart!) | **ja**        |
+
+Alle drei über `POST /index.php?q=churchservice/ajax` mit CSRF-Token und Sitzungs-Cookie – **beides
+hat unser Server bereits.**
+
+### 5.1 Was daraus für den Nutzer wird
+
+Der Weg, den Alwin beschrieben hat, in einem Durchgang:
+
+```
+„Neues Lied"  →  Titel eintippen  →  Trefferliste aus CCLI
+                                      (Titel · Autoren · Nummer · Text ✓ · Akkorde ✓)
+              →  auswählen        →  Formular ist AUSGEFÜLLT
+                                      (Titel, Autoren, Copyright, Tonart)
+              →  Kategorie wählen →  anlegen
+              →  ChordPro holen   →  fertig, das Lied hat ein Notenblatt
+```
+
+Dasselbe für ein **vorhandenes** Lied mit CCLI-Nummer: „Notenblatt aus SongSelect holen" in der
+Dateiverwaltung aus Teil 1.
+
+### 5.2 Vor dem Bau zu klären (Fragen an Alwin)
 
 1. **Wo entsteht ein neues Lied?** Nur in der Bibliothek, oder direkt in den Ablauf des gewählten
    Termins? Das entscheidet, wo der Einstieg sitzt.
-2. **Welche Kategorie** bekommt ein neues Lied? Kategorie 0 heißt „Aktive Songs" — eine inhaltliche
+2. **Welche Kategorie** bekommt ein neues Lied? Kategorie 0 heißt „Aktive Songs" – eine inhaltliche
    Entscheidung des Teams, keine technische.
-3. **Doppelanlagen:** vor dem Anlegen nach gleichem Namen suchen und darauf hinweisen — oder
-   zulassen?
+3. **Doppelanlagen:** vor dem Anlegen nach gleichem Namen suchen und darauf hinweisen – oder
+   zulassen? (Bei SongSelect kommt die CCLI-Nummer mit; damit ließe sich ein Doppel **sicher**
+   erkennen, nicht nur über den Namen.)
 
-### 5.2 Was der Umsetzung vorausgeht
+### 5.3 Was der Umsetzung vorausgeht
 
 - **Die Kategorie fehlt in unserem Typ.** `SongLibraryEntry` trägt heute nur
-  `songId, name, author, key, arrangementId`. Für die Auswahl muss die Kategorie mitgeliefert
-  werden — einen eigenen Endpunkt dafür gibt es in ChurchTools nicht (alle geratenen Pfade 404).
+  `songId, name, author, key, arrangementId`. Einen eigenen Endpunkt für Kategorien gibt es nicht
+  (alle geratenen Pfade 404) – sie muss aus den Liedern selbst kommen.
 - **Das Recht ist heute ein Ja/Nein.** `canEditSongs` fasst `edit songcategory` zu einem Bool
-  zusammen; das Recht nennt aber die **erlaubten Kategorie-IDs** (bei Alwin `[0,1]`). Für #322 muss
-  die Liste durchgereicht werden, sonst bietet die App Kategorien an, die ChurchTools ablehnt.
-- **Beim Anlegen entsteht sofort ein Arrangement mit** — ohne eines ist das Lied unbrauchbar. Das
-  sind zwei Schreibvorgänge, und der zweite kann scheitern: Dann existiert ein Lied ohne
-  Arrangement. Der Fall muss benannt werden, statt still zu bleiben.
+  zusammen; das Recht nennt aber die **erlaubten Kategorie-IDs** (bei Alwin `[0,1]`). Ohne die Liste
+  bietet die App Kategorien an, die ChurchTools ablehnt.
+- **Beim Anlegen entsteht sofort ein Arrangement mit** – ohne eines ist das Lied unbrauchbar. Das
+  sind zwei Schreibvorgänge, und der zweite kann scheitern: Dann existiert ein Lied **ohne**
+  Arrangement. Dieser Zwischenzustand muss benannt werden, statt still zu bleiben.
 
-### 5.3 Nicht machbar, bewusst weggelassen
+### 5.4 Was an SongSelect besonders zu beachten ist
 
-Der SongSelect-Import (CCLI) bleibt außen vor — die Datenbank gibt CCLI nur zertifizierten Partnern
-frei. Lieder holt man weiter über die ChurchTools-Oberfläche; danach stehen sie der App zur
-Verfügung.
+- **Der Download ist NICHT idempotent.** Beim Erkunden entstanden drei gleichnamige `Treu.chordpro`.
+  Vor dem Holen also prüfen, ob die Datei schon da ist – die Warnung aus Teil 1 lässt sich
+  übernehmen.
+- **`isAuthorized` vor `exists`.** Nur anbieten, was die Lizenz hergibt; sonst führt ein Knopf ins
+  Leere.
+- **Die Suche ist unscharf** (147 Treffer für „Wo ich auch stehe"). Die Trefferliste muss die
+  Unterscheidungsmerkmale zeigen: Titel, Autoren, Nummer, verfügbare Formate.
+- **Blättern ist ungeklärt** – ChurchTools holt 100 von 147 und zeigt keinen Weg weiter. Die App darf
+  nicht so tun, als sei die Liste vollständig; besser zum Verfeinern der Suche raten.
+- **Undokumentierte interne Schnittstelle.** Sie gehört hinter **eine** Stelle (`ctSongSelect.ts`),
+  damit ein ChurchTools-Update genau einen Ort trifft. Ein Fehlschlag wird verständlich gemeldet.
+  Offen: Anfrage beim ChurchTools-Support nach einem offiziellen Weg.
+- **Nur ChordPro ist gemessen.** Text, Akkord-PDF, Lead- und Vocal-Sheet haben vermutlich eigene
+  Funktionen – **geraten, nicht belegt.** Wer sie ergänzt, misst sie vorher; blindes Ausprobieren
+  gegen die Gemeinde-Instanz legt bei jedem Versuch eine Datei an.
 
 ## 6. Reihenfolge der Umsetzung
 
-| Schritt | Inhalt                                                          | Issue |
-| ------- | --------------------------------------------------------------- | ----- |
-| 1       | `uploadFile` verallgemeinern, `uploadChordpro` darauf umstellen | #321  |
-| 2       | Drei Endpunkte + Rechteprüfung serverseitig, mit Tests          | #321  |
-| 3       | Blatt „Dateien …" im Lied-Menü, Liste + Herunterladen           | #321  |
-| 4       | Hochladen und Löschen samt Rückfrage und Fehlerfällen           | #321  |
-| 5       | Auf Staging prüfen, im Browser durchklicken, dann Release       | #321  |
-| 6       | Die drei Fragen aus §5.1 klären                                 | #322  |
-| 7       | Kategorie + Kategorie-IDs durchreichen                          | #322  |
-| 8       | Lied anlegen (Lied + Arrangement), Stammdaten ändern            | #322  |
+| Schritt | Inhalt                                                             | Issue | Stand |
+| ------- | ------------------------------------------------------------------ | ----- | ----- |
+| 1       | `uploadFile` verallgemeinern, `uploadChordpro` darauf umstellen    | #321  | ✅    |
+| 2       | Drei Endpunkte + Zugehörigkeitsprüfung, mit Tests                  | #321  | ✅    |
+| 3       | Blatt „Dateien …" im Lied-Menü, Liste + Herunterladen              | #321  | ✅    |
+| 4       | Hochladen und Löschen samt Rückfrage und Fehlerfällen              | #321  | ✅    |
+| 5       | Auf Staging prüfen, im Browser durchklicken, dann Release          | #321  | offen |
+| 6       | Die drei Fragen aus §5.2 klären                                    | #322  | offen |
+| 7       | Kategorie + erlaubte Kategorie-IDs durchreichen                    | #322  | offen |
+| 8       | `ctSongSelect.ts`: Suche + Abfrage, rein lesend, mit Tests         | #322  | offen |
+| 9       | „Notenblatt aus SongSelect holen" in der Dateiverwaltung (Teil 1)  | #322  | offen |
+| 10      | Lied anlegen (Lied + Arrangement), Formular aus CCLI vorausgefüllt | #322  | offen |
+| 11      | Stammdaten eines vorhandenen Lieds ändern                          | #322  | offen |
 
-Schritt 1 ist bewusst zuerst: Er ist die Stelle, an der eine Kopie entstehen würde.
+**Schritt 8 vor 9 und 10**, weil Suche und Abfrage **nichts ändern**: Sie lassen sich gefahrlos
+gegen die echte Instanz prüfen. Erst danach kommt der Schritt, der Dateien anlegt.
+
+**Schritt 9 vor 10**, weil er der kleinere ist und die Fernbedienung als Ganzes belegt – an einem
+vorhandenen Lied mit CCLI-Nummer, ohne dass gleich ein neues Lied entsteht.
 
 ## 7. Verifikation
 
@@ -169,6 +221,9 @@ Schritt 1 ist bewusst zuerst: Er ist die Stelle, an der eine Kopie entstehen wü
   per grep auf die Ausgabe.
 - **Schreibende Erkundung nur gegen die Test-Instanz.** `probe-songwrite.ts` weigert sich, gegen die
   Gemeinde-Instanz zu laufen; das bleibt so.
+- **SongSelect: lesende Aufrufe gefahrlos, der Download NICHT.** Suche und Abfrage ändern nichts und
+  dürfen wiederholt werden. Jeder Download legt eine Datei an – beim Entwickeln also sparsam und
+  hinterher aufräumen. (Beim Erkunden sind so drei gleichnamige Dateien entstanden.)
 - **Im Browser durchgeklickt** (#283): Eine grüne Testsuite hat in diesem Projekt schon einmal eine
   kaputte Bedienung überdeckt. Für Datei-Upload und -Löschen gilt das besonders — sie ändern echte
   Daten in ChurchTools.
