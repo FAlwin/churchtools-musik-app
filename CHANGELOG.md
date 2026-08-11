@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.20.0] – 2026-08-11
+
 ### Behoben
 
 - **Team-Notizen: Die Striche eines Kollegen sind auch dann zu finden, wenn er ein anderes
