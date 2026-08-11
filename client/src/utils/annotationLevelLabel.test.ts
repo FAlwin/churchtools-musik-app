@@ -11,7 +11,7 @@ import { anzeigeName, beschreibeEbene } from './annotationLevelLabel';
 const NAMEN = {
   versionName: (key: string) => (key === 'akustik' ? 'Akustik' : 'Original'),
   arrangementName: (id: number | null) =>
-    id === null ? 'Ohne Arrangement' : id === 152 ? 'Test' : 'Standard-Arrangement',
+    id === null ? 'Standard' : id === 152 ? 'Test' : 'Standard-Arrangement',
 };
 /** Ein Lied mit nur EINEM Arrangement: Dann wird es bewusst nicht genannt. */
 const OHNE_ARR = { ...NAMEN, arrangementName: () => null };
@@ -41,7 +41,7 @@ describe('beschreibeEbene – jeder Teil sagt, was er ist', () => {
 
   it('benennt Bestandsnotizen ohne Segment, statt sie namenlos zu lassen', () => {
     const b = beschreibeEbene({ versionKey: 'original', lyr: false, arrangementId: null }, NAMEN);
-    expect(b.arrangement).toBe('Arrangement: Ohne Arrangement');
+    expect(b.arrangement).toBe('Arrangement: Standard');
   });
 });
 
