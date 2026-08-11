@@ -19,13 +19,13 @@ in der ChurchTools-Oberfläche ohnehin vorhanden ist. Dafür brauchen wir keinen
 
 | Frage                                      | Antwort                                                        |
 | ------------------------------------------ | -------------------------------------------------------------- |
-| Hat ChurchTools eine SongSelect-Anbindung? | Ja – Suche, Text, Akkorde, ChordPro, Lead-/Vocal-Sheet         |
+| Hat ChurchTools eine SongSelect-Anbindung? | Ja – Suche nach Titel, Abfrage per Nummer, Download            |
 | Gibt es dafür einen `/api/`-Endpunkt?      | **Nein.** Alle geratenen Pfade 404, keine OpenAPI-Beschreibung |
 | Wo liegt sie dann?                         | Im **alten** Modul: `POST /index.php?q=churchservice/ajax`     |
 | Kann unser Server das aufrufen?            | **Ja** – er hat Sitzungs-Cookie und CSRF-Token bereits         |
 | Recht des Kontos                           | `use ccli: true` (aus `/api/permissions/global`)               |
 
-## Die beiden Aufrufe
+## Die drei Aufrufe
 
 Gemeinsam für beide:
 
@@ -93,6 +93,51 @@ ChurchTools holt die Datei bei CCLI und legt sie als `<Titel>.chordpro` ins Arra
 Funktionen (`getCCLILyrics`, …) – **das ist geraten**, nicht gemessen. Wer sie ergänzt, misst sie
 vorher; blindes Ausprobieren gegen die Gemeinde-Instanz legt bei jedem Versuch eine Datei an
 (siehe unten).
+
+### 3. Suchen: `getCCLISongsMatchingTitle`
+
+```
+func=getCCLISongsMatchingTitle
+songTitle=Wo ich auch stehe
+browsertabId=1964557953
+```
+
+Antwort wie oben verpackt; innen eine Trefferliste:
+
+```jsonc
+{
+  "pagination": { "pageSize": 100, "pageNumber": 1, "totalItems": 147, "lastPage": 2 },
+  "data": {
+    "type": "searchResults",
+    "results": [
+      {
+        "title": "Wo ich auch stehe",
+        "songNumber": 4330228,
+        "authors": ["Albert Frey"],
+        "defaultKey": ["C"], // kann leer sein
+        "transposeKeyList": "majorKeys",
+        "isPublicDomain": false,
+        "content": {
+          /* wie oben: exists + isAuthorized je Format */
+        },
+      },
+    ],
+  },
+}
+```
+
+**Die Suche ist unscharf und großzügig.** „Wo ich auch stehe" ergab **147** Treffer, darunter viel
+Unverwandtes – gesucht wird offenbar über den ganzen CCLI-Katalog, nicht nur über den Titelanfang.
+Die Trefferliste in unserer App muss deshalb **die Unterscheidungsmerkmale zeigen**, mit denen man
+den richtigen findet: Titel, Autoren, Nummer und was verfügbar ist. Genau das macht ChurchTools auch
+(Spalten „Texte" und „Akkorde" mit ✓/✗).
+
+**Blättern ist ungeklärt.** ChurchTools holt Seite 1 mit 100 Einträgen; ein Parameter dafür war in
+der Nutzlast **nicht** zu sehen. Ob und wie sich Seite 2 holen lässt, ist nicht gemessen. Für die
+App heißt das zunächst: die ersten 100 zeigen und zum Verfeinern der Suche raten – nicht so tun, als
+wäre die Liste vollständig.
+
+**Suchen ändert nichts.** Anders als das Herunterladen ist dieser Aufruf gefahrlos wiederholbar.
 
 ## Was beim Bauen zählt
 
