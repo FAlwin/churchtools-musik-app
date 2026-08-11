@@ -76,7 +76,7 @@ hergibt. Ein Angebot, das dann doch abgelehnt wird, muss es also nicht geben.
 **Nebenwert für #322:** Titel, Autoren, Copyright und Tonart kommen hier mit. Ein neues Lied ließe
 sich damit aus der CCLI-Nummer **vorausfüllen**, statt alles abzutippen.
 
-### 2. Holen: `getCCLIChordPro`
+### 2. Holen: `getCCLIChordPro` – **liefert TEXT, legt keine Datei an**
 
 ```
 func=getCCLIChordPro
@@ -87,7 +87,35 @@ arrangementID=27
 browsertabId=1964557953
 ```
 
-ChurchTools holt die Datei bei CCLI und legt sie als `<Titel>.chordpro` ins Arrangement.
+**Achtung, hier lag mein teuerster Irrtum (11.08.2026).** Der Aufruf sieht in der Oberfläche so aus,
+als lege er die Datei an – **er tut es nicht.** Er gibt den ChordPro-**Text** zurück; die
+ChurchTools-Oberfläche lädt ihn danach selbst hoch.
+
+Die Antwort ist hier **anders verpackt** als bei Suche und Abfrage: `data` ist ein Objekt
+`{ success, content }`, und erst `content` ist die Zeichenkette mit der CCLI-Antwort:
+
+```jsonc
+{
+  "data": {
+    "type": "songChordPro",
+    "songNumber": 4328979,
+    "title": "Treu",
+    "copyright": ["1995 Gerth Medien"],
+    "chordPro": "{title: Treu}\n{key: E}\n…",
+  },
+}
+```
+
+Der Text trägt die Tonart selbst (`{key: E}`) – CCLI transponiert ihn nach `tonality`.
+
+**Was das für uns heißt (und warum es besser ist):** Wir laden die Datei **selbst** hoch, über
+`uploadFile` – unsere eigene geprüfte Stelle. Damit liegt der Dateiname in unserer Hand, und die
+Reihenfolge „erst die neue Datei, dann die alte weg" ist eine echte Zusage statt einer Hoffnung.
+
+**Was passiert, wenn man es nicht weiß:** Genau das ist mir passiert. Der Aufruf meldete
+`status: success`, es entstand nichts, und mein Ablauf löschte danach das vorhandene Notenblatt.
+Bei der ECG standen daraufhin zwei Arrangements ohne Blatt da – während die App „Notenblatt aus
+SongSelect geholt" meldete. **Ein Erfolgssignal ist kein Beleg dafür, dass etwas entstanden ist.**
 
 **Nicht bestätigt:** Für Text, Akkord-PDF, Lead- und Vocal-Sheet gibt es vermutlich entsprechende
 Funktionen (`getCCLILyrics`, …) – **das ist geraten**, nicht gemessen. Wer sie ergänzt, misst sie
