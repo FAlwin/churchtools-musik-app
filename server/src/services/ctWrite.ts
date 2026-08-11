@@ -12,7 +12,7 @@ import { agendaItemWritePayload } from './agendaPayload.js';
 import { arrangementWritePayload } from './arrangementPayload.js';
 import { csrfWriteDenied, getCsrfToken } from './ctCsrf.js';
 import { BASE, CT_FILE_TIMEOUT_MS, ctSignal } from './ctHttp.js';
-import { getAgenda, getSong } from './ctRead.js';
+import { getAgenda, getArrangement } from './ctRead.js';
 import type { CtAgendaItem } from './ctTypes.js';
 
 /** Fehlermeldung, wenn ChurchTools das Ändern des Ablaufs verweigert – siebenmal derselbe Satz. */
@@ -298,9 +298,8 @@ export async function updateArrangementTempo(
   arrangementId: number,
   tempo: number,
 ): Promise<void> {
-  const song = await getSong(cookie, songId); // frische Live-Daten – NIE aus einem Cache
-  const arr = song.arrangements.find((a) => a.id === arrangementId);
-  if (!arr) throw new HttpError(404, 'Arrangement nicht gefunden.');
+  // Frische Live-Daten – NIE aus einem Cache: geschrieben wird auf diesem Stand.
+  const { arrangement: arr } = await getArrangement(cookie, songId, arrangementId);
 
   await schreibe(cookie, `/api/songs/${songId}/arrangements/${arrangementId}`, {
     method: 'PUT',

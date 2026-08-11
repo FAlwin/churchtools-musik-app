@@ -59,6 +59,14 @@ export interface CtAgendaItem {
 export interface CtArrangementFile {
   name: string;
   fileUrl: string;
+  /**
+   * Größe in Bytes – **optional und notfalls als Zeichenkette** (#321).
+   *
+   * ChurchTools liefert Zahlen je nach Endpunkt als Zahl ODER als Text; bei `bpm` ist genau das
+   * schon aufgefallen (siehe `CtArrangement`). Wer hier `number` annimmt, rechnet irgendwann mit
+   * `"12345"`. Auswertung deshalb nur über `arrangementFileEntries`.
+   */
+  size?: number | string | null;
 }
 
 export interface CtArrangement {

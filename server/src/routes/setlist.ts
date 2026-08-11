@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
+import { MAX_FILE_BYTES } from '../services/ctHttp.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireSession } from '../middleware/session.js';
 import {
@@ -22,6 +23,9 @@ import {
   getSongUsageCtrl,
   getCapabilitiesCtrl,
   getAgendaServicesCtrl,
+  getArrangementFiles,
+  postArrangementFile,
+  deleteArrangementFileCtrl,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -48,5 +52,21 @@ router.post('/songs/:songId/versions', asyncHandler(postVersion));
 router.put('/songs/:songId/versions/:versionKey', asyncHandler(putVersion));
 router.delete('/songs/:songId/versions/:versionKey', asyncHandler(deleteVersionCtrl));
 router.get('/songs/:songId/files/:fileId', asyncHandler(getFile));
+
+/**
+ * Dateiverwaltung eines Arrangements (#321).
+ *
+ * `express.raw` nur HIER: Die Datei kommt als roher Rumpf, nicht als Multipart (Begründung am
+ * Controller). Die Grenze ist dieselbe wie beim LESEN von ChurchTools-Dateien – eine zweite Zahl
+ * daneben würde irgendwann von der ersten abweichen und Dateien annehmen, die wir nicht wieder
+ * ausliefern können.
+ */
+router.get('/songs/:songId/arrangements/:arrangementId/files', asyncHandler(getArrangementFiles));
+router.post(
+  '/songs/:songId/arrangements/:arrangementId/files',
+  express.raw({ type: '*/*', limit: MAX_FILE_BYTES }),
+  asyncHandler(postArrangementFile),
+);
+router.delete('/songs/:songId/files/:fileId', asyncHandler(deleteArrangementFileCtrl));
 
 export default router;

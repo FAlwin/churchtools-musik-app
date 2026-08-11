@@ -55,6 +55,16 @@
 - `PUT  /api/songs/:songId/versions/:versionKey` {arrangementId, text?, name?} → Version aktualisieren/umbenennen
 - `DELETE /api/songs/:songId/versions/:versionKey` {arrangementId} → Version löschen (Original bleibt)
 - `GET  /api/songs/:songId/files/:fileId` → PDF/Bild aus ChurchTools durchreichen (Content-Type-Whitelist; Viewer)
+- `GET  /api/songs/:songId/arrangements/:arrangementId/files` → **alle** Dateien des Arrangements als
+  `ArrangementFileEntry[]` (flach: ChordPro, Versionen, PDF/Bild und alles andere; `size` kann `null`
+  sein, wenn ChurchTools sie nicht mitliefert) (#321)
+- `POST /api/songs/:songId/arrangements/:arrangementId/files?name=<Dateiname>` → Datei anhängen →
+  frische Liste. **Roher Rumpf, kein Multipart:** die Datei unverändert als Body, Art über
+  `Content-Type`, Name über `?name=`. Grenze `MAX_FILE_BYTES` (50 MB) wie beim Lesen. Ein leerer
+  Rumpf ist **400**, nicht eine 0-Byte-Datei (#321)
+- `DELETE /api/songs/:songId/files/:fileId` → Datei löschen. Die Datei muss zu **diesem Lied**
+  gehören (sonst 404) – ohne diese Prüfung wäre der Weg ein „lösche beliebige Datei", denn
+  ChurchTools prüft nur das Bearbeiten-Recht, nicht welche Datei gemeint war (#321, vgl. #199)
 
 **Kopfangaben eines Lieds – die Datei hat das letzte Wort (#236).** Überall, wo ein Lied als
 `SetlistSong` geliefert wird (`/setlist`, `/songs/:songId/chart`), gewinnen die ChordPro-Angaben der

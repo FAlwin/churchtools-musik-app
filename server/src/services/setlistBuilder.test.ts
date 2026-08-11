@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import type { CtAgendaItem, CtArrangementFile } from './ctTypes.js';
-import { versionSlug, versionNameOf, versionFileName, documentsOf } from './arrangementFiles.js';
+import {
+  versionSlug,
+  versionNameOf,
+  versionFileName,
+  documentsOf,
+  fileKind,
+  arrangementFileEntries,
+  safeFileName,
+} from './arrangementFiles.js';
 import { metaValue } from './chordproMeta.js';
 import { setlistFingerprint, diffAgendaItems } from './agendaDiff.js';
 import {
@@ -294,5 +302,89 @@ describe('documentsOf (PDF/Bild-Dokumente)', () => {
   });
   it('überspringt Dateien ohne id in der URL', () => {
     expect(documentsOf([{ name: 'x.pdf', fileUrl: 'https://x.ct/ohne-id' }])).toEqual([]);
+  });
+});
+
+/**
+ * #321: Die Dateiverwaltung zeigt die Dateien eines Arrangements **flach** – alle vier Klassen in
+ * einer Liste (Entscheidung Alwin, 11.08.2026). Die Art dient nur dem Symbol und dem Wortlaut der
+ * Rückfrage, nicht dem Sortieren oder Schützen.
+ *
+ * Wichtig an diesen Tests: `fileKind` und `documentsOf` müssen sich **einig** bleiben. Sie beantworten
+ * dieselbe Frage; liefen sie auseinander, hätte ein PDF in der einen Liste ein anderes Symbol als in
+ * der anderen – und niemand würde es je bemerken.
+ */
+describe('fileKind (#321 – welche Art hat die Datei)', () => {
+  it('erkennt alle vier Klassen', () => {
+    expect(fileKind(file('Treu.chordpro', 1))).toBe('chordpro-original');
+    expect(fileKind(file('Treu — Akustik (App).chordpro', 2))).toBe('chordpro-version');
+    expect(fileKind(file('Treu - E.pdf', 3))).toBe('pdf');
+    expect(fileKind(file('scan.JPEG', 4))).toBe('image');
+    expect(fileKind(file('probe.mp3', 5))).toBe('other');
+  });
+
+  it('hält eine verwaltete Version NICHT für das Original', () => {
+    // Beide enden auf .chordpro – die Reihenfolge der Fragen entscheidet. Verwechselt man sie,
+    // gilt die Version als Quelle des Notenblatts.
+    expect(fileKind(file('Treu — Bearbeitet.chordpro', 6))).toBe('chordpro-version');
+  });
+
+  it('bleibt mit documentsOf einig – dieselbe Frage, dieselbe Antwort', () => {
+    const dateien = [file('a.pdf', 1), file('b.png', 2), file('c.chordpro', 3), file('d.zip', 4)];
+    const alsDokument = new Map(documentsOf(dateien).map((d) => [d.name, d.type]));
+    for (const f of dateien) {
+      const art = fileKind(f);
+      if (art === 'pdf' || art === 'image') expect(alsDokument.get(f.name)).toBe(art);
+      else expect(alsDokument.has(f.name)).toBe(false);
+    }
+  });
+});
+
+describe('arrangementFileEntries (#321 – die flache Liste)', () => {
+  it('nimmt ALLES mit, auch was die App bisher nirgends zeigte', () => {
+    const namen = arrangementFileEntries([
+      file('Treu.chordpro', 1),
+      file('Treu - E.pdf', 2),
+      file('probe.mp3', 3),
+    ]).map((e) => e.name);
+    expect(namen).toEqual(['Treu.chordpro', 'Treu - E.pdf', 'probe.mp3']);
+  });
+
+  it('versteht eine Größe als Zahl UND als Text', () => {
+    // ChurchTools liefert Zahlen je nach Endpunkt als Zahl oder als Zeichenkette – bei `bpm` ist
+    // genau das schon aufgefallen. Wer hier `number` annimmt, zeigt irgendwann „NaN KB".
+    expect(arrangementFileEntries([{ ...file('a.pdf', 1), size: 2048 }])[0].size).toBe(2048);
+    expect(arrangementFileEntries([{ ...file('b.pdf', 2), size: '4096' }])[0].size).toBe(4096);
+  });
+
+  it('meldet eine fehlende oder unsinnige Größe als null, nicht als 0', () => {
+    // 0 wäre eine Aussage („leere Datei"), null ist die Wahrheit („unbekannt").
+    expect(arrangementFileEntries([file('a.pdf', 1)])[0].size).toBeNull();
+    expect(arrangementFileEntries([{ ...file('b.pdf', 2), size: 'viel' }])[0].size).toBeNull();
+  });
+
+  it('überspringt Dateien ohne ID – ihre Knöpfe führten ins Leere', () => {
+    expect(arrangementFileEntries([{ name: 'x.pdf', fileUrl: 'https://x.ct/ohne-id' }])).toEqual(
+      [],
+    );
+  });
+});
+
+describe('safeFileName (#321)', () => {
+  it('entfernt Pfadtrenner – ein Name darf kein Pfad werden', () => {
+    expect(safeFileName('../../geheim.pdf')).toBe('....geheim.pdf');
+    expect(safeFileName('a\\b:c*d?e"f<g>h|i.pdf')).toBe('abcdefghi.pdf');
+  });
+
+  it('lässt normale Namen samt Umlauten und Klammern in Ruhe', () => {
+    expect(safeFileName('Größer (Live) - E.pdf')).toBe('Größer (Live) - E.pdf');
+  });
+
+  it('versionFileName benutzt dieselbe Reinigung und schützt das (App)-Kürzel', () => {
+    // Die Klammern fallen NUR im Versionsnamen – sonst ließe sich ein „(App)" hineinschmuggeln und
+    // eine fremde Datei als verwaltete Version tarnen.
+    expect(versionFileName('Treu/Neu', 'Akustik (laut)')).toBe(
+      'TreuNeu — Akustik laut (App).chordpro',
+    );
   });
 });
