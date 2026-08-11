@@ -146,6 +146,28 @@ selben Arrangement – jeder Klick legt eine weitere an, ChurchTools ersetzt nic
 muss deshalb **vorher warnen**, wenn es die Datei schon gibt. Dieselbe Regel gilt bereits für unser
 eigenes Hochladen (#321) – die Warnung dort kann übernommen werden.
 
+**Die Tonart steckt IN der Datei – und pro Arrangement gehört genau EINE hin.** Gemessen am
+11.08.2026: CCLI transponiert beim Herunterladen und schreibt `{key: …}` in das ChordPro. Dasselbe
+Lied „Treu" liegt bei der ECG in zwei Arrangements –
+
+| Arrangement          | Tonart | in der Datei | erste Akkorde |
+| -------------------- | ------ | ------------ | ------------- |
+| Standard-Arrangement | E      | `key=E`      | E F#m7 A B    |
+| Test                 | D      | `key=D`      | D Em7 G A     |
+
+– und der Download nimmt automatisch die Tonart **des jeweiligen Arrangements**. Verschiedene
+Tonarten gehören also in verschiedene **Arrangements**, nicht nebeneinander in eines.
+
+**Warum zwei ChordPro im selben Arrangement gefährlich sind:** Beide heißen `<Titel>.chordpro`, und
+`setlistBuilder` sucht das Notenblatt mit `arr.files.find(isOriginalChordpro)` – **die erste
+gewinnt**, welche das ist, entscheidet die Reihenfolge von ChurchTools. Weil die Datei ihre Tonart
+selbst mitbringt und bei uns Vorrang vor den ChurchTools-Angaben hat (#236), könnte das Blatt still
+auf eine andere Fassung **und eine andere Tonart** springen. Nichts kracht, es ist nur plötzlich
+anders.
+
+Deshalb beim Holen: Ist im Arrangement schon ein ChordPro, wird **gefragt und ersetzt** (altes
+löschen, neues holen) – nicht danebengelegt.
+
 **Es ist eine undokumentierte interne Schnittstelle.** Sie kann sich mit einem ChurchTools-Update
 ohne Ankündigung ändern. Für eine Funktion, die im Gottesdienst gebraucht wird, ist das ein echtes
 Risiko:
