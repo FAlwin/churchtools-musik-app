@@ -18,6 +18,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Betroffen war auch das **Übernehmen**: „Zusammenführen" und „Ersetzen" taten nichts, weil sie
   unter demselben unvollständigen Schlüssel lasen und schrieben.
 
+- **Der Stift-Marker im Lied-Menü war verschwunden.** Neben einer Version zeigt ein kleiner Stift,
+  dass du dort Notizen hast – seit v2.19.0 suchte er unter dem alten Schlüssel, während gespeichert
+  längst mit Arrangement wird. Er erschien deshalb nie mehr, ohne Fehlermeldung.
+
 ## [2.19.0] – 2026-08-11
 
 ### Behoben
