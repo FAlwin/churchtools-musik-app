@@ -7,6 +7,23 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Neu
+
+- **Die Dateien eines Liedes lassen sich in der App verwalten (#321).** Im Lied-Menü gibt es
+  **„Dateien …"** – dort stehen alle Dateien des Arrangements: das Notenblatt als ChordPro, die
+  Versionen, PDFs und Bilder. **Auch Dateien, die die App bisher gar nicht zeigte** (z. B. eine
+  Aufnahme als MP3), sind dort zu sehen.
+
+  Antippen lädt eine Datei aufs Gerät (auf dem iPad über das Teilen-Menü). Über **„Datei
+  hinzufügen …"** kommt eine neue hinein – ein neues PDF steht danach sofort im Menü unter
+  „Anzeige" zur Auswahl. Der Papierkorb rechts löscht, **immer mit Rückfrage**, und die Rückfrage
+  sagt, was danach fehlt: Beim ChordPro etwa, dass die App für dieses Arrangement keine Akkorde mehr
+  zeigt.
+
+  Sichtbar ist das nur, wer in ChurchTools Lieder bearbeiten darf. Zu große Dateien (über 50 MB)
+  werden **vor** dem Hochladen abgelehnt, und bei einem Namen, den es schon gibt, kommt eine
+  Warnung: ChurchTools ersetzt nicht, die Datei läge danach zweimal da.
+
 ## [2.21.0] – 2026-08-11
 
 ### Neu

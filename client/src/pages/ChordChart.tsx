@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import type { SetlistSong } from '@shared/types/index';
 import { Screen } from '../components/Screen';
 import { ChartHeader } from '../components/ChartHeader';
@@ -49,13 +48,10 @@ import {
   useArrangementUeberschreibung,
   useArrangementVorladen,
 } from '../hooks/useArrangementUeberschreibung';
-import {
-  getArrangementFiles,
-  getSongFileBlob,
-  setArrangementTempo,
-} from '../services/churchtoolsApi';
+import { setArrangementTempo } from '../services/churchtoolsApi';
 import { ArrangementFilesSheet } from '../components/ArrangementFilesSheet';
-import { shareOrDownload } from '../utils/shareFile';
+import { useArrangementDateien } from '../hooks/useArrangementDateien';
+import { loeschFrage } from '../utils/dateiVerwaltung';
 import { useSetlistPages } from '../hooks/useSetlistPages';
 import { useSongArrangements } from '../hooks/useServices';
 import type { DrawTool } from '../types/index';
@@ -314,17 +310,18 @@ export function ChordChart({
   const ablaufArrangement = songsAusAblauf[activeSongIdx]?.arrangementId ?? song.arrangementId;
 
   /**
-   * Die Dateien des aktiven Arrangements (#321).
+   * Dateiverwaltung des aktiven Arrangements (#321) – Abruf und Aktionen in `useArrangementDateien`.
    *
-   * **Erst beim Öffnen des Blattes**, nicht schon beim Öffnen des Lieds: Es ist ein zusätzlicher
-   * Abruf gegen ChurchTools, und im Gottesdienst braucht ihn niemand. Genau an vermeidbaren
-   * Abrufen ist die App einmal in ein Rate-Limit gelaufen (#300).
+   * `aktiv` erst beim Öffnen des Blattes: Es ist ein zusätzlicher Abruf gegen ChurchTools, und im
+   * Gottesdienst braucht ihn niemand. Genau an vermeidbaren Abrufen ist die App einmal in ein
+   * Rate-Limit gelaufen (#300).
    */
-  const dateien = useQuery({
-    queryKey: ['arrangement-files', song.id, song.arrangementId],
-    queryFn: () => getArrangementFiles(song.id, song.arrangementId),
-    enabled: overlay === 'files',
-    staleTime: 1000 * 30,
+  const datei = useArrangementDateien({
+    songId: song.id,
+    arrangementId: song.arrangementId,
+    aktiv: overlay === 'files',
+    showToast,
+    onReload,
   });
 
   /**
@@ -506,21 +503,6 @@ export function ChordChart({
       ),
     [owners, viewingId, viewingSongId, viewingLyr, viewingArr],
   );
-
-  /**
-   * Eine Datei des Arrangements aufs Gerät geben (#321).
-   *
-   * Über denselben Weg wie das PDF-Teilen (`shareOrDownload`): auf dem iPad das Teilen-Menü, am
-   * Rechner ein Download. Ein Fehlschlag wird gemeldet – ohne Rückmeldung hielte man die Datei für
-   * gespeichert, und sie wäre nirgends (#270).
-   */
-  const dateiHerunterladen = async (f: { fileId: number; name: string }): Promise<void> => {
-    try {
-      await shareOrDownload(await getSongFileBlob(song.id, f.fileId), f.name);
-    } catch {
-      showToast('Die Datei konnte nicht geladen werden.');
-    }
-  };
 
   /**
    * „Als PDF teilen" – das aktive Lied als einzelne PDF.
@@ -811,17 +793,44 @@ export function ChordChart({
         {overlay === 'files' && (
           <ArrangementFilesSheet
             arrangementName={ebenenNamen.arrangementName(song.arrangementId)}
-            files={dateien.data ?? []}
-            laedt={dateien.isPending}
+            files={datei.dateien.data ?? []}
+            laedt={datei.dateien.isPending}
             // `paused` heißt: React Query wartet auf den Server, statt weiter zu versuchen.
-            angehalten={dateien.fetchStatus === 'paused'}
+            angehalten={datei.dateien.fetchStatus === 'paused'}
             fehler={
-              dateien.error
+              datei.dateien.error
                 ? 'Die Dateien konnten nicht geladen werden. Bitte erneut versuchen.'
                 : null
             }
-            onDownload={(f) => void dateiHerunterladen(f)}
+            laedtHoch={datei.laedtHoch}
+            onDownload={(f) => void datei.herunterladen(f)}
+            onUpload={datei.dateiGewaehlt}
+            onDelete={datei.setLoeschDatei}
             onClose={() => setOverlay(null)}
+          />
+        )}
+
+        {/* Rückfrage vor dem Löschen. Bei einer flachen Liste ist dieser Text die einzige Bremse –
+            deshalb nennt er die FOLGE und nicht nur „wirklich?". */}
+        {datei.loeschDatei && (
+          <ConfirmDialog
+            title="Datei löschen?"
+            message={loeschFrage(datei.loeschDatei)}
+            confirmLabel="Löschen"
+            onConfirm={() => void datei.loeschenBestaetigen()}
+            onCancel={() => datei.setLoeschDatei(null)}
+          />
+        )}
+
+        {/* Gleicher Name: ChurchTools ersetzt nicht, es läge zweimal da. Was die richtige Datei ist,
+            weiß nur der Nutzer – also Auskunft geben und ihn entscheiden lassen. */}
+        {datei.uploadWarnung && (
+          <ConfirmDialog
+            title="Datei gibt es schon"
+            message={datei.uploadWarnung.text}
+            confirmLabel="Trotzdem hochladen"
+            onConfirm={datei.warnungBestaetigen}
+            onCancel={() => datei.setUploadWarnung(null)}
           />
         )}
 

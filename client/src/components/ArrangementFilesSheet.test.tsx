@@ -23,7 +23,7 @@ const DATEIEN: ArrangementFileEntry[] = [
 ];
 
 function setup(over: Partial<Parameters<typeof ArrangementFilesSheet>[0]> = {}) {
-  const onDownload = vi.fn();
+  const h = { onDownload: vi.fn(), onUpload: vi.fn(), onDelete: vi.fn(), onClose: vi.fn() };
   render(
     <ArrangementFilesSheet
       arrangementName="Test"
@@ -31,12 +31,12 @@ function setup(over: Partial<Parameters<typeof ArrangementFilesSheet>[0]> = {}) 
       laedt={false}
       angehalten={false}
       fehler={null}
-      onDownload={onDownload}
-      onClose={vi.fn()}
+      laedtHoch={false}
+      {...h}
       {...over}
     />,
   );
-  return { onDownload };
+  return h;
 }
 
 afterEach(cleanup);
@@ -113,5 +113,60 @@ describe('ArrangementFilesSheet – die drei leeren Fälle sehen verschieden aus
     // Sonst hielte man den Rest für vollständig.
     setup({ fehler: 'Fehlgeschlagen.' });
     expect(screen.queryByText('Treu.chordpro')).toBeNull();
+  });
+});
+
+describe('ArrangementFilesSheet – Hochladen und Löschen (#321, Schritt 4)', () => {
+  it('der Papierkorb löscht, die Zeile selbst lädt herunter', () => {
+    // Zwei getrennte Ziele in einer Zeile: Wer herunterladen will, darf nicht löschen. Deshalb hier
+    // BEIDE Wege einzeln geprüft und nicht nur einer stellvertretend.
+    const h = setup();
+    screen.getByLabelText('„Treu - E.pdf" löschen').click();
+    expect(h.onDelete).toHaveBeenCalledWith(DATEIEN[2]);
+    expect(h.onDownload).not.toHaveBeenCalled();
+
+    screen.getByText('Treu - E.pdf').click();
+    expect(h.onDownload).toHaveBeenCalledWith(DATEIEN[2]);
+    expect(h.onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it('jede Datei hat einen eigenen Löschknopf – auch die Quelle des Notenblatts', () => {
+    // Die flache Liste ist so entschieden. Der Test hält fest, dass hier nichts heimlich ausgenommen
+    // ist: Der Schutz liegt allein im Wortlaut der Rückfrage (siehe `loeschFrage`).
+    setup();
+    for (const d of DATEIEN) expect(screen.getByLabelText(`„${d.name}" löschen`)).toBeTruthy();
+  });
+
+  it('meldet eine ausgewählte Datei nach oben', () => {
+    const h = setup();
+    const feld = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const datei = new File(['x'], 'neu.pdf', { type: 'application/pdf' });
+    Object.defineProperty(feld, 'files', { value: [datei], configurable: true });
+    feld.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(h.onUpload).toHaveBeenCalledWith(datei);
+  });
+
+  it('während des Hochladens ist der Knopf beschäftigt und nicht anklickbar', () => {
+    // Sonst schickt ein zweiter Tipp dieselbe Datei ein zweites Mal – und ein Upload ist nicht
+    // idempotent, sie läge danach doppelt in ChurchTools.
+    setup({ laedtHoch: true });
+    const knopf = screen.getByText<HTMLButtonElement>('Wird hochgeladen …');
+    expect(knopf.disabled).toBe(true);
+    expect(screen.queryByText('Datei hinzufügen …')).toBeNull();
+  });
+
+  it('ohne vorliegende Liste gibt es kein Hinzufügen', () => {
+    // Ohne die Liste kann die Prüfung nicht wissen, ob es den Namen schon gibt – der Upload würde
+    // stillschweigend ein Doppel anlegen.
+    setup({ files: [], laedt: true });
+    expect(screen.queryByText('Datei hinzufügen …')).toBeNull();
+    setup({ files: [], fehler: 'Fehlgeschlagen.' });
+    expect(screen.queryByText('Datei hinzufügen …')).toBeNull();
+  });
+
+  it('bei leerem Arrangement kann man trotzdem hinzufügen', () => {
+    // Sonst wäre ein leeres Arrangement eine Sackgasse – genau dort will man die erste Datei ablegen.
+    setup({ files: [] });
+    expect(screen.getByText('Datei hinzufügen …')).toBeTruthy();
   });
 });

@@ -184,6 +184,36 @@ export function getSongFileBlob(songId: number, fileId: number): Promise<Blob> {
   return apiFetchBlob(`/api/songs/${songId}/files/${fileId}`);
 }
 
+/**
+ * Eine Datei an ein Arrangement hängen (#321) – gibt die frische Liste zurück.
+ *
+ * **Roher Rumpf, kein Multipart:** Die Datei geht unverändert als Body, ihre Art über
+ * `Content-Type`, der Name über `?name=`. Der Server setzt daraus das Multipart für ChurchTools
+ * zusammen. So braucht keine Seite eine Bibliothek zum Zerlegen von Multipart.
+ *
+ * Der `Content-Type` wird ausdrücklich gesetzt: `apiFetch` schreibt sonst bei jedem Rumpf
+ * `application/json` – ein PDF käme dann als JSON deklariert an.
+ */
+export function uploadArrangementFile(
+  songId: number,
+  arrangementId: number,
+  datei: File,
+): Promise<ArrangementFileEntry[]> {
+  return apiFetch<ArrangementFileEntry[]>(
+    `/api/songs/${songId}/arrangements/${arrangementId}/files?name=${encodeURIComponent(datei.name)}`,
+    {
+      method: 'POST',
+      body: datei,
+      headers: { 'Content-Type': datei.type || 'application/octet-stream' },
+    },
+  );
+}
+
+/** Löscht eine Datei des Lieds (#321). Der Server prüft, dass sie wirklich zu ihm gehört. */
+export function deleteSongFile(songId: number, fileId: number): Promise<void> {
+  return apiFetch<void>(`/api/songs/${songId}/files/${fileId}`, { method: 'DELETE' });
+}
+
 /** Löscht einen Ablaufpunkt. */
 export function deleteAgendaItem(eventId: number, itemId: number): Promise<{ ok: boolean }> {
   return apiFetch(`/api/services/${eventId}/agenda/items/${itemId}`, { method: 'DELETE' });
