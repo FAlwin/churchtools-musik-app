@@ -26,6 +26,8 @@ import {
   getArrangementFiles,
   postArrangementFile,
   deleteArrangementFileCtrl,
+  getSongSelectSearch,
+  getSongSelectByNumber,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -68,5 +70,12 @@ router.post(
   asyncHandler(postArrangementFile),
 );
 router.delete('/songs/:songId/files/:fileId', asyncHandler(deleteArrangementFileCtrl));
+
+/**
+ * CCLI SongSelect (#322) – nur lesend. Beide Aufrufe gehen über ChurchTools weiter zu CCLI und
+ * dauern spürbar (~800 ms gemessen); sie ändern aber nichts.
+ */
+router.get('/songselect/search', asyncHandler(getSongSelectSearch));
+router.get('/songselect/songs/:songNumber', asyncHandler(getSongSelectByNumber));
 
 export default router;

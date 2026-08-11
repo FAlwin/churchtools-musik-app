@@ -237,6 +237,9 @@ export function parseCapabilities(
     canViewAgendas: isAdmin || has(cs['view agenda']),
     canEditAgendas: isAdmin || has(cs['edit agenda']),
     canEditSongs: isAdmin || has(cs['edit songcategory']),
+    // `use ccli` ist ein eigenes Recht und NICHT vom Admin-Recht abgedeckt: Ohne SongSelect-Abo der
+    // Gemeinde hilft auch Administrator sein nichts (#322).
+    canUseCcli: has(cs['use ccli']),
     isAdmin,
     // Default; die tatsächliche Gruppen-/Rollen-Prüfung ergänzt getCapabilities (braucht Cookie + Config).
     canUseGlobalNotes: false,

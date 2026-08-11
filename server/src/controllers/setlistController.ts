@@ -22,6 +22,7 @@ import { getUserId } from '../services/ctAuth.js';
 import { getCapabilities } from '../services/ctCapabilities.js';
 import { fetchFileBytes } from '../services/ctFiles.js';
 import { getCtServices, getSong } from '../services/ctRead.js';
+import { getSongSelectSong, searchSongSelect } from '../services/ctSongSelect.js';
 import {
   createAgendaItem,
   deleteAgendaItem,
@@ -479,4 +480,27 @@ export async function deleteArrangementFileCtrl(req: Request, res: Response): Pr
   const fileId = idSchema.parse(req.params.fileId);
   await removeArrangementFile(ctCookie(req), songId, fileId);
   res.status(204).end();
+}
+
+/**
+ * CCLI SongSelect (#322) – **nur die lesenden Wege**: suchen und abfragen.
+ *
+ * Beide ändern nichts und sind beliebig wiederholbar; das Herunterladen kommt später an eigener
+ * Stelle mit eigener Rückfrage.
+ *
+ * **Rechte:** wie überall geht das Cookie des Nutzers durch und ChurchTools entscheidet. Zusätzlich
+ * meldet `capabilities.canUseCcli`, ob die Gemeinde SongSelect überhaupt hat – damit die Oberfläche
+ * den Einstieg gar nicht erst zeigt, statt einen Knopf anzubieten, der immer scheitert.
+ */
+
+/** GET /api/songselect/search?title=… */
+export async function getSongSelectSearch(req: Request, res: Response): Promise<void> {
+  const title = z.string().min(1).max(200).parse(req.query.title);
+  res.json(await searchSongSelect(ctCookie(req), title));
+}
+
+/** GET /api/songselect/songs/:songNumber */
+export async function getSongSelectByNumber(req: Request, res: Response): Promise<void> {
+  const songNumber = idSchema.parse(req.params.songNumber);
+  res.json(await getSongSelectSong(ctCookie(req), songNumber));
 }

@@ -34,6 +34,7 @@ const CAPS: UserCapabilities = {
   canEditSongs: false,
   isAdmin: false,
   canUseGlobalNotes: true,
+  canUseCcli: false,
 };
 
 /**

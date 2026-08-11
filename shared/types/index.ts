@@ -142,6 +142,33 @@ export interface ArrangementFileEntry {
   kind: ArrangementFileKind;
 }
 
+/**
+ * Ein Treffer aus CCLI SongSelect (#322) – über ChurchTools abgefragt.
+ *
+ * **Bewusst schmal:** Die Antwort von CCLI enthält auch die Konto-Nummer der Gemeinde, interne IDs
+ * und Links zur CCLI-API. Nichts davon gehört in den Browser.
+ */
+export interface SongSelectTreffer {
+  songNumber: number;
+  title: string;
+  authors: string[];
+  /** Tonart laut CCLI – `null`, wenn dort keine hinterlegt ist (kommt vor). */
+  defaultKey: string | null;
+  isPublicDomain: boolean;
+  /**
+   * Verfügbar heißt: bei CCLI **vorhanden UND** von der Lizenz der Gemeinde **abgedeckt**.
+   * Ein Knopf für etwas, das CCLI dann verweigert, führt ins Leere.
+   */
+  hasLyrics: boolean;
+  hasChordPro: boolean;
+  hasChordSheet: boolean;
+}
+
+/** Ein per CCLI-Nummer abgefragtes Lied – wie ein Treffer, plus Copyright fürs Anlegen. */
+export interface SongSelectSong extends SongSelectTreffer {
+  copyright: string | null;
+}
+
 /** Ein anzeigbares Dokument (PDF oder Bild) eines Arrangements. */
 export interface SongDocument {
   fileId: number;
@@ -224,6 +251,14 @@ export interface UserCapabilities {
    * aktives Mitglied einer freigegebenen Gruppe mit freigegebener Rolle.
    */
   canUseGlobalNotes: boolean;
+  /**
+   * Darf CCLI SongSelect nutzen (#322) – aus dem ChurchTools-Recht `use ccli`.
+   *
+   * Getrennt von `canEditSongs`: Lieder bearbeiten zu dürfen heißt nicht, dass die Gemeinde eine
+   * SongSelect-Lizenz hat. Ohne dieses Recht erscheint der Einstieg gar nicht erst – ein Knopf, der
+   * immer scheitert, ist schlimmer als keiner.
+   */
+  canUseCcli: boolean;
 }
 
 /** Antwort des Login-Endpunkts. */
