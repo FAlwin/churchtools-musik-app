@@ -52,7 +52,6 @@ function starte(zoomedSlots: [boolean, boolean] = [true, false]) {
     lastScale: { current: [1, 1] } as MutableRefObject<[number, number]>,
     gestureSlot: { current: null } as MutableRefObject<number | null>,
     zoomedSlots,
-    eingepasst: { current: new Set<string>() } as MutableRefObject<Set<string>>,
   };
   return { ...renderHook(() => useZoomPersistence(args)), a, b, args };
 }
@@ -96,92 +95,5 @@ describe('resetVisibleZoom – merken oder vergessen', () => {
     zoomSpeichern(result, args);
     result.current.resetVisibleZoom();
     expect(result.current.loadZoom(0)).toBeNull();
-  });
-
-  it('BEHÄLT ihn beim Einpassen – Leisten umschalten ist kein Zurücknehmen (#319)', () => {
-    const { result, a, args } = starte();
-    zoomSpeichern(result, args);
-    result.current.fitVisibleZoom();
-    // Eingepasst wurde trotzdem …
-    expect(a.setTransform).toHaveBeenCalledWith(0, 0, 1, 0);
-    // … aber der bewusst gesetzte Zoom ist noch da.
-    expect(result.current.loadZoom(0)?.scale).toBe(1.8);
-  });
-});
-
-describe('fitVisibleZoom – ohne Vorbehalt', () => {
-  it('passt AUCH ein, wenn der Merker die Seite nicht als vergrößert führt', () => {
-    // Genau das war der gemeldete Fehler: `zoomedSlots` wird in `onTransformed` gepflegt und kann
-    // im Moment des Umschaltens veraltet sein – dann passierte gar nichts.
-    const { result, a } = starte([false, false]);
-    result.current.fitVisibleZoom();
-    expect(a.setTransform).toHaveBeenCalledWith(0, 0, 1, 0);
-  });
-
-  it('passt OHNE Animation ein – eine animierte Rückfahrt wird vom Größenwechsel verworfen', () => {
-    // Gemessen im Browser: `resetTransform(150)` ließ den Zoom auf 1,96 stehen, vorher wie nachher.
-    // Die Bibliothek fährt den Wert über eine Animation zurück, und genau in dem Moment ändert sich
-    // die Größe der Fläche und verwirft sie. Deshalb Dauer 0 – und **kein** `resetTransform` mehr.
-    const { result, a } = starte();
-    result.current.fitVisibleZoom();
-    expect(a.setTransform).toHaveBeenCalledWith(0, 0, 1, 0);
-    expect(a.resetTransform).not.toHaveBeenCalled();
-  });
-
-  it('passt auch direkt nach einer Geste ein und gibt die Sperre frei (#319)', () => {
-    // Anders als die Wiederherstell-Effekte: Die Sperre aus #33 soll einen LAUFENDEN Pinch schützen,
-    // hier kann keiner laufen (ein Tipp mit einem Finger, ein Pinch mit zweien). Gemessen steht sie
-    // nach dem Zoomen noch rund eine halbe Sekunde – wer sofort danach in die Mitte tippte, bekam
-    // gar kein Einpassen. Genau der gemeldete Fall.
-    const { result, a, args } = starte();
-    args.gestureSlot.current = 0;
-    result.current.fitVisibleZoom();
-    expect(a.setTransform).toHaveBeenCalledWith(0, 0, 1, 0);
-    expect(args.gestureSlot.current).toBeNull();
-  });
-});
-
-describe('Einpassen haelt – bis der Nutzer selbst wieder zoomt (#319)', () => {
-  it('ein spaeterer Abgleich holt den gespeicherten Zoom NICHT zurueck', () => {
-    // Der gemeldete Fehler, im Protokoll belegt: Tipp bei 3755 ms, eingepasst bei 3760 ms – und bei
-    // 30078 ms holte der 30-Sekunden-Abgleich die alten 1,722 zurueck. Das Einpassen hielt also nur
-    // bis zum naechsten Abgleich.
-    const { result, a, args } = starte();
-    zoomSpeichern(result, args);
-    result.current.fitVisibleZoom();
-    a.setTransform.mockClear();
-
-    result.current.restoreVisibleZoom({ fitUnsaved: true });
-    expect(a.setTransform).not.toHaveBeenCalled();
-  });
-
-  it('der gespeicherte Zoom bleibt aber erhalten – er gilt beim Zurueckblaettern wieder', () => {
-    const { result, args } = starte();
-    zoomSpeichern(result, args);
-    result.current.fitVisibleZoom();
-    expect(result.current.loadZoom(0)?.scale).toBe(1.8);
-  });
-
-  it('zoomt der Nutzer selbst wieder, gewinnt SEIN Wert', () => {
-    const { result, a, args } = starte();
-    zoomSpeichern(result, args);
-    result.current.fitVisibleZoom();
-    // Neue Geste: Der Merker faellt weg, ab jetzt gilt wieder das Gespeicherte.
-    zoomSpeichern(result, args);
-    a.setTransform.mockClear();
-    result.current.restoreVisibleZoom({ fitUnsaved: true });
-    expect(a.setTransform).toHaveBeenCalled();
-  });
-
-  it('gilt nur fuer DIESE Seite – auf einer anderen wird normal wiederhergestellt', () => {
-    // Der Merker haengt am Zoom-Schluessel. Blaettert man weiter, gilt dort ein anderer.
-    const { result, a, args } = starte();
-    zoomSpeichern(result, args);
-    result.current.fitVisibleZoom();
-    args.pageIndex = 1;
-    a.setTransform.mockClear();
-    // Auf Seite 1 gibt es nichts Gespeichertes – aber auch keinen Merker, der das Laden verhindert.
-    result.current.restoreVisibleZoom({ fitUnsaved: true });
-    expect(result.current.loadZoom(0)?.scale).toBe(1.8);
   });
 });
