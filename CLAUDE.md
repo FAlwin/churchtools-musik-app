@@ -20,9 +20,17 @@
   extern unter `https://musik.ecg-donrath.de` live.
 
   **Stand 11.08.2026: Produktiv läuft noch `v2.16.3`.** In `main` und getaggt, aber NICHT
-  ausgeliefert: **v2.17.0, v2.18.0 und v2.19.0** – der Prod-Deploy liegt bei Alwin
-  (`prod-restart.command` auf dem NAS). Getestet ist alles auf Staging
-  (`musik-test.ecg-donrath.de`). **v2.16.2 wurde übersprungen**, siehe unten.
+  ausgeliefert: **v2.17.0 bis v2.21.0** – der Prod-Deploy liegt bei Alwin. Getestet ist alles auf
+  Staging (`musik-test.ecg-donrath.de`). **v2.16.2 wurde übersprungen**, siehe unten.
+
+  Seit v2.21.0 liegt zusätzlich **ungetaggt** in `main`: die **Dateiverwaltung** eines Arrangements
+  (#321) und die **CCLI-SongSelect-Anbindung** (#322, Suche/Abfrage/Notenblatt holen) – beides von
+  Alwin auf Staging geprüft.
+
+  **Deploy-Falle:** Prod zieht den Tag `:2`, und der liegt lokal auf dem NAS bereits – ein
+  „Erstellen" im Container Manager nimmt sonst das **alte** Abbild. Erst das Abbild holen
+  (`sudo docker pull ghcr.io/falwin/churchtools-musik-app:2`), dann Projekt stoppen → löschen
+  (**ohne** Volumes) → erstellen, mit **identischem** Projektnamen (er bestimmt den Volume-Namen).
 
 - **Repository:** öffentliches GitHub-Repo `FAlwin/churchtools-musik-app` (origin/main), MIT-Lizenz.
 

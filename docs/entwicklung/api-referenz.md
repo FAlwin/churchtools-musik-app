@@ -27,7 +27,7 @@
 - `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt signiertes Session-Cookie
 - `POST /api/auth/logout` → Session + ChurchTools-Session beenden
 - `GET  /api/auth/me` → `{authenticated, user?}`
-- `GET  /api/capabilities` → Rechte des Nutzers (view/edit agenda, view/edit songcategory, canUseGlobalNotes) → steuert UI
+- `GET  /api/capabilities` → Rechte des Nutzers (view/edit agenda, view/edit songcategory, canUseGlobalNotes, **canUseCcli** aus `use ccli`) → steuert UI
 
 ## Termine / Ablauf
 
@@ -62,6 +62,17 @@
   frische Liste. **Roher Rumpf, kein Multipart:** die Datei unverändert als Body, Art über
   `Content-Type`, Name über `?name=`. Grenze `MAX_FILE_BYTES` (50 MB) wie beim Lesen. Ein leerer
   Rumpf ist **400**, nicht eine 0-Byte-Datei (#321)
+- `GET  /api/songselect/search?title=…` → CCLI-SongSelect nach Titel durchsuchen → Treffer mit
+  Titel, Autoren, Nummer, Tonart und je Format `hasLyrics`/`hasChordPro`/`hasChordSheet`
+  (**vorhanden UND lizenziert**). Zusätzlich `gesamt` und `vollstaendig` – ChurchTools liefert 100
+  auf einmal, mehr ist ungeklärt (#322)
+- `GET  /api/songselect/songs/:songNumber` → ein Lied per CCLI-Nummer, zusätzlich mit `copyright`
+  (fürs Anlegen-Formular) (#322)
+- `POST /api/songs/:songId/arrangements/:arrangementId/songselect/chordpro` {songNumber} → holt das
+  ChordPro bei CCLI **in der Tonart des Arrangements** und legt es ab → frische Dateiliste.
+  Ersetzt ein vorhandenes Original-ChordPro (erst hochladen, dann das alte löschen). Läuft über die
+  **alte** ChurchTools-Schnittstelle (`index.php?q=churchservice/ajax`), gebündelt in
+  `ctSongSelect.ts` – Einzelheiten in [`churchtools-songselect.md`](./churchtools-songselect.md)
 - `DELETE /api/songs/:songId/files/:fileId` → Datei löschen. Die Datei muss zu **diesem Lied**
   gehören (sonst 404) – ohne diese Prüfung wäre der Weg ein „lösche beliebige Datei", denn
   ChurchTools prüft nur das Bearbeiten-Recht, nicht welche Datei gemeint war (#321, vgl. #199)

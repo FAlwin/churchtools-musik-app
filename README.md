@@ -25,6 +25,10 @@ Datenquelle – die App hat keine eigene Datenbank.
   installierbar (Home-Bildschirm)
 - **Hochgeladene PDFs/Bilder** je Lied – direkt im durchgehenden Ablauf (mitwischen, im Querformat
   neben dem Nachbarlied) und ebenfalls mit Anmerkungen
+- **Dateien eines Arrangements verwalten** – ansehen, aufs Gerät laden, hinzufügen und löschen,
+  ohne den Umweg über die ChurchTools-Oberfläche
+- **Notenblatt aus CCLI SongSelect holen** – wenn die Gemeinde die SongSelect-Integration in
+  ChurchTools aktiviert hat und das Lied eine CCLI-Nummer trägt; in der Tonart des Arrangements
 - **Rechtebewusste Oberfläche** – jede Person sieht nur, wozu ihre ChurchTools-Rechte passen
 - **Geführte Einführung** (Onboarding-Touren) beim ersten Öffnen
 - **Frei konfigurierbare Links** (z. B. zu weiteren Gemeinde-Angeboten) im „Mehr"-Tab und optional
