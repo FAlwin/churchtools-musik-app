@@ -125,6 +125,18 @@ export type ArrangementFileKind =
 export interface ArrangementFileEntry {
   fileId: number;
   name: string;
+  /**
+   * Sprechende Bezeichnung für die Liste – **vom Server gebildet, nicht vom Client** (#321).
+   *
+   * Bei einer verwalteten Version ist es ihr Name („Version „Akustik""), beim Original „Notenblatt
+   * (ChordPro)", sonst der Dateiname selbst.
+   *
+   * Warum der Server: Den Versionsnamen liest `versionNameOf` aus dem `(App)`-Marker im Dateinamen.
+   * Diese Grammatik im Client ein zweites Mal auseinanderzunehmen wäre genau die Dopplung, die in
+   * diesem Projekt am häufigsten schiefgegangen ist – sie steht bereits an mehreren Stellen und
+   * kennt Altlasten (`(ECG)`, „Bearbeitet"), die man beim Abschreiben verliert.
+   */
+  label: string;
   /** Größe in Bytes – `null`, wenn ChurchTools sie nicht mitliefert. */
   size: number | null;
   kind: ArrangementFileKind;

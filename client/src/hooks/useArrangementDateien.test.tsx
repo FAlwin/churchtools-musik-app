@@ -34,7 +34,13 @@ vi.mock('../utils/shareFile', () => ({
 
 const { useArrangementDateien } = await import('./useArrangementDateien');
 
-const PDF: ArrangementFileEntry = { fileId: 2, name: 'Treu - E.pdf', size: 1024, kind: 'pdf' };
+const PDF: ArrangementFileEntry = {
+  fileId: 2,
+  name: 'Treu - E.pdf',
+  label: 'Treu - E.pdf',
+  size: 1024,
+  kind: 'pdf',
+};
 const LISTE: ArrangementFileEntry[] = [PDF];
 
 function starte(opts: { invalidateHaengt?: boolean } = {}) {

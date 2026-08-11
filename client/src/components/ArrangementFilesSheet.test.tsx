@@ -16,10 +16,22 @@ import { ArrangementFilesSheet } from './ArrangementFilesSheet';
  * bisher nirgends anzeigte.
  */
 const DATEIEN: ArrangementFileEntry[] = [
-  { fileId: 1, name: 'Treu.chordpro', size: 2048, kind: 'chordpro-original' },
-  { fileId: 2, name: 'Treu — Akustik (App).chordpro', size: 1024, kind: 'chordpro-version' },
-  { fileId: 3, name: 'Treu - E.pdf', size: 412 * 1024, kind: 'pdf' },
-  { fileId: 4, name: 'probe.mp3', size: null, kind: 'other' },
+  {
+    fileId: 1,
+    name: 'Treu.chordpro',
+    label: 'Notenblatt (ChordPro)',
+    size: 2048,
+    kind: 'chordpro-original',
+  },
+  {
+    fileId: 2,
+    name: 'Treu — Akustik (App).chordpro',
+    label: 'Version „Akustik"',
+    size: 1024,
+    kind: 'chordpro-version',
+  },
+  { fileId: 3, name: 'Treu - E.pdf', label: 'Treu - E.pdf', size: 412 * 1024, kind: 'pdf' },
+  { fileId: 4, name: 'probe.mp3', label: 'probe.mp3', size: null, kind: 'other' },
 ];
 
 function setup(over: Partial<Parameters<typeof ArrangementFilesSheet>[0]> = {}) {
@@ -44,7 +56,11 @@ afterEach(cleanup);
 describe('ArrangementFilesSheet – die flache Liste', () => {
   it('zeigt ALLE Dateien, auch die bisher unsichtbaren', () => {
     setup();
-    for (const d of DATEIEN) expect(screen.getByText(d.name)).toBeTruthy();
+    // Über Teiltreffer, weil Name und Größe in einer Zeile stehen können – und über `getAllByText`,
+    // weil bei PDF/Bild Überschrift UND Löschknopf-Beschriftung den Namen enthalten.
+    for (const d of DATEIEN) {
+      expect(screen.getAllByText((t) => t.includes(d.name)).length).toBeGreaterThan(0);
+    }
   });
 
   it('nennt das Arrangement im Titel – sonst ist unklar, wessen Dateien man sieht', () => {
@@ -52,18 +68,32 @@ describe('ArrangementFilesSheet – die flache Liste', () => {
     expect(screen.getByText('Dateien – Test')).toBeTruthy();
   });
 
-  it('sagt bei jeder Datei, was sie IST', () => {
+  /**
+   * Von Alwin gemeldet (11.08.2026): Die technischen Dateinamen als Überschrift und ein „· –" am
+   * Ende jeder Zeile sahen unschön aus. Jetzt steht oben die sprechende Bezeichnung, der Dateiname
+   * klein darunter – damit man die Datei in ChurchTools trotzdem wiederfindet.
+   */
+  it('zeigt oben die sprechende Bezeichnung, den Dateinamen darunter', () => {
     setup();
-    // Der Zusatz ist der einzige Hinweis darauf, dass das Original-ChordPro das Notenblatt trägt.
-    // Ohne ihn sähen vier Klassen gleich aus, und die flache Liste wäre eine Falle.
-    expect(screen.getByText(/ChordPro – daraus entsteht das Notenblatt/)).toBeTruthy();
-    expect(screen.getByText(/ChordPro – von der App verwaltete Version/)).toBeTruthy();
-    expect(screen.getByText(/^PDF · 412 KB$/)).toBeTruthy();
+    expect(screen.getByText('Notenblatt (ChordPro)')).toBeTruthy();
+    expect(screen.getByText('Version „Akustik"')).toBeTruthy();
+    // Der echte Dateiname bleibt sichtbar – sonst findet man die Datei in ChurchTools nicht.
+    expect(screen.getByText(/Treu\.chordpro/)).toBeTruthy();
+    expect(screen.getByText(/Treu — Akustik \(App\)\.chordpro/)).toBeTruthy();
   });
 
-  it('zeigt eine unbekannte Größe als Gedankenstrich', () => {
+  it('bei PDF und Bild bleibt der Dateiname die Überschrift – er sagt mehr als „PDF"', () => {
     setup();
-    expect(screen.getByText('Datei · –')).toBeTruthy();
+    expect(screen.getByText('Treu - E.pdf')).toBeTruthy();
+    expect(screen.getByText('PDF · 412 KB')).toBeTruthy();
+  });
+
+  it('lässt eine unbekannte Größe WEG, statt einen Gedankenstrich zu zeigen', () => {
+    // Genau die Meldung von Alwin: ChurchTools liefert die Größe nicht immer mit, und „· –" sah aus
+    // wie ein Fehler. Wo nichts bekannt ist, gehört auch nichts hin.
+    setup();
+    expect(screen.getByText('Datei')).toBeTruthy();
+    expect(screen.queryByText(/·\s*–/)).toBeNull();
   });
 
   it('meldet die angetippte Datei vollständig zurück', () => {

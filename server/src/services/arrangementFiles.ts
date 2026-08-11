@@ -120,9 +120,32 @@ export function arrangementFileEntries(files: CtArrangementFile[]): ArrangementF
   for (const f of files) {
     const fileId = fileIdFromUrl(f.fileUrl);
     if (fileId === null) continue;
-    out.push({ fileId, name: f.name, size: groesseVon(f), kind: fileKind(f) });
+    out.push({
+      fileId,
+      name: f.name,
+      label: dateiLabel(f),
+      size: groesseVon(f),
+      kind: fileKind(f),
+    });
   }
   return out;
+}
+
+/**
+ * Die sprechende Bezeichnung einer Datei (#321).
+ *
+ * **Hier und nicht im Client:** Der Versionsname steckt im `(App)`-Marker des Dateinamens, und
+ * `versionNameOf` kennt dessen Altlasten (`(ECG)`, „Bearbeitet"). Diese Grammatik ein zweites Mal
+ * zu schreiben hieße, genau diese Sonderfälle zu verlieren.
+ *
+ * Bei PDF, Bild und Sonstigem bleibt der Dateiname selbst die Bezeichnung – er ist vom Nutzer
+ * gewählt und sagt mehr als „PDF".
+ */
+function dateiLabel(f: CtArrangementFile): string {
+  const version = versionNameOf(f);
+  if (version) return `Version „${version}"`;
+  if (isOriginalChordpro(f)) return 'Notenblatt (ChordPro)';
+  return f.name;
 }
 
 /**

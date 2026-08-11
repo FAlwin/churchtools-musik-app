@@ -13,6 +13,7 @@
  */
 import type { ArrangementFileEntry, ArrangementFileKind } from '@shared/types/index';
 import { MAX_FILE_BYTES, MAX_FILE_TEXT } from '@shared/dateien/index';
+import { dateiGroesse } from './dateiGroesse';
 
 /** Symbol je Art – dieselben Zeichen wie im Lied-Menü, damit eine Datei überall gleich aussieht. */
 export const DATEI_SYMBOL: Record<ArrangementFileKind, string> = {
@@ -23,7 +24,27 @@ export const DATEI_SYMBOL: Record<ArrangementFileKind, string> = {
   other: '📎',
 };
 
-/** Was eine Datei IST – der Zusatz unter dem Namen, damit die vier Klassen unterscheidbar sind. */
+/**
+ * Die zwei Zeilen einer Datei in der Liste (#321).
+ *
+ * Oben steht die **sprechende** Bezeichnung vom Server (`label`) – „Notenblatt (ChordPro)",
+ * „Version „Akustik"" oder bei PDF/Bild der Dateiname selbst. Was darunter kommt, folgt daraus:
+ *
+ *  - Weicht die Bezeichnung vom Dateinamen ab, steht **der Dateiname** darunter. Sonst wüsste man
+ *    nicht, welche Datei in ChurchTools gemeint ist – und genau danach sucht man dort.
+ *  - Ist sie der Dateiname, steht die **Art** darunter („PDF", „Bild").
+ *
+ * **Die Größe erscheint nur, wenn sie bekannt ist.** ChurchTools liefert sie für ChordPro-Dateien
+ * nicht mit; ein „· –" am Ende jeder Zeile sah aus wie ein Fehler (von Alwin gemeldet, 11.08.2026).
+ * Wo nichts bekannt ist, gehört auch nichts hin.
+ */
+export function dateiZeilen(datei: ArrangementFileEntry): { titel: string; unter: string } {
+  const teile = [datei.label === datei.name ? DATEI_ART[datei.kind] : datei.name];
+  if (datei.size !== null) teile.push(dateiGroesse(datei.size));
+  return { titel: datei.label, unter: teile.join(' · ') };
+}
+
+/** Was eine Datei IST – der Zusatz unter dem Namen, wenn die Bezeichnung schon der Dateiname ist. */
 export const DATEI_ART: Record<ArrangementFileKind, string> = {
   'chordpro-original': 'ChordPro – daraus entsteht das Notenblatt',
   'chordpro-version': 'ChordPro – von der App verwaltete Version',

@@ -15,7 +15,7 @@ const datei = (
   name: string,
   kind: ArrangementFileEntry['kind'],
   size: number | null = 1024,
-): ArrangementFileEntry => ({ fileId: 1, name, size, kind });
+): ArrangementFileEntry => ({ fileId: 1, name, label: name, size, kind });
 
 describe('loeschFolge – was nach dem Löschen fehlt', () => {
   it('nennt beim Original-ChordPro, dass danach das Notenblatt fehlt', () => {
