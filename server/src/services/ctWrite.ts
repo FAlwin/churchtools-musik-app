@@ -69,21 +69,71 @@ async function schreibe(
   }
 }
 
-/** Lädt eine .chordpro-Datei an ein Arrangement hoch (ersetzt vorhandene gleichen Namens nicht automatisch). */
+/** Eine hochzuladende Datei – Name, Art und Inhalt. Bytes für Binärdateien, Text für ChordPro. */
+export interface HochzuladendeDatei {
+  filename: string;
+  /** MIME-Art, wie ChurchTools sie speichern soll (`text/plain`, `application/pdf`, …). */
+  mime: string;
+  inhalt: string | Uint8Array;
+}
+
+/**
+ * Lädt EINE Datei an ein Arrangement hoch (#321).
+ *
+ * **Die einzige Stelle, die einen Datei-Upload zusammenbaut.** Vorher stand sie nur in
+ * `uploadChordpro` und war dort auf ChordPro zugeschnitten (`text/plain` festverdrahtet). Für die
+ * Dateiverwaltung braucht es beliebige Arten – und die Auflage aus #321 ist ausdrücklich, daraus
+ * eine gemeinsame Funktion zu machen **statt einer zweiten Fassung daneben**. Genau diese
+ * Fehlerklasse hat das Projekt am häufigsten getroffen; zuletzt am 11.08.2026 die Benennung einer
+ * Anmerkungs-Ebene, die an drei Stellen stand.
+ *
+ * **ChurchTools ersetzt eine vorhandene Datei gleichen Namens NICHT** – sie liegt danach zweimal da.
+ * Wer das nicht will, löscht die alte vorher; diese Funktion tut es nicht von sich aus, weil ein
+ * ungefragtes Löschen fremder Dateien schlimmer wäre als ein Doppel.
+ *
+ * Kein Wiederholversuch: Ein Upload ist nicht idempotent (siehe `schreibe`).
+ */
+export async function uploadFile(
+  cookie: string,
+  arrangementId: number,
+  datei: HochzuladendeDatei,
+  meldungen: { verweigert: string; fehler: string } = {
+    verweigert: 'Keine Berechtigung, Dateien in ChurchTools zu speichern.',
+    fehler: 'Hochladen nach ChurchTools fehlgeschlagen',
+  },
+): Promise<void> {
+  const form = new FormData();
+  form.append('files[]', new Blob([datei.inhalt], { type: datei.mime }), datei.filename);
+  await schreibe(cookie, `/api/files/song_arrangement/${arrangementId}`, {
+    method: 'POST',
+    form,
+    verweigert: meldungen.verweigert,
+    fehler: meldungen.fehler,
+  });
+}
+
+/**
+ * Lädt eine .chordpro-Datei an ein Arrangement hoch.
+ *
+ * Nur noch ein Aufrufer von `uploadFile` mit den ChordPro-Vorgaben. Die Meldungen bleiben wortgleich
+ * wie vorher – beim Speichern einer Version sagt „Speichern" das Richtige, „Hochladen" wäre für den
+ * Nutzer eine andere Handlung.
+ */
 export async function uploadChordpro(
   cookie: string,
   arrangementId: number,
   filename: string,
   text: string,
 ): Promise<void> {
-  const form = new FormData();
-  form.append('files[]', new Blob([text], { type: 'text/plain' }), filename);
-  await schreibe(cookie, `/api/files/song_arrangement/${arrangementId}`, {
-    method: 'POST',
-    form,
-    verweigert: 'Keine Berechtigung, in ChurchTools zu speichern.',
-    fehler: 'Speichern in ChurchTools fehlgeschlagen',
-  });
+  await uploadFile(
+    cookie,
+    arrangementId,
+    { filename, mime: 'text/plain', inhalt: text },
+    {
+      verweigert: 'Keine Berechtigung, in ChurchTools zu speichern.',
+      fehler: 'Speichern in ChurchTools fehlgeschlagen',
+    },
+  );
 }
 
 /**
