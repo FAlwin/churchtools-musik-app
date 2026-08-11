@@ -1,5 +1,4 @@
 import type { MutableRefObject } from 'react';
-import { diag } from '../utils/diagnose';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { pushField } from '../services/annotations';
 import { deviceClass } from '../utils/deviceClass';
@@ -138,7 +137,6 @@ export function useZoomPersistence({
       const ref = transformRefs[j].current;
       if (!ref) continue;
       const saved = loadZoom(pageIndex + j);
-      diag(`    restore Slot ${j}: gespeichert ${saved ? String(saved.scale) : 'nein'}`);
       if (saved) {
         ref.setTransform(saved.x, saved.y, saved.scale, 0);
       } else if (fitUnsaved) {

@@ -5,7 +5,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
-## [Unreleased]
+## [2.19.0] – 2026-08-11
 
 ### Behoben
 
@@ -29,6 +29,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   festlegen will, tut das beim Bearbeiten des Ablaufs. Die Wahl bleibt erhalten und folgt dir aufs
   zweite Gerät; die Wahl zurück auf das Arrangement aus dem Ablauf wird als „keine eigene Wahl"
   gemerkt – ändert das Team den Ablauf später, folgt die App wieder.
+
+  **Der Wechsel geht flott.** Sobald das Lied-Menü offen ist, holt die App die anderen Arrangements
+  im Hintergrund – meist ist das neue Blatt dann schon da, wenn man tippt. Dauert es doch, sagt eine
+  Leiste „Arrangement wird geladen …"; das alte Blatt bleibt bis dahin stehen, denn ein leeres Blatt
+  ist im Gottesdienst das Letzte, was man braucht.
 
   **Deine Anmerkungen gehören ab jetzt zum Arrangement.** Zwei Arrangements können je eine Version
   „Akustik" haben – gleicher Name, anderes Notenblatt. Bestehende Notizen wurden dem Arrangement
