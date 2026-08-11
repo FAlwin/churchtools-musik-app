@@ -26,7 +26,6 @@ interface UseZoomOrchestrationParams {
    * Anzeigefläche. Anders als `resetZoomSignal` bleibt ein gespeicherter Zoom dabei erhalten – der
    * Nutzer hat ihn nicht zurückgenommen, sondern nur die Leisten umgeschaltet.
    */
-  fitZoomSignal?: number;
 }
 
 /** Die Zoom-bezogenen Eigenschaften einer `TransformWrapper`-Ebene. */
@@ -66,21 +65,10 @@ export function useZoomOrchestration({
   transformRefs,
   onZoomedChange,
   resetZoomSignal,
-  fitZoomSignal = 0,
 }: UseZoomOrchestrationParams) {
   // Letzter Zoom-Faktor je Slot – um „aktives Herauszoomen" von programmatischem Reset zu unterscheiden.
   const lastScale = useRef<[number, number]>([1, 1]);
   const gestureSlot = useRef<number | null>(null);
-  /**
-   * Welche Seiten sind frisch eingepasst? (#319)
-   *
-   * Ohne diesen Merker macht jeder spaetere Abgleich das Einpassen wieder zunichte: Der beim Pinch
-   * gespeicherte Zoom wird erneut angewandt, obwohl der Nutzer inzwischen die Leisten umgeschaltet
-   * hat. Im Protokoll von Alwin lagen zwischen Einpassen (3760 ms) und Rueckkehr des alten Werts
-   * (30078 ms, der 30-Sekunden-Abgleich) knapp eine halbe Minute – deshalb war es so schwer zu
-   * fassen.
-   */
-  const eingepasst = useRef<Set<string>>(new Set());
   const gestureEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Welche sichtbaren Seiten gerade reingezoomt sind (auch geladener Zoom) → steuert
   // Wisch-Navigation und den Zoom-Reset-Knopf.
@@ -93,7 +81,6 @@ export function useZoomOrchestration({
     transformRefs,
     lastScale,
     gestureSlot,
-    eingepasst,
     zoomedSlots,
   });
   // Die Funktionen entstehen je Render neu (sie hängen an `zoomKeyBaseFor`, das der Aufrufer inline
@@ -158,19 +145,6 @@ export function useZoomOrchestration({
     lastResetSignal.current = resetZoomSignal;
     zoomRef.current.resetVisibleZoom();
   }, [resetZoomSignal, zoomRef]);
-
-  // Nur einpassen, nichts löschen (#319 – Leisten umgeschaltet, die Fläche hat eine neue Höhe).
-  // Ein rAF dazwischen, damit die neue Höhe schon im Layout steht, bevor eingepasst wird.
-  const lastFitSignal = useRef(fitZoomSignal);
-  useEffect(() => {
-    if (fitZoomSignal === lastFitSignal.current) return;
-    lastFitSignal.current = fitZoomSignal;
-    diag('  Einpass-Signal empfangen');
-    requestAnimationFrame(() => {
-      diag('  rAF da -> fitVisibleZoom()');
-      zoomRef.current.fitVisibleZoom();
-    });
-  }, [fitZoomSignal, zoomRef]);
 
   /** Zoom-Eigenschaften der Ebene für Slot `j`. */
   function paneProps(j: number): ZoomPaneProps {

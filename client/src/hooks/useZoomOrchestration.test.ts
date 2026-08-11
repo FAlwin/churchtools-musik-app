@@ -37,10 +37,9 @@ const ref = () =>
 
 interface Props {
   resetZoomSignal: number;
-  fitZoomSignal: number;
 }
 
-function starte(initial: Props = { resetZoomSignal: 0, fitZoomSignal: 0 }) {
+function starte(initial: Props = { resetZoomSignal: 0 }) {
   return renderHook(
     (p: Props) =>
       useZoomOrchestration({
@@ -52,7 +51,6 @@ function starte(initial: Props = { resetZoomSignal: 0, fitZoomSignal: 0 }) {
         syncTick: 0,
         transformRefs: [ref(), ref()],
         resetZoomSignal: p.resetZoomSignal,
-        fitZoomSignal: p.fitZoomSignal,
       }),
     { initialProps: initial },
   );
@@ -81,45 +79,27 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('useZoomOrchestration – die beiden Zoom-Signale', () => {
+describe('useZoomOrchestration – das Zoom-Signal', () => {
   it('tut ohne Signaländerung nichts', () => {
-    const { rerender } = starte();
-    rerender({ resetZoomSignal: 0, fitZoomSignal: 0 });
+    starte();
     frameZustellen();
     expect(resetVisibleZoom).not.toHaveBeenCalled();
-    expect(fitVisibleZoom).not.toHaveBeenCalled();
   });
 
-  it('der Zoom-Knopf setzt zurück UND vergisst (ohne keepStored)', () => {
+  it('der Zoom-Knopf setzt zurück UND vergisst', () => {
     const { rerender } = starte();
-    resetVisibleZoom.mockClear();
-    rerender({ resetZoomSignal: 1, fitZoomSignal: 0 });
+    rerender({ resetZoomSignal: 1 });
     expect(resetVisibleZoom).toHaveBeenCalledTimes(1);
     expect(resetVisibleZoom).toHaveBeenCalledWith();
   });
 
-  it('das Einpass-Signal ruft das EINPASSEN – nicht das Zurücksetzen', () => {
-    const { rerender } = starte();
-    rerender({ resetZoomSignal: 0, fitZoomSignal: 1 });
+  it('das Umschalten der Leisten löst KEIN Zurücksetzen aus (#319)', () => {
+    // Es gab hier einmal ein zweites Signal, das beim Vollbild-Umschalten einpasste. Das war meine
+    // Auslegung von „Text wird verdeckt" – gewollt ist das Gegenteil: „dass der Vollbildmodus den
+    // Zoom einfach beibehält". Dass die Seite ihren Rahmen nicht überragt, macht der Pixel-Deckel
+    // in `PageDeck`. Dieser Test hält fest, dass hier nichts mehr am Zoom rührt.
+    starte();
     frameZustellen();
-    expect(fitVisibleZoom).toHaveBeenCalledTimes(1);
-    expect(resetVisibleZoom).not.toHaveBeenCalled(); // sonst wäre der Zoom vergessen
-  });
-
-  it('passt erst NACH einem Frame ein – die neue Höhe muss im Layout stehen', () => {
-    const { rerender } = starte();
-    rerender({ resetZoomSignal: 0, fitZoomSignal: 1 });
-    expect(fitVisibleZoom).not.toHaveBeenCalled(); // noch nicht
-    frameZustellen();
-    expect(fitVisibleZoom).toHaveBeenCalledTimes(1);
-  });
-
-  it('reagiert auf jedes weitere Umschalten erneut', () => {
-    const { rerender } = starte();
-    for (const n of [1, 2, 3]) {
-      rerender({ resetZoomSignal: 0, fitZoomSignal: n });
-      frameZustellen();
-    }
-    expect(fitVisibleZoom).toHaveBeenCalledTimes(3);
+    expect(resetVisibleZoom).not.toHaveBeenCalled();
   });
 });

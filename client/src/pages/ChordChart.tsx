@@ -221,7 +221,6 @@ export function ChordChart({
   // Erhöhen → die verfügbare Fläche hat sich geändert (Leisten umgeschaltet, #319). PageDeck baut
   // daraufhin die Zoom-Ebene neu auf, damit sie die neue Höhe vermisst, und passt eine vergrößerte
   // Seite ein – ohne den gespeicherten Zoom zu vergessen.
-  const [layoutEpoch, setLayoutEpoch] = useState(0);
 
   // ── Durchgehender Seitenstrom: alle Lieder zu EINER PDF (mit Seiten-Besitzer) ──
   // Aufbau in `useChartStream` – bewusst NACH dem Zeichnen, mit stehenbleibendem
@@ -480,9 +479,18 @@ export function ChordChart({
    *
    * Beim ERSTEN Ausblenden ein einmaliger Hinweis – mit ausgeblendeten Leisten ist auch der
    * Zurück-Knopf weg, und dass ein weiterer Tipp sie zurückholt, sieht man dem Blatt nicht an.
+   *
+   * **Der Zoom bleibt dabei, wie er ist.** Ursprünglich passte ein Umschalten die Seite auch gleich
+   * neu ein – das war meine Auslegung von „Text wird verdeckt" und ging an der Absicht vorbei:
+   * „Was ich eigentlich erwarte ist, dass der Vollbildmodus den Zoom einfach beibehält und nur die
+   * Leisten aus- und die Seite bildschirmfüllend anzeigt."
+   *
+   * Dass die Seite ihren Rahmen nicht mehr überragt – der eigentliche gemeldete Fehler – erledigt
+   * der Pixel-Deckel in `PageDeck`, nicht das Einpassen. Das war die zweite, unnötige Hälfte.
    */
   const leistenUmschalten = () => {
     const wirdAusgeblendet = !leistenAus;
+    diag(`Tipp Mitte -> Leisten ${wirdAusgeblendet ? 'aus' : 'an'} (Zoom bleibt)`);
     setLeistenAus(wirdAusgeblendet);
     // Der Hinweis steht BEWUSST außerhalb der `setLeistenAus`-Aktualisierung. Solche Funktionen
     // müssen frei von Nebenwirkungen sein – React ruft sie unter Umständen mehrfach auf und darf
@@ -493,15 +501,6 @@ export function ChordChart({
       markTourDone(HINT_VOLLBILD);
       showToast('Leisten ausgeblendet – nochmal in die Mitte tippen holt sie zurück.');
     }
-    // Die Anzeigefläche ändert ihre HÖHE – eine vergrößerte Seite muss neu eingepasst werden,
-    // sonst ragt der Text hinter die Fußzeile (genau der gemeldete Fehler).
-    //
-    // BEWUSST NICHT `bumpSync()`: Das löst `restoreVisibleZoom` aus, und das wendet einen
-    // GESPEICHERTEN Zoom erneut an – also wieder eine Größe, die in die neue Fläche nicht passt.
-    // Und bewusst nicht `resetZoomSignal`: Das löscht den gespeicherten Zoom, was hier zu viel
-    // wäre – der Nutzer hat ihn nicht zurückgenommen, sondern nur die Leisten umgeschaltet.
-    diag(`Tipp Mitte -> Leisten ${wirdAusgeblendet ? 'aus' : 'an'}`);
-    setLayoutEpoch((n) => n + 1);
   };
 
   const nextSong = activeSongIdx < songs.length - 1 ? songs[activeSongIdx + 1] : null;
@@ -626,7 +625,6 @@ export function ChordChart({
               drawColors={DRAW_COLORS}
               syncTick={syncTick}
               onMiddleTap={leistenUmschalten}
-              layoutEpoch={layoutEpoch}
               onZoomedChange={setStreamZoomed}
               resetZoomSignal={resetZoomSignal}
             />

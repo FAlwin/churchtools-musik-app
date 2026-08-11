@@ -226,12 +226,11 @@ holt sie zurück. Die Ränder blättern weiter wie bisher.
 3. Am **linken** und **rechten** Rand tippen → es wird geblättert, die Leisten bleiben wie sie sind.
 4. Ins **Querformat** drehen, in die rechte Bildhälfte (aber nicht an den Rand) tippen → Leisten
    weg **und** die Kopfzeile bezieht sich auf das rechte Lied.
-5. Mit zwei Fingern hineinzoomen, dann in die Mitte tippen → die Seite wird **neu eingepasst**
-   (nichts ragt hinter die Leisten). Danach zu einem anderen Lied und wieder zurück blättern → die
-   Vergrößerung ist **wieder da**, sie wurde nur eingepasst, nicht verworfen.
-   **Sofort** nach dem Zoomen tippen, ohne Pause – auch dann muss eingepasst werden. Genau dieser
-   Fall ging schief: Die Sperre gegen das Abwürgen einer laufenden Pinch-Geste stand noch rund eine
-   halbe Sekunde nach dem Loslassen.
+5. Mit zwei Fingern hineinzoomen, dann in die Mitte tippen → die Vergrößerung **bleibt genau so**,
+   nur die Leisten verschwinden. Nochmal tippen → Leisten zurück, Vergrößerung immer noch dieselbe.
+   **Eine Minute stehen lassen** – auch der Hintergrund-Abgleich darf nichts daran ändern.
+   Danach zu einem anderen Lied und wieder zurück blättern → die Vergrößerung ist ebenfalls noch da.
+   (Bis v2.18 setzte das Umschalten den Zoom zurück; das war ein Missverständnis meinerseits.)
 6. **Am großen Bildschirm, Fenster hoch und schmal** (nicht am Handy!): einmal in die Mitte tippen
    und wieder zurück → die Seite muss am Ende wieder in die Fläche passen. Nur in einem hohen
    Fenster ist die Seite höhenbegrenzt; im Hochformat am Handy begrenzt die Breite und der Fehler

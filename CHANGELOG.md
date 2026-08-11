@@ -9,16 +9,14 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Behoben
 
-- **Nach dem Vollbild-Umschalten sprang der alte Zoom zurück (#319).** Das Einpassen funktionierte –
-  aber ein späterer Hintergrund-Abgleich stellte den zuvor gepinchten Zoom wieder her, auf derselben
-  Seite und ohne Zutun. Bis zu einer halben Minute später sah es dann aus, als hätte das Umschalten
-  nicht gewirkt.
+- **Das Vollbild behält jetzt die Vergrößerung (#319).** Wer hineingezoomt hat und in die Mitte
+  tippt, bekommt die Leisten ausgeblendet und die Seite bildschirmfüllend – **die Vergrößerung
+  bleibt, wie sie ist.** Bisher wurde sie dabei zurückgesetzt.
 
-  Ursache war eine Entscheidung aus dem ursprünglichen Vollbild-Fix: Das Einpassen behält den
-  gemerkten Zoom bewusst, damit er beim Zurückblättern wieder gilt. Nur galt er eben auch sofort
-  wieder. Jetzt merkt sich die App, welche Seite frisch eingepasst wurde, und lässt sie in Ruhe –
-  bis man selbst wieder pincht oder auf eine andere Seite blättert. Beide Zusagen bleiben damit
-  erhalten.
+  Das war ein Missverständnis von mir: Der ursprüngliche Bericht („Text wird verdeckt") führte zu
+  einem automatischen Einpassen beim Umschalten. Nötig war davon nur die eine Hälfte – dass die
+  Seite ihren Rahmen nicht mehr überragt. Die erledigt eine andere Stelle; das Einpassen war
+  überflüssig und ist entfallen.
 
 ### Neu
 

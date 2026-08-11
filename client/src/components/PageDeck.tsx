@@ -89,7 +89,6 @@ interface PageDeckProps {
    * auf, und die Seite fiel dabei gemessen auf 150 px zusammen. Der Wechsel Hoch-/Querformat darf
    * das, weil dort ohnehin alles neu gerendert wird – hier nicht.
    */
-  layoutEpoch?: number;
 }
 
 // Stabiler Default für `viewKeyFor` (kein Ansehen).
@@ -135,7 +134,6 @@ export function PageDeck({
   syncTick = 0,
   onZoomedChange,
   resetZoomSignal = 0,
-  layoutEpoch = 0,
 }: PageDeckProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   // Inline-Texteingabe direkt auf der Seite (blinkender Cursor statt separater Leiste).
@@ -183,7 +181,6 @@ export function PageDeck({
     transformRefs,
     onZoomedChange,
     resetZoomSignal,
-    fitZoomSignal: layoutEpoch,
   });
 
   // ── Schlüssel der beteiligten Seiten ──
