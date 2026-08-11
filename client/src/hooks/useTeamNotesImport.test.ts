@@ -270,3 +270,45 @@ describe('useTeamNotesImport – Notizen MIT Arrangement (#320, 3c)', () => {
     expect(localStorage.getItem(`worship_docdraw_song12_voriginal_0`)).toBe('ALTBESTAND');
   });
 });
+
+/**
+ * Der Umschalter in der Leiste (11.08.2026, von Alwin gewünscht): ein anderes Arrangement / eine
+ * andere Version DERSELBEN Person, ohne den Umweg über die Personenauswahl.
+ */
+describe('useTeamNotesImport – Ebene wechseln, ohne die Person neu zu wählen', () => {
+  it('öffnet den Wähler direkt bei der angesehenen Person', async () => {
+    const { result } = starte();
+    await anseheStufe(result, 12, 'original', false, 45);
+    act(() => result.current.openLevels());
+
+    // Stufe 2, nicht Stufe 1: Wer nur das Arrangement wechseln will, soll die Person nicht
+    // noch einmal antippen müssen.
+    expect(result.current.pickerPerson).toEqual({ id: 5, name: 'Anna' });
+    expect(result.current.showSharers).toBe(true);
+  });
+
+  it('lädt dabei NICHTS nach', async () => {
+    // Spiegel und Roh-Einstellungen liegen seit `openPersonLevels` bereit. Ein erneuter Abruf wäre
+    // eine Anfrage gegen ChurchTools ohne Anlass – genau daran ist die App in #300 in ein
+    // Rate-Limit gelaufen.
+    const { result } = starte();
+    await anseheStufe(result, 12, 'original', false, 45);
+    loadViewMirror.mockClear();
+    getSettingsOf.mockClear();
+    getSharers.mockClear();
+
+    act(() => result.current.openLevels());
+
+    expect(loadViewMirror).not.toHaveBeenCalled();
+    expect(getSettingsOf).not.toHaveBeenCalled();
+    expect(getSharers).not.toHaveBeenCalled();
+  });
+
+  it('tut nichts, wenn gar nichts angesehen wird', () => {
+    // Sonst öffnete sich ein leerer Wähler ohne Person – eine Sackgasse.
+    const { result } = starte();
+    act(() => result.current.openLevels());
+    expect(result.current.showSharers).toBe(false);
+    expect(result.current.pickerPerson).toBeNull();
+  });
+});

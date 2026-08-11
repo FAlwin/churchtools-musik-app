@@ -261,6 +261,24 @@ export function useTeamNotesImport({
     refreshSharers();
   }
 
+  /**
+   * Nur die EBENE wechseln – ein anderes Arrangement oder eine andere Version DERSELBEN Person.
+   *
+   * Von Alwin gewünscht (11.08.2026): Bisher führte der einzige Weg über „Andere Person", also
+   * zurück auf Stufe 1 und die Person noch einmal auswählen – obwohl man sie gar nicht wechseln
+   * wollte. Bei einem Lied mit mehreren Arrangements ist der Vergleich zweier Ebenen aber genau
+   * das, was man im Gottesdienst tut.
+   *
+   * Es wird **nichts nachgeladen**: Spiegel und Roh-Einstellungen der Person liegen seit
+   * `openPersonLevels` bereit und werden erst beim Beenden geräumt. Ein erneuter Abruf wäre eine
+   * Anfrage gegen ChurchTools, für die es keinen Anlass gibt (#300).
+   */
+  function openLevels() {
+    if (!viewing) return;
+    setPickerPerson({ id: viewing.id, name: viewing.name });
+    setShowSharers(true);
+  }
+
   return {
     viewing,
     pickerPerson,
@@ -279,5 +297,6 @@ export function useTeamNotesImport({
     groupKeyOf,
     importFrom,
     openSharers,
+    openLevels,
   };
 }
