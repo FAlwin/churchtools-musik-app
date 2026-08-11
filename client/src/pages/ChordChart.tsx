@@ -52,6 +52,7 @@ import { setArrangementTempo } from '../services/churchtoolsApi';
 import { useSetlistPages } from '../hooks/useSetlistPages';
 import { useSongArrangements } from '../hooks/useServices';
 import type { DrawTool } from '../types/index';
+import { NotesDiag, type NotesDiagPage } from '../dev/NotesDiag';
 import styles from './ChordChart.module.scss';
 
 /**
@@ -451,6 +452,37 @@ export function ChordChart({
   );
 
   /**
+   * ⚠️ VORÜBERGEHEND (11.08.2026) – mit `NotesDiag` wieder ERSATZLOS entfernen.
+   *
+   * Gemeldet: fremde Notizen auswählbar, „es erscheint gar nichts". Beide Seiten des Vergleichs
+   * werden hier gesammelt: der gesuchte Schlüssel je Seite UND was im Spiegel liegt.
+   */
+  const diagNotizen = new URLSearchParams(window.location.search).get('diag') === 'notizen';
+  const diagPages: NotesDiagPage[] = !diagNotizen
+    ? []
+    : owners
+        .map((o, page) => ({ o, page }))
+        .filter(({ o }) => o.kind !== 'doc' && o.songId === viewingSongId)
+        .map(({ o, page }) => {
+          const viewKey = viewKeyFor(page);
+          return {
+            page,
+            ownerSongId: o.songId,
+            ownerVersionKey: o.versionKey,
+            ownerLocalPage: o.localPage,
+            ownerArrangementId: o.arrangementId ?? null,
+            viewKey,
+            gefunden: viewKey !== null && localStorage.getItem(viewKey) !== null,
+          };
+        });
+  const diagMirror: string[] = !diagNotizen
+    ? []
+    : Object.keys(localStorage)
+        .filter((k) => k.startsWith(VIEW_NS))
+        .map((k) => k.slice(VIEW_NS.length))
+        .sort();
+
+  /**
    * „Als PDF teilen" – das aktive Lied als einzelne PDF.
    *
    * Geht über `pdfOptionsForSong`, dieselbe Funktion, die auch den Seitenstrom der Anzeige baut.
@@ -727,11 +759,38 @@ export function ChordChart({
             pickerPerson={pickerPerson}
             levels={mirrorGroups()}
             versionName={(key) => versions.find((v) => v.key === key)?.name ?? key}
+            arrangementName={(id) => {
+              // Nur bei mehreren Arrangements – bei einem unterscheidet der Name nichts.
+              if (song.arrangementCount <= 1) return null;
+              if (id === null) return 'Ohne Arrangement';
+              return (
+                (arrangements.data ?? []).find((a) => a.arrangementId === id)?.arrangementName ??
+                `Arrangement ${id}`
+              );
+            }}
             levelKey={groupKeyOf}
             onPickPerson={(p) => void openPersonLevels(p, song.id)}
             onPickLevel={(g) => viewLevel(song.id, g.versionKey, g.lyr, g.arrangementId)}
             onBackToPersons={() => setPickerPerson(null)}
             onClose={() => setShowSharers(false)}
+          />
+        )}
+
+        {/* ⚠️ VORÜBERGEHEND (11.08.2026): `?diag=notizen`, danach ersatzlos entfernen. */}
+        {diagNotizen && (
+          <NotesDiag
+            viewing={
+              viewing
+                ? {
+                    songId: viewing.songId,
+                    versionKey: viewing.versionKey,
+                    lyr: viewing.lyr,
+                    arrangementId: viewing.arrangementId,
+                  }
+                : null
+            }
+            pages={diagPages}
+            mirrorKeys={diagMirror}
           />
         )}
 

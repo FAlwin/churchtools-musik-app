@@ -29,6 +29,14 @@ interface SharersSheetProps {
   levels: LevelChoice[];
   /** Anzeigename einer Version (Slug → „Akustik"). */
   versionName: (versionKey: string) => string;
+  /**
+   * Anzeigename eines Arrangements – oder `null`, wenn es nicht in die Zeile gehört.
+   *
+   * `null` bei einem Lied mit nur EINEM Arrangement: Dann unterscheidet es nichts und macht die
+   * Zeile nur länger. Von Alwin so entschieden (11.08.2026), nachdem zwei Zeilen identisch aussahen,
+   * weil das Arrangement hier gar nicht vorkam.
+   */
+  arrangementName: (arrangementId: number | null) => string | null;
   levelKey: (level: LevelChoice) => string;
   onPickPerson: (person: { id: number; name: string }) => void;
   onPickLevel: (level: LevelChoice) => void;
@@ -42,6 +50,7 @@ export function SharersSheet({
   pickerPerson,
   levels,
   versionName,
+  arrangementName,
   levelKey,
   onPickPerson,
   onPickLevel,
@@ -81,17 +90,24 @@ export function SharersSheet({
           {levels.length === 0 && (
             <p className={styles.pickHint}>Keine Anmerkungen zu diesem Lied vorhanden.</p>
           )}
-          {levels.map((g) => (
-            <button key={levelKey(g)} className={styles.pickRow} onClick={() => onPickLevel(g)}>
-              <Icon name="pencil" size={16} stroke={2} />
-              <span className={styles.pickName}>
-                Version „{versionName(g.versionKey)}" · {g.lyr ? 'Nur Text' : 'Akkorde & Text'}
-              </span>
-              <span className={styles.pickPages}>
-                {g.pages.length} {g.pages.length === 1 ? 'Seite' : 'Seiten'}
-              </span>
-            </button>
-          ))}
+          {levels.map((g) => {
+            const arr = arrangementName(g.arrangementId);
+            return (
+              <button key={levelKey(g)} className={styles.pickRow} onClick={() => onPickLevel(g)}>
+                <Icon name="pencil" size={16} stroke={2} />
+                <span className={styles.pickName}>
+                  {/* Das Arrangement steht VORN, weil es die größere Klammer ist – die Versionen
+                      sind ChordPro-Dateien innerhalb eines Arrangements. Dieselbe Reihenfolge wie
+                      im Lied-Menü. */}
+                  {arr && <>{arr} · </>}
+                  Version „{versionName(g.versionKey)}" · {g.lyr ? 'Nur Text' : 'Akkorde & Text'}
+                </span>
+                <span className={styles.pickPages}>
+                  {g.pages.length} {g.pages.length === 1 ? 'Seite' : 'Seiten'}
+                </span>
+              </button>
+            );
+          })}
           <button className={styles.pickBack} onClick={onBackToPersons}>
             Andere Person wählen
           </button>
