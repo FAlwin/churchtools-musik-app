@@ -4,6 +4,7 @@
 import type {
   AgendaItem,
   AgendaServiceOption,
+  ArrangementFileEntry,
   AuthStatus,
   Service,
   SetlistSong,
@@ -12,7 +13,7 @@ import type {
   SongVersion,
   UserCapabilities,
 } from '@shared/types/index';
-import { apiFetch } from './api';
+import { apiFetch, apiFetchBlob } from './api';
 
 export function login(email: string, password: string): Promise<AuthStatus> {
   return apiFetch<AuthStatus>('/api/auth/login', {
@@ -156,6 +157,31 @@ export function getSongArrangements(songId: number): Promise<SongArrangementOpti
 export function getSongChart(songId: number, arrangementId?: number): Promise<SetlistSong> {
   const qs = arrangementId ? `?arrangementId=${arrangementId}` : '';
   return apiFetch<SetlistSong>(`/api/songs/${songId}/chart${qs}`);
+}
+
+/**
+ * Die Dateien eines Arrangements – ALLE, flach (#321).
+ *
+ * Anders als `song.documents`, das nur die anzeigbaren PDFs/Bilder meint: Hier sind auch ChordPro,
+ * die verwalteten Versionen und alles Übrige dabei.
+ */
+export function getArrangementFiles(
+  songId: number,
+  arrangementId: number,
+): Promise<ArrangementFileEntry[]> {
+  return apiFetch<ArrangementFileEntry[]>(
+    `/api/songs/${songId}/arrangements/${arrangementId}/files`,
+  );
+}
+
+/**
+ * Eine Datei aus ChurchTools als Bytes holen (#321) – zum Herunterladen aufs Gerät.
+ *
+ * Derselbe Endpunkt, über den auch der Dokumenten-Betrachter liest; er prüft die Ziel-URL gegen die
+ * eigene Instanz (#199).
+ */
+export function getSongFileBlob(songId: number, fileId: number): Promise<Blob> {
+  return apiFetchBlob(`/api/songs/${songId}/files/${fileId}`);
 }
 
 /** Löscht einen Ablaufpunkt. */

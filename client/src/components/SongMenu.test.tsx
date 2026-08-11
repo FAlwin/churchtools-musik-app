@@ -50,6 +50,7 @@ function setup(
     onOpenSectionTranspose: vi.fn(),
     onSharePdf: vi.fn(),
     onEditCurrent: vi.fn(),
+    onOpenFiles: vi.fn(),
     onNewVersion: vi.fn(),
     onDeleteVersion: vi.fn(),
     onChange: vi.fn(),
@@ -202,5 +203,34 @@ describe('SongMenu – Arrangement umschalten (#320)', () => {
     const props = setup({ arrangements: arrs, song: song({ arrangementId: 2 }) });
     screen.getByText('Band').click();
     expect(props.onChange).toHaveBeenCalledWith({ arrangementId: null });
+  });
+});
+
+/**
+ * #321: Der Einstieg in die Dateiverwaltung.
+ *
+ * Zwei Zusagen: Er erscheint **nur** für Berechtigte (Dateien in ChurchTools zu ändern ist kein
+ * Anzeige-Detail), und er erscheint **auch bei einem Dokument** – wer ein PDF ansieht, will genau
+ * dort ein neues hochladen können. Der Bearbeiten-Punkt daneben ist an Akkorde gebunden, dieser
+ * bewusst nicht.
+ */
+describe('SongMenu – Dateien (#321)', () => {
+  it('zeigt „Dateien …" für Berechtigte und meldet den Klick', () => {
+    const h = setup({ canEdit: true });
+    screen.getByText('Dateien …').click();
+    expect(h.onOpenFiles).toHaveBeenCalledTimes(1);
+  });
+
+  it('zeigt es NICHT ohne Berechtigung', () => {
+    setup({ canEdit: false });
+    expect(screen.queryByText('Dateien …')).toBeNull();
+  });
+
+  it('zeigt es auch, wenn gerade ein Dokument angesehen wird', () => {
+    // `viewSource` ist dann eine Datei-ID statt 'chords'. „Bearbeiten" verschwindet hier zu Recht –
+    // „Dateien" muss bleiben, sonst käme man beim PDF nicht an die Dateiverwaltung.
+    setup({ canEdit: true, set: { viewSource: 4711 } });
+    expect(screen.getByText('Dateien …')).toBeTruthy();
+    expect(screen.queryByText('Bearbeiten (neue Version)')).toBeNull();
   });
 });
