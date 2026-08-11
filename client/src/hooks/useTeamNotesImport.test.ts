@@ -227,7 +227,11 @@ describe('useTeamNotesImport – Übernehmen', () => {
     expect(localStorage.getItem('worship_key_12_original')).toBeNull();
     expect(localStorage.getItem('worship_capo_12_original')).toBeNull();
     expect(args.reloadSettings).toHaveBeenCalled();
-    expect(args.showToast).toHaveBeenCalledWith(expect.stringContaining('Übernommen'));
+    // Die Meldung benennt die Ebene mit denselben Wörtern wie Auswahl und Streifen (über
+    // `beschreibeEbene`). Vorher stand hier eine dritte, eigene Formulierung.
+    expect(args.showToast).toHaveBeenCalledWith(
+      expect.stringContaining('Übernommen – Version: Original · Anzeige: Akkorde & Text.'),
+    );
   });
 
   it('tut nichts, wenn die angesehene Ebene gar keine Anmerkungen enthält', async () => {

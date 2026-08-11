@@ -7,6 +7,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.21.0] – 2026-08-11
+
 ### Neu
 
 - **Beim Ansehen fremder Notizen lässt sich das Arrangement direkt umschalten.** In der Leiste unten
@@ -27,8 +29,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   > Version: Original · Anzeige: Akkorde & Text
 
   Bei Liedern mit nur einem Arrangement bleibt die Zeile kurz; dort unterscheidet der Name nichts.
-  Der blaue Streifen während des Ansehens benutzt **dieselben Wörter** – beide holen sie aus einer
-  gemeinsamen Stelle, statt sie getrennt zu formulieren.
+  Notizen aus der Zeit vor den Arrangements stehen unter **„Standard"**.
+
+  Der blaue Streifen während des Ansehens und die Meldung nach dem Übernehmen benutzen **dieselben
+  Wörter** – alle drei holen sie aus einer gemeinsamen Stelle, statt sie getrennt zu formulieren.
 
 ## [2.20.0] – 2026-08-11
 

@@ -14,6 +14,7 @@ import { availableVersions, setLsVersion, setLsSong, readVersioned } from '../ut
 import { type SongSettings, settingsForLevel, DEFAULT_SETTINGS } from '../utils/chartSettings';
 import { mergeStrokes } from '../utils/strokes';
 import { levelsUnderNamespace, levelKeyOf, OWN_DRAW_PREFIX } from '../utils/annotationKeys';
+import { beschreibeEbene } from '../utils/annotationLevelLabel';
 
 /** Textobjekt einer Anmerkungs-Seite (Form wird beim Import 1:1 übernommen). */
 interface PageTextObjLike {
@@ -242,9 +243,23 @@ export function useTeamNotesImport({
     const vName =
       (target && availableVersions(target).find((v) => v.key === pVersion)?.name) ?? pVersion;
     stopViewing();
-    showToast(
-      `Übernommen – Ansicht: Version „${vName}"${pLyr === '1' ? ' · Nur Text' : ''}. Eigene Notizen: siehe Stift-Markierung im Lied-Menü.`,
+    /**
+     * Auch diese Meldung benennt eine Ebene – also über `beschreibeEbene`, nicht von Hand.
+     *
+     * Beim Aufräumen gefunden: Hier stand die DRITTE eigene Formulierung derselben Angabe
+     * („Version „X" · Nur Text"), nachdem Auswahl und Streifen gerade erst zusammengelegt worden
+     * waren. Genau so wird ein geteilter Baustein zur nächsten Kopie – die Suche nach den übrigen
+     * Stellen gehört in denselben Durchgang.
+     *
+     * **Ohne Arrangement, und das mit Absicht:** Übernommen wird die ANSICHT (Version, Spalten,
+     * Schrift). Das Arrangement bleibt die eigene Wahl, es würde hier also etwas behaupten, was
+     * nicht passiert ist.
+     */
+    const b = beschreibeEbene(
+      { versionKey: pVersion, lyr: pLyr === '1', arrangementId: null },
+      { versionName: () => vName, arrangementName: () => null },
     );
+    showToast(`Übernommen – ${b.einzeilig}. Eigene Notizen: siehe Stift-Markierung im Lied-Menü.`);
   }
 
   /** Liste der Teilenden (still) auffrischen – z. B. beim initialen Laden des Charts. */
