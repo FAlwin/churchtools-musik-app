@@ -79,10 +79,22 @@ async function ctAjax(
   if (aussen.status !== 'success') {
     throw new HttpError(502, aussen.message ?? 'SongSelect-Anfrage fehlgeschlagen.');
   }
-  // `data` ist eine Zeichenkette mit JSON darin – die Antwort von CCLI.
-  if (typeof aussen.data !== 'string') return aussen.data;
+  /**
+   * **Zwei gemessene Formen von `data`** – beide kommen wirklich vor:
+   *  - Suche und Abfrage: `data` ist eine **Zeichenkette** mit der CCLI-Antwort darin.
+   *  - Herunterladen: `data` ist ein **Objekt** `{ success, content }`, und erst `content` ist die
+   *    Zeichenkette.
+   *
+   * Das hier auszupacken ist der Grund für diese Funktion. Wer es je Aufrufer täte, hätte zwei
+   * Stellen, an denen dieselbe Eigenheit richtig getroffen werden muss.
+   */
+  const roh2: unknown =
+    typeof aussen.data === 'object' && aussen.data !== null && 'content' in aussen.data
+      ? aussen.data.content
+      : aussen.data;
+  if (typeof roh2 !== 'string') return roh2;
   try {
-    return JSON.parse(aussen.data);
+    return JSON.parse(roh2);
   } catch {
     throw new HttpError(502, 'Die Antwort von CCLI war nicht lesbar.');
   }
@@ -185,26 +197,38 @@ export async function getSongSelectSong(
 }
 
 /**
- * Das ChordPro eines Liedes bei CCLI holen und ins Arrangement legen (#322, Schritt 9).
+ * Den ChordPro-**Text** eines Liedes bei CCLI holen (#322, Schritt 9).
  *
- * **Der einzige SCHREIBENDE Weg dieser Datei.** Anders als Suche und Abfrage legt er eine Datei an –
- * und zwar **jedes Mal eine neue**: ChurchTools ersetzt nicht. Beim Erkunden sind so drei
- * gleichnamige `Treu.chordpro` entstanden. Wer ihn aufruft, muss vorher wissen, was mit einer
- * vorhandenen Datei geschehen soll; die Regel dafür steht in `holeChordProAusSongSelect`.
+ * **Diese Funktion legt KEINE Datei an – und genau das war mein Denkfehler.** Ich hatte angenommen,
+ * `getCCLIChordPro` lege das Notenblatt in ChurchTools ab, wie es nach dem Klick in deren Oberfläche
+ * aussieht. Gemessen am 11.08.2026: Der Aufruf **liefert den Text zurück** (`type: songChordPro`,
+ * Feld `chordPro`); die ChurchTools-Oberfläche lädt ihn danach selbst als Datei hoch.
  *
- * **`tonality` ist Pflicht, nicht Beiwerk.** CCLI transponiert beim Herunterladen und schreibt die
- * Tonart in die Datei (`{key: …}`). Gemessen am 11.08.2026: Dasselbe Lied kam für das Arrangement in
- * E als E-Fassung und für das in D als D-Fassung. Wer hier die falsche Tonart schickt, bekommt ein
- * Notenblatt, das nicht zum Arrangement passt.
+ * Der Fehler war teuer: Der Aufrufer meldete „success", hat aber nichts angelegt – und die alte
+ * Datei wurde trotzdem gelöscht. **Ein `status: success` ist kein Beleg dafür, dass etwas entstanden
+ * ist.** Seitdem gilt: erst den Text in der Hand haben, dann selbst hochladen, dann aufräumen.
+ *
+ * Dass wir selbst hochladen, ist sogar der bessere Weg: Es läuft über `uploadFile` – unsere eigene,
+ * geprüfte Stelle –, und der Dateiname liegt damit in unserer Hand.
+ *
+ * `tonality` bestimmt, in welcher Tonart CCLI liefert; `arrangementID` schickt die echte Oberfläche
+ * mit, es bleibt der Vollständigkeit halber drin.
  */
-export async function downloadChordPro(
+export async function fetchChordProText(
   cookie: string,
   auftrag: { arrangementId: number; songNumber: number; title: string; tonality: string },
-): Promise<void> {
-  await ctAjax(cookie, 'getCCLIChordPro', {
+): Promise<string> {
+  const antwort = (await ctAjax(cookie, 'getCCLIChordPro', {
     songNumber: String(auftrag.songNumber),
     title: auftrag.title,
     tonality: auftrag.tonality,
     arrangementID: String(auftrag.arrangementId),
-  });
+  })) as { data?: { chordPro?: unknown } };
+
+  const text = antwort.data?.chordPro;
+  // Leer heißt: nichts geholt. Dann darf hinterher auch nichts gelöscht werden.
+  if (typeof text !== 'string' || text.trim().length === 0) {
+    throw new HttpError(502, 'CCLI hat kein Notenblatt geliefert.');
+  }
+  return text;
 }

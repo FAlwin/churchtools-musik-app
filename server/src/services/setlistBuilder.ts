@@ -23,7 +23,7 @@ import {
 } from './ctRead.js';
 import type { CtAgendaSong } from './ctTypes.js';
 import { deleteFile, uploadChordpro, uploadFile } from './ctWrite.js';
-import { downloadChordPro, getSongSelectSong } from './ctSongSelect.js';
+import { fetchChordProText, getSongSelectSong } from './ctSongSelect.js';
 import type { CtArrangementFile, CtSong } from './ctTypes.js';
 import {
   versionSlug,
@@ -738,11 +738,24 @@ export async function holeChordProAusSongSelect(
   // alten zu unterscheiden (beide heißen `<Titel>.chordpro`).
   const vorher = arrangement.files.filter(isOriginalChordpro).map((f) => fileIdFromUrl(f.fileUrl));
 
-  await downloadChordPro(cookie, {
+  /**
+   * **Erst den Text holen, dann selbst hochladen, dann aufräumen.**
+   *
+   * Der Aufruf bei CCLI liefert nur den Text – er legt nichts an (gemessen). Hochgeladen wird über
+   * `uploadFile`, unsere eigene geprüfte Stelle: Sie wirft bei einem Fehlschlag, und erst danach
+   * wird gelöscht. Damit ist die Reihenfolge eine echte Zusage und nicht mehr die Hoffnung, dass ein
+   * `status: success` auch bedeutet, dass etwas entstanden ist.
+   */
+  const text = await fetchChordProText(cookie, {
     arrangementId,
     songNumber,
     title: song.name,
     tonality,
+  });
+  await uploadFile(cookie, arrangementId, {
+    filename: `${safeFileName(song.name)}.chordpro`,
+    mime: 'text/plain',
+    inhalt: text,
   });
 
   for (const id of vorher) {

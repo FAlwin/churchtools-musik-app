@@ -206,7 +206,7 @@ describe('removeArrangementFile – die Zugehörigkeit ist die Sicherung', () =>
  */
 describe('holeChordProAusSongSelect – erst holen, dann ersetzen', () => {
   /** Wie `mockCt`, aber mit CSRF-Token und der doppelt verpackten SongSelect-Antwort. */
-  function mockSongSelect(opts: { downloadScheitert?: boolean } = {}) {
+  function mockSongSelect(opts: { downloadScheitert?: boolean; ohneText?: boolean } = {}) {
     const w: { method: string; url: string; body: string }[] = [];
     vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
       const u = String(url);
@@ -216,11 +216,25 @@ describe('holeChordProAusSongSelect – erst holen, dann ersetzen', () => {
       w.push({ method, url: u, body: String(init?.body ?? '') });
       if (u.includes('churchservice/ajax')) {
         if (opts.downloadScheitert) return Promise.resolve(jsonRes(null, 502));
+        /**
+         * Die ECHTE Antwortform (gemessen): `data` ist ein Objekt mit `content` als Zeichenkette,
+         * und der Text steckt in `data.chordPro`. `opts.ohneText` stellt den Fall nach, der mich
+         * Daten gekostet hat: ChurchTools meldet Erfolg, liefert aber nichts.
+         */
+        const innen = opts.ohneText
+          ? { statusCode: 200, data: { type: 'songChordPro' } }
+          : {
+              statusCode: 200,
+              data: { type: 'songChordPro', chordPro: '{title: Treu}\n{key: D}' },
+            };
         return Promise.resolve(
-          new Response(JSON.stringify({ status: 'success', data: JSON.stringify({ ok: true }) }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          }),
+          new Response(
+            JSON.stringify({
+              status: 'success',
+              data: { success: true, content: JSON.stringify(innen) },
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
         );
       }
       return Promise.resolve(jsonRes(null, 200));
@@ -233,11 +247,12 @@ describe('holeChordProAusSongSelect – erst holen, dann ersetzen', () => {
     await holeChordProAusSongSelect(COOKIE, 12, 500, 4328979);
 
     const holen = w.findIndex((x) => x.url.includes('churchservice/ajax'));
+    const hochladen = w.findIndex((x) => x.url.includes('/api/files/song_arrangement/'));
     const loeschen = w.findIndex((x) => x.method === 'DELETE');
     expect(holen).toBeGreaterThanOrEqual(0);
-    expect(loeschen).toBeGreaterThanOrEqual(0);
-    // Die eigentliche Zusage: das Löschen kommt NACH dem Holen.
-    expect(loeschen).toBeGreaterThan(holen);
+    expect(hochladen).toBeGreaterThan(holen);
+    // Die eigentliche Zusage: gelöscht wird ERST, wenn die neue Datei wirklich liegt.
+    expect(loeschen).toBeGreaterThan(hochladen);
     // Und es trifft die alte Datei-ID, nicht irgendeine.
     expect(w[loeschen].url).toContain('/api/files/1');
   });
@@ -258,6 +273,32 @@ describe('holeChordProAusSongSelect – erst holen, dann ersetzen', () => {
     const w = mockSongSelect({ downloadScheitert: true });
     await expect(holeChordProAusSongSelect(COOKIE, 12, 500, 4328979)).rejects.toThrow();
     expect(w.filter((x) => x.method === 'DELETE')).toHaveLength(0);
+  });
+
+  /**
+   * **Der Test zu meinem teuersten Fehler (11.08.2026).**
+   *
+   * Ich hatte angenommen, `getCCLIChordPro` lege die Datei in ChurchTools an. Es liefert aber nur den
+   * Text. Der Aufruf meldete `status: success`, es entstand nichts – und mein Ablauf löschte
+   * anschließend das vorhandene Notenblatt. Bei Alwin waren danach ZWEI Arrangements ohne Blatt, und
+   * die App meldete „Notenblatt aus SongSelect geholt."
+   *
+   * Ein Erfolgssignal ist kein Beleg dafür, dass etwas entstanden ist.
+   */
+  it('löscht NICHTS, wenn CCLI zwar Erfolg meldet, aber keinen Text liefert', async () => {
+    const w = mockSongSelect({ ohneText: true });
+    await expect(holeChordProAusSongSelect(COOKIE, 12, 500, 4328979)).rejects.toThrow(
+      /kein Notenblatt/,
+    );
+    expect(w.filter((x) => x.method === 'DELETE')).toHaveLength(0);
+    expect(w.filter((x) => x.url.includes('/api/files/song_arrangement/'))).toHaveLength(0);
+  });
+
+  it('lädt den gelieferten Text als <Titel>.chordpro hoch', async () => {
+    const w = mockSongSelect();
+    await holeChordProAusSongSelect(COOKIE, 12, 500, 4328979);
+    const hoch = w.find((x) => x.url.includes('/api/files/song_arrangement/500'));
+    expect(hoch).toBeDefined();
   });
 
   it('lässt die verwalteten Versionen in Ruhe – die gehören nicht CCLI', async () => {
