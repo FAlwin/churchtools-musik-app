@@ -195,19 +195,29 @@ Dateiverwaltung aus Teil 1.
 
 ## 6. Reihenfolge der Umsetzung
 
-| Schritt | Inhalt                                                             | Issue | Stand |
-| ------- | ------------------------------------------------------------------ | ----- | ----- |
-| 1       | `uploadFile` verallgemeinern, `uploadChordpro` darauf umstellen    | #321  | ✅    |
-| 2       | Drei Endpunkte + Zugehörigkeitsprüfung, mit Tests                  | #321  | ✅    |
-| 3       | Blatt „Dateien …" im Lied-Menü, Liste + Herunterladen              | #321  | ✅    |
-| 4       | Hochladen und Löschen samt Rückfrage und Fehlerfällen              | #321  | ✅    |
-| 5       | Auf Staging prüfen, im Browser durchklicken, dann Release          | #321  | offen |
-| 6       | Die drei Fragen aus §5.2 klären                                    | #322  | offen |
-| 7       | Kategorie + erlaubte Kategorie-IDs durchreichen                    | #322  | offen |
-| 8       | `ctSongSelect.ts`: Suche + Abfrage, rein lesend, mit Tests         | #322  | offen |
-| 9       | „Notenblatt aus SongSelect holen" in der Dateiverwaltung (Teil 1)  | #322  | offen |
-| 10      | Lied anlegen (Lied + Arrangement), Formular aus CCLI vorausgefüllt | #322  | offen |
-| 11      | Stammdaten eines vorhandenen Lieds ändern                          | #322  | offen |
+| Schritt | Inhalt                                                             | Issue | Stand                     |
+| ------- | ------------------------------------------------------------------ | ----- | ------------------------- |
+| 1       | `uploadFile` verallgemeinern, `uploadChordpro` darauf umstellen    | #321  | ✅                        |
+| 2       | Drei Endpunkte + Zugehörigkeitsprüfung, mit Tests                  | #321  | ✅                        |
+| 3       | Blatt „Dateien …" im Lied-Menü, Liste + Herunterladen              | #321  | ✅                        |
+| 4       | Hochladen und Löschen samt Rückfrage und Fehlerfällen              | #321  | ✅                        |
+| 5       | Auf Staging prüfen, im Browser durchklicken, dann Release          | #321  | ✅ geprüft, Release offen |
+| 6       | Die drei Fragen aus §5.2 klären                                    | #322  | offen                     |
+| 7       | Kategorie + erlaubte Kategorie-IDs durchreichen                    | #322  | offen                     |
+| 8       | `ctSongSelect.ts`: Suche + Abfrage, rein lesend, mit Tests         | #322  | ✅                        |
+| 9       | „Notenblatt aus SongSelect holen" in der Dateiverwaltung (Teil 1)  | #322  | ✅                        |
+| 10      | Lied anlegen (Lied + Arrangement), Formular aus CCLI vorausgefüllt | #322  | offen                     |
+| 11      | Stammdaten eines vorhandenen Lieds ändern                          | #322  | offen                     |
+
+**Erfahrung aus Schritt 9 (11.08.2026):** `getCCLIChordPro` **legt keine Datei an**, es liefert nur
+den Text – die ChurchTools-Oberfläche lädt ihn selbst hoch. Weil ChurchTools trotzdem
+`status: success` meldete, wurde ein vorhandenes Notenblatt gelöscht, ohne dass ein neues entstand.
+**Ein Erfolgssignal ist kein Beleg dafür, dass etwas entstanden ist.** Jetzt laden wir den Text
+selbst hoch (`uploadFile`) und löschen erst danach.
+
+**Schritt 9 hat außerdem eine Entwurfsfrage geklärt:** Der Knopf erscheint nur, wenn das Arrangement
+**kein** Notenblatt hat. Liegt schon eines da, ersetzt er es durch dasselbe – er tut nichts und lädt
+trotzdem zum Drücken ein. Und zum **Transponieren** braucht man ihn nicht: Die App rechnet selbst um.
 
 **Schritt 8 vor 9 und 10**, weil Suche und Abfrage **nichts ändern**: Sie lassen sich gefahrlos
 gegen die echte Instanz prüfen. Erst danach kommt der Schritt, der Dateien anlegt.

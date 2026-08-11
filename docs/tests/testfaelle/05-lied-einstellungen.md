@@ -204,3 +204,76 @@ Sammel-Pause ein).
 - **Historie:** #275 (Vorbild: #245/#256 bei den Anmerkungen)
 
 </details>
+
+### TF-EINST-09 · Dateien eines Arrangements verwalten
+
+**Das brauchst du:** Ein Konto, das Lieder in ChurchTools bearbeiten darf, und ein Lied mit
+mindestens einer Datei. **Am besten auf einem Testlied** – hier wird wirklich in ChurchTools
+geschrieben.
+
+**Das muss passieren:** Im Lied-Menü steht **„Dateien …"**. Dahinter liegt alles, was am Arrangement
+hängt – auch Dateien, die die App sonst nirgends zeigt (z. B. eine MP3).
+
+1. **Liste:** Oben steht die sprechende Bezeichnung („Notenblatt (ChordPro)", „Version „Akustik""),
+   klein darunter der echte Dateiname. Bei PDF und Bild ist der Dateiname die Überschrift.
+   Wo ChurchTools keine Größe liefert, steht **nichts** – kein Gedankenstrich.
+2. **Herunterladen:** Eine Zeile antippen → auf dem iPad öffnet sich das Teilen-Menü, am Rechner
+   wird geladen. Die Datei ist vollständig und lässt sich öffnen.
+3. **Hochladen:** „Datei hinzufügen …", ein PDF wählen → es erscheint in der Liste **und** im
+   Lied-Menü unter „Anzeige" als weiteres Dokument.
+4. **Gleicher Name:** Dieselbe Datei nochmal wählen → Warnung, dass ChurchTools **nicht ersetzt**
+   und sie danach zweimal daliegt. Abbrechen → nichts passiert.
+5. **Zu groß:** Eine Datei über 50 MB wählen → Meldung **bevor** etwas übertragen wird.
+6. **Löschen:** Papierkorb rechts → die Rückfrage nennt die **Folge**. Beim Original-ChordPro muss
+   dort stehen, dass die App danach keine Akkorde mehr zeigt. Abbrechen → nichts passiert.
+7. **Ohne Berechtigung** (Konto ohne „Lieder bearbeiten") erscheint „Dateien …" gar nicht.
+8. **Ohne Netz** (Flugmodus): Das Blatt sagt „Keine Verbindung zum Server", nicht endlos
+   „wird geladen".
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Warum:** schreibt in ChurchTools
+- **Betrifft:** `client/src/components/ArrangementFilesSheet.tsx`, `client/src/hooks/useArrangementDateien.ts`, `client/src/utils/dateiVerwaltung.ts`, `server/src/services/setlistBuilder.ts`, `server/src/services/arrangementFiles.ts`
+- **Automatisiert:** weitgehend – `ArrangementFilesSheet.test.tsx` (die drei leeren Fälle, beide
+  Knöpfe je Zeile), `dateiVerwaltung.test.ts` (Größe, Doppel, Wortlaut der Rückfrage),
+  `useArrangementDateien.test.tsx` (Meldung hängt nicht am Auffrischen),
+  `arrangementFileVerwaltung.test.ts` (Zugehörigkeit, Reihenfolge). Von Hand bleiben das
+  **Teilen-Menü auf dem iPad** (Punkt 2) und der Blick nach ChurchTools (Punkt 3).
+- **Historie:** #321
+
+</details>
+
+### TF-EINST-10 · Notenblatt aus CCLI SongSelect holen
+
+**Das brauchst du:** Ein Lied mit **CCLI-Nummer** in einem Arrangement **ohne** Notenblatt, und eine
+Gemeinde mit aktiver SongSelect-Integration. **Achtung: Der Abruf wird bei CCLI vermerkt.**
+
+**Das muss passieren:** In „Dateien …" steht **„Notenblatt aus SongSelect holen …"** – aber **nur**,
+wenn noch keines da ist.
+
+1. **Arrangement ohne Notenblatt** → der Knopf ist da. Rückfrage lesen: Sie nennt Lied,
+   CCLI-Nummer, Arrangement und dass die Tonart **des Arrangements** verwendet wird.
+2. **Holen** → Meldung „Notenblatt aus SongSelect geholt", die Datei erscheint, der Knopf
+   **verschwindet**. Das Lied zeigt Akkorde.
+3. **Tonart prüfen:** Hat das Arrangement z. B. D, müssen die Akkorde in D stehen – nicht in der
+   Standard-Tonart des Liedes.
+4. **Zweites Arrangement** mit anderer Tonart → dort kommt die eigene Fassung.
+5. **Kein zweiter Knopf:** Wo schon ein Notenblatt liegt, erscheint er nicht.
+6. **Ohne CCLI-Nummer** am Lied erscheint er ebenfalls nicht.
+7. **In ChurchTools nachsehen:** Genau **eine** ChordPro-Datei im Arrangement – keine Doppel.
+
+Erscheint nach dem Holen **keine** Datei, obwohl Erfolg gemeldet wurde: **melden.** Genau dieser
+Fall hat schon einmal ein vorhandenes Notenblatt gekostet (#322).
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Warum:** schreibt in ChurchTools und wird bei CCLI vermerkt
+- **Betrifft:** `server/src/services/ctSongSelect.ts`, `server/src/services/setlistBuilder.ts`, `client/src/components/ArrangementFilesSheet.tsx`, `client/src/hooks/useArrangementDateien.ts`
+- **Automatisiert:** weitgehend – `ctSongSelect.test.ts` (Antwortformen, Lizenz, keine Interna nach
+  außen), `arrangementFileVerwaltung.test.ts` (erst holen/hochladen, dann löschen; nichts löschen
+  ohne Text). Von Hand bleibt der Blick nach ChurchTools und auf die **echte Tonart** im Blatt.
+- **Historie:** #322
+
+</details>

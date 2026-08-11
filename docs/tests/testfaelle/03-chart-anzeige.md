@@ -298,7 +298,8 @@ Tempo also, bevor man es speichert. **Das Menü darf dabei nie seine Größe ode
 
 <details><summary>Technisches</summary>
 
-- **Priorität:** hoch (Punkt 10 schreibt in ChurchTools)
+- **Priorität:** hoch
+- **Warum:** Punkt 10 schreibt in ChurchTools
 - **Betrifft:** `client/src/components/TempoMenu.tsx`, `client/src/pages/ChordChart.tsx`, `client/src/hooks/useMetronome.ts`, `client/src/utils/metronome.ts`, `client/src/utils/tapTempo.ts`, `server/src/services/arrangementPayload.ts`, `server/src/services/ctWrite.ts`
 - **Automatisiert:** weitgehend – `metronome.test.ts`, `tapTempo.test.ts`, `useMetronome.test.ts`
   (Audio-Uhr mit gestellter Zeit), `TempoMenu.test.tsx` (alle vier Wege zum Wert, und dass
@@ -430,7 +431,8 @@ Schlüssel liegen unverändert daneben, es wurde kopiert und nicht umbenannt.
 
 <details><summary>Technisches</summary>
 
-- **Priorität:** kritisch (Nutzerdaten)
+- **Priorität:** kritisch
+- **Warum:** Nutzerdaten
 - **Betrifft:** `shared/keys/index.ts`, `client/src/utils/arrangementMigration.ts`, `client/src/utils/streamKeys.ts`, `client/src/utils/annotationKeys.ts`, `client/src/pages/ChordChart.tsx`
 - **Automatisiert:** weitgehend – `arrangementMigration.test.ts` (was kopiert wird, nichts
   überschreiben, wiederholbar), `annoKeyGrammatik.test.ts` (Erzeuger gegen Prüfmuster),
