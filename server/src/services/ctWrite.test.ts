@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   uploadChordpro,
+  uploadFile,
   reorderAgenda,
   createAgendaItem,
   updateAgendaItem,
@@ -13,9 +14,9 @@ import { __resetSessionMemosForTests } from './ctSessionMemos.js';
 /**
  * #280: Alle Schreiboperationen teilen sich seit dem Aufteilen EINEN Helfer (`schreibe`). Vorher stand
  * das Ritual – Token holen, mitschicken, bei 401/403 über `csrfWriteDenied` melden – **siebenmal
- * wortgleich** im Code.
+ * wortgleich** im Code. Seit #321 sind es acht – `uploadFile` kam als allgemeiner Datei-Upload hinzu.
  *
- * Dieser Test prüft die Regel für **jede einzelne** der sieben Funktionen, nicht für eine
+ * Dieser Test prüft die Regel für **jede einzelne** dieser Funktionen, nicht für eine
  * stellvertretend. Genau darum geht es: Die Fehlerklasse dieses Projekts ist „die Regel gilt für A, B,
  * C – C fehlt". Ein Test, der nur `deleteFile` prüft, hätte eine vergessene achte Stelle nie bemerkt.
  *
@@ -56,9 +57,13 @@ function mockMitAblehnung() {
   return zaehler;
 }
 
-/** Die sieben Schreiboperationen, jede mit gültigen Argumenten. */
+/** Die acht Schreiboperationen, jede mit gültigen Argumenten. */
 const SCHREIBER: Array<[string, () => Promise<void>]> = [
   ['uploadChordpro', () => uploadChordpro(COOKIE, 5, 'lied.cho', 'inhalt')],
+  [
+    'uploadFile',
+    () => uploadFile(COOKIE, 5, { filename: 'blatt.pdf', mime: 'application/pdf', inhalt: 'x' }),
+  ],
   ['reorderAgenda', () => reorderAgenda(COOKIE, 9, [1])],
   ['createAgendaItem', () => createAgendaItem(COOKIE, 9, { type: 'header', title: 'Neu' })],
   ['updateAgendaItem', () => updateAgendaItem(COOKIE, 9, 1, { title: 'Anders' })],
@@ -102,5 +107,76 @@ describe('Ohne Ablehnung bleibt das Token liegen – sonst spart der Speicher ni
     await aufrufen();
     await aufrufen();
     expect(zaehler.token).toBe(1); // beide Male dasselbe Token
+  });
+});
+
+/**
+ * #321, Schritt 1: `uploadChordpro` war auf ChordPro zugeschnitten (`text/plain` festverdrahtet).
+ * Für die Dateiverwaltung braucht es beliebige Arten – als **gemeinsame** Funktion, nicht als zweite
+ * Fassung daneben.
+ *
+ * Geprüft wird deshalb nicht nur, dass `uploadFile` funktioniert, sondern dass `uploadChordpro`
+ * WIRKLICH darüber läuft und dabei sein Verhalten behält. Sonst stünden hinterher doch zwei
+ * Fassungen da, nur eine davon getestet.
+ */
+describe('uploadFile – die einzige Stelle, die einen Datei-Upload zusammenbaut (#321)', () => {
+  /** Fängt den Schreibvorgang ab und gibt die gesendete Datei zurück. */
+  function mockUpload() {
+    const gesendet: { url: string; datei: File | null } = { url: '', datei: null };
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
+      const u = String(url);
+      if (u.includes('/api/csrftoken')) return Promise.resolve(jsonRes('token-1'));
+      gesendet.url = u;
+      const body = init?.body;
+      const teil = body instanceof FormData ? body.get('files[]') : null;
+      gesendet.datei = teil instanceof File ? teil : null;
+      return Promise.resolve(jsonRes(null, 200));
+    });
+    return gesendet;
+  }
+
+  it('schickt die übergebene Art mit – nicht text/plain', async () => {
+    const g = mockUpload();
+    await uploadFile(COOKIE, 7, {
+      filename: 'Treu - E.pdf',
+      mime: 'application/pdf',
+      inhalt: new Uint8Array([1, 2, 3]),
+    });
+
+    expect(g.url).toContain('/api/files/song_arrangement/7');
+    expect(g.datei?.name).toBe('Treu - E.pdf');
+    expect(g.datei?.type).toBe('application/pdf');
+    // Bytes, nicht Text: Ein PDF darf nicht als Zeichenkette verstümmelt werden.
+    expect(g.datei?.size).toBe(3);
+  });
+
+  it('uploadChordpro läuft darüber und bleibt bei text/plain', async () => {
+    const g = mockUpload();
+    await uploadChordpro(COOKIE, 7, 'Treu — Akustik (App).chordpro', '{title: Treu}');
+
+    expect(g.datei?.name).toBe('Treu — Akustik (App).chordpro');
+    expect(g.datei?.type).toBe('text/plain');
+  });
+
+  it('meldet einen Fehlschlag, statt still zu tun als wäre gespeichert', async () => {
+    // #270: Ein vorübergehender Fehler darf nicht wie Erfolg aussehen – sonst hält der Nutzer die
+    // Datei für hochgeladen und sie ist nirgends.
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url) =>
+      Promise.resolve(String(url).includes('/api/csrftoken') ? jsonRes('t') : jsonRes(null, 504)),
+    );
+    await expect(
+      uploadFile(COOKIE, 7, { filename: 'a.pdf', mime: 'application/pdf', inhalt: 'x' }),
+    ).rejects.toThrow(/Hochladen nach ChurchTools fehlgeschlagen \(504\)/);
+  });
+
+  it('die ChordPro-Meldung bleibt wortgleich, nicht die allgemeine', async () => {
+    // „Speichern" ist beim Bearbeiten einer Version die richtige Handlung; „Hochladen" wäre für den
+    // Nutzer etwas anderes. Die Verallgemeinerung darf den Wortlaut nicht mitverändern.
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url) =>
+      Promise.resolve(String(url).includes('/api/csrftoken') ? jsonRes('t') : jsonRes(null, 504)),
+    );
+    await expect(uploadChordpro(COOKIE, 7, 'a.chordpro', 'x')).rejects.toThrow(
+      /Speichern in ChurchTools fehlgeschlagen \(504\)/,
+    );
   });
 });
