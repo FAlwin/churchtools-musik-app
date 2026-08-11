@@ -14,30 +14,28 @@ import styles from '../pages/ChordChart.module.scss';
 
 interface ViewingBannerProps {
   personName: string;
-  /** Anzeigename der angesehenen Version. */
-  versionName: string;
-  /** Ist es eine ANDERE Version als die eigene? Dann wird sie hervorgehoben. */
+  /**
+   * Die Benennung der angesehenen Ebene – **fertig formuliert von `beschreibeEbene`.**
+   *
+   * Vorher setzte dieses Banner den Text selbst zusammen („Version „X" · Akkorde & Text"), die
+   * Auswahl daneben ebenfalls, mit anderen Worten und ohne das Arrangement. Von Alwin gemeldet:
+   * „Ich weiß nicht genau, was was ist." Zwei Formulierungen derselben Angabe sind eine Doppelung
+   * wie jede andere – deshalb kommt der Text hier von außen und wird nicht mehr hier gebaut.
+   */
+  levelText: string;
+  /** Ist es eine ANDERE Version als die eigene? Dann wird die Angabe hervorgehoben. */
   otherVersion: boolean;
-  /** Angesehene Darstellungsart. */
-  lyricsOnly: boolean;
 }
 
 /** Oben: wessen Ebene man gerade sieht. */
-export function ViewingBanner({
-  personName,
-  versionName,
-  otherVersion,
-  lyricsOnly,
-}: ViewingBannerProps) {
+export function ViewingBanner({ personName, levelText, otherVersion }: ViewingBannerProps) {
   return (
     <div className={styles.viewBar}>
       <Icon name="people" size={15} stroke={2} />
       <span className={styles.viewBarText}>
         Notizen von {personName}
         {' · '}
-        {otherVersion ? <strong>Version „{versionName}"</strong> : <>Version „{versionName}"</>}
-        {' · '}
-        {lyricsOnly ? 'Nur Text' : 'Akkorde & Text'}
+        {otherVersion ? <strong>{levelText}</strong> : levelText}
       </span>
     </div>
   );

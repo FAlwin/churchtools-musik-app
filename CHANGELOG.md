@@ -7,6 +7,22 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **In „Notizen von …" sagt jetzt jede Angabe, was sie ist.** Eine Zeile hieß „Version „Original" ·
+  Akkorde & Text" – drei Begriffe, durch Punkte getrennt, und keiner sagte, wofür er steht. Bei einem
+  Lied mit zwei Arrangements sahen zwei verschiedene Zeilen dadurch **völlig gleich** aus.
+
+  Jetzt steht das Arrangement oben, Version und Anzeige darunter – mit denselben Wörtern wie im
+  Lied-Menü:
+
+  > **Arrangement: Test**
+  > Version: Original · Anzeige: Akkorde & Text
+
+  Bei Liedern mit nur einem Arrangement bleibt die Zeile kurz; dort unterscheidet der Name nichts.
+  Der blaue Streifen während des Ansehens benutzt **dieselben Wörter** – beide holen sie aus einer
+  gemeinsamen Stelle, statt sie getrennt zu formulieren.
+
 ## [2.20.0] – 2026-08-11
 
 ### Behoben

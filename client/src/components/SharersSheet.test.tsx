@@ -77,15 +77,15 @@ describe('SharersSheet – Stufe 1: Person wählen', () => {
 describe('SharersSheet – Stufe 2: Ebene wählen', () => {
   it('nennt Version, Darstellungsart und Seitenzahl', () => {
     setup({ pickerPerson: PERSON });
-    expect(screen.getByText('Version „Original" · Akkorde & Text')).toBeTruthy();
-    expect(screen.getByText('Version „Akustik" · Nur Text')).toBeTruthy();
+    expect(screen.getByText('Version: Original · Anzeige: Akkorde & Text')).toBeTruthy();
+    expect(screen.getByText('Version: Akustik · Anzeige: Nur Text')).toBeTruthy();
     expect(screen.getByText('2 Seiten')).toBeTruthy();
     expect(screen.getByText('1 Seite')).toBeTruthy(); // Einzahl, nicht „1 Seiten"
   });
 
   it('meldet die gewählte Ebene vollständig zurück', () => {
     const h = setup({ pickerPerson: PERSON });
-    screen.getByText('Version „Akustik" · Nur Text').click();
+    screen.getByText('Version: Akustik · Anzeige: Nur Text').click();
     expect(h.onPickLevel).toHaveBeenCalledWith({
       versionKey: 'akustik',
       lyr: true,
@@ -108,10 +108,8 @@ describe('SharersSheet – Stufe 2: Ebene wählen', () => {
 
   it('unterscheidet zwei Arrangements mit derselben Version', () => {
     setup({ pickerPerson: PERSON, levels: ZWEI_ARRANGEMENTS, arrangementName: NAMEN });
-    expect(
-      screen.getByText('Standard-Arrangement · Version „Original" · Akkorde & Text'),
-    ).toBeTruthy();
-    expect(screen.getByText('Test · Version „Original" · Akkorde & Text')).toBeTruthy();
+    expect(screen.getByText('Arrangement: Standard-Arrangement')).toBeTruthy();
+    expect(screen.getByText('Arrangement: Test')).toBeTruthy();
   });
 
   it('benennt Bestandsnotizen ohne Arrangement, statt sie namenlos zu lassen', () => {
@@ -120,13 +118,13 @@ describe('SharersSheet – Stufe 2: Ebene wählen', () => {
       levels: [{ versionKey: 'original', lyr: false, arrangementId: null, pages: [0] }],
       arrangementName: NAMEN,
     });
-    expect(screen.getByText('Ohne Arrangement · Version „Original" · Akkorde & Text')).toBeTruthy();
+    expect(screen.getByText('Arrangement: Ohne Arrangement')).toBeTruthy();
   });
 
   it('bei nur EINEM Arrangement bleibt die Zeile kurz', () => {
     // So von Alwin entschieden: Wo nichts zu unterscheiden ist, macht der Name die Zeile nur länger.
     setup({ pickerPerson: PERSON, levels: ZWEI_ARRANGEMENTS, arrangementName: () => null });
-    expect(screen.getAllByText('Version „Original" · Akkorde & Text')).toHaveLength(2);
+    expect(screen.getAllByText('Version: Original · Anzeige: Akkorde & Text')).toHaveLength(2);
   });
 
   it('hat die Person keine Ebenen, steht auch dafür ein Satz da', () => {

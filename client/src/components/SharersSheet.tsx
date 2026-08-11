@@ -7,6 +7,7 @@
  * steht – eine leere Auswahl wäre eine Sackgasse.
  */
 import type { Sharer } from '../services/teamNotes';
+import { beschreibeEbene } from '../utils/annotationLevelLabel';
 import { Sheet } from './Sheet';
 import { Icon } from './icons';
 import styles from '../pages/ChordChart.module.scss';
@@ -91,16 +92,24 @@ export function SharersSheet({
             <p className={styles.pickHint}>Keine Anmerkungen zu diesem Lied vorhanden.</p>
           )}
           {levels.map((g) => {
-            const arr = arrangementName(g.arrangementId);
+            /**
+             * Benennung über `beschreibeEbene` – dieselbe Funktion, die den Streifen oben
+             * beschriftet. Zwei getrennte Formulierungen derselben Angabe waren genau der Grund,
+             * warum unklar war, „was was ist".
+             *
+             * Zwei Zeilen, jeder Teil beschriftet: Das Arrangement ist die größere Klammer und steht
+             * oben (die Versionen sind ChordPro-Dateien INNERHALB eines Arrangements), Version und
+             * Anzeige darunter.
+             */
+            const b = beschreibeEbene(g, { versionName, arrangementName });
             return (
               <button key={levelKey(g)} className={styles.pickRow} onClick={() => onPickLevel(g)}>
                 <Icon name="pencil" size={16} stroke={2} />
-                <span className={styles.pickName}>
-                  {/* Das Arrangement steht VORN, weil es die größere Klammer ist – die Versionen
-                      sind ChordPro-Dateien innerhalb eines Arrangements. Dieselbe Reihenfolge wie
-                      im Lied-Menü. */}
-                  {arr && <>{arr} · </>}
-                  Version „{versionName(g.versionKey)}" · {g.lyr ? 'Nur Text' : 'Akkorde & Text'}
+                <span className={styles.pickLevel}>
+                  {b.arrangement && <span className={styles.pickName}>{b.arrangement}</span>}
+                  <span className={b.arrangement ? styles.pickSub : styles.pickName}>
+                    {b.details}
+                  </span>
                 </span>
                 <span className={styles.pickPages}>
                   {g.pages.length} {g.pages.length === 1 ? 'Seite' : 'Seiten'}

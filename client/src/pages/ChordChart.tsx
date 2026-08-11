@@ -52,6 +52,7 @@ import { setArrangementTempo } from '../services/churchtoolsApi';
 import { useSetlistPages } from '../hooks/useSetlistPages';
 import { useSongArrangements } from '../hooks/useServices';
 import type { DrawTool } from '../types/index';
+import { beschreibeEbene, type NamenQuelle } from '../utils/annotationLevelLabel';
 import { NotesDiag, type NotesDiagPage } from '../dev/NotesDiag';
 import styles from './ChordChart.module.scss';
 
@@ -360,6 +361,24 @@ export function ChordChart({
   } = deriveActiveSongView(song, set);
 
   /**
+   * Wie eine Anmerkungs-Ebene benannt wird – EINE Quelle für den Streifen oben UND die Auswahl
+   * „Notizen von …". Vorher formulierte jede Stelle es selbst, mit anderen Worten und ohne das
+   * Arrangement; von Alwin gemeldet als „ich weiß nicht, was was ist".
+   */
+  const ebenenNamen: NamenQuelle = {
+    versionName: (key) => versions.find((v) => v.key === key)?.name ?? key,
+    // Das Arrangement nur bei mehreren – bei einem unterscheidet der Name nichts.
+    arrangementName: (id) => {
+      if (song.arrangementCount <= 1) return null;
+      if (id === null) return 'Ohne Arrangement';
+      return (
+        (arrangements.data ?? []).find((a) => a.arrangementId === id)?.arrangementName ??
+        `Nr. ${id}`
+      );
+    },
+  };
+
+  /**
    * Wirksames Tempo: das eingestellte, sonst das aus ChurchTools. Steht EINMAL hier und wird von
    * Kopfzeile, Puls, Klick und Menü gemeinsam benutzt – jede Stelle, die stattdessen selbst
    * `tempoWert ?? song.bpm` rechnete, wäre eine Kopie dieser Regel.
@@ -603,11 +622,8 @@ export function ChordChart({
         {viewing && (
           <ViewingBanner
             personName={viewing.name}
-            versionName={
-              versions.find((v) => v.key === viewing.versionKey)?.name ?? viewing.versionKey
-            }
+            levelText={beschreibeEbene(viewing, ebenenNamen).einzeilig}
             otherVersion={(settings[song.id]?.versionKey ?? 'original') !== viewing.versionKey}
-            lyricsOnly={viewing.lyr}
           />
         )}
 
@@ -758,16 +774,8 @@ export function ChordChart({
             sharers={songSharers}
             pickerPerson={pickerPerson}
             levels={mirrorGroups()}
-            versionName={(key) => versions.find((v) => v.key === key)?.name ?? key}
-            arrangementName={(id) => {
-              // Nur bei mehreren Arrangements – bei einem unterscheidet der Name nichts.
-              if (song.arrangementCount <= 1) return null;
-              if (id === null) return 'Ohne Arrangement';
-              return (
-                (arrangements.data ?? []).find((a) => a.arrangementId === id)?.arrangementName ??
-                `Arrangement ${id}`
-              );
-            }}
+            versionName={ebenenNamen.versionName}
+            arrangementName={ebenenNamen.arrangementName}
             levelKey={groupKeyOf}
             onPickPerson={(p) => void openPersonLevels(p, song.id)}
             onPickLevel={(g) => viewLevel(song.id, g.versionKey, g.lyr, g.arrangementId)}
