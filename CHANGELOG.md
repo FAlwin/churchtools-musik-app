@@ -15,6 +15,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Kollegen nicht gab. In der Ebenen-Auswahl stehen zwei Arrangements mit gleichnamigen Versionen
   jetzt getrennt, statt zu einer Ebene zu verschmelzen.
 
+  Betroffen war auch das **Übernehmen**: „Zusammenführen" und „Ersetzen" taten nichts, weil sie
+  unter demselben unvollständigen Schlüssel lasen und schrieben.
+
 ## [2.19.0] – 2026-08-11
 
 ### Behoben

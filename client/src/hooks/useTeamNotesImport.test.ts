@@ -63,11 +63,12 @@ async function anseheStufe(
   songId = 12,
   versionKey = 'original',
   lyr = false,
+  arrangementId: number | null = null,
 ) {
   await act(async () => {
     await result.current.openPersonLevels({ id: 5, name: 'Anna' }, songId);
   });
-  act(() => result.current.viewLevel(songId, versionKey, lyr, null));
+  act(() => result.current.viewLevel(songId, versionKey, lyr, arrangementId));
 }
 
 beforeEach(() => {
@@ -237,5 +238,35 @@ describe('useTeamNotesImport – Übernehmen', () => {
     });
     expect(args.showToast).not.toHaveBeenCalled();
     expect(result.current.viewing).not.toBeNull(); // Ansicht bleibt stehen
+  });
+});
+
+describe('useTeamNotesImport – Notizen MIT Arrangement (#320, 3c)', () => {
+  it('übernimmt die Striche eines Kollegen, dessen Ebene ein Arrangement trägt', async () => {
+    // Der gemeldete Fehler: Man konnte die Notizen auswählen, sah aber nichts – und
+    // „Zusammenführen"/„Ersetzen" tat ebenfalls nichts. Ursache war eine VIERTE, von Hand
+    // zusammengesetzte Schreibweise des Schlüssels, die einzige ohne Arrangement. Gelesen wurde
+    // unter einem Schlüssel, den es beim Kollegen nicht gab.
+    const seiner = `${VIEW_NS}song12_a45_voriginal_0`;
+    localStorage.setItem(seiner, 'SEINE-STRICHE');
+
+    const { result } = starte();
+    await anseheStufe(result, 12, 'original', false, 45);
+    await act(async () => {
+      await result.current.importFrom('replace');
+    });
+
+    // Unter dem EIGENEN Schlüssel – und der trägt sein Arrangement, sonst wäre nichts zu sehen.
+    expect(localStorage.getItem(`worship_docdraw_song12_a45_voriginal_0`)).toBe('SEINE-STRICHE');
+  });
+
+  it('lässt Bestandsnotizen ohne Arrangement weiter funktionieren', async () => {
+    localStorage.setItem(`${VIEW_NS}song12_voriginal_0`, 'ALTBESTAND');
+    const { result } = starte();
+    await anseheStufe(result, 12, 'original', false, null);
+    await act(async () => {
+      await result.current.importFrom('replace');
+    });
+    expect(localStorage.getItem(`worship_docdraw_song12_voriginal_0`)).toBe('ALTBESTAND');
   });
 });

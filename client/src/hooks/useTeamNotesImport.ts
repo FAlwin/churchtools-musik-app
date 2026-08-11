@@ -1,5 +1,6 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import type { SetlistSong } from '@shared/types/index';
+import { songPageKey } from '@shared/keys/index';
 import {
   VIEW_NS,
   getSharers,
@@ -167,10 +168,19 @@ export function useTeamNotesImport({
     );
     if (!level) return;
     {
-      const { versionKey } = level;
-      const seg = level.lyr ? '_lyr' : '';
       for (const page of level.pages) {
-        const base = `song${songId}_v${versionKey}${seg}_${page}`;
+        /**
+         * Schlüssel über `songPageKey` – NICHT von Hand zusammengesetzt (#320, 3c).
+         *
+         * Hier stand `song${songId}_v${versionKey}${seg}_${page}`: eine VIERTE Umsetzung derselben
+         * Grammatik, und die einzige ohne Arrangement. Folge, von Alwin gemeldet: Man konnte die
+         * Notizen eines Kollegen auswählen, sah aber nichts – und „Zusammenführen"/„Ersetzen" tat
+         * ebenfalls nichts. Gelesen wurde unter einem Schlüssel, den es bei ihm nicht gab, und
+         * geschrieben unter einen, der nicht angezeigt wird.
+         *
+         * Das Arrangement kommt aus der ANGESEHENEN Ebene – es ist seines, nicht das eigene.
+         */
+        const base = songPageKey(songId, level.versionKey, level.lyr, page, level.arrangementId);
         const theirStrokes = localStorage.getItem(VIEW_NS + base);
         const theirTexts =
           safeParse<PageTextObjLike[]>(localStorage.getItem(`${VIEW_NS + base}_text`)) ?? [];
