@@ -7,6 +7,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Neu
+
+- **Beim Ansehen fremder Notizen lässt sich das Arrangement direkt umschalten.** In der Leiste unten
+  steht neben dem Personen-Knopf ein zweiter mit einem Notensymbol: Er führt sofort zur Auswahl der
+  Arrangements und Versionen **derselben** Person. Bisher ging das nur über „Andere Person" – man
+  musste dieselbe Person noch einmal antippen, obwohl man sie gar nicht wechseln wollte.
+
 ### Geändert
 
 - **In „Notizen von …" sagt jetzt jede Angabe, was sie ist.** Eine Zeile hieß „Version „Original" ·

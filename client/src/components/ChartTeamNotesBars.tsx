@@ -53,8 +53,15 @@ interface ImportPreviewBarProps {
   onMode: (mode: 'view' | 'merge' | 'replace') => void;
   /** Die angezeigte Vorschau wirklich übernehmen – nur aus „Zusammenführen"/„Ersetzen" möglich. */
   onImport: (mode: 'merge' | 'replace') => void;
-  /** Andere Person oder Ebene wählen. */
+  /** Andere Person wählen (zurück auf Stufe 1 des Wählers). */
   onPickOther: () => void;
+  /**
+   * Anderes Arrangement / andere Version DERSELBEN Person.
+   *
+   * Eigener Knopf, weil der Weg dorthin sonst über „Andere Person" führt – man müsste dieselbe
+   * Person noch einmal auswählen, obwohl man sie gar nicht wechseln will. Von Alwin gewünscht.
+   */
+  onPickLevel: () => void;
   onStop: () => void;
 }
 
@@ -70,6 +77,7 @@ export function ImportPreviewBar({
   onMode,
   onImport,
   onPickOther,
+  onPickLevel,
   onStop,
 }: ImportPreviewBarProps) {
   return (
@@ -93,11 +101,20 @@ export function ImportPreviewBar({
           </button>
         </>
       )}
+      {/* Ebene zuerst, dann Person: die kleinere Änderung steht links von der größeren. */}
+      <button
+        className={styles.pvIcon}
+        onClick={onPickLevel}
+        title="Anderes Arrangement / andere Version"
+        aria-label="Anderes Arrangement oder andere Version wählen"
+      >
+        <Icon name="music" size={18} stroke={2} />
+      </button>
       <button
         className={styles.pvIcon}
         onClick={onPickOther}
-        title="Andere Person / Ebene"
-        aria-label="Andere Person oder Ebene wählen"
+        title="Andere Person"
+        aria-label="Andere Person wählen"
       >
         <Icon name="people" size={18} stroke={2} />
       </button>

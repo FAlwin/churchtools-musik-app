@@ -183,6 +183,7 @@ export function ChordChart({
     groupKeyOf,
     importFrom,
     openSharers,
+    openLevels,
   } = useTeamNotesImport({
     songs,
     settings,
@@ -769,6 +770,7 @@ export function ChordChart({
             onMode={setViewMode}
             onImport={(m) => void importFrom(m)}
             onPickOther={openSharers}
+            onPickLevel={openLevels}
             onStop={stopViewing}
           />
         )}

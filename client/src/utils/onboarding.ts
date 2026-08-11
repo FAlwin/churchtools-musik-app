@@ -14,6 +14,8 @@ export const TOUR_TERMINE = 'termine-v2';
 // Der Text wurde beim Umbau des Menues (Metronom-Symbol, ein gemeinsamer Tempo-Wert) NACHGEZOGEN,
 // ohne die Version zu erhoehen: chart-v4 war nie in Produktion (dort laeuft v2.16.3), es hat sie
 // also niemand ausser auf Staging gesehen. Waere sie draussen gewesen, muesste hier v5 stehen.
+// Aus demselben Grund wurde der Schritt „Notizen von anderen" nachgezogen (Umschalter fuer
+// Arrangement/Version in der Leiste): chart-v4 ist weiterhin nur auf Staging gelaufen.
 // chart-v3: Der Tipp in die Mitte blendet jetzt die Leisten aus (#319) – die Geste findet man
 // sonst nicht von selbst. Version erhöht, damit Bestandsnutzer den geänderten Schritt sehen.
 // (chart-v2 hatte den Schritt „Team-Anmerkungen" (#124) ergänzt.)
@@ -118,7 +120,7 @@ export const CHART_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="chart-team"]',
     title: 'Notizen von anderen',
-    body: 'Sieh dir die geteilten Anmerkungen deiner Team-Mitglieder an – in deren Ansicht – und übernimm sie bei Bedarf in deine eigenen. Deine Anmerkungen teilst du unter „Mehr → Team-Notizen".',
+    body: 'Sieh dir die geteilten Anmerkungen deiner Team-Mitglieder an – in deren Ansicht – und übernimm sie bei Bedarf in deine eigenen. In der Leiste unten wechselst du dann Arrangement, Version oder die Person. Deine Anmerkungen teilst du unter „Mehr → Team-Notizen".',
   },
 ];
 
