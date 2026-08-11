@@ -183,3 +183,28 @@ export async function getSongSelectSong(
   }
   return { ...treffer(roh), copyright: roh.copyrights?.[0] ?? null };
 }
+
+/**
+ * Das ChordPro eines Liedes bei CCLI holen und ins Arrangement legen (#322, Schritt 9).
+ *
+ * **Der einzige SCHREIBENDE Weg dieser Datei.** Anders als Suche und Abfrage legt er eine Datei an –
+ * und zwar **jedes Mal eine neue**: ChurchTools ersetzt nicht. Beim Erkunden sind so drei
+ * gleichnamige `Treu.chordpro` entstanden. Wer ihn aufruft, muss vorher wissen, was mit einer
+ * vorhandenen Datei geschehen soll; die Regel dafür steht in `holeChordProAusSongSelect`.
+ *
+ * **`tonality` ist Pflicht, nicht Beiwerk.** CCLI transponiert beim Herunterladen und schreibt die
+ * Tonart in die Datei (`{key: …}`). Gemessen am 11.08.2026: Dasselbe Lied kam für das Arrangement in
+ * E als E-Fassung und für das in D als D-Fassung. Wer hier die falsche Tonart schickt, bekommt ein
+ * Notenblatt, das nicht zum Arrangement passt.
+ */
+export async function downloadChordPro(
+  cookie: string,
+  auftrag: { arrangementId: number; songNumber: number; title: string; tonality: string },
+): Promise<void> {
+  await ctAjax(cookie, 'getCCLIChordPro', {
+    songNumber: String(auftrag.songNumber),
+    title: auftrag.title,
+    tonality: auftrag.tonality,
+    arrangementID: String(auftrag.arrangementId),
+  });
+}

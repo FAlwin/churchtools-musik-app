@@ -16,6 +16,7 @@ import {
   listArrangementFiles,
   addArrangementFile,
   removeArrangementFile,
+  holeChordProAusSongSelect,
 } from '../services/setlistBuilder.js';
 import { getMemoizedVersion, rememberVersion } from '../services/versionMemo.js';
 import { getUserId } from '../services/ctAuth.js';
@@ -503,4 +504,17 @@ export async function getSongSelectSearch(req: Request, res: Response): Promise<
 export async function getSongSelectByNumber(req: Request, res: Response): Promise<void> {
   const songNumber = idSchema.parse(req.params.songNumber);
   res.json(await getSongSelectSong(ctCookie(req), songNumber));
+}
+
+/**
+ * POST /api/songs/:songId/arrangements/:arrangementId/songselect/chordpro
+ *
+ * Holt das Notenblatt aus CCLI SongSelect ins Arrangement (#322). **Der einzige schreibende
+ * SongSelect-Weg** – er ersetzt ein vorhandenes Original-ChordPro (Begründung am Dienst).
+ */
+export async function postSongSelectChordPro(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const arrangementId = idSchema.parse(req.params.arrangementId);
+  const { songNumber } = z.object({ songNumber: z.number().int().positive() }).parse(req.body);
+  res.json(await holeChordProAusSongSelect(ctCookie(req), songId, arrangementId, songNumber));
 }

@@ -28,6 +28,7 @@ import {
   deleteArrangementFileCtrl,
   getSongSelectSearch,
   getSongSelectByNumber,
+  postSongSelectChordPro,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -77,5 +78,11 @@ router.delete('/songs/:songId/files/:fileId', asyncHandler(deleteArrangementFile
  */
 router.get('/songselect/search', asyncHandler(getSongSelectSearch));
 router.get('/songselect/songs/:songNumber', asyncHandler(getSongSelectByNumber));
+// Der einzige SCHREIBENDE SongSelect-Weg: holt das Notenblatt ins Arrangement und ersetzt dabei ein
+// vorhandenes Original-ChordPro (pro Arrangement genau eines, Begruendung am Dienst).
+router.post(
+  '/songs/:songId/arrangements/:arrangementId/songselect/chordpro',
+  asyncHandler(postSongSelectChordPro),
+);
 
 export default router;

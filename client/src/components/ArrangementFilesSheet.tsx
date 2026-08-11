@@ -38,9 +38,17 @@ interface ArrangementFilesSheetProps {
   fehler: string | null;
   /** Läuft gerade ein Upload? Dann ist der Knopf beschäftigt statt anklickbar. */
   laedtHoch: boolean;
+  /**
+   * Aus CCLI SongSelect holen anbieten? (#322)
+   *
+   * `null`, wenn nicht: keine SongSelect-Lizenz der Gemeinde, oder das Lied hat keine CCLI-Nummer.
+   * Ein Knopf, der ohne beides immer scheitert, ist schlimmer als keiner.
+   */
+  songSelect: { songNumber: number; laeuft: boolean } | null;
   onDownload: (file: ArrangementFileEntry) => void;
   onUpload: (datei: File) => void;
   onDelete: (file: ArrangementFileEntry) => void;
+  onSongSelect: () => void;
   onClose: () => void;
 }
 
@@ -51,9 +59,11 @@ export function ArrangementFilesSheet({
   angehalten,
   fehler,
   laedtHoch,
+  songSelect,
   onDownload,
   onUpload,
   onDelete,
+  onSongSelect,
   onClose,
 }: ArrangementFilesSheetProps) {
   const dateiFeld = useRef<HTMLInputElement>(null);
@@ -133,6 +143,18 @@ export function ArrangementFilesSheet({
           >
             {laedtHoch ? 'Wird hochgeladen …' : 'Datei hinzufügen …'}
           </button>
+          {/* Aus SongSelect holen – nur mit Lizenz UND CCLI-Nummer (#322). Steht unter dem
+              Hochladen, weil es der seltenere Weg ist: Man holt einmal und lädt danach eigene
+              Dateien dazu. */}
+          {songSelect && (
+            <button
+              className={styles.importBtn}
+              onClick={onSongSelect}
+              disabled={songSelect.laeuft}
+            >
+              {songSelect.laeuft ? 'Wird geholt …' : 'Notenblatt aus SongSelect holen …'}
+            </button>
+          )}
         </>
       )}
     </Sheet>

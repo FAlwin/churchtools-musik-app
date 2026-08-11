@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   addArrangementFile,
+  holeChordProAusSongSelect,
   listArrangementFiles,
   removeArrangementFile,
 } from './setlistBuilder.js';
@@ -39,7 +40,11 @@ const LIED = {
       keyOfArrangement: 'D',
       bpm: 75,
       beat: null,
-      files: [datei('Treu.chordpro', 1, 2048), datei('Treu - E.pdf', 2, '4096')],
+      files: [
+        datei('Treu.chordpro', 1, 2048),
+        datei('Treu - E.pdf', 2, '4096'),
+        datei('Treu — Akustik (App).chordpro', 3, 900),
+      ],
     },
     { id: 501, name: 'Test', key: 'D', keyOfArrangement: 'D', bpm: 75, beat: null, files: [] },
   ],
@@ -85,6 +90,13 @@ describe('listArrangementFiles', () => {
         kind: 'chordpro-original',
       },
       { fileId: 2, name: 'Treu - E.pdf', label: 'Treu - E.pdf', size: 4096, kind: 'pdf' },
+      {
+        fileId: 3,
+        name: 'Treu — Akustik (App).chordpro',
+        label: 'Version „Akustik"',
+        size: 900,
+        kind: 'chordpro-version',
+      },
     ]);
   });
 
@@ -115,7 +127,7 @@ describe('addArrangementFile', () => {
     expect(w[0].url).toContain('/api/files/song_arrangement/500');
     // Die Liste kommt frisch zurück – der Client braucht die neue Datei-ID, ohne selbst noch
     // einmal zu fragen (#300: jede vermeidbare Anfrage zählt).
-    expect(liste).toHaveLength(2);
+    expect(liste).toHaveLength(3);
   });
 
   it('reinigt den Dateinamen – er kommt aus dem Browser und ist nicht zu glauben', async () => {
@@ -181,5 +193,86 @@ describe('removeArrangementFile – die Zugehörigkeit ist die Sicherung', () =>
     const w = mockCt();
     await removeArrangementFile(COOKIE, 12, 1);
     expect(w[0].url).toContain('/api/files/1');
+  });
+});
+
+/**
+ * #322, Schritt 9: Das Notenblatt aus CCLI SongSelect holen.
+ *
+ * **Der Kern ist die REIHENFOLGE.** Ersetzt wird durch „erst holen, dann das alte löschen". Andersherum
+ * stünde das Lied ohne Notenblatt da, sobald der Abruf bei CCLI scheitert – Netz, Lizenz,
+ * Zeitüberschreitung. Im schlimmsten Fall bleibt ein Doppel liegen: ärgerlich, aber behebbar. Ein
+ * Lied ohne Blatt im Gottesdienst ist es nicht.
+ */
+describe('holeChordProAusSongSelect – erst holen, dann ersetzen', () => {
+  /** Wie `mockCt`, aber mit CSRF-Token und der doppelt verpackten SongSelect-Antwort. */
+  function mockSongSelect(opts: { downloadScheitert?: boolean } = {}) {
+    const w: { method: string; url: string; body: string }[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
+      const u = String(url);
+      const method = init?.method ?? 'GET';
+      if (u.includes('/api/csrftoken')) return Promise.resolve(jsonRes('token'));
+      if (method === 'GET' && /\/api\/songs\/12$/.test(u)) return Promise.resolve(jsonRes(LIED));
+      w.push({ method, url: u, body: String(init?.body ?? '') });
+      if (u.includes('churchservice/ajax')) {
+        if (opts.downloadScheitert) return Promise.resolve(jsonRes(null, 502));
+        return Promise.resolve(
+          new Response(JSON.stringify({ status: 'success', data: JSON.stringify({ ok: true }) }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }
+      return Promise.resolve(jsonRes(null, 200));
+    });
+    return w;
+  }
+
+  it('holt zuerst und löscht das alte ChordPro erst danach', async () => {
+    const w = mockSongSelect();
+    await holeChordProAusSongSelect(COOKIE, 12, 500, 4328979);
+
+    const holen = w.findIndex((x) => x.url.includes('churchservice/ajax'));
+    const loeschen = w.findIndex((x) => x.method === 'DELETE');
+    expect(holen).toBeGreaterThanOrEqual(0);
+    expect(loeschen).toBeGreaterThanOrEqual(0);
+    // Die eigentliche Zusage: das Löschen kommt NACH dem Holen.
+    expect(loeschen).toBeGreaterThan(holen);
+    // Und es trifft die alte Datei-ID, nicht irgendeine.
+    expect(w[loeschen].url).toContain('/api/files/1');
+  });
+
+  it('schickt die Tonart DES ARRANGEMENTS mit', async () => {
+    // CCLI transponiert beim Herunterladen. Die falsche Tonart ergibt ein Blatt, das nicht zum
+    // Arrangement passt – und man merkt es erst beim Spielen.
+    const w = mockSongSelect();
+    await holeChordProAusSongSelect(COOKIE, 12, 500, 4328979);
+    const holen = w.find((x) => x.url.includes('churchservice/ajax'));
+    expect(holen?.body).toContain('func=getCCLIChordPro');
+    expect(holen?.body).toContain('tonality=D'); // Arrangement 500 steht auf D
+    expect(holen?.body).toContain('arrangementID=500');
+  });
+
+  it('löscht NICHTS, wenn das Holen scheitert', async () => {
+    // Der Fall, für den die Reihenfolge da ist.
+    const w = mockSongSelect({ downloadScheitert: true });
+    await expect(holeChordProAusSongSelect(COOKIE, 12, 500, 4328979)).rejects.toThrow();
+    expect(w.filter((x) => x.method === 'DELETE')).toHaveLength(0);
+  });
+
+  it('lässt die verwalteten Versionen in Ruhe – die gehören nicht CCLI', async () => {
+    const w = mockSongSelect();
+    await holeChordProAusSongSelect(COOKIE, 12, 500, 4328979);
+    const geloescht = w.filter((x) => x.method === 'DELETE').map((x) => x.url);
+    // Datei 3 ist „Treu — Akustik (App).chordpro" und muss bleiben.
+    expect(geloescht.some((u) => u.includes('/api/files/3'))).toBe(false);
+  });
+
+  it('holt nicht für ein fremdes Arrangement', async () => {
+    const w = mockSongSelect();
+    await expect(holeChordProAusSongSelect(COOKIE, 12, 999, 4328979)).rejects.toThrow(
+      /Arrangement nicht gefunden/,
+    );
+    expect(w).toHaveLength(0);
   });
 });

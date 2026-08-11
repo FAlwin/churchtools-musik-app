@@ -23,6 +23,7 @@ import {
 } from './ctRead.js';
 import type { CtAgendaSong } from './ctTypes.js';
 import { deleteFile, uploadChordpro, uploadFile } from './ctWrite.js';
+import { downloadChordPro, getSongSelectSong } from './ctSongSelect.js';
 import type { CtArrangementFile, CtSong } from './ctTypes.js';
 import {
   versionSlug,
@@ -690,4 +691,64 @@ export async function removeArrangementFile(
 ): Promise<void> {
   await resolveFileUrl(cookie, songId, fileId);
   await deleteFile(cookie, fileId);
+}
+
+/**
+ * Das Notenblatt eines Liedes aus CCLI SongSelect ins Arrangement holen (#322, Schritt 9).
+ *
+ * **Pro Arrangement genau EIN Original-ChordPro.** Aus der Messung vom 11.08.2026: Die Datei bringt
+ * ihre Tonart selbst mit (`{key: …}`), und `buildSong` sucht das Notenblatt mit
+ * `files.find(isOriginalChordpro)` – die **erste** gewinnt. Lägen zwei da, entschiede die Reihenfolge
+ * von ChurchTools, welche Fassung (und welche Tonart!) angezeigt wird. Nichts kracht, es ist nur
+ * plötzlich anders. Deshalb wird ersetzt, nicht danebengelegt.
+ *
+ * **ERST holen, DANN das alte löschen** – und diese Reihenfolge ist der Kern dieser Funktion.
+ * Andersherum stünde das Lied ohne Notenblatt da, sobald der Abruf bei CCLI scheitert (Netz, Lizenz,
+ * Zeitüberschreitung). Im schlimmsten Fall bleibt so ein Doppel liegen; das ist ärgerlich, aber
+ * behebbar – ein Lied ohne Blatt im Gottesdienst ist es nicht.
+ *
+ * **Die verwalteten Versionen bleiben unangetastet.** Sie gehören der App und dem Nutzer, nicht
+ * CCLI; ersetzt wird nur das Original.
+ */
+export async function holeChordProAusSongSelect(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+  songNumber: number,
+): Promise<ArrangementFileEntry[]> {
+  const { song, arrangement } = await getArrangement(cookie, songId, arrangementId);
+
+  /**
+   * Die Tonart des ARRANGEMENTS, sonst die von CCLI vorgeschlagene.
+   *
+   * Ohne beides wird abgebrochen, statt eine zu raten: Ein Notenblatt in einer zufälligen Tonart
+   * ist schlimmer als keines – man merkt es erst beim Spielen.
+   */
+  const tonart = arrangement.keyOfArrangement ?? arrangement.key ?? null;
+  const ausCcli = tonart ? null : await getSongSelectSong(cookie, songNumber);
+  const tonality = tonart ?? ausCcli?.defaultKey ?? null;
+  if (!tonality) {
+    throw new HttpError(
+      400,
+      'Für dieses Arrangement ist keine Tonart hinterlegt, und CCLI schlägt keine vor. Bitte zuerst eine Tonart setzen.',
+    );
+  }
+
+  // Vor dem Holen merken, was ersetzt werden soll – danach ist die neue Datei nicht mehr von der
+  // alten zu unterscheiden (beide heißen `<Titel>.chordpro`).
+  const vorher = arrangement.files.filter(isOriginalChordpro).map((f) => fileIdFromUrl(f.fileUrl));
+
+  await downloadChordPro(cookie, {
+    arrangementId,
+    songNumber,
+    title: song.name,
+    tonality,
+  });
+
+  for (const id of vorher) {
+    // Ein Fehlschlag beim Aufräumen darf den Erfolg nicht umwerfen: Das neue Blatt liegt schon da.
+    if (id !== null) await deleteFile(cookie, id).catch(() => undefined);
+  }
+
+  return listArrangementFiles(cookie, songId, arrangementId);
 }
