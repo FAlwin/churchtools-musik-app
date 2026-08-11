@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { SetlistSong } from '@shared/types/index';
 import { Screen } from '../components/Screen';
 import { ChartHeader } from '../components/ChartHeader';
 import { ChartFooter } from '../components/ChartFooter';
-import { ChartOverlays } from '../components/ChartOverlays';
+import { ChartOverlays, type ChartOverlay } from '../components/ChartOverlays';
 import { TempoMenu } from '../components/TempoMenu';
 import { ImportPreviewBar, ViewingBanner } from '../components/ChartTeamNotesBars';
 import { Icon } from '../components/icons';
@@ -48,7 +49,13 @@ import {
   useArrangementUeberschreibung,
   useArrangementVorladen,
 } from '../hooks/useArrangementUeberschreibung';
-import { setArrangementTempo } from '../services/churchtoolsApi';
+import {
+  getArrangementFiles,
+  getSongFileBlob,
+  setArrangementTempo,
+} from '../services/churchtoolsApi';
+import { ArrangementFilesSheet } from '../components/ArrangementFilesSheet';
+import { shareOrDownload } from '../utils/shareFile';
 import { useSetlistPages } from '../hooks/useSetlistPages';
 import { useSongArrangements } from '../hooks/useServices';
 import type { DrawTool } from '../types/index';
@@ -151,10 +158,13 @@ export function ChordChart({
    * Sie schließen sich gegenseitig aus – mit fünf unabhängigen Flaggen war ein Zustand darstellbar,
    * den es nicht geben darf (zwei Overlays gleichzeitig offen). Mit einem Feld ist er nicht mehr
    * ausdrückbar, und beim Öffnen des einen ist das andere automatisch zu.
+   *
+   * **Die Namen kommen aus `ChartOverlay` und werden hier nicht abgeschrieben** (#321). Vorher stand
+   * die Liste der fünf Namen zweimal: dort für die Komponente, hier für den Zustand. Bei „Dateien"
+   * wäre es die dritte Fassung geworden – und die Namen, die `ChartOverlays` gar nicht rendert
+   * (`tempo`, `files`), stehen jetzt sichtbar getrennt statt in einer Liste vermischt.
    */
-  const [overlay, setOverlay] = useState<
-    'key' | 'capo' | 'sec' | 'appearance' | 'menu' | 'tempo' | null
-  >(null);
+  const [overlay, setOverlay] = useState<ChartOverlay | 'tempo' | 'files'>(null);
   /** Ein Overlay umschalten (nochmal derselbe Knopf schließt es). */
   const toggleOverlay = (o: 'appearance' | 'menu' | 'tempo') =>
     setOverlay((cur) => (cur === o ? null : o));
@@ -304,6 +314,20 @@ export function ChordChart({
   const ablaufArrangement = songsAusAblauf[activeSongIdx]?.arrangementId ?? song.arrangementId;
 
   /**
+   * Die Dateien des aktiven Arrangements (#321).
+   *
+   * **Erst beim Öffnen des Blattes**, nicht schon beim Öffnen des Lieds: Es ist ein zusätzlicher
+   * Abruf gegen ChurchTools, und im Gottesdienst braucht ihn niemand. Genau an vermeidbaren
+   * Abrufen ist die App einmal in ein Rate-Limit gelaufen (#300).
+   */
+  const dateien = useQuery({
+    queryKey: ['arrangement-files', song.id, song.arrangementId],
+    queryFn: () => getArrangementFiles(song.id, song.arrangementId),
+    enabled: overlay === 'files',
+    staleTime: 1000 * 30,
+  });
+
+  /**
    * Die anderen Arrangements vorladen, sobald das Lied-Menü offen ist (#320).
    *
    * Gemeldet als „dauert super lange, bis das neue ChordPro-Dokument erscheint". Gemessen liegt die
@@ -370,6 +394,13 @@ export function ChordChart({
     // Das Arrangement nur bei mehreren – bei einem unterscheidet der Name nichts.
     arrangementName: (id) => {
       if (song.arrangementCount <= 1) return null;
+      /**
+       * Das Arrangement des angezeigten Lieds trägt seinen Namen selbst mit – dafür braucht es die
+       * Arrangement-Liste nicht. Beim Durchklicken aufgefallen (11.08.2026): Solange die Liste noch
+       * lädt (oder wie in der Vorführung gar nicht kommt), stand hier „Nr. 999001". Der häufigste
+       * Fall ist genau dieser, und für ihn ist die Antwort schon da.
+       */
+      if (id === song.arrangementId) return song.arrangementName;
       /**
        * Notizen ohne Arrangement-Segment heißen **„Standard"** – so von Alwin gewünscht
        * (11.08.2026). Es sind Anmerkungen aus der Zeit vor #320, als es je Lied nur ein Arrangement
@@ -475,6 +506,21 @@ export function ChordChart({
       ),
     [owners, viewingId, viewingSongId, viewingLyr, viewingArr],
   );
+
+  /**
+   * Eine Datei des Arrangements aufs Gerät geben (#321).
+   *
+   * Über denselben Weg wie das PDF-Teilen (`shareOrDownload`): auf dem iPad das Teilen-Menü, am
+   * Rechner ein Download. Ein Fehlschlag wird gemeldet – ohne Rückmeldung hielte man die Datei für
+   * gespeichert, und sie wäre nirgends (#270).
+   */
+  const dateiHerunterladen = async (f: { fileId: number; name: string }): Promise<void> => {
+    try {
+      await shareOrDownload(await getSongFileBlob(song.id, f.fileId), f.name);
+    } catch {
+      showToast('Die Datei konnte nicht geladen werden.');
+    }
+  };
 
   /**
    * „Als PDF teilen" – das aktive Lied als einzelne PDF.
@@ -631,10 +677,10 @@ export function ChordChart({
         <ChartOverlays
           arrangements={arrangements.data ?? []}
           ablaufArrangementId={ablaufArrangement}
-          // Das Tempo-Menü ist bewusst KEIN `ChartOverlay`: Es teilt sich zwar die Regel „höchstens
-          // eines offen", hat aber eine ganz andere Bedienung. Deshalb hier herausgefiltert, statt
-          // den Typ dort aufzuweichen.
-          overlay={overlay === 'tempo' ? null : overlay}
+          // Tempo-Menü und Dateiverwaltung sind bewusst KEINE `ChartOverlay`: Sie teilen sich zwar
+          // die Regel „höchstens eines offen", haben aber eine ganz andere Bedienung. Deshalb hier
+          // herausgefiltert, statt den Typ dort aufzuweichen.
+          overlay={overlay === 'tempo' || overlay === 'files' ? null : overlay}
           onOverlay={setOverlay}
           song={song}
           set={set}
@@ -649,6 +695,7 @@ export function ChordChart({
           onSetting={(patch) => updateSetting(song.id, patch)}
           onSelectVersion={(versionKey) => selectVersion(song.id, versionKey)}
           onSharePdf={shareCurrentAsPdf}
+          onOpenFiles={() => setOverlay('files')}
           onEditCurrent={openEditCurrent}
           onNewVersion={openNewVersion}
           onDeleteVersion={() => setConfirmDelEdited(true)}
@@ -757,6 +804,24 @@ export function ChordChart({
             onPickLevel={(g) => viewLevel(song.id, g.versionKey, g.lyr, g.arrangementId)}
             onBackToPersons={() => setPickerPerson(null)}
             onClose={() => setShowSharers(false)}
+          />
+        )}
+
+        {/* Dateien des Arrangements (#321). Hochladen/Löschen folgt in Schritt 4. */}
+        {overlay === 'files' && (
+          <ArrangementFilesSheet
+            arrangementName={ebenenNamen.arrangementName(song.arrangementId)}
+            files={dateien.data ?? []}
+            laedt={dateien.isPending}
+            // `paused` heißt: React Query wartet auf den Server, statt weiter zu versuchen.
+            angehalten={dateien.fetchStatus === 'paused'}
+            fehler={
+              dateien.error
+                ? 'Die Dateien konnten nicht geladen werden. Bitte erneut versuchen.'
+                : null
+            }
+            onDownload={(f) => void dateiHerunterladen(f)}
+            onClose={() => setOverlay(null)}
           />
         )}
 

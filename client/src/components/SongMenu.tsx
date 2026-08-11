@@ -42,6 +42,8 @@ interface SongMenuProps {
   onOpenSectionTranspose: () => void;
   onSharePdf: () => void;
   onEditCurrent: () => void;
+  /** Dateien des Arrangements verwalten (#321) – nur für Berechtigte. */
+  onOpenFiles: () => void;
   onNewVersion: () => void;
   onDeleteVersion: () => void;
   onChange: (patch: Partial<SongSettings>) => void;
@@ -66,6 +68,7 @@ export function SongMenu({
   onOpenSectionTranspose,
   onSharePdf,
   onEditCurrent,
+  onOpenFiles,
   onNewVersion,
   onDeleteVersion,
   onChange,
@@ -124,6 +127,15 @@ export function SongMenu({
               {isOriginal ? 'Bearbeiten (neue Version)' : `„${currentVersion.name}" bearbeiten`}
             </span>
             <span className={styles.mmValue}>🖉</span>
+          </button>
+        )}
+        {/* Dateien des Arrangements (#321) – neben dem Bearbeiten, weil beides das Lied PFLEGT.
+            Anders als „Bearbeiten" auch bei einem Dokument sichtbar (`showsChords` fehlt hier
+            bewusst): Wer ein PDF ansieht, will genau dort ein neues hochladen können. */}
+        {canEditSong && (
+          <button className={styles.mmItem} onClick={pick(onOpenFiles)}>
+            <span>Dateien …</span>
+            <span className={styles.mmValue}>📎</span>
           </button>
         )}
 

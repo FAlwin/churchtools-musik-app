@@ -43,6 +43,7 @@ interface ChartOverlaysProps {
   onSelectVersion: (versionKey: string) => void;
   onSharePdf: () => void;
   onEditCurrent: () => void;
+  onOpenFiles: () => void;
   onNewVersion: () => void;
   onDeleteVersion: () => void;
 }
@@ -66,6 +67,7 @@ export function ChartOverlays({
   onSelectVersion,
   onSharePdf,
   onEditCurrent,
+  onOpenFiles,
   onNewVersion,
   onDeleteVersion,
 }: ChartOverlaysProps) {
@@ -103,6 +105,7 @@ export function ChartOverlays({
         onOpenSectionTranspose={() => onOverlay('sec')}
         onSharePdf={onSharePdf}
         onEditCurrent={onEditCurrent}
+        onOpenFiles={onOpenFiles}
         onNewVersion={onNewVersion}
         onDeleteVersion={onDeleteVersion}
         onChange={onSetting}

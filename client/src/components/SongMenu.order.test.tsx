@@ -50,6 +50,7 @@ function renderMenu(spy: { onClose: () => void; onOpenKeyPicker: () => void }) {
       onOpenSectionTranspose={vi.fn()}
       onSharePdf={vi.fn()}
       onEditCurrent={vi.fn()}
+      onOpenFiles={vi.fn()}
       onNewVersion={vi.fn()}
       onDeleteVersion={vi.fn()}
       onChange={vi.fn()}

@@ -88,3 +88,32 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   return body as T;
 }
+
+/**
+ * Wie `apiFetch`, aber für BYTES statt JSON (#321) – zum Herunterladen einer Datei.
+ *
+ * **Nicht über `apiFetch`:** Das liest den Rumpf als Text und versucht, ihn als JSON zu verstehen –
+ * bei einem PDF käme dabei kaputter Text heraus. Die Fehlerbehandlung ist aber dieselbe Frage, und
+ * deshalb steht sie hier direkt daneben und nicht in einer fremden Datei.
+ *
+ * Bewusst schlichter als `apiFetch`: keine Offline-Erkennung am Rumpf (die braucht den `{error}`-Body
+ * und ist bei einer Binärantwort nicht zu haben) und kein Sitzungs-Melder – ein Download ist nie der
+ * erste Aufruf, die Sitzung wurde also schon woanders geprüft.
+ */
+export async function apiFetchBlob(path: string): Promise<Blob> {
+  const res = await fetch(`${BASE}${path}`, { credentials: 'include' });
+  if (!res.ok) {
+    // Bei einem Fehler ist der Rumpf unser `{error}`-JSON, kein Binärinhalt.
+    let message = `Fehler ${res.status}`;
+    try {
+      const body: unknown = await res.json();
+      if (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string') {
+        message = body.error;
+      }
+    } catch {
+      /* kein JSON – dann bleibt die Statusmeldung */
+    }
+    throw new ApiError(res.status, message);
+  }
+  return res.blob();
+}
