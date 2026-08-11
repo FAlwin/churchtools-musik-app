@@ -6,6 +6,7 @@ import { ChartFooter } from '../components/ChartFooter';
 import { ChartOverlays } from '../components/ChartOverlays';
 import { TempoMenu } from '../components/TempoMenu';
 import { ImportPreviewBar, ViewingBanner } from '../components/ChartTeamNotesBars';
+import { Icon } from '../components/icons';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ChordEditor } from '../components/ChordEditor';
 import { PageDeck } from '../components/PageDeck';
@@ -45,7 +46,10 @@ import { taktRaster } from '../utils/metronome';
 import { diag } from '../utils/diagnose';
 import { DiagOverlay } from '../components/DiagOverlay';
 import { arrangementMigrationAnwenden } from '../utils/arrangementMigration';
-import { useArrangementUeberschreibung } from '../hooks/useArrangementUeberschreibung';
+import {
+  useArrangementUeberschreibung,
+  useArrangementVorladen,
+} from '../hooks/useArrangementUeberschreibung';
 import { setArrangementTempo } from '../services/churchtoolsApi';
 import { useSetlistPages } from '../hooks/useSetlistPages';
 import { useSongArrangements } from '../hooks/useServices';
@@ -94,7 +98,10 @@ export function ChordChart({
    * WIRKLICH gilt, und muss nichts von der Überschreibung wissen. Während des Ladens (und bei einem
    * Fehlschlag) bleibt es beim Eintrag aus dem Ablauf, damit die Seiten nicht verschwinden.
    */
-  const songs = useArrangementUeberschreibung(songsAusAblauf, settings);
+  const { songs, laedt: arrangementLaedt } = useArrangementUeberschreibung(
+    songsAusAblauf,
+    settings,
+  );
 
   /**
    * Bestandsnotizen dem geltenden Arrangement zuschlagen (#320).
@@ -295,6 +302,20 @@ export function ChordChart({
    * die einmal die richtige war.
    */
   const ablaufArrangement = songsAusAblauf[activeSongIdx]?.arrangementId ?? song.arrangementId;
+
+  /**
+   * Die anderen Arrangements vorladen, sobald das Lied-Menü offen ist (#320).
+   *
+   * Gemeldet als „dauert super lange, bis das neue ChordPro-Dokument erscheint". Gemessen liegt die
+   * Zeit NICHT im Neuaufbau der Seiten (357 ms gegen den Test-Server, davon 6 ms Abruf), sondern im
+   * Abruf gegen echtes ChurchTools: Der Server holt dort das Lied UND lädt die Datei herunter. Steht
+   * das Blatt schon im Zwischenspeicher, ist der Wechsel sofort da.
+   */
+  useArrangementVorladen(
+    song.id,
+    (arrangements.data ?? []).map((a) => a.arrangementId).filter((id) => id !== song.arrangementId),
+    overlay === 'menu',
+  );
   const set = effSettings[song.id] ?? DEFAULT_SETTINGS;
   // Ansehen gilt pro Lied: Blättert man zu einem anderen Lied, endet es automatisch.
   useEffect(() => {
@@ -534,6 +555,18 @@ export function ChordChart({
             onToggleTeamNotes={() => (viewing ? stopViewing() : openSharers())}
             onToggleDraw={() => setDrawMode((d) => !d)}
           />
+        )}
+
+        {/* Sichtbare Rückmeldung beim Arrangement-Wechsel (#320).
+            Das alte Blatt bleibt ABSICHTLICH stehen, bis das neue da ist – im Gottesdienst ist ein
+            leeres Blatt das Letzte, was man braucht. Ohne Hinweis sieht genau das aber wie ein
+            Aussetzer aus: Man tippt, und scheinbar passiert nichts. Gemeldet als „dauert super
+            lange"; die Zeit steckt im Abruf gegen ChurchTools, nicht im Zeichnen. */}
+        {arrangementLaedt && (
+          <div className={styles.viewBar} role="status">
+            <Icon name="cloud-download" size={15} stroke={2} />
+            <span className={styles.viewBarText}>Arrangement wird geladen …</span>
+          </div>
         )}
 
         {viewing && (
