@@ -13,6 +13,9 @@ import {
   getSongChart,
   getSongUsageMap,
   invalidateSongUsageCache,
+  listArrangementFiles,
+  addArrangementFile,
+  removeArrangementFile,
 } from '../services/setlistBuilder.js';
 import { getMemoizedVersion, rememberVersion } from '../services/versionMemo.js';
 import { getUserId } from '../services/ctAuth.js';
@@ -30,6 +33,7 @@ import {
 import { getSeenSetlists, markSeenSetlist } from '../services/seenSetlists.js';
 import { MAX_BPM, MIN_BPM } from '@shared/tempo/index';
 import type { AgendaServiceOption, SongArrangementOption } from '@shared/types/index';
+import { HttpError } from '../middleware/errorHandler.js';
 import { ctCookie } from '../utils/ctCookie.js';
 import { accountKey } from '../middleware/session.js';
 
@@ -413,4 +417,66 @@ export async function deleteVersionCtrl(req: Request, res: Response): Promise<vo
   const { arrangementId } = deleteSchema.parse(req.body);
   await deleteVersion(ctCookie(req), songId, arrangementId, versionKey);
   res.json({ ok: true });
+}
+
+/**
+ * Die Dateiverwaltung eines Arrangements (#321).
+ *
+ * **Rechte:** wie bei den ChordPro-Versionen und beim Tempo – das Cookie des Nutzers geht durch,
+ * **ChurchTools entscheidet**. Ein 401/403 kommt als verständliche Meldung zurück (`csrfWriteDenied`,
+ * #298). Eine zusätzliche eigene Prüfung stünde daneben und wäre die zweite Stelle für dieselbe
+ * Regel – genau das, was in diesem Projekt regelmäßig auseinanderläuft. Die Oberfläche zeigt den
+ * Einstieg nur bei `canEditSong`; erzwungen wird er nicht dort, sondern in ChurchTools.
+ */
+
+/** GET /api/songs/:songId/arrangements/:arrangementId/files */
+export async function getArrangementFiles(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const arrangementId = idSchema.parse(req.params.arrangementId);
+  res.json(await listArrangementFiles(ctCookie(req), songId, arrangementId));
+}
+
+/**
+ * POST /api/songs/:songId/arrangements/:arrangementId/files?name=<Dateiname>
+ *
+ * **Roher Rumpf, kein Multipart.** Der Browser schickt die Datei unverändert als Body, Art über
+ * `Content-Type`, Name über `?name=`. Das spart eine Abhängigkeit fürs Zerlegen von Multipart – und
+ * eine Abhängigkeit, die Dateien aus dem Netz zerlegt, ist eine Angriffsfläche, die wir für einen
+ * einzigen Endpunkt nicht brauchen. Zusammengesetzt wird das Multipart erst zu ChurchTools hin, in
+ * `uploadFile`.
+ */
+export async function postArrangementFile(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const arrangementId = idSchema.parse(req.params.arrangementId);
+  const filename = z.string().min(1).max(255).parse(req.query.name);
+  const mime = z
+    .string()
+    .min(1)
+    .max(255)
+    .catch('application/octet-stream')
+    .parse(req.get('content-type'));
+
+  // `express.raw` legt den Rumpf als Buffer ab. Ein leerer Rumpf ist ein Fehler und kein leeres
+  // Dokument: Er entstünde bei einem abgebrochenen Upload, und eine 0-Byte-Datei in ChurchTools
+  // sähe aus wie eine echte.
+  const inhalt = req.body as unknown;
+  if (!Buffer.isBuffer(inhalt) || inhalt.length === 0) {
+    throw new HttpError(400, 'Die Datei ist leer oder wurde nicht vollständig übertragen.');
+  }
+
+  res.json(
+    await addArrangementFile(ctCookie(req), songId, arrangementId, {
+      filename,
+      mime,
+      inhalt,
+    }),
+  );
+}
+
+/** DELETE /api/songs/:songId/files/:fileId */
+export async function deleteArrangementFileCtrl(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const fileId = idSchema.parse(req.params.fileId);
+  await removeArrangementFile(ctCookie(req), songId, fileId);
+  res.status(204).end();
 }

@@ -107,6 +107,29 @@ export interface SongLibraryEntry {
   arrangementId: number;
 }
 
+/**
+ * Die Art einer Arrangement-Datei (#321) – nur für das Symbol in der Liste.
+ *
+ * **Kein Sortier- oder Schutzmerkmal.** Die Liste ist bewusst flach und behandelt alle Dateien
+ * gleich (Entscheidung Alwin, 11.08.2026); die Art sagt nur, was für ein Symbol davorsteht und
+ * welche Folge die Rückfrage vor dem Löschen nennt.
+ */
+export type ArrangementFileKind =
+  | 'chordpro-original'
+  | 'chordpro-version'
+  | 'pdf'
+  | 'image'
+  | 'other';
+
+/** Eine Datei eines Arrangements, wie die Dateiverwaltung sie zeigt (#321). */
+export interface ArrangementFileEntry {
+  fileId: number;
+  name: string;
+  /** Größe in Bytes – `null`, wenn ChurchTools sie nicht mitliefert. */
+  size: number | null;
+  kind: ArrangementFileKind;
+}
+
 /** Ein anzeigbares Dokument (PDF oder Bild) eines Arrangements. */
 export interface SongDocument {
   fileId: number;

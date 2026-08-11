@@ -5,6 +5,7 @@
  */
 import type {
   AgendaItem,
+  ArrangementFileEntry,
   Service,
   SetlistSong,
   SongLibraryEntry,
@@ -12,9 +13,16 @@ import type {
 } from '@shared/types/index';
 import { downloadFileText, fileIdFromUrl } from './ctFiles.js';
 import { CtOverloadedError, isCtOverloaded } from './ctHttp.js';
-import { getAgenda, getAllSongs, getAppointmentSubtitle, getEvents, getSong } from './ctRead.js';
+import {
+  getAgenda,
+  getAllSongs,
+  getAppointmentSubtitle,
+  getArrangement,
+  getEvents,
+  getSong,
+} from './ctRead.js';
 import type { CtAgendaSong } from './ctTypes.js';
-import { deleteFile, uploadChordpro } from './ctWrite.js';
+import { deleteFile, uploadChordpro, uploadFile } from './ctWrite.js';
 import type { CtArrangementFile, CtSong } from './ctTypes.js';
 import {
   versionSlug,
@@ -23,6 +31,8 @@ import {
   isVersionFile,
   isOriginalChordpro,
   documentsOf,
+  arrangementFileEntries,
+  safeFileName,
 } from './arrangementFiles.js';
 import { metaValue } from './chordproMeta.js';
 import { setlistFingerprint, agendaSignatureList, diffAgendaItems } from './agendaDiff.js';
@@ -232,9 +242,7 @@ async function loadArrangementVersions(
   songId: number,
   arrangementId: number,
 ): Promise<{ songName: string; files: { file: CtArrangementFile; name: string; key: string }[] }> {
-  const song = await getSong(cookie, songId);
-  const arr = song.arrangements.find((a) => a.id === arrangementId);
-  if (!arr) throw new HttpError(404, 'Arrangement nicht gefunden.');
+  const { song, arrangement: arr } = await getArrangement(cookie, songId, arrangementId);
   const files = arr.files
     .map((file) => {
       const name = versionNameOf(file);
@@ -621,4 +629,65 @@ export async function getAgendaItems(
     result.splice(at, 0, placeholder);
   }
   return result;
+}
+
+/**
+ * Alle Dateien eines Arrangements auflisten (#321).
+ *
+ * Flach und ungefiltert – anders als `documents`, das nur die anzeigbaren Dokumente meint. Damit
+ * werden auch Dateien sichtbar, die die App bisher nirgends zeigte (`.docx`, `.mp3`).
+ */
+export async function listArrangementFiles(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+): Promise<ArrangementFileEntry[]> {
+  const { arrangement } = await getArrangement(cookie, songId, arrangementId);
+  return arrangementFileEntries(arrangement.files);
+}
+
+/**
+ * Eine beliebige Datei an ein Arrangement hängen (#321).
+ *
+ * **Der Dateiname wird gereinigt, nicht geglaubt.** Er kommt aus dem Browser des Nutzers; ohne
+ * `safeFileName` könnte ein Pfadtrenner darin stehen.
+ *
+ * **Das Arrangement wird zuerst geprüft.** `getArrangement` wirft 404, wenn es nicht zu diesem Lied
+ * gehört – sonst wäre dieser Endpunkt ein Weg, Dateien an ein beliebiges fremdes Arrangement zu
+ * hängen, nur weil man dessen Nummer kennt.
+ *
+ * **Ein vorhandener gleicher Name wird NICHT ersetzt** (ChurchTools tut das nicht, und wir tun es
+ * auch nicht von uns aus): Die Datei läge danach zweimal da. Die Oberfläche warnt vorher, weil sie
+ * die Liste kennt – ein ungefragtes Löschen fremder Dateien wäre der schlimmere Fehler.
+ */
+export async function addArrangementFile(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+  datei: { filename: string; mime: string; inhalt: Uint8Array },
+): Promise<ArrangementFileEntry[]> {
+  const filename = safeFileName(datei.filename);
+  if (!filename) throw new HttpError(400, 'Bitte einen Dateinamen angeben.');
+  await getArrangement(cookie, songId, arrangementId);
+  await uploadFile(cookie, arrangementId, { ...datei, filename });
+  // Die frische Liste zurückgeben: Der Aufrufer braucht die neue Datei-ID, und ein zweiter Abruf
+  // durch den Client wäre eine Anfrage mehr gegen ChurchTools (#300).
+  return listArrangementFiles(cookie, songId, arrangementId);
+}
+
+/**
+ * Eine Datei des Lieds löschen (#321).
+ *
+ * **`resolveFileUrl` ist hier die Sicherung, nicht Beiwerk:** Es wirft 404, wenn die Datei nicht zu
+ * diesem Lied gehört. Ohne diese Prüfung wäre der Endpunkt ein „lösche beliebige Datei in
+ * ChurchTools" – die Nummer allein würde reichen, und ChurchTools prüft nur, ob man Lieder bearbeiten
+ * darf, nicht WELCHE Datei gemeint war. Dieselbe Sorge wie bei `assertCtFileUrl` (#199).
+ */
+export async function removeArrangementFile(
+  cookie: string,
+  songId: number,
+  fileId: number,
+): Promise<void> {
+  await resolveFileUrl(cookie, songId, fileId);
+  await deleteFile(cookie, fileId);
 }
