@@ -5,18 +5,15 @@ import type { MutableRefObject } from 'react';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 
 /**
- * #319: Beim Aus-/Einblenden der Leisten ändert sich die HÖHE der Anzeigefläche. Eine vergrößerte
- * Seite muss dann neu eingepasst werden – **aber der bewusst gespeicherte Zoom darf nicht
- * verschwinden.** Der Nutzer hat ihn nicht zurückgenommen, er hat nur die Leisten umgeschaltet.
+ * Zoom-Ablage: Was wird gemerkt, was vergessen?
  *
- * Genau das unterscheidet die beiden Fälle, und genau das prüft dieser Test:
+ * Der Zoom-Knopf in der Kopfzeile setzt zurück UND vergisst – dort IST das die Absicht. Alles
+ * andere (Blättern, Abgleich, Wiederkehr in die App) stellt den gespeicherten Wert wieder her.
  *
- *  - Zoom-Knopf in der Kopfzeile  → einpassen UND vergessen (dort IST das die Absicht)
- *  - Leisten umgeschaltet         → einpassen, aber MERKEN
- *
- * Vorher gab es diese Unterscheidung nicht: `restoreVisibleZoom` wandte den gespeicherten Zoom
- * erneut an – also wieder eine Größe, die in die neue Fläche nicht passte. Das war der gemeldete
- * Fehler „Text wird verdeckt".
+ * **Was hier NICHT mehr steht:** Bis v2.18 passte das Aus-/Einblenden der Leisten die Seite auch
+ * gleich neu ein. Das war ein Missverständnis des ersten Berichts zu #319 – gewollt ist, dass das
+ * Vollbild die Vergrößerung behält. Die Mechanik ist ersatzlos entfallen; dass die Seite ihren
+ * Rahmen nicht überragt, macht der Pixel-Deckel in `PageDeck`.
  */
 vi.mock('../services/annotations', () => ({ pushField: vi.fn() }));
 vi.mock('../utils/deviceClass', () => ({ deviceClass: () => 'large' }));

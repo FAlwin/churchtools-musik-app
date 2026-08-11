@@ -14,7 +14,6 @@ import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
  * keiner Umgebung hängt.
  */
 const resetVisibleZoom = vi.fn();
-const fitVisibleZoom = vi.fn();
 const restoreVisibleZoom = vi.fn();
 vi.mock('./useZoomPersistence', () => ({
   useZoomPersistence: () => ({
@@ -23,7 +22,6 @@ vi.mock('./useZoomPersistence', () => ({
     persistZoom: vi.fn(),
     clearStoredZoom: vi.fn(),
     resetVisibleZoom: (...a: unknown[]) => resetVisibleZoom(...a),
-    fitVisibleZoom: () => fitVisibleZoom(),
     restoreVisibleZoom: (...a: unknown[]) => restoreVisibleZoom(...a),
   }),
 }));

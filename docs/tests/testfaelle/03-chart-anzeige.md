@@ -244,8 +244,9 @@ holt sie zurück. Die Ränder blättern weiter wie bisher.
 - **Priorität:** normal
 - **Betrifft:** `client/src/hooks/usePageNavigation.ts`, `client/src/pages/ChordChart.tsx`, `client/src/components/PageDeck.tsx`, `client/src/utils/onboarding.ts`, `client/src/hooks/useZoomPersistence.ts`, `client/src/hooks/useZoomOrchestration.ts`
 - **Automatisiert:** weitgehend – `client/src/hooks/usePageNavigation.test.ts` (Zonen,
-  Zeichenmodus, der nach einem Touch nachgereichte Klick), dazu `useZoomPersistence.test.ts` und
-  `useZoomOrchestration.test.ts` (einpassen ohne vergessen). **Punkt 5 und 6 deckt
+  Zeichenmodus, der nach einem Touch nachgereichte Klick), dazu `useZoomOrchestration.test.ts`
+  (dass das Umschalten NICHT am Zoom rührt – seit v2.19.0 behält das Vollbild die Vergrößerung).
+  **Punkt 5 und 6 deckt
   `e2e/chart-fullscreen.spec.ts` ab** – bewusst als E2E, weil es um echte Geometrie geht
   (gerenderte Seiten, CSS, Zoom-Bibliothek) und die Messung nur in einem hohen Fenster etwas
   aussagt. Von Hand bleibt der Eindruck am Gerät: ob es sich beim echten Pinch richtig anfühlt,
