@@ -1,5 +1,6 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import type { SetlistSong } from '@shared/types/index';
+import { songPageKey } from '@shared/keys/index';
 import {
   VIEW_NS,
   getSharers,
@@ -60,6 +61,14 @@ export function useTeamNotesImport({
     songId: number;
     versionKey: string;
     lyr: boolean;
+    /**
+     * Arrangement der angesehenen Ebene (#320, 3c) – `null` bei Bestandsnotizen ohne Segment.
+     *
+     * Es MUSS das des Kollegen sein, nicht das eigene: Gesucht wird unter SEINEM Schlüssel. Setzte
+     * man hier das eigene ein, suchte man unter einem Schlüssel, den es bei ihm nicht gibt, und sähe
+     * seine Striche nie.
+     */
+    arrangementId: number | null;
   } | null>(null);
   // Wähler-Zwischenschritt: Person angetippt → ihre Ebenen (Version + Darstellung) zur Auswahl.
   const [pickerPerson, setPickerPerson] = useState<{ id: number; name: string } | null>(null);
@@ -108,12 +117,17 @@ export function useTeamNotesImport({
   }
 
   /** Eine konkrete Ebene (Version + Darstellungsart) der Person ansehen. */
-  function viewLevel(songId: number, versionKey: string, lyr: boolean) {
+  function viewLevel(
+    songId: number,
+    versionKey: string,
+    lyr: boolean,
+    arrangementId: number | null,
+  ) {
     if (!pickerPerson) return;
     const target = songs.find((x) => x.id === songId);
     if (!target) return;
     setViewSettings({ [songId]: settingsForLevel(target, viewRaw ?? {}, versionKey, lyr) });
-    setViewing({ ...pickerPerson, songId, versionKey, lyr });
+    setViewing({ ...pickerPerson, songId, versionKey, lyr, arrangementId });
     setViewMode('view');
     setDrawMode(false);
     setShowSharers(false);
@@ -147,14 +161,26 @@ export function useTeamNotesImport({
     const songId = viewing.songId;
     // Übernommen wird die GERADE ANGESEHENE Ebene (= das, was die Vorschau zeigt).
     const level = mirrorGroups().find(
-      (g) => g.versionKey === viewing.versionKey && g.lyr === viewing.lyr,
+      (g) =>
+        g.versionKey === viewing.versionKey &&
+        g.lyr === viewing.lyr &&
+        g.arrangementId === viewing.arrangementId,
     );
     if (!level) return;
     {
-      const { versionKey } = level;
-      const seg = level.lyr ? '_lyr' : '';
       for (const page of level.pages) {
-        const base = `song${songId}_v${versionKey}${seg}_${page}`;
+        /**
+         * Schlüssel über `songPageKey` – NICHT von Hand zusammengesetzt (#320, 3c).
+         *
+         * Hier stand `song${songId}_v${versionKey}${seg}_${page}`: eine VIERTE Umsetzung derselben
+         * Grammatik, und die einzige ohne Arrangement. Folge, von Alwin gemeldet: Man konnte die
+         * Notizen eines Kollegen auswählen, sah aber nichts – und „Zusammenführen"/„Ersetzen" tat
+         * ebenfalls nichts. Gelesen wurde unter einem Schlüssel, den es bei ihm nicht gab, und
+         * geschrieben unter einen, der nicht angezeigt wird.
+         *
+         * Das Arrangement kommt aus der ANGESEHENEN Ebene – es ist seines, nicht das eigene.
+         */
+        const base = songPageKey(songId, level.versionKey, level.lyr, page, level.arrangementId);
         const theirStrokes = localStorage.getItem(VIEW_NS + base);
         const theirTexts =
           safeParse<PageTextObjLike[]>(localStorage.getItem(`${VIEW_NS + base}_text`)) ?? [];

@@ -112,7 +112,7 @@ describe('viewKeyForOwner – die angesehene fremde Ebene', () => {
   it('baut den Schlüssel im Ansichts-Namensraum, gültig für den Filter', () => {
     const key = viewKeyForOwner(
       chordOwner(),
-      { songId: 12, versionKey: 'original', lyr: false },
+      { songId: 12, versionKey: 'original', lyr: false, arrangementId: null },
       VIEW_NS,
     );
     expect(key?.startsWith(VIEW_NS)).toBe(true);
@@ -122,14 +122,14 @@ describe('viewKeyForOwner – die angesehene fremde Ebene', () => {
   it('gilt nur für das angesehene Lied und nie für Dokument-Seiten', () => {
     const andereSong = viewKeyForOwner(
       chordOwner({ songId: 99 }),
-      { songId: 12, versionKey: 'original', lyr: false },
+      { songId: 12, versionKey: 'original', lyr: false, arrangementId: null },
       VIEW_NS,
     );
     expect(andereSong).toBeNull();
 
     const dok = viewKeyForOwner(
       docOwner(),
-      { songId: 12, versionKey: 'original', lyr: false },
+      { songId: 12, versionKey: 'original', lyr: false, arrangementId: null },
       VIEW_NS,
     );
     expect(dok).toBeNull();
@@ -176,17 +176,29 @@ describe('Arrangement im Schlüssel (#320)', () => {
     expect(a).not.toBe(b);
   });
 
-  it('die ANGESEHENE fremde Ebene traegt es bewusst NICHT', () => {
-    // Welches Arrangement die andere Person benutzt hat, weiß diese Funktion nicht. Das eigene
-    // einzusetzen wäre schlimmer als keines: Man suchte unter einem Schlüssel, den es bei ihr nicht
-    // gibt, und sähe ihre Striche nie. Offen für Schritt 3 – hier festgehalten, damit die
-    // Entscheidung nicht unbemerkt kippt.
+  it('die ANGESEHENE fremde Ebene traegt SEIN Arrangement (#320, 3c)', () => {
+    // Hier stand bis v2.19.0 das Gegenteil: Der fremde Schluessel trug bewusst kein Arrangement,
+    // weil `viewing` es nicht kannte. Folge war, dass man die Striche eines Kollegen nicht fand,
+    // sobald er ein anderes Arrangement gewaehlt hatte. Jetzt traegt `viewing` es mit – und zwar
+    // SEINES: Das eigene einzusetzen waere schlimmer als keines, man suchte unter einem Schluessel,
+    // den es bei ihm gar nicht gibt.
     const key = viewKeyForOwner(
       chordOwner({ arrangementId: 45 }),
-      { songId: 12, versionKey: 'original', lyr: false },
+      { songId: 12, versionKey: 'original', lyr: false, arrangementId: 46 },
       'worship_teamview_',
     );
-    expect(key).not.toContain('_a45_');
+    expect(key).toContain('_a46_'); // SEIN Arrangement
+    expect(key).not.toContain('_a45_'); // nicht das eigene
+  });
+
+  it('ohne Arrangement in der fremden Ebene bleibt der Bestands-Schluessel', () => {
+    // Notizen aus der Zeit vor dem Segment liegen ohne. Wer die ansieht, muss sie auch finden.
+    const key = viewKeyForOwner(
+      chordOwner({ arrangementId: 45 }),
+      { songId: 12, versionKey: 'original', lyr: false, arrangementId: null },
+      'worship_teamview_',
+    );
+    expect(key).not.toContain('_a');
   });
 
   it('Dokument-Seiten bleiben ohne Arrangement – sie haengen an der Datei', () => {

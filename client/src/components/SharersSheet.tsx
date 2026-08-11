@@ -15,6 +15,8 @@ import styles from '../pages/ChordChart.module.scss';
 interface LevelChoice {
   versionKey: string;
   lyr: boolean;
+  /** Arrangement der Ebene (#320, 3c) – `null` bei Bestandsnotizen ohne Segment. */
+  arrangementId: number | null;
   pages: number[];
 }
 

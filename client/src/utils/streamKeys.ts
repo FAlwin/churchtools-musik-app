@@ -50,18 +50,30 @@ export function zoomKeyBaseForOwner(owner: StreamOwner, lyricsOnly: boolean): st
  * Schlüssel der ANGESEHENEN fremden Ebene (Team-Notizen) – oder `null`, wenn diese Seite nicht dazu
  * gehört. Nur Akkord-Seiten; Dokument-Anmerkungen werden nicht geteilt.
  *
- * **Bewusst OHNE Arrangement-Segment (#320, offen für Schritt 3):** Hier wird der Schlüssel einer
- * FREMDEN Ebene zusammengebaut. Welches Arrangement die andere Person benutzt hat, weiß diese
- * Funktion nicht – `viewing` trägt es nicht. Das eigene einzusetzen wäre schlimmer als keines: Man
- * suchte dann unter einem Schlüssel, den es bei ihr gar nicht gibt, und sähe ihre Striche nie.
- * Ohne Segment findet man weiterhin ihren Bestand; erst wenn sie arrangement-genau zeichnet, fehlt
- * etwas. Die saubere Lösung braucht das Arrangement in `viewing` – das ist Schritt 3.
+ * **Mit SEINEM Arrangement (#320, 3c).** Das eigene einzusetzen wäre schlimmer als keines: Man
+ * suchte unter einem Schlüssel, den es bei ihm gar nicht gibt, und sähe seine Striche nie. Deshalb
+ * trägt `viewing` das Arrangement der angesehenen Ebene mit.
  */
 export function viewKeyForOwner(
   owner: StreamOwner,
-  viewing: { songId: number; versionKey: string; lyr: boolean } | null,
+  viewing: {
+    songId: number;
+    versionKey: string;
+    lyr: boolean;
+    arrangementId: number | null;
+  } | null,
   viewNamespace: string,
 ): string | null {
   if (!viewing || owner.kind === 'doc' || owner.songId !== viewing.songId) return null;
-  return viewNamespace + songPageKey(owner.songId, owner.versionKey, viewing.lyr, owner.localPage);
+  return (
+    viewNamespace +
+    songPageKey(
+      owner.songId,
+      owner.versionKey,
+      viewing.lyr,
+      owner.localPage,
+      // SEIN Arrangement, nicht das eigene (#320, 3c).
+      viewing.arrangementId,
+    )
+  );
 }

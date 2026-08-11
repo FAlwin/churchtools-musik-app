@@ -19,6 +19,12 @@ import { drawKeyForOwner, viewKeyForOwner, zoomKeyBaseForOwner } from './streamK
 export interface ViewedLevel {
   songId: number;
   lyr: boolean;
+  /**
+   * Arrangement der angesehenen Ebene (#320, 3c) – `null` bei Bestandsnotizen ohne Segment.
+   *
+   * SEIN Arrangement, nicht das eigene: Gesucht wird unter dem Schlüssel des Kollegen.
+   */
+  arrangementId: number | null;
 }
 
 /**
@@ -92,7 +98,12 @@ export function viewKeyForPage(
   if (!o) return null;
   return viewKeyForOwner(
     o,
-    { songId: viewed.songId, versionKey: o.versionKey, lyr: viewed.lyr },
+    {
+      songId: viewed.songId,
+      versionKey: o.versionKey,
+      lyr: viewed.lyr,
+      arrangementId: viewed.arrangementId,
+    },
     viewNamespace,
   );
 }

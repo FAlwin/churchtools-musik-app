@@ -421,7 +421,9 @@ Aufblitzen, ohne Nachladen.
 3. Ein **mehrseitiges** Lied durchblättern, auch im Querformat.
 4. Ein Lied mit eigener **Version** prüfen.
 5. **Zoom:** hineinzoomen, wegblättern, zurück → derselbe Ausschnitt.
-6. **Team-Notizen** eines Kollegen ansehen → unverändert.
+6. **Team-Notizen** eines Kollegen ansehen → unverändert. Hat er ein **anderes Arrangement**
+   gewählt als du, müssen seine Striche trotzdem erscheinen; in der Auswahl stehen zwei
+   Arrangements mit gleichnamigen Versionen getrennt (#320, 3c).
 
 Fehlt irgendwo etwas: **nichts weiter tun und melden.** Es ist nichts verloren – die alten
 Schlüssel liegen unverändert daneben, es wurde kopiert und nicht umbenannt.
