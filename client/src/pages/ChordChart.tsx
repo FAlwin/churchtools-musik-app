@@ -370,7 +370,13 @@ export function ChordChart({
     // Das Arrangement nur bei mehreren – bei einem unterscheidet der Name nichts.
     arrangementName: (id) => {
       if (song.arrangementCount <= 1) return null;
-      if (id === null) return 'Ohne Arrangement';
+      /**
+       * Notizen ohne Arrangement-Segment heißen **„Standard"** – so von Alwin gewünscht
+       * (11.08.2026). Es sind Anmerkungen aus der Zeit vor #320, als es je Lied nur ein Arrangement
+       * gab; „Standard" trifft, wo sie herkommen, und ist für Musiker verständlicher als der
+       * technisch genauere Hinweis, dass ihnen die Angabe fehlt.
+       */
+      if (id === null) return 'Standard';
       return (
         (arrangements.data ?? []).find((a) => a.arrangementId === id)?.arrangementName ??
         `Nr. ${id}`

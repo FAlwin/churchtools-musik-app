@@ -104,7 +104,7 @@ describe('SharersSheet – Stufe 2: Ebene wählen', () => {
     { versionKey: 'original', lyr: false, arrangementId: 46, pages: [0] },
   ];
   const NAMEN = (id: number | null) =>
-    id === 45 ? 'Standard-Arrangement' : id === 46 ? 'Test' : 'Ohne Arrangement';
+    id === 45 ? 'Standard-Arrangement' : id === 46 ? 'Test' : 'Standard';
 
   it('unterscheidet zwei Arrangements mit derselben Version', () => {
     setup({ pickerPerson: PERSON, levels: ZWEI_ARRANGEMENTS, arrangementName: NAMEN });
@@ -118,7 +118,7 @@ describe('SharersSheet – Stufe 2: Ebene wählen', () => {
       levels: [{ versionKey: 'original', lyr: false, arrangementId: null, pages: [0] }],
       arrangementName: NAMEN,
     });
-    expect(screen.getByText('Arrangement: Ohne Arrangement')).toBeTruthy();
+    expect(screen.getByText('Arrangement: Standard')).toBeTruthy();
   });
 
   it('bei nur EINEM Arrangement bleibt die Zeile kurz', () => {
