@@ -12,7 +12,14 @@ import { SharersSheet } from './SharersSheet';
  * einen Satz dazu sagen** – eine stumme leere Liste ist eine Sackgasse.
  */
 const PERSON = { id: 3, name: 'Anna' };
-const LEVELS = [
+/** Wie eine Ebene für den Wähler aussieht – `arrangementId` bewusst weit, sonst engt TS auf `null` ein. */
+interface Ebene {
+  versionKey: string;
+  lyr: boolean;
+  arrangementId: number | null;
+  pages: number[];
+}
+const LEVELS: Ebene[] = [
   { versionKey: 'original', lyr: false, arrangementId: null, pages: [0, 1] },
   { versionKey: 'akustik', lyr: true, arrangementId: null, pages: [2] },
 ];
@@ -21,7 +28,8 @@ function setup(
   over: {
     sharers?: { id: number; name: string; songs: number[] }[];
     pickerPerson?: { id: number; name: string } | null;
-    levels?: typeof LEVELS;
+    levels?: Ebene[];
+    arrangementName?: (id: number | null) => string | null;
   } = {},
 ) {
   const handlers = {
@@ -37,7 +45,9 @@ function setup(
       pickerPerson={over.pickerPerson ?? null}
       levels={over.levels ?? LEVELS}
       versionName={(key) => (key === 'akustik' ? 'Akustik' : 'Original')}
-      levelKey={(g) => `${g.versionKey}|${g.lyr ? 1 : 0}`}
+      // Standard: ein Lied mit nur EINEM Arrangement – dann steht es bewusst nicht in der Zeile.
+      arrangementName={over.arrangementName ?? (() => null)}
+      levelKey={(g) => `${g.arrangementId ?? ''}|${g.versionKey}|${g.lyr ? 1 : 0}`}
       {...handlers}
     />,
   );
@@ -82,6 +92,41 @@ describe('SharersSheet – Stufe 2: Ebene wählen', () => {
       arrangementId: null,
       pages: [2],
     });
+  });
+
+  /**
+   * Von Alwin gemeldet (11.08.2026): Zwei Zeilen sahen **identisch** aus – „Version „Original" ·
+   * Akkorde & Text", zweimal, 1 Seite. Es waren zwei verschiedene Arrangements; das Arrangement kam
+   * in der Zeile nur nicht vor. Eine Auswahl, in der zwei Einträge gleich heißen, ist keine Auswahl.
+   */
+  const ZWEI_ARRANGEMENTS: Ebene[] = [
+    { versionKey: 'original', lyr: false, arrangementId: 45, pages: [0] },
+    { versionKey: 'original', lyr: false, arrangementId: 46, pages: [0] },
+  ];
+  const NAMEN = (id: number | null) =>
+    id === 45 ? 'Standard-Arrangement' : id === 46 ? 'Test' : 'Ohne Arrangement';
+
+  it('unterscheidet zwei Arrangements mit derselben Version', () => {
+    setup({ pickerPerson: PERSON, levels: ZWEI_ARRANGEMENTS, arrangementName: NAMEN });
+    expect(
+      screen.getByText('Standard-Arrangement · Version „Original" · Akkorde & Text'),
+    ).toBeTruthy();
+    expect(screen.getByText('Test · Version „Original" · Akkorde & Text')).toBeTruthy();
+  });
+
+  it('benennt Bestandsnotizen ohne Arrangement, statt sie namenlos zu lassen', () => {
+    setup({
+      pickerPerson: PERSON,
+      levels: [{ versionKey: 'original', lyr: false, arrangementId: null, pages: [0] }],
+      arrangementName: NAMEN,
+    });
+    expect(screen.getByText('Ohne Arrangement · Version „Original" · Akkorde & Text')).toBeTruthy();
+  });
+
+  it('bei nur EINEM Arrangement bleibt die Zeile kurz', () => {
+    // So von Alwin entschieden: Wo nichts zu unterscheiden ist, macht der Name die Zeile nur länger.
+    setup({ pickerPerson: PERSON, levels: ZWEI_ARRANGEMENTS, arrangementName: () => null });
+    expect(screen.getAllByText('Version „Original" · Akkorde & Text')).toHaveLength(2);
   });
 
   it('hat die Person keine Ebenen, steht auch dafür ein Satz da', () => {
