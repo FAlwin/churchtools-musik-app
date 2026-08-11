@@ -75,8 +75,16 @@ describe('listArrangementFiles', () => {
   it('listet alle Dateien des Arrangements samt Art und Größe', async () => {
     mockCt();
     await expect(listArrangementFiles(COOKIE, 12, 500)).resolves.toEqual([
-      { fileId: 1, name: 'Treu.chordpro', size: 2048, kind: 'chordpro-original' },
-      { fileId: 2, name: 'Treu - E.pdf', size: 4096, kind: 'pdf' },
+      {
+        fileId: 1,
+        name: 'Treu.chordpro',
+        // Sprechende Bezeichnung kommt vom SERVER: Der Versionsname steckt im `(App)`-Marker, und
+        // diese Grammatik im Client nachzubauen hätte ihre Altlasten verloren (#321).
+        label: 'Notenblatt (ChordPro)',
+        size: 2048,
+        kind: 'chordpro-original',
+      },
+      { fileId: 2, name: 'Treu - E.pdf', label: 'Treu - E.pdf', size: 4096, kind: 'pdf' },
     ]);
   });
 

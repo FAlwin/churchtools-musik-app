@@ -14,6 +14,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Versionen, PDFs und Bilder. **Auch Dateien, die die App bisher gar nicht zeigte** (z. B. eine
   Aufnahme als MP3), sind dort zu sehen.
 
+  Die Liste nennt jede Datei bei ihrem sprechenden Namen – **„Notenblatt (ChordPro)"** oder
+  **„Version „Akustik""** –, den technischen Dateinamen klein darunter, damit man sie in ChurchTools
+  wiederfindet. Die Größe steht nur dort, wo ChurchTools sie mitliefert.
+
   Antippen lädt eine Datei aufs Gerät (auf dem iPad über das Teilen-Menü). Über **„Datei
   hinzufügen …"** kommt eine neue hinein – ein neues PDF steht danach sofort im Menü unter
   „Anzeige" zur Auswahl. Der Papierkorb rechts löscht, **immer mit Rückfrage**, und die Rückfrage

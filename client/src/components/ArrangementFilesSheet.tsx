@@ -15,8 +15,7 @@
  */
 import { useRef } from 'react';
 import type { ArrangementFileEntry } from '@shared/types/index';
-import { dateiGroesse } from '../utils/dateiGroesse';
-import { DATEI_ART, DATEI_SYMBOL } from '../utils/dateiVerwaltung';
+import { DATEI_SYMBOL, dateiZeilen } from '../utils/dateiVerwaltung';
 import { Sheet } from './Sheet';
 import { Icon } from './icons';
 import styles from '../pages/ChordChart.module.scss';
@@ -95,10 +94,8 @@ export function ArrangementFilesSheet({
             >
               <span aria-hidden="true">{DATEI_SYMBOL[f.kind]}</span>
               <span className={styles.pickLevel}>
-                <span className={styles.pickName}>{f.name}</span>
-                <span className={styles.pickSub}>
-                  {DATEI_ART[f.kind]} · {dateiGroesse(f.size)}
-                </span>
+                <span className={styles.pickName}>{dateiZeilen(f).titel}</span>
+                <span className={styles.pickSub}>{dateiZeilen(f).unter}</span>
               </span>
               <Icon name="download" size={16} stroke={2} className={styles.pickChev} />
             </button>
