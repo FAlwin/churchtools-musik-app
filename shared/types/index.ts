@@ -261,6 +261,25 @@ export interface SongSelectTreffer {
   hasChordSheet: boolean;
 }
 
+/**
+ * Das Ergebnis einer SongSelect-Suche (#322) – **Treffer PLUS die Auskunft über Vollständigkeit.**
+ *
+ * Der Typ steht hier und nicht nur im Server, und das ist die Lehre aus einem Absturz vom 13.08.2026:
+ * Der Client behauptete `SongSelectTreffer[]`, der Server lieferte dieses Objekt. `apiFetch<T>` ist über
+ * die HTTP-Grenze nur eine **Behauptung** – TypeScript prüft dort nichts nach. Die Trefferliste rief
+ * dann `.map` auf einem Objekt auf und die App zeigte den Fehlerschirm.
+ *
+ * `vollstaendig` beantwortet, ob noch mehr Treffer da wären: ChurchTools holt 100 auf einmal und kennt
+ * keinen Weg zu weiteren Seiten (gemessen: 147 zu „Wo ich auch stehe"). **Diese Rechnung gehört nicht
+ * in die Oberfläche** – dort stand vorher ein geratenes `treffer.length >= 100` daneben.
+ */
+export interface SongSelectSuchergebnis {
+  treffer: SongSelectTreffer[];
+  /** Wie viele Treffer CCLI insgesamt hat – auch die, die nicht mitkamen. */
+  gesamt: number;
+  vollstaendig: boolean;
+}
+
 /** Ein per CCLI-Nummer abgefragtes Lied – wie ein Treffer, plus Copyright fürs Anlegen. */
 export interface SongSelectSong extends SongSelectTreffer {
   copyright: string | null;

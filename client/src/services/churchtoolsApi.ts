@@ -16,7 +16,7 @@ import type {
   SongCategory,
   SongLibraryEntry,
   SongSelectSong,
-  SongSelectTreffer,
+  SongSelectSuchergebnis,
   SongVersion,
   UserCapabilities,
 } from '@shared/types/index';
@@ -163,8 +163,10 @@ export function getSongCategories(): Promise<SongCategory[]> {
  * Weg weiter (gemessen: 147 zu „Wo ich auch stehe"). Die Oberfläche sagt das, statt Vollständigkeit
  * vorzutäuschen.
  */
-export function sucheSongSelect(title: string): Promise<SongSelectTreffer[]> {
-  return apiFetch<SongSelectTreffer[]>(`/api/songselect/search?title=${encodeURIComponent(title)}`);
+export function sucheSongSelect(title: string): Promise<SongSelectSuchergebnis> {
+  return apiFetch<SongSelectSuchergebnis>(
+    `/api/songselect/search?title=${encodeURIComponent(title)}`,
+  );
 }
 
 /** Ein CCLI-Lied per Nummer abfragen (#322) – liefert zusätzlich das Copyright fürs Formular. */

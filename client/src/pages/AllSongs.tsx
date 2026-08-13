@@ -70,7 +70,9 @@ export function AllSongs({
              die App das fertige Lied auch öffnen kann. */
           canCreateSong && onOpenSong ? (
             <IconButton onClick={() => setNeuesLied(true)} title="Neues Lied anlegen">
-              <Icon name="plus" size={22} stroke={2.4} />
+              {/* Größe und Strichstärke wie die Header-Aktionen im Ablauf (Teilen, Bearbeiten) –
+                  vorher stand hier 22/2.4 und fiel dadurch aus der Reihe. */}
+              <Icon name="plus" size={20} stroke={2.2} />
             </IconButton>
           ) : undefined
         }

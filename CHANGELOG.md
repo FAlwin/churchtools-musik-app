@@ -91,6 +91,22 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   werden **vor** dem Hochladen abgelehnt, und bei einem Namen, den es schon gibt, kommt eine
   Warnung: ChurchTools ersetzt nicht, die Datei läge danach zweimal da.
 
+### Behoben
+
+- **Die CCLI-Suche stürzte beim ersten Treffer ab** (`e.map is not a function`, #322). Der Client
+  erwartete eine Liste, der Server liefert `{treffer, gesamt, vollstaendig}` – und über die
+  HTTP-Grenze prüft TypeScript nichts nach, `apiFetch<T>` ist dort nur eine Behauptung. Der Typ steht
+  jetzt in `@shared/types` (`SongSelectSuchergebnis`), also nutzen Server und Oberfläche dieselbe
+  Definition.
+
+  Der Test hat es nicht gefunden, weil sein Mock **dieselbe falsche Annahme** hatte wie der Code.
+  Die Testdaten sind jetzt gegen den geteilten Typ typisiert – so kann ein Mock die Form nicht mehr
+  erfinden. Dazu drei Tests, die die Trefferliste wirklich rendern.
+
+  Nebenbei aufgefallen: Der Hinweis „Liste unvollständig" rechnete mit einem geratenen
+  `treffer.length >= 100`, obwohl der Server `vollstaendig` und `gesamt` mitliefert. Jetzt nennt der
+  Hinweis die echte Zahl („CCLI hat 147 Treffer, angezeigt werden 100").
+
 ### Intern
 
 - **Die Lied-Kategorien stehen der App zur Verfügung (#322, Schritt 7).** Grundlage für das Anlegen

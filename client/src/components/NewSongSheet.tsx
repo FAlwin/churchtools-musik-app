@@ -213,7 +213,13 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
   /* ----------------------------------------------------------------------- Suche */
 
   if (schritt === 'suche') {
-    const liste = suche.data ?? [];
+    /**
+     * **`suche.data` ist ein OBJEKT, keine Liste** – hier lag ein Absturz (13.08.2026, von Alwin beim
+     * Durchklicken gefunden): Der Client behauptete `SongSelectTreffer[]`, der Server lieferte
+     * `{treffer, gesamt, vollstaendig}`. `.map` auf dem Objekt ergab den Fehlerschirm. Seitdem steht
+     * der Typ in `@shared/types` – über die HTTP-Grenze prüft TypeScript nichts nach.
+     */
+    const liste = suche.data?.treffer ?? [];
     return (
       <Sheet title={titel} onClose={onClose}>
         <div className={styles.searchRow}>
@@ -267,12 +273,14 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
           </button>
         ))}
 
-        {/* Blättern gibt es bei ChurchTools nicht: Es holt 100 Treffer und zeigt keinen Weg weiter.
-            Die Liste tut deshalb nicht so, als wäre sie vollständig (gemessen: 147 zu „Wo ich auch
-            stehe"). */}
-        {liste.length >= 100 && (
+        {/* Blättern gibt es bei ChurchTools nicht: Es holt 100 Treffer auf einmal und zeigt keinen
+            Weg weiter (gemessen: 147 zu „Wo ich auch stehe"). **Ob die Liste vollständig ist, sagt der
+            Server** (`vollstaendig`) – vorher stand hier ein geratenes `liste.length >= 100` daneben,
+            also dieselbe Rechnung ein zweites Mal und schlechter. */}
+        {suche.data && !suche.data.vollstaendig && (
           <div className={styles.hint}>
-            CCLI liefert höchstens 100 Treffer. Ist das gesuchte Lied nicht dabei, such genauer.
+            CCLI hat {suche.data.gesamt} Treffer zu „{begriff}", angezeigt werden {liste.length}.
+            Ist das gesuchte Lied nicht dabei, such genauer.
           </div>
         )}
 

@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import type { SongCategory, SongLibraryEntry, UserCapabilities } from '@shared/types/index';
+import type {
+  SongCategory,
+  SongLibraryEntry,
+  SongSelectSuchergebnis,
+  UserCapabilities,
+} from '@shared/types/index';
 
 /**
  * Das Blatt „Neues Lied" (#322, Schritt 10b) – geprüft werden die **Entscheidungen**, nicht das
@@ -50,6 +55,31 @@ const BESTAND: SongLibraryEntry[] = [
   { songId: 3, name: 'Treu', author: null, key: null, arrangementId: 30 },
 ];
 
+/**
+ * **Typisiert, und das ist der Punkt** (13.08.2026): Der erste Entwurf mockte hier `{ data: [] }` – eine
+ * Liste. Der Server liefert aber `{treffer, gesamt, vollstaendig}`. Weil Mock und Code dieselbe falsche
+ * Annahme teilten, war der Test grün, während die App beim ersten echten Suchtreffer abstürzte
+ * (`.map is not a function`). Mit dem geteilten Typ kann der Mock die Form nicht mehr erfinden.
+ */
+const LEERE_SUCHE: SongSelectSuchergebnis = { treffer: [], gesamt: 0, vollstaendig: true };
+
+const SUCHE_MIT_TREFFERN: SongSelectSuchergebnis = {
+  treffer: [
+    {
+      songNumber: 5841527,
+      title: 'Treu',
+      authors: ['Autor A'],
+      defaultKey: 'E',
+      isPublicDomain: false,
+      hasLyrics: true,
+      hasChordPro: true,
+      hasChordSheet: true,
+    },
+  ],
+  gesamt: 147,
+  vollstaendig: false,
+};
+
 /** Nur die Felder, die dieses Blatt liest – der Rest der Rechte spielt hier keine Rolle. */
 function rechte(canUseCcli: boolean): { data: Partial<UserCapabilities> } {
   return { data: { canUseCcli, canEditSongs: true } };
@@ -60,7 +90,7 @@ beforeEach(() => {
   caps.mockReturnValue(rechte(false));
   kategorien.mockReturnValue({ data: KATEGORIEN, isLoading: false, isError: false });
   bibliothek.mockReturnValue({ data: BESTAND });
-  suche.mockReturnValue({ data: [], isLoading: false, isError: false });
+  suche.mockReturnValue({ data: LEERE_SUCHE, isLoading: false, isError: false });
 });
 
 function zeige(props: Partial<Parameters<typeof NewSongSheet>[0]> = {}) {
@@ -158,5 +188,44 @@ describe('NewSongSheet – Ablauf-Einstieg', () => {
   it('sagt vorher, dass das Lied in den Ablauf kommt', () => {
     zeige({ eventId: 42, eventName: 'Gottesdienst' });
     expect(screen.getByText(/in den Ablauf von Gottesdienst eingetragen/)).toBeTruthy();
+  });
+});
+
+describe('NewSongSheet – Trefferliste (Regression zum Absturz vom 13.08.2026)', () => {
+  it('zeigt die Treffer aus `data.treffer` – nicht aus dem Antwort-Objekt selbst', () => {
+    // Der Absturz: `.map` auf `{treffer, gesamt, vollstaendig}`. Dieser Test rendert die Liste wirklich.
+    caps.mockReturnValue(rechte(true));
+    suche.mockReturnValue({ data: SUCHE_MIT_TREFFERN, isLoading: false, isError: false });
+    zeige();
+    fireEvent.click(screen.getByRole('button', { name: /Bei CCLI suchen/ }));
+    fireEvent.change(screen.getByPlaceholderText('Liedtitel …'), { target: { value: 'Treu' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Suchen' }));
+
+    expect(screen.getByText('Treu')).toBeTruthy();
+    expect(screen.getByText(/Nr. 5841527/)).toBeTruthy();
+  });
+
+  it('sagt mit den Zahlen DES SERVERS, dass die Liste unvollständig ist', () => {
+    // Vorher stand hier ein geratenes `laenge >= 100` – dieselbe Rechnung ein zweites Mal.
+    caps.mockReturnValue(rechte(true));
+    suche.mockReturnValue({ data: SUCHE_MIT_TREFFERN, isLoading: false, isError: false });
+    zeige();
+    fireEvent.click(screen.getByRole('button', { name: /Bei CCLI suchen/ }));
+    fireEvent.change(screen.getByPlaceholderText('Liedtitel …'), { target: { value: 'Treu' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Suchen' }));
+
+    expect(screen.getByText(/147 Treffer/)).toBeTruthy();
+  });
+
+  it('schweigt, wenn der Server die Liste als vollständig meldet', () => {
+    caps.mockReturnValue(rechte(true));
+    suche.mockReturnValue({
+      data: { ...SUCHE_MIT_TREFFERN, gesamt: 1, vollstaendig: true },
+      isLoading: false,
+      isError: false,
+    });
+    zeige();
+    fireEvent.click(screen.getByRole('button', { name: /Bei CCLI suchen/ }));
+    expect(screen.queryByText(/such genauer/)).toBeNull();
   });
 });
