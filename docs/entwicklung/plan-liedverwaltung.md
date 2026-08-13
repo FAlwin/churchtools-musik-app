@@ -221,19 +221,37 @@ halb gescheiterten Anlegen. Der zweite Versuch fände es dann nicht. Sie muss au
 
 ## 6. Reihenfolge der Umsetzung
 
-| Schritt | Inhalt                                                             | Issue | Stand                     |
-| ------- | ------------------------------------------------------------------ | ----- | ------------------------- |
-| 1       | `uploadFile` verallgemeinern, `uploadChordpro` darauf umstellen    | #321  | ✅                        |
-| 2       | Drei Endpunkte + Zugehörigkeitsprüfung, mit Tests                  | #321  | ✅                        |
-| 3       | Blatt „Dateien …" im Lied-Menü, Liste + Herunterladen              | #321  | ✅                        |
-| 4       | Hochladen und Löschen samt Rückfrage und Fehlerfällen              | #321  | ✅                        |
-| 5       | Auf Staging prüfen, im Browser durchklicken, dann Release          | #321  | ✅ geprüft, Release offen |
-| 6       | Die drei Fragen aus §5.2 klären                                    | #322  | ✅ 13.08.2026             |
-| 7       | Kategorie + erlaubte Kategorie-IDs durchreichen                    | #322  | ✅                        |
-| 8       | `ctSongSelect.ts`: Suche + Abfrage, rein lesend, mit Tests         | #322  | ✅                        |
-| 9       | „Notenblatt aus SongSelect holen" in der Dateiverwaltung (Teil 1)  | #322  | ✅                        |
-| 10      | Lied anlegen (Lied + Arrangement), Formular aus CCLI vorausgefüllt | #322  | offen                     |
-| 11      | Stammdaten eines vorhandenen Lieds ändern                          | #322  | offen                     |
+| Schritt | Inhalt                                                            | Issue | Stand                     |
+| ------- | ----------------------------------------------------------------- | ----- | ------------------------- |
+| 1       | `uploadFile` verallgemeinern, `uploadChordpro` darauf umstellen   | #321  | ✅                        |
+| 2       | Drei Endpunkte + Zugehörigkeitsprüfung, mit Tests                 | #321  | ✅                        |
+| 3       | Blatt „Dateien …" im Lied-Menü, Liste + Herunterladen             | #321  | ✅                        |
+| 4       | Hochladen und Löschen samt Rückfrage und Fehlerfällen             | #321  | ✅                        |
+| 5       | Auf Staging prüfen, im Browser durchklicken, dann Release         | #321  | ✅ geprüft, Release offen |
+| 6       | Die drei Fragen aus §5.2 klären                                   | #322  | ✅ 13.08.2026             |
+| 7       | Kategorie + erlaubte Kategorie-IDs durchreichen                   | #322  | ✅                        |
+| 8       | `ctSongSelect.ts`: Suche + Abfrage, rein lesend, mit Tests        | #322  | ✅                        |
+| 9       | „Notenblatt aus SongSelect holen" in der Dateiverwaltung (Teil 1) | #322  | ✅                        |
+| 10a     | Lied anlegen – **Server** (`POST /api/songs`), mit Tests          | #322  | ✅ 13.08.2026 (PR #374)   |
+| 10b     | Lied anlegen – **Oberfläche**, Formular aus CCLI vorausgefüllt    | #322  | offen                     |
+| 11      | Stammdaten eines vorhandenen Lieds ändern                         | #322  | offen                     |
+
+**Für Schritt 10b liegt alles bereit** – der Endpunkt ist gebaut und getestet, gebraucht werden noch:
+Sheet „Neues Lied" mit SongSelect-Titelsuche (Trefferliste zeigt Titel · Autoren · Nummer · Formate
+und sagt, wenn sie unvollständig ist), Auswahl füllt Titel/Autoren/Copyright/Tonart, Kategorie als
+Pflichtfeld ohne Vorbelegung (`GET /api/song-categories`), Warnung bei gleichem **Namen** (die
+CCLI-Blockade macht der Server), Einstiege im Liederheft **und** im Ablauf, geführte Einführung samt
+erhöhter Tour-Version, manuelle Testfälle, CHANGELOG für Nutzer – und der Browser-Durchklick (#283:
+eine grüne Testsuite hat hier schon einmal eine kaputte Bedienung überdeckt).
+
+**Ohne SongSelect-Recht (`canUseCcli`) muss das Formular trotzdem benutzbar sein** – dann eben ohne
+Suche, mit Titel von Hand. Ein Formular, das ohne fremde Lizenz gar nicht aufgeht, wäre für andere
+Gemeinden wertlos.
+
+**Zwei Meldungen, die die Oberfläche weiterreichen muss, statt sie zu „Fehler" zu verkürzen:**
+Der Server antwortet bei einem gescheiterten Arrangement mit dem Hinweis, dass das Lied bereits
+angelegt ist (ein zweiter Versuch würde es doppeln), und bei einem gescheiterten Ablauf-Eintrag mit
+`201` + `imAblauf: false`. Beides ist Text für den Nutzer, kein Protokolleintrag.
 
 **Erfahrung aus Schritt 9 (11.08.2026):** `getCCLIChordPro` **legt keine Datei an**, es liefert nur
 den Text – die ChurchTools-Oberfläche lädt ihn selbst hoch. Weil ChurchTools trotzdem
