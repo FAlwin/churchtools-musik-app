@@ -1,15 +1,23 @@
 import { describe, it, expect } from 'vitest';
-import type { SongLibraryEntry, SongSelectSong, SongSelectTreffer } from '@shared/types/index';
+import type {
+  LiedStammdatenAnsicht,
+  SongLibraryEntry,
+  SongSelectSong,
+  SongSelectTreffer,
+} from '@shared/types/index';
 import { LIED_GRENZEN } from '@shared/types/index';
 import {
   LEERES_FORMULAR,
+  aenderungAus,
   auftragAus,
+  formularAusLied,
   formularAusTreffer,
   formularBereit,
+  hatAenderung,
   namensWarnung,
   notenblattPlan,
   trefferUnterzeile,
-} from './neuesLied';
+} from './liedFormular';
 
 /**
  * Die Regeln des Formulars „Neues Lied" (#322, Schritt 10b).
@@ -237,5 +245,99 @@ describe('trefferUnterzeile', () => {
 
   it('nennt gemeinfrei', () => {
     expect(trefferUnterzeile({ ...TREFFER, isPublicDomain: true })).toContain('gemeinfrei');
+  });
+});
+
+/* ════════════════════════════ Stammdaten ändern (#322, Schritt 11) ════════════════════════════ */
+
+const IST: LiedStammdatenAnsicht = {
+  songId: 7,
+  name: 'Treu',
+  author: 'Autor A',
+  ccli: '5841527',
+  copyright: '2019 Beispielverlag',
+  categoryId: 0,
+};
+
+describe('formularAusLied', () => {
+  it('füllt das Formular aus dem gelesenen Stand', () => {
+    const f = formularAusLied(IST);
+    expect(f.name).toBe('Treu');
+    expect(f.author).toBe('Autor A');
+    expect(f.ccli).toBe('5841527');
+    expect(f.copyright).toBe('2019 Beispielverlag');
+    expect(f.categoryId).toBe(0);
+  });
+
+  it('macht aus `null` ein leeres Feld', () => {
+    const f = formularAusLied({ ...IST, author: null, ccli: null, copyright: null });
+    expect(f.author).toBe('');
+    expect(f.ccli).toBe('');
+    expect(f.copyright).toBe('');
+  });
+
+  it('lässt Tonart und Arrangement-Name leer – die gehören zum Arrangement', () => {
+    const f = formularAusLied(IST);
+    expect(f.key).toBe('');
+    expect(f.arrangementName).toBe('');
+  });
+});
+
+describe('aenderungAus', () => {
+  it('schickt nichts, wenn nichts geändert wurde', () => {
+    expect(aenderungAus(formularAusLied(IST), IST)).toEqual({});
+    expect(hatAenderung(formularAusLied(IST), IST)).toBe(false);
+  });
+
+  it('schickt nur das geänderte Feld', () => {
+    const f = { ...formularAusLied(IST), name: 'Treu (neu)' };
+    expect(aenderungAus(f, IST)).toEqual({ name: 'Treu (neu)' });
+    expect(hatAenderung(f, IST)).toBe(true);
+  });
+
+  it('macht aus einem geleerten Feld ein `""` – die Absicht „löschen"', () => {
+    // Der Server lässt das Feld dann aus dem Payload fallen; ChurchTools setzt es auf null. Ohne diese
+    // Unterscheidung ließe sich ein falscher Autor nie wieder entfernen.
+    const f = { ...formularAusLied(IST), author: '' };
+    expect(aenderungAus(f, IST)).toEqual({ author: '' });
+  });
+
+  it('hält ein leeres Feld und ein `null` im Bestand für dasselbe', () => {
+    // Sonst wäre der Speichern-Knopf bei jedem Lied ohne Autor dauerhaft aktiv.
+    const ohne = { ...IST, author: null, ccli: null, copyright: null };
+    expect(aenderungAus(formularAusLied(ohne), ohne)).toEqual({});
+    expect(hatAenderung(formularAusLied(ohne), ohne)).toBe(false);
+  });
+
+  it('ignoriert reine Leerzeichen als Änderung', () => {
+    const f = { ...formularAusLied(IST), author: '  Autor A  ' };
+    expect(aenderungAus(f, IST)).toEqual({});
+  });
+
+  it('nimmt einen Kategorie-Wechsel mit – auch nach Kategorie 0', () => {
+    expect(aenderungAus({ ...formularAusLied(IST), categoryId: 1 }, IST)).toEqual({
+      categoryId: 1,
+    });
+    const ausEins = { ...IST, categoryId: 1 };
+    expect(aenderungAus({ ...formularAusLied(ausEins), categoryId: 0 }, ausEins)).toEqual({
+      categoryId: 0,
+    });
+  });
+
+  it('schickt keine Kategorie, wenn keine gewählt ist', () => {
+    // `null` heißt „nicht gewählt" – daraus darf niemals eine 0 („Aktive Songs") werden.
+    const f = { ...formularAusLied(IST), categoryId: null };
+    expect('categoryId' in aenderungAus(f, IST)).toBe(false);
+  });
+});
+
+describe('namensWarnung beim Ändern', () => {
+  it('warnt NICHT wegen des eigenen Namens', () => {
+    // Ohne diese Ausnahme stünde beim Öffnen jedes Formulars „gibt es schon" – über dem Lied selbst.
+    expect(namensWarnung('Treu', [lied(7, 'Treu')], 7)).toBeNull();
+  });
+
+  it('warnt weiter wegen eines FREMDEN Liedes mit dem Namen', () => {
+    expect(namensWarnung('Treu', [lied(7, 'Treu'), lied(9, 'Treu')], 7)).toContain('„Treu"');
   });
 });

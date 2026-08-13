@@ -13,8 +13,9 @@ import { agendaItemWritePayload } from './agendaPayload.js';
 import { arrangementWritePayload } from './arrangementPayload.js';
 import { csrfWriteDenied, getCsrfToken } from './ctCsrf.js';
 import { BASE, CT_FILE_TIMEOUT_MS, ctSignal } from './ctHttp.js';
-import { getAgenda, getArrangement } from './ctRead.js';
-import type { CtAgendaItem } from './ctTypes.js';
+import { getAgenda, getArrangement, getSong } from './ctRead.js';
+import { songWritePayload, type SongOverrides } from './songPayload.js';
+import type { CtAgendaItem, CtSong } from './ctTypes.js';
 
 /** Fehlermeldung, wenn ChurchTools das Ändern des Ablaufs verweigert – siebenmal derselbe Satz. */
 const ABLAUF_VERWEIGERT = 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.';
@@ -346,6 +347,65 @@ export async function createSong(cookie: string, daten: NeuesLied): Promise<numb
     fehler: 'Lied anlegen fehlgeschlagen',
   });
   return neueId(res, 'Das Lied');
+}
+
+/**
+ * Ändert die Stammdaten eines Liedes (#322, Schritt 11) – **lesen, ändern, schreiben.**
+ *
+ * **Keine Stilfrage, sondern gemessen** (ChurchTools-Test-Instanz, 13.08.2026): `PUT /api/songs/{id}`
+ * ersetzt den ganzen Datensatz. Ein `PUT {name, categoryId}` löschte Autor, CCLI-Nummer und Copyright
+ * und setzte `shouldPractice` zurück. Deshalb wird das Lied zuerst frisch gelesen und der Payload
+ * daraus gebaut (`songWritePayload`) – dieselbe Vorsichtsmaßnahme wie beim Arrangement-Tempo.
+ *
+ * **Frisch gelesen, nicht aus einem Cache**: Zwischen dem Öffnen des Formulars und dem Speichern kann
+ * jemand in ChurchTools etwas geändert haben. Ein alter Stand als Grundlage würde diese Änderung
+ * überschreiben, ohne dass es jemand merkt.
+ *
+ * Gibt das geänderte Lied zurück, wie ChurchTools es danach liest – damit die App anzeigen kann, was
+ * wirklich drinsteht, statt das Formular zu spiegeln.
+ */
+export async function updateSong(
+  cookie: string,
+  songId: number,
+  aenderung: SongOverrides,
+  bereitsGelesen?: CtSong,
+): Promise<CtSong> {
+  /**
+   * `bereitsGelesen` spart **einen** ChurchTools-Abruf, wenn der Aufrufer das Lied im selben Vorgang
+   * schon geholt hat (`liedAendern` braucht es für die Rechteprüfung). Ohne diesen Parameter wären es
+   * drei Abrufe je Speichern statt zwei – und unnötige Abrufe waren die Ursache der Drosselung (#300).
+   *
+   * **Nur ein Lied, das GERADE gelesen wurde, darf hier hinein.** Ein aus einem Cache oder aus einem
+   * Formular-Zustand gefüllter Datensatz würde fremde Änderungen überschreiben – genau davor schützt
+   * das frische Lesen.
+   */
+  const song = bereitsGelesen ?? (await getSong(cookie, songId));
+  await schreibe(cookie, `/api/songs/${songId}`, {
+    method: 'PUT',
+    json: songWritePayload(song, aenderung),
+    verweigert: 'Keine Berechtigung, dieses Lied in ChurchTools zu ändern.',
+    fehler: 'Lied ändern fehlgeschlagen',
+  });
+  // Nachsehen statt glauben (Lehre vom 11.08.2026): Was steht danach wirklich im Datensatz?
+  return getSong(cookie, songId);
+}
+
+/**
+ * Löscht ein Lied in ChurchTools (#322, Schritt 11).
+ *
+ * **Das nimmt alles mit, was am Lied hängt** – Arrangements, Notenblätter, Dateien und die verwalteten
+ * Versionen. Deshalb liegt die Rückfrage in der Oberfläche, und deshalb nennt sie die Folgen, statt
+ * nur „wirklich?" zu fragen.
+ *
+ * `okBei404: true`: Ein Lied, das schon weg ist, ist kein Fehler (gemessen: DELETE antwortet 204).
+ */
+export async function deleteSong(cookie: string, songId: number): Promise<void> {
+  await schreibe(cookie, `/api/songs/${songId}`, {
+    method: 'DELETE',
+    verweigert: 'Keine Berechtigung, dieses Lied in ChurchTools zu löschen.',
+    fehler: 'Lied löschen fehlgeschlagen',
+    okBei404: true,
+  });
 }
 
 /**

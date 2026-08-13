@@ -19,6 +19,9 @@ import { LIED_GRENZEN } from '@shared/types/index';
 import { Sheet } from './Sheet';
 import { Icon } from './icons';
 import { CenterMessage } from './CenterMessage';
+import { SongFields } from './SongFields';
+// Die Feld-Stile direkt aus dem Modul: Ein Re-Export über die Komponente bricht Fast Refresh.
+import feld from './SongFields.module.scss';
 import {
   SONGSELECT_MIN_ZEICHEN,
   useCapabilities,
@@ -34,7 +37,7 @@ import {
   namensWarnung,
   trefferUnterzeile,
   type NeuesLiedFormular,
-} from '../utils/neuesLied';
+} from '../utils/liedFormular';
 import { getSongSelectSong } from '../services/churchtoolsApi';
 import styles from './NewSongSheet.module.scss';
 
@@ -303,94 +306,40 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
           sich kein Lied anlegen – das kann ein Administrator ändern.
         </div>
       ) : (
-        <div className={styles.form}>
-          <div className={styles.field}>
-            <span className={styles.label}>Liedname</span>
-            <input
-              className={styles.input}
-              placeholder="Titel des Liedes"
-              value={formular.name}
-              maxLength={LIED_GRENZEN.name.max}
-              autoFocus
-              onChange={(e) => setzeFeld('name', e.target.value)}
-            />
-            {/* Gleiche Namen sind erlaubt – gewarnt wird trotzdem, damit niemand versehentlich ein
-                Doppel anlegt. Blockiert wird nur die gleiche CCLI-Nummer, und zwar am Server. */}
-            {warnung && <span className={styles.warn}>{warnung}</span>}
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>Kategorie</span>
-            <div className={styles.chips}>
-              {kategorieListe.map((k) => (
-                <button
-                  key={k.id}
-                  className={`${styles.chip}${formular.categoryId === k.id ? ' ' + styles.chipActive : ''}`}
-                  aria-pressed={formular.categoryId === k.id}
-                  onClick={() => setFormular((f) => ({ ...f, categoryId: k.id }))}
-                >
-                  {k.name}
-                </button>
-              ))}
+        <div className={feld.form}>
+          <SongFields
+            formular={formular}
+            onFeld={setzeFeld}
+            onKategorie={(id) => setFormular((f) => ({ ...f, categoryId: id }))}
+            kategorien={kategorieListe}
+            warnung={warnung}
+            copyrightPlatzhalter={holtDetails ? 'Wird von CCLI geholt …' : 'Optional'}
+            autoFocus
+          >
+            {/* Nur beim Anlegen: Beides gehört zum ERSTEN Arrangement, nicht zum Lied. Beim Ändern der
+                Stammdaten haben sie deshalb nichts zu suchen. */}
+            <div className={feld.field}>
+              <span className={feld.label}>Tonart</span>
+              <input
+                className={feld.input}
+                placeholder="z. B. E"
+                value={formular.key}
+                maxLength={LIED_GRENZEN.key}
+                onChange={(e) => setzeFeld('key', e.target.value)}
+              />
             </div>
-          </div>
 
-          <div className={styles.field}>
-            <span className={styles.label}>Tonart</span>
-            <input
-              className={styles.input}
-              placeholder="z. B. E"
-              value={formular.key}
-              maxLength={LIED_GRENZEN.key}
-              onChange={(e) => setzeFeld('key', e.target.value)}
-            />
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>Autor</span>
-            <input
-              className={styles.input}
-              placeholder="Optional"
-              value={formular.author}
-              maxLength={LIED_GRENZEN.author}
-              onChange={(e) => setzeFeld('author', e.target.value)}
-            />
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>CCLI-Nummer</span>
-            <input
-              className={styles.input}
-              placeholder="Optional"
-              inputMode="numeric"
-              value={formular.ccli}
-              maxLength={LIED_GRENZEN.ccli}
-              onChange={(e) => setzeFeld('ccli', e.target.value)}
-            />
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>Copyright</span>
-            <textarea
-              className={styles.textarea}
-              placeholder={holtDetails ? 'Wird von CCLI geholt …' : 'Optional'}
-              rows={2}
-              value={formular.copyright}
-              maxLength={LIED_GRENZEN.copyright}
-              onChange={(e) => setzeFeld('copyright', e.target.value)}
-            />
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>Name des Arrangements</span>
-            <input
-              className={styles.input}
-              placeholder="Standard"
-              value={formular.arrangementName}
-              maxLength={LIED_GRENZEN.arrangementName}
-              onChange={(e) => setzeFeld('arrangementName', e.target.value)}
-            />
-          </div>
+            <div className={feld.field}>
+              <span className={feld.label}>Name des Arrangements</span>
+              <input
+                className={feld.input}
+                placeholder="Standard"
+                value={formular.arrangementName}
+                maxLength={LIED_GRENZEN.arrangementName}
+                onChange={(e) => setzeFeld('arrangementName', e.target.value)}
+              />
+            </div>
+          </SongFields>
 
           {eventId !== undefined && (
             <div className={styles.hint}>

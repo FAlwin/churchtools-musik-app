@@ -16,14 +16,16 @@ export const TOUR_TERMINE = 'termine-v3';
 // Die spaeteren Textaenderungen (Metronom-Menue, „Lied-Optionen" mit der Dateiverwaltung #321,
 // „Notizen von anderen" mit dem Umschalter) wurden NACHGEZOGEN, ohne die Version zu erhoehen –
 // begruendet damit, chart-v4 sei „nie in Produktion" gewesen.
-// ACHTUNG, das gilt nicht mehr (gemessen am 13.08.2026 im ausgelieferten Bundle): chart-v4 steckt
-// seit v2.18.0 im Code, und produktiv laeuft v2.20.0. Die Fassung IST also draussen – die naechste
-// Textaenderung an CHART_STEPS braucht deshalb chart-v5, sonst sieht sie niemand, der die Tour
-// schon weggeklickt hat.
+// ACHTUNG, diese Begruendung war falsch (gemessen am 13.08.2026 im ausgelieferten Bundle): chart-v4
+// steckt seit v2.18.0 im Code, und produktiv laeuft v2.20.0. Die Fassung IST also draussen.
+// chart-v5 (13.08.2026): Der Schritt „Lied-Optionen" nennt jetzt auch die **Stammdaten** (#322,
+// Schritt 11) – Name, Kategorie, Autor, CCLI-Nummer und Copyright aendert man in der App. Hier wurde
+// die Version deshalb wirklich erhoeht: Wer die Tour unter v2.20.0 weggeklickt hat, saehe einen
+// nachgezogenen Text sonst nie.
 // chart-v3: Der Tipp in die Mitte blendet jetzt die Leisten aus (#319) – die Geste findet man
 // sonst nicht von selbst. Version erhöht, damit Bestandsnutzer den geänderten Schritt sehen.
 // (chart-v2 hatte den Schritt „Team-Anmerkungen" (#124) ergänzt.)
-export const TOUR_CHART = 'chart-v4';
+export const TOUR_CHART = 'chart-v5';
 
 /**
  * Einmaliger Hinweis, wenn die Leisten zum ersten Mal ausgeblendet werden (#319).
@@ -105,7 +107,7 @@ export const CHART_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="chart-lied"]',
     title: 'Lied-Optionen',
-    body: 'Tippe auf den Titel, um die Tonart zu ändern, eine Version zu wählen oder zu transponieren. Unter „Dateien …" verwaltest du die Notenblätter des Arrangements.',
+    body: 'Tippe auf den Titel, um die Tonart zu ändern, eine Version zu wählen oder zu transponieren. Unter „Dateien …" verwaltest du die Notenblätter des Arrangements, unter „Stammdaten …" Name, Kategorie, Autor und Copyright des Liedes.',
   },
   {
     selector: '[data-tour="chart-aussehen"]',

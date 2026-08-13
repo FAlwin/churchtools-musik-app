@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { LiedAnlegenAuftrag } from '@shared/types/index';
+import type { LiedAnlegenAuftrag, LiedStammdaten } from '@shared/types/index';
 import * as api from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 
@@ -267,6 +267,62 @@ export function useSongSelectSuche(titel: string, enabled: boolean) {
     enabled: enabled && begriff.length >= SONGSELECT_MIN_ZEICHEN,
     staleTime: 1000 * 60 * 5,
     retry: false,
+  });
+}
+
+/**
+ * Lädt die Stammdaten eines Liedes für das Änderungsformular (#322, Schritt 11).
+ *
+ * **`staleTime: 0` mit Absicht.** Diese Abfrage füllt ein Formular, aus dem heraus geschrieben wird –
+ * ein alter Stand wäre hier gefährlicher als eine zusätzliche Anfrage. Der Server liest beim Speichern
+ * ohnehin noch einmal frisch (`liedAendern`), aber der Nutzer soll auch SEHEN, was gerade gilt.
+ */
+export function useSongStammdaten(songId: number | null) {
+  return useQuery({
+    queryKey: ['song-stammdaten', songId],
+    queryFn: () => api.getSongStammdaten(songId as number),
+    enabled: songId !== null,
+    staleTime: 0,
+  });
+}
+
+/**
+ * Ändert die Stammdaten eines Liedes (#322, Schritt 11).
+ *
+ * Danach ist **alles ungültig, wo ein Liedname steht**: Bibliothek, Chart und – falls das Lied im
+ * Ablauf vorkommt – die Abläufe. Bewusst NICHT die Statistik (`song-usage`): Ein umbenanntes Lied wurde
+ * nicht öfter oder seltener gespielt, und der Lauf kostet ~250 ChurchTools-Anfragen (#300).
+ */
+export function useLiedAendern(songId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (aenderung: Partial<LiedStammdaten>) => api.aendereLied(songId, aenderung),
+    onSuccess: (stand) => {
+      // Den frischen Stand direkt in den Cache legen, damit das Formular nicht kurz den alten zeigt.
+      qc.setQueryData(['song-stammdaten', songId], stand);
+      void qc.invalidateQueries({ queryKey: ['song-library'] });
+      void qc.invalidateQueries({ queryKey: ['song-chart', songId] });
+      void qc.invalidateQueries({ queryKey: ['agenda'] });
+    },
+  });
+}
+
+/**
+ * Löscht ein Lied (#322, Schritt 11).
+ *
+ * Räumt danach auch die **Anmerkungs-Abfragen** nicht weg – die liegen pro Konto und verweisen auf eine
+ * songId, die es nicht mehr gibt; sie laufen ins Leere, richten aber keinen Schaden an. Was hier zählt:
+ * Bibliothek und Abläufe müssen neu geladen werden, sonst zeigt die App ein Lied, das nicht mehr da ist.
+ */
+export function useLiedLoeschen() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (songId: number) => api.loescheLied(songId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['song-library'] });
+      void qc.invalidateQueries({ queryKey: ['agenda'] });
+      void qc.invalidateQueries({ queryKey: ['services'] });
+    },
   });
 }
 

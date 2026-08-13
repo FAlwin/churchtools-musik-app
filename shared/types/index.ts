@@ -169,6 +169,26 @@ export interface LiedAnlegenAuftrag extends LiedStammdaten {
 }
 
 /**
+ * Die Stammdaten eines Liedes, wie die App sie anzeigt und zurückbekommt (#322, Schritt 11).
+ *
+ * **Eine Form für zwei Wege:** `GET /api/songs/:songId/stammdaten` liefert sie, und `PUT` antwortet mit
+ * derselben Form – das, was danach wirklich in ChurchTools steht. Zwei verschiedene Formen für „so
+ * sieht das Lied aus" wären zwei Stellen, die auseinanderlaufen.
+ *
+ * Leere Felder sind `null`, nicht `''`: Das ist der Zustand, den ChurchTools liefert, und die
+ * Oberfläche macht daraus ein leeres Eingabefeld.
+ */
+export interface LiedStammdatenAnsicht {
+  songId: number;
+  name: string;
+  author: string | null;
+  ccli: string | null;
+  copyright: string | null;
+  /** `null`, wenn ChurchTools keine Kategorie mitliefert – dann lässt sich das Lied nicht speichern. */
+  categoryId: number | null;
+}
+
+/**
  * Was beim Anlegen herauskam – **auch der Teilerfolg wird benannt**, nicht verschwiegen (#322).
  *
  * Ein Lied entsteht in zwei bis drei Schreibvorgängen ohne Transaktion (siehe

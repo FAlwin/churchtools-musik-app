@@ -33,12 +33,17 @@
   Seit v2.21.0 liegt zusätzlich **ungetaggt** in `main`:
   - die **Dateiverwaltung** eines Arrangements (#321) und die **CCLI-SongSelect-Anbindung**
     (#322, Suche/Abfrage/Notenblatt holen) – beides von Alwin auf Staging geprüft;
-  - die **Liedverwaltung** (#322, Schritte 6–10b): Lied-Kategorien samt Rechte-Schnitt
-    (`GET /api/song-categories`), das Anlegen serverseitig (`POST /api/songs`) **und die Oberfläche
-    dazu** – `NewSongSheet`, Einstiege im Liederheft (**+** in der Kopfzeile) und im Ablauf. **Noch
-    nicht auf Staging durchgeklickt**, weil jeder Lauf ein echtes Lied in ChurchTools anlegt (siehe
-    TF-LIB-03). Offen bleibt Schritt **11** (Stammdaten ändern),
-    `docs/entwicklung/plan-liedverwaltung.md`.
+  - die **Liedverwaltung KOMPLETT** (#322, Schritte 6–11): Lied-Kategorien samt Rechte-Schnitt
+    (`GET /api/song-categories`), **Anlegen** (`POST /api/songs` + `NewSongSheet`, Einstiege im
+    Liederheft und im Ablauf) und **Stammdaten ändern/löschen** (`GET …/stammdaten`, `PUT`, `DELETE`
+    - `EditSongSheet`, Einstiege im Lied-Menü und im Liederheft). **Noch nicht auf Staging
+      durchgeklickt**, weil jeder Lauf echte Lieder in ChurchTools anlegt bzw. löscht (TF-LIB-03,
+      TF-LIB-04).
+
+    ⚠️ **Der gefährlichste Punkt darin, gemessen:** `PUT /api/songs/{id}` **ersetzt den ganzen
+    Datensatz** – ein Teil-`PUT` löscht Autor, CCLI-Nummer, Copyright und `shouldPractice`. Deshalb
+    lesen–ändern–schreiben über `songWritePayload` (wie beim Arrangement-Tempo). Wer dort ein Feld
+    ergänzt, muss es in `ZU_ERHALTEN` nennen, sonst geht es beim nächsten Speichern verloren.
 
   **Deploy-Falle:** Prod zieht den Tag `:2`, und der liegt lokal auf dem NAS bereits – ein
   „Erstellen" im Container Manager nimmt sonst das **alte** Abbild. Erst das Abbild holen

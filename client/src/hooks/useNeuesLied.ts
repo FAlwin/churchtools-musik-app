@@ -21,7 +21,7 @@ import type { SongSelectTreffer } from '@shared/types/index';
 import { ApiError } from '../services/api';
 import { holeChordProAusSongSelect } from '../services/churchtoolsApi';
 import { useLiedAnlegen } from './useServices';
-import { auftragAus, notenblattPlan, type NeuesLiedFormular } from '../utils/neuesLied';
+import { auftragAus, notenblattPlan, type NeuesLiedFormular } from '../utils/liedFormular';
 
 /** Was aus dem Anlegen wurde – **einschließlich der Teilerfolge.** */
 export interface NeuesLiedErgebnis {

@@ -1,7 +1,7 @@
 # Umsetzungsplan – Liedverwaltung in der App (#321, #322)
 
-> Status: **13.08.2026 – Teil 1 fertig; von Teil 2 stehen die Schritte 6–10b.
-> Offen: nur noch 11 (Stammdaten ändern) und der Staging-Durchklick von 10b.**
+> Status: **13.08.2026 – FERTIG GEBAUT. Teil 1 (#321) und Teil 2 (#322, Schritte 6–11) stehen.
+> Offen ist nur noch der Staging-Durchklick.**
 > Die Neufassung von Teil 2 kommt aus einem Fund vom selben Tag: **SongSelect ist doch machbar**,
 > über ChurchTools als Vermittler (siehe `churchtools-songselect.md`). Das ändert #322 grundlegend –
 > aus „Formular zum Abtippen" wird „Lied aus CCLI holen".
@@ -235,7 +235,7 @@ halb gescheiterten Anlegen. Der zweite Versuch fände es dann nicht. Sie muss au
 | 9       | „Notenblatt aus SongSelect holen" in der Dateiverwaltung (Teil 1) | #322  | ✅                        |
 | 10a     | Lied anlegen – **Server** (`POST /api/songs`), mit Tests          | #322  | ✅ 13.08.2026 (PR #374)   |
 | 10b     | Lied anlegen – **Oberfläche**, Formular aus CCLI vorausgefüllt    | #322  | ✅ 13.08.2026             |
-| 11      | Stammdaten eines vorhandenen Lieds ändern                         | #322  | offen                     |
+| 11      | Stammdaten eines vorhandenen Lieds ändern (+ löschen)             | #322  | ✅ 13.08.2026             |
 
 **Schritt 10b ist gebaut (13.08.2026).** `NewSongSheet` mit Wegwahl (CCLI-Suche / selbst eintippen),
 Trefferliste mit Titel · Autoren · Nummer · Formaten und dem Hinweis auf die 100er-Grenze, Übernahme
@@ -244,7 +244,7 @@ Client, Einstiege im Liederheft (**+** in der Kopfzeile) und im Ablauf („Hinzu
 Lied anlegen …"), Erfolgsansicht mit drei Wegen (öffnen / noch eins / fertig), Einführung auf
 `termine-v3` und `setlist-edit-v2`, Testfall **TF-LIB-03**, CHANGELOG.
 
-Die Regeln liegen bewusst **nicht** in der Komponente: `utils/neuesLied.ts` (Formularstand, Warnung,
+Die Regeln liegen bewusst **nicht** in der Komponente: `utils/liedFormular.ts` (Formularstand, Warnung,
 Auftrag, Entscheidung über das Notenblatt) und `hooks/useNeuesLied.ts` (die Abfolge samt
 Teilerfolgen). Beides ist geprüft, jede Regel einzeln per Gegenprobe – 46 neue Tests.
 
@@ -257,6 +257,50 @@ ChurchTools wieder wegräumen – die App kann keine Lieder löschen.
 **Bewusst NICHT gebaut:** ein dritter Einstieg in `ItemActionSheet` („Lied verknüpfen"). Dort wird
 einem **vorhandenen** Ablaufpunkt ein Lied zugeordnet; der Auftrag legt mit `eventId` aber einen
 **neuen** Punkt an. Das bräuchte einen anderen Schreibweg und fehlt nicht aus Versehen.
+
+## 8. Schritt 11 – Stammdaten ändern und löschen (13.08.2026)
+
+**Erst gemessen, dann gebaut** (`probe-songwrite.ts --ja-ich-will`, ChurchTools-Test-Instanz):
+
+| Frage                                     | Befund                                                                                    |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Löscht ein Teil-`PUT` die anderen Felder? | **Ja.** `PUT {name, categoryId}` → author/ccli/copyright `null`, `shouldPractice` `false` |
+| Nimmt `PUT` das Feld `note`?              | **Nein** – ChurchTools markiert es am Lied selbst als `@deprecated`                       |
+| Lässt sich die Kategorie wechseln?        | **Ja** (0 → 1 gemessen)                                                                   |
+| Pflichtfelder beim `PUT`                  | `name` (2–200 Zeichen) **und** `categoryId`                                               |
+
+**Der erste Messversuch war falsch gestellt** und steht als Warnung im Code: Er schickte nur `{name}`
+und bekam **400** (weil `categoryId` fehlte). Dass danach alle Felder noch standen, sah nach
+„ungefährlich" aus – geschrieben hatte der Aufruf aber gar nicht. **Ein Messaufbau, der den geprüften
+Vorgang nicht auslöst, belegt nichts.**
+
+Daraus die Umsetzung:
+
+- **`songWritePayload`** (`server/services/songPayload.ts`) baut den Rumpf **aus dem gelesenen Lied**
+  plus Änderung – wie `arrangementWritePayload` beim Tempo. `ZU_ERHALTEN` nennt die Felder, die
+  mitmüssen; `shouldPractice` steht dort, obwohl die App es nirgends zeigt.
+- **Leeren nutzt den Messbefund, statt eine zweite Annahme zu treffen:** `''` lässt das Feld aus dem
+  Payload fallen – und was fehlt, wird `null`. Ob ein gesendetes `''` auch leert, ist damit keine
+  offene Frage.
+- **Rechte zweimal geprüft** (`liedAendern`): an der Kategorie, in der das Lied liegt, **und** an der,
+  in die es soll. Die CCLI-Blockade nimmt das eigene Lied aus – sonst wäre ein Lied mit Nummer nie
+  wieder speicherbar.
+- **Löschen mit Rückfrage, die die Folgen nennt** (Entscheidung Alwin): Arrangements, Notenblätter,
+  Dateien, und im Ablauf fehlt es danach. Der Name wird **vor** dem Löschen gelesen – danach gibt es
+  ihn nicht mehr, die Meldung braucht ihn aber.
+- **Zwei Einstiege** (Entscheidung Alwin): Lied-Menü im Chart („Stammdaten …") und Stift je Zeile im
+  Liederheft. Aus dem Chart heraus verlässt die App nach dem Löschen die Ansicht – ein Blatt zu einem
+  gelöschten Lied wäre eine Sackgasse.
+- **`SongFields`** trägt die fünf Felder für **beide** Formulare; die Regeln liegen zusammen in
+  `utils/liedFormular.ts`. Der Dateiname `songErstellen.ts` wurde zu `songVerwaltung.ts`, weil dort
+  jetzt Anlegen, Ändern und Löschen liegen.
+- **Kein Notiz-Feld** – siehe Messung.
+
+**Dabei zwei Dopplungen gefunden und aufgelöst:** die Stammdaten-Felder (zwei Formulare) und der
+Meldungs-Wortlaut „… wurde gespeichert/gelöscht", der bei **beiden** Aufrufern stand; er liegt jetzt im
+Blatt, die Aufrufer zeigen nur an. Dazu ein Nebenbefund: `liedAendern` las das Lied anfangs **dreimal**
+je Speichern (Rechteprüfung, Payload, Kontrolle) – jetzt zweimal, weil der gelesene Stand
+weitergegeben wird (#300).
 
 **Ohne SongSelect-Recht (`canUseCcli`) muss das Formular trotzdem benutzbar sein** – dann eben ohne
 Suche, mit Titel von Hand. Ein Formular, das ohne fremde Lizenz gar nicht aufgeht, wäre für andere

@@ -50,6 +50,7 @@ import {
 } from '../hooks/useArrangementUeberschreibung';
 import { setArrangementTempo } from '../services/churchtoolsApi';
 import { ArrangementFilesSheet } from '../components/ArrangementFilesSheet';
+import { EditSongSheet } from '../components/EditSongSheet';
 import { useArrangementDateien } from '../hooks/useArrangementDateien';
 import { loeschFrage } from '../utils/dateiVerwaltung';
 import { useSetlistPages } from '../hooks/useSetlistPages';
@@ -165,7 +166,7 @@ export function ChordChart({
    * wäre es die dritte Fassung geworden – und die Namen, die `ChartOverlays` gar nicht rendert
    * (`tempo`, `files`), stehen jetzt sichtbar getrennt statt in einer Liste vermischt.
    */
-  const [overlay, setOverlay] = useState<ChartOverlay | 'tempo' | 'files'>(null);
+  const [overlay, setOverlay] = useState<ChartOverlay | 'tempo' | 'files' | 'stammdaten'>(null);
   /** Ein Overlay umschalten (nochmal derselbe Knopf schließt es). */
   const toggleOverlay = (o: 'appearance' | 'menu' | 'tempo') =>
     setOverlay((cur) => (cur === o ? null : o));
@@ -667,8 +668,11 @@ export function ChordChart({
           // Tempo-Menü und Dateiverwaltung sind bewusst KEINE `ChartOverlay`: Sie teilen sich zwar
           // die Regel „höchstens eines offen", haben aber eine ganz andere Bedienung. Deshalb hier
           // herausgefiltert, statt den Typ dort aufzuweichen.
-          overlay={overlay === 'tempo' || overlay === 'files' ? null : overlay}
-          onOverlay={setOverlay}
+          overlay={
+            overlay === 'tempo' || overlay === 'files' || overlay === 'stammdaten' ? null : overlay
+          }
+          /* Eigener Pfeil statt `setOverlay`: Der Zustand kennt mehr Werte als `ChartOverlay`. */
+          onOverlay={(o) => setOverlay(o)}
           song={song}
           set={set}
           curKey={curKey}
@@ -683,6 +687,7 @@ export function ChordChart({
           onSelectVersion={(versionKey) => selectVersion(song.id, versionKey)}
           onSharePdf={shareCurrentAsPdf}
           onOpenFiles={() => setOverlay('files')}
+          onEditSong={() => setOverlay('stammdaten')}
           onEditCurrent={openEditCurrent}
           onNewVersion={openNewVersion}
           onDeleteVersion={() => setConfirmDelEdited(true)}
@@ -791,6 +796,25 @@ export function ChordChart({
             onPickLevel={(g) => viewLevel(song.id, g.versionKey, g.lyr, g.arrangementId)}
             onBackToPersons={() => setPickerPerson(null)}
             onClose={() => setShowSharers(false)}
+          />
+        )}
+
+        {/**
+         * Stammdaten ändern (#322, Schritt 11).
+         *
+         * **Nach dem Löschen wird die Chart-Ansicht verlassen** (`onBack`): Ein Blatt zu einem Lied,
+         * das es nicht mehr gibt, wäre eine Sackgasse – der nächste Abruf endete im Fehler.
+         */}
+        {overlay === 'stammdaten' && (
+          <EditSongSheet
+            songId={song.id}
+            songName={song.title}
+            onSaved={showToast}
+            onDeleted={(meldung) => {
+              showToast(meldung);
+              onBack();
+            }}
+            onClose={() => setOverlay(null)}
           />
         )}
 

@@ -8,6 +8,8 @@ import type {
   AuthStatus,
   LiedAngelegt,
   LiedAnlegenAuftrag,
+  LiedStammdaten,
+  LiedStammdatenAnsicht,
   Service,
   SetlistSong,
   SongArrangementOption,
@@ -168,6 +170,42 @@ export function sucheSongSelect(title: string): Promise<SongSelectTreffer[]> {
 /** Ein CCLI-Lied per Nummer abfragen (#322) – liefert zusätzlich das Copyright fürs Formular. */
 export function getSongSelectSong(songNumber: number): Promise<SongSelectSong> {
   return apiFetch<SongSelectSong>(`/api/songselect/songs/${songNumber}`);
+}
+
+/**
+ * Die Stammdaten eines Liedes lesen (#322, Schritt 11) – für das Änderungsformular.
+ *
+ * **Nicht aus der Bibliothek:** `SongLibraryEntry` kennt CCLI-Nummer, Copyright und Kategorie nicht.
+ * Sie dort mitzuschleppen hieße, sie in jeder Liedliste zu laden, obwohl kein Bildschirm sie anzeigt.
+ */
+export function getSongStammdaten(songId: number): Promise<LiedStammdatenAnsicht> {
+  return apiFetch<LiedStammdatenAnsicht>(`/api/songs/${songId}/stammdaten`);
+}
+
+/**
+ * Stammdaten ändern (#322, Schritt 11) – **nur die geänderten Felder.**
+ *
+ * Der Server macht daraus ein vollständiges `PUT` (lesen–ändern–schreiben), weil ChurchTools bei einem
+ * Teil-`PUT` die nicht gesendeten Felder löscht. Zurück kommt, was danach wirklich drinsteht.
+ */
+export function aendereLied(
+  songId: number,
+  aenderung: Partial<LiedStammdaten>,
+): Promise<LiedStammdatenAnsicht> {
+  return apiFetch<LiedStammdatenAnsicht>(`/api/songs/${songId}`, {
+    method: 'PUT',
+    body: JSON.stringify(aenderung),
+  });
+}
+
+/**
+ * Ein Lied löschen (#322, Schritt 11) – **samt allem, was daran hängt.**
+ *
+ * Die Rückfrage steht in der Oberfläche und nennt die Folgen. Zurück kommt der Name, weil es ihn danach
+ * nicht mehr gibt, die Meldung ihn aber braucht.
+ */
+export function loescheLied(songId: number): Promise<{ name: string }> {
+  return apiFetch<{ name: string }>(`/api/songs/${songId}`, { method: 'DELETE' });
 }
 
 /**

@@ -7,6 +7,7 @@ import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
 import { AddToAgendaSheet } from '../components/AddToAgendaSheet';
 import { NewSongSheet } from '../components/NewSongSheet';
+import { EditSongSheet } from '../components/EditSongSheet';
 import { SongStatsBar } from '../components/SongStatsBar';
 import { useSongFilter } from '../hooks/useSongFilter';
 import { statLabel } from '../utils/songFilter';
@@ -32,6 +33,8 @@ interface AllSongsProps {
   canCreateSong?: boolean;
   /** Öffnet ein Lied unmittelbar nach dem Anlegen (#322). */
   onOpenSong?: (songId: number, arrangementId: number) => void;
+  /** Meldung nach dem Speichern/Löschen von Stammdaten (#322, Schritt 11). */
+  onToast?: (text: string) => void;
 }
 
 /** Durchsuchbare Liste aller Lieder, sortierbar nach Name/Häufigkeit/zuletzt (+ Zeitfilter). */
@@ -49,9 +52,12 @@ export function AllSongs({
   services = [],
   canCreateSong = false,
   onOpenSong,
+  onToast,
 }: AllSongsProps) {
   const [addSong, setAddSong] = useState<SongLibraryEntry | null>(null);
   const [neuesLied, setNeuesLied] = useState(false);
+  /** Lied, dessen Stammdaten geändert werden (#322, Schritt 11) – `null` = kein Blatt offen. */
+  const [editSong, setEditSong] = useState<SongLibraryEntry | null>(null);
   const f = useSongFilter(songs, usage, showStats, 'name', !usageError);
   const query = f.q.trim();
 
@@ -134,6 +140,19 @@ export function AllSongs({
                         <Icon name="plus" size={20} stroke={2.4} />
                       </button>
                     )}
+                    {/* Stammdaten ändern (#322, Schritt 11) – hier in der Liste, weil man den
+                        fehlenden Autor beim Durchsehen bemerkt, nicht erst im geöffneten Blatt.
+                        Dasselbe Recht wie das Anlegen. */}
+                    {canCreateSong && (
+                      <button
+                        className={styles.addBtn}
+                        onClick={() => setEditSong(s)}
+                        aria-label={`Stammdaten von „${s.name}" ändern`}
+                        title="Stammdaten ändern"
+                      >
+                        <Icon name="pencil" size={18} stroke={2.2} />
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -145,6 +164,18 @@ export function AllSongs({
 
       {addSong && (
         <AddToAgendaSheet song={addSong} services={services} onClose={() => setAddSong(null)} />
+      )}
+
+      {/* Stammdaten ändern (#322, Schritt 11). Nach dem Löschen bleibt die Liste stehen – sie lädt
+          sich neu, das Lied verschwindet daraus. Kein Ansichtswechsel nötig, anders als im Chart. */}
+      {editSong && (
+        <EditSongSheet
+          songId={editSong.songId}
+          songName={editSong.name}
+          onSaved={onToast}
+          onDeleted={onToast}
+          onClose={() => setEditSong(null)}
+        />
       )}
 
       {neuesLied && onOpenSong && (

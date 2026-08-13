@@ -9,6 +9,29 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
+- **Die Stammdaten eines Liedes lassen sich in der App ändern (#322).** Im Lied-Menü steht unter
+  „Dateien …" nun **„Stammdaten …"**, und im Liederheft gibt es je Zeile einen Stift. Dort ändert man
+  **Name, Kategorie, Autor, CCLI-Nummer und Copyright** – ohne den Umweg über ChurchTools.
+
+  **Gespeichert wird nur, was du geändert hast.** Ein Feld, das du leerst, wird auch in ChurchTools
+  leer; alles andere bleibt unangetastet. Das ist kein Selbstläufer: ChurchTools ersetzt beim
+  Speichern den **ganzen** Datensatz, und alles, was nicht mitgeschickt wird, ist danach weg. Die App
+  liest deshalb vor jedem Speichern den aktuellen Stand und legt nur deine Änderung darüber – wer
+  einen Liednamen korrigiert, verliert dabei nicht den Autor.
+
+  **Ein Lied kann hier auch gelöscht werden** – mit einer Rückfrage, die sagt, was mitgeht:
+  Arrangements, Notenblätter und Dateien, und im Ablauf fehlt es danach. Über die App ist das nicht
+  rückholbar. Nach dem Löschen aus einem geöffneten Lied heraus schließt sich die Ansicht.
+
+  Zur Wahl stehen wieder nur die Kategorien, in denen ChurchTools dich arbeiten lässt – und zwar für
+  **beide** Seiten: Du kannst nur Lieder ändern, die in einer deiner Kategorien liegen, und nur in
+  eine deiner Kategorien verschieben. Eine CCLI-Nummer, die ein **anderes** Lied schon hat, wird
+  abgelehnt; die eigene Nummer bleibt selbstverständlich erlaubt.
+
+  **Ein Notiz-Feld gibt es bewusst nicht:** ChurchTools speichert die Lied-Notiz über diesen Weg gar
+  nicht (gemessen) und hat sie selbst als veraltet markiert. Ein Feld, das nichts behält, wäre eine
+  Falle.
+
 - **Lieder lassen sich in der App anlegen (#322).** Im Liederheft steht oben rechts ein **+**, und
   beim Bearbeiten eines Ablaufs gibt es unter „Hinzufügen → Lied" den Punkt **„Neues Lied anlegen …"**.
   Beides sieht nur, wer in ChurchTools Lieder bearbeiten darf.
@@ -93,6 +116,21 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   zweiten Versuch, der es doppeln würde. Scheitert nur der Ablauf-Eintrag, ist das kein Fehler: Das
   Lied existiert, und die Antwort sagt beides. Doppelte CCLI-Nummern und fremde Kategorien lehnt der
   Server selbst ab, nicht erst das Formular.
+
+- **Die Stammdaten-Felder gibt es genau einmal** (`SongFields`) – „Neues Lied" und „Stammdaten ändern"
+  zeigen dieselben fünf Angaben. Als zwei Formulare nebeneinander wäre jede Korrektur an einem davon
+  gelandet. Die Regeln beider Formulare liegen zusammen in `utils/liedFormular.ts`, der Schreibweg in
+  `services/songVerwaltung.ts` (vorher `songErstellen.ts` – der Name stimmte nicht mehr).
+
+- **`songWritePayload` baut den Lied-`PUT` aus dem gelesenen Ist-Zustand** – die dritte riskante reine
+  Funktion des Projekts nach `agendaItemWritePayload` und `arrangementWritePayload`. Gemessen an der
+  ChurchTools-Test-Instanz: Ein `PUT {name, categoryId}` setzte Autor, CCLI-Nummer und Copyright auf
+  `null` und `shouldPractice` auf `false`.
+
+  Beim Messen ist mir die Frage zuerst **falsch** geraten: Der erste Versuch schickte nur `{name}` und
+  bekam 400, weil `categoryId` Pflicht ist – dass danach alle Felder noch standen, sah nach
+  „ungefährlich" aus, obwohl gar nicht geschrieben worden war. Ein Messaufbau, der den geprüften
+  Vorgang nicht auslöst, belegt nichts.
 
 - **Auftrag, Ergebnis und Feldgrenzen des Anlegens stehen an EINER Stelle** (`@shared/types`:
   `LiedStammdaten`, `LiedAnlegenAuftrag`, `LiedAngelegt`, `LIED_GRENZEN`). Vorher hätte das Formular

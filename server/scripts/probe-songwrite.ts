@@ -150,6 +150,8 @@ async function anlegeDurchgang(csrf: string): Promise<void> {
     ccli: '1234567',
     copyright: 'Test Copyright',
     note: 'Test Notiz',
+    // Für Frage 1 aus `aenderFragen`: ein weiteres Feld, das ein Teil-PUT verlieren könnte.
+    shouldPractice: true,
   });
   console.log(`  POST /api/songs → ${angelegt.status}`);
   console.log(`    Antwort: ${JSON.stringify(angelegt.json).slice(0, 700)}`);
@@ -203,6 +205,8 @@ async function anlegeDurchgang(csrf: string): Promise<void> {
   console.log(`  PUT /api/songs/${songId} (Stammdaten) → ${nachher.status}`);
   console.log(`    Antwort: ${JSON.stringify(nachher.json).slice(0, 500)}`);
 
+  await aenderFragen(csrf, songId, name);
+
   // Aufräumen – und danach NACHSEHEN, ob es wirklich weg ist.
   const geloescht = await schreibVersuch('DELETE', `/api/songs/${songId}`, csrf);
   console.log(`  DELETE /api/songs/${songId} → ${geloescht.status}`);
@@ -213,6 +217,100 @@ async function anlegeDurchgang(csrf: string): Promise<void> {
     kontrolle.status === 404
       ? '    ✓ Aufgeräumt (Kontrolle: 404).'
       : `    ⚠️  Lied #${songId} liegt NOCH in der Test-Instanz (Kontrolle: ${kontrolle.status}) – bitte von Hand löschen.`,
+  );
+}
+
+/**
+ * **Die drei Fragen von Schritt 11** (#322, Stammdaten ändern) – lesend nicht klärbar.
+ *
+ *  1. **Löscht ein Teil-`PUT` die nicht gesendeten Felder?** Beim Arrangement ist genau das belegt:
+ *     Ein `PUT {name, bpm}` hat Tonart, zweite Tonart und Dauer auf `null` gesetzt (siehe
+ *     `updateArrangementTempo`). Gilt das für Lieder auch, MUSS die App lesen–ändern–schreiben – ein
+ *     Formular, das nur die geänderten Felder schickt, würde sonst Autor und Copyright wegwerfen.
+ *  2. **Nimmt `PUT` das Feld `note` an?** Beim Anlegen ignoriert ChurchTools es (gemessen). Ignoriert
+ *     es der `PUT` auch, darf im Formular kein Notiz-Feld stehen – ein Feld, das nichts speichert,
+ *     ist schlimmer als keins.
+ *  3. **Lässt sich die Kategorie per `PUT` wechseln?** Danach richtet sich, ob die Kategorie im
+ *     Änderungsformular überhaupt anklickbar sein darf.
+ *
+ * Gemessen wird am **frisch angelegten Testlied** des Durchgangs oben, direkt vor dem Löschen. Nach
+ * jedem Schreibvorgang wird **nachgelesen** – nicht die Antwort geglaubt (Lehre vom 11.08.2026).
+ */
+async function aenderFragen(csrf: string, songId: number, name: string): Promise<void> {
+  console.log('\n── Stammdaten ändern (#322, Schritt 11) ──');
+
+  /** Liest das Lied frisch und zeigt die Felder, auf die es ankommt. */
+  async function lies(): Promise<Record<string, unknown>> {
+    await new Promise((r) => setTimeout(r, PAUSE_MS));
+    const res = await fetch(`${BASE}/api/songs/${songId}`, {
+      headers: { Authorization: `Login ${TOKEN}`, Accept: 'application/json' },
+    });
+    const json = (await res.json()) as { data?: Record<string, unknown> };
+    return json.data ?? {};
+  }
+
+  const vorher = await lies();
+  console.log(
+    `  Vorher: author=${JSON.stringify(vorher.author)} ccli=${JSON.stringify(vorher.ccli)} ` +
+      `copyright=${JSON.stringify(vorher.copyright)} note=${JSON.stringify(vorher.note)} ` +
+      `categoryId=${JSON.stringify((vorher.category as { id?: unknown } | undefined)?.id ?? vorher.categoryId)}`,
+  );
+  console.log(`  Alle Feldnamen von GET /api/songs/{id}: ${Object.keys(vorher).join(', ')}`);
+  console.log(`  ${vorher.note ? '✓' : '✗'} `.trim() + ` note nach dem ersten PUT gesetzt?`);
+
+  /**
+   * Frage 1, **richtig gestellt.** Der erste Versuch schickte nur `{name}` und bekam **400**:
+   * `categoryId` ist beim `PUT` Pflicht (dasselbe sagt der Leer-Versuch oben). Dass danach alle Felder
+   * noch standen, belegte deshalb **nichts** – der Aufruf hat gar nicht geschrieben.
+   *
+   * Also mit **beiden Pflichtfeldern** und ohne die übrigen: Bleiben Autor, CCLI, Copyright und
+   * `shouldPractice` stehen, oder werden sie geleert?
+   */
+  const teil = await schreibVersuch('PUT', `/api/songs/${songId}`, csrf, {
+    name: `${name} (geändert)`,
+    categoryId: 0,
+  });
+  console.log(`\n  PUT {name, categoryId} – ohne author/ccli/copyright → ${teil.status}`);
+  const danach = await lies();
+  const felder = ['author', 'ccli', 'copyright', 'shouldPractice'] as const;
+  const verloren = felder.filter((f) => vorher[f] && !danach[f]);
+  console.log(
+    verloren.length > 0
+      ? `  🔴 TEIL-PUT LÖSCHT: ${verloren.join(', ')} → lesen–ändern–schreiben ist PFLICHT.`
+      : '  🟢 Teil-PUT lässt die übrigen Felder stehen.',
+  );
+  console.log(
+    `  Nachher: author=${JSON.stringify(danach.author)} ccli=${JSON.stringify(danach.ccli)} ` +
+      `copyright=${JSON.stringify(danach.copyright)} shouldPractice=${JSON.stringify(danach.shouldPractice)}`,
+  );
+  console.log(
+    `  ${danach.name === `${name} (geändert)` ? '✓' : '🔴'} Der neue Name ist wirklich angekommen` +
+      ` (gelesen: ${JSON.stringify(danach.name)}).`,
+  );
+
+  // Frage 2: note ausdrücklich setzen – und nachlesen, nicht der Antwort glauben.
+  await schreibVersuch('PUT', `/api/songs/${songId}`, csrf, {
+    name: `${name} (geändert)`,
+    categoryId: 0,
+    note: 'Notiz aus Schritt 11',
+  });
+  const mitNotiz = await lies();
+  console.log(
+    mitNotiz.note === 'Notiz aus Schritt 11'
+      ? '  🟢 note wird per PUT gespeichert → das Formular darf ein Notiz-Feld haben.'
+      : `  🔴 note wird per PUT NICHT gespeichert (gelesen: ${JSON.stringify(mitNotiz.note)}) → kein Notiz-Feld.`,
+  );
+
+  // Frage 3: Kategorie wechseln (0 → 1, „Inaktive Songs").
+  const kat = await schreibVersuch('PUT', `/api/songs/${songId}`, csrf, {
+    name: `${name} (geändert)`,
+    categoryId: 1,
+  });
+  const nachKat = await lies();
+  const katId = (nachKat.category as { id?: unknown } | undefined)?.id ?? nachKat.categoryId;
+  console.log(
+    `  PUT categoryId: 1 → ${kat.status}; gelesen: ${JSON.stringify(katId)} ` +
+      (String(katId) === '1' ? '🟢 Wechsel möglich' : '🔴 Wechsel NICHT übernommen'),
   );
 }
 

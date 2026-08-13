@@ -1,18 +1,25 @@
 /**
- * Die Regeln des Formulars „Neues Lied" (#322, Schritt 10b) – **rein und damit prüfbar.**
+ * Die Regeln der Lied-Formulare – **anlegen (#322, Schritt 10b) und ändern (Schritt 11)**, rein und
+ * damit prüfbar.
  *
- * Warum hier und nicht in der Komponente: Es sind Entscheidungen, nicht Darstellung. Was ein Doppel
- * ist, wann der Knopf freigibt und was aus dem CCLI-Treffer ins Formular übernommen wird – genau das
- * sind die Stellen, an denen später eine Korrektur landet. In einer Komponente ließe sich das nur
- * über gerenderte Oberfläche prüfen; hier direkt.
+ * Warum hier und nicht in den Komponenten: Es sind Entscheidungen, nicht Darstellung. Was ein Doppel
+ * ist, wann der Knopf freigibt, was aus dem CCLI-Treffer übernommen wird und **was als Änderung gilt** –
+ * genau das sind die Stellen, an denen später eine Korrektur landet. In einer Komponente ließe sich das
+ * nur über gerenderte Oberfläche prüfen; hier direkt.
+ *
+ * **Beide Formulare teilen diese Datei mit Absicht.** Sie zeigen dieselben Felder; zwei Regelsätze
+ * nebeneinander wären zwei Stellen, an denen dieselbe Korrektur landen müsste – und die zweite wird
+ * vergessen.
  *
  * **Was hier NICHT steht:** die Blockade gegen eine doppelte CCLI-Nummer und die Rechteprüfung. Beides
- * macht der Server (`songErstellen.ts`) – eine Prüfung, die nur in der Oberfläche steht, umgeht jeder,
+ * macht der Server (`songVerwaltung.ts`) – eine Prüfung, die nur in der Oberfläche steht, umgeht jeder,
  * der den Endpunkt direkt aufruft. Die Oberfläche zeigt die Meldung des Servers, statt sie
  * vorwegzunehmen.
  */
 import type {
   LiedAnlegenAuftrag,
+  LiedStammdaten,
+  LiedStammdatenAnsicht,
   SongLibraryEntry,
   SongSelectSong,
   SongSelectTreffer,
@@ -88,11 +95,17 @@ export function formularBereit(f: NeuesLiedFormular): boolean {
  * Verglichen wird getrimmt und ohne Groß-/Kleinschreibung, weil „Treu" und „treu " dasselbe Lied
  * meinen. `null`, solange der Name zu kurz zum Vergleichen ist.
  */
-export function namensWarnung(name: string, songs: SongLibraryEntry[]): string | null {
+export function namensWarnung(
+  name: string,
+  songs: SongLibraryEntry[],
+  eigenesLied?: number,
+): string | null {
   const gesucht = name.trim().toLocaleLowerCase('de-DE');
   if (gesucht.length < LIED_GRENZEN.name.min) return null;
 
-  const treffer = songs.filter((s) => s.name.trim().toLocaleLowerCase('de-DE') === gesucht);
+  const treffer = songs.filter(
+    (s) => s.name.trim().toLocaleLowerCase('de-DE') === gesucht && s.songId !== eigenesLied,
+  );
   if (treffer.length === 0) return null;
 
   return treffer.length === 1
@@ -177,4 +190,66 @@ export function trefferUnterzeile(t: SongSelectTreffer): string {
   else if (t.hasLyrics) teile.push('nur Text');
   if (t.isPublicDomain) teile.push('gemeinfrei');
   return teile.join(' · ');
+}
+
+/* ══════════════════════════════════════ Stammdaten ändern (#322, Schritt 11) ══════════════════ */
+
+/**
+ * Füllt das Formular aus den gelesenen Stammdaten.
+ *
+ * `null` wird zu `''` – im Eingabefeld gibt es kein „nicht gesetzt", nur leer. Die Rückrichtung
+ * (`aenderungAus`) macht daraus wieder eine Leerung.
+ *
+ * `key` und `arrangementName` bleiben leer: Sie gehören zum **Arrangement**, nicht zum Lied. Beim
+ * Ändern der Stammdaten haben sie deshalb nichts zu suchen – die Tonart eines vorhandenen
+ * Arrangements ändert man in ChurchTools oder über die Transposition der App.
+ */
+export function formularAusLied(lied: LiedStammdatenAnsicht): NeuesLiedFormular {
+  return {
+    ...LEERES_FORMULAR,
+    name: lied.name,
+    categoryId: lied.categoryId,
+    author: lied.author ?? '',
+    ccli: lied.ccli ?? '',
+    copyright: lied.copyright ?? '',
+  };
+}
+
+/**
+ * Was sich gegenüber dem gelesenen Stand geändert hat – **nur das wird geschickt.**
+ *
+ * Drei Zustände, und die Unterscheidung ist der Grund für diese Funktion:
+ *  - Feld **fehlt** im Ergebnis = unverändert (der Server behält den Ist-Wert),
+ *  - Feld mit **Text** = neuer Wert,
+ *  - Feld mit **`''`** = ausdrücklich leeren.
+ *
+ * Der Server baut daraus einen vollständigen Payload (`songWritePayload`) – nötig, weil ein Teil-`PUT`
+ * in ChurchTools die nicht gesendeten Felder löscht (gemessen). Diese Funktion beschreibt also die
+ * **Absicht**, nicht den Payload.
+ *
+ * Ein leeres Ergebnis heißt: Es gibt nichts zu speichern. Die Oberfläche sperrt dann den Knopf, statt
+ * einen Schreibvorgang für nichts auszulösen.
+ */
+export function aenderungAus(
+  f: NeuesLiedFormular,
+  ist: LiedStammdatenAnsicht,
+): Partial<LiedStammdaten> {
+  const aenderung: Partial<LiedStammdaten> = {};
+
+  if (f.name.trim() !== ist.name) aenderung.name = f.name.trim();
+  if (f.categoryId !== null && f.categoryId !== ist.categoryId) aenderung.categoryId = f.categoryId;
+
+  // Die drei freiwilligen Textfelder: `''` im Formular und `null` im Bestand sind dasselbe – daraus
+  // darf keine Änderung entstehen, sonst wäre der Speichern-Knopf immer aktiv.
+  for (const feld of ['author', 'ccli', 'copyright'] as const) {
+    const neu = f[feld].trim();
+    if (neu !== (ist[feld] ?? '')) aenderung[feld] = neu;
+  }
+
+  return aenderung;
+}
+
+/** Gibt es überhaupt etwas zu speichern? (Leere Änderung = Knopf bleibt gesperrt.) */
+export function hatAenderung(f: NeuesLiedFormular, ist: LiedStammdatenAnsicht): boolean {
+  return Object.keys(aenderungAus(f, ist)).length > 0;
 }

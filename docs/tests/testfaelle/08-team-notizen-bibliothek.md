@@ -116,8 +116,44 @@ gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas 
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/NewSongSheet.tsx`, `client/src/hooks/useNeuesLied.ts`, `client/src/utils/neuesLied.ts`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `server/src/services/songErstellen.ts`, `server/src/services/ctSongCategories.ts`
-- **Automatisiert:** teilweise – `client/src/utils/neuesLied.test.ts`, `client/src/hooks/useNeuesLied.test.tsx`, `client/src/components/NewSongSheet.test.tsx`, `server/src/services/songErstellen.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und CCLI
+- **Betrifft:** `client/src/components/NewSongSheet.tsx`, `client/src/hooks/useNeuesLied.ts`, `client/src/utils/liedFormular.ts`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctSongCategories.ts`
+- **Automatisiert:** teilweise – `client/src/utils/liedFormular.test.ts`, `client/src/hooks/useNeuesLied.test.tsx`, `client/src/components/NewSongSheet.test.tsx`, `server/src/services/songVerwaltung.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und CCLI
+- **Historie:** #322
+
+</details>
+
+### TF-LIB-04 · Stammdaten eines Liedes ändern und löschen
+
+**Das brauchst du:** Ein Konto, das in ChurchTools Lieder bearbeiten darf, und ein **Testlied** aus
+TF-LIB-03 – **nicht ein echtes Gemeindelied.** Dieser Test schreibt und löscht in ChurchTools.
+
+**Das muss passieren:** Geänderte Felder stehen in ChurchTools – und **die nicht angefassten Felder
+stehen unverändert daneben.** Das ist der eigentliche Prüfpunkt: ChurchTools ersetzt beim Speichern
+den ganzen Datensatz, und die App muss den Rest bewahren.
+
+1. Ein Lied öffnen, auf den Titel tippen, **„Stammdaten …"** wählen. Prüfen: Alle Felder sind mit dem
+   gefüllt, was in ChurchTools steht.
+2. **Speichern muss gesperrt sein**, solange nichts geändert ist.
+3. Nur den **Namen** ändern und speichern. Danach in ChurchTools nachsehen: Der Name ist neu –
+   **Autor, CCLI-Nummer und Copyright stehen unverändert da.**
+4. Den **Autor leeren** und speichern. In ChurchTools muss das Feld nun leer sein, die übrigen
+   unberührt.
+5. Die **Kategorie** wechseln (z. B. auf „Inaktive Songs") und speichern; in ChurchTools prüfen.
+6. Eine **CCLI-Nummer eintragen, die ein anderes Lied schon hat**: Das muss abgelehnt werden, mit
+   Nennung des anderen Liedes. Die eigene Nummer erneut zu speichern muss dagegen gehen.
+7. Zurück im **Liederheft**: den **Stift** in der Liedzeile antippen – dasselbe Blatt, gleicher Ablauf.
+8. **Löschen:** unten „Lied löschen …". Die Rückfrage muss die **Folgen** nennen (Arrangements,
+   Notenblätter, Dateien, Ablauf). **Abbrechen** darf nichts tun.
+9. Nun wirklich löschen. Aus dem geöffneten Lied heraus muss die App die Blatt-Ansicht **verlassen**;
+   im Liederheft verschwindet das Lied aus der Liste. In ChurchTools nachsehen: Es ist weg.
+10. Zum Schluss mit einem Konto **ohne** das Recht „Lieder bearbeiten" nachsehen: Weder „Stammdaten …"
+    im Lied-Menü noch der Stift im Liederheft dürfen erscheinen.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/components/EditSongSheet.tsx`, `client/src/components/SongFields.tsx`, `client/src/utils/liedFormular.ts`, `client/src/components/SongMenu.tsx`, `client/src/pages/AllSongs.tsx`, `server/src/services/songPayload.ts`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctWrite.ts`
+- **Automatisiert:** teilweise – `server/src/services/songPayload.test.ts` (Feld-Erhalt!), `server/src/services/songVerwaltung.test.ts`, `client/src/utils/liedFormular.test.ts`, `client/src/components/EditSongSheet.test.tsx`; von Hand bleibt, dass ChurchTools die Felder wirklich behält
 - **Historie:** #322
 
 </details>

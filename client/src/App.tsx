@@ -533,6 +533,7 @@ export default function App() {
             /* Anlegen braucht Netz: Es schreibt in ChurchTools (#322). */
             canCreateSong={canEditSongs && online}
             onOpenSong={openLibrarySong}
+            onToast={showToast}
           />
         )}
 

@@ -8,18 +8,7 @@
   gap: 12px;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.label {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text2);
-}
-
+// Nur für die Suchzeile; die Formularfelder liegen in SongFields.module.scss.
 .input {
   flex: 1;
   min-width: 0;
@@ -29,67 +18,12 @@
   background: var(--surface2);
   color: var(--text);
   font-family: inherit;
-  // 16px, damit iOS beim Fokussieren nicht hineinzoomt.
   font-size: 16px;
 
   &:focus {
     outline: none;
     border-color: var(--blue);
   }
-}
-
-.textarea {
-  width: 100%;
-  min-width: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface2);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 16px;
-  resize: vertical;
-
-  &:focus {
-    outline: none;
-    border-color: var(--blue);
-  }
-}
-
-// Kategorie-Auswahl: Chips statt Auswahlliste. Es sind wenige, sie sind alle erlaubt (der Server
-// schneidet zu), und keiner ist vorbelegt – ein leeres <select> mit Platzhalter sähe dagegen wie ein
-// Versehen aus.
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.chip {
-  padding: 9px 13px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border);
-  background: var(--surface2);
-  color: var(--text);
-  font-family: var(--ui);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.12s,
-    border-color 0.12s;
-
-  @media (hover: hover) {
-    &:hover {
-      background: var(--surface3);
-    }
-  }
-}
-
-.chipActive {
-  border-color: var(--blue);
-  background: var(--blue-soft);
-  color: var(--blue-ink);
 }
 
 .searchRow {
@@ -183,14 +117,6 @@
   line-height: 1.45;
 }
 
-// Warnung direkt am Feld (gleicher Liedname): gedeckt, nicht rot. Anlegen ist erlaubt – ein roter
-// Fehlerkasten würde einen Riegel behaupten, den es hier nicht gibt.
-.warn {
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: var(--text2);
-}
-
 .primary {
   padding: 12px 18px;
   border: none;
@@ -276,4 +202,35 @@
   border-radius: 50%;
   background: rgba(22, 138, 22, 0.12);
   color: var(--green, #168a16);
+}
+
+// Der folgenreiche Weg (Lied löschen) – rot umrandet, aber nicht rot gefüllt: Er soll auffindbar
+// sein, ohne wie der Hauptknopf zu wirken.
+.dangerWide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 44px;
+  margin-top: 4px;
+  border-radius: 11px;
+  border: 1px solid rgba(178, 34, 71, 0.4);
+  background: transparent;
+  color: var(--red);
+  font-family: var(--ui);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover {
+      background: rgba(178, 34, 71, 0.08);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
 }

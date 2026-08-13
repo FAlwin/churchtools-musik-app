@@ -95,11 +95,31 @@ export interface CtArrangement {
   note?: string | null;
 }
 
+/**
+ * Ein Lied, wie ChurchTools es liefert.
+ *
+ * **Die Felder unterhalb von `arrangements` stehen hier, weil das Ändern der Stammdaten sie braucht**
+ * (#322, Schritt 11): `PUT /api/songs/{id}` ersetzt den ganzen Datensatz, deshalb muss der
+ * Ist-Zustand vollständig gelesen werden, bevor etwas darüber gelegt wird. Gemessen an der
+ * ChurchTools-Test-Instanz (13.08.2026) liefert `GET /api/songs/{id}`: `id`, `name`, `category`,
+ * `author`, `copyright`, `ccli`, `shouldPractice`, `arrangements`, `meta`, `note`.
+ *
+ * `category` ist beim **Lesen** ein Objekt, beim **Schreiben** heißt das Feld `categoryId` – die
+ * Umrechnung macht `songWritePayload`, damit sie nicht an mehreren Stellen entsteht.
+ *
+ * `note` fehlt hier mit Absicht: ChurchTools markiert es am Lied als `@deprecated` und **speichert es
+ * weder beim Anlegen noch beim Ändern** (beides gemessen). Ein Feld, das nichts behält, gehört in
+ * keinen Payload und in kein Formular.
+ */
 export interface CtSong {
   id: number;
   name: string;
   author: string | null;
   ccli: string | null;
+  copyright?: string | null;
+  category?: CtSongCategory | null;
+  /** ChurchTools-Kennzeichen „sollte geübt werden" – wird beim Schreiben mitgeführt, nicht angezeigt. */
+  shouldPractice?: boolean;
   arrangements: CtArrangement[];
 }
 
