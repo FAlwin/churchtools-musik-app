@@ -9,6 +9,33 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
+- **Lieder lassen sich in der App anlegen (#322).** Im Liederheft steht oben rechts ein **+**, und
+  beim Bearbeiten eines Ablaufs gibt es unter „Hinzufügen → Lied" den Punkt **„Neues Lied anlegen …"**.
+  Beides sieht nur, wer in ChurchTools Lieder bearbeiten darf.
+
+  **Zwei gleichrangige Wege.** Entweder **bei CCLI suchen** – dann kommen Titel, Autoren, Nummer,
+  Copyright und Tonart mit, und nach dem Anlegen holt die App auch gleich **das Notenblatt**, sodass
+  das Lied sofort Akkorde hat. Oder **selbst eintippen**, für eigene Lieder, Übersetzungen und alles,
+  was nicht bei CCLI steht. Ohne SongSelect-Lizenz gibt es nur den zweiten Weg – und keinen Knopf,
+  der ins Leere führt.
+
+  **Die Kategorie ist ein Pflichtfeld ohne Vorbelegung.** Zur Wahl stehen genau die Kategorien, in
+  denen ChurchTools dich arbeiten lässt. Ist dir keine freigegeben, sagt die App das, statt ein
+  Formular anzubieten, das am Ende abgelehnt würde.
+
+  **Gleiche Namen sind erlaubt, gleiche CCLI-Nummern nicht.** Ein Lied darf so heißen wie ein
+  vorhandenes – Übersetzungen und zweite Fassungen sind normal, es kommt nur eine Warnung. Eine
+  CCLI-Nummer, die es schon gibt, lehnt die App ab und nennt das Lied, das sie hat.
+
+  Nach dem Anlegen entscheidest du, wie es weitergeht: **Lied öffnen**, **noch ein Lied anlegen** oder
+  **fertig**.
+
+  **Was nicht glattgebügelt wird:** Ein Lied entsteht in ChurchTools in mehreren Schritten, und
+  ChurchTools kennt dafür keine Transaktion. Klappt der Ablauf-Eintrag nicht oder kommt das Notenblatt
+  nicht, steht das Lied trotzdem da – und die App sagt genau, was fehlt, statt einen Fehler zu melden,
+  der wie „nichts passiert" aussieht. Nach einem unklaren Fehlschlag heißt der Knopf „Trotzdem erneut
+  anlegen": Ein beiläufiger zweiter Versuch würde das Lied doppelt anlegen.
+
 - **Das Notenblatt lässt sich aus CCLI SongSelect holen (#322).** Hat ein Lied eine CCLI-Nummer und
   eure Gemeinde die SongSelect-Integration, steht in „Dateien …" ein zweiter Knopf:
   **„Notenblatt aus SongSelect holen …"**. ChurchTools holt es dann bei CCLI – **in der Tonart des
@@ -43,10 +70,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Intern
 
-- **Die Lied-Kategorien stehen der App jetzt zur Verfügung (#322, Schritt 7).** Grundlage für das
-  Anlegen von Liedern: Der Server kennt die Kategorien der Instanz **mit Namen** und weiß, in welchen
-  davon der Anmeldete arbeiten darf. Noch ist nichts davon zu sehen – die Oberfläche kommt mit dem
-  Anlege-Formular.
+- **Die Lied-Kategorien stehen der App zur Verfügung (#322, Schritt 7).** Grundlage für das Anlegen
+  von Liedern: Der Server kennt die Kategorien der Instanz **mit Namen** und weiß, in welchen davon
+  der Anmeldete arbeiten darf. Zu sehen ist das in der Kategorie-Auswahl des Anlege-Formulars.
 
   Bemerkenswert daran ist, wo die Namen herkommen: Einen `/api`-Endpunkt für Lied-Kategorien gibt es
   **nicht** (fünf Pfade geprüft, alle 404). Sie stecken in `getMasterData` der alten
@@ -59,15 +85,30 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   beim Aufrufer, damit ein Fehler beim Liedersuchen weiter anders klingt als einer beim Laden der
   Kategorien.
 
-- **Der Server kann Lieder anlegen (#322, Schritt 10a).** `POST /api/songs` legt ein Lied **samt
-  Arrangement** an und trägt es auf Wunsch gleich in den Ablauf eines Termins ein. **Die Oberfläche
-  dazu fehlt noch** – zu sehen ist davon also nichts.
+- **Der Server legt Lieder an (#322, Schritt 10a).** `POST /api/songs` legt ein Lied **samt
+  Arrangement** an und trägt es auf Wunsch gleich in den Ablauf eines Termins ein.
 
   Die Sorgfalt steckt in den halben Durchläufen: ChurchTools kennt keine Transaktion. Scheitert das
   Arrangement, liegt dort ein Lied ohne eines – die Meldung sagt genau das und warnt vor einem
   zweiten Versuch, der es doppeln würde. Scheitert nur der Ablauf-Eintrag, ist das kein Fehler: Das
   Lied existiert, und die Antwort sagt beides. Doppelte CCLI-Nummern und fremde Kategorien lehnt der
   Server selbst ab, nicht erst das Formular.
+
+- **Auftrag, Ergebnis und Feldgrenzen des Anlegens stehen an EINER Stelle** (`@shared/types`:
+  `LiedStammdaten`, `LiedAnlegenAuftrag`, `LiedAngelegt`, `LIED_GRENZEN`). Vorher hätte das Formular
+  seine `maxLength` und der Server sein Zod-Schema je eigene Zahlen gehabt – zwei Listen über dieselben
+  ChurchTools-Grenzen, von denen die zweite bei einer Änderung vergessen wird. `ctWrite.NeuesLied` ist
+  jetzt nur ein anderer Name für `LiedStammdaten`.
+
+- **Ein Lied aus dem Liederheft zu öffnen, passiert nur noch an einer Stelle** (`openLibrarySong` in
+  `App.tsx`). Beim Antippen in der Liste und nach dem Anlegen sind es dieselben zwei Zustände; als
+  zwei Kopien wäre die nächste Änderung an genau einer davon gelandet.
+
+- **Die geführte Einführung nennt beide neuen Einstiege** (`termine-v3`, `setlist-edit-v2`).
+  Nebenbefund dabei, gemessen im ausgelieferten Bundle: Produktiv läuft **v2.20.0**, nicht das in
+  Doku und Code-Kommentaren behauptete v2.16.3. Damit ist `chart-v4` sehr wohl draußen – die nächste
+  Textänderung an den Chart-Schritten braucht also `chart-v5`. Der irreführende Kommentar in
+  `onboarding.ts` ist berichtigt.
 
 ## [2.21.0] – 2026-08-11
 

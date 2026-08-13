@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { LiedAnlegenAuftrag } from '@shared/types/index';
 import * as api from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 
@@ -244,6 +245,52 @@ export function useSongCategories(enabled: boolean) {
     queryFn: () => api.getSongCategories(),
     enabled,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** Ab wie vielen Zeichen bei CCLI gesucht wird – kürzere Eingaben ergeben nur Rauschen. */
+export const SONGSELECT_MIN_ZEICHEN = 3;
+
+/**
+ * Sucht bei CCLI SongSelect nach einem Titel (#322).
+ *
+ * **Jede Suche geht über ChurchTools an CCLI** – deshalb wird sie nicht bei jedem Tastendruck
+ * ausgelöst: Der Aufrufer gibt den Suchbegriff entprellt herein, und unter drei Zeichen läuft gar
+ * nichts. **Kein automatischer zweiter Versuch:** Ein Fehler von CCLI (keine Lizenz, Aussetzer)
+ * wiederholt sich meist, und die Meldung ist hier die nützlichere Antwort als ein stiller Retry.
+ */
+export function useSongSelectSuche(titel: string, enabled: boolean) {
+  const begriff = titel.trim();
+  return useQuery({
+    queryKey: ['songselect-search', begriff],
+    queryFn: () => api.sucheSongSelect(begriff),
+    enabled: enabled && begriff.length >= SONGSELECT_MIN_ZEICHEN,
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+  });
+}
+
+/**
+ * Legt ein Lied an (#322) – Lied + erstes Arrangement, auf Wunsch mit Ablauf-Eintrag.
+ *
+ * **Die Liedliste wird danach ungültig, die Statistik nur bei einem Ablauf-Eintrag.** Ohne Termin hat
+ * sich an der Nutzung nichts geändert; sie neu zu holen wären ChurchTools-Anfragen für nichts (#300).
+ *
+ * Was **nicht** hier steht: ein Wiederholversuch. Ein zweiter Durchlauf legte ein zweites Lied an
+ * (siehe `songErstellen.ts`) – React Query wiederholt Mutationen von sich aus nicht, und das bleibt so.
+ */
+export function useLiedAnlegen() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (auftrag: LiedAnlegenAuftrag) => api.legeLiedAn(auftrag),
+    onSuccess: (ergebnis, auftrag) => {
+      void qc.invalidateQueries({ queryKey: ['song-library'] });
+      if (auftrag.eventId !== undefined && ergebnis.imAblauf) {
+        void qc.invalidateQueries({ queryKey: ['agenda', auftrag.eventId] });
+        void qc.invalidateQueries({ queryKey: ['services'] });
+        void qc.invalidateQueries({ queryKey: ['song-usage'] });
+      }
+    },
   });
 }
 

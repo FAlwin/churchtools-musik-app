@@ -124,6 +124,67 @@ export interface SongCategory {
 }
 
 /**
+ * Die Stammdaten eines neuen Liedes (#322) – **die einzige Stelle, die diese Felder aufzählt.**
+ *
+ * Sie stehen hier und nicht im Server, weil das Formular sie füllt und ChurchTools sie annimmt: Eine
+ * zweite Fassung im Client wäre die Regel-Dopplung, die dieses Projekt am häufigsten getroffen hat.
+ * `server/services/ctWrite.ts` verwendet denselben Typ (`NeuesLied`).
+ *
+ * `note` fehlt mit Absicht: `POST /api/songs` ignoriert das Feld (gemessen 13.08.2026) – die Notiz
+ * kommt über „Stammdaten ändern" (#322, Schritt 11).
+ */
+export interface LiedStammdaten {
+  name: string;
+  categoryId: number;
+  author?: string;
+  ccli?: string;
+  copyright?: string;
+}
+
+/**
+ * Die Feldgrenzen beim Anlegen eines Liedes (#322) – **eine Quelle für Formular und Zod-Schema.**
+ *
+ * Die Werte stammen von ChurchTools selbst (gemessen mit leerem Rumpf, 07.08.2026: Name 2–200
+ * Zeichen). Sie stehen hier, weil beide Seiten sie brauchen: das Formular für `maxLength` und die
+ * Freigabe des Knopfs, der Server zum Prüfen. Zweimal hingeschriebene Zahlen wären zwei Stellen, an
+ * denen eine Korrektur landen muss – und die zweite wird vergessen.
+ */
+export const LIED_GRENZEN = {
+  name: { min: 2, max: 200 },
+  author: 200,
+  ccli: 50,
+  copyright: 500,
+  key: 10,
+  arrangementName: 50,
+} as const;
+
+/** Der Auftrag aus dem Formular „Neues Lied" (#322): Stammdaten + erstes Arrangement (+ Ablauf). */
+export interface LiedAnlegenAuftrag extends LiedStammdaten {
+  /** Tonart des ersten Arrangements (aus SongSelect vorbelegt, änderbar). */
+  key?: string | null;
+  /** Name des ersten Arrangements; leer = „Standard". */
+  arrangementName?: string;
+  /** Wenn gesetzt: das fertige Lied zusätzlich in den Ablauf dieses Termins eintragen. */
+  eventId?: number;
+}
+
+/**
+ * Was beim Anlegen herauskam – **auch der Teilerfolg wird benannt**, nicht verschwiegen (#322).
+ *
+ * Ein Lied entsteht in zwei bis drei Schreibvorgängen ohne Transaktion (siehe
+ * `server/services/songErstellen.ts`). Deshalb sagt die Antwort nicht nur „hat geklappt", sondern
+ * auch, was davon: Ein fehlender Ablauf-Eintrag ist kein Grund, das angelegte Lied zu verschweigen.
+ */
+export interface LiedAngelegt {
+  songId: number;
+  arrangementId: number;
+  /** Nur gesetzt, wenn ein Termin mitgegeben wurde: Hat der Ablauf-Eintrag geklappt? */
+  imAblauf?: boolean;
+  /** Warum der Ablauf-Eintrag nicht geklappt hat – für die Meldung an den Nutzer. */
+  ablaufFehler?: string;
+}
+
+/**
  * Die Art einer Arrangement-Datei (#321) – nur für das Symbol in der Liste.
  *
  * **Kein Sortier- oder Schutzmerkmal.** Die Liste ist bewusst flach und behandelt alle Dateien

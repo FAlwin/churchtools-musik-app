@@ -87,6 +87,41 @@ richtiger **Lied-Punkt** mit Arrangement – kein reiner Text-Punkt.
 
 </details>
 
+### TF-LIB-03 · Neues Lied anlegen (CCLI und selbst eingetippt)
+
+**Das brauchst du:** Ein Konto, das in ChurchTools Lieder bearbeiten darf. **Achtung: Dieser Test
+legt echte Lieder in ChurchTools an** – auch von der Test-Instanz aus, denn beide sprechen dieselbe
+ChurchTools-Instanz. Räum sie hinterher in ChurchTools wieder weg; die App kann keine Lieder löschen.
+
+**Das muss passieren:** Das Lied steht in ChurchTools mit Kategorie, Autor, CCLI-Nummer, Copyright
+und einem **Standard-Arrangement** in der gewählten Tonart. Beim CCLI-Weg hängt am Arrangement auch
+gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas hochladen muss.
+
+1. Unten auf **Lieder** tippen, oben rechts auf **+**.
+2. **Bei CCLI suchen**, einen Titel eintippen (mindestens drei Zeichen) und **Suchen** drücken.
+3. Einen Treffer antippen. Prüfen: Titel, Autoren, Nummer und Tonart stehen im Formular, das
+   Copyright erscheint einen Moment später.
+4. **Ohne Kategorie** prüfen, dass „Lied anlegen" **gesperrt** ist. Dann eine Kategorie antippen.
+5. **Lied anlegen** – und in der Erfolgsansicht **Lied öffnen** wählen. Das Blatt muss Akkorde zeigen.
+6. In ChurchTools nachsehen: Kategorie, Autor, CCLI, Copyright, Arrangement, Notenblatt.
+7. Noch einmal **+**, diesmal **Selbst eintippen**: nur Name und Kategorie füllen, anlegen. Das Lied
+   entsteht ohne Notenblatt – das ist richtig.
+8. Einen Namen eintippen, den es schon gibt: Es muss eine **Warnung** erscheinen, das Anlegen aber
+   erlaubt bleiben.
+9. Dasselbe mit einer **CCLI-Nummer, die es schon gibt**: Hier muss der Server **ablehnen** und sagen,
+   welches Lied sie schon hat.
+10. Zum Schluss den Ablauf-Weg: Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied** →
+    **Neues Lied anlegen …**. Danach muss das Lied im Ablauf stehen – genau einmal.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/components/NewSongSheet.tsx`, `client/src/hooks/useNeuesLied.ts`, `client/src/utils/neuesLied.ts`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `server/src/services/songErstellen.ts`, `server/src/services/ctSongCategories.ts`
+- **Automatisiert:** teilweise – `client/src/utils/neuesLied.test.ts`, `client/src/hooks/useNeuesLied.test.tsx`, `client/src/components/NewSongSheet.test.tsx`, `server/src/services/songErstellen.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und CCLI
+- **Historie:** #322
+
+</details>
+
 ### TF-VER-01 · Eigene Fassung anlegen, ändern, löschen
 
 **Das brauchst du:** Ein Lied, das du bearbeiten darfst.

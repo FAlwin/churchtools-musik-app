@@ -7,6 +7,7 @@
  *    Funktion einzeln eingebaut, hätte genau eine davon gefehlt (#298).
  *  - **Kein Schreibvorgang wird automatisch wiederholt.** Nicht alle sind idempotent.
  */
+import type { LiedStammdaten } from '@shared/types/index';
 import { HttpError } from '../middleware/errorHandler.js';
 import { agendaItemWritePayload } from './agendaPayload.js';
 import { arrangementWritePayload } from './arrangementPayload.js';
@@ -308,14 +309,14 @@ export async function setAgendaItemHidden(
   });
 }
 
-/** Die Stammdaten eines neuen Liedes. Kategorie und Name sind Pflicht (ChurchTools prüft es selbst). */
-export interface NeuesLied {
-  name: string;
-  categoryId: number;
-  author?: string;
-  ccli?: string;
-  copyright?: string;
-}
+/**
+ * Die Stammdaten eines neuen Liedes. Kategorie und Name sind Pflicht (ChurchTools prüft es selbst).
+ *
+ * **Nur ein anderer Name für `LiedStammdaten`** aus `@shared/types` – dort steht die Feldliste, weil
+ * auch das Formular sie füllt. Zwei Aufzählungen derselben Felder wären zwei Stellen, die
+ * auseinanderlaufen.
+ */
+export type NeuesLied = LiedStammdaten;
 
 /**
  * Legt ein Lied in ChurchTools an und liefert seine ID (#322, Schritt 10).

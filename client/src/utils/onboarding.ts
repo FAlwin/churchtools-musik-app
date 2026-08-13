@@ -5,18 +5,21 @@ import type { CoachStep } from '../components/Coachmarks';
  * in localStorage (pro Gerät); „Einführung nochmal ansehen" im Mehr-Tab setzt ihn zurück.
  */
 const PREFIX = 'worship:onboard-';
-// termine-v2: Schritt „geändert"-Hinweis (#143) ergänzt – Version erhöht, damit Bestandsnutzer
-// den neuen Schritt beim ersten Öffnen nach dem Update sehen.
-export const TOUR_TERMINE = 'termine-v2';
+// termine-v3: Der Schritt „Die Bereiche" nennt jetzt das Anlegen neuer Lieder (#322) – der +-Knopf
+// im Liederheft ist neu und sieht nach nichts aus. Version erhöht, damit Bestandsnutzer den
+// geänderten Schritt sehen.
+// (termine-v2 hatte den Schritt „geändert"-Hinweis (#143) ergänzt.)
+export const TOUR_TERMINE = 'termine-v3';
 // chart-v4: Der Tempo-Knopf oeffnet jetzt ein MENUE (#145 Folge) statt nur den Puls zu schalten –
 // und er ist neuerdings auch bei Liedern OHNE gepflegtes Tempo da, weil man genau dort eins
 // antippen will. Beides sieht man dem Knopf nicht an, also gehoert es in die Einfuehrung.
-// Der Text wurde beim Umbau des Menues (Metronom-Symbol, ein gemeinsamer Tempo-Wert) NACHGEZOGEN,
-// ohne die Version zu erhoehen: chart-v4 war nie in Produktion (dort laeuft v2.16.3), es hat sie
-// also niemand ausser auf Staging gesehen. Waere sie draussen gewesen, muesste hier v5 stehen.
-// Ebenso der Schritt „Lied-Optionen" (Dateiverwaltung, #321) – gleiche Begruendung.
-// Aus demselben Grund wurde der Schritt „Notizen von anderen" nachgezogen (Umschalter fuer
-// Arrangement/Version in der Leiste): chart-v4 ist weiterhin nur auf Staging gelaufen.
+// Die spaeteren Textaenderungen (Metronom-Menue, „Lied-Optionen" mit der Dateiverwaltung #321,
+// „Notizen von anderen" mit dem Umschalter) wurden NACHGEZOGEN, ohne die Version zu erhoehen –
+// begruendet damit, chart-v4 sei „nie in Produktion" gewesen.
+// ACHTUNG, das gilt nicht mehr (gemessen am 13.08.2026 im ausgelieferten Bundle): chart-v4 steckt
+// seit v2.18.0 im Code, und produktiv laeuft v2.20.0. Die Fassung IST also draussen – die naechste
+// Textaenderung an CHART_STEPS braucht deshalb chart-v5, sonst sieht sie niemand, der die Tour
+// schon weggeklickt hat.
 // chart-v3: Der Tipp in die Mitte blendet jetzt die Leisten aus (#319) – die Geste findet man
 // sonst nicht von selbst. Version erhöht, damit Bestandsnutzer den geänderten Schritt sehen.
 // (chart-v2 hatte den Schritt „Team-Anmerkungen" (#124) ergänzt.)
@@ -31,7 +34,9 @@ export const TOUR_CHART = 'chart-v4';
  */
 export const HINT_VOLLBILD = 'hinweis-vollbild';
 export const TOUR_SETLIST = 'setlist-v1';
-export const TOUR_SETLIST_EDIT = 'setlist-edit-v1';
+// setlist-edit-v2: „Hinzufügen" kann jetzt auch ein Lied ANLEGEN (#322) – bisher konnte man nur
+// vorhandene wählen. Version erhöht, damit Bestandsnutzer den geänderten Schritt sehen.
+export const TOUR_SETLIST_EDIT = 'setlist-edit-v2';
 
 export function isTourDone(key: string): boolean {
   try {
@@ -86,7 +91,7 @@ export const TERMINE_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="tabbar"]',
     title: 'Die Bereiche',
-    body: 'Unter „Lieder" durchsuchst du alle Lieder, unter „Mehr" findest du Einstellungen – und kannst diese Einführung erneut starten.',
+    body: 'Unter „Lieder" durchsuchst du alle Lieder – und legst mit dem + oben rechts ein neues an, wenn du in ChurchTools Lieder bearbeiten darfst. Unter „Mehr" findest du Einstellungen und kannst diese Einführung erneut starten.',
   },
 ];
 
@@ -159,6 +164,6 @@ export const SETLIST_EDIT_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="edit-add"]',
     title: 'Hinzufügen',
-    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu.',
+    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Ist das Lied noch nicht in ChurchTools, kannst du es dort gleich anlegen – bei CCLI gesucht oder selbst eingetippt.',
   },
 ];

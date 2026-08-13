@@ -1,7 +1,7 @@
 # Umsetzungsplan – Liedverwaltung in der App (#321, #322)
 
-> Status: **13.08.2026 – Teil 1 fertig; von Teil 2 stehen die Schritte 6–9 und 10a (Server).
-> Offen: 10b (Oberfläche) und 11 (Stammdaten ändern).**
+> Status: **13.08.2026 – Teil 1 fertig; von Teil 2 stehen die Schritte 6–10b.
+> Offen: nur noch 11 (Stammdaten ändern) und der Staging-Durchklick von 10b.**
 > Die Neufassung von Teil 2 kommt aus einem Fund vom selben Tag: **SongSelect ist doch machbar**,
 > über ChurchTools als Vermittler (siehe `churchtools-songselect.md`). Das ändert #322 grundlegend –
 > aus „Formular zum Abtippen" wird „Lied aus CCLI holen".
@@ -234,16 +234,29 @@ halb gescheiterten Anlegen. Der zweite Versuch fände es dann nicht. Sie muss au
 | 8       | `ctSongSelect.ts`: Suche + Abfrage, rein lesend, mit Tests        | #322  | ✅                        |
 | 9       | „Notenblatt aus SongSelect holen" in der Dateiverwaltung (Teil 1) | #322  | ✅                        |
 | 10a     | Lied anlegen – **Server** (`POST /api/songs`), mit Tests          | #322  | ✅ 13.08.2026 (PR #374)   |
-| 10b     | Lied anlegen – **Oberfläche**, Formular aus CCLI vorausgefüllt    | #322  | offen                     |
+| 10b     | Lied anlegen – **Oberfläche**, Formular aus CCLI vorausgefüllt    | #322  | ✅ 13.08.2026             |
 | 11      | Stammdaten eines vorhandenen Lieds ändern                         | #322  | offen                     |
 
-**Für Schritt 10b liegt alles bereit** – der Endpunkt ist gebaut und getestet, gebraucht werden noch:
-Sheet „Neues Lied" mit SongSelect-Titelsuche (Trefferliste zeigt Titel · Autoren · Nummer · Formate
-und sagt, wenn sie unvollständig ist), Auswahl füllt Titel/Autoren/Copyright/Tonart, Kategorie als
-Pflichtfeld ohne Vorbelegung (`GET /api/song-categories`), Warnung bei gleichem **Namen** (die
-CCLI-Blockade macht der Server), Einstiege im Liederheft **und** im Ablauf, geführte Einführung samt
-erhöhter Tour-Version, manuelle Testfälle, CHANGELOG für Nutzer – und der Browser-Durchklick (#283:
-eine grüne Testsuite hat hier schon einmal eine kaputte Bedienung überdeckt).
+**Schritt 10b ist gebaut (13.08.2026).** `NewSongSheet` mit Wegwahl (CCLI-Suche / selbst eintippen),
+Trefferliste mit Titel · Autoren · Nummer · Formaten und dem Hinweis auf die 100er-Grenze, Übernahme
+füllt Titel/Autoren/Copyright/Tonart, Kategorie als Pflichtfeld ohne Vorbelegung, Namenswarnung im
+Client, Einstiege im Liederheft (**+** in der Kopfzeile) und im Ablauf („Hinzufügen → Lied → Neues
+Lied anlegen …"), Erfolgsansicht mit drei Wegen (öffnen / noch eins / fertig), Einführung auf
+`termine-v3` und `setlist-edit-v2`, Testfall **TF-LIB-03**, CHANGELOG.
+
+Die Regeln liegen bewusst **nicht** in der Komponente: `utils/neuesLied.ts` (Formularstand, Warnung,
+Auftrag, Entscheidung über das Notenblatt) und `hooks/useNeuesLied.ts` (die Abfolge samt
+Teilerfolgen). Beides ist geprüft, jede Regel einzeln per Gegenprobe – 46 neue Tests.
+
+**Was noch fehlt: der Durchklick auf Staging** (#283 – eine grüne Testsuite hat hier schon einmal
+eine kaputte Bedienung überdeckt). Er lässt sich nicht vorwegnehmen: Das Blatt braucht Anmeldung und
+ChurchTools-Rechte, und **jeder Testlauf legt ein echtes Lied in ChurchTools an** (Staging und Prod
+sprechen dieselbe Instanz). Es muss also jemand mit Konto durchklicken und die Testlieder danach in
+ChurchTools wieder wegräumen – die App kann keine Lieder löschen.
+
+**Bewusst NICHT gebaut:** ein dritter Einstieg in `ItemActionSheet` („Lied verknüpfen"). Dort wird
+einem **vorhandenen** Ablaufpunkt ein Lied zugeordnet; der Auftrag legt mit `eventId` aber einen
+**neuen** Punkt an. Das bräuchte einen anderen Schreibweg und fehlt nicht aus Versehen.
 
 **Ohne SongSelect-Recht (`canUseCcli`) muss das Formular trotzdem benutzbar sein** – dann eben ohne
 Suche, mit Titel von Hand. Ein Formular, das ohne fremde Lizenz gar nicht aufgeht, wäre für andere

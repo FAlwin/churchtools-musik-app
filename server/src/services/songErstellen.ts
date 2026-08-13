@@ -16,31 +16,17 @@
  * angelegten Liedes wäre die schlechtere Wahl: Der Datensatz existiert, jemand könnte ihn schon
  * sehen, und ein Aufräumen, das selbst scheitert, hinterlässt einen noch unklareren Zustand.
  */
+import type { LiedAngelegt, LiedAnlegenAuftrag } from '@shared/types/index';
 import { HttpError } from '../middleware/errorHandler.js';
 import { getAllSongs, getSong } from './ctRead.js';
 import { getEditableSongCategories } from './ctSongCategories.js';
 import { createAgendaItem, createArrangement, createSong } from './ctWrite.js';
-import type { NeuesLied } from './ctWrite.js';
 
-/** Der Auftrag aus der Oberfläche. */
-export interface LiedAnlegenAuftrag extends NeuesLied {
-  /** Tonart des ersten Arrangements (aus SongSelect vorbelegt, änderbar). */
-  key?: string | null;
-  /** Name des ersten Arrangements; leer = „Standard". */
-  arrangementName?: string;
-  /** Wenn gesetzt: das fertige Lied zusätzlich in den Ablauf dieses Termins eintragen. */
-  eventId?: number;
-}
-
-/** Was dabei herauskam – **auch der Teilerfolg wird benannt**, nicht verschwiegen. */
-export interface LiedAngelegt {
-  songId: number;
-  arrangementId: number;
-  /** Nur gesetzt, wenn ein Termin mitgegeben wurde: Hat der Ablauf-Eintrag geklappt? */
-  imAblauf?: boolean;
-  /** Warum der Ablauf-Eintrag nicht geklappt hat – für die Meldung an den Nutzer. */
-  ablaufFehler?: string;
-}
+/**
+ * Auftrag und Ergebnis stehen in `@shared/types` – **die Oberfläche schickt das eine und liest das
+ * andere.** Zwei Fassungen (hier und im Client) wären zwei Stellen für dieselbe Absprache.
+ */
+export type { LiedAngelegt, LiedAnlegenAuftrag };
 
 /**
  * Prüft, ob der Nutzer in dieser Kategorie anlegen darf – **serverseitig, nicht nur im Formular**.

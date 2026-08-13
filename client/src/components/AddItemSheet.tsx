@@ -2,11 +2,17 @@ import { useState } from 'react';
 import type { AgendaServiceOption } from '@shared/types/index';
 import { Sheet } from './Sheet';
 import { SongPicker } from './SongPicker';
+import { NewSongSheet } from './NewSongSheet';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
+import { useCapabilities } from '../hooks/useServices';
 import styles from './AddItemSheet.module.scss';
 
 interface AddItemSheetProps {
+  /** Termin, dessen Ablauf ergänzt wird – ein neu angelegtes Lied geht direkt hinein (#322). */
+  eventId: number;
+  /** Name des Termins – für den Satz in der Erfolgsansicht von „Neues Lied". */
+  eventName?: string;
   onClose: () => void;
   /** Legt einen Punkt an. Wirft bei Fehler (z.B. fehlende Rechte). */
   onAdd: (data: {
@@ -24,8 +30,11 @@ interface AddItemSheetProps {
 type Mode = 'choose' | 'header' | 'text' | 'song';
 
 /** Sheet zum Hinzufügen eines Ablaufpunkts: Überschrift, Text oder Lied (per Songsuche). */
-export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
+export function AddItemSheet({ eventId, eventName, onClose, onAdd, services }: AddItemSheetProps) {
   const [mode, setMode] = useState<Mode>('choose');
+  /** „Neues Lied" ersetzt dieses Blatt, statt sich darüberzulegen – zwei Dialoge übereinander. */
+  const [neuesLied, setNeuesLied] = useState(false);
+  const canEditSongs = useCapabilities(true).data?.canEditSongs ?? false;
   const [title, setTitle] = useState('');
   const [responsible, setResponsible] = useState('');
   const [note, setNote] = useState('');
@@ -67,6 +76,20 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
         : mode === 'song'
           ? 'Lied hinzufügen'
           : 'Hinzufügen';
+
+  /**
+   * Ein neues Lied wird direkt in diesen Ablauf eingetragen – das macht der Server in einem Zug
+   * (`eventId` im Auftrag). Deshalb wird `onAdd` danach **nicht** noch aufgerufen: Der Punkt stünde
+   * sonst zweimal im Ablauf.
+   *
+   * **Warum es diesen Einstieg nur hier gibt und nicht auch in `ItemActionSheet`:** Dort wird einem
+   * **vorhandenen** Ablaufpunkt ein Lied zugeordnet. Ein neu angelegtes Lied müsste in diesen Punkt
+   * hineingeschrieben werden – der Auftrag legt aber mit `eventId` einen **neuen** Punkt an. Der
+   * Einstieg dort bräuchte also einen anderen Schreibweg; er fehlt nicht aus Versehen.
+   */
+  if (neuesLied) {
+    return <NewSongSheet eventId={eventId} eventName={eventName} onClose={onClose} />;
+  }
 
   return (
     <Sheet title={titleText} onClose={onClose}>
@@ -149,13 +172,23 @@ export function AddItemSheet({ onClose, onAdd, services }: AddItemSheetProps) {
       )}
 
       {mode === 'song' && (
-        <SongPicker
-          autoFocus
-          busy={busy}
-          onPick={(arrangementId, songName) =>
-            add({ type: 'song', title: songName, arrangementId })
-          }
-        />
+        <>
+          {/* Steht ÜBER der Liste, weil man hier landet, wenn man das Lied darin nicht findet –
+              und nur mit dem ChurchTools-Recht, Lieder zu bearbeiten (#322). */}
+          {canEditSongs && (
+            <button className={styles.choice} onClick={() => setNeuesLied(true)}>
+              <Icon name="plus" size={20} className={styles.choiceIcon} />
+              <span>Neues Lied anlegen …</span>
+            </button>
+          )}
+          <SongPicker
+            autoFocus
+            busy={busy}
+            onPick={(arrangementId, songName) =>
+              add({ type: 'song', title: songName, arrangementId })
+            }
+          />
+        </>
       )}
     </Sheet>
   );

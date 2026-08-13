@@ -167,6 +167,18 @@ export default function App() {
     servicesLoading: servicesQuery.isLoading,
   });
 
+  /**
+   * Ein Lied aus dem Liederheft in der Chart-Ansicht öffnen – **die eine Stelle dafür.**
+   *
+   * Es gibt zwei Anlässe: das Antippen in der Liste und ein frisch angelegtes Lied (#322). Beide
+   * setzen dieselben zwei Zustände; als zwei Kopien nebeneinander wäre die nächste Änderung an genau
+   * einer davon gelandet.
+   */
+  const openLibrarySong = (songId: number, arrangementId: number): void => {
+    setLibSel({ songId, arrangementId });
+    setView({ type: 'chart', source: 'lieder' });
+  };
+
   const agendaQuery = useAgenda(service?.id ?? null);
   const reorderAgenda = useReorderAgenda(service?.id ?? null);
   const deleteAgendaItem = useDeleteAgendaItem(service?.id ?? null);
@@ -514,11 +526,13 @@ export default function App() {
                 showToast('Liedersammlung ist offline nicht verfügbar.');
                 return;
               }
-              setLibSel({ songId: e.songId, arrangementId: e.arrangementId });
-              setView({ type: 'chart', source: 'lieder' });
+              openLibrarySong(e.songId, e.arrangementId);
             }}
             canAddToAgenda={canEditAgendas}
             services={servicesQuery.data ?? []}
+            /* Anlegen braucht Netz: Es schreibt in ChurchTools (#322). */
+            canCreateSong={canEditSongs && online}
+            onOpenSong={openLibrarySong}
           />
         )}
 

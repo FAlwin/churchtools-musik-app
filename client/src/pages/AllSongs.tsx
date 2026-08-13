@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import type { Service, SongLibraryEntry } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
-import { NavBar } from '../components/NavBar';
+import { IconButton, NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
 import { AddToAgendaSheet } from '../components/AddToAgendaSheet';
+import { NewSongSheet } from '../components/NewSongSheet';
 import { SongStatsBar } from '../components/SongStatsBar';
 import { useSongFilter } from '../hooks/useSongFilter';
 import { statLabel } from '../utils/songFilter';
@@ -27,6 +28,10 @@ interface AllSongsProps {
   canAddToAgenda?: boolean;
   /** Termine zur Auswahl beim Hinzufügen (kommende + vergangene). */
   services?: Service[];
+  /** Wenn true: „Neues Lied" in der Kopfzeile (#322) – nur mit dem ChurchTools-Recht. */
+  canCreateSong?: boolean;
+  /** Öffnet ein Lied unmittelbar nach dem Anlegen (#322). */
+  onOpenSong?: (songId: number, arrangementId: number) => void;
 }
 
 /** Durchsuchbare Liste aller Lieder, sortierbar nach Name/Häufigkeit/zuletzt (+ Zeitfilter). */
@@ -42,14 +47,28 @@ export function AllSongs({
   onSelect,
   canAddToAgenda = false,
   services = [],
+  canCreateSong = false,
+  onOpenSong,
 }: AllSongsProps) {
   const [addSong, setAddSong] = useState<SongLibraryEntry | null>(null);
+  const [neuesLied, setNeuesLied] = useState(false);
   const f = useSongFilter(songs, usage, showStats, 'name', !usageError);
   const query = f.q.trim();
 
   return (
     <Screen>
-      <NavBar title="Lieder" />
+      <NavBar
+        title="Lieder"
+        right={
+          /* „Neues Lied" nur mit dem ChurchTools-Recht, Lieder zu bearbeiten (#322) – und nur, wenn
+             die App das fertige Lied auch öffnen kann. */
+          canCreateSong && onOpenSong ? (
+            <IconButton onClick={() => setNeuesLied(true)} title="Neues Lied anlegen">
+              <Icon name="plus" size={22} stroke={2.4} />
+            </IconButton>
+          ) : undefined
+        }
+      />
 
       <div className={styles.searchWrap}>
         <div className={styles.search}>
@@ -126,6 +145,16 @@ export function AllSongs({
 
       {addSong && (
         <AddToAgendaSheet song={addSong} services={services} onClose={() => setAddSong(null)} />
+      )}
+
+      {neuesLied && onOpenSong && (
+        <NewSongSheet
+          onOpenSong={(songId, arrangementId) => {
+            setNeuesLied(false);
+            onOpenSong(songId, arrangementId);
+          }}
+          onClose={() => setNeuesLied(false)}
+        />
       )}
     </Screen>
   );

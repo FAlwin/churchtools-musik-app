@@ -36,6 +36,7 @@ import {
 } from '../services/ctWrite.js';
 import { getSeenSetlists, markSeenSetlist } from '../services/seenSetlists.js';
 import { MAX_BPM, MIN_BPM } from '@shared/tempo/index';
+import { LIED_GRENZEN } from '@shared/types/index';
 import type { AgendaServiceOption, SongArrangementOption } from '@shared/types/index';
 import { HttpError } from '../middleware/errorHandler.js';
 import { ctCookie } from '../utils/ctCookie.js';
@@ -275,20 +276,28 @@ export async function getSongCategoriesCtrl(req: Request, res: Response): Promis
  * Ein neues Lied, wie es aus dem Formular kommt (#322, Schritt 10).
  *
  * **Die Grenzen stammen von ChurchTools selbst** (gemessen mit leerem Rumpf, 07.08.2026): Name 2–200
- * Zeichen, `categoryId` eine Ganzzahl. Sie stehen hier trotzdem, damit ein Tippfehler eine
+ * Zeichen, `categoryId` eine Ganzzahl. Geprüft wird hier trotzdem, damit ein Tippfehler eine
  * verständliche deutsche Meldung ergibt und nicht erst nach einer Runde durch ChurchTools auffällt.
+ *
+ * **Die Zahlen kommen aus `LIED_GRENZEN` (`@shared/types`), nicht aus der Hand.** Das Formular richtet
+ * seine `maxLength` nach derselben Liste; hier ein zweites Mal hingeschriebene Werte wären zwei
+ * Stellen, die auseinanderlaufen, sobald ChurchTools eine Grenze verschiebt.
  *
  * **`categoryId` ist `nonnegative`, nicht `positive`:** Kategorie **0** ist echt („Aktive Songs").
  * Mit `positive()` wäre ausgerechnet die Kategorie unmöglich, in der bei der ECG alle Lieder liegen.
  */
 const neuesLiedSchema = z.object({
-  name: z.string().trim().min(2, 'Der Liedname braucht mindestens 2 Zeichen.').max(200),
+  name: z
+    .string()
+    .trim()
+    .min(LIED_GRENZEN.name.min, `Der Liedname braucht mindestens ${LIED_GRENZEN.name.min} Zeichen.`)
+    .max(LIED_GRENZEN.name.max),
   categoryId: z.number().int().nonnegative(),
-  author: z.string().trim().max(200).optional(),
-  ccli: z.string().trim().max(50).optional(),
-  copyright: z.string().trim().max(500).optional(),
-  key: z.string().trim().max(10).optional(),
-  arrangementName: z.string().trim().max(50).optional(),
+  author: z.string().trim().max(LIED_GRENZEN.author).optional(),
+  ccli: z.string().trim().max(LIED_GRENZEN.ccli).optional(),
+  copyright: z.string().trim().max(LIED_GRENZEN.copyright).optional(),
+  key: z.string().trim().max(LIED_GRENZEN.key).optional(),
+  arrangementName: z.string().trim().max(LIED_GRENZEN.arrangementName).optional(),
   /** Optional: das fertige Lied gleich in den Ablauf dieses Termins eintragen. */
   eventId: z.number().int().positive().optional(),
 });

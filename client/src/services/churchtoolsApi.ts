@@ -6,11 +6,15 @@ import type {
   AgendaServiceOption,
   ArrangementFileEntry,
   AuthStatus,
+  LiedAngelegt,
+  LiedAnlegenAuftrag,
   Service,
   SetlistSong,
   SongArrangementOption,
   SongCategory,
   SongLibraryEntry,
+  SongSelectSong,
+  SongSelectTreffer,
   SongVersion,
   UserCapabilities,
 } from '@shared/types/index';
@@ -148,6 +152,36 @@ export function getSongLibrary(): Promise<SongLibraryEntry[]> {
  */
 export function getSongCategories(): Promise<SongCategory[]> {
   return apiFetch<SongCategory[]>('/api/song-categories');
+}
+
+/**
+ * Bei CCLI SongSelect nach einem Titel suchen (#322) – über ChurchTools als Vermittler.
+ *
+ * **Die Trefferliste ist nicht unbedingt vollständig:** ChurchTools holt 100 Treffer und zeigt keinen
+ * Weg weiter (gemessen: 147 zu „Wo ich auch stehe"). Die Oberfläche sagt das, statt Vollständigkeit
+ * vorzutäuschen.
+ */
+export function sucheSongSelect(title: string): Promise<SongSelectTreffer[]> {
+  return apiFetch<SongSelectTreffer[]>(`/api/songselect/search?title=${encodeURIComponent(title)}`);
+}
+
+/** Ein CCLI-Lied per Nummer abfragen (#322) – liefert zusätzlich das Copyright fürs Formular. */
+export function getSongSelectSong(songNumber: number): Promise<SongSelectSong> {
+  return apiFetch<SongSelectSong>(`/api/songselect/songs/${songNumber}`);
+}
+
+/**
+ * Ein neues Lied anlegen (#322) – Lied + erstes Arrangement, auf Wunsch samt Ablauf-Eintrag.
+ *
+ * **Rechte, Kategorie und die CCLI-Doppelprüfung macht der Server**, nicht das Formular: Eine Prüfung,
+ * die nur in der Oberfläche steht, umgeht jeder, der den Endpunkt direkt aufruft. Die Antwort nennt
+ * auch den Teilerfolg (`imAblauf: false`) – die Oberfläche gibt ihn als Text weiter.
+ */
+export function legeLiedAn(auftrag: LiedAnlegenAuftrag): Promise<LiedAngelegt> {
+  return apiFetch<LiedAngelegt>('/api/songs', {
+    method: 'POST',
+    body: JSON.stringify(auftrag),
+  });
 }
 
 /**
