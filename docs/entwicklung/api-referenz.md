@@ -71,8 +71,9 @@
 - `POST /api/songs/:songId/arrangements/:arrangementId/songselect/chordpro` {songNumber} → holt das
   ChordPro bei CCLI **in der Tonart des Arrangements** und legt es ab → frische Dateiliste.
   Ersetzt ein vorhandenes Original-ChordPro (erst hochladen, dann das alte löschen). Läuft über die
-  **alte** ChurchTools-Schnittstelle (`index.php?q=churchservice/ajax`), gebündelt in
-  `ctSongSelect.ts` – Einzelheiten in [`churchtools-songselect.md`](./churchtools-songselect.md)
+  **alte** ChurchTools-Schnittstelle (`index.php?q=churchservice/ajax`), gekapselt in `ctAjax.ts`
+  (die einzige Stelle, die sie kennt), CCLI-Aufrufe in `ctSongSelect.ts` – Einzelheiten in
+  [`churchtools-songselect.md`](./churchtools-songselect.md)
 - `DELETE /api/songs/:songId/files/:fileId` → Datei löschen. Die Datei muss zu **diesem Lied**
   gehören (sonst 404) – ohne diese Prüfung wäre der Weg ein „lösche beliebige Datei", denn
   ChurchTools prüft nur das Bearbeiten-Recht, nicht welche Datei gemeint war (#321, vgl. #199)

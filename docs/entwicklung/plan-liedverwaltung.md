@@ -186,9 +186,12 @@ Dateiverwaltung aus Teil 1.
   Unterscheidungsmerkmale zeigen: Titel, Autoren, Nummer, verfügbare Formate.
 - **Blättern ist ungeklärt** – ChurchTools holt 100 von 147 und zeigt keinen Weg weiter. Die App darf
   nicht so tun, als sei die Liste vollständig; besser zum Verfeinern der Suche raten.
-- **Undokumentierte interne Schnittstelle.** Sie gehört hinter **eine** Stelle (`ctSongSelect.ts`),
-  damit ein ChurchTools-Update genau einen Ort trifft. Ein Fehlschlag wird verständlich gemeldet.
-  Offen: Anfrage beim ChurchTools-Support nach einem offiziellen Weg.
+- **Undokumentierte interne Schnittstelle.** Sie gehört hinter **eine** Stelle – seit Schritt 7 das
+  eigene Modul `ctAjax.ts`, damit ein ChurchTools-Update genau einen Ort trifft. (Bis dahin stand sie
+  privat in `ctSongSelect.ts`; mit den Lied-Kategorien kam ein zweiter Nutzer, und eine zweite Fassung
+  daneben wäre genau die Fehlerklasse aus §7 gewesen.) Ein Fehlschlag wird verständlich gemeldet –
+  die **Wortlaute bleiben beim Aufrufer**, denn ein Fehler beim Liedersuchen ist etwas anderes als
+  einer beim Laden der Kategorien. Offen: Anfrage beim ChurchTools-Support nach einem offiziellen Weg.
 - **Nur ChordPro ist gemessen.** Text, Akkord-PDF, Lead- und Vocal-Sheet haben vermutlich eigene
   Funktionen – **geraten, nicht belegt.** Wer sie ergänzt, misst sie vorher; blindes Ausprobieren
   gegen die Gemeinde-Instanz legt bei jedem Versuch eine Datei an.
