@@ -59,6 +59,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   beim Aufrufer, damit ein Fehler beim Liedersuchen weiter anders klingt als einer beim Laden der
   Kategorien.
 
+- **Der Server kann Lieder anlegen (#322, Schritt 10a).** `POST /api/songs` legt ein Lied **samt
+  Arrangement** an und trägt es auf Wunsch gleich in den Ablauf eines Termins ein. **Die Oberfläche
+  dazu fehlt noch** – zu sehen ist davon also nichts.
+
+  Die Sorgfalt steckt in den halben Durchläufen: ChurchTools kennt keine Transaktion. Scheitert das
+  Arrangement, liegt dort ein Lied ohne eines – die Meldung sagt genau das und warnt vor einem
+  zweiten Versuch, der es doppeln würde. Scheitert nur der Ablauf-Eintrag, ist das kein Fehler: Das
+  Lied existiert, und die Antwort sagt beides. Doppelte CCLI-Nummern und fremde Kategorien lehnt der
+  Server selbst ab, nicht erst das Formular.
+
 ## [2.21.0] – 2026-08-11
 
 ### Neu
