@@ -50,7 +50,7 @@ async function schreibe(
     /** Für Löschvorgänge: „schon weg" ist kein Fehler. */
     okBei404?: boolean;
   },
-): Promise<void> {
+): Promise<Response> {
   const csrf = await getCsrfToken(cookie);
   const headers: Record<string, string> = { Cookie: cookie, 'CSRF-Token': csrf };
   if (opts.json !== undefined) headers['Content-Type'] = 'application/json';
@@ -67,6 +67,45 @@ async function schreibe(
   if (!res.ok && !(opts.okBei404 && res.status === 404)) {
     throw new HttpError(502, `${opts.fehler} (${res.status}).`);
   }
+  /**
+   * **Die Antwort wird zurückgegeben, nicht verworfen** (#322, Schritt 10).
+   *
+   * Bis hierher hat kein Schreibvorgang etwas von ChurchTools zurückgebraucht. Beim Anlegen eines
+   * Liedes ist das anders: Die Antwort enthält die **ID des neuen Datensatzes**, und ohne sie
+   * müsste die App das eben angelegte Lied über seinen Namen wiedersuchen.
+   *
+   * Der Rumpf wird hier bewusst **nicht** gelesen – ein `res.json()` an dieser Stelle würde bei den
+   * Antworten ohne Inhalt (204 beim Löschen) werfen und alle bisherigen Aufrufer treffen. Wer die
+   * Antwort braucht, liest sie selbst (`neueId`); alle anderen ignorieren den Rückgabewert wie
+   * bisher.
+   */
+  return res;
+}
+
+/**
+ * Die ID des eben angelegten Datensatzes aus der Antwort – oder ein Fehler.
+ *
+ * **Warum das eine eigene Funktion mit Wurf ist:** Ein `201` bedeutet nicht, dass wir wissen, WAS
+ * entstanden ist. Ohne ID kann die App das neue Lied weder öffnen noch ein Arrangement daranhängen –
+ * sie stünde mit einem „hat geklappt" da, das ins Leere führt. Am 11.08.2026 hat genau diese Sorte
+ * Annahme („success heißt, es ist etwas entstanden") zwei Notenblätter gekostet. Deshalb wird hier
+ * nachgesehen, statt dem Statuscode zu glauben.
+ *
+ * Gemessen an der Test-Instanz (13.08.2026): `POST /api/songs` und `POST …/arrangements` antworten
+ * beide `201` mit `{data: {id}}`.
+ */
+async function neueId(res: Response, was: string): Promise<number> {
+  let json: unknown = null;
+  try {
+    json = await res.json();
+  } catch {
+    throw new HttpError(502, `${was} wurde angelegt, aber ChurchTools nannte keine ID.`);
+  }
+  const id = (json as { data?: { id?: unknown } } | null)?.data?.id;
+  if (typeof id !== 'number' || !Number.isInteger(id)) {
+    throw new HttpError(502, `${was} wurde angelegt, aber ChurchTools nannte keine ID.`);
+  }
+  return id;
 }
 
 /** Eine hochzuladende Datei – Name, Art und Inhalt. Bytes für Binärdateien, Text für ChordPro. */
@@ -267,6 +306,75 @@ export async function setAgendaItemHidden(
     verweigert: ABLAUF_VERWEIGERT,
     fehler: 'Uhrzeit aus-/einblenden fehlgeschlagen',
   });
+}
+
+/** Die Stammdaten eines neuen Liedes. Kategorie und Name sind Pflicht (ChurchTools prüft es selbst). */
+export interface NeuesLied {
+  name: string;
+  categoryId: number;
+  author?: string;
+  ccli?: string;
+  copyright?: string;
+}
+
+/**
+ * Legt ein Lied in ChurchTools an und liefert seine ID (#322, Schritt 10).
+ *
+ * **Autor, CCLI-Nummer und Copyright gehen mit** – gemessen an der Test-Instanz (13.08.2026) nimmt
+ * `POST /api/songs` sie direkt an. Damit sind die Stammdaten EIN Schreibvorgang statt zwei; jeder
+ * weitere wäre ein zusätzlicher Zwischenzustand, den die App erklären müsste, wenn er scheitert.
+ *
+ * **`note` fehlt hier mit Absicht:** Dasselbe Feld wird beim Anlegen von ChurchTools ignoriert (leer
+ * in der Antwort, obwohl gesendet). Es über ein nachgeschobenes `PUT` zu setzen, hieße einen zweiten
+ * Schreibvorgang für ein Nebenfeld – die Notiz kommt deshalb über „Stammdaten ändern" (Schritt 11).
+ *
+ * **Kein Wiederholversuch** (siehe `schreibe`): Ein zweiter Durchlauf legte ein zweites Lied an.
+ */
+export async function createSong(cookie: string, daten: NeuesLied): Promise<number> {
+  const body: Record<string, unknown> = { name: daten.name, categoryId: daten.categoryId };
+  // Leere Felder gar nicht erst senden: ChurchTools soll seine Vorgaben behalten, statt sie mit "" zu
+  // überschreiben.
+  if (daten.author?.trim()) body.author = daten.author.trim();
+  if (daten.ccli?.trim()) body.ccli = daten.ccli.trim();
+  if (daten.copyright?.trim()) body.copyright = daten.copyright.trim();
+
+  const res = await schreibe(cookie, '/api/songs', {
+    method: 'POST',
+    json: body,
+    verweigert: 'Keine Berechtigung, in dieser Kategorie Lieder anzulegen.',
+    fehler: 'Lied anlegen fehlgeschlagen',
+  });
+  return neueId(res, 'Das Lied');
+}
+
+/**
+ * Legt ein Arrangement an einem Lied an und liefert seine ID (#322, Schritt 10).
+ *
+ * **`isDefault` MUSS mitgeschickt werden.** Ohne das Flag antwortet ChurchTools mit
+ * `isDefault: false` – das Lied hätte dann gar kein Standard-Arrangement (gemessen; beim ersten
+ * Versuch genau so passiert). `getSongLibrary` fängt das über `?? arrangements[0]` ab, aber jede
+ * Stelle, die sich auf `isDefault` verlässt, stünde vor `undefined`.
+ *
+ * Die Tonart geht direkt mit (`key`), damit das erste Arrangement nicht ohne dasteht.
+ */
+export async function createArrangement(
+  cookie: string,
+  songId: number,
+  daten: { name: string; key?: string | null; isDefault?: boolean },
+): Promise<number> {
+  const body: Record<string, unknown> = {
+    name: daten.name,
+    isDefault: daten.isDefault ?? true,
+  };
+  if (daten.key?.trim()) body.key = daten.key.trim();
+
+  const res = await schreibe(cookie, `/api/songs/${songId}/arrangements`, {
+    method: 'POST',
+    json: body,
+    verweigert: 'Keine Berechtigung, Arrangements in ChurchTools anzulegen.',
+    fehler: 'Arrangement anlegen fehlgeschlagen',
+  });
+  return neueId(res, 'Das Arrangement');
 }
 
 /** Löscht eine Datei in ChurchTools (per Datei-ID). */
