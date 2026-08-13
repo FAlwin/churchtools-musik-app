@@ -57,6 +57,22 @@
   den vorhandenen Liedern gebildet – dann fehlen Kategorien, die **kein** Lied benutzt, und eine
   erlaubte ID ohne Namen erscheint als „Kategorie N" (nicht weggelassen: sonst verschweigt die App
   ein Recht). Gemessen mit `server/scripts/probe-songmgmt.ts`.
+- `POST /api/songs` `{name, categoryId, author?, ccli?, copyright?, key?, arrangementName?, eventId?}`
+  → **201** `{songId, arrangementId, imAblauf?, ablaufFehler?}` – ein neues Lied anlegen (#322).
+  Legt **immer auch ein Arrangement** an (`isDefault: true`; ohne das Flag hätte das Lied kein
+  Standard-Arrangement – gemessen). Mit `eventId` wandert es zusätzlich in den Ablauf dieses Termins.
+
+  **Zwei Regeln erzwingt der Server, nicht das Formular:** Die Kategorie muss im Recht des Nutzers
+  vorkommen (403), und dieselbe **CCLI-Nummer** wird blockiert (409, die Meldung nennt das vorhandene
+  Lied). Die Doppel-Erkennung läuft über `getAllSongs`, **nicht** über die Bibliothek – die wirft
+  Lieder ohne Arrangement weg, also genau den Rest eines halb gescheiterten Versuchs.
+
+  **Teilfehlschläge sind benannt, nicht verschwiegen:** Scheitert das Arrangement, liegt in
+  ChurchTools ein Lied ohne eines – die Meldung sagt das und warnt vor einem zweiten Versuch (er
+  legte ein Doppel an). Scheitert nur der Ablauf-Eintrag, ist das **kein** Fehler: Antwort 201 mit
+  `imAblauf: false` und Grund. Nichts wird automatisch wiederholt oder zurückgenommen.
+  `note` geht bewusst nicht mit – ChurchTools ignoriert das Feld beim Anlegen (gemessen).
+
 - `GET  /api/song-usage` → Nutzungsstatistik je Song als **`{ dates: string[] }`** (vergangene Spieltermine, bis zu 4 Jahre zurück, absteigend; 1h-Cache). Häufigkeit + „zuletzt gespielt" für den gewählten Zeitraum rechnet der **Client** daraus – ohne erneuten Server-Roundtrip. Bei Drosselung **503** (+ `Retry-After`), wenn kein früherer Stand im Speicher liegt; der Client zeigt dann „–" statt einer Null und lässt die Liederliste vollständig (#300).
 - `GET  /api/songs/:songId/arrangements` → Arrangements eines Lieds (für „Zu Ablauf hinzufügen")
 - `GET  /api/songs/:songId/chart` → Chart eines einzelnen Lieds (aus „Alle Lieder")
