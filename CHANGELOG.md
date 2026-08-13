@@ -100,6 +100,23 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Behoben
 
+- **Die Kopfzeile zeigte eine andere Überschrift als das Blatt** (gemeldet von Alwin). Sichtbar wurde
+  es an einer überzähligen Klammer: „Die Schöpfung singt (Grosser Gott)**]**" oben, aber korrekt auf dem
+  Blatt. Die Klammer steht tatsächlich im Original-ChordPro, das von CCLI kommt
+  (`{title: … (Grosser Gott)]}`); die von der App gepflegte Version hat sie nicht.
+
+  Der Fehler war, dass es **zwei Wege zur Überschrift** gab: Das Blatt las sie aus dem gerade
+  angezeigten Text, die Kopfzeile aus dem Original. Bei einem Lied mit eigener Version standen damit
+  zwei verschiedene Titel übereinander. Jetzt gehen beide durch dieselbe Funktion – wie es der
+  Kommentar an dieser Funktion ohnehin versprach.
+
+  **Die Klammer selbst bleibt sichtbar, wenn man das Original ansieht** – sie steht in der Datei, und
+  die App zeigt, was drinsteht. Korrigieren lässt sie sich in ChurchTools oder in der Version.
+
+- **„Neues Lied" sieht im Ablauf jetzt genauso aus wie im Liederheft**: eine ruhige Textaktion oben
+  rechts statt einer breiten Karte, die neben der Liedliste wie ein eigener Menüpunkt wirkte. Der Stil
+  liegt als gemeinsamer Baustein an einer Stelle.
+
 - **Die Kopfzeilen waren unterschiedlich hoch** (gemeldet von Alwin). Bis auf 52 Pixel schrumpfte eine
   Leiste ohne Aktions-Knopf, während eine mit Knopf 63 Pixel hoch war – beim Wechsel zwischen
   „Termine", „Lieder" und „Mehr" sprang die Leiste sichtbar. Grund: Der Inhalt bestimmte die Höhe, und

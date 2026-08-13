@@ -173,13 +173,16 @@ export function AddItemSheet({ eventId, eventName, onClose, onAdd, services }: A
 
       {mode === 'song' && (
         <>
-          {/* Steht ÜBER der Liste, weil man hier landet, wenn man das Lied darin nicht findet –
-              und nur mit dem ChurchTools-Recht, Lieder zu bearbeiten (#322). */}
+          {/* Oben rechts als ruhige Textaktion – **dieselbe Optik wie im Liederheft** (Wunsch Alwin,
+              13.08.2026). Vorher stand hier eine breite Karte, die neben der Liedliste wie ein
+              eigener Menüpunkt wirkte. Nur mit dem ChurchTools-Recht, Lieder zu bearbeiten. */}
           {canEditSongs && (
-            <button className={styles.choice} onClick={() => setNeuesLied(true)}>
-              <Icon name="plus" size={20} className={styles.choiceIcon} />
-              <span>Neues Lied anlegen …</span>
-            </button>
+            <div className={styles.songHdr}>
+              <button className={styles.newSongBtn} onClick={() => setNeuesLied(true)}>
+                <Icon name="plus" size={16} stroke={2.4} />
+                Neues Lied
+              </button>
+            </div>
           )}
           <SongPicker
             autoFocus

@@ -31,7 +31,7 @@ import { SharersSheet } from '../components/SharersSheet';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { deriveActiveSongView } from '../utils/activeSongView';
-import { generateChordPdf } from '../utils/chordPdf';
+import { chartHead, generateChordPdf } from '../utils/chordPdf';
 import { pdfOptionsForSong } from '../utils/chartPdfOptions';
 import { sharePdf } from '../utils/sharePdf';
 import { DEFAULT_SETTINGS } from '../utils/chartSettings';
@@ -590,7 +590,21 @@ export function ChordChart({
       <>
         {!leistenAus && (
           <ChartHeader
-            songTitle={song.title}
+            /**
+             * **Derselbe Titel wie auf dem Blatt** – über `chartHead`, nicht über `song.title`.
+             *
+             * Vorher gab es zwei Wege zur Überschrift: Das Blatt las sie aus dem **angezeigten** Text
+             * (also auch aus einer Version), die Kopfzeile nahm den Titel des **Originals**. Bei einem
+             * Lied mit App-Version standen damit zwei verschiedene Überschriften übereinander –
+             * gemeldet von Alwin am 13.08.2026, sichtbar an einer überzähligen Klammer, die im
+             * Original-ChordPro von CCLI steht (`{title: … (Grosser Gott)]}`) und in der
+             * App-Version nicht mehr. Der Kommentar an `chartHead` versprach schon, die eine Quelle zu
+             * sein; diese Stelle hielt sich nicht daran.
+             */
+            songTitle={
+              chartHead({ title: song.title, author: song.author, chordpro: displayedChordpro })
+                .title
+            }
             headInfo={headInfo}
             menuOpen={overlay === 'menu'}
             appearanceOpen={overlay === 'appearance'}

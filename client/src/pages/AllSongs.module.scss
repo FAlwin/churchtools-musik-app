@@ -60,22 +60,7 @@
 }
 
 .newSongBtn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0 2px;
-  background: none;
-  border: none;
-  color: var(--blue-ink);
-  font-family: var(--ui);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  flex-shrink: 0;
-
-  &:active {
-    opacity: 0.5;
-  }
+  @include m.neues-lied-aktion;
 }
 
 .group {

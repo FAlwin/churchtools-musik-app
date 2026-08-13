@@ -187,6 +187,24 @@ describe('chartHead – Titel/Autor des Blatts', () => {
     );
   });
 
+  /**
+   * Der echte Fall vom 13.08.2026 (von Alwin gemeldet): Das Original-ChordPro von CCLI trägt eine
+   * **überzählige Klammer** im Titel, die App-Version nicht. Solange die Kopfzeile `song.title` nahm
+   * (aus dem Original) und das Blatt `chartHead` mit dem angezeigten Text, standen zwei verschiedene
+   * Überschriften übereinander. Beide gehen jetzt durch diese Funktion – gefüttert mit dem Text, der
+   * gerade gezeigt wird.
+   */
+  it('nimmt den Titel der ANGEZEIGTEN Fassung – auch wenn das Original einen anderen trägt', () => {
+    const original = '{title: Die Schöpfung singt (Grosser Gott)]}\n[B]Text\n';
+    const version = '{title: Die Schöpfung singt (Grosser Gott)}\n[B]Text\n';
+    expect(chartHead(song({ title: 'Die Schöpfung singt', chordpro: original })).title).toBe(
+      'Die Schöpfung singt (Grosser Gott)]',
+    );
+    expect(chartHead(song({ title: 'Die Schöpfung singt', chordpro: version })).title).toBe(
+      'Die Schöpfung singt (Grosser Gott)',
+    );
+  });
+
   it('{artist} schlägt den ChurchTools-Autor, sonst bleibt dieser', () => {
     const mit = song({ author: 'CT-Autor', chordpro: '{artist: Echter Autor}\n[C]Text\n' });
     const ohne = song({ author: 'CT-Autor', chordpro: '[C]Text\n' });
