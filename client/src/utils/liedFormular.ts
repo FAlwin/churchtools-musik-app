@@ -276,3 +276,35 @@ export function sucheArt(
   if (/^\d+$/.test(text)) return { art: 'nummer', nummer: Number(text) };
   return { art: 'titel', titel: text };
 }
+
+/**
+ * Wie viele Stellen eine CCLI-Nummer mindestens hat, damit **von selbst** abgefragt wird.
+ *
+ * **Gemessen, nicht geraten** (13.08.2026, `probe-songsuche.ts` gegen den Bestand der ECG): Alle 46
+ * vergebenen Nummern haben **7 Stellen**. Ohne diese Schwelle würde die Suche beim Tippen einer Nummer
+ * schon nach drei Ziffern abfragen und viermal „findet CCLI kein Lied" melden, bevor die Nummer
+ * vollständig ist.
+ *
+ * **Kürzere Nummern sind trotzdem erreichbar** – über den Knopf „Abfragen". Die Schwelle bremst nur die
+ * automatische Suche; sie ist eine Beobachtung an einem Bestand, kein Gesetz von CCLI, und darf
+ * niemandem den Weg versperren.
+ */
+export const CCLI_NUMMER_STELLEN_FUER_AUTO = 7;
+
+/**
+ * Darf zu dieser Eingabe **von selbst** gesucht werden? (#322)
+ *
+ * Getrennt von `sucheArt`, weil es eine andere Frage ist: `sucheArt` sagt, **wohin** die Eingabe geht,
+ * diese Funktion, **ob** es dafür schon reicht. Beide Regeln liegen hier und nicht in der Komponente –
+ * dort wären sie nur durch Anklicken prüfbar.
+ *
+ * `mindestens` ist die allgemeine Mindestlänge (`SONGSELECT_MIN_ZEICHEN`); sie kommt vom Aufrufer, damit
+ * es die Zahl nicht zweimal gibt.
+ */
+export function automatischSuchen(eingabe: string, mindestens: number): boolean {
+  const text = eingabe.trim();
+  if (text.length < mindestens) return false;
+  const art = sucheArt(text);
+  // Eine Nummer erst, wenn sie vollständig aussieht – siehe `CCLI_NUMMER_STELLEN_FUER_AUTO`.
+  return art.art === 'titel' || text.length >= CCLI_NUMMER_STELLEN_FUER_AUTO;
+}

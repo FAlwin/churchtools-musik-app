@@ -13,7 +13,7 @@
  * (`songErstellen.ts`) – eine Prüfung, die nur in der Oberfläche steht, umgeht jeder, der den
  * Endpunkt direkt aufruft. Angezeigt wird seine Meldung.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { SongSelectTreffer } from '@shared/types/index';
 import { LIED_GRENZEN } from '@shared/types/index';
 import { Sheet } from './Sheet';
@@ -30,8 +30,10 @@ import {
   useSongSelectSuche,
 } from '../hooks/useServices';
 import { useNeuesLied } from '../hooks/useNeuesLied';
+import { useEntprellt } from '../hooks/useEntprellt';
 import {
   LEERES_FORMULAR,
+  automatischSuchen,
   formularAusTreffer,
   sucheArt,
   formularBereit,
@@ -80,9 +82,22 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
   /** Der übernommene CCLI-Treffer – entscheidet mit, ob ein Notenblatt zu holen ist. */
   const [treffer, setTreffer] = useState<SongSelectTreffer | null>(null);
 
-  /** Der abgeschickte Suchbegriff. Getippt wird in `eingabe` – gesucht erst auf Enter/Knopf. */
+  /**
+   * Getippt wird in `eingabe`, gesucht wird nach `begriff`.
+   *
+   * **Gesucht wird beim Tippen** (Wunsch Alwin, 13.08.2026) – aber entprellt: Jeder Aufruf geht über
+   * ChurchTools weiter zu CCLI (~800 ms gemessen), und „Wo ich auch stehe" wären sonst fünfzehn
+   * Suchen. Der Knopf bleibt daneben: Er löst sofort aus und erlaubt auch das, was die automatische
+   * Regel noch zurückhält – etwa eine kurze CCLI-Nummer.
+   */
   const [eingabe, setEingabe] = useState('');
   const [begriff, setBegriff] = useState('');
+  const entprellt = useEntprellt(eingabe, 400);
+
+  useEffect(() => {
+    // Nur wenn die Eingabe „reif" ist: Titel ab drei Zeichen, eine Nummer erst vollständig.
+    if (automatischSuchen(entprellt, SONGSELECT_MIN_ZEICHEN)) setBegriff(entprellt.trim());
+  }, [entprellt]);
   const suche = useSongSelectSuche(begriff, schritt === 'suche');
   /** Was zuletzt abgeschickt wurde – Titel oder Nummer. Bestimmt nur die Wortwahl der Meldungen. */
   const gesucht = sucheArt(begriff);
@@ -246,7 +261,8 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
             disabled={eingabe.trim().length < SONGSELECT_MIN_ZEICHEN}
           >
             {/* „Abfragen" statt „Suchen", sobald es nach einer Nummer aussieht: Sie liefert genau ein
-                Lied, keine Trefferliste – das darf der Knopf sagen. */}
+                Lied, keine Trefferliste – das darf der Knopf sagen. Der Knopf bleibt trotz der
+                Tipp-Suche: Er wartet die Entprellung nicht ab und erlaubt auch kurze Nummern. */}
             {eingabeArt.art === 'nummer' ? 'Abfragen' : 'Suchen'}
           </button>
         </div>

@@ -37,11 +37,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   beim Bearbeiten eines Ablaufs gibt es unter „Hinzufügen → Lied" den Punkt **„Neues Lied anlegen …"**.
   Beides sieht nur, wer in ChurchTools Lieder bearbeiten darf.
 
+  **Gesucht wird beim Tippen.** Ein Knopfdruck ist nicht mehr nötig; die App wartet kurz, bis man
+  aufhört zu tippen, und sucht dann. Der Knopf bleibt daneben – er löst sofort aus.
+
   **Suchen geht mit dem Titel ODER mit der CCLI-Nummer** – im selben Feld. Text landet in der Suche
   nach dem Namen, reine Ziffern gehen direkt an die Nummer: Das ergibt genau einen Treffer statt einer
   langen Liste, denn die Titelsuche von CCLI ist unscharf (147 Treffer für „Wo ich auch stehe"). Der
   Knopf heißt dann „Abfragen" statt „Suchen", und findet CCLI zu der Nummer nichts, nennt der Hinweis
-  den anderen Weg.
+  den anderen Weg. Beim Tippen wird eine Nummer erst abgefragt, wenn sie **sieben Stellen** hat – so
+  lang sind alle 46 Nummern im Bestand (nachgezählt). Sonst stünde viermal „nicht gefunden" da, während
+  man noch tippt. Kürzere Nummern gehen weiter über den Knopf.
 
   **Zwei gleichrangige Wege.** Entweder **bei CCLI suchen** – dann kommen Titel, Autoren, Nummer,
   Copyright und Tonart mit, und nach dem Anlegen holt die App auch gleich **das Notenblatt**, sodass

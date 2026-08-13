@@ -15,6 +15,8 @@ import {
   formularBereit,
   hatAenderung,
   namensWarnung,
+  CCLI_NUMMER_STELLEN_FUER_AUTO,
+  automatischSuchen,
   notenblattPlan,
   sucheArt,
   trefferUnterzeile,
@@ -366,5 +368,36 @@ describe('sucheArt – Titel oder CCLI-Nummer', () => {
 
   it('liefert den Titel getrimmt zurück', () => {
     expect(sucheArt('  Treu  ')).toEqual({ art: 'titel', titel: 'Treu' });
+  });
+});
+
+describe('automatischSuchen – wann von selbst gesucht wird', () => {
+  const MIN = 3;
+
+  it('ein Titel ab der Mindestlänge', () => {
+    expect(automatischSuchen('Tr', MIN)).toBe(false);
+    expect(automatischSuchen('Tre', MIN)).toBe(true);
+  });
+
+  it('eine Nummer erst, wenn sie vollständig aussieht', () => {
+    /**
+     * Gemessen: Alle 46 CCLI-Nummern im Bestand haben 7 Stellen. Ohne diese Schwelle würde beim Tippen
+     * von „5841527" viermal „findet CCLI kein Lied" erscheinen, bevor die Nummer fertig ist.
+     */
+    expect(automatischSuchen('584', MIN)).toBe(false);
+    expect(automatischSuchen('584152', MIN)).toBe(false);
+    expect(automatischSuchen('5841527', MIN)).toBe(true);
+  });
+
+  it('nutzt die Schwelle aus der Konstante, nicht eine eigene Zahl', () => {
+    const knapp = '9'.repeat(CCLI_NUMMER_STELLEN_FUER_AUTO - 1);
+    const genau = '9'.repeat(CCLI_NUMMER_STELLEN_FUER_AUTO);
+    expect(automatischSuchen(knapp, MIN)).toBe(false);
+    expect(automatischSuchen(genau, MIN)).toBe(true);
+  });
+
+  it('zählt Leerzeichen nicht mit', () => {
+    expect(automatischSuchen('  Tre  ', MIN)).toBe(true);
+    expect(automatischSuchen('   ', MIN)).toBe(false);
   });
 });
