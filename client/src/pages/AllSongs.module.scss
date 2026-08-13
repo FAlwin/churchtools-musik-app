@@ -31,6 +31,34 @@
   flex-shrink: 0;
 }
 
+/**
+ * „Neues Lied" über der Liste (#322) – eine ruhige Textaktion, kein Kasten.
+ *
+ * Rechtsbündig unter der Suche: Sie liegt außerhalb des Scroll-Bereichs und bleibt damit sichtbar,
+ * auch wenn man weit geblättert hat oder die Suche keinen Treffer hat. Der Knopf war zuerst in der
+ * Kopfzeile – dort wirkte er fremd und machte die Leiste höher als die der anderen Bereiche.
+ */
+.newSongBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 10px 0 2px auto;
+  padding: 5px 2px;
+  background: none;
+  border: none;
+  color: var(--blue-ink);
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  // `margin-left: auto` (oben im margin-Kürzel) schiebt ihn nach rechts.
+  width: fit-content;
+
+  &:active {
+    opacity: 0.5;
+  }
+}
+
 .group {
   margin: 18px 16px 0;
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Service, SongLibraryEntry } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
-import { IconButton, NavBar } from '../components/NavBar';
+import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
@@ -29,7 +29,7 @@ interface AllSongsProps {
   canAddToAgenda?: boolean;
   /** Termine zur Auswahl beim Hinzufügen (kommende + vergangene). */
   services?: Service[];
-  /** Wenn true: „Neues Lied" in der Kopfzeile (#322) – nur mit dem ChurchTools-Recht. */
+  /** Wenn true: „Neues Lied" unter der Suche (#322) – nur mit dem ChurchTools-Recht. */
   canCreateSong?: boolean;
   /** Öffnet ein Lied unmittelbar nach dem Anlegen (#322). */
   onOpenSong?: (songId: number, arrangementId: number) => void;
@@ -63,20 +63,11 @@ export function AllSongs({
 
   return (
     <Screen>
-      <NavBar
-        title="Lieder"
-        right={
-          /* „Neues Lied" nur mit dem ChurchTools-Recht, Lieder zu bearbeiten (#322) – und nur, wenn
-             die App das fertige Lied auch öffnen kann. */
-          canCreateSong && onOpenSong ? (
-            <IconButton onClick={() => setNeuesLied(true)} title="Neues Lied anlegen">
-              {/* Größe und Strichstärke wie die Header-Aktionen im Ablauf (Teilen, Bearbeiten) –
-                  vorher stand hier 22/2.4 und fiel dadurch aus der Reihe. */}
-              <Icon name="plus" size={20} stroke={2.2} />
-            </IconButton>
-          ) : undefined
-        }
-      />
+      {/* Die Kopfzeile bleibt bewusst leer (Entscheidung Alwin, 13.08.2026): „Neues Lied" stand hier
+          zuerst als Symbol – es wirkte fremd, und ein Aktions-Knopf machte diese Leiste 10px höher als
+          die von „Termine" und „Mehr", was beim Durchklicken sichtbar sprang. Die Höhe ist inzwischen
+          in `NavBar.module.scss` festgenagelt, der Einstieg sitzt trotzdem unten am Listenkopf. */}
+      <NavBar title="Lieder" />
 
       <div className={styles.searchWrap}>
         <div className={styles.search}>
@@ -88,6 +79,22 @@ export function AllSongs({
           />
         </div>
         {showStats && <SongStatsBar {...f} />}
+
+        {/**
+         * „Neues Lied" (#322) – **über dem Scroll-Bereich, nicht darin.**
+         *
+         * In der Liste wäre der Einstieg zweimal schlecht: Er scrollt bei 49 Liedern weg, und bei einer
+         * Suche ohne Treffer gibt es gar keine Liste – also genau dann nicht, wenn man ein Lied anlegen
+         * will, weil es fehlt. Hier bleibt er immer sichtbar.
+         *
+         * Nur mit dem ChurchTools-Recht, und nur wenn die App das fertige Lied auch öffnen kann.
+         */}
+        {canCreateSong && onOpenSong && (
+          <button className={styles.newSongBtn} onClick={() => setNeuesLied(true)}>
+            <Icon name="plus" size={16} stroke={2.4} />
+            Neues Lied
+          </button>
+        )}
       </div>
 
       <Scroll onRefresh={onRetry}>

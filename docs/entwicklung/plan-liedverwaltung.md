@@ -240,7 +240,7 @@ halb gescheiterten Anlegen. Der zweite Versuch fände es dann nicht. Sie muss au
 **Schritt 10b ist gebaut (13.08.2026).** `NewSongSheet` mit Wegwahl (CCLI-Suche / selbst eintippen),
 Trefferliste mit Titel · Autoren · Nummer · Formaten und dem Hinweis auf die 100er-Grenze, Übernahme
 füllt Titel/Autoren/Copyright/Tonart, Kategorie als Pflichtfeld ohne Vorbelegung, Namenswarnung im
-Client, Einstiege im Liederheft (**+** in der Kopfzeile) und im Ablauf („Hinzufügen → Lied → Neues
+Client, Einstiege im Liederheft („Neues Lied" unter der Suche) und im Ablauf („Hinzufügen → Lied → Neues
 Lied anlegen …"), Erfolgsansicht mit drei Wegen (öffnen / noch eins / fertig), Einführung auf
 `termine-v3` und `setlist-edit-v2`, Testfall **TF-LIB-03**, CHANGELOG.
 

@@ -24,6 +24,20 @@
   flex: 1 1 0;
   display: flex;
   min-width: 0;
+  /**
+   * **Die Kopfzeile ist immer gleich hoch – mit und ohne Aktion.**
+   *
+   * Vorher bestimmte der Inhalt die Höhe: Ein Titel allein ist ~21px hoch, ein Aktions-Knopf 34px.
+   * Damit war eine Kopfzeile MIT Aktion 62px hoch und eine ohne 52px – beim Durchklicken der Tabs
+   * sprang die Leiste sichtbar (gemeldet von Alwin am 13.08.2026, aufgefallen, als das Liederheft
+   * seine erste Aktion bekam). Die 34px hier nageln die Inhaltshöhe fest, unabhängig davon, ob
+   * gerade ein Knopf da ist.
+   *
+   * Bewusst an `.side` und nicht als größeres `min-height` an `.nav`: So bleibt die Rechnung
+   * „Safe-Area + Inhalt + 8px" erhalten, die den iOS-Rand oben abdeckt (#187).
+   */
+  min-height: 34px;
+  align-items: center;
 }
 .right {
   justify-content: flex-end;
@@ -35,7 +49,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   min-width: 0;
+  // Dieselben 34px wie an `.side`: Ein Titel MIT Untertitel ist ~35px hoch, einer ohne ~21px. Ohne
+  // diese Zeile wäre eine Detail-Kopfzeile (Titel + Datum) höher als eine Tab-Kopfzeile.
+  min-height: 34px;
 }
 
 .title {

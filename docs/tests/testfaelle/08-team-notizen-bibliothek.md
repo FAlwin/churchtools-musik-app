@@ -97,7 +97,7 @@ ChurchTools-Instanz. Räum sie hinterher in ChurchTools wieder weg; die App kann
 und einem **Standard-Arrangement** in der gewählten Tonart. Beim CCLI-Weg hängt am Arrangement auch
 gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas hochladen muss.
 
-1. Unten auf **Lieder** tippen, oben rechts auf **+**.
+1. Unten auf **Lieder** tippen, dann rechts unter der Suche auf **„Neues Lied"**.
 2. **Bei CCLI suchen**, einen Titel eintippen (mindestens drei Zeichen) und **Suchen** drücken.
 3. Einen Treffer antippen. Prüfen: Titel, Autoren, Nummer und Tonart stehen im Formular, das
    Copyright erscheint einen Moment später.

@@ -32,7 +32,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   nicht (gemessen) und hat sie selbst als veraltet markiert. Ein Feld, das nichts behält, wäre eine
   Falle.
 
-- **Lieder lassen sich in der App anlegen (#322).** Im Liederheft steht oben rechts ein **+**, und
+- **Lieder lassen sich in der App anlegen (#322).** Im Liederheft steht rechts unter der Suche
+  **„Neues Lied"**, und
   beim Bearbeiten eines Ablaufs gibt es unter „Hinzufügen → Lied" den Punkt **„Neues Lied anlegen …"**.
   Beides sieht nur, wer in ChurchTools Lieder bearbeiten darf.
 
@@ -92,6 +93,19 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Warnung: ChurchTools ersetzt nicht, die Datei läge danach zweimal da.
 
 ### Behoben
+
+- **Die Kopfzeilen waren unterschiedlich hoch** (gemeldet von Alwin). Bis auf 52 Pixel schrumpfte eine
+  Leiste ohne Aktions-Knopf, während eine mit Knopf 63 Pixel hoch war – beim Wechsel zwischen
+  „Termine", „Lieder" und „Mehr" sprang die Leiste sichtbar. Grund: Der Inhalt bestimmte die Höhe, und
+  ein Knopf ist höher als eine Zeile Text.
+
+  Jetzt hat die Kopfzeile eine feste Inhaltshöhe – gemessen mit dem echten CSS: **63 Pixel in allen
+  Fällen**, mit Aktion, ohne Aktion und mit Untertitel. Aufgefallen ist es, als das Liederheft seine
+  erste Kopfzeilen-Aktion bekam; betroffen war aber die ganze App.
+
+- **„Neues Lied" sitzt nicht mehr in der Kopfzeile**, sondern als ruhige Textaktion rechts unter der
+  Suche. Dort ist es auch dann erreichbar, wenn man weit geblättert hat **oder die Suche keinen Treffer
+  hat** – also genau in dem Moment, in dem ein Lied fehlt.
 
 - **Die CCLI-Suche stürzte beim ersten Treffer ab** (`e.map is not a function`, #322). Der Client
   erwartete eine Liste, der Server liefert `{treffer, gesamt, vollstaendig}` – und über die
