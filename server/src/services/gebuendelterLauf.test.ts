@@ -33,20 +33,29 @@ describe('createGebuendelterLauf – bündeln', () => {
     const b = createGebuendelterLauf<number>(1000);
     const kaputt = vi.fn(() => Promise.reject(new Error('CT weg')));
     await expect(b.fuehreAus(kaputt)).rejects.toThrow('CT weg');
-    expect(b.laeuft()).toBe(false);
 
+    // Der Beweis, dass die Bahn frei ist: Ein neuer Lauf kommt durch und liefert SEIN Ergebnis.
     const gut = vi.fn(() => Promise.resolve(7));
     expect(await b.fuehreAus(gut)).toBe(7);
+    expect(gut).toHaveBeenCalledTimes(1);
   });
 
-  it('meldet während des Laufs, dass einer läuft', async () => {
+  it('hängt sich an einen laufenden an, statt einen zweiten zu starten', async () => {
+    /**
+     * Mit einem Lauf, der noch nicht fertig ist – das ist der Alltag: Fünf iPads treffen ein, während
+     * der erste Aufbau läuft. Sie müssen dasselbe Ergebnis bekommen, ohne einen zweiten Lauf.
+     */
     const b = createGebuendelterLauf<number>(1000);
     let loesen: (n: number) => void = () => undefined;
-    const versprechen = b.fuehreAus(() => new Promise<number>((r) => (loesen = r)));
-    expect(b.laeuft()).toBe(true);
+    const lauf = vi.fn(() => new Promise<number>((r) => (loesen = r)));
+
+    const ersteAnfrage = b.fuehreAus(lauf);
+    const zweiteAnfrage = b.fuehreAus(lauf);
     loesen(3);
-    await versprechen;
-    expect(b.laeuft()).toBe(false);
+
+    expect(await ersteAnfrage).toBe(3);
+    expect(await zweiteAnfrage).toBe(3);
+    expect(lauf).toHaveBeenCalledTimes(1);
   });
 });
 

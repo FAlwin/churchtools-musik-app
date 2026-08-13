@@ -42,10 +42,13 @@ nutzt bewusst Monospace (`'JetBrains Mono', monospace`) für die Roh-Bearbeitung
 ## Wiederverwendbare Bausteine
 
 - **SCSS-Mixins** (`client/src/styles/_mixins.scss`): `card-list`, `group-header`, `list-row`,
-  `key-pill`. In Modulen: `@use '../styles/mixins' as m;` → `@include m.card-list;`.
+  `key-pill`, `neues-lied-aktion` (die ruhige Textaktion „Neues Lied" – im Liederheft **und** im
+  „Lied hinzufügen"-Blatt, deshalb geteilt). In Modulen:
+  `@use '../styles/mixins' as m;` → `@include m.card-list;`.
 - **Komponenten:** `Segment` (Auswahl 2–3 Optionen), `NoteTile` (Noten-Kachel),
   `Icon` (`components/icons.tsx`, Line-Icons – keine Emojis in der UI), `NavBar`, `TabBar`,
-  `Sheet`, `ConfirmDialog`.
+  `Sheet`, `ConfirmDialog`, `SongFields` (die Stammdaten-Felder eines Liedes – von „Neues Lied" und
+  „Stammdaten ändern" gemeinsam genutzt, damit es die fünf Felder nur einmal gibt).
 
 ## Theme
 

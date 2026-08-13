@@ -31,8 +31,6 @@ export interface GebuendelterLauf<T> {
    * Der laufende Vorgang wird **immer** freigegeben, auch wenn `lauf` wirft.
    */
   fuehreAus(lauf: () => Promise<T>): Promise<T>;
-  /** Läuft gerade einer? (Nur zum Entscheiden, nicht zum Warten – dafür ist `fuehreAus` da.) */
-  laeuft(): boolean;
   /** Gilt gerade eine Sperrfrist nach einer Drosselung? */
   istGesperrt(): boolean;
   /** Wie lange die Sperre noch gilt – für die `Retry-After`-Angabe an den Client. */
@@ -65,7 +63,6 @@ export function createGebuendelterLauf<T>(cooldownMs: number): GebuendelterLauf<
       });
       return inflight;
     },
-    laeuft: () => inflight !== null,
     istGesperrt: () => Date.now() < gesperrtBis,
     restMs: () => Math.max(0, gesperrtBis - Date.now()),
     sperren(ms) {

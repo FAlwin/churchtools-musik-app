@@ -14,7 +14,14 @@ Datenquelle – die App hat keine eigene Datenbank.
 - **Chord Charts als PDF** (SongSelect-Look) mit automatischer Transponierung, Kapo, Spalten- und
   Schrift-Optionen; im Querformat zwei Seiten nebeneinander, als PDF teil-/druckbar
 - **Alle Lieder** durchsuchbar inkl. Nutzungs-Statistik (Häufigkeit / zuletzt gespielt, mit
-  wählbarem Zeitraum) – dieselbe Auswahl auch beim Lied-Hinzufügen/Verknüpfen im Ablauf
+  wählbarem Zeitraum) – dieselbe Auswahl auch beim Lied-Hinzufügen/Verknüpfen im Ablauf. Gesucht wird
+  in Titel und Autor, Titel-Treffer stehen vorn; auf Wunsch **auch im Liedtext**, wenn man nur eine
+  Zeile kennt
+- **Lieder anlegen** – bei CCLI SongSelect gesucht (Titel oder CCLI-Nummer; Autoren, Copyright und
+  Tonart kommen mit, das Notenblatt gleich dazu) oder selbst eingetippt. Aus dem Liederheft oder
+  direkt beim Ergänzen eines Ablaufs
+- **Stammdaten pflegen** – Name, Kategorie, Autor, CCLI-Nummer und Copyright eines vorhandenen Liedes
+  ändern; Löschen mit Rückfrage, die die Folgen nennt
 - **Live-Aktualisierung**: Änderungen am Ablauf erscheinen zeitnah bei allen; geänderte Punkte
   werden beim Öffnen hervorgehoben, entfernte lösen sich sichtbar auf
 - **Mehrere benannte Lied-Versionen** (z. B. „Akustik", „Jugend") – team-weit in ChurchTools,

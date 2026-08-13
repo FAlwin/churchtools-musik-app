@@ -126,6 +126,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Behoben
 
+- **Auch beim Speichern wird eine Drosselung jetzt als solche gemeldet.** Bremste ChurchTools einen
+  Schreibvorgang aus (Lied anlegen, Datei hochladen, Tempo speichern), stand da „fehlgeschlagen" – statt
+  „ChurchTools bremst uns gerade aus, bitte einen Moment warten". Das eine klingt nach einem Fehler, den
+  man nicht lösen kann, das andere nach „gleich nochmal". Damit gilt die Regel an allen drei Stellen:
+  beim Lesen, beim Datei-Download und beim Schreiben.
+
 - **Datei-Downloads erkannten eine Drosselung durch ChurchTools nicht.** Aufgefallen beim Bau der
   Textsuche: Ein `429` („zu viele Anfragen") wurde im Datei-Pfad wie ein normaler Serverfehler
   behandelt. Damit konnte ein Vorgang, der viele Dateien lädt, die Bremse nicht erkennen und schickte

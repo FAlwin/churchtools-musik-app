@@ -153,3 +153,60 @@ describe('Datei-Downloads – 429 wird als Drosselung erkannt (#300, nachgezogen
     expect(fehler).toMatchObject({ status: 502 });
   });
 });
+
+/**
+ * **Die dritte Stelle derselben Regel** – gefunden bei der Dopplungs-Suche im `/festhalten`
+ * (13.08.2026): `ctGet` unterschied 429 seit #300, der Datei-Download seit demselben Tag, der
+ * SCHREIB-Pfad (`schreibe` in `ctWrite`) nicht.
+ *
+ * Für den Nutzer ist das ein Unterschied: „Lied anlegen fehlgeschlagen (429)" klingt nach einem Fehler,
+ * den er nicht lösen kann – „ChurchTools bremst uns gerade aus" nach „gleich nochmal".
+ */
+describe('Schreibvorgänge – 429 wird als Drosselung erkannt (#300, dritte Stelle)', () => {
+  it('createSong: 429 ergibt CtOverloadedError, nicht 502', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
+      const u = String(url);
+      // Das CSRF-Token muss durchkommen, sonst scheitert der Aufruf vorher.
+      if (u.includes('/api/csrftoken')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ data: 'token' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }
+      return Promise.resolve(
+        new Response('nope', { status: 429, headers: { 'retry-after': '20' } }),
+      );
+    });
+    const { createSong } = await import('./ctWrite.js');
+    const fehler = await createSong('cookie', { name: 'Testlied', categoryId: 0 }).catch(
+      (e: unknown) => e,
+    );
+
+    expect(fehler).toBeInstanceOf(CtOverloadedError);
+    expect(isCtOverloaded(fehler)).toBe(true);
+    expect(fehler).toMatchObject({ retryAfterMs: 20_000 });
+  });
+
+  it('ein 500 beim Schreiben bleibt ein 502 – nur 429 ist eine Drosselung', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
+      const u = String(url);
+      if (u.includes('/api/csrftoken')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ data: 'token' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }
+      return Promise.resolve(new Response('nope', { status: 500 }));
+    });
+    const { createSong } = await import('./ctWrite.js');
+    const fehler = await createSong('cookie', { name: 'Testlied', categoryId: 0 }).catch(
+      (e: unknown) => e,
+    );
+    expect(isCtOverloaded(fehler)).toBe(false);
+    expect(fehler).toMatchObject({ status: 502 });
+  });
+});

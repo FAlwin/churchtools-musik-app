@@ -12,7 +12,13 @@ import { HttpError } from '../middleware/errorHandler.js';
 import { agendaItemWritePayload } from './agendaPayload.js';
 import { arrangementWritePayload } from './arrangementPayload.js';
 import { csrfWriteDenied, getCsrfToken } from './ctCsrf.js';
-import { BASE, CT_FILE_TIMEOUT_MS, ctSignal } from './ctHttp.js';
+import {
+  BASE,
+  CT_FILE_TIMEOUT_MS,
+  CtOverloadedError,
+  ctSignal,
+  parseRetryAfter,
+} from './ctHttp.js';
 import { getAgenda, getArrangement, getSong } from './ctRead.js';
 import { songWritePayload, type SongOverrides } from './songPayload.js';
 import type { CtAgendaItem, CtSong } from './ctTypes.js';
@@ -66,6 +72,21 @@ async function schreibe(
   });
 
   if (res.status === 401 || res.status === 403) csrfWriteDenied(cookie, opts.verweigert);
+  /**
+   * **429 ist eine Drosselung, kein Serverfehler** – die DRITTE Stelle dieser Regel (13.08.2026).
+   *
+   * `ctGet` unterscheidet das seit #300, der Datei-Download seit demselben Tag – hier fehlte es noch.
+   * Folge: Bremste ChurchTools einen Schreibvorgang aus (Lied anlegen, Datei hochladen, Tempo
+   * speichern), meldete die App „fehlgeschlagen (429)" statt „ChurchTools bremst uns gerade aus, bitte
+   * einen Moment warten". Für den Nutzer sind das zwei verschiedene Dinge: Das eine klingt nach einem
+   * Fehler, den er nicht lösen kann, das andere nach „gleich nochmal".
+   *
+   * Gefunden bei der Dopplungs-Suche im `/festhalten` – genau dafür ist sie da: Dieselbe Regel stand an
+   * drei Stellen, und zwei waren korrigiert.
+   */
+  if (res.status === 429) {
+    throw new CtOverloadedError(parseRetryAfter(res.headers.get('retry-after')));
+  }
   if (!res.ok && !(opts.okBei404 && res.status === 404)) {
     throw new HttpError(502, `${opts.fehler} (${res.status}).`);
   }

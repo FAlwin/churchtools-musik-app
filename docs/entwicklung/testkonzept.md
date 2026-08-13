@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand v2.19.0: **110 Testdateien** –
-**80 Client (830 Tests)** + **37 Server (414 Tests)** mit Vitest + **11 Playwright-E2E in 6 Dateien**
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand 13.08.2026 (nach #322): **129 Testdateien** –
+**86 Client (929 Tests)** + **43 Server (507 Tests)** mit Vitest + **11 Playwright-E2E in 6 Dateien**
 (Render-Smoke, voller Auth-Flow, Vollbild-Geometrie, Tempo-Menü-Geometrie,
 Arrangement-Migration,
 Arrangement-Wechsel). Die Zahlen sind mit
@@ -41,6 +41,19 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
 
 - `services/setlistBuilder` + `getAgendaItems` – Ablauf-Mapping, Uhrzeiten/Dauer, Diff (LIS), Fingerabdruck
 - `services/songUsage` – Spieltermine je Lied, Zukunft ausgeschlossen, Caching
+- `services/songVerwaltung` – Lieder anlegen/ändern/löschen (#322): Rechte an alter UND neuer Kategorie,
+  CCLI-Doppel (das eigene Lied ausgenommen), die halben Durchläufe („Lied da, Arrangement nicht"), und
+  dass vor dem Schreiben frisch gelesen wird
+- `services/songPayload` – der Lied-`PUT` aus dem Ist-Zustand (#322): **ein Teil-`PUT` löscht in
+  ChurchTools die nicht gesendeten Felder** (gemessen), deshalb steht hier der Test auf **Erhalt**;
+  dazu „leeren heißt weglassen" und die Pflichtfelder
+- `services/songTextIndex` – Suche im Liedtext (#322): Akkorde fallen **ersatzlos** weg (sonst wird
+  „ge[Am]liebt" nicht bei „geliebt" gefunden), fünf gleichzeitige Suchen ergeben **einen** Index-Aufbau,
+  eine Drosselung wird gemeldet statt eine halbe Trefferliste ausgeliefert
+- `services/gebuendelterLauf` – Bündelung + Sperrfrist teurer org-weiter Läufe (#300): fünf gleichzeitige
+  Aufrufe = ein Lauf, Freigabe auch nach einem Fehler, Sperrfrist mit `Retry-After`
+- `services/churchtools.ratelimit` – 429 ist eine **Drosselung, kein Serverfehler** (#300), inzwischen an
+  allen **drei** Stellen: `ctGet`, Datei-Download und Schreibpfad (`schreibe`)
 - `services/seenSetlists` – „gesehen"-Basislinien-Store (atomar, Cleanup)
 - `services/capabilitiesCache` + `churchtools(.capabilities)` – Rechte-Cache, CT-Aussetzer überbrücken
 - `services/annotations` – Anmerkungen pro Konto inkl. Obergrenzen (#139)

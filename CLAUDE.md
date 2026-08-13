@@ -46,10 +46,12 @@
     Bausteine dabei:** `gebuendelterLauf.ts` (Bündelung + Sperrfrist, jetzt auch von der Song-Statistik
     genutzt) und `mapLimit.ts` (war privat in `setlistBuilder`).
 
-    ⚠️ **Dabei ein Fund über #322 hinaus:** `fileDownloadError` machte aus **jedem** Status außer 404
-    einen 502 – auch aus **429**. Datei-Downloads konnten eine Drosselung also nicht erkennen, und
-    Läufe mit vielen Dateien schickten weiter Anfragen in ein erschöpftes Limit (das Muster von #300).
-    Behoben: 429 wirft jetzt auch dort `CtOverloadedError`, mit `Retry-After`.
+    ⚠️ **Dabei ein Fund über #322 hinaus – und er saß an DREI Stellen:** Die Regel „429 ist eine
+    Drosselung, kein Serverfehler" (#300) galt nur in `ctGet`. `fileDownloadError` machte aus jedem
+    Status außer 404 einen 502, `schreibe()` in `ctWrite` ebenso. Läufe mit vielen Dateien konnten eine
+    Drosselung also nicht erkennen, und beim Speichern stand „fehlgeschlagen" statt „ChurchTools bremst
+    uns aus". Jetzt werfen **alle drei** `CtOverloadedError` mit `Retry-After`. Die dritte Stelle fand
+    erst die Dopplungs-Suche beim `/festhalten` – genau dafür ist sie da.
 
     ⚠️ **Der gefährlichste Punkt darin, gemessen:** `PUT /api/songs/{id}` **ersetzt den ganzen
     Datensatz** – ein Teil-`PUT` löscht Autor, CCLI-Nummer, Copyright und `shouldPractice`. Deshalb

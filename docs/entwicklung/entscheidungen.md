@@ -143,15 +143,19 @@ durchsetzen muss, startet den Container neu.
 
 ## Ein Prozess, ein Zustand – die App skaliert nicht horizontal _(27.07.2026, #198)_
 
-Vier Caches leben **im Arbeitsspeicher des Server-Prozesses**, alle in `services/`:
+**Sechs** Caches leben **im Arbeitsspeicher des Server-Prozesses**, alle in `services/`:
 
-| Wo                                 | Was                                          | Lebensdauer |
-| ---------------------------------- | -------------------------------------------- | ----------- |
-| `versionMemo.ts`                   | Ablauf-Fingerabdruck je Termin **und Konto** | 5 s         |
-| `ctSessionMemos.ts` (Konto-ID)     | Konto-ID zum Session-Cookie                  | 12 h        |
-| `ctSessionMemos.ts` (Rechte)       | Rechte eines Kontos                          | 5 min       |
-| `ctSessionMemos.ts` (CSRF-Token)   | Schreib-Token einer Sitzung                  | 1 min       |
-| `setlistBuilder.ts` (`usageCache`) | org-weite Lied-Statistik                     | 1 h         |
+| Wo                                 | Was                                            | Lebensdauer |
+| ---------------------------------- | ---------------------------------------------- | ----------- |
+| `versionMemo.ts`                   | Ablauf-Fingerabdruck je Termin **und Konto**   | 5 s         |
+| `ctSessionMemos.ts` (Konto-ID)     | Konto-ID zum Session-Cookie                    | 12 h        |
+| `ctSessionMemos.ts` (Rechte)       | Rechte eines Kontos                            | 5 min       |
+| `ctSessionMemos.ts` (CSRF-Token)   | Schreib-Token einer Sitzung                    | 1 min       |
+| `setlistBuilder.ts` (`usageCache`) | org-weite Lied-Statistik                       | 1 h         |
+| `songTextIndex.ts` (`index`)       | org-weiter Suchindex über die Liedtexte (#322) | 1 h         |
+
+(Die Zahl stand hier bis zum 13.08.2026 auf „vier", obwohl die Tabelle fünf Zeilen hatte – beim
+Ergänzen des Suchindex nachgezählt.)
 
 **Bewusst so.** Die App läuft als **eine** Container-Instanz auf dem NAS; ein geteilter Speicher
 (Redis o. ä.) wäre ein zusätzlicher Dienst, der ausfallen kann – für Caches, deren Verlust nichts
@@ -160,8 +164,11 @@ kostet außer ein paar Abfragen mehr.
 ⚠️ **Die Einschränkung, die daraus folgt:** Mit einer zweiten Instanz hinter einem Lastverteiler
 wären diese Caches nicht mehr konsistent. Konkret: Der Fingerabdruck-Poll träfe je nach Instanz
 unterschiedliche Stände (der Ablauf „flackerte" zwischen geändert und unverändert), und ein
-Rechteentzug würde je nach Instanz unterschiedlich schnell greifen. Wer skalieren will, muss diese
-vier Stellen zuerst gemeinsam lösen – nicht einzeln.
+Rechteentzug würde je nach Instanz unterschiedlich schnell greifen. Beim Suchindex käme hinzu, dass
+**jede** Instanz ihn einmal baut – bei 50 Liedern also 50 Datei-Downloads pro Instanz. Wer skalieren
+will, muss diese Stellen zuerst gemeinsam lösen – nicht einzeln.
 
-Alle vier liegen deshalb in `services/`, nicht in Controllern: So sind sie an einer Stelle
-auffindbar, statt zwischen Routing-Code versteckt.
+Alle liegen deshalb in `services/`, nicht in Controllern: So sind sie an einer Stelle auffindbar,
+statt zwischen Routing-Code versteckt. **Zwei Bausteine tragen die gemeinsame Mechanik:** `ttlMemo.ts`
+(Verfallszeit) und `gebuendelterLauf.ts` (Bündelung + Sperrfrist der teuren org-weiten Läufe – Statistik
+und Suchindex).
