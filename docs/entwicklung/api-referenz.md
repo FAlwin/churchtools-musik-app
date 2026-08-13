@@ -48,6 +48,15 @@
   Liefert bewusst den **ChurchTools-Namen**, nicht `{title: …}` aus der Datei: Die Liste lädt keine
   ChordPro-Texte, und sie dafür zu laden hieße, bei jedem Öffnen jede Lieddatei einzeln zu holen
   (#236). Überall sonst gewinnt `{title}` – siehe unten.
+- `GET  /api/song-categories` → `[{id, name}]` – die Lied-Kategorien, in denen der Nutzer anlegen
+  bzw. ändern darf (#322). **Schon am Recht zugeschnitten:** `edit songcategory` nennt die erlaubten
+  Kategorie-IDs, ein Administrator bekommt alle. Die Oberfläche filtert **nicht** noch einmal – zwei
+  Filter über dieselbe Regel wären zwei Stellen, die auseinanderlaufen.
+  Die **Namen** stammen aus `getMasterData` der alten Schnittstelle (`ctAjax.ts`); einen `/api`-Weg
+  für Kategorien gibt es nicht (fünf Pfade geprüft, alle 404). Scheitert der Aufruf, werden sie aus
+  den vorhandenen Liedern gebildet – dann fehlen Kategorien, die **kein** Lied benutzt, und eine
+  erlaubte ID ohne Namen erscheint als „Kategorie N" (nicht weggelassen: sonst verschweigt die App
+  ein Recht). Gemessen mit `server/scripts/probe-songmgmt.ts`.
 - `GET  /api/song-usage` → Nutzungsstatistik je Song als **`{ dates: string[] }`** (vergangene Spieltermine, bis zu 4 Jahre zurück, absteigend; 1h-Cache). Häufigkeit + „zuletzt gespielt" für den gewählten Zeitraum rechnet der **Client** daraus – ohne erneuten Server-Roundtrip. Bei Drosselung **503** (+ `Retry-After`), wenn kein früherer Stand im Speicher liegt; der Client zeigt dann „–" statt einer Null und lässt die Liederliste vollständig (#300).
 - `GET  /api/songs/:songId/arrangements` → Arrangements eines Lieds (für „Zu Ablauf hinzufügen")
 - `GET  /api/songs/:songId/chart` → Chart eines einzelnen Lieds (aus „Alle Lieder")

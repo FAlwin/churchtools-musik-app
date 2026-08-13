@@ -109,10 +109,32 @@ export interface CtService {
   sortKey?: number;
 }
 
+/**
+ * Die Kategorie, wie ChurchTools sie an einem Lied mitliefert (#322).
+ *
+ * Gemessen am 11.08.2026 (`probe-songmgmt.ts`): Sie steckt **vollständig** in jedem Lied der Liste –
+ * `{id, name, nameTranslated, sortKey, campusId}`. Wir lesen nur die zwei Felder, die wir brauchen;
+ * ein eigener Endpunkt für Kategorien existiert nicht (fünf Pfade geprüft, alle 404).
+ */
+export interface CtSongCategory {
+  id: number;
+  name: string;
+}
+
 export interface CtSongListEntry {
   id: number;
   name: string;
   author: string | null;
+  /**
+   * **Zeichenkette, nicht Zahl** – gemessen `"5841527"`.
+   *
+   * Wichtig für die Doppel-Erkennung beim Anlegen (#322): Verglichen wird getrimmter Text. Als Zahl
+   * gelesen verlöre eine Nummer mit führender Null ihre Identität, und `Number('')` wäre `0` – also
+   * genau ein falscher Treffer bei jedem Lied ohne Nummer.
+   */
+  ccli?: string | null;
+  /** Fehlt bei einem Lied ohne Kategorie – die Zuordnung ist in ChurchTools nicht erzwungen. */
+  category?: CtSongCategory | null;
   arrangements: {
     id: number;
     name: string;
