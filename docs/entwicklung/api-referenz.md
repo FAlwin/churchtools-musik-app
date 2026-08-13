@@ -62,6 +62,10 @@
   → **201** `{songId, arrangementId, imAblauf?, ablaufFehler?}` – ein neues Lied anlegen (#322).
   Legt **immer auch ein Arrangement** an (`isDefault: true`; ohne das Flag hätte das Lied kein
   Standard-Arrangement – gemessen). Mit `eventId` wandert es zusätzlich in den Ablauf dieses Termins.
+- `GET  /api/song-text-search?q=…` → `SongTextTreffer[]` – **Suche in den Liedtexten** (#322). Baut beim
+  ersten Aufruf einen Index über alle Lieder (ein Datei-Download je Lied), danach eine Stunde aus dem
+  Speicher; gebündelt (fünf gleichzeitige Suchen = ein Aufbau) und bei einer Drosselung mit Sperrfrist.
+  Unter drei Zeichen wird nicht gesucht. Gemessen: Weder `/api/songs?query=` noch CCLI können das.
 - `GET  /api/songs/:songId/stammdaten` → `LiedStammdatenAnsicht` – Name, Kategorie, Autor, CCLI,
   Copyright eines Liedes (fürs Änderungsformular; die Bibliothek kennt diese Felder nicht).
 - `PUT  /api/songs/:songId` `{name?, categoryId?, author?, ccli?, copyright?}` → `LiedStammdatenAnsicht`

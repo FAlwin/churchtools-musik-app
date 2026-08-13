@@ -100,3 +100,56 @@ describe('isCtOverloaded – Drosselung UND Zeitüberschreitung (#300)', () => {
     expect(isCtOverloaded(null)).toBe(false);
   });
 });
+
+/**
+ * **Der Datei-Pfad erkannte 429 NICHT** – gefunden am 13.08.2026 beim Bau des Suchindex über die
+ * Liedtexte.
+ *
+ * `fileDownloadError` machte aus jedem Status außer 404 einen 502. Ein Lauf, der viele Dateien lädt
+ * (Suchindex ~50, Setlist-Aufbau ähnlich), konnte eine Drosselung damit nicht erkennen und schickte
+ * weiter Anfragen in ein erschöpftes Limit – genau das Muster von #300, nur an einer Stelle, an der die
+ * Lehre nie angewandt worden war.
+ */
+describe('Datei-Downloads – 429 wird als Drosselung erkannt (#300, nachgezogen)', () => {
+  it('downloadFileText: 429 ergibt CtOverloadedError, nicht 502', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('nope', { status: 429 }));
+    const { downloadFileText } = await import('./ctFiles.js');
+    const fehler = await downloadFileText('cookie', 'https://test.church.tools/f/1').catch(
+      (e: unknown) => e,
+    );
+
+    expect(fehler).toBeInstanceOf(CtOverloadedError);
+    expect(isCtOverloaded(fehler)).toBe(true);
+  });
+
+  it('downloadFileText: liest `Retry-After` mit', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('nope', { status: 429, headers: { 'retry-after': '30' } }),
+    );
+    const { downloadFileText } = await import('./ctFiles.js');
+    const fehler = await downloadFileText('cookie', 'https://test.church.tools/f/1').catch(
+      (e: unknown) => e,
+    );
+    expect(fehler).toMatchObject({ retryAfterMs: 30_000 });
+  });
+
+  it('fetchFileBytes: 429 ebenfalls – beide Wege, nicht nur einer', async () => {
+    // Die Fehlerklasse dieses Projekts: dieselbe Regel an zwei Stellen, korrigiert nur an einer.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('nope', { status: 429 }));
+    const { fetchFileBytes } = await import('./ctFiles.js');
+    const fehler = await fetchFileBytes('cookie', 'https://test.church.tools/f/1').catch(
+      (e: unknown) => e,
+    );
+    expect(fehler).toBeInstanceOf(CtOverloadedError);
+  });
+
+  it('ein 500 bleibt ein 502 – nur 429 ist eine Drosselung', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('nope', { status: 500 }));
+    const { downloadFileText } = await import('./ctFiles.js');
+    const fehler = await downloadFileText('cookie', 'https://test.church.tools/f/1').catch(
+      (e: unknown) => e,
+    );
+    expect(isCtOverloaded(fehler)).toBe(false);
+    expect(fehler).toMatchObject({ status: 502 });
+  });
+});

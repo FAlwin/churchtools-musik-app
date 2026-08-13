@@ -87,6 +87,33 @@ richtiger **Lied-Punkt** mit Arrangement – kein reiner Text-Punkt.
 
 </details>
 
+### TF-LIB-05 · Im Liedtext suchen
+
+**Das brauchst du:** Ein Wort, das du in einem Liedtext kennst und das **nicht** im Titel vorkommt.
+
+**Das muss passieren:** Das Lied wird gefunden, und die Zeile mit dem Wort steht darunter. Beim ersten
+Mal dauert es ein paar Sekunden (die App holt dafür jeden Liedtext einmal), danach ist es sofort da.
+
+1. Unten auf **Lieder** tippen und das Wort eingeben – die normale Liste zeigt vermutlich keine Treffer.
+2. Unter der Liste **„Auch im Liedtext nach … suchen"** antippen.
+3. Warten: Es muss ein Hinweis erscheinen, dass die Liedtexte durchsucht werden.
+4. Die Trefferliste ansehen: Liedname und darunter der **Textausschnitt** mit dem Wort.
+5. Einen Treffer antippen – das Lied öffnet sich wie aus der normalen Liste.
+6. Dasselbe Wort erneut suchen: Jetzt muss die Antwort **sofort** kommen (der Bestand ist vorgehalten).
+7. Ein Wort suchen, das **nirgends** vorkommt: Es muss dastehen, dass es auch in den Texten nicht steht –
+   nicht einfach eine leere Liste.
+8. Die Eingabe ändern: Die alten Text-Treffer müssen verschwinden (sie gehören zum alten Begriff), und
+   der Knopf muss wieder erscheinen.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `server/src/services/songTextIndex.ts`, `server/src/services/gebuendelterLauf.ts`, `server/src/services/mapLimit.ts`, `client/src/pages/AllSongs.tsx`, `client/src/hooks/useServices.ts`
+- **Automatisiert:** teilweise – `server/src/services/songTextIndex.test.ts` (Akkorde ersatzlos entfernen, ein Aufbau bei fünf Suchen, Drosselung), `server/src/services/gebuendelterLauf.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und die Wartezeit beim ersten Aufbau
+- **Historie:** #322
+
+</details>
+
 ### TF-LIB-03 · Neues Lied anlegen (CCLI und selbst eingetippt)
 
 **Das brauchst du:** Ein Konto, das in ChurchTools Lieder bearbeiten darf. **Achtung: Dieser Test

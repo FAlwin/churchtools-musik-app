@@ -9,6 +9,20 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
+- **Man kann jetzt im Liedtext suchen (#322).** Wer nur eine Zeile im Kopf hat, aber nicht den Titel,
+  tippt sie ins Suchfeld im Liederheft und wählt darunter **„Auch im Liedtext nach … suchen"**. Die
+  Treffer erscheinen mit der **Fundstelle**, sodass man sieht, warum ein Lied dabei ist.
+
+  Beim ersten Mal dauert es einen Moment: Die App holt dafür jeden Liedtext einmal von ChurchTools.
+  Danach ist es sofort da – der Bestand wird eine Stunde vorgehalten.
+
+  **Warum es nicht einfach mitläuft:** Weder ChurchTools noch CCLI können im Liedtext suchen – gemessen
+  am 13.08.2026: Ein Wort aus dem Text ergab bei ChurchTools 0 Treffer, dasselbe Wort aus dem Titel 1.
+  Die Texte liegen dort als Datei am Arrangement. Unsere App durchsucht sie deshalb selbst, und das
+  kostet einmal einen Durchgang durch alle Lieder. Ein Angebot auf Knopfdruck statt bei jedem
+  Tastendruck ist der schonende Weg – auch gegenüber ChurchTools, das uns bei zu vielen Anfragen
+  bremst.
+
 - **Die Stammdaten eines Liedes lassen sich in der App ändern (#322).** Im Lied-Menü steht unter
   „Dateien …" nun **„Stammdaten …"**, und im Liederheft gibt es je Zeile einen Stift. Dort ändert man
   **Name, Kategorie, Autor, CCLI-Nummer und Copyright** – ohne den Umweg über ChurchTools.
@@ -104,6 +118,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Warnung: ChurchTools ersetzt nicht, die Datei läge danach zweimal da.
 
 ### Behoben
+
+- **Datei-Downloads erkannten eine Drosselung durch ChurchTools nicht.** Aufgefallen beim Bau der
+  Textsuche: Ein `429` („zu viele Anfragen") wurde im Datei-Pfad wie ein normaler Serverfehler
+  behandelt. Damit konnte ein Vorgang, der viele Dateien lädt, die Bremse nicht erkennen und schickte
+  weiter Anfragen in ein erschöpftes Limit – genau das Muster, das im Juli die ganze App lahmgelegt hat.
+  Die Regel gilt jetzt für Dateien genauso wie für alle anderen Abfragen.
 
 - **Die Kopfzeile zeigte eine andere Überschrift als das Blatt** (gemeldet von Alwin). Sichtbar wurde
   es an einer überzähligen Klammer: „Die Schöpfung singt (Grosser Gott)**]**" oben, aber korrekt auf dem

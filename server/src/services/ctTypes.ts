@@ -162,5 +162,13 @@ export interface CtSongListEntry {
     keyOfArrangement: string | null;
     isDefault?: boolean;
     bpm?: number | null;
+    /**
+     * Die Dateien des Arrangements – **kommen in der Liste mit** (gemessen 13.08.2026).
+     *
+     * Gebraucht vom Suchindex über die Liedtexte (#322): Er findet so das Original-ChordPro jedes
+     * Liedes, ohne je Lied zusätzlich das Arrangement abzurufen. Das wären ~50 Anfragen mehr – genau
+     * die Sorte Last, die in #300 die Drosselung ausgelöst hat.
+     */
+    files?: { name: string; fileUrl: string }[];
   }[];
 }

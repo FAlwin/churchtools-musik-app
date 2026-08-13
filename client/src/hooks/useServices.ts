@@ -253,6 +253,28 @@ export function useSongCategories(enabled: boolean) {
   });
 }
 
+/**
+ * Sucht im **Liedtext** des eigenen Bestands (#322).
+ *
+ * **Erst auf Verlangen**, nicht automatisch: Der erste Aufruf lässt den Server einen Index bauen (ein
+ * Datei-Download je Lied). Das ist zu teuer, um es bei jedem Tippen im Liederheft mitlaufen zu lassen –
+ * die Titelsuche filtert ohnehin schon lokal und deckt den Normalfall ab.
+ *
+ * Danach ist es billig: Der Index hält eine Stunde, weitere Suchen antworten aus dem Speicher.
+ */
+export function useLiedtextSuche(begriff: string, enabled: boolean) {
+  const q = begriff.trim();
+  return useQuery({
+    queryKey: ['song-text-search', q],
+    queryFn: () => api.sucheImLiedtext(q),
+    enabled: enabled && q.length >= 3,
+    staleTime: 1000 * 60 * 10,
+    // Kein automatischer zweiter Versuch: Ist ChurchTools gedrosselt (503), hilft Wiederholen nicht –
+    // die Meldung ist die nützlichere Antwort.
+    retry: false,
+  });
+}
+
 /** Ab wie vielen Zeichen bei CCLI gesucht wird – kürzere Eingaben ergeben nur Rauschen. */
 export const SONGSELECT_MIN_ZEICHEN = 3;
 

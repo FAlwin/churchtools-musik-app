@@ -25,6 +25,7 @@ import { fetchFileBytes } from '../services/ctFiles.js';
 import { getCtServices, getSong } from '../services/ctRead.js';
 import { getEditableSongCategories } from '../services/ctSongCategories.js';
 import { liedAendern, liedAnlegen, liedLoeschen } from '../services/songVerwaltung.js';
+import { sucheImLiedtext } from '../services/songTextIndex.js';
 import { getSongSelectSong, searchSongSelect } from '../services/ctSongSelect.js';
 import {
   createAgendaItem,
@@ -410,6 +411,22 @@ export async function deleteSongCtrl(req: Request, res: Response): Promise<void>
   const songId = idSchema.parse(req.params.songId);
   const { name } = await liedLoeschen(ctCookie(req), songId);
   res.json({ name });
+}
+
+/**
+ * GET /api/song-text-search?q=… – **Suche in den Liedtexten** (#322).
+ *
+ * Der Index wird beim ersten Aufruf gebaut (ein Datei-Download je Lied) und dann eine Stunde gehalten;
+ * gebündelt und gedrosselt, siehe `songTextIndex.ts`. Unter drei Zeichen wird nicht gesucht – kürzere
+ * Begriffe treffen fast jedes Lied und der Aufwand wäre für nichts.
+ */
+export async function getSongTextSearch(req: Request, res: Response): Promise<void> {
+  const q = z
+    .string()
+    .trim()
+    .max(100)
+    .parse(req.query.q ?? '');
+  res.json(await sucheImLiedtext(ctCookie(req), q));
 }
 
 /** GET /api/capabilities – was der angemeldete Nutzer laut ChurchTools darf. */

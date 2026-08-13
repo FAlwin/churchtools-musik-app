@@ -40,6 +40,17 @@
       durchgeklickt**, weil jeder Lauf echte Lieder in ChurchTools anlegt bzw. löscht (TF-LIB-03,
       TF-LIB-04).
 
+    Dazu die **Suche im Liedtext** (`GET /api/song-text-search`): Weder ChurchTools noch CCLI können
+    das (gemessen, `probe-songsuche.ts`), also durchsucht unser Server die ChordPro-Dateien selbst –
+    mit Index, eine Stunde gecacht, gebündelt und gedrosselt (`songTextIndex.ts`). **Neue geteilte
+    Bausteine dabei:** `gebuendelterLauf.ts` (Bündelung + Sperrfrist, jetzt auch von der Song-Statistik
+    genutzt) und `mapLimit.ts` (war privat in `setlistBuilder`).
+
+    ⚠️ **Dabei ein Fund über #322 hinaus:** `fileDownloadError` machte aus **jedem** Status außer 404
+    einen 502 – auch aus **429**. Datei-Downloads konnten eine Drosselung also nicht erkennen, und
+    Läufe mit vielen Dateien schickten weiter Anfragen in ein erschöpftes Limit (das Muster von #300).
+    Behoben: 429 wirft jetzt auch dort `CtOverloadedError`, mit `Retry-After`.
+
     ⚠️ **Der gefährlichste Punkt darin, gemessen:** `PUT /api/songs/{id}` **ersetzt den ganzen
     Datensatz** – ein Teil-`PUT` löscht Autor, CCLI-Nummer, Copyright und `shouldPractice`. Deshalb
     lesen–ändern–schreiben über `songWritePayload` (wie beim Arrangement-Tempo). Wer dort ein Feld

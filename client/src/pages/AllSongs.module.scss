@@ -162,3 +162,26 @@
   flex-shrink: 0;
   margin-left: -2px;
 }
+
+/**
+ * „Auch im Liedtext suchen" (#322) – bewusst zurückhaltend und **unter** den Titel-Treffern.
+ *
+ * Die Titelsuche filtert lokal und ist sofort da; die Textsuche kostet beim ersten Mal einen
+ * Index-Aufbau auf dem Server. Deshalb ist sie ein Angebot, kein Automatismus – und sieht auch so aus.
+ */
+.textSucheBtn {
+  @include m.neues-lied-aktion;
+  margin: 14px auto 0;
+  font-size: 14.5px;
+}
+
+.textSucheHinweis {
+  margin: 14px 16px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface3);
+  color: var(--text2);
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-align: center;
+}

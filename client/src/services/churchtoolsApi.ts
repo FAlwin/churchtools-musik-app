@@ -17,6 +17,7 @@ import type {
   SongLibraryEntry,
   SongSelectSong,
   SongSelectSuchergebnis,
+  SongTextTreffer,
   SongVersion,
   UserCapabilities,
 } from '@shared/types/index';
@@ -154,6 +155,17 @@ export function getSongLibrary(): Promise<SongLibraryEntry[]> {
  */
 export function getSongCategories(): Promise<SongCategory[]> {
   return apiFetch<SongCategory[]>('/api/song-categories');
+}
+
+/**
+ * Im **Liedtext** des eigenen Bestands suchen (#322).
+ *
+ * Beim ersten Aufruf baut der Server dafür einen Index (ein Datei-Download je Lied) – das dauert
+ * spürbar, danach kommt die Antwort aus dem Speicher. Gemessen: Weder ChurchTools noch CCLI können im
+ * Liedtext suchen, deshalb macht es unser Server selbst (siehe `songTextIndex.ts`).
+ */
+export function sucheImLiedtext(q: string): Promise<SongTextTreffer[]> {
+  return apiFetch<SongTextTreffer[]>(`/api/song-text-search?q=${encodeURIComponent(q)}`);
 }
 
 /**

@@ -285,6 +285,19 @@ export interface SongSelectSong extends SongSelectTreffer {
   copyright: string | null;
 }
 
+/**
+ * Ein Treffer der **Suche im Liedtext** (#322).
+ *
+ * Der Ausschnitt zeigt die Fundstelle – ohne ihn müsste man jedes Lied öffnen, um zu sehen, warum es
+ * gefunden wurde. Er kommt aus dem Suchtext (kleingeschrieben, ohne Akkorde) und ist damit ehrlich:
+ * So wurde gesucht.
+ */
+export interface SongTextTreffer {
+  songId: number;
+  name: string;
+  ausschnitt: string;
+}
+
 /** Ein anzeigbares Dokument (PDF oder Bild) eines Arrangements. */
 export interface SongDocument {
   fileId: number;
