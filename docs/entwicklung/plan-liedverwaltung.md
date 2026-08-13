@@ -1,6 +1,7 @@
 # Umsetzungsplan – Liedverwaltung in der App (#321, #322)
 
-> Status: **13.08.2026 – Teil 1 fertig; von Teil 2 stehen die Schritte 6–9, offen sind 10 und 11.**
+> Status: **13.08.2026 – Teil 1 fertig; von Teil 2 stehen die Schritte 6–9 und 10a (Server).
+> Offen: 10b (Oberfläche) und 11 (Stammdaten ändern).**
 > Die Neufassung von Teil 2 kommt aus einem Fund vom selben Tag: **SongSelect ist doch machbar**,
 > über ChurchTools als Vermittler (siehe `churchtools-songselect.md`). Das ändert #322 grundlegend –
 > aus „Formular zum Abtippen" wird „Lied aus CCLI holen".
