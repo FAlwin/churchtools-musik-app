@@ -81,19 +81,29 @@ export function AllSongs({
         {showStats && <SongStatsBar {...f} />}
 
         {/**
-         * „Neues Lied" (#322) – **über dem Scroll-Bereich, nicht darin.**
+         * Listenkopf: **Anzahl links, „Neues Lied" rechts – auf einer Höhe** (Wunsch Alwin,
+         * 13.08.2026).
          *
-         * In der Liste wäre der Einstieg zweimal schlecht: Er scrollt bei 49 Liedern weg, und bei einer
-         * Suche ohne Treffer gibt es gar keine Liste – also genau dann nicht, wenn man ein Lied anlegen
-         * will, weil es fehlt. Hier bleibt er immer sichtbar.
+         * Die Zeile steht **über dem Scroll-Bereich**, nicht darin. Das hat zwei Gründe: Sie bleibt beim
+         * Blättern sichtbar, und sie ist auch dann da, wenn die Suche **keinen** Treffer hat – also
+         * genau in dem Moment, in dem ein Lied fehlt und angelegt werden soll. Innerhalb der Liste
+         * würde sie mit ihr verschwinden.
          *
-         * Nur mit dem ChurchTools-Recht, und nur wenn die App das fertige Lied auch öffnen kann.
+         * Die Anzahl erscheint nur, wenn es etwas zu zählen gibt; „Neues Lied" nur mit dem
+         * ChurchTools-Recht und nur, wenn die App das fertige Lied auch öffnen kann.
          */}
-        {canCreateSong && onOpenSong && (
-          <button className={styles.newSongBtn} onClick={() => setNeuesLied(true)}>
-            <Icon name="plus" size={16} stroke={2.4} />
-            Neues Lied
-          </button>
+        {(f.list.length > 0 || (canCreateSong && onOpenSong)) && (
+          <div className={styles.listHdr}>
+            <span className={styles.listCount}>
+              {f.list.length > 0 && !isLoading && !isError ? `${f.list.length} Lieder` : ''}
+            </span>
+            {canCreateSong && onOpenSong && (
+              <button className={styles.newSongBtn} onClick={() => setNeuesLied(true)}>
+                <Icon name="plus" size={16} stroke={2.4} />
+                Neues Lied
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -115,7 +125,7 @@ export function AllSongs({
           />
         ) : (
           <div className={styles.group}>
-            <div className={styles.groupHdr}>{f.list.length} Lieder</div>
+            {/* Die Anzahl steht jetzt oben im festen Listenkopf – auf einer Höhe mit „Neues Lied". */}
             <div className={styles.cardList}>
               {f.list.map((s) => {
                 const st = f.stats.get(s.songId);

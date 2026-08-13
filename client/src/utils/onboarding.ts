@@ -93,7 +93,7 @@ export const TERMINE_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="tabbar"]',
     title: 'Die Bereiche',
-    body: 'Unter „Lieder" durchsuchst du alle Lieder – und legst über „Neues Lied" unter der Suche eines an, wenn du in ChurchTools Lieder bearbeiten darfst. Unter „Mehr" findest du Einstellungen und kannst diese Einführung erneut starten.',
+    body: 'Unter „Lieder" durchsuchst du alle Lieder – und legst über „Neues Lied" im Listenkopf eines an, wenn du in ChurchTools Lieder bearbeiten darfst. Unter „Mehr" findest du Einstellungen und kannst diese Einführung erneut starten.',
   },
 ];
 

@@ -103,9 +103,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Fällen**, mit Aktion, ohne Aktion und mit Untertitel. Aufgefallen ist es, als das Liederheft seine
   erste Kopfzeilen-Aktion bekam; betroffen war aber die ganze App.
 
-- **„Neues Lied" sitzt nicht mehr in der Kopfzeile**, sondern als ruhige Textaktion rechts unter der
-  Suche. Dort ist es auch dann erreichbar, wenn man weit geblättert hat **oder die Suche keinen Treffer
-  hat** – also genau in dem Moment, in dem ein Lied fehlt.
+- **„Neues Lied" sitzt nicht mehr in der Kopfzeile**, sondern im Listenkopf – **auf einer Höhe mit der
+  Liedanzahl**, links „49 Lieder", rechts „Neues Lied". Die Zeile steht über dem Bereich, der beim
+  Aktualisieren nach unten gezogen wird, und bleibt deshalb sichtbar: beim Blättern und auch dann, wenn
+  die Suche **keinen Treffer** hat – also genau in dem Moment, in dem ein Lied fehlt.
 
 - **Die CCLI-Suche stürzte beim ersten Treffer ab** (`e.map is not a function`, #322). Der Client
   erwartete eine Liste, der Server liefert `{treffer, gesamt, vollstaendig}` – und über die

@@ -32,18 +32,38 @@
 }
 
 /**
- * „Neues Lied" über der Liste (#322) – eine ruhige Textaktion, kein Kasten.
+ * Der Listenkopf: **Anzahl links, „Neues Lied" rechts – auf einer Höhe** (#322).
  *
- * Rechtsbündig unter der Suche: Sie liegt außerhalb des Scroll-Bereichs und bleibt damit sichtbar,
- * auch wenn man weit geblättert hat oder die Suche keinen Treffer hat. Der Knopf war zuerst in der
- * Kopfzeile – dort wirkte er fremd und machte die Leiste höher als die der anderen Bereiche.
+ * Er sitzt außerhalb des Scroll-Bereichs und bleibt deshalb sichtbar: beim Blättern und auch dann,
+ * wenn die Suche keinen Treffer hat. Der Knopf stand zuerst in der Kopfzeile – dort wirkte er fremd
+ * und machte die Leiste höher als die der anderen Bereiche.
+ *
+ * `min-height` hält die Zeile gleich hoch, egal ob gerade eine Anzahl oder ein Knopf darin steht –
+ * sonst würde die Liste beim Suchen um wenige Pixel hüpfen.
  */
+.listHdr {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-bottom: 8px;
+  // Die Zeile bleibt gleich hoch, ob mit oder ohne Anzahl (bei einer Suche ohne Treffer ist sie leer) –
+  // sonst rutscht die Liste beim Tippen um ein paar Pixel.
+  min-height: 28px;
+}
+
+.listCount {
+  @include m.group-header;
+  // Der Abstand nach unten sitzt an `.listHdr`, damit Anzahl und Knopf gemeinsam ausgerichtet sind.
+  padding-bottom: 0;
+}
+
 .newSongBtn {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin: 10px 0 2px auto;
-  padding: 5px 2px;
+  padding: 0 2px;
   background: none;
   border: none;
   color: var(--blue-ink);
@@ -51,8 +71,7 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  // `margin-left: auto` (oben im margin-Kürzel) schiebt ihn nach rechts.
-  width: fit-content;
+  flex-shrink: 0;
 
   &:active {
     opacity: 0.5;
@@ -60,7 +79,8 @@
 }
 
 .group {
-  margin: 18px 16px 0;
+  // Kein Abstand oben mehr: Den bringt jetzt `.listHdr` mit, der über dem Scroll-Bereich sitzt.
+  margin: 0 16px;
 }
 .groupHdr {
   @include m.group-header;
