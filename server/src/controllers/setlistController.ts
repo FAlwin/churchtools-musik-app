@@ -24,6 +24,7 @@ import { getCapabilities } from '../services/ctCapabilities.js';
 import { fetchFileBytes } from '../services/ctFiles.js';
 import { getCtServices, getSong } from '../services/ctRead.js';
 import { getEditableSongCategories } from '../services/ctSongCategories.js';
+import { liedAnlegen } from '../services/songErstellen.js';
 import { getSongSelectSong, searchSongSelect } from '../services/ctSongSelect.js';
 import {
   createAgendaItem,
@@ -268,6 +269,44 @@ export async function getSongLibraryCtrl(req: Request, res: Response): Promise<v
 export async function getSongCategoriesCtrl(req: Request, res: Response): Promise<void> {
   const categories = await getEditableSongCategories(ctCookie(req));
   res.json(categories);
+}
+
+/**
+ * Ein neues Lied, wie es aus dem Formular kommt (#322, Schritt 10).
+ *
+ * **Die Grenzen stammen von ChurchTools selbst** (gemessen mit leerem Rumpf, 07.08.2026): Name 2–200
+ * Zeichen, `categoryId` eine Ganzzahl. Sie stehen hier trotzdem, damit ein Tippfehler eine
+ * verständliche deutsche Meldung ergibt und nicht erst nach einer Runde durch ChurchTools auffällt.
+ *
+ * **`categoryId` ist `nonnegative`, nicht `positive`:** Kategorie **0** ist echt („Aktive Songs").
+ * Mit `positive()` wäre ausgerechnet die Kategorie unmöglich, in der bei der ECG alle Lieder liegen.
+ */
+const neuesLiedSchema = z.object({
+  name: z.string().trim().min(2, 'Der Liedname braucht mindestens 2 Zeichen.').max(200),
+  categoryId: z.number().int().nonnegative(),
+  author: z.string().trim().max(200).optional(),
+  ccli: z.string().trim().max(50).optional(),
+  copyright: z.string().trim().max(500).optional(),
+  key: z.string().trim().max(10).optional(),
+  arrangementName: z.string().trim().max(50).optional(),
+  /** Optional: das fertige Lied gleich in den Ablauf dieses Termins eintragen. */
+  eventId: z.number().int().positive().optional(),
+});
+
+/**
+ * POST /api/songs – ein neues Lied anlegen (#322, Schritt 10).
+ *
+ * Rechte, Doppel-Erkennung und die Reihenfolge der Schreibvorgänge stecken im Dienst; der Controller
+ * prüft nur die Form der Eingabe. Antwort ist `201` mit den neuen IDs – und, wenn ein Termin
+ * mitgegeben war, mit der ehrlichen Auskunft, ob der Ablauf-Eintrag geklappt hat.
+ */
+export async function postSong(req: Request, res: Response): Promise<void> {
+  const daten = neuesLiedSchema.parse(req.body);
+  const ergebnis = await liedAnlegen(ctCookie(req), daten);
+  // Ein neu angelegtes Lied verändert die Bibliothek – und wenn es in einen Ablauf ging, auch die
+  // Statistik dieses Termins (#300: nur bei beigetragenem Termin).
+  if (daten.eventId !== undefined && ergebnis.imAblauf) invalidateSongUsageCache(daten.eventId);
+  res.status(201).json(ergebnis);
 }
 
 /** GET /api/capabilities – was der angemeldete Nutzer laut ChurchTools darf. */
