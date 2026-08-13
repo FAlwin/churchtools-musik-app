@@ -8,8 +8,11 @@
  *
  * Aufruf:  npx tsx server/scripts/probe-songmgmt.ts
  *
- * **STRENG LESEND.** Es werden ausschließlich GET-Anfragen gestellt – nichts wird angelegt,
- * geändert oder gelöscht. Der Token wird nie ausgegeben.
+ * **STRENG LESEND.** Nichts wird angelegt, geändert oder gelöscht; der Token wird nie ausgegeben.
+ * Bis auf eine Ausnahme sind es reine GET-Anfragen: `getMasterData` über die alte
+ * churchservice-Schnittstelle ist ein **POST, der nur liest** (sie kennt keine GETs). Diese
+ * Unterscheidung steht hier, weil im Kopf früher „ausschließlich GET" stand – eine Aussage, die
+ * nach der Ergänzung nicht mehr gestimmt hätte.
  *
  * Bei HTTP 429 (Drosselung) bricht das Skript SOFORT ab: Unsere eigene App hat ChurchTools schon
  * einmal überfahren (#300), danach scheiterten Login, Rechte und Speichern gleichzeitig. Das
@@ -74,6 +77,74 @@ function felder(json: unknown): string[] {
   return erst && typeof erst === 'object' ? Object.keys(erst as object).sort() : [];
 }
 
+/**
+ * **Woher die Kategorie-NAMEN kommen** (#322, Schritt 7).
+ *
+ * Unter `/api/` gibt es sie nicht – alle geratenen Pfade antworten 404 (oben mitgeprüft, damit dieser
+ * Befund nicht in Erzählform in einer Doku steht, sondern jederzeit nachlaufbar ist). Die alte
+ * churchservice-Schnittstelle liefert sie: `func=getMasterData` → `songcategory`.
+ *
+ * Das ist wichtig, weil die Liedliste nur die Kategorien nennt, die auch **benutzt** werden. Bei der
+ * ECG sind das 49 Lieder in genau einer Kategorie; die zweite erlaubte („Inaktive Songs") kommt in
+ * keinem Lied vor. Ohne diesen Aufruf hieße sie in der App „Kategorie 1".
+ *
+ * **Bewusst eigenes `fetch` statt der Server-Module.** Ein Erkundungsskript, das über unseren eigenen
+ * Code läuft, prüft unsere Annahmen gegen sich selbst. Die anderen `probe-*.ts` halten es genauso.
+ */
+async function kategorienUeberAjax(): Promise<void> {
+  if (abgebrochen) return;
+  console.log('\n── Kategorie-Namen über die alte Schnittstelle (POST, liest nur) ──');
+
+  // Die alte Schnittstelle kennt den `Authorization: Login`-Kopf nicht; sie braucht ein
+  // Session-Cookie. Das gibt es über `whoami?login_token=…` (so steht es in der CLAUDE.md für
+  // Datei-Downloads) – plus ein CSRF-Token, das auch lesende Aufrufe verlangen.
+  const who = await fetch(`${BASE}/api/whoami?login_token=${TOKEN}`, { redirect: 'manual' });
+  const cookie = (who.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ');
+  if (!cookie) {
+    console.log('  ✗ Kein Session-Cookie erhalten – Kategorie-Namen nicht prüfbar.');
+    return;
+  }
+  const csrfRes = await fetch(`${BASE}/api/csrftoken`, {
+    headers: { Cookie: cookie, Accept: 'application/json' },
+  });
+  const csrf = ((await csrfRes.json()) as { data?: string }).data;
+  if (!csrf) {
+    console.log('  ✗ Kein CSRF-Token erhalten – Kategorie-Namen nicht prüfbar.');
+    return;
+  }
+
+  const res = await fetch(`${BASE}/index.php?q=churchservice/ajax`, {
+    method: 'POST',
+    headers: {
+      Cookie: cookie,
+      'CSRF-Token': csrf,
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'X-Requested-With': 'XMLHttpRequest',
+      Accept: 'application/json',
+    },
+    body: new URLSearchParams({ func: 'getMasterData' }),
+  });
+  const text = await res.text();
+  let daten: unknown;
+  try {
+    const aussen = JSON.parse(text) as { status?: string; data?: unknown };
+    if (aussen.status !== 'success') {
+      console.log(`  ✗ getMasterData meldet „${String(aussen.status)}".`);
+      return;
+    }
+    daten = typeof aussen.data === 'string' ? JSON.parse(aussen.data) : aussen.data;
+  } catch {
+    console.log(`  ✗ Antwort nicht lesbar (${res.status}).`);
+    return;
+  }
+  const kategorien = (daten as { songcategory?: unknown }).songcategory;
+  console.log(`  ✓ ${res.status} getMasterData → songcategory:`);
+  console.log(`      ${JSON.stringify(kategorien)}`);
+  console.log(
+    '      ⚠️  Beachten: `id` kommt als ZEICHENKETTE, das Namensfeld heißt `bezeichnung`.',
+  );
+}
+
 async function main(): Promise<void> {
   console.log(`\nChurchTools-Erkundung „Liedverwaltung" – NUR LESEND\nInstanz: ${BASE}\n`);
 
@@ -96,6 +167,22 @@ async function main(): Promise<void> {
   }
   console.log(`      → Beispiel-Lied #${songId}`);
 
+  /**
+   * **Die FORM von `category` und `ccli`, nicht nur ihre Anwesenheit** (#322, Schritt 7).
+   *
+   * Die Feldliste oben sagt, dass es beide gibt – über ihre Gestalt sagt sie nichts. Genau daran
+   * hängen zwei Entscheidungen: Ob die Kategorie-Auswahl einen **Namen** anzeigen kann (oder nur eine
+   * Zahl), und ob sich ein Doppel-Anlegen an der **CCLI-Nummer** erkennen lässt, ohne für jedes Lied
+   * einen Einzelabruf zu machen – letzteres wären ~250 Anfragen und damit genau #300.
+   */
+  const erstesLied = (liste.json as { data?: Record<string, unknown>[] } | null)?.data?.[0];
+  if (erstesLied) {
+    console.log(`      → category = ${JSON.stringify(erstesLied.category)}`);
+    console.log(
+      `      → ccli = ${JSON.stringify(erstesLied.ccli)} (Typ ${typeof erstesLied.ccli})`,
+    );
+  }
+
   const einzeln = await pruefe(`Einzelnes Lied #${songId}`, `/api/songs/${songId}`);
   const einzelFelder = felder(einzeln.json);
   if (einzelFelder.length) console.log(`      → Felder: ${einzelFelder.join(', ')}`);
@@ -114,6 +201,9 @@ async function main(): Promise<void> {
   if (felder(kat.json).length) console.log(`      → Felder: ${felder(kat.json).join(', ')}`);
   await pruefe('Tonarten (musical keys)', '/api/musicalkeys');
   await pruefe('Masterdata Lieder', '/api/masterdata/songs');
+  await pruefe('Masterdata churchservice', '/api/masterdata/churchservice');
+  await pruefe('Masterdata (ohne Modul)', '/api/masterdata');
+  await kategorienUeberAjax();
 
   console.log('\n── Dateien am Arrangement ──');
   const arrId = Array.isArray(arr) && typeof arr[0]?.id === 'number' ? (arr[0].id as number) : null;
@@ -135,6 +225,83 @@ async function main(): Promise<void> {
   const songRechte = (perm.json as { data?: { song?: Record<string, unknown> } } | null)?.data
     ?.song;
   if (songRechte) console.log(`      → song: ${JSON.stringify(songRechte)}`);
+  /**
+   * **`edit songcategory` nennt die erlaubten Kategorie-IDs, nicht bloß ja/nein** (#322).
+   *
+   * `parseCapabilities` verdichtet das Recht heute zu einem Bool (`canEditSongs`). Für das
+   * Anlege-Formular ist die **Liste** nötig: Ohne sie bietet die App Kategorien an, die ChurchTools
+   * danach ablehnt. Nur diese zwei Einträge werden ausgegeben – der ganze Rechte-Block wäre lang und
+   * hat hier nichts zu suchen.
+   */
+  const cs = (perm.json as { data?: { churchservice?: Record<string, unknown> } } | null)?.data
+    ?.churchservice;
+  if (cs) {
+    console.log(
+      `      → churchservice['edit songcategory'] = ${JSON.stringify(cs['edit songcategory'])}`,
+    );
+    console.log(
+      `      → churchservice['view songcategory'] = ${JSON.stringify(cs['view songcategory'])}`,
+    );
+  }
+
+  /**
+   * **Was der Bestand über die geplanten Regeln sagt** (#322).
+   *
+   * Zwei Fragen lassen sich nur an den echten Daten beantworten, und beide entscheiden über die
+   * Oberfläche:
+   *  1. **Welche Kategorien kommen überhaupt vor?** Einen Endpunkt für Kategorien gibt es nicht (404,
+   *     siehe oben) – die Auswahl kann nur aus den Liedern gebildet werden. Ist eine erlaubte
+   *     Kategorie in keinem Lied benutzt, kennt die App ihren Namen nicht.
+   *  2. **Gibt es schon Lieder mit gleicher CCLI-Nummer?** Die Blockade beim Anlegen wäre sonst eine
+   *     Regel, die der eigene Bestand verletzt – das gehört gewusst, bevor sie gebaut wird.
+   *
+   * Drei bis vier Seitenabrufe, gemütlich getaktet – kein Vergleich zu den ~250 Anfragen aus #300.
+   */
+  console.log('\n── Der Bestand: Kategorien und CCLI-Nummern ──');
+  interface RohLied {
+    id: number;
+    name: string;
+    ccli?: unknown;
+    category?: { id?: number; name?: string } | null;
+  }
+  const alle: RohLied[] = [];
+  for (let page = 1; page <= 50; page++) {
+    const a = await get(`/api/songs?limit=100&page=${page}`);
+    if (a.status !== 200) break;
+    const teil = ((a.json as { data?: RohLied[] }).data ?? []) as RohLied[];
+    alle.push(...teil);
+    if (teil.length < 100) break;
+  }
+  console.log(`  ${alle.length} Lieder gelesen`);
+
+  const kategorien = new Map<number, { name: string; anzahl: number }>();
+  for (const l of alle) {
+    const id = l.category?.id;
+    if (typeof id !== 'number') continue;
+    const e = kategorien.get(id) ?? { name: l.category?.name ?? '(ohne Namen)', anzahl: 0 };
+    e.anzahl++;
+    kategorien.set(id, e);
+  }
+  for (const [id, e] of [...kategorien].sort((a, b) => a[0] - b[0])) {
+    console.log(`  Kategorie ${id}: „${e.name}" – ${e.anzahl} Lied(er)`);
+  }
+
+  const mitCcli = alle.filter((l) => String(l.ccli ?? '').trim().length > 0);
+  console.log(`  CCLI-Nummer gesetzt bei ${mitCcli.length} von ${alle.length} Liedern`);
+  const nachCcli = new Map<string, string[]>();
+  for (const l of mitCcli) {
+    const k = String(l.ccli).trim();
+    nachCcli.set(k, [...(nachCcli.get(k) ?? []), l.name]);
+  }
+  const doppelt = [...nachCcli].filter(([, namen]) => namen.length > 1);
+  if (doppelt.length === 0) {
+    console.log(
+      '  ✓ Keine CCLI-Nummer kommt doppelt vor – eine Blockade widerspricht dem Bestand nicht.',
+    );
+  } else {
+    console.log(`  ⚠️  ${doppelt.length} CCLI-Nummer(n) mehrfach vergeben:`);
+    for (const [nr, namen] of doppelt) console.log(`      ${nr}: ${namen.join(' | ')}`);
+  }
 
   console.log('\nFertig. Nichts wurde verändert.\n');
 }
