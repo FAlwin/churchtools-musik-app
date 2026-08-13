@@ -1,6 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { LiedAnlegenAuftrag, LiedStammdaten } from '@shared/types/index';
+import type {
+  LiedAnlegenAuftrag,
+  LiedStammdaten,
+  SongSelectSuchergebnis,
+} from '@shared/types/index';
+import { sucheArt } from '../utils/liedFormular';
 import * as api from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 
@@ -259,11 +264,22 @@ export const SONGSELECT_MIN_ZEICHEN = 3;
  * nichts. **Kein automatischer zweiter Versuch:** Ein Fehler von CCLI (keine Lizenz, Aussetzer)
  * wiederholt sich meist, und die Meldung ist hier die nützlichere Antwort als ein stiller Retry.
  */
-export function useSongSelectSuche(titel: string, enabled: boolean) {
-  const begriff = titel.trim();
+export function useSongSelectSuche(eingabe: string, enabled: boolean) {
+  const begriff = eingabe.trim();
+  const art = sucheArt(begriff);
   return useQuery({
-    queryKey: ['songselect-search', begriff],
-    queryFn: () => api.sucheSongSelect(begriff),
+    // Die Art gehört in den Schlüssel: „5841527" und ein gleichnamiger Titel sind zwei Abfragen.
+    queryKey: ['songselect-search', art.art, begriff],
+    queryFn: async (): Promise<SongSelectSuchergebnis> => {
+      if (art.art === 'titel') return api.sucheSongSelect(art.titel);
+      /**
+       * **Eine CCLI-Nummer ist keine Suche, sondern eine Abfrage** – sie liefert genau ein Lied.
+       * Das Ergebnis wird in dieselbe Form gebracht, damit die Trefferliste nicht zwei Fälle kennen
+       * muss: ein Treffer, vollständig.
+       */
+      const lied = await api.getSongSelectSong(art.nummer);
+      return { treffer: [lied], gesamt: 1, vollstaendig: true };
+    },
     enabled: enabled && begriff.length >= SONGSELECT_MIN_ZEICHEN,
     staleTime: 1000 * 60 * 5,
     retry: false,

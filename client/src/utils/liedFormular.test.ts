@@ -16,6 +16,7 @@ import {
   hatAenderung,
   namensWarnung,
   notenblattPlan,
+  sucheArt,
   trefferUnterzeile,
 } from './liedFormular';
 
@@ -339,5 +340,31 @@ describe('namensWarnung beim Ändern', () => {
 
   it('warnt weiter wegen eines FREMDEN Liedes mit dem Namen', () => {
     expect(namensWarnung('Treu', [lied(7, 'Treu'), lied(9, 'Treu')], 7)).toContain('„Treu"');
+  });
+});
+
+describe('sucheArt – Titel oder CCLI-Nummer', () => {
+  it('reine Ziffern sind eine Nummer', () => {
+    expect(sucheArt('5841527')).toEqual({ art: 'nummer', nummer: 5841527 });
+  });
+
+  it('Leerzeichen drumherum stören nicht', () => {
+    expect(sucheArt('  5841527  ')).toEqual({ art: 'nummer', nummer: 5841527 });
+  });
+
+  it('alles mit Buchstaben ist ein Titel – auch mit Zahl darin', () => {
+    // „Psalm 23" ist ein Titel. Nur wenn NICHTS außer Ziffern da ist, wird abgefragt.
+    expect(sucheArt('Psalm 23')).toEqual({ art: 'titel', titel: 'Psalm 23' });
+    expect(sucheArt('Treu')).toEqual({ art: 'titel', titel: 'Treu' });
+  });
+
+  it('eine Zahl mit Bindestrich oder Punkt ist ein Titel', () => {
+    // Sonst würde aus einer Jahresangabe oder einem Datum stillschweigend eine Nummer.
+    expect(sucheArt('2019-2020').art).toBe('titel');
+    expect(sucheArt('1.2.3').art).toBe('titel');
+  });
+
+  it('liefert den Titel getrimmt zurück', () => {
+    expect(sucheArt('  Treu  ')).toEqual({ art: 'titel', titel: 'Treu' });
   });
 });

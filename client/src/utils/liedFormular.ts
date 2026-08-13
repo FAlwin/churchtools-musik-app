@@ -253,3 +253,26 @@ export function aenderungAus(
 export function hatAenderung(f: NeuesLiedFormular, ist: LiedStammdatenAnsicht): boolean {
   return Object.keys(aenderungAus(f, ist)).length > 0;
 }
+
+/**
+ * Was hat der Nutzer ins CCLI-Suchfeld getippt – einen **Titel** oder eine **CCLI-Nummer**? (#322)
+ *
+ * Zwei verschiedene Wege bei CCLI: Der Titel geht in die unscharfe Suche (147 Treffer für „Wo ich auch
+ * stehe"), die Nummer in die direkte Abfrage – **ein** Treffer, sofort richtig. Wer die Nummer zur Hand
+ * hat, soll sie eintippen können.
+ *
+ * **Nur Ziffern gelten als Nummer.** Ein Liedtitel besteht praktisch nie ausschließlich aus Ziffern;
+ * „Psalm 23" enthält Buchstaben und ist damit ein Titel. Der Randfall bleibt: Wer wirklich nach dem
+ * Titel „40" suchen will, findet ihn so nicht – die Meldung nennt deshalb beide Wege, statt nur
+ * „nichts gefunden" zu sagen.
+ *
+ * Die Mindestlänge gilt für beide Wege gleich (`SONGSELECT_MIN_ZEICHEN` beim Aufrufer): Kürzere
+ * Eingaben ergeben bei CCLI nur Rauschen.
+ */
+export function sucheArt(
+  eingabe: string,
+): { art: 'nummer'; nummer: number } | { art: 'titel'; titel: string } {
+  const text = eingabe.trim();
+  if (/^\d+$/.test(text)) return { art: 'nummer', nummer: Number(text) };
+  return { art: 'titel', titel: text };
+}

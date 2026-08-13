@@ -33,6 +33,7 @@ import { useNeuesLied } from '../hooks/useNeuesLied';
 import {
   LEERES_FORMULAR,
   formularAusTreffer,
+  sucheArt,
   formularBereit,
   namensWarnung,
   trefferUnterzeile,
@@ -83,6 +84,10 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
   const [eingabe, setEingabe] = useState('');
   const [begriff, setBegriff] = useState('');
   const suche = useSongSelectSuche(begriff, schritt === 'suche');
+  /** Was zuletzt abgeschickt wurde – Titel oder Nummer. Bestimmt nur die Wortwahl der Meldungen. */
+  const gesucht = sucheArt(begriff);
+  /** Was die Eingabe gerade IST – für die Beschriftung des Knopfs, noch vor dem Abschicken. */
+  const eingabeArt = sucheArt(eingabe);
   /** Läuft die Einzelabfrage für das Copyright? Nur dafür, nicht fürs Anlegen. */
   const [holtDetails, setHoltDetails] = useState(false);
 
@@ -225,7 +230,9 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
         <div className={styles.searchRow}>
           <input
             className={styles.input}
-            placeholder="Liedtitel …"
+            /* Beide Wege im Platzhalter, weil es beide wirklich gibt: Text geht in die unscharfe
+               Titelsuche, reine Ziffern direkt an die CCLI-Nummer (siehe `sucheArt`). */
+            placeholder="Liedtitel oder CCLI-Nummer eintippen …"
             value={eingabe}
             autoFocus
             onChange={(e) => setEingabe(e.target.value)}
@@ -238,24 +245,39 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
             onClick={() => setBegriff(eingabe)}
             disabled={eingabe.trim().length < SONGSELECT_MIN_ZEICHEN}
           >
-            Suchen
+            {/* „Abfragen" statt „Suchen", sobald es nach einer Nummer aussieht: Sie liefert genau ein
+                Lied, keine Trefferliste – das darf der Knopf sagen. */}
+            {eingabeArt.art === 'nummer' ? 'Abfragen' : 'Suchen'}
           </button>
         </div>
 
-        {suche.isLoading && <CenterMessage loading text="Wird bei CCLI gesucht…" />}
+        {suche.isLoading && (
+          <CenterMessage
+            loading
+            text={
+              gesucht.art === 'nummer'
+                ? `CCLI-Nummer ${gesucht.nummer} wird abgefragt…`
+                : 'Wird bei CCLI gesucht…'
+            }
+          />
+        )}
 
         {/* Der Grund kommt vom Server: fehlende Lizenz klingt anders als ein Aussetzer (#270). */}
         {suche.isError && (
           <div className={styles.err}>
             {suche.error instanceof Error
               ? suche.error.message
-              : 'Die Suche bei CCLI ist fehlgeschlagen.'}
+              : gesucht.art === 'nummer'
+                ? `Die CCLI-Nummer ${gesucht.nummer} konnte nicht abgefragt werden.`
+                : 'Die Suche bei CCLI ist fehlgeschlagen.'}
           </div>
         )}
 
         {begriff !== '' && !suche.isLoading && !suche.isError && liste.length === 0 && (
           <div className={styles.hint}>
-            Keine Treffer bei CCLI. Vielleicht ist es ein eigenes Lied – dann selbst eintippen.
+            {gesucht.art === 'nummer'
+              ? `Zu der Nummer ${gesucht.nummer} findet CCLI kein Lied. Tippe den Titel ein, um nach dem Namen zu suchen.`
+              : 'Keine Treffer bei CCLI. Vielleicht ist es ein eigenes Lied – dann selbst eintippen.'}
           </div>
         )}
 
