@@ -9,6 +9,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
+- **Bei der Liedsuche stehen Titel-Treffer zuerst.** Gesucht wird in Titel **und** Autor; bisher stand
+  die Liste rein alphabetisch, ein Lied mit dem Wort nur im Autor konnte also vor dem stehen, das es im
+  Titel hat. Wer ein Wort eintippt, meint fast immer den Titel.
+
+  Bei **Häufigkeit** und **Zuletzt** gewinnen weiter die Zahlen – sonst wäre der Umschalter wirkungslos.
+  Dort entscheidet die Trefferart nur bei Gleichstand.
+
 - **Man kann jetzt im Liedtext suchen (#322).** Wer nur eine Zeile im Kopf hat, aber nicht den Titel,
   tippt sie ins Suchfeld im Liederheft und wählt darunter **„Auch im Liedtext nach … suchen"**. Die
   Treffer erscheinen mit der **Fundstelle**, sodass man sieht, warum ein Lied dabei ist.

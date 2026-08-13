@@ -65,6 +65,59 @@ describe('filterSongs', () => {
     expect(names(filterSongs(SONGS, USAGE, opts({ query: 'autor x' })).list)).toEqual(['Anker']);
   });
 
+  /**
+   * **Titel-Treffer zuerst** (Wunsch Alwin, 13.08.2026).
+   *
+   * Gesucht wird in Titel und Autor. Vorher stand die Liste rein alphabetisch – „Zenit" mit dem
+   * gesuchten Wort im TITEL landete hinter „Anker", das es nur im Autor trug. Wer ein Wort eintippt,
+   * meint fast immer den Titel.
+   */
+  describe('Titel-Treffer stehen vor Autor-Treffern', () => {
+    const GEMISCHT: SongLibraryEntry[] = [
+      // Alphabetisch zuerst, aber „gnade" steht nur im Autor.
+      { songId: 1, name: 'Anker', author: 'Peter Gnade', key: 'C', arrangementId: 11 },
+      // Alphabetisch zuletzt, hat „Gnade" aber im Titel.
+      { songId: 2, name: 'Zenit der Gnade', author: 'Autor Y', key: 'D', arrangementId: 22 },
+      { songId: 3, name: 'Gnade genügt', author: 'Autor Z', key: 'E', arrangementId: 33 },
+    ];
+
+    it('A–Z: erst die Titel-Treffer (alphabetisch), dann die Autor-Treffer', () => {
+      const r = filterSongs(GEMISCHT, undefined, opts({ query: 'gnade', showStats: false }));
+      expect(names(r.list)).toEqual(['Gnade genügt', 'Zenit der Gnade', 'Anker']);
+    });
+
+    it('ohne Suche bleibt es reine Alphabetik', () => {
+      const r = filterSongs(GEMISCHT, undefined, opts({ query: '', showStats: false }));
+      expect(names(r.list)).toEqual(['Anker', 'Gnade genügt', 'Zenit der Gnade']);
+    });
+
+    it('bei Häufigkeit gewinnen weiter die ZAHLEN – sonst wäre der Umschalter wirkungslos', () => {
+      // „Anker" hat das Wort nur im Autor, wurde aber öfter gespielt: Es bleibt vorn.
+      const usage: SongUsageMap = {
+        '1': { dates: ['2026-06-01', '2026-05-01', '2026-04-01'] },
+        '2': { dates: ['2026-06-02'] },
+        '3': { dates: ['2026-06-03'] },
+      };
+      const r = filterSongs(GEMISCHT, usage, opts({ query: 'gnade', sort: 'count' }));
+      expect(names(r.list)[0]).toBe('Anker');
+    });
+
+    it('bei gleicher Häufigkeit entscheidet die Trefferart – dann erst der Name', () => {
+      const usage: SongUsageMap = {
+        '1': { dates: ['2026-06-01'] },
+        '2': { dates: ['2026-06-01'] },
+        '3': { dates: ['2026-06-01'] },
+      };
+      const r = filterSongs(GEMISCHT, usage, opts({ query: 'gnade', sort: 'count' }));
+      expect(names(r.list)).toEqual(['Gnade genügt', 'Zenit der Gnade', 'Anker']);
+    });
+
+    it('Groß-/Kleinschreibung ändert die Einordnung nicht', () => {
+      const r = filterSongs(GEMISCHT, undefined, opts({ query: 'GNADE', showStats: false }));
+      expect(names(r.list)).toEqual(['Gnade genügt', 'Zenit der Gnade', 'Anker']);
+    });
+  });
+
   it('ohne Statistik-Recht bleibt es reines A–Z (kein statMode, alle Lieder)', () => {
     const r = filterSongs(SONGS, USAGE, opts({ sort: 'count', showStats: false }));
     expect(r.statMode).toBe(false);

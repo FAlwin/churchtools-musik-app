@@ -52,7 +52,8 @@ Beim Lied stehen das letzte Spieldatum und wie oft es gespielt wurde – **künf
 dabei nicht mit.
 
 1. Unten auf **Lieder** tippen.
-2. Oben einen Teil eines Liedtitels eintippen (drei, vier Buchstaben).
+2. Oben einen Teil eines Liedtitels eintippen (drei, vier Buchstaben). Prüfen: Lieder, die das Wort im
+   **Titel** haben, stehen **vor** denen, die es nur im Autor tragen (bei „A–Z").
 3. Den Zeitraum-Filter umstellen, z. B. auf **letzte 12 Monate**.
 4. Ein Lied antippen, das kürzlich im Gottesdienst war.
 
