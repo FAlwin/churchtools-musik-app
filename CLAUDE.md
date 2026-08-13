@@ -19,13 +19,18 @@
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
   extern unter `https://musik.ecg-donrath.de` live.
 
-  **Stand 11.08.2026: Produktiv läuft noch `v2.16.3`.** In `main` und getaggt, aber NICHT
+  **Stand 13.08.2026: Produktiv läuft noch `v2.16.3`.** In `main` und getaggt, aber NICHT
   ausgeliefert: **v2.17.0 bis v2.21.0** – der Prod-Deploy liegt bei Alwin. Getestet ist alles auf
   Staging (`musik-test.ecg-donrath.de`). **v2.16.2 wurde übersprungen**, siehe unten.
 
-  Seit v2.21.0 liegt zusätzlich **ungetaggt** in `main`: die **Dateiverwaltung** eines Arrangements
-  (#321) und die **CCLI-SongSelect-Anbindung** (#322, Suche/Abfrage/Notenblatt holen) – beides von
-  Alwin auf Staging geprüft.
+  Seit v2.21.0 liegt zusätzlich **ungetaggt** in `main`:
+  - die **Dateiverwaltung** eines Arrangements (#321) und die **CCLI-SongSelect-Anbindung**
+    (#322, Suche/Abfrage/Notenblatt holen) – beides von Alwin auf Staging geprüft;
+  - die **Grundlage der Liedverwaltung** (#322, Schritte 6/7/10a, PRs #373–#375): Lied-Kategorien
+    samt Rechte-Schnitt (`GET /api/song-categories`) und das **Anlegen von Liedern** serverseitig
+    (`POST /api/songs`). **Dafür gibt es noch keine Oberfläche** – für Nutzer ist davon nichts
+    sichtbar, und `useSongCategories`/`getSongCategories` im Client haben bewusst noch keinen
+    Aufrufer. Was der Oberfläche fehlt, steht in `docs/entwicklung/plan-liedverwaltung.md` (10b).
 
   **Deploy-Falle:** Prod zieht den Tag `:2`, und der liegt lokal auf dem NAS bereits – ein
   „Erstellen" im Container Manager nimmt sonst das **alte** Abbild. Erst das Abbild holen
@@ -404,6 +409,31 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
+
+- **In `main` seit 13.08.2026 (ungetaggt): die Liedverwaltung, Schritte 6/7/10a** (#322, PRs
+  #373–#375). **Nächster Schritt ist 10b: die Oberfläche** – Plan in
+  `docs/entwicklung/plan-liedverwaltung.md`.
+  - **Kategorien** (`GET /api/song-categories`): schon am Recht zugeschnitten. Die **Namen** gibt es
+    NICHT unter `/api` (fünf Pfade geprüft, alle 404), sondern über `getMasterData` der alten
+    Schnittstelle – deshalb liegt sie seither in `ctAjax.ts`, der **einzigen** Stelle, die
+    `index.php?q=churchservice/ajax` kennt (vorher privat in `ctSongSelect.ts`). Rückfall: die
+    Kategorien der vorhandenen Lieder – der zeigt aber nur **benutzte**; bei der ECG liegen alle 49
+    Lieder in Kategorie 0, „Inaktive Songs" (ID 1) käme dort nie vor.
+  - **`edit songcategory` wird an EINER Stelle ausgewertet** (`parseSongEditRight`); `canEditSongs`
+    fragt sie, statt das Recht ein zweites Mal selbst zu lesen.
+  - **Lieder anlegen** (`POST /api/songs`): legt Lied **und** Arrangement an (`isDefault: true` MUSS
+    mit, sonst hat das Lied kein Standard-Arrangement – gemessen), optional mit Ablauf-Eintrag.
+    Autor/CCLI/Copyright nimmt der POST direkt an, **`note` nicht**. Kategorie-Recht (403) und
+    doppelte CCLI-Nummer (409) erzwingt der **Server**, nicht das Formular; die Doppel-Erkennung
+    läuft über `getAllSongs`, **nicht** über `getSongLibrary` – die wirft Lieder ohne Arrangement
+    weg, also genau den Rest eines halb gescheiterten Versuchs.
+  - **Teilfehlschläge werden benannt:** Lied da, Arrangement nicht → Meldung sagt das und warnt vor
+    dem zweiten Versuch (er würde doppeln). Ablauf-Eintrag misslungen → **201** mit
+    `imAblauf: false` + Grund, denn das Lied existiert.
+  - ⚠️ **`utils/ctId.ts`:** `Number(null)` ist `0` und `Number.isInteger(0)` ist `true` – wer IDs mit
+    `map(Number)` liest, erfindet aus einem `null` die Kategorie 0. Für ChurchTools-IDs deshalb immer
+    `ctId` (0 gültig, `null`/`''`/`true` nicht). `songIdsFromQuery` taugt dafür nicht: Der verlangt
+    `n > 0`.
 
 - **In `main` seit v2.16.0 (NICHT in Prod): die vier hohen Code-Check-Funde behoben** – #273, #274,
   #275, #276. Alle vier waren dieselbe Lehre („vorübergehend ≠ ungültig"), und bei jedem wurde zuerst

@@ -270,7 +270,7 @@ Fall hat schon einmal ein vorhandenes Notenblatt gekostet (#322).
 
 - **Priorität:** hoch
 - **Warum:** schreibt in ChurchTools und wird bei CCLI vermerkt
-- **Betrifft:** `server/src/services/ctSongSelect.ts`, `server/src/services/setlistBuilder.ts`, `client/src/components/ArrangementFilesSheet.tsx`, `client/src/hooks/useArrangementDateien.ts`
+- **Betrifft:** `server/src/services/ctSongSelect.ts`, `server/src/services/ctAjax.ts`, `server/src/services/setlistBuilder.ts`, `client/src/components/ArrangementFilesSheet.tsx`, `client/src/hooks/useArrangementDateien.ts`
 - **Automatisiert:** weitgehend – `ctSongSelect.test.ts` (Antwortformen, Lizenz, keine Interna nach
   außen), `arrangementFileVerwaltung.test.ts` (erst holen/hochladen, dann löschen; nichts löschen
   ohne Text). Von Hand bleibt der Blick nach ChurchTools und auf die **echte Tonart** im Blatt.
