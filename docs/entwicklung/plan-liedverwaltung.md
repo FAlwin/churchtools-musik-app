@@ -1,6 +1,6 @@
 # Umsetzungsplan – Liedverwaltung in der App (#321, #322)
 
-> Status: **11.08.2026 – Teil 1 gebaut (Schritte 1–4), Teil 2 neu geschrieben.**
+> Status: **13.08.2026 – Teil 1 fertig; von Teil 2 stehen die Schritte 6–9, offen sind 10 und 11.**
 > Die Neufassung von Teil 2 kommt aus einem Fund vom selben Tag: **SongSelect ist doch machbar**,
 > über ChurchTools als Vermittler (siehe `churchtools-songselect.md`). Das ändert #322 grundlegend –
 > aus „Formular zum Abtippen" wird „Lied aus CCLI holen".
@@ -153,27 +153,50 @@ Der Weg, den Alwin beschrieben hat, in einem Durchgang:
 Dasselbe für ein **vorhandenes** Lied mit CCLI-Nummer: „Notenblatt aus SongSelect holen" in der
 Dateiverwaltung aus Teil 1.
 
-### 5.2 Vor dem Bau zu klären (Fragen an Alwin)
+### 5.2 Entschieden mit Alwin am 13.08.2026 (Schritt 6 ✅)
 
-1. **Wo entsteht ein neues Lied?** Nur in der Bibliothek, oder direkt in den Ablauf des gewählten
-   Termins? Das entscheidet, wo der Einstieg sitzt.
-2. **Welche Kategorie** bekommt ein neues Lied? Kategorie 0 heißt „Aktive Songs" – eine inhaltliche
-   Entscheidung des Teams, keine technische.
-3. **Doppelanlagen:** vor dem Anlegen nach gleichem Namen suchen und darauf hinweisen – oder
-   zulassen? (Bei SongSelect kommt die CCLI-Nummer mit; damit ließe sich ein Doppel **sicher**
-   erkennen, nicht nur über den Namen.)
+| Frage                      | Entscheidung                                                                              |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| Wo entsteht ein Lied?      | **Liederheft UND direkt im Ablauf** – beide Einstiege                                     |
+| Welche Kategorie?          | **Pflichtfeld ohne Vorschlag** – keine wird vorbelegt                                     |
+| Doppelanlagen?             | **Gleiche CCLI-Nummer → blockieren**; gleicher Name → nur warnen, Anlegen erlaubt         |
+| „Inaktive Songs" anbieten? | **Ja** – die App bietet an, was das ChurchTools-Recht hergibt, und entscheidet nichts vor |
+
+**Zum Ablauf-Einstieg:** Er kostet keinen neuen Schreibweg. `createAgendaItem(type: 'song')` in
+`ctWrite.ts` ist erprobt (es steht hinter „Eintrag hinzufügen" und `AddToAgendaSheet`); nach dem
+Anlegen wird es einfach aufgerufen. Es bleibt aber ein **dritter** Schreibvorgang, der eigenständig
+scheitern kann – siehe §5.3.
+
+**Zur Doppel-Blockade:** Sie ist an der CCLI-Nummer möglich, ohne ChurchTools zu belasten – `/api/songs`
+liefert `ccli` mit (gemessen). Und sie widerspricht dem Bestand nicht: keine der 45 vergebenen Nummern
+kommt doppelt vor. **Achtung für die Umsetzung:** Die Prüfung darf **nicht** auf `getSongLibrary`
+aufsetzen – die Funktion wirft Lieder **ohne Arrangement** weg, und genau so eines entsteht bei einem
+halb gescheiterten Anlegen. Der zweite Versuch fände es dann nicht. Sie muss auf `getAllSongs` gehen.
 
 ### 5.3 Was der Umsetzung vorausgeht
 
-- **Die Kategorie fehlt in unserem Typ.** `SongLibraryEntry` trägt heute nur
-  `songId, name, author, key, arrangementId`. Einen eigenen Endpunkt für Kategorien gibt es nicht
-  (alle geratenen Pfade 404) – sie muss aus den Liedern selbst kommen.
-- **Das Recht ist heute ein Ja/Nein.** `canEditSongs` fasst `edit songcategory` zu einem Bool
-  zusammen; das Recht nennt aber die **erlaubten Kategorie-IDs** (bei Alwin `[0,1]`). Ohne die Liste
-  bietet die App Kategorien an, die ChurchTools ablehnt.
+- ✅ **Kategorien und Rechte sind durchgereicht** (Schritt 7, 13.08.2026). Gemessen mit
+  `probe-songmgmt.ts` gegen die echte Instanz (CT 3.135.2):
+  - `/api/songs` liefert `category` **und** `ccli` mit. Beide stehen jetzt in `CtSongListEntry`; die
+    Doppel-Erkennung braucht damit **keinen** Einzelabruf je Lied (das wären ~250 – genau #300).
+    `ccli` ist eine **Zeichenkette** (`"5841527"`) – verglichen wird getrimmter Text, nie eine Zahl.
+  - **Die Kategorie-Namen gibt es doch** – nur nicht unter `/api/` (fünf Pfade geprüft, alle 404),
+    sondern über `getMasterData` der alten Schnittstelle. Dort ist `id` eine Zeichenkette und der
+    Name heißt `bezeichnung`. Neu: `ctSongCategories.ts`, mit **Rückfall** auf die Kategorien der
+    vorhandenen Lieder. Der Rückfall ist nötig, aber schwächer: Bei der ECG liegen alle 49 Lieder in
+    Kategorie 0, „Inaktive Songs" (ID 1) käme dort gar nicht vor.
+  - Das Recht wird an **einer** Stelle ausgewertet (`parseSongEditRight`); `canEditSongs` fragt sie,
+    statt `edit songcategory` ein zweites Mal selbst zu lesen. Neuer Endpunkt
+    `GET /api/song-categories` liefert die Liste **schon zugeschnitten** – die Oberfläche filtert
+    nicht nach.
+  - `SongLibraryEntry` bleibt bewusst **unverändert**: Solange kein Bildschirm die Kategorie eines
+    Liedes anzeigt, wäre das ein Feld, das niemand liest. Es kommt mit Schritt 11 dazu.
 - **Beim Anlegen entsteht sofort ein Arrangement mit** – ohne eines ist das Lied unbrauchbar. Das
   sind zwei Schreibvorgänge, und der zweite kann scheitern: Dann existiert ein Lied **ohne**
-  Arrangement. Dieser Zwischenzustand muss benannt werden, statt still zu bleiben.
+  Arrangement. Dieser Zwischenzustand muss benannt werden, statt still zu bleiben. Mit dem
+  Ablauf-Eintrag (§5.2) sind es **drei**; jeder Fehlschlag wird einzeln gemeldet, und keiner wird
+  automatisch wiederholt (`schreibe` ist bewusst ohne Wiederholung – ein doppeltes Anlegen wäre
+  genau der Fall).
 
 ### 5.4 Was an SongSelect besonders zu beachten ist
 
@@ -186,9 +209,12 @@ Dateiverwaltung aus Teil 1.
   Unterscheidungsmerkmale zeigen: Titel, Autoren, Nummer, verfügbare Formate.
 - **Blättern ist ungeklärt** – ChurchTools holt 100 von 147 und zeigt keinen Weg weiter. Die App darf
   nicht so tun, als sei die Liste vollständig; besser zum Verfeinern der Suche raten.
-- **Undokumentierte interne Schnittstelle.** Sie gehört hinter **eine** Stelle (`ctSongSelect.ts`),
-  damit ein ChurchTools-Update genau einen Ort trifft. Ein Fehlschlag wird verständlich gemeldet.
-  Offen: Anfrage beim ChurchTools-Support nach einem offiziellen Weg.
+- **Undokumentierte interne Schnittstelle.** Sie gehört hinter **eine** Stelle – seit Schritt 7 das
+  eigene Modul `ctAjax.ts`, damit ein ChurchTools-Update genau einen Ort trifft. (Bis dahin stand sie
+  privat in `ctSongSelect.ts`; mit den Lied-Kategorien kam ein zweiter Nutzer, und eine zweite Fassung
+  daneben wäre genau die Fehlerklasse aus §7 gewesen.) Ein Fehlschlag wird verständlich gemeldet –
+  die **Wortlaute bleiben beim Aufrufer**, denn ein Fehler beim Liedersuchen ist etwas anderes als
+  einer beim Laden der Kategorien. Offen: Anfrage beim ChurchTools-Support nach einem offiziellen Weg.
 - **Nur ChordPro ist gemessen.** Text, Akkord-PDF, Lead- und Vocal-Sheet haben vermutlich eigene
   Funktionen – **geraten, nicht belegt.** Wer sie ergänzt, misst sie vorher; blindes Ausprobieren
   gegen die Gemeinde-Instanz legt bei jedem Versuch eine Datei an.
@@ -202,8 +228,8 @@ Dateiverwaltung aus Teil 1.
 | 3       | Blatt „Dateien …" im Lied-Menü, Liste + Herunterladen              | #321  | ✅                        |
 | 4       | Hochladen und Löschen samt Rückfrage und Fehlerfällen              | #321  | ✅                        |
 | 5       | Auf Staging prüfen, im Browser durchklicken, dann Release          | #321  | ✅ geprüft, Release offen |
-| 6       | Die drei Fragen aus §5.2 klären                                    | #322  | offen                     |
-| 7       | Kategorie + erlaubte Kategorie-IDs durchreichen                    | #322  | offen                     |
+| 6       | Die drei Fragen aus §5.2 klären                                    | #322  | ✅ 13.08.2026             |
+| 7       | Kategorie + erlaubte Kategorie-IDs durchreichen                    | #322  | ✅                        |
 | 8       | `ctSongSelect.ts`: Suche + Abfrage, rein lesend, mit Tests         | #322  | ✅                        |
 | 9       | „Notenblatt aus SongSelect holen" in der Dateiverwaltung (Teil 1)  | #322  | ✅                        |
 | 10      | Lied anlegen (Lied + Arrangement), Formular aus CCLI vorausgefüllt | #322  | offen                     |

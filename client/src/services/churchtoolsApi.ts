@@ -9,6 +9,7 @@ import type {
   Service,
   SetlistSong,
   SongArrangementOption,
+  SongCategory,
   SongLibraryEntry,
   SongVersion,
   UserCapabilities,
@@ -137,6 +138,16 @@ export function setAgendaItemHidden(
 /** Alle Lieder (für die „Alle Lieder"-Ansicht) – ohne Statistik (lädt schnell). */
 export function getSongLibrary(): Promise<SongLibraryEntry[]> {
   return apiFetch<SongLibraryEntry[]>('/api/song-library');
+}
+
+/**
+ * Die Lied-Kategorien, in denen der Nutzer anlegen/ändern darf (#322).
+ *
+ * Der Server schneidet die Liste bereits am ChurchTools-Recht zu – hier wird **nicht** noch einmal
+ * gefiltert. Zwei Filter über dieselbe Regel wären zwei Stellen, die auseinanderlaufen können.
+ */
+export function getSongCategories(): Promise<SongCategory[]> {
+  return apiFetch<SongCategory[]>('/api/song-categories');
 }
 
 /**

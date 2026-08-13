@@ -23,6 +23,7 @@ import { getUserId } from '../services/ctAuth.js';
 import { getCapabilities } from '../services/ctCapabilities.js';
 import { fetchFileBytes } from '../services/ctFiles.js';
 import { getCtServices, getSong } from '../services/ctRead.js';
+import { getEditableSongCategories } from '../services/ctSongCategories.js';
 import { getSongSelectSong, searchSongSelect } from '../services/ctSongSelect.js';
 import {
   createAgendaItem,
@@ -255,6 +256,18 @@ export async function deleteAgendaItemCtrl(req: Request, res: Response): Promise
 export async function getSongLibraryCtrl(req: Request, res: Response): Promise<void> {
   const songs = await getSongLibrary(ctCookie(req));
   res.json(songs);
+}
+
+/**
+ * GET /api/song-categories – die Kategorien, in denen der Nutzer Lieder anlegen/ändern darf (#322).
+ *
+ * **Schon zugeschnitten.** Der Dienst schneidet die Liste am ChurchTools-Recht zu; die Oberfläche
+ * bekommt gar nichts zu sehen, was ChurchTools ablehnen würde. Dieselbe Funktion prüft beim Anlegen,
+ * ob die gewählte Kategorie erlaubt war – eine Prüfung, die nur in der Oberfläche steht, ist keine.
+ */
+export async function getSongCategoriesCtrl(req: Request, res: Response): Promise<void> {
+  const categories = await getEditableSongCategories(ctCookie(req));
+  res.json(categories);
 }
 
 /** GET /api/capabilities – was der angemeldete Nutzer laut ChurchTools darf. */

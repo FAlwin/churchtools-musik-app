@@ -6,98 +6,41 @@
  * Datei löst nur aus, was in der ChurchTools-Oberfläche ohnehin vorhanden ist – mit dem Cookie des
  * Nutzers und seinem CSRF-Token.
  *
- * **DIE EINZIGE STELLE, DIE DIE ALTE SCHNITTSTELLE ANSPRICHT.** `POST /index.php?q=churchservice/ajax`
- * ist **undokumentiert und intern**; sie kann sich mit einem ChurchTools-Update ohne Ankündigung
- * ändern. Deshalb liegt sie hinter genau einer Funktion (`ctAjax`): Ein Update trifft dann einen Ort,
- * nicht fünf. Alles andere im Projekt geht weiter über `/api/` – siehe `ctRead`/`ctWrite`.
+ * **Die alte Schnittstelle wird hier nicht selbst angesprochen.** `POST /index.php?q=churchservice/ajax`
+ * ist undokumentiert und intern; sie liegt hinter `ctAjax.ts` – der einzigen Stelle, die sie kennt.
+ * Bis #322/Schritt 7 stand diese Funktion privat hier, weil SongSelect ihr erster Nutzer war; mit den
+ * Lied-Kategorien kam ein zweiter, und eine zweite Fassung daneben ist die Fehlerklasse, die dieses
+ * Projekt am häufigsten getroffen hat. Alles andere im Projekt geht über `/api/` – siehe
+ * `ctRead`/`ctWrite`.
  *
  * Vollständig gemessen und begründet in `docs/entwicklung/churchtools-songselect.md`.
  *
- * **Hier stehen nur die LESENDEN Aufrufe** (Suche, Abfrage). Sie ändern nichts und dürfen beliebig
- * wiederholt werden. Das Herunterladen legt eine Datei an und kommt bewusst später, an einer eigenen
- * Stelle mit eigener Rückfrage.
+ * **Hier stehen die Aufrufe rund um CCLI.** Suche und Abfrage ändern nichts und dürfen beliebig
+ * wiederholt werden; `fetchChordProText` holt nur Text und legt selbst keine Datei an (siehe dort).
  */
 import { HttpError } from '../middleware/errorHandler.js';
-import { csrfWriteDenied, getCsrfToken } from './ctCsrf.js';
-import { BASE, CT_FILE_TIMEOUT_MS, ctSignal } from './ctHttp.js';
+import { ctAjax, type AjaxMeldungen } from './ctAjax.js';
 import type { SongSelectSong, SongSelectTreffer } from '@shared/types/index';
 
 /**
- * Ein Aufruf der alten ChurchTools-Schnittstelle.
+ * Die SongSelect-Wortlaute – **wortgleich wie vor dem Herausziehen**.
  *
- * **Warum ein CSRF-Token, obwohl nichts geschrieben wird:** Die alte Schnittstelle verlangt es für
- * jeden Aufruf, auch für lesende – so macht es die ChurchTools-Oberfläche selbst (gemessen). Wir
- * benutzen denselben Weg wie alle Schreibvorgänge (`getCsrfToken`), damit es genau eine Stelle gibt,
- * die Tokens holt und bei Ablehnung verwirft (#298).
- *
- * **Die längere Zeitgrenze ist kein Luxus:** Der Aufruf geht über ChurchTools **weiter zu CCLI**.
- * Gemessen ~800 ms; ein normales API-Zeitlimit wäre zu knapp und würde Suchen abbrechen, die
- * gerade noch funktionieren.
- *
- * **Die Antwort ist doppelt verpackt:** außen `{status, data}` von ChurchTools, und `data` ist eine
- * **Zeichenkette**, in der die Antwort von CCLI steckt. Das ist keine Schönheit, sondern der
- * gemessene Ist-Zustand – und der Grund, warum das Auspacken hier einmal steht und nicht bei jedem
- * Aufrufer.
+ * Sie stehen hier und nicht in `ctAjax`, weil ein Fehler beim Liedersuchen etwas anderes ist als
+ * einer beim Laden der Kategorien. Wichtig ist die Trennung der letzten beiden: „ChurchTools
+ * antwortete nicht lesbar" heißt, unser Vermittler klemmt; „Die Antwort von CCLI war nicht lesbar"
+ * heißt, die Gegenstelle dahinter.
  */
-async function ctAjax(
-  cookie: string,
-  func: string,
-  felder: Record<string, string>,
-): Promise<unknown> {
-  const csrf = await getCsrfToken(cookie);
-  const body = new URLSearchParams({ func, ...felder });
+const SS_MELDUNGEN: AjaxMeldungen = {
+  verweigert: 'Keine Berechtigung für CCLI SongSelect in ChurchTools.',
+  abgelehnt: 'ChurchTools hat die SongSelect-Anfrage abgelehnt',
+  unlesbar: 'ChurchTools lieferte keine lesbare Antwort für SongSelect.',
+  fehlgeschlagen: 'SongSelect-Anfrage fehlgeschlagen.',
+  innenUnlesbar: 'Die Antwort von CCLI war nicht lesbar.',
+};
 
-  const res = await fetch(`${BASE}/index.php?q=churchservice/ajax`, {
-    signal: ctSignal(CT_FILE_TIMEOUT_MS),
-    method: 'POST',
-    headers: {
-      Cookie: cookie,
-      'CSRF-Token': csrf,
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      // Ohne diesen Kopf antwortet die alte Schnittstelle mit einer HTML-Seite statt JSON.
-      'X-Requested-With': 'XMLHttpRequest',
-      Accept: 'application/json',
-    },
-    body,
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    csrfWriteDenied(cookie, 'Keine Berechtigung für CCLI SongSelect in ChurchTools.');
-  }
-  if (!res.ok) {
-    throw new HttpError(502, `ChurchTools hat die SongSelect-Anfrage abgelehnt (${res.status}).`);
-  }
-
-  const roh = await res.text();
-  let aussen: { status?: string; data?: unknown; message?: string };
-  try {
-    aussen = JSON.parse(roh) as typeof aussen;
-  } catch {
-    // Kommt vor, wenn die Sitzung abgelaufen ist: Dann liefert das alte Modul eine Anmeldeseite.
-    throw new HttpError(502, 'ChurchTools lieferte keine lesbare Antwort für SongSelect.');
-  }
-  if (aussen.status !== 'success') {
-    throw new HttpError(502, aussen.message ?? 'SongSelect-Anfrage fehlgeschlagen.');
-  }
-  /**
-   * **Zwei gemessene Formen von `data`** – beide kommen wirklich vor:
-   *  - Suche und Abfrage: `data` ist eine **Zeichenkette** mit der CCLI-Antwort darin.
-   *  - Herunterladen: `data` ist ein **Objekt** `{ success, content }`, und erst `content` ist die
-   *    Zeichenkette.
-   *
-   * Das hier auszupacken ist der Grund für diese Funktion. Wer es je Aufrufer täte, hätte zwei
-   * Stellen, an denen dieselbe Eigenheit richtig getroffen werden muss.
-   */
-  const roh2: unknown =
-    typeof aussen.data === 'object' && aussen.data !== null && 'content' in aussen.data
-      ? aussen.data.content
-      : aussen.data;
-  if (typeof roh2 !== 'string') return roh2;
-  try {
-    return JSON.parse(roh2);
-  } catch {
-    throw new HttpError(502, 'Die Antwort von CCLI war nicht lesbar.');
-  }
+/** Ein SongSelect-Aufruf über die alte Schnittstelle, mit den Meldungen von oben. */
+function ssAjax(cookie: string, func: string, felder: Record<string, string>): Promise<unknown> {
+  return ctAjax(cookie, func, felder, SS_MELDUNGEN);
 }
 
 /** Was CCLI je Format meldet: Gibt es das, und deckt die Lizenz der Gemeinde es ab? */
@@ -163,7 +106,7 @@ export async function searchSongSelect(
   const titel = songTitle.trim();
   if (!titel) throw new HttpError(400, 'Bitte einen Titel eingeben.');
 
-  const antwort = (await ctAjax(cookie, 'getCCLISongsMatchingTitle', { songTitle: titel })) as {
+  const antwort = (await ssAjax(cookie, 'getCCLISongsMatchingTitle', { songTitle: titel })) as {
     pagination?: { totalItems?: number };
     data?: { results?: CtSongSelectRoh[] };
   };
@@ -186,7 +129,7 @@ export async function getSongSelectSong(
   cookie: string,
   songNumber: number,
 ): Promise<SongSelectSong> {
-  const antwort = (await ctAjax(cookie, 'getCCLISongData', {
+  const antwort = (await ssAjax(cookie, 'getCCLISongData', {
     songNumber: String(songNumber),
   })) as { data?: CtSongSelectRoh };
   const roh = antwort.data;
@@ -218,7 +161,7 @@ export async function fetchChordProText(
   cookie: string,
   auftrag: { arrangementId: number; songNumber: number; title: string; tonality: string },
 ): Promise<string> {
-  const antwort = (await ctAjax(cookie, 'getCCLIChordPro', {
+  const antwort = (await ssAjax(cookie, 'getCCLIChordPro', {
     songNumber: String(auftrag.songNumber),
     title: auftrag.title,
     tonality: auftrag.tonality,

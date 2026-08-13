@@ -22,8 +22,6 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   und ohne Netz. Verschiedene Tonarten gehören in **verschiedene Arrangements** – dort holt jedes
   seine eigene Fassung.
 
-### Neu
-
 - **Die Dateien eines Liedes lassen sich in der App verwalten (#321).** Im Lied-Menü gibt es
   **„Dateien …"** – dort stehen alle Dateien des Arrangements: das Notenblatt als ChordPro, die
   Versionen, PDFs und Bilder. **Auch Dateien, die die App bisher gar nicht zeigte** (z. B. eine
@@ -42,6 +40,24 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Sichtbar ist das nur, wer in ChurchTools Lieder bearbeiten darf. Zu große Dateien (über 50 MB)
   werden **vor** dem Hochladen abgelehnt, und bei einem Namen, den es schon gibt, kommt eine
   Warnung: ChurchTools ersetzt nicht, die Datei läge danach zweimal da.
+
+### Intern
+
+- **Die Lied-Kategorien stehen der App jetzt zur Verfügung (#322, Schritt 7).** Grundlage für das
+  Anlegen von Liedern: Der Server kennt die Kategorien der Instanz **mit Namen** und weiß, in welchen
+  davon der Anmeldete arbeiten darf. Noch ist nichts davon zu sehen – die Oberfläche kommt mit dem
+  Anlege-Formular.
+
+  Bemerkenswert daran ist, wo die Namen herkommen: Einen `/api`-Endpunkt für Lied-Kategorien gibt es
+  **nicht** (fünf Pfade geprüft, alle 404). Sie stecken in `getMasterData` der alten
+  ChurchTools-Schnittstelle. Fällt die aus, werden die Kategorien aus den vorhandenen Liedern
+  gebildet – das zeigt allerdings nur, was auch benutzt wird: Bei der ECG liegen alle 49 Lieder in
+  „Aktive Songs", die Kategorie „Inaktive Songs" käme dort nicht vor.
+
+- **`ctAjax.ts` ist die einzige Stelle, die die alte ChurchTools-Schnittstelle anspricht.** Sie stand
+  privat in `ctSongSelect.ts`; mit den Kategorien kam ein zweiter Nutzer. Die Fehlermeldungen bleiben
+  beim Aufrufer, damit ein Fehler beim Liedersuchen weiter anders klingt als einer beim Laden der
+  Kategorien.
 
 ## [2.21.0] – 2026-08-11
 

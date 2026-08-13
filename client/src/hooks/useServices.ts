@@ -230,6 +230,23 @@ export function useSongLibrary(enabled: boolean) {
   });
 }
 
+/**
+ * Lädt die Lied-Kategorien, in denen der Nutzer anlegen/ändern darf (#322).
+ *
+ * **Kurze Vorhaltezeit (5 min) mit Absicht.** Kategorien ändern sich fast nie, aber die Liste hängt an
+ * einem **Recht** – wird es in ChurchTools entzogen, soll die Auswahl nicht stundenlang eine Kategorie
+ * anbieten, die es für diesen Nutzer nicht mehr gibt. Die Liedliste darf 10 Minuten alt sein, eine
+ * Berechtigung eher nicht.
+ */
+export function useSongCategories(enabled: boolean) {
+  return useQuery({
+    queryKey: ['song-categories'],
+    queryFn: () => api.getSongCategories(),
+    enabled,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
 /** Lädt die Song-Nutzungsdaten (Häufigkeit/zuletzt) im Hintergrund. */
 export function useSongUsage(enabled: boolean) {
   return useQuery({

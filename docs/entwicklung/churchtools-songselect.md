@@ -200,8 +200,9 @@ löschen, neues holen) – nicht danebengelegt.
 ohne Ankündigung ändern. Für eine Funktion, die im Gottesdienst gebraucht wird, ist das ein echtes
 Risiko:
 
-- der Aufruf gehört **hinter eine eigene Stelle** (`ctSongSelect.ts`), damit eine Änderung genau
-  einen Ort betrifft,
+- der Aufruf gehört **hinter eine eigene Stelle** (`ctAjax.ts`), damit eine Änderung genau
+  einen Ort betrifft – seit #322/Schritt 7 ein eigenes Modul, weil die Lied-Kategorien ein zweiter
+  Nutzer derselben Schnittstelle sind; die CCLI-Aufrufe selbst liegen weiter in `ctSongSelect.ts`,
 - schlägt er fehl, muss die App das **verständlich melden** und darf nicht so tun, als sei nichts
   gewesen,
 - eine Anfrage beim ChurchTools-Support nach einem offiziellen Weg ist offen.

@@ -108,6 +108,22 @@ export interface SongLibraryEntry {
 }
 
 /**
+ * Eine Lied-Kategorie, wie die App sie zur Auswahl anbietet (#322).
+ *
+ * **Immer schon zugeschnitten:** Der Server liefert nur die Kategorien, die das ChurchTools-Recht des
+ * Nutzers zum Bearbeiten hergibt (`edit songcategory` nennt die erlaubten IDs). Eine Auswahl, die
+ * Kategorien anbietet, die ChurchTools danach ablehnt, wäre ein Knopf ins Leere.
+ *
+ * `id` ist hier eine **Zahl** – die alte ChurchTools-Schnittstelle liefert sie als Zeichenkette
+ * (`"0"`), das wird beim Einlesen umgewandelt. Ein Typ, der beides zulässt, hätte irgendwann einen
+ * Vergleich `"0" === 0` in sich.
+ */
+export interface SongCategory {
+  id: number;
+  name: string;
+}
+
+/**
  * Die Art einer Arrangement-Datei (#321) – nur für das Symbol in der Liste.
  *
  * **Kein Sortier- oder Schutzmerkmal.** Die Liste ist bewusst flach und behandelt alle Dateien

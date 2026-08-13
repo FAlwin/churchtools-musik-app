@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getSongSelectSong, searchSongSelect } from './ctSongSelect.js';
+import { fetchChordProText, getSongSelectSong, searchSongSelect } from './ctSongSelect.js';
 import { __resetSessionMemosForTests } from './ctSessionMemos.js';
 
 /**
@@ -280,4 +280,52 @@ describe('Fehler werden benannt, nicht verschluckt', () => {
     mockCt(() => new Response('', { status: 503 }));
     await expect(searchSongSelect(COOKIE, 'Treu')).rejects.toThrow(/503/);
   });
+});
+
+/**
+ * **Jede der drei Funktionen einzeln** (#322, Schritt 7).
+ *
+ * Seit `ctAjax` ein eigenes Modul ist, kommen die SongSelect-Wortlaute aus `SS_MELDUNGEN` und werden
+ * über einen kleinen Wrapper (`ssAjax`) gesetzt. Eine Funktion, die `ctAjax` direkt aufruft, bekäme
+ * still die generischen Meldungen – „ChurchTools hat die Anfrage abgelehnt" statt „…die
+ * SongSelect-Anfrage…". Das fällt niemandem auf, solange nur EINE Funktion geprüft wird.
+ *
+ * Deshalb ist es eine Tabelle: Gegenprobe ist, EINE der drei am Wrapper vorbeizuführen – dann fällt
+ * genau ihr Fall. Dasselbe Muster wie beim Schreib-Helfer in #280, wo sieben Funktionen dieselbe
+ * Regel teilen.
+ */
+describe('alle SongSelect-Aufrufe tragen die SongSelect-Wortlaute', () => {
+  const AUFRUFE: [string, () => Promise<unknown>][] = [
+    ['Suche', () => searchSongSelect(COOKIE, 'Treu')],
+    ['Abfrage per Nummer', () => getSongSelectSong(COOKIE, 4330228)],
+    [
+      'ChordPro holen',
+      () =>
+        fetchChordProText(COOKIE, {
+          arrangementId: 155,
+          songNumber: 4330228,
+          title: 'Treu',
+          tonality: 'E',
+        }),
+    ],
+  ];
+
+  for (const [name, aufruf] of AUFRUFE) {
+    it(`${name}: 503 nennt die SongSelect-Anfrage`, async () => {
+      mockCt(() => new Response('', { status: 503 }));
+      await expect(aufruf()).rejects.toThrow(/SongSelect-Anfrage abgelehnt/);
+    });
+
+    it(`${name}: unlesbare CCLI-Nutzlast nennt CCLI, nicht ChurchTools`, async () => {
+      // Aussen sauberes ChurchTools-JSON, innen Unsinn → der Fehler muss auf CCLI zeigen.
+      mockCt(
+        () =>
+          new Response(JSON.stringify({ status: 'success', data: '{kein json' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      );
+      await expect(aufruf()).rejects.toThrow(/Antwort von CCLI/);
+    });
+  }
 });
