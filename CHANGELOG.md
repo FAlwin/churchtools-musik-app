@@ -56,13 +56,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
   **Suchen geht mit dem Titel ODER mit der CCLI-Nummer** – im selben Feld. Text landet in der Suche
   nach dem Namen, reine Ziffern gehen direkt an die Nummer: Das ergibt genau einen Treffer statt einer
-  langen Liste, denn die Titelsuche von CCLI ist unscharf (147 Treffer für „Wo ich auch stehe"). Der
-  Knopf heißt dann „Abfragen" statt „Suchen", und findet CCLI zu der Nummer nichts, nennt der Hinweis
+  langen Liste, denn die Titelsuche von SongSelect ist unscharf (147 Treffer für „Wo ich auch stehe"). Der
+  Knopf heißt dann „Abfragen" statt „Suchen", und findet SongSelect zu der Nummer nichts, nennt der Hinweis
   den anderen Weg. Beim Tippen wird eine Nummer erst abgefragt, wenn sie **sieben Stellen** hat – so
   lang sind alle 46 Nummern im Bestand (nachgezählt). Sonst stünde viermal „nicht gefunden" da, während
   man noch tippt. Kürzere Nummern gehen weiter über den Knopf.
 
-  **Zwei gleichrangige Wege.** Entweder **bei CCLI suchen** – dann kommen Titel, Autoren, Nummer,
+  **Zwei gleichrangige Wege.** Entweder **bei SongSelect suchen** – dann kommen Titel, Autoren, Nummer,
   Copyright und Tonart mit, und nach dem Anlegen holt die App auch gleich **das Notenblatt**, sodass
   das Lied sofort Akkorde hat. Oder **selbst eintippen**, für eigene Lieder, Übersetzungen und alles,
   was nicht bei CCLI steht. Ohne SongSelect-Lizenz gibt es nur den zweiten Weg – und keinen Knopf,

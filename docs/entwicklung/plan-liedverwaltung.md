@@ -237,7 +237,7 @@ halb gescheiterten Anlegen. Der zweite Versuch fände es dann nicht. Sie muss au
 | 10b     | Lied anlegen – **Oberfläche**, Formular aus CCLI vorausgefüllt    | #322  | ✅ 13.08.2026             |
 | 11      | Stammdaten eines vorhandenen Lieds ändern (+ löschen)             | #322  | ✅ 13.08.2026             |
 
-**Schritt 10b ist gebaut (13.08.2026).** `NewSongSheet` mit Wegwahl (CCLI-Suche / selbst eintippen),
+**Schritt 10b ist gebaut (13.08.2026).** `NewSongSheet` mit Wegwahl (SongSelect-Suche / selbst eintippen),
 Trefferliste mit Titel · Autoren · Nummer · Formaten und dem Hinweis auf die 100er-Grenze, Übernahme
 füllt Titel/Autoren/Copyright/Tonart, Kategorie als Pflichtfeld ohne Vorbelegung, Namenswarnung im
 Client, Einstiege im Liederheft („Neues Lied" im Listenkopf) und im Ablauf („Hinzufügen → Lied → Neues

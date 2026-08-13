@@ -869,7 +869,7 @@ export function ChordChart({
         {songSelectFrage && song.ccli && (
           <ConfirmDialog
             title="Notenblatt aus SongSelect holen?"
-            message={`Für „${song.title}" (CCLI ${song.ccli}) wird das Notenblatt bei CCLI geholt und in „${song.arrangementName}" abgelegt – in der Tonart des Arrangements. Ein vorhandenes Notenblatt dieses Arrangements wird dabei ERSETZT; deine eigenen Versionen bleiben.`}
+            message={`Für „${song.title}" (CCLI-Nummer ${song.ccli}) wird das Notenblatt bei SongSelect geholt und in „${song.arrangementName}" abgelegt – in der Tonart des Arrangements. Ein vorhandenes Notenblatt dieses Arrangements wird dabei ERSETZT; deine eigenen Versionen bleiben.`}
             confirmLabel="Holen"
             onConfirm={() => {
               setSongSelectFrage(false);

@@ -91,6 +91,14 @@ function rechte(canUseCcli: boolean): { data: Partial<UserCapabilities> } {
  */
 const suchfeld = () => screen.getByPlaceholderText(/Liedtitel/);
 
+/**
+ * Der Weg-Knopf zur SongSelect-Suche – **einmal benannt.** Sein Wortlaut stand vorher achtmal im Test;
+ * als er von „Bei CCLI suchen" zu „Bei SongSelect suchen" wurde (CCLI ist die Lizenz, SongSelect der
+ * Dienst), fielen alle acht einzeln auf. Dieselbe Lehre wie beim Platzhalter darüber.
+ */
+const WEG_SUCHE = /Bei SongSelect suchen/;
+const wegKnopf = () => screen.getByRole('button', { name: WEG_SUCHE });
+
 beforeEach(() => {
   vi.clearAllMocks();
   caps.mockReturnValue(rechte(false));
@@ -151,21 +159,21 @@ describe('NewSongSheet – Kategorie ist Pflicht', () => {
 describe('NewSongSheet – Wege', () => {
   it('ohne SongSelect-Lizenz beginnt das Blatt direkt beim Formular', () => {
     zeige();
-    expect(screen.queryByRole('button', { name: /Bei CCLI suchen/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: WEG_SUCHE })).toBeNull();
     expect(screen.getByPlaceholderText('Titel des Liedes')).toBeTruthy();
   });
 
   it('mit Lizenz stehen beide Wege gleichrangig zur Wahl', () => {
     caps.mockReturnValue(rechte(true));
     zeige();
-    expect(screen.getByRole('button', { name: /Bei CCLI suchen/ })).toBeTruthy();
+    expect(wegKnopf()).toBeTruthy();
     expect(screen.getByRole('button', { name: /Selbst eintippen/ })).toBeTruthy();
   });
 
   it('unter drei Zeichen wird nicht bei CCLI gesucht', () => {
     caps.mockReturnValue(rechte(true));
     zeige();
-    fireEvent.click(screen.getByRole('button', { name: /Bei CCLI suchen/ }));
+    fireEvent.click(wegKnopf());
 
     const knopf = () => screen.getByRole('button', { name: 'Suchen' });
     expect(knopf().hasAttribute('disabled')).toBe(true);
@@ -203,7 +211,7 @@ describe('NewSongSheet – Trefferliste (Regression zum Absturz vom 13.08.2026)'
     caps.mockReturnValue(rechte(true));
     suche.mockReturnValue({ data: SUCHE_MIT_TREFFERN, isLoading: false, isError: false });
     zeige();
-    fireEvent.click(screen.getByRole('button', { name: /Bei CCLI suchen/ }));
+    fireEvent.click(wegKnopf());
     fireEvent.change(suchfeld(), { target: { value: 'Treu' } });
     fireEvent.click(screen.getByRole('button', { name: 'Suchen' }));
 
@@ -216,7 +224,7 @@ describe('NewSongSheet – Trefferliste (Regression zum Absturz vom 13.08.2026)'
     caps.mockReturnValue(rechte(true));
     suche.mockReturnValue({ data: SUCHE_MIT_TREFFERN, isLoading: false, isError: false });
     zeige();
-    fireEvent.click(screen.getByRole('button', { name: /Bei CCLI suchen/ }));
+    fireEvent.click(wegKnopf());
     fireEvent.change(suchfeld(), { target: { value: 'Treu' } });
     fireEvent.click(screen.getByRole('button', { name: 'Suchen' }));
 
@@ -231,7 +239,7 @@ describe('NewSongSheet – Trefferliste (Regression zum Absturz vom 13.08.2026)'
       isError: false,
     });
     zeige();
-    fireEvent.click(screen.getByRole('button', { name: /Bei CCLI suchen/ }));
+    fireEvent.click(wegKnopf());
     expect(screen.queryByText(/such genauer/)).toBeNull();
   });
 });
@@ -240,7 +248,7 @@ describe('NewSongSheet – Titel oder CCLI-Nummer im selben Feld', () => {
   function zurSuche() {
     caps.mockReturnValue(rechte(true));
     zeige();
-    fireEvent.click(screen.getByRole('button', { name: /Bei CCLI suchen/ }));
+    fireEvent.click(wegKnopf());
   }
 
   it('der Platzhalter nennt beide Wege – weil es beide wirklich gibt', () => {

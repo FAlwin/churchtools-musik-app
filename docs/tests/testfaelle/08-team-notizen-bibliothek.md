@@ -126,7 +126,7 @@ gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas 
 
 1. Unten auf **Lieder** tippen, dann im Listenkopf rechts auf **„Neues Lied"** (auf einer Höhe mit
    der Liedanzahl).
-2. **Bei CCLI suchen** und einen Titel eintippen (mindestens drei Zeichen): Die Suche läuft **von
+2. **Bei SongSelect suchen** und einen Titel eintippen (mindestens drei Zeichen): Die Suche läuft **von
    selbst**, kurz nachdem du aufhörst zu tippen – ohne Knopfdruck. Achte darauf, dass sie nicht bei
    jedem Buchstaben neu lädt.
    Dann dasselbe mit einer **CCLI-Nummer** (nur Ziffern): Der Knopf muss **Abfragen** heißen und genau

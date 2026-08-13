@@ -165,8 +165,8 @@ export function notenblattPlan(
   if (treffer && treffer.songNumber === nummer && !treffer.hasChordPro) {
     return {
       grund: treffer.hasChordSheet
-        ? 'CCLI hat für dieses Lied keine Akkorde als ChordPro, nur ein PDF – das Notenblatt musst du in ChurchTools hochladen.'
-        : 'CCLI hat für dieses Lied keine Akkorde – das Notenblatt musst du selbst hinzufügen.',
+        ? 'SongSelect hat für dieses Lied keine Akkorde als ChordPro, nur ein PDF – das Notenblatt musst du in ChurchTools hochladen.'
+        : 'SongSelect hat für dieses Lied keine Akkorde – das Notenblatt musst du selbst hinzufügen.',
     };
   }
   return { songNumber: nummer };

@@ -142,7 +142,7 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
   const titel = ergebnis
     ? 'Lied angelegt'
     : schritt === 'suche'
-      ? 'Bei CCLI suchen'
+      ? 'Bei SongSelect suchen'
       : schritt === 'formular'
         ? 'Neues Lied'
         : 'Neues Lied anlegen';
@@ -210,7 +210,7 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
           <button className={styles.choice} onClick={() => setSchrittGewaehlt('suche')}>
             <Icon name="search" size={20} className={styles.choiceIcon} />
             <span className={styles.choiceText}>
-              <span className={styles.choiceTitle}>Bei CCLI suchen</span>
+              <span className={styles.choiceTitle}>Bei SongSelect suchen</span>
               <span className={styles.choiceMeta}>
                 Titel, Autoren und Tonart kommen mit – das Notenblatt auch
               </span>
@@ -272,8 +272,8 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
             loading
             text={
               gesucht.art === 'nummer'
-                ? `CCLI-Nummer ${gesucht.nummer} wird abgefragt…`
-                : 'Wird bei CCLI gesucht…'
+                ? `CCLI-Nummer ${gesucht.nummer} wird bei SongSelect abgefragt …`
+                : 'Wird bei SongSelect gesucht …'
             }
           />
         )}
@@ -284,16 +284,16 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
             {suche.error instanceof Error
               ? suche.error.message
               : gesucht.art === 'nummer'
-                ? `Die CCLI-Nummer ${gesucht.nummer} konnte nicht abgefragt werden.`
-                : 'Die Suche bei CCLI ist fehlgeschlagen.'}
+                ? `Die CCLI-Nummer ${gesucht.nummer} konnte bei SongSelect nicht abgefragt werden.`
+                : 'Die Suche bei SongSelect ist fehlgeschlagen.'}
           </div>
         )}
 
         {begriff !== '' && !suche.isLoading && !suche.isError && liste.length === 0 && (
           <div className={styles.hint}>
             {gesucht.art === 'nummer'
-              ? `Zu der Nummer ${gesucht.nummer} findet CCLI kein Lied. Tippe den Titel ein, um nach dem Namen zu suchen.`
-              : 'Keine Treffer bei CCLI. Vielleicht ist es ein eigenes Lied – dann selbst eintippen.'}
+              ? `Zu der Nummer ${gesucht.nummer} findet SongSelect kein Lied. Tippe den Titel ein, um nach dem Namen zu suchen.`
+              : 'Keine Treffer bei SongSelect. Vielleicht ist es ein eigenes Lied – dann selbst eintippen.'}
           </div>
         )}
 
@@ -317,8 +317,8 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
             also dieselbe Rechnung ein zweites Mal und schlechter. */}
         {suche.data && !suche.data.vollstaendig && (
           <div className={styles.hint}>
-            CCLI hat {suche.data.gesamt} Treffer zu „{begriff}", angezeigt werden {liste.length}.
-            Ist das gesuchte Lied nicht dabei, such genauer.
+            SongSelect hat {suche.data.gesamt} Treffer zu „{begriff}", angezeigt werden{' '}
+            {liste.length}. Ist das gesuchte Lied nicht dabei, such genauer.
           </div>
         )}
 
@@ -359,7 +359,7 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
             onKategorie={(id) => setFormular((f) => ({ ...f, categoryId: id }))}
             kategorien={kategorieListe}
             warnung={warnung}
-            copyrightPlatzhalter={holtDetails ? 'Wird von CCLI geholt …' : 'Optional'}
+            copyrightPlatzhalter={holtDetails ? 'Wird von SongSelect geholt …' : 'Optional'}
             autoFocus
           >
             {/* Nur beim Anlegen: Beides gehört zum ERSTEN Arrangement, nicht zum Lied. Beim Ändern der

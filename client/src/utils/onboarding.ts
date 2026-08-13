@@ -166,6 +166,6 @@ export const SETLIST_EDIT_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="edit-add"]',
     title: 'Hinzufügen',
-    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Ist das Lied noch nicht in ChurchTools, kannst du es dort gleich anlegen – bei CCLI gesucht oder selbst eingetippt.',
+    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Ist das Lied noch nicht in ChurchTools, kannst du es dort gleich anlegen – bei SongSelect gesucht oder selbst eingetippt.',
   },
 ];
