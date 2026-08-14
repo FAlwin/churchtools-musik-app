@@ -117,6 +117,7 @@ export function ItemActionSheet({
           {err && <div className={styles.err}>{err}</div>}
           <SongPicker
             autoFocus
+            aktionLabel="Mit diesem Eintrag verknüpfen"
             onPick={(arrangementId, songName) => {
               setLinkState({ kind: 'link', arrangementId, name: songName });
               setErr(null);

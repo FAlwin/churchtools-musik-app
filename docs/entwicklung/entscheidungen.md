@@ -214,7 +214,39 @@ Eingabe – eine CCLI-Nummer also erst vollständig (7 Stellen, am Bestand gemes
 Auf einem geteilten iPad am Notenpult soll nicht plötzlich der CCLI-Katalog offen stehen, weil zuletzt
 jemand Lieder eingepflegt hat.
 
-## Liedtext-Vorschau: auf Verlangen je Lied, und der Suchindex wird nur BENUTZT _(14.08.2026, #379)_
+## Der Quellen-Umschalter gehört zum EINFÜGEN, nicht in das Liederheft _(14.08.2026, #378)_
+
+**Korrektur an #378, nach dem Durchklicken.** Der Umschalter „Bibliothek · Liedtexte · SongSelect" stand
+zuerst **auch** im Liederheft – dort war er falsch (Rückmeldung Alwin): Im Liederheft **schlägt man ein
+Lied nach**; drei gleichrangige Quellen darüber wirken fremd, und SongSelect hat dort nichts zu suchen.
+
+Er sitzt jetzt nur noch in `SongPicker`, also in „Lied hinzufügen" und „Lied verknüpfen" – **dort, wo man
+ein Lied einfügt.** Genau so macht es WorshipTools: Die Quellen liegen im Dialog „Lied zum Set
+hinzufügen", nicht in der Bibliotheksübersicht.
+
+Das Liederheft hat wieder **ein einfaches Suchfeld**, und die Suche im Liedtext ist dort wieder ein
+**Angebot unter der Liste** („Auch in den Liedtexten nach … suchen") – wie vor #378. Sie bleibt damit
+erreichbar, wo der Wunsch entsteht, ohne die Ansicht zu belasten.
+
+**Die Lehre für künftige Entwürfe:** „Gilt überall" war als Festlegung gemeint und als Anweisung
+verstanden. Dass derselbe Baustein an einer Stelle richtig und an einer anderen fremd ist, sah man erst am
+Bildschirm – nicht in der Beschreibung. Bei sichtbaren Bedienelementen also **früh einen Durchklick
+anbieten**, statt die Festlegung wörtlich auf jede Ansicht zu übertragen.
+
+## Liedtext-Vorschau: der Zwischenschritt beim Einfügen _(14.08.2026, #379)_
+
+**Ein Antippen führt in die Vorschau, nicht direkt zum Einfügen** (Muster ProPresenter, von Alwin
+benannt). Der Liedtext ist die **Entscheidungsgrundlage**: Bei 147 SongSelect-Treffern zu einem Titel ist
+er das Einzige, was die Fassungen unterscheidet.
+
+**Erster Entwurf war ein „Text zeigen"-Knopf je Zeile (#379) – zurückgebaut.** Er behandelte den Text als
+Zusatzinfo neben dem Titel und machte jede Liste unruhig. Die Vorschau als Zwischenschritt sagt dasselbe
+mit weniger Bedienelementen.
+
+**Der kurze Weg bleibt daneben:** Ein **„+"** in der Bibliothekszeile fügt sofort ein, ohne Vorschau
+(Entscheidung Alwin). Im Gottesdienst zählt das – die eigenen Lieder kennt das Team.
+
+Was vom ersten Entwurf **bleibt** – die Sparsamkeit:
 
 Unter jedem Lied steht ein kleines **„Text zeigen"**. Erst der Tipp holt den Textanfang – **keine Vorschau
 unter jedem Titel** (Entscheidung Alwin). Zwei Gründe, und beide zählen:

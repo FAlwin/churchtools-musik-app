@@ -1,0 +1,132 @@
+// Die Vorschau vor dem Einfügen (#379) – Muster: ProPresenter.
+//
+// Der Liedtext ist hier der Inhalt, nicht eine Randnotiz: Er bekommt Platz und ruhige Typografie, die
+// Beschriftungen der Abschnitte („Vers 1") stehen darüber. Der Knopf sitzt unten, wo er nach dem Lesen
+// erwartet wird.
+
+.karte {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.kopf {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.zurueck {
+  flex-shrink: 0;
+  margin-top: 1px;
+  padding: 2px;
+  border: none;
+  background: none;
+  color: var(--blue);
+  cursor: pointer;
+}
+
+.titelBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titel {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.autoren {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text2);
+}
+
+// Rechts oben klein, wie die CCLI-Nummer bei ProPresenter.
+.kennung {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.textBereich {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  // Der Text darf lang sein – die Karte selbst bleibt im Blatt.
+  max-height: 42vh;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface3);
+}
+
+.teil {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  // Die Zeilenumbrüche im Liedtext sind Inhalt, kein Zufall der Formatierung.
+  white-space: pre-line;
+}
+
+.still {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text2);
+  font-style: italic;
+}
+
+// CCLI-Lizenzhinweis – klein, aber vorhanden. Er ist Pflicht, wenn die Quelle ihn mitschickt.
+.disclaimer {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text3);
+  padding: 0 2px;
+}
+
+.aktionen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.primaer {
+  width: 100%;
+  height: 46px;
+  border: none;
+  border-radius: 11px;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--ui);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}

@@ -18,8 +18,6 @@ import type { SongLibraryEntry, SongTextTreffer } from '@shared/types/index';
 const suche = vi.fn();
 vi.mock('../hooks/useServices', () => ({
   useLiedtextSuche: (begriff: string, enabled: boolean) => suche(begriff, enabled),
-  // Die Vorschau (#379) haengt mit in jeder Zeile; hier nur stillgelegt – sie hat ihren eigenen Test.
-  useLiedtextVorschau: () => ({ data: undefined, isLoading: false, isError: false }),
 }));
 
 const { LiedtextTrefferListe } = await import('./LiedtextTrefferListe');
@@ -43,13 +41,7 @@ function zeige(begriff: string, songs = BESTAND) {
   return render(<LiedtextTrefferListe begriff={begriff} songs={songs} onPick={onPick} />);
 }
 
-/**
- * Die Treffer-Zeile – **einmal benannt, und zwar über den Ausschnitt.**
- *
- * Ein `getByRole('button', { name: /Treu/ })` traf ab #379 zwei Knöpfe: die Zeile und den „Text
- * zeigen"-Knopf der Vorschau, deren Vorlesetext den Liednamen enthält. Der Ausschnitt gehört dagegen nur
- * der Zeile.
- */
+/** Die Treffer-Zeile – über den Ausschnitt benannt, der nur ihr gehört. */
 const trefferZeile = () => screen.getByRole('button', { name: /deine treue trägt/ });
 
 describe('LiedtextTrefferListe – ohne Begriff wird nicht gesucht', () => {
@@ -92,10 +84,16 @@ describe('LiedtextTrefferListe – Treffer', () => {
     expect(onPick).toHaveBeenCalledWith(BESTAND[0]);
   });
 
-  it('bietet die Liedtext-Vorschau an – der Ausschnitt zeigt nur die Fundstelle (#379)', () => {
+  it('bringt KEINEN eigenen Vorschau-Knopf mit (#379)', () => {
+    /**
+     * Kurzzeitig stand hier ein „Text zeigen" je Zeile (#379). Das ist zurückgebaut: Der Liedtext ist die
+     * **Entscheidungsgrundlage**, nicht eine Zusatzinfo – im Einfüge-Dialog führt ein Antippen deshalb in
+     * die Vorschau (`LiedVorschau`), im Liederheft direkt ins Lied. Ein dritter Weg daneben wäre genau
+     * die Sorte Bedienelement, die eine Liste unruhig macht.
+     */
     suche.mockReturnValue({ data: TREFFER, isLoading: false, isError: false });
     zeige('treue');
-    expect(screen.getByRole('button', { name: /Liedtext-Anfang von „Treu" zeigen/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Text zeigen|Liedtext-Anfang/ })).toBeNull();
   });
 
   it('ein Treffer, den die Bibliothek nicht kennt, ist gesperrt statt versteckt', () => {
@@ -110,8 +108,6 @@ describe('LiedtextTrefferListe – Treffer', () => {
     expect(zeile.hasAttribute('disabled')).toBe(true);
     fireEvent.click(zeile);
     expect(onPick).not.toHaveBeenCalled();
-    // Und keine Vorschau: Zu einem Lied, das die Liste nicht kennt, gibt es nichts anzubieten.
-    expect(screen.queryByRole('button', { name: /Liedtext-Anfang/ })).toBeNull();
   });
 
   it('sagt beim ersten Mal, warum es dauert', () => {

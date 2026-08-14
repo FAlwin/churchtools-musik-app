@@ -199,6 +199,7 @@ export function AddItemSheet({ eventId, eventName, onClose, onAdd, services }: A
           <SongPicker
             autoFocus
             busy={busy}
+            aktionLabel="Zum Ablauf hinzufügen"
             onPick={(arrangementId, songName) =>
               add({ type: 'song', title: songName, arrangementId })
             }

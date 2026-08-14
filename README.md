@@ -13,15 +13,15 @@ Datenquelle – die App hat keine eigene Datenbank.
 - **Ablaufpläne & Setlists** aus ChurchTools anzeigen (kompletter Ablauf, nicht nur Lieder)
 - **Chord Charts als PDF** (SongSelect-Look) mit automatischer Transponierung, Kapo, Spalten- und
   Schrift-Optionen; im Querformat zwei Seiten nebeneinander, als PDF teil-/druckbar
-- **Ein Suchfeld, drei Quellen** – ein Umschalter darunter wählt **Bibliothek · Liedtexte ·
-  SongSelect**; der Begriff bleibt beim Wechseln stehen. Dieselbe Anordnung im Liederheft und beim
-  Lied-Hinzufügen/Verknüpfen im Ablauf (beim Verknüpfen ohne SongSelect – dort könnte ein neu
-  angelegtes Lied nicht landen)
 - **Alle Lieder** durchsuchbar inkl. Nutzungs-Statistik (Häufigkeit / zuletzt gespielt, mit
-  wählbarem Zeitraum). Gesucht wird in Titel und Autor, Titel-Treffer stehen vorn; über die Quelle
-  **Liedtexte** auch im Text, wenn man nur eine Zeile kennt
-- **Liedtext-Vorschau** („Text zeigen") – zum Unterscheiden gleichnamiger Lieder, ohne sie zu öffnen.
-  Auf Verlangen je Lied, damit das Durchsehen einer Liste keine Abrufe auslöst
+  wählbarem Zeitraum). Gesucht wird in Titel und Autor, Titel-Treffer stehen vorn; findet der Titel
+  nichts, lässt sich **auch im Liedtext** suchen – für den Fall, dass man nur eine Zeile kennt
+- **Beim Einfügen eines Liedes: ein Suchfeld, drei Quellen** – ein Umschalter wählt **Bibliothek ·
+  Liedtexte · SongSelect**, der Begriff bleibt beim Wechseln stehen (beim Verknüpfen ohne SongSelect –
+  dort könnte ein neu angelegtes Lied nicht landen)
+- **Liedtext-Vorschau vor dem Einfügen** – ein Antippen zeigt erst den Text, dann den Knopf zum
+  Hinzufügen; so unterscheidet man gleichnamige Lieder, ohne sie zu öffnen. Bei SongSelect mit
+  Abschnitten, Autoren und CCLI-Nummer. Für den Alltag bleibt der **„+"**-Knopf: sofort einfügen
 - **Lieder anlegen** – über die Quelle **SongSelect** gefunden (Titel oder CCLI-Nummer; Autoren,
   Copyright und Tonart kommen mit, das Notenblatt gleich dazu) oder über „Neues Lied" selbst
   eingetippt. Aus dem Liederheft oder direkt beim Ergänzen eines Ablaufs

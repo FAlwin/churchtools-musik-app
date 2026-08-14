@@ -5,18 +5,36 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
-## [2.22.0] – 2026-09-03
+## [Unreleased]
 
 ### Neu
+
+- **Liedtext-Vorschau beim Einfügen (#379).** Heißen mehrere Lieder gleich und ist der Autor
+  unbekannt oder ebenfalls gleich, war die Entscheidung ohne Öffnen nicht zu treffen. Jetzt zeigt ein
+  Antippen im Dialog **„Lied hinzufügen"** zuerst den **Liedtext**, und darin steht der Knopf zum
+  Einfügen – nach dem Vorbild von ProPresenter. Der Text ist damit die Entscheidungsgrundlage, nicht
+  eine Randnotiz.
+
+  Bei **SongSelect** wirkt das am stärksten: Eine Titelsuche liefert dort bis zu 100 Treffer, viele mit
+  demselben Namen. Die Vorschau zeigt CCLIs Text **mit den Abschnitten** („Vers 1", „Chorus 1"), dazu
+  Autoren, CCLI-Nummer und den Lizenzhinweis von CCLI, der mit jedem Text mitkommt.
+
+  **Der kurze Weg bleibt:** In der Bibliotheksliste steht neben jedem Lied weiter ein **„+"** – ein
+  Tipp, sofort im Ablauf, ohne Umweg. Im Gottesdienst zählt das.
+
+  **Abgerufen wird nur, was du wirklich ansiehst.** Beim Durchsehen der Liste entsteht keine einzige
+  Anfrage, und ein Lied, das du zweimal öffnest, wird nur einmal geholt. Für die eigenen Lieder nutzt
+  der Server ohnehin den Bestand, den die Liedtextsuche schon angelegt hat.
 
 - **Ein Suchfeld, und darunter steht, wo gesucht wird (#378).** Über der Liedliste gibt es jetzt einen
   Umschalter: **Bibliothek · Liedtexte · SongSelect**. Der eingetippte Begriff bleibt beim Wechseln
   stehen – man tippt einmal und entscheidet danach, wo gesucht werden soll.
 
-  **Überall dieselbe Anordnung:** im Liederheft, beim Hinzufügen eines Liedes zum Ablauf und beim
-  Verknüpfen. Nur beim **Verknüpfen** fehlt SongSelect, und zwar mit Absicht: Dort wird einem
-  vorhandenen Ablaufpunkt ein Lied zugeordnet, ein neu angelegtes könnte dort nicht landen. Ein Reiter
-  dorthin wäre eine Sackgasse. Ohne SongSelect-Lizenz erscheint er ebenfalls nicht.
+  **Dort, wo du ein Lied einfügst** – also in „Lied hinzufügen" und „Lied verknüpfen". **Im Liederheft
+  bewusst nicht:** Dort schlägst du ein Lied nach, und drei Quellen über der Liste wirken dort fremd
+  (Rückmeldung Alwin, 14.08.2026). Beim **Verknüpfen** fehlt SongSelect, und zwar mit Absicht: Dort wird
+  einem vorhandenen Ablaufpunkt ein Lied zugeordnet, ein neu angelegtes könnte dort nicht landen. Ohne
+  SongSelect-Lizenz erscheint der Reiter ebenfalls nicht.
 
   **Das Blatt „Neues Lied" ist dadurch einfacher geworden:** Die vorgeschaltete Frage „Bei SongSelect
   suchen oder selbst eintippen?" ist weg. „Neues Lied" führt direkt ins leere Formular, und ein Treffer
@@ -27,6 +45,30 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   anderen Quellen hätten sie nichts zu sagen. Und der Zähler schreibt bei einem einzigen Lied jetzt
   **„1 Lied"** statt „1 Lieder"; der Fehler stand seit #322 drin und fiel bei 49 Liedern nie auf.
 
+### Geändert
+
+- **Die Suche im Liedtext ist jetzt an zwei Wegen erreichbar (#378).** Im Liederheft steht sie
+  weiterhin als Angebot unter der leeren Liste – der Wortlaut heißt jetzt **„Auch in den Liedtexten
+  nach … suchen"** –, im Einfüge-Dialog ist sie zusätzlich ein Reiter neben Bibliothek und SongSelect.
+  Ausgelöst wird sie erst ab **drei Zeichen**; ein Tipp auf den Reiter allein holt noch nichts. Das
+  bleibt der schonende Weg gegenüber ChurchTools, das uns bei zu vielen Anfragen bremst.
+
+### Behoben
+
+- **Die Suche im Liedtext konnte die falsche Fassung eines Liedes durchsuchen (#379).** Wer über die App
+  eine eigene Fassung eines Notenblatts angelegt hat, hatte am Arrangement zwei ChordPro-Dateien: das
+  Original und die bearbeitete Fassung. Der Suchindex sollte immer das Original nehmen, erkannte aber nur
+  das heutige Namensmuster – **ältere Bestandsfassungen** („… (ECG).chordpro", „… — Bearbeitet.chordpro")
+  gingen als Original durch. Stand so eine Datei in der Antwort von ChurchTools vor dem Original, wurde
+  der bearbeitete Text durchsucht statt des echten.
+
+  Gefunden beim Bau der Vorschau, weil dieselbe Regel dort noch einmal gebraucht wurde – und sie gab es
+  längst als geprüfte Funktion. Jetzt nutzen beide Stellen sie, statt sie nachzubauen.
+
+## [2.22.0] – 2026-09-03
+
+### Neu
+
 - **Bei der Liedsuche stehen Titel-Treffer zuerst.** Gesucht wird in Titel **und** Autor; bisher stand
   die Liste rein alphabetisch, ein Lied mit dem Wort nur im Autor konnte also vor dem stehen, das es im
   Titel hat. Wer ein Wort eintippt, meint fast immer den Titel.
@@ -35,9 +77,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Dort entscheidet die Trefferart nur bei Gleichstand.
 
 - **Man kann jetzt im Liedtext suchen (#322).** Wer nur eine Zeile im Kopf hat, aber nicht den Titel,
-  tippt sie ins Suchfeld und schaltet auf **Liedtexte** um. Die Treffer erscheinen mit der
-  **Fundstelle**, sodass man sieht, warum ein Lied dabei ist. Findet die Bibliothek nichts, steht unter
-  der leeren Liste eine Abkürzung dorthin.
+  tippt sie ins Suchfeld im Liederheft und wählt darunter **„Auch im Liedtext nach … suchen"**. Die
+  Treffer erscheinen mit der **Fundstelle**, sodass man sieht, warum ein Lied dabei ist.
 
   Beim ersten Mal dauert es einen Moment: Die App holt dafür jeden Liedtext einmal von ChurchTools.
   Danach ist es sofort da – der Bestand wird eine Stunde vorgehalten.
@@ -45,9 +86,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   **Warum es nicht einfach mitläuft:** Weder ChurchTools noch CCLI können im Liedtext suchen – gemessen
   am 13.08.2026: Ein Wort aus dem Text ergab bei ChurchTools 0 Treffer, dasselbe Wort aus dem Titel 1.
   Die Texte liegen dort als Datei am Arrangement. Unsere App durchsucht sie deshalb selbst, und das
-  kostet einmal einen Durchgang durch alle Lieder. Deshalb braucht es einen Begriff von mindestens drei
-  Zeichen – ein Tipp auf den Reiter allein löst nichts aus. Das ist der schonende Weg, auch gegenüber
-  ChurchTools, das uns bei zu vielen Anfragen bremst.
+  kostet einmal einen Durchgang durch alle Lieder. Ein Angebot auf Knopfdruck statt bei jedem
+  Tastendruck ist der schonende Weg – auch gegenüber ChurchTools, das uns bei zu vielen Anfragen
+  bremst.
 
 - **Die Stammdaten eines Liedes lassen sich in der App ändern (#322).** Im Lied-Menü steht unter
   „Dateien …" nun **„Stammdaten …"**, und im Liederheft gibt es je Zeile einen Stift. Dort ändert man

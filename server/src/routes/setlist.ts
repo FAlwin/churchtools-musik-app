@@ -36,6 +36,7 @@ import {
   getSongSelectByNumber,
   postSongSelectChordPro,
   getLiedtextVorschau,
+  getSongSelectLyricsCtrl,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -99,6 +100,8 @@ router.delete('/songs/:songId/files/:fileId', asyncHandler(deleteArrangementFile
  */
 router.get('/songselect/search', asyncHandler(getSongSelectSearch));
 router.get('/songselect/songs/:songNumber', asyncHandler(getSongSelectByNumber));
+// Der Liedtext eines SongSelect-Liedes (#379) – Grundlage der Vorschau vor dem Anlegen.
+router.get('/songselect/songs/:songNumber/liedtext', asyncHandler(getSongSelectLyricsCtrl));
 // Der einzige SCHREIBENDE SongSelect-Weg: holt das Notenblatt ins Arrangement und ersetzt dabei ein
 // vorhandenes Original-ChordPro (pro Arrangement genau eines, Begruendung am Dienst).
 router.post(

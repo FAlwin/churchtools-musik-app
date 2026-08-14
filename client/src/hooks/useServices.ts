@@ -297,6 +297,26 @@ export function useLiedtextVorschau(songId: number, enabled: boolean) {
   });
 }
 
+/**
+ * Der Liedtext eines **SongSelect**-Liedes für die Vorschau (#379).
+ *
+ * **`staleTime: Infinity` und `gcTime` lang – das ist hier keine Feinheit, sondern die Vorkehrung.** Ob
+ * CCLI einen Textabruf als Nutzung verbucht, ist offen; deshalb darf Auf- und Zuklappen desselben Liedes
+ * **nicht** erneut fragen. Ein Abruf je Nummer und Sitzung.
+ *
+ * `enabled` steuert der Aufrufer: erst wenn ein Treffer wirklich geöffnet wird.
+ */
+export function useSongSelectLiedtext(songNumber: number | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['songselect-liedtext', songNumber],
+    queryFn: () => api.holeSongSelectLiedtext(songNumber as number),
+    enabled: enabled && songNumber !== null,
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60,
+    retry: false,
+  });
+}
+
 /** Ab wie vielen Zeichen bei CCLI gesucht wird – kürzere Eingaben ergeben nur Rauschen. */
 export const SONGSELECT_MIN_ZEICHEN = 3;
 
