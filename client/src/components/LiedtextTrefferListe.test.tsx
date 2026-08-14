@@ -18,6 +18,8 @@ import type { SongLibraryEntry, SongTextTreffer } from '@shared/types/index';
 const suche = vi.fn();
 vi.mock('../hooks/useServices', () => ({
   useLiedtextSuche: (begriff: string, enabled: boolean) => suche(begriff, enabled),
+  // Die Vorschau (#379) haengt mit in jeder Zeile; hier nur stillgelegt – sie hat ihren eigenen Test.
+  useLiedtextVorschau: () => ({ data: undefined, isLoading: false, isError: false }),
 }));
 
 const { LiedtextTrefferListe } = await import('./LiedtextTrefferListe');
@@ -40,6 +42,15 @@ beforeEach(() => {
 function zeige(begriff: string, songs = BESTAND) {
   return render(<LiedtextTrefferListe begriff={begriff} songs={songs} onPick={onPick} />);
 }
+
+/**
+ * Die Treffer-Zeile – **einmal benannt, und zwar über den Ausschnitt.**
+ *
+ * Ein `getByRole('button', { name: /Treu/ })` traf ab #379 zwei Knöpfe: die Zeile und den „Text
+ * zeigen"-Knopf der Vorschau, deren Vorlesetext den Liednamen enthält. Der Ausschnitt gehört dagegen nur
+ * der Zeile.
+ */
+const trefferZeile = () => screen.getByRole('button', { name: /deine treue trägt/ });
 
 describe('LiedtextTrefferListe – ohne Begriff wird nicht gesucht', () => {
   it('erklärt die Mindestlänge, statt eine leere Liste zu zeigen', () => {
@@ -77,8 +88,14 @@ describe('LiedtextTrefferListe – Treffer', () => {
   it('gibt beim Antippen den Bibliothekseintrag weiter – der trägt das Arrangement', () => {
     suche.mockReturnValue({ data: TREFFER, isLoading: false, isError: false });
     zeige('treue');
-    fireEvent.click(screen.getByRole('button', { name: /Treu/ }));
+    fireEvent.click(trefferZeile());
     expect(onPick).toHaveBeenCalledWith(BESTAND[0]);
+  });
+
+  it('bietet die Liedtext-Vorschau an – der Ausschnitt zeigt nur die Fundstelle (#379)', () => {
+    suche.mockReturnValue({ data: TREFFER, isLoading: false, isError: false });
+    zeige('treue');
+    expect(screen.getByRole('button', { name: /Liedtext-Anfang von „Treu" zeigen/ })).toBeTruthy();
   });
 
   it('ein Treffer, den die Bibliothek nicht kennt, ist gesperrt statt versteckt', () => {
@@ -89,10 +106,12 @@ describe('LiedtextTrefferListe – Treffer', () => {
     suche.mockReturnValue({ data: TREFFER, isLoading: false, isError: false });
     zeige('treue', []);
 
-    const zeile = screen.getByRole('button', { name: /Treu/ });
+    const zeile = trefferZeile();
     expect(zeile.hasAttribute('disabled')).toBe(true);
     fireEvent.click(zeile);
     expect(onPick).not.toHaveBeenCalled();
+    // Und keine Vorschau: Zu einem Lied, das die Liste nicht kennt, gibt es nichts anzubieten.
+    expect(screen.queryByRole('button', { name: /Liedtext-Anfang/ })).toBeNull();
   });
 
   it('sagt beim ersten Mal, warum es dauert', () => {

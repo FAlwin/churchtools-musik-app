@@ -213,3 +213,38 @@ Eingabe – eine CCLI-Nummer also erst vollständig (7 Stellen, am Bestand gemes
 **Die letzte Quelle wird NICHT gemerkt** (Entscheidung Alwin): Jeder Einstieg beginnt bei der Bibliothek.
 Auf einem geteilten iPad am Notenpult soll nicht plötzlich der CCLI-Katalog offen stehen, weil zuletzt
 jemand Lieder eingepflegt hat.
+
+## Liedtext-Vorschau: auf Verlangen je Lied, und der Suchindex wird nur BENUTZT _(14.08.2026, #379)_
+
+Unter jedem Lied steht ein kleines **„Text zeigen"**. Erst der Tipp holt den Textanfang – **keine Vorschau
+unter jedem Titel** (Entscheidung Alwin). Zwei Gründe, und beide zählen:
+
+- **Kosten.** Eine Vorschau je Zeile ist eine Anfrage je Zeile. Bei 49 Liedern wären das 49 Abrufe, nur um
+  eine Liste durchzusehen.
+- **Ruhe.** Auf einem Notenpult im Gottesdienst ist eine ruhige Liste wichtiger als Vollständigkeit.
+
+**Der Suchindex aus #322 wird benutzt, aber NIE für die Vorschau gebaut** – das ist der Kern:
+
+| Lage                                   | Kosten der Vorschau              |
+| -------------------------------------- | -------------------------------- |
+| Index frisch (es wurde gerade gesucht) | **keine** Anfrage an ChurchTools |
+| Index fehlt oder ist alt               | **ein** Datei-Download           |
+
+Ein Index-Aufbau kostet einen Download je Lied. Ihn für zwei Zeilen Vorschau anzustoßen wäre grob
+unverhältnismäßig – und genau die Sorte Last, die in #300 das ChurchTools-Limit gerissen hat.
+
+**Der Index hält seitdem zwei Texte je Lied**, und die Trennung ist Absicht: `text` ist kleingeschrieben
+und ohne Akkorde – zum **Suchen** gebaut; `vorschau` ist der lesbare Anfang mit Groß-/Kleinschreibung – zum
+**Lesen**. Bei ~50 Liedern kostet das wenige Kilobyte, deutlich weniger als eine Datei erneut zu laden.
+Damit die Regel „Akkorde fallen ersatzlos weg" nur **einmal** existiert, baut `chordproZuText` auf
+`chordproZuLesetext` auf.
+
+**Bei den Liedtext-Treffern stehen bewusst zwei Dinge übereinander:** der Ausschnitt um die **Fundstelle**
+(aus dem Suchtext, also kleingeschrieben – das ist ehrlich: so wurde gesucht) und darunter auf Wunsch der
+**Anfang** des Liedes. Zwei verschiedene Aussagen; eine davon weglassen hieße, die andere für beides
+ausgeben.
+
+**Für SongSelect-Treffer gibt es die Vorschau noch nicht.** `getCCLILyrics` existiert (am 13.08.2026
+gemessen), aber es ist **offen, ob CCLI einen Textabruf als Nutzung vermerkt** – beim Notenblatt ist das so.
+Solange das nicht gemessen ist, wird nicht abgerufen: Ein Abruf bei jedem Durchsehen könnte der Gemeinde
+Nutzungen verbuchen, die niemand wollte.

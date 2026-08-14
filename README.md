@@ -20,6 +20,8 @@ Datenquelle – die App hat keine eigene Datenbank.
 - **Alle Lieder** durchsuchbar inkl. Nutzungs-Statistik (Häufigkeit / zuletzt gespielt, mit
   wählbarem Zeitraum). Gesucht wird in Titel und Autor, Titel-Treffer stehen vorn; über die Quelle
   **Liedtexte** auch im Text, wenn man nur eine Zeile kennt
+- **Liedtext-Vorschau** („Text zeigen") – zum Unterscheiden gleichnamiger Lieder, ohne sie zu öffnen.
+  Auf Verlangen je Lied, damit das Durchsehen einer Liste keine Abrufe auslöst
 - **Lieder anlegen** – über die Quelle **SongSelect** gefunden (Titel oder CCLI-Nummer; Autoren,
   Copyright und Tonart kommen mit, das Notenblatt gleich dazu) oder über „Neues Lied" selbst
   eingetippt. Aus dem Liederheft oder direkt beim Ergänzen eines Ablaufs

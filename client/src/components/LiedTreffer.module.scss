@@ -13,6 +13,18 @@
   gap: 7px;
 }
 
+// Zeile + Vorschau als ein Eintrag (#379). Die Vorschau steht NEBEN dem Zeilen-Knopf, nicht darin:
+// ein `<button>` in einem `<button>` ist ungültiges HTML.
+.eintrag {
+  display: flex;
+  flex-direction: column;
+
+  // Die Vorschau (zweites Kind) rückt auf die Textkante der Zeile darüber ein.
+  > :nth-child(2) {
+    padding: 0 14px 6px;
+  }
+}
+
 .zeile {
   display: flex;
   align-items: center;

@@ -25,7 +25,7 @@ import { fetchFileBytes } from '../services/ctFiles.js';
 import { getCtServices, getSong } from '../services/ctRead.js';
 import { getEditableSongCategories } from '../services/ctSongCategories.js';
 import { liedAendern, liedAnlegen, liedLoeschen } from '../services/songVerwaltung.js';
-import { sucheImLiedtext } from '../services/songTextIndex.js';
+import { liedtextVorschau, sucheImLiedtext } from '../services/songTextIndex.js';
 import { getSongSelectSong, searchSongSelect } from '../services/ctSongSelect.js';
 import {
   createAgendaItem,
@@ -427,6 +427,21 @@ export async function getSongTextSearch(req: Request, res: Response): Promise<vo
     .max(100)
     .parse(req.query.q ?? '');
   res.json(await sucheImLiedtext(ctCookie(req), q));
+}
+
+/**
+ * GET /api/songs/:songId/liedtext-vorschau – **der Textanfang EINES Liedes** (#379).
+ *
+ * Für den Fall, dass mehrere Lieder gleich heißen: Ohne einen Blick in den Text ist nicht zu entscheiden,
+ * welches gemeint ist. **Baut den Suchindex NICHT** – er wird nur benutzt, wenn er ohnehin frisch
+ * dasteht; sonst wird genau dieses eine Notenblatt geladen (siehe `liedtextVorschau`).
+ *
+ * `vorschau: null` heißt „hat keinen Text" – ein eigener Fall, kein Fehler: Die Oberfläche zeigt dann
+ * gar keine Vorschau statt einer leeren.
+ */
+export async function getLiedtextVorschau(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  res.json({ vorschau: await liedtextVorschau(ctCookie(req), songId) });
 }
 
 /** GET /api/capabilities – was der angemeldete Nutzer laut ChurchTools darf. */

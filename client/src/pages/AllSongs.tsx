@@ -16,6 +16,7 @@ import { EditSongSheet } from '../components/EditSongSheet';
 import { SongStatsBar } from '../components/SongStatsBar';
 import { LiedSucheKopf } from '../components/LiedSucheKopf';
 import { LiedtextTrefferListe } from '../components/LiedtextTrefferListe';
+import { LiedtextVorschau } from '../components/LiedtextVorschau';
 import { SongSelectTrefferListe } from '../components/SongSelectTrefferListe';
 import { useSongFilter } from '../hooks/useSongFilter';
 import { useLiedSuche } from '../hooks/useLiedSuche';
@@ -194,48 +195,56 @@ export function AllSongs({
               {f.list.map((s) => {
                 const st = f.stats.get(s.songId);
                 return (
-                  <div key={s.songId} className={styles.rowWrap}>
-                    <button className={styles.row} onClick={() => onSelect(s)}>
-                      <NoteTile />
-                      <div className={styles.info}>
-                        <div className={styles.name}>{s.name}</div>
-                        {s.author && <div className={styles.sub}>{s.author}</div>}
-                        {showStats && f.sort !== 'name' && (
-                          <span className={styles.stat}>
-                            {statLabel(
-                              f.sort,
-                              st,
-                              usageError ? 'error' : usageLoading ? 'loading' : 'ok',
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      {s.key && <span className={styles.keyPill}>{s.key}</span>}
-                      <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-                    </button>
-                    {canAddToAgenda && (
-                      <button
-                        className={styles.addBtn}
-                        onClick={() => setAddSong(s)}
-                        aria-label={`„${s.name}" zu einem Ablauf hinzufügen`}
-                        title="Zu Ablauf hinzufügen"
-                      >
-                        <Icon name="plus" size={20} stroke={2.4} />
+                  /**
+                   * Zeile **und** Vorschau (#379). Die Vorschau steht unter der Zeile, nicht darin: Sie
+                   * bringt einen eigenen Knopf mit, und ein `<button>` in einem `<button>` ist ungültiges
+                   * HTML.
+                   */
+                  <div key={s.songId} className={styles.eintrag}>
+                    <div className={styles.rowWrap}>
+                      <button className={styles.row} onClick={() => onSelect(s)}>
+                        <NoteTile />
+                        <div className={styles.info}>
+                          <div className={styles.name}>{s.name}</div>
+                          {s.author && <div className={styles.sub}>{s.author}</div>}
+                          {showStats && f.sort !== 'name' && (
+                            <span className={styles.stat}>
+                              {statLabel(
+                                f.sort,
+                                st,
+                                usageError ? 'error' : usageLoading ? 'loading' : 'ok',
+                              )}
+                            </span>
+                          )}
+                        </div>
+                        {s.key && <span className={styles.keyPill}>{s.key}</span>}
+                        <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
                       </button>
-                    )}
-                    {/* Stammdaten ändern (#322, Schritt 11) – hier in der Liste, weil man den
-                        fehlenden Autor beim Durchsehen bemerkt, nicht erst im geöffneten Blatt.
-                        Dasselbe Recht wie das Anlegen. */}
-                    {canCreateSong && (
-                      <button
-                        className={styles.addBtn}
-                        onClick={() => setEditSong(s)}
-                        aria-label={`Stammdaten von „${s.name}" ändern`}
-                        title="Stammdaten ändern"
-                      >
-                        <Icon name="pencil" size={18} stroke={2.2} />
-                      </button>
-                    )}
+                      {canAddToAgenda && (
+                        <button
+                          className={styles.addBtn}
+                          onClick={() => setAddSong(s)}
+                          aria-label={`„${s.name}" zu einem Ablauf hinzufügen`}
+                          title="Zu Ablauf hinzufügen"
+                        >
+                          <Icon name="plus" size={20} stroke={2.4} />
+                        </button>
+                      )}
+                      {/* Stammdaten ändern (#322, Schritt 11) – hier in der Liste, weil man den
+                          fehlenden Autor beim Durchsehen bemerkt, nicht erst im geöffneten Blatt.
+                          Dasselbe Recht wie das Anlegen. */}
+                      {canCreateSong && (
+                        <button
+                          className={styles.addBtn}
+                          onClick={() => setEditSong(s)}
+                          aria-label={`Stammdaten von „${s.name}" ändern`}
+                          title="Stammdaten ändern"
+                        >
+                          <Icon name="pencil" size={18} stroke={2.2} />
+                        </button>
+                      )}
+                    </div>
+                    <LiedtextVorschau songId={s.songId} songName={s.name} />
                   </div>
                 );
               })}

@@ -57,6 +57,21 @@
     Listenkopf schrieb „1 LIEDER"). Letzteres fand nur das **Durchklicken** mit dem E2E-Stub, der ein
     einziges Lied hat – bei den 49 Liedern der ECG wäre es nie aufgefallen.
 
+  - die **Liedtext-Vorschau „Text zeigen"** (#379): auf Verlangen je Lied, in allen drei Listen
+    (`components/LiedtextVorschau.tsx`, Endpunkt `GET /api/songs/:songId/liedtext-vorschau`). **Sie baut
+    den Suchindex NICHT** – steht er frisch, kommt die Antwort daraus; sonst wird genau ein Notenblatt
+    geladen. Für SongSelect-Treffer bewusst noch nicht: erst muss geklärt sein, ob CCLI einen Textabruf
+    als Nutzung vermerkt.
+
+    ⚠️ **Dabei ein echter Fehler gefunden – und die erste Diagnose war falsch:** Der Suchindex prüfte mit
+    einem **selbst nachgebauten** `!/\(App\)\.chordpro$/i`, obwohl `isOriginalChordpro` in
+    `arrangementFiles.ts` genau das schon kann – und zwar für alle drei Marker (`(App)`, `(ECG)`,
+    `— Bearbeitet`). Die Folge war **nicht** „das Lied steht doppelt im Index" (`.find()` liefert nur eine
+    Datei), sondern: Steht eine alte App-Fassung in der ChurchTools-Antwort **vor** dem Original, wurde
+    der **bearbeitete** Text durchsucht. **Meine erste Gegenprobe blieb grün, weil im Testmaterial das
+    Original zuerst stand** – erst die umgedrehte Reihenfolge deckte es auf. Merksatz: Bleibt eine
+    Gegenprobe grün, ist meist die Diagnose falsch, nicht der Test schwach.
+
     Dazu die **Suche im Liedtext** (`GET /api/song-text-search`): Weder ChurchTools noch CCLI können
     das (gemessen, `probe-songsuche.ts`), also durchsucht unser Server die ChordPro-Dateien selbst –
     mit Index, eine Stunde gecacht, gebündelt und gedrosselt (`songTextIndex.ts`). **Neue geteilte

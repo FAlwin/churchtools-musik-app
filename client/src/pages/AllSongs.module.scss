@@ -49,6 +49,18 @@
   @include m.card-list;
 }
 
+// Zeile + Liedtext-Vorschau als ein Eintrag (#379). Die Vorschau liegt NEBEN dem Zeilen-Knopf, nicht
+// darin: ein `<button>` in einem `<button>` ist ungültiges HTML.
+.eintrag {
+  display: flex;
+  flex-direction: column;
+
+  // Die Vorschau rückt auf die Textkante ein – also hinter die Noten-Kachel der Zeile darüber.
+  > :nth-child(2) {
+    padding: 0 16px 8px 62px;
+  }
+}
+
 .rowWrap {
   display: flex;
   align-items: center;

@@ -4,6 +4,7 @@ import { SongStatsBar } from './SongStatsBar';
 import { LiedSucheKopf } from './LiedSucheKopf';
 import { LiedtextTrefferListe } from './LiedtextTrefferListe';
 import { SongSelectTrefferListe } from './SongSelectTrefferListe';
+import { LiedtextVorschau } from './LiedtextVorschau';
 import { useSongFilter } from '../hooks/useSongFilter';
 import { useLiedSuche } from '../hooks/useLiedSuche';
 import { statLabel } from '../utils/songFilter';
@@ -98,27 +99,31 @@ export function SongPicker({ onPick, onSongSelectTreffer, busy, autoFocus }: Son
           f.list.map((s: SongLibraryEntry) => {
             const st = f.stats.get(s.songId);
             return (
-              <button
-                key={s.songId}
-                className={styles.result}
-                disabled={busy}
-                onClick={() => onPick(s.arrangementId, s.name)}
-              >
-                <div className={styles.info}>
-                  <span className={styles.songName}>{s.name}</span>
-                  {s.author && <span className={styles.sub}>{s.author}</span>}
-                  {showStats && f.sort !== 'name' && (
-                    <span className={styles.stat}>
-                      {statLabel(
-                        f.sort,
-                        st,
-                        usage.isError ? 'error' : usage.isLoading ? 'loading' : 'ok',
-                      )}
-                    </span>
-                  )}
-                </div>
-                {s.key && <span className={styles.keyPill}>{s.key}</span>}
-              </button>
+              /* Zeile + Vorschau (#379) – die Vorschau NEBEN dem Knopf, nicht darin (verschachtelte
+                 Buttons sind ungültiges HTML). */
+              <div key={s.songId} className={styles.eintrag}>
+                <button
+                  className={styles.result}
+                  disabled={busy}
+                  onClick={() => onPick(s.arrangementId, s.name)}
+                >
+                  <div className={styles.info}>
+                    <span className={styles.songName}>{s.name}</span>
+                    {s.author && <span className={styles.sub}>{s.author}</span>}
+                    {showStats && f.sort !== 'name' && (
+                      <span className={styles.stat}>
+                        {statLabel(
+                          f.sort,
+                          st,
+                          usage.isError ? 'error' : usage.isLoading ? 'loading' : 'ok',
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  {s.key && <span className={styles.keyPill}>{s.key}</span>}
+                </button>
+                <LiedtextVorschau songId={s.songId} songName={s.name} />
+              </div>
             );
           })
         )}

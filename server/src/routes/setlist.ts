@@ -35,6 +35,7 @@ import {
   getSongSelectSearch,
   getSongSelectByNumber,
   postSongSelectChordPro,
+  getLiedtextVorschau,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -50,6 +51,8 @@ router.get('/song-categories', asyncHandler(getSongCategoriesCtrl));
 // Suche in den Liedtexten (#322). Baut beim ersten Aufruf einen Index (ein Download je Lied) –
 // gebündelt, gedrosselt und eine Stunde gecacht, siehe songTextIndex.ts.
 router.get('/song-text-search', asyncHandler(getSongTextSearch));
+// Der Textanfang EINES Liedes (#379) – auf Verlangen, baut den Suchindex nicht.
+router.get('/songs/:songId/liedtext-vorschau', asyncHandler(getLiedtextVorschau));
 // Ein neues Lied (#322). Rechte und Doppel-Erkennung prüft der Dienst, nicht die Oberfläche.
 router.post('/songs', asyncHandler(postSong));
 // Stammdaten ändern und löschen (#322, Schritt 11). Der PUT ist lesen–ändern–schreiben: Ein

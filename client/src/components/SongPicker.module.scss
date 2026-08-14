@@ -17,6 +17,16 @@
   margin-top: 2px;
 }
 
+// Zeile + Liedtext-Vorschau als ein Eintrag (#379) – die Vorschau NEBEN dem Knopf, nicht darin.
+.eintrag {
+  display: flex;
+  flex-direction: column;
+
+  > :nth-child(2) {
+    padding: 0 12px 4px;
+  }
+}
+
 .result {
   display: flex;
   align-items: center;
