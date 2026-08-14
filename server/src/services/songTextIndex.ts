@@ -23,12 +23,14 @@
  * ChordPro-Direktiven. Er ist bewusst org-weit und kontenunabhängig – wie die Statistik: Liedtexte sind
  * für alle dieselben, und der Bestand ist ohnehin für jeden mit Lieder-Recht sichtbar.
  */
-import type { SongTextTreffer } from '@shared/types/index';
+import { LIEDTEXT_SUCHE_MIN_ZEICHEN, type SongTextTreffer } from '@shared/types/index';
 import { CtOverloadedError, isCtOverloaded } from './ctHttp.js';
 import { downloadFileText } from './ctFiles.js';
 import { getAllSongs } from './ctRead.js';
 import { createGebuendelterLauf } from './gebuendelterLauf.js';
 import { mapLimit } from './mapLimit.js';
+import { isOriginalChordpro } from './arrangementFiles.js';
+import type { CtSongListEntry } from './ctTypes.js';
 
 /** Wie lange ein aufgebauter Index gilt. Liedtexte ändern sich selten; eine Stunde ist reichlich. */
 const INDEX_TTL_MS = 3_600_000;
@@ -37,11 +39,28 @@ const INDEX_COOLDOWN_MS = 120_000;
 /** Gleichzeitige Datei-Downloads. Bewusst niedriger als die 8 der Statistik: Dateien sind schwerer. */
 const PARALLEL = 6;
 
+/**
+ * Wie viele Zeichen die Vorschau zeigt (#379).
+ *
+ * Genug, um zwei gleichnamige Lieder zu unterscheiden – der Anfang reicht dafür, denn schon die erste
+ * Zeile ist bei verschiedenen Fassungen verschieden. Mehr würde die Liste zumüllen.
+ */
+const VORSCHAU_ZEICHEN = 220;
+
 interface IndexEintrag {
   songId: number;
   name: string;
   /** Kleingeschrieben, ohne Akkorde und Direktiven – nur zum Suchen. */
   text: string;
+  /**
+   * Der **lesbare** Anfang des Liedtexts (#379) – mit Groß-/Kleinschreibung.
+   *
+   * Getrennt von `text`, weil beide verschiedene Aufgaben haben: `text` ist zum **Suchen** gebaut
+   * (kleingeschrieben, damit der Vergleich ohne Umschalten funktioniert), die Vorschau zum **Lesen**.
+   * Bei ~50 Liedern sind das wenige Kilobyte – deutlich billiger, als für eine Vorschau eine Datei zu
+   * laden, die schon einmal durch die Leitung ging.
+   */
+  vorschau: string;
 }
 
 let index: { at: number; eintraege: IndexEintrag[] } | null = null;
@@ -63,13 +82,66 @@ export function __resetSongTextIndexForTests(): void {
  * Direktiven (`{title: …}`, `{comment: …}`) fliegen ganz heraus: Der Titel wird ohnehin schon in der
  * Liste durchsucht, und Kommentare wie „2× spielen" sind kein Liedtext.
  */
-export function chordproZuText(chordpro: string): string {
+export function chordproZuLesetext(chordpro: string): string {
   return chordpro
     .replace(/\{[^}]*\}/g, ' ') // Direktiven samt Inhalt
     .replace(/\[[^\]]*\]/g, '') // Akkorde ERSATZLOS – sonst zerfallen Wörter
     .replace(/\s+/g, ' ')
-    .trim()
-    .toLocaleLowerCase('de-DE');
+    .trim();
+}
+
+/**
+ * Die **Vergleichsform** – sie muss für den Index UND für den Suchbegriff dieselbe sein.
+ *
+ * Deshalb steht sie hier und nicht als `toLocaleLowerCase` an drei Stellen: Gesucht wird mit
+ * `text.includes(gesucht)`. Würde eine der beiden Seiten anders normalisiert – etwa weil jemand später
+ * Umlaute oder Bindestriche mit einbezieht –, **fände die Suche schlicht nichts mehr**, ohne Fehler und
+ * ohne Hinweis. Genau diese Sorte stiller Bruch entsteht, wenn eine Regel zweimal existiert.
+ */
+export function zuSuchform(text: string): string {
+  return text.toLocaleLowerCase('de-DE');
+}
+
+/**
+ * Derselbe Text, in der Suchform – die Form, in der gesucht wird.
+ *
+ * Baut bewusst auf `chordproZuLesetext` auf, statt die Ersetzungen zu wiederholen: Die Regel „Akkorde
+ * ersatzlos" gibt es damit **einmal**. Zwei Fassungen wären zwei Stellen, an denen die nächste Korrektur
+ * landen müsste – und die zweite wird vergessen.
+ */
+export function chordproZuText(chordpro: string): string {
+  return zuSuchform(chordproZuLesetext(chordpro));
+}
+
+/**
+ * Der Anfang eines Liedtexts als Vorschau (#379) – **an der Wortgrenze abgeschnitten.**
+ *
+ * Mitten im Wort zu trennen sieht nach einem Fehler aus. Ist der Text kürzer als die Grenze, steht er
+ * ganz da und bekommt **kein** Auslassungszeichen: Es soll nur behaupten, dass mehr kommt, wenn wirklich
+ * mehr kommt.
+ */
+export function vorschauAus(lesetext: string, laenge = VORSCHAU_ZEICHEN): string {
+  if (lesetext.length <= laenge) return lesetext;
+  const teil = lesetext.slice(0, laenge);
+  const luecke = teil.lastIndexOf(' ');
+  return (luecke > laenge * 0.6 ? teil.slice(0, luecke) : teil).trimEnd() + ' …';
+}
+
+/**
+ * Die Datei, aus der Suchtext und Vorschau kommen: das **Original**-ChordPro des Liedes.
+ *
+ * **Nutzt `isOriginalChordpro` und baut die Regel nicht nach** (#379). Vorher stand hier ein eigenes
+ * `!/\(App\)\.chordpro$/i` – das erkannte nur den heutigen Marker. Bestandsdateien mit den älteren
+ * Kürzeln (`— <Name> (ECG).chordpro`, `— Bearbeitet.chordpro`) gingen damit als Original durch.
+ *
+ * **Die Folge, genau benannt:** Gesucht wird mit `.find()`, es gewinnt also die **erste** passende Datei.
+ * Steht eine solche Bestandsfassung in der ChurchTools-Antwort **vor** dem Original, wurde der
+ * **bearbeitete** Text indexiert statt des echten – die Suche fand dann die falsche Fassung, und die
+ * Vorschau zeigte sie. (Nicht: „das Lied stand doppelt drin" – `find` liefert nur eine Datei. Diese
+ * erste Diagnose war falsch und wäre unbemerkt geblieben, hätte die Gegenprobe sie nicht widerlegt.)
+ */
+function originalChordpro(song: CtSongListEntry): { name: string; fileUrl: string } | undefined {
+  return song.arrangements?.flatMap((a) => a.files ?? []).find(isOriginalChordpro);
 }
 
 /**
@@ -98,17 +170,25 @@ async function baueIndex(cookie: string): Promise<IndexEintrag[]> {
   await mapLimit(songs, PARALLEL, async (song) => {
     // Notbremse: Sobald ChurchTools gebremst hat, keine weiteren Downloads mehr starten (#300).
     if (gedrosselt) return;
-    const datei = song.arrangements
-      ?.flatMap((a) => a.files ?? [])
-      .find((f) => /\.chordpro$/i.test(f.name) && !/\(App\)\.chordpro$/i.test(f.name));
+    const datei = originalChordpro(song);
     if (!datei) {
       ohneText++;
       return;
     }
     try {
-      const text = chordproZuText(await downloadFileText(cookie, datei.fileUrl));
-      if (text) eintraege.push({ songId: song.id, name: song.name, text });
-      else ohneText++;
+      // Einmal aufbereiten, zweimal genutzt: Suchtext und Vorschau (lesbar) aus demselben Lauf.
+      // Die Kleinschreibung läuft über `zuSuchform` – dieselbe Funktion, die auch den Suchbegriff
+      // normalisiert. Zwei Fassungen davon würden die Suche still ins Leere laufen lassen.
+      const lesetext = chordproZuLesetext(await downloadFileText(cookie, datei.fileUrl));
+      const text = zuSuchform(lesetext);
+      if (text) {
+        eintraege.push({
+          songId: song.id,
+          name: song.name,
+          text,
+          vorschau: vorschauAus(lesetext),
+        });
+      } else ohneText++;
     } catch (e) {
       if (isCtOverloaded(e)) {
         gedrosselt = true;
@@ -149,8 +229,9 @@ async function baueIndex(cookie: string): Promise<IndexEintrag[]> {
  * sagt das**, statt so zu tun, als wäre Suchen immer gleich schnell.
  */
 export async function sucheImLiedtext(cookie: string, begriff: string): Promise<SongTextTreffer[]> {
-  const gesucht = begriff.trim().toLocaleLowerCase('de-DE');
-  if (gesucht.length < 3) return [];
+  // Dieselbe Vergleichsform wie der Index – siehe `zuSuchform`.
+  const gesucht = zuSuchform(begriff.trim());
+  if (gesucht.length < LIEDTEXT_SUCHE_MIN_ZEICHEN) return [];
 
   const vorhanden = index;
   const frisch = vorhanden !== null && Date.now() - vorhanden.at < INDEX_TTL_MS;
@@ -172,4 +253,38 @@ export async function sucheImLiedtext(cookie: string, begriff: string): Promise<
     .filter((e) => e.text.includes(gesucht))
     .map((e) => ({ songId: e.songId, name: e.name, ausschnitt: ausschnitt(e.text, gesucht) }))
     .sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
+}
+
+/**
+ * Der Anfang eines Liedtexts zum Nachlesen (#379) – **auf Verlangen, für EIN Lied.**
+ *
+ * Anlass (Alwin, 13.08.2026): Heißen mehrere Lieder gleich und ist der Autor unbekannt, entscheidet nur
+ * ein Blick in den Text. Ausgelöst wird das je Lied, nicht für die Liste.
+ *
+ * **Der Index wird dafür nie gebaut, nur benutzt** – das ist der ganze Trick:
+ *
+ *  - Steht er frisch (weil gerade in Liedtexten gesucht wurde), kostet die Vorschau **keine** Anfrage.
+ *  - Steht er nicht, wird **genau dieses eine** Notenblatt geladen. Ein Index-Aufbau (~50 Downloads)
+ *    nur für zwei Zeilen wäre grob unverhältnismäßig – und genau die Sorte Last, die in #300 das
+ *    ChurchTools-Limit gerissen hat.
+ *
+ * `null` heißt „dieses Lied hat keinen Text" – die Oberfläche zeigt dann **keine** leere Vorschau.
+ */
+export async function liedtextVorschau(cookie: string, songId: number): Promise<string | null> {
+  const vorhanden = index;
+  if (vorhanden !== null && Date.now() - vorhanden.at < INDEX_TTL_MS) {
+    const treffer = vorhanden.eintraege.find((e) => e.songId === songId);
+    // Nur wenn das Lied im Index steht. Fehlt es dort, hat es beim Aufbau keinen Text gehabt – dann
+    // lohnt der Versuch unten trotzdem, denn seitdem kann eines hinzugekommen sein.
+    if (treffer) return treffer.vorschau;
+  }
+
+  const songs = await getAllSongs(cookie);
+  const song = songs.find((s) => s.id === songId);
+  if (!song) return null;
+  const datei = originalChordpro(song);
+  if (!datei) return null;
+
+  const lesetext = chordproZuLesetext(await downloadFileText(cookie, datei.fileUrl));
+  return lesetext ? vorschauAus(lesetext) : null;
 }

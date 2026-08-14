@@ -49,6 +49,13 @@ nutzt bewusst Monospace (`'JetBrains Mono', monospace`) für die Roh-Bearbeitung
   `Icon` (`components/icons.tsx`, Line-Icons – keine Emojis in der UI), `NavBar`, `TabBar`,
   `Sheet`, `ConfirmDialog`, `SongFields` (die Stammdaten-Felder eines Liedes – von „Neues Lied" und
   „Stammdaten ändern" gemeinsam genutzt, damit es die fünf Felder nur einmal gibt).
+- **Lied suchen – ein Kopf für alle drei Stellen** (#378): `LiedSucheKopf` (Suchfeld + Quellen-`Segment`)
+  mit `LiedTreffer.module.scss` für die Trefferzeilen von „Liedtexte" und „SongSelect". Vorher hatte
+  jede Ansicht ihre eigene Kopie des Suchfelds (`AllSongs` und `SongPicker` je eine, dazu eine dritte
+  Zeile in `NewSongSheet`). **Regel daraus:** Das Suchfeld gibt es nur noch hier – wer eine vierte Suche
+  braucht, nimmt den Kopf, statt seine Optik nachzubauen.
+  Der Umschalter erscheint nur bei **mehr als einer** Quelle, und die Sortierleiste (`SongStatsBar`) nur
+  bei der Bibliothek: Eine Leiste, die nichts bewirkt, ist schlimmer als keine.
 
 ## Theme
 

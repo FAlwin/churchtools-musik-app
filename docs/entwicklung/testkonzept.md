@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand 13.08.2026 (nach #322): **129 Testdateien** –
-**86 Client (929 Tests)** + **43 Server (507 Tests)** mit Vitest + **11 Playwright-E2E in 6 Dateien**
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand 14.08.2026 (nach #378, #379 und #381): **135 Testdateien** –
+**92 Client (1003 Tests)** + **43 Server (519 Tests)** mit Vitest + **11 Playwright-E2E in 6 Dateien**
 (Render-Smoke, voller Auth-Flow, Vollbild-Geometrie, Tempo-Menü-Geometrie,
 Arrangement-Migration,
 Arrangement-Wechsel). Die Zahlen sind mit
@@ -49,7 +49,11 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
   dazu „leeren heißt weglassen" und die Pflichtfelder
 - `services/songTextIndex` – Suche im Liedtext (#322): Akkorde fallen **ersatzlos** weg (sonst wird
   „ge[Am]liebt" nicht bei „geliebt" gefunden), fünf gleichzeitige Suchen ergeben **einen** Index-Aufbau,
-  eine Drosselung wird gemeldet statt eine halbe Trefferliste ausgeliefert
+  eine Drosselung wird gemeldet statt eine halbe Trefferliste ausgeliefert.
+  Dazu die **Vorschau** (#379): Sie **baut den Index nicht** – steht er frisch, kostet sie keinen
+  Download, sonst genau **einen** (gezählt im Test). Und sie nimmt das **Original**-ChordPro, auch wenn
+  App-Fassungen davor stehen: Das Testmaterial listet sie deshalb absichtlich **vor** dem Original –
+  mit dem Original zuerst wäre der Fehler unsichtbar, und genau daran blieb die erste Gegenprobe grün
 - `services/gebuendelterLauf` – Bündelung + Sperrfrist teurer org-weiter Läufe (#300): fünf gleichzeitige
   Aufrufe = ein Lauf, Freigabe auch nach einem Fehler, Sperrfrist mit `Retry-After`
 - `services/churchtools.ratelimit` – 429 ist eine **Drosselung, kein Serverfehler** (#300), inzwischen an
@@ -116,6 +120,35 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
   jeweilige Seite. Bewusst ohne echtes Canvas (Strich-Persistenz bleibt manuell/Staging).
 - `components/Coachmarks`: Schritte durchlaufen (Fertig → onClose), Überspringen, Auto-Ende ohne
   Ziel-Element, Auto-Skip fehlender Schritte.
+- **Der Quellen-Umschalter (#378)** – hier liegt das Teure, denn die drei Quellen kosten sehr
+  Unterschiedliches:
+  - `hooks/useLiedSuche` (jsdom, **Fake-Timer**): Welche Quellen es überhaupt gibt (SongSelect nur mit
+    Lizenz **und** einem Weg zum Anlegen) und der **Rückfall auf die Bibliothek**, wenn die gewählte
+    Quelle wegfällt – abgeleitet, nicht in einem Effekt korrigiert (#283). Vor allem aber: **in der
+    Bibliothek getippter Text löst KEINE CCLI-Anfrage aus**, nach dem Wechsel wird der stehende Begriff
+    ohne neuen Tastendruck abgeschickt, eine unvollständige CCLI-Nummer läuft nicht von selbst (7
+    Stellen, gemessen) – über den Knopf aber doch. Die Liedtextsuche startet erst ab drei Zeichen; ein
+    Reitertipp allein baut keinen Index. **Fake-Timer sind Pflicht:** Mit echten erledigt die
+    Entprellung die Arbeit, die der Test der Regel zuschreibt.
+  - `components/LiedSucheKopf`: Platzhalter je Quelle, Knopf **nur** bei SongSelect („Abfragen" bei
+    reinen Ziffern), Eingabetaste löst in der Bibliothek nichts aus, und der Begriff bleibt beim Wechsel
+    stehen.
+  - `components/SongSelectTrefferListe` + `components/LiedtextTrefferListe`: die Trefferlisten samt der
+    **Regression zum Absturz vom 13.08.2026** (Treffer kommen aus `data.treffer`, nicht aus dem
+    Antwort-Objekt) und der Unterscheidung „nichts gefunden" / „konnte nicht suchen" (#270). Dazu, dass
+    ohne Begriff gar nicht abgefragt wird – geprüft am **Argument**, nicht am Ladehinweis, sonst prüfte
+    der Test nur den Mock.
+- **Die Vorschau vor dem Einfügen (#379, #381):**
+  - `components/SongPicker`: **Beim Durchsehen der Liste wird KEIN Liedtext abgefragt** – geprüft am
+    `enabled`-Argument beider Hooks, denn eine Vorschau je Zeile hieße eine Anfrage je Zeile. Bei CCLI ist
+    das mehr als Sparsamkeit: Ob ein Textabruf dort als Nutzung verbucht wird, ist offen. Dazu die zwei
+    Wege, die beide gewollt sind: **Antippen → Vorschau** und **„+" → sofort einfügen** (der zweite darf
+    keine Textabfrage auslösen). Der Hook `useLiedSuche` ist hier **nicht gemockt** – ein Mock müsste
+    seine Quellen-Logik nachbauen; stattdessen läuft er echt, mit Fake-Timern für die Entprellung.
+  - `components/LiedVorschau`: **handlungsfähig in jedem Zustand** – ohne Liedtext, bei einem Ladefehler
+    und während des Holens muss Einfügen möglich bleiben. „Kein Text vorhanden", ein **Fehler** und eine
+    leere Anzeige sind drei verschiedene Aussagen. Und: **der CCLI-Hinweis wird angezeigt**, wenn die
+    Quelle ihn mitschickt – das ist eine Lizenzbedingung, keine Zierde.
 - `utils/strokes` (`mergeStrokes`, reine null-Zweige), `utils/vanishedRows` (lokale
   Auflöse-Platzhalter #178) und `utils/annotationKeys` (Schlüssel-Grammatik: Ebenen-Präfix,
   nicht-leere Notizen je Ebene, Ebenen-Gruppierung unter Namensraum) rein getestet.

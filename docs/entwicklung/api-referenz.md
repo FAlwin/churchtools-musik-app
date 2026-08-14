@@ -65,7 +65,20 @@
 - `GET  /api/song-text-search?q=…` → `SongTextTreffer[]` – **Suche in den Liedtexten** (#322). Baut beim
   ersten Aufruf einen Index über alle Lieder (ein Datei-Download je Lied), danach eine Stunde aus dem
   Speicher; gebündelt (fünf gleichzeitige Suchen = ein Aufbau) und bei einer Drosselung mit Sperrfrist.
-  Unter drei Zeichen wird nicht gesucht. Gemessen: Weder `/api/songs?query=` noch CCLI können das.
+  Unter `LIEDTEXT_SUCHE_MIN_ZEICHEN` (3) wird nicht gesucht – die Grenze steht in `@shared/types`, weil
+  Client und Server sie beide prüfen. Gemessen: Weder `/api/songs?query=` noch CCLI können das.
+- `GET  /api/songselect/songs/:songNumber/liedtext` → `SongSelectLiedtext` – **CCLIs Liedtext** zu einer
+  Nummer (#381), Grundlage der Vorschau vor dem Anlegen. Gemessen am 14.08.2026: Der Aufruf heißt
+  `getCCLILyrics` und nimmt `songNumber`; CCLI liefert den Text **strukturiert** (`lyricParts` mit
+  „Vers 1", „Chorus 1") und dazu einen **`disclaimer`**, der **angezeigt werden muss**.
+  ⚠️ **Nur beim bewussten Öffnen eines Treffers aufrufen, nie beim Durchsehen:** Ob CCLI den Abruf als
+  Nutzung verbucht, ist offen (die Antwort enthält keinen Hinweis darauf – das beweist nichts). Der Client
+  speichert je Nummer zwischen (`staleTime: Infinity`).
+- `GET  /api/songs/:songId/liedtext-vorschau` → `LiedtextVorschau` (`{vorschau: string | null}`) – der
+  **Textanfang eines Liedes** für die Vorschau bei gleichnamigen Liedern (#379). **Baut den Suchindex
+  NICHT:** Steht er frisch, kommt die Antwort daraus (keine Anfrage an ChurchTools); sonst wird **genau
+  dieses eine** Notenblatt geladen. Ein Index-Aufbau (~50 Downloads) für zwei Zeilen wäre grob
+  unverhältnismäßig. `vorschau: null` heißt „hat keinen Text" – ein gültiger Fall, kein Fehler.
 - `GET  /api/songs/:songId/stammdaten` → `LiedStammdatenAnsicht` – Name, Kategorie, Autor, CCLI,
   Copyright eines Liedes (fürs Änderungsformular; die Bibliothek kennt diese Felder nicht).
 - `PUT  /api/songs/:songId` `{name?, categoryId?, author?, ccli?, copyright?}` → `LiedStammdatenAnsicht`

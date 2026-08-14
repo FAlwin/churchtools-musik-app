@@ -35,6 +35,8 @@ import {
   getSongSelectSearch,
   getSongSelectByNumber,
   postSongSelectChordPro,
+  getLiedtextVorschau,
+  getSongSelectLyricsCtrl,
 } from '../controllers/setlistController.js';
 
 const router = Router();
@@ -50,6 +52,8 @@ router.get('/song-categories', asyncHandler(getSongCategoriesCtrl));
 // Suche in den Liedtexten (#322). Baut beim ersten Aufruf einen Index (ein Download je Lied) –
 // gebündelt, gedrosselt und eine Stunde gecacht, siehe songTextIndex.ts.
 router.get('/song-text-search', asyncHandler(getSongTextSearch));
+// Der Textanfang EINES Liedes (#379) – auf Verlangen, baut den Suchindex nicht.
+router.get('/songs/:songId/liedtext-vorschau', asyncHandler(getLiedtextVorschau));
 // Ein neues Lied (#322). Rechte und Doppel-Erkennung prüft der Dienst, nicht die Oberfläche.
 router.post('/songs', asyncHandler(postSong));
 // Stammdaten ändern und löschen (#322, Schritt 11). Der PUT ist lesen–ändern–schreiben: Ein
@@ -96,6 +100,8 @@ router.delete('/songs/:songId/files/:fileId', asyncHandler(deleteArrangementFile
  */
 router.get('/songselect/search', asyncHandler(getSongSelectSearch));
 router.get('/songselect/songs/:songNumber', asyncHandler(getSongSelectByNumber));
+// Der Liedtext eines SongSelect-Liedes (#381) – Grundlage der Vorschau vor dem Anlegen.
+router.get('/songselect/songs/:songNumber/liedtext', asyncHandler(getSongSelectLyricsCtrl));
 // Der einzige SCHREIBENDE SongSelect-Weg: holt das Notenblatt ins Arrangement und ersetzt dabei ein
 // vorhandenes Original-ChordPro (pro Arrangement genau eines, Begruendung am Dienst).
 router.post(

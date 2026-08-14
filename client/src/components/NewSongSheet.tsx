@@ -1,17 +1,22 @@
 /**
- * „Neues Lied" – ein Lied in ChurchTools anlegen (#322, Schritt 10b).
+ * „Neues Lied" – ein Lied in ChurchTools anlegen (#322, Schritt 10b; umgebaut in #378).
  *
- * **Zwei gleichrangige Wege** (Entscheidung Alwin, 13.08.2026): bei CCLI SongSelect suchen und das
- * Formular ausgefüllt bekommen, oder alles selbst eintippen. Der zweite ist kein Notausgang – eigene
- * Lieder und Übersetzungen stehen nicht bei CCLI, und ohne die SongSelect-Lizenz gibt es den ersten
- * Weg gar nicht.
+ * **Das Blatt ist nur noch das Formular.** Die Wegwahl („Bei SongSelect suchen / Selbst eintippen") und
+ * die CCLI-Suche standen hier, bis der Quellen-Umschalter kam (#378, Entscheidung Alwin, 14.08.2026):
+ * Gesucht wird jetzt oben im Suchkopf, bei der Quelle „SongSelect". Ein Treffer dort öffnet dieses Blatt
+ * mit `startTreffer` – vorbelegt, aber noch nicht angelegt.
  *
- * **Die Kategorie ist Pflicht und wird nicht vorbelegt.** Die App bietet an, was das
- * ChurchTools-Recht hergibt (der Server schneidet die Liste zu), und entscheidet nichts vor.
+ * Damit gibt es die SongSelect-Suche **genau einmal**. Zwei Fassungen wären zwei Stellen, an denen jede
+ * künftige Korrektur landen müsste, und die zweite wird vergessen – die teuerste Fehlerklasse in diesem
+ * Projekt.
+ *
+ * **Die Kategorie ist Pflicht und wird nicht vorbelegt.** Die App bietet an, was das ChurchTools-Recht
+ * hergibt (der Server schneidet die Liste zu), und entscheidet nichts vor. Genau deshalb führt ein
+ * SongSelect-Treffer hierher und nicht direkt in ChurchTools.
  *
  * Was hier **nicht** geprüft wird: das Recht und die doppelte CCLI-Nummer. Das macht der Server
- * (`songErstellen.ts`) – eine Prüfung, die nur in der Oberfläche steht, umgeht jeder, der den
- * Endpunkt direkt aufruft. Angezeigt wird seine Meldung.
+ * (`songVerwaltung.ts`) – eine Prüfung, die nur in der Oberfläche steht, umgeht jeder, der den Endpunkt
+ * direkt aufruft. Angezeigt wird seine Meldung.
  */
 import { useEffect, useState } from 'react';
 import type { SongSelectTreffer } from '@shared/types/index';
@@ -23,25 +28,19 @@ import { SongFields } from './SongFields';
 // Die Feld-Stile direkt aus dem Modul: Ein Re-Export über die Komponente bricht Fast Refresh.
 import feld from './SongFields.module.scss';
 import {
-  SONGSELECT_MIN_ZEICHEN,
   useCapabilities,
   useSongCategories,
   useSongLibrary,
-  useSongSelectSuche,
+  useSongSelectSong,
 } from '../hooks/useServices';
 import { useNeuesLied } from '../hooks/useNeuesLied';
-import { useEntprellt } from '../hooks/useEntprellt';
 import {
   LEERES_FORMULAR,
-  automatischSuchen,
   formularAusTreffer,
-  sucheArt,
   formularBereit,
   namensWarnung,
-  trefferUnterzeile,
   type NeuesLiedFormular,
 } from '../utils/liedFormular';
-import { getSongSelectSong } from '../services/churchtoolsApi';
 import styles from './NewSongSheet.module.scss';
 
 interface NewSongSheetProps {
@@ -49,6 +48,13 @@ interface NewSongSheetProps {
   eventId?: number;
   /** Name des Termins – nur für den Satz in der Erfolgsansicht. */
   eventName?: string;
+  /**
+   * Ein Treffer aus der Quelle „SongSelect" (#378) – füllt das Formular beim Öffnen.
+   *
+   * Das Copyright fehlt in der Trefferliste von CCLI und wird nachgeholt (`useSongSelectSong`); der Rest
+   * steht sofort da, damit man nicht auf eine Abfrage wartet, die ~800 ms dauert.
+   */
+  startTreffer?: SongSelectTreffer;
   /**
    * Öffnet das fertige Lied (Chart-Ansicht) – **optional.**
    *
@@ -60,9 +66,13 @@ interface NewSongSheetProps {
   onClose: () => void;
 }
 
-type Schritt = 'weg' | 'suche' | 'formular';
-
-export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSongSheetProps) {
+export function NewSongSheet({
+  eventId,
+  eventName,
+  startTreffer,
+  onOpenSong,
+  onClose,
+}: NewSongSheetProps) {
   const caps = useCapabilities(true);
   const canUseCcli = caps.data?.canUseCcli ?? false;
   const kategorien = useSongCategories(true);
@@ -70,41 +80,37 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
   // Lied-Auswahl nutzen dieselbe Query) – deshalb kein zusätzlicher Abruf gegen ChurchTools.
   const bibliothek = useSongLibrary(true);
 
-  const [schrittGewaehlt, setSchrittGewaehlt] = useState<Schritt | null>(null);
   /**
-   * Ohne SongSelect-Lizenz beginnt das Blatt direkt beim Formular – ein Weg, den es nicht gibt, wäre
-   * eine Sackgasse. Abgeleitet statt in einem Effekt gesetzt: Beim ersten Rendern sind die Rechte
-   * vielleicht noch nicht da, und ein Anfangszustand aus einem `false` wäre dann falsch.
-   */
-  const schritt: Schritt = schrittGewaehlt ?? (canUseCcli ? 'weg' : 'formular');
-
-  const [formular, setFormular] = useState<NeuesLiedFormular>(LEERES_FORMULAR);
-  /** Der übernommene CCLI-Treffer – entscheidet mit, ob ein Notenblatt zu holen ist. */
-  const [treffer, setTreffer] = useState<SongSelectTreffer | null>(null);
-
-  /**
-   * Getippt wird in `eingabe`, gesucht wird nach `begriff`.
+   * Der Treffer, der dieses Formular vorbelegt hat – **als Zustand, nicht direkt das Prop.**
    *
-   * **Gesucht wird beim Tippen** (Wunsch Alwin, 13.08.2026) – aber entprellt: Jeder Aufruf geht über
-   * ChurchTools weiter zu CCLI (~800 ms gemessen), und „Wo ich auch stehe" wären sonst fünfzehn
-   * Suchen. Der Knopf bleibt daneben: Er löst sofort aus und erlaubt auch das, was die automatische
-   * Regel noch zurückhält – etwa eine kurze CCLI-Nummer.
+   * „Noch ein Lied anlegen" muss ihn loswerden können: Sonst füllte die nachgeholte Abfrage das gerade
+   * geleerte Formular wieder mit dem alten Lied.
    */
-  const [eingabe, setEingabe] = useState('');
-  const [begriff, setBegriff] = useState('');
-  const entprellt = useEntprellt(eingabe, 400);
+  const [vorbelegung, setVorbelegung] = useState<SongSelectTreffer | null>(startTreffer ?? null);
+  const details = useSongSelectSong(vorbelegung?.songNumber ?? null);
+  /**
+   * Der vollständigste bekannte Stand des Treffers – **abgeleitet, kein eigener Zustand.**
+   *
+   * Er entscheidet mit, ob nach dem Anlegen ein Notenblatt zu holen ist (`notenblattPlan`): Die
+   * Einzelabfrage weiß, welche Formate CCLI hergibt, der Listentreffer nur das Nötigste.
+   */
+  const treffer = details.data ?? vorbelegung;
 
+  const [formular, setFormular] = useState<NeuesLiedFormular>(() =>
+    startTreffer ? formularAusTreffer(startTreffer) : LEERES_FORMULAR,
+  );
+
+  /**
+   * Das nachgeholte Copyright ins Formular spiegeln.
+   *
+   * Hängt an `details.data` und damit an einem Wert, den die Abfrage stabil hält – ein Effekt an einem
+   * Prop-Objekt wäre bei jedem Rendern neu gelaufen. Die bereits eingetippten Felder bleiben stehen
+   * (`formularAusTreffer` legt nur die Treffer-Felder darüber).
+   */
   useEffect(() => {
-    // Nur wenn die Eingabe „reif" ist: Titel ab drei Zeichen, eine Nummer erst vollständig.
-    if (automatischSuchen(entprellt, SONGSELECT_MIN_ZEICHEN)) setBegriff(entprellt.trim());
-  }, [entprellt]);
-  const suche = useSongSelectSuche(begriff, schritt === 'suche');
-  /** Was zuletzt abgeschickt wurde – Titel oder Nummer. Bestimmt nur die Wortwahl der Meldungen. */
-  const gesucht = sucheArt(begriff);
-  /** Was die Eingabe gerade IST – für die Beschriftung des Knopfs, noch vor dem Abschicken. */
-  const eingabeArt = sucheArt(eingabe);
-  /** Läuft die Einzelabfrage für das Copyright? Nur dafür, nicht fürs Anlegen. */
-  const [holtDetails, setHoltDetails] = useState(false);
+    const voll = details.data;
+    if (voll) setFormular((f) => formularAusTreffer(voll, f));
+  }, [details.data]);
 
   const neuesLied = useNeuesLied({ eventId, canUseCcli });
   const ergebnis = neuesLied.ergebnis;
@@ -112,46 +118,15 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
   const setzeFeld = (feld: keyof NeuesLiedFormular, wert: string): void =>
     setFormular((f) => ({ ...f, [feld]: wert }));
 
-  /**
-   * Einen Treffer übernehmen – und dabei **das Copyright nachholen.**
-   *
-   * Die Trefferliste von CCLI enthält es nicht; erst die Abfrage per Nummer liefert es. Scheitert sie,
-   * geht es ohne weiter: Ein fehlendes Copyright ist kein Grund, das Anlegen zu verhindern.
-   */
-  async function trefferUebernehmen(t: SongSelectTreffer): Promise<void> {
-    setTreffer(t);
-    setFormular((f) => formularAusTreffer(t, f));
-    setSchrittGewaehlt('formular');
-
-    setHoltDetails(true);
-    try {
-      const voll = await getSongSelectSong(t.songNumber);
-      setTreffer(voll);
-      setFormular((f) => formularAusTreffer(voll, f));
-    } catch {
-      /* Copyright bleibt leer – der Rest steht schon im Formular. */
-    } finally {
-      setHoltDetails(false);
-    }
-  }
-
   const kategorieListe = kategorien.data ?? [];
   const warnung = namensWarnung(formular.name, bibliothek.data ?? []);
   const bereit = formularBereit(formular) && kategorieListe.length > 0;
-
-  const titel = ergebnis
-    ? 'Lied angelegt'
-    : schritt === 'suche'
-      ? 'Bei SongSelect suchen'
-      : schritt === 'formular'
-        ? 'Neues Lied'
-        : 'Neues Lied anlegen';
 
   /* ---------------------------------------------------------------- Erfolgsansicht */
 
   if (ergebnis) {
     return (
-      <Sheet title={titel} onClose={onClose} cancelLabel="Fertig">
+      <Sheet title="Lied angelegt" onClose={onClose} cancelLabel="Fertig">
         <div className={styles.success}>
           <span className={styles.successIcon}>
             <Icon name="check" size={26} stroke={2.6} />
@@ -188,10 +163,8 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
             onClick={() => {
               neuesLied.zuruecksetzen();
               setFormular(LEERES_FORMULAR);
-              setTreffer(null);
-              setEingabe('');
-              setBegriff('');
-              setSchrittGewaehlt(canUseCcli ? 'weg' : 'formular');
+              // Muss mit zurück: Sonst legte die Abfrage zum alten Treffer das leere Formular wieder voll.
+              setVorbelegung(null);
             }}
           >
             Noch ein Lied anlegen
@@ -201,138 +174,10 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
     );
   }
 
-  /* --------------------------------------------------------------------- Wegwahl */
-
-  if (schritt === 'weg') {
-    return (
-      <Sheet title={titel} onClose={onClose}>
-        <div className={styles.choices}>
-          <button className={styles.choice} onClick={() => setSchrittGewaehlt('suche')}>
-            <Icon name="search" size={20} className={styles.choiceIcon} />
-            <span className={styles.choiceText}>
-              <span className={styles.choiceTitle}>Bei SongSelect suchen</span>
-              <span className={styles.choiceMeta}>
-                Titel, Autoren und Tonart kommen mit – das Notenblatt auch
-              </span>
-            </span>
-          </button>
-          <button className={styles.choice} onClick={() => setSchrittGewaehlt('formular')}>
-            <Icon name="type" size={20} className={styles.choiceIcon} />
-            <span className={styles.choiceText}>
-              <span className={styles.choiceTitle}>Selbst eintippen</span>
-              <span className={styles.choiceMeta}>
-                Für eigene Lieder, Übersetzungen und alles, was nicht bei CCLI steht
-              </span>
-            </span>
-          </button>
-        </div>
-      </Sheet>
-    );
-  }
-
-  /* ----------------------------------------------------------------------- Suche */
-
-  if (schritt === 'suche') {
-    /**
-     * **`suche.data` ist ein OBJEKT, keine Liste** – hier lag ein Absturz (13.08.2026, von Alwin beim
-     * Durchklicken gefunden): Der Client behauptete `SongSelectTreffer[]`, der Server lieferte
-     * `{treffer, gesamt, vollstaendig}`. `.map` auf dem Objekt ergab den Fehlerschirm. Seitdem steht
-     * der Typ in `@shared/types` – über die HTTP-Grenze prüft TypeScript nichts nach.
-     */
-    const liste = suche.data?.treffer ?? [];
-    return (
-      <Sheet title={titel} onClose={onClose}>
-        <div className={styles.searchRow}>
-          <input
-            className={styles.input}
-            /* Beide Wege im Platzhalter, weil es beide wirklich gibt: Text geht in die unscharfe
-               Titelsuche, reine Ziffern direkt an die CCLI-Nummer (siehe `sucheArt`). */
-            placeholder="Liedtitel oder CCLI-Nummer eintippen …"
-            value={eingabe}
-            autoFocus
-            onChange={(e) => setEingabe(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') setBegriff(eingabe);
-            }}
-          />
-          <button
-            className={styles.primary}
-            onClick={() => setBegriff(eingabe)}
-            disabled={eingabe.trim().length < SONGSELECT_MIN_ZEICHEN}
-          >
-            {/* „Abfragen" statt „Suchen", sobald es nach einer Nummer aussieht: Sie liefert genau ein
-                Lied, keine Trefferliste – das darf der Knopf sagen. Der Knopf bleibt trotz der
-                Tipp-Suche: Er wartet die Entprellung nicht ab und erlaubt auch kurze Nummern. */}
-            {eingabeArt.art === 'nummer' ? 'Abfragen' : 'Suchen'}
-          </button>
-        </div>
-
-        {suche.isLoading && (
-          <CenterMessage
-            loading
-            text={
-              gesucht.art === 'nummer'
-                ? `CCLI-Nummer ${gesucht.nummer} wird bei SongSelect abgefragt …`
-                : 'Wird bei SongSelect gesucht …'
-            }
-          />
-        )}
-
-        {/* Der Grund kommt vom Server: fehlende Lizenz klingt anders als ein Aussetzer (#270). */}
-        {suche.isError && (
-          <div className={styles.err}>
-            {suche.error instanceof Error
-              ? suche.error.message
-              : gesucht.art === 'nummer'
-                ? `Die CCLI-Nummer ${gesucht.nummer} konnte bei SongSelect nicht abgefragt werden.`
-                : 'Die Suche bei SongSelect ist fehlgeschlagen.'}
-          </div>
-        )}
-
-        {begriff !== '' && !suche.isLoading && !suche.isError && liste.length === 0 && (
-          <div className={styles.hint}>
-            {gesucht.art === 'nummer'
-              ? `Zu der Nummer ${gesucht.nummer} findet SongSelect kein Lied. Tippe den Titel ein, um nach dem Namen zu suchen.`
-              : 'Keine Treffer bei SongSelect. Vielleicht ist es ein eigenes Lied – dann selbst eintippen.'}
-          </div>
-        )}
-
-        {liste.map((t) => (
-          <button
-            key={t.songNumber}
-            className={styles.pickRow}
-            onClick={() => void trefferUebernehmen(t)}
-          >
-            <span className={styles.choiceText}>
-              <span className={styles.choiceTitle}>{t.title}</span>
-              <span className={styles.choiceMeta}>{trefferUnterzeile(t)}</span>
-            </span>
-            <Icon name="chev-right" size={18} stroke={2.2} className={styles.choiceIcon} />
-          </button>
-        ))}
-
-        {/* Blättern gibt es bei ChurchTools nicht: Es holt 100 Treffer auf einmal und zeigt keinen
-            Weg weiter (gemessen: 147 zu „Wo ich auch stehe"). **Ob die Liste vollständig ist, sagt der
-            Server** (`vollstaendig`) – vorher stand hier ein geratenes `liste.length >= 100` daneben,
-            also dieselbe Rechnung ein zweites Mal und schlechter. */}
-        {suche.data && !suche.data.vollstaendig && (
-          <div className={styles.hint}>
-            SongSelect hat {suche.data.gesamt} Treffer zu „{begriff}", angezeigt werden{' '}
-            {liste.length}. Ist das gesuchte Lied nicht dabei, such genauer.
-          </div>
-        )}
-
-        <button className={styles.secondaryWide} onClick={() => setSchrittGewaehlt('formular')}>
-          Stattdessen selbst eintippen
-        </button>
-      </Sheet>
-    );
-  }
-
   /* -------------------------------------------------------------------- Formular */
 
   return (
-    <Sheet title={titel} onClose={onClose}>
+    <Sheet title="Neues Lied" onClose={onClose}>
       {neuesLied.fehler && <div className={styles.err}>{neuesLied.fehler}</div>}
 
       {kategorien.isError ? (
@@ -359,7 +204,7 @@ export function NewSongSheet({ eventId, eventName, onOpenSong, onClose }: NewSon
             onKategorie={(id) => setFormular((f) => ({ ...f, categoryId: id }))}
             kategorien={kategorieListe}
             warnung={warnung}
-            copyrightPlatzhalter={holtDetails ? 'Wird von SongSelect geholt …' : 'Optional'}
+            copyrightPlatzhalter={details.isLoading ? 'Wird von SongSelect geholt …' : 'Optional'}
             autoFocus
           >
             {/* Nur beim Anlegen: Beides gehört zum ERSTEN Arrangement, nicht zum Lied. Beim Ändern der

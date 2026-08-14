@@ -1,0 +1,92 @@
+// Die Zeilen-Optik der beiden Such-Quellen „Liedtexte" und „SongSelect" (#378).
+//
+// Gemeinsam, weil beide dasselbe zeigen: einen Titel, darunter eine erklärende Zeile (Ausschnitt aus
+// dem Liedtext bzw. Autoren · Nummer · Formate), rechts ein Pfeil. Zwei fast gleiche Dateien wären die
+// nächste Stelle, an der eine Änderung nur zur Hälfte ankommt.
+//
+// Bewusst schlanker als die Bibliotheksliste und ohne Noten-Symbol: Die zweite Zeile trägt hier echte
+// Information und braucht den Platz.
+
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.zeile {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--ui);
+  cursor: pointer;
+  transition: background 0.12s;
+
+  @media (hover: hover) {
+    &:hover {
+      background: var(--surface3);
+    }
+  }
+  &:active {
+    background: var(--surface3);
+  }
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titel {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chev {
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+// Überschrift über der Trefferliste („3 Lieder mit ‚Gnade' im Text").
+.kopf {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 2px 4px;
+}
+
+// Ruhige Sätze: zu kurzer Begriff, nichts gefunden, Fehlermeldung des Servers.
+.hinweis {
+  padding: 14px 4px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text2);
+  text-align: center;
+}

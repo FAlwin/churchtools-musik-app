@@ -298,6 +298,64 @@ export interface SongTextTreffer {
   ausschnitt: string;
 }
 
+/**
+ * Ab wie vielen Zeichen im Liedtext gesucht wird – **die Zahl steht hier, weil beide Seiten sie
+ * brauchen** (#378).
+ *
+ * Kürzere Begriffe treffen fast jedes Lied und wären nur Rauschen. Der Server prüft es ebenfalls: Eine
+ * Grenze, die nur der Client zieht, umgeht jeder, der den Endpunkt direkt aufruft.
+ *
+ * **Sie stand vorher an vier Stellen** (`useServices`, zweimal `AllSongs`, `songTextIndex`) – jede eine
+ * eigene `3`. Beim Umbau auf den Quellen-Umschalter wäre eine fünfte dazugekommen; wer die Grenze
+ * später anhebt, hätte vier davon gefunden und eine vergessen.
+ */
+export const LIEDTEXT_SUCHE_MIN_ZEICHEN = 3;
+
+/**
+ * Die Antwort auf `GET /api/songs/:songId/liedtext-vorschau` (#379).
+ *
+ * **Ein Objekt, keine nackte Zeichenkette** – und `vorschau: null` ist ein eigener, gültiger Fall: „Dieses
+ * Lied hat keinen Text." Die Oberfläche zeigt dann gar keine Vorschau, statt eine leere.
+ *
+ * Der Typ steht hier und nicht im Client, weil er über die **HTTP-Grenze** geht: Dort prüft TypeScript
+ * nichts nach – `apiFetch<T>` castet nur. Am 13.08.2026 hat genau das die App zum Absturz gebracht
+ * (Client erwartete eine Liste, Server lieferte ein Objekt), und der Test war grün, weil sein Mock
+ * dieselbe falsche Form hatte.
+ */
+export interface LiedtextVorschau {
+  vorschau: string | null;
+}
+
+/**
+ * Ein Abschnitt eines Liedtexts von CCLI (#381) – `Vers 1`, `Chorus 1`, `Bridge`, …
+ *
+ * CCLI liefert den Text **strukturiert** (`lyricParts`), nicht als einen Block – gemessen am 14.08.2026.
+ * Das wird durchgereicht, statt es plattzumachen: Mit den Beschriftungen liest man die Vorschau so, wie
+ * das Lied aufgebaut ist, und erkennt zwei Fassungen desselben Titels schneller.
+ */
+export interface LiedtextTeil {
+  /** Die Beschriftung von CCLI, z. B. „Vers 1" oder „Chorus 1". */
+  label: string;
+  text: string;
+}
+
+/**
+ * Der Liedtext eines SongSelect-Liedes (#381) – die Entscheidungsgrundlage in der Vorschau.
+ *
+ * **`disclaimer` ist nicht schmückend, sondern Pflicht.** CCLI schickt ihn mit jedem Text mit („For use
+ * solely with the SongSelect Terms of Use. All rights reserved. www.ccli.com", gemessen). Wer den Text
+ * anzeigt, zeigt ihn mit – deshalb steht er im Typ und nicht als hübsche Beigabe im Client.
+ */
+export interface SongSelectLiedtext {
+  songNumber: number;
+  title: string;
+  authors: string[];
+  /** Erste Copyright-Zeile von CCLI, falls vorhanden. */
+  copyright: string | null;
+  teile: LiedtextTeil[];
+  disclaimer: string | null;
+}
+
 /** Ein anzeigbares Dokument (PDF oder Bild) eines Arrangements. */
 export interface SongDocument {
   fileId: number;

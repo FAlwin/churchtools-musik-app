@@ -25,8 +25,12 @@ import { fetchFileBytes } from '../services/ctFiles.js';
 import { getCtServices, getSong } from '../services/ctRead.js';
 import { getEditableSongCategories } from '../services/ctSongCategories.js';
 import { liedAendern, liedAnlegen, liedLoeschen } from '../services/songVerwaltung.js';
-import { sucheImLiedtext } from '../services/songTextIndex.js';
-import { getSongSelectSong, searchSongSelect } from '../services/ctSongSelect.js';
+import { liedtextVorschau, sucheImLiedtext } from '../services/songTextIndex.js';
+import {
+  getSongSelectLyrics,
+  getSongSelectSong,
+  searchSongSelect,
+} from '../services/ctSongSelect.js';
 import {
   createAgendaItem,
   deleteAgendaItem,
@@ -429,6 +433,21 @@ export async function getSongTextSearch(req: Request, res: Response): Promise<vo
   res.json(await sucheImLiedtext(ctCookie(req), q));
 }
 
+/**
+ * GET /api/songs/:songId/liedtext-vorschau – **der Textanfang EINES Liedes** (#379).
+ *
+ * Für den Fall, dass mehrere Lieder gleich heißen: Ohne einen Blick in den Text ist nicht zu entscheiden,
+ * welches gemeint ist. **Baut den Suchindex NICHT** – er wird nur benutzt, wenn er ohnehin frisch
+ * dasteht; sonst wird genau dieses eine Notenblatt geladen (siehe `liedtextVorschau`).
+ *
+ * `vorschau: null` heißt „hat keinen Text" – ein eigener Fall, kein Fehler: Die Oberfläche zeigt dann
+ * gar keine Vorschau statt einer leeren.
+ */
+export async function getLiedtextVorschau(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  res.json({ vorschau: await liedtextVorschau(ctCookie(req), songId) });
+}
+
 /** GET /api/capabilities – was der angemeldete Nutzer laut ChurchTools darf. */
 export async function getCapabilitiesCtrl(req: Request, res: Response): Promise<void> {
   const caps = await getCapabilities(ctCookie(req), req.ctUserId ?? null);
@@ -676,6 +695,21 @@ export async function getSongSelectSearch(req: Request, res: Response): Promise<
 export async function getSongSelectByNumber(req: Request, res: Response): Promise<void> {
   const songNumber = idSchema.parse(req.params.songNumber);
   res.json(await getSongSelectSong(ctCookie(req), songNumber));
+}
+
+/**
+ * GET /api/songselect/songs/:songNumber/liedtext – **der Liedtext eines SongSelect-Liedes** (#381).
+ *
+ * Grundlage der Vorschau: Bei 147 Treffern zu einem Titel entscheidet nur der Text, welches Lied gemeint
+ * ist. Der `disclaimer` von CCLI geht mit durch – er **muss** angezeigt werden.
+ *
+ * **Nur beim bewussten Öffnen eines Treffers aufrufen, nie beim Durchsehen einer Liste:** Ob CCLI den
+ * Abruf als Nutzung verbucht, ist offen (siehe `getSongSelectLyrics`). Der Client speichert je Nummer
+ * zwischen, damit Auf- und Zuklappen nicht mehrfach fragt.
+ */
+export async function getSongSelectLyricsCtrl(req: Request, res: Response): Promise<void> {
+  const songNumber = idSchema.parse(req.params.songNumber);
+  res.json(await getSongSelectLyrics(ctCookie(req), songNumber));
 }
 
 /**

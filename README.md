@@ -14,12 +14,17 @@ Datenquelle – die App hat keine eigene Datenbank.
 - **Chord Charts als PDF** (SongSelect-Look) mit automatischer Transponierung, Kapo, Spalten- und
   Schrift-Optionen; im Querformat zwei Seiten nebeneinander, als PDF teil-/druckbar
 - **Alle Lieder** durchsuchbar inkl. Nutzungs-Statistik (Häufigkeit / zuletzt gespielt, mit
-  wählbarem Zeitraum) – dieselbe Auswahl auch beim Lied-Hinzufügen/Verknüpfen im Ablauf. Gesucht wird
-  in Titel und Autor, Titel-Treffer stehen vorn; auf Wunsch **auch im Liedtext**, wenn man nur eine
-  Zeile kennt
-- **Lieder anlegen** – bei CCLI SongSelect gesucht (Titel oder CCLI-Nummer; Autoren, Copyright und
-  Tonart kommen mit, das Notenblatt gleich dazu) oder selbst eingetippt. Aus dem Liederheft oder
-  direkt beim Ergänzen eines Ablaufs
+  wählbarem Zeitraum). Gesucht wird in Titel und Autor, Titel-Treffer stehen vorn; findet der Titel
+  nichts, lässt sich **auch im Liedtext** suchen – für den Fall, dass man nur eine Zeile kennt
+- **Beim Einfügen eines Liedes: ein Suchfeld, drei Quellen** – ein Umschalter wählt **Bibliothek ·
+  Liedtexte · SongSelect**, der Begriff bleibt beim Wechseln stehen (beim Verknüpfen ohne SongSelect –
+  dort könnte ein neu angelegtes Lied nicht landen)
+- **Liedtext-Vorschau vor dem Einfügen** – ein Antippen zeigt erst den Text, dann den Knopf zum
+  Hinzufügen; so unterscheidet man gleichnamige Lieder, ohne sie zu öffnen. Bei SongSelect mit
+  Abschnitten, Autoren und CCLI-Nummer. Für den Alltag bleibt der **„+"**-Knopf: sofort einfügen
+- **Lieder anlegen** – über die Quelle **SongSelect** gefunden (Titel oder CCLI-Nummer; Autoren,
+  Copyright und Tonart kommen mit, das Notenblatt gleich dazu) oder über „Neues Lied" selbst
+  eingetippt. Aus dem Liederheft oder direkt beim Ergänzen eines Ablaufs
 - **Stammdaten pflegen** – Name, Kategorie, Autor, CCLI-Nummer und Copyright eines vorhandenen Liedes
   ändern; Löschen mit Rückfrage, die die Folgen nennt
 - **Live-Aktualisierung**: Änderungen am Ablauf erscheinen zeitnah bei allen; geänderte Punkte
