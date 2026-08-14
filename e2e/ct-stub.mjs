@@ -195,6 +195,33 @@ function ajaxAntwort(func) {
       }),
     };
   }
+  /**
+   * Der Liedtext (#381) – **in der Form, die am 14.08.2026 gemessen wurde**: strukturiert in
+   * `lyricParts` mit `partLabel`, dazu `disclaimer`. Der Disclaimer ist hier absichtlich dabei: Er
+   * MUSS angezeigt werden, und ohne ihn im Stub liesse sich das nicht durchklicken.
+   */
+  if (func === 'getCCLILyrics') {
+    return {
+      status: 'success',
+      data: JSON.stringify({
+        data: {
+          type: 'songLyrics',
+          songNumber: CCLI_TREFFER[0].songNumber,
+          title: CCLI_TREFFER[0].title,
+          authors: CCLI_TREFFER[0].authors,
+          copyrights: ['© 2019 Stub-Verlag'],
+          disclaimer:
+            'For use solely with the SongSelect Terms of Use. All rights reserved. www.ccli.com',
+          lyricParts: [
+            { partLabel: 'Vers 1', partType: 'Verse', lyrics: 'Erste Zeile vom Stub-Vers,\nzweite Zeile.' },
+            { partLabel: 'Chorus 1', partType: 'Chorus', lyrics: 'Stub-Refrain,\nHalleluja!' },
+            // Ein Abschnitt ohne Text – er darf NICHT als leere Überschrift erscheinen.
+            { partLabel: 'Bridge', partType: 'Bridge', lyrics: '   ' },
+          ],
+        },
+      }),
+    };
+  }
   return null;
 }
 

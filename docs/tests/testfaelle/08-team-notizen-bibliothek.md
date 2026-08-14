@@ -161,37 +161,37 @@ gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas 
 
 </details>
 
-### TF-LIB-06 · Der Quellen-Umschalter (Bibliothek | Liedtexte | SongSelect)
+### TF-LIB-06 · Der Quellen-Umschalter beim Einfügen (Bibliothek | Liedtexte | SongSelect)
 
-**Das brauchst du:** Nichts Besonderes – aber ein Konto **mit** und wenn möglich eines **ohne** das
-Recht, Lieder zu bearbeiten.
+**Das brauchst du:** Einen **Test-Termin** und ein Konto **mit** dem Recht, Lieder zu bearbeiten – wenn
+möglich zusätzlich eines **ohne**.
 
-**Das muss passieren:** Ein Suchfeld, darunter die Quellen. Der eingetippte Begriff bleibt beim Wechsel
-stehen. **An allen drei Stellen dieselbe Anordnung** – nur „Lied verknüpfen" hat SongSelect nicht, weil
-ein neu angelegtes Lied dort nicht landen könnte.
+**Das muss passieren:** Der Umschalter steht **nur dort, wo man ein Lied einfügt**. Im Liederheft gibt es
+ihn ausdrücklich **nicht** – dort schlägt man nach.
 
-1. Unten auf **Lieder**: Über der Liste stehen ein Suchfeld und darunter **Bibliothek · Liedtexte ·
-   SongSelect**.
-2. Ein Wort eintippen, das ein Lied im Titel hat. Dann auf **SongSelect** wechseln: **Der Begriff muss
-   stehen bleiben**, und es muss ohne weiteren Tastendruck bei SongSelect gesucht werden.
-3. Zurück auf **Bibliothek**: Wieder die eigene Liste, und **die Sortierleiste (A–Z · Häufigkeit ·
-   Zuletzt) ist nur hier zu sehen** – bei den anderen Quellen wäre sie wirkungslos.
-4. Ebenso die **Anzahl** links im Listenkopf („12 Lieder"): nur bei der Bibliothek. Bei **einem** Lied
-   muss dort **„1 Lied"** stehen, nicht „1 Lieder".
-5. **„Neues Lied"** muss in **jeder** Quelle rechts im Listenkopf erreichbar bleiben.
-6. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**: dieselben drei Reiter wie im
-   Liederheft.
-7. Jetzt der wichtige Unterschied: Im Ablauf einen **vorhandenen** Eintrag antippen → **Lied
-   verknüpfen**. Hier dürfen nur **Bibliothek** und **Liedtexte** stehen – **kein SongSelect.**
-8. Mit einem Konto **ohne** das Recht, Lieder zu bearbeiten: Der Reiter **SongSelect** fehlt überall,
-   „Neues Lied" ebenso. **Liedtexte** bleibt – Suchen darf jeder.
+1. Unten auf **Lieder**: Über der Liste steht **nur ein Suchfeld** und darunter die Sortierleiste
+   (A–Z · Häufigkeit · Zuletzt). **Kein** Bibliothek/Liedtexte/SongSelect. Bei **einem** Lied muss im
+   Listenkopf **„1 Lied"** stehen, nicht „1 Lieder".
+2. Ein Wort eintippen, das kein Titel enthält: Unter „Keine Treffer" steht **„Auch in den Liedtexten
+   nach … suchen"**. Antippen – die Treffer erscheinen mit dem Ausschnitt um die Fundstelle.
+3. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**: **Hier** stehen die drei Reiter
+   **Bibliothek · Liedtexte · SongSelect**.
+4. Ein Wort eintippen und auf **SongSelect** wechseln: **Der Begriff muss stehen bleiben**, und es muss
+   ohne weiteren Tastendruck bei SongSelect gesucht werden.
+5. Zurück auf **Bibliothek**: Die Sortierleiste ist **nur hier** zu sehen – bei den anderen Quellen wäre
+   sie wirkungslos.
+6. Jetzt der wichtige Unterschied: Im Ablauf einen **vorhandenen** Eintrag antippen → **Lied
+   verknüpfen**. Dort dürfen nur **Bibliothek** und **Liedtexte** stehen – **kein SongSelect** (ein neu
+   angelegtes Lied könnte in einem vorhandenen Punkt nicht landen).
+7. Mit einem Konto **ohne** das Recht, Lieder zu bearbeiten: **SongSelect** fehlt überall, „Neues Lied"
+   ebenso. **Liedtexte** bleibt – Suchen darf jeder.
 
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/hooks/useLiedSuche.ts`, `client/src/components/LiedSucheKopf.tsx`, `client/src/components/SongPicker.tsx`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `client/src/components/ItemActionSheet.tsx`
-- **Automatisiert:** teilweise – `client/src/hooks/useLiedSuche.test.ts` (welche Quellen es gibt, Rückfall wenn eine wegfällt, keine CCLI-Anfrage aus der Bibliothek), `client/src/components/LiedSucheKopf.test.tsx` (Platzhalter je Quelle, Knopf nur bei SongSelect, Begriff bleibt stehen), `client/src/utils/songFilter.test.ts` (die Einzahl); von Hand bleibt, dass die Anordnung an allen drei Stellen wirklich gleich ist und dass „Lied verknüpfen" kein SongSelect zeigt
-- **Historie:** #378
+- **Automatisiert:** teilweise – `client/src/hooks/useLiedSuche.test.ts` (welche Quellen es gibt, Rückfall wenn eine wegfällt, keine CCLI-Anfrage aus der Bibliothek), `client/src/components/LiedSucheKopf.test.tsx` (Platzhalter je Quelle, Knopf nur bei SongSelect, Begriff bleibt stehen), `client/src/components/SongPicker.test.tsx` (Reiter nur mit Anlege-Weg), `client/src/utils/songFilter.test.ts` (die Einzahl); von Hand bleibt, dass der Umschalter im Liederheft wirklich fehlt und in „Lied verknüpfen" ohne SongSelect erscheint
+- **Historie:** #378, im Liederheft zurückgebaut #381
 
 </details>
 
@@ -345,36 +345,38 @@ neue Versionsnummer.
 
 </details>
 
-### TF-LIB-07 · Liedtext-Vorschau („Text zeigen")
+### TF-LIB-07 · Liedtext-Vorschau vor dem Einfügen
 
-**Das brauchst du:** Zwei Lieder mit **gleichem oder ähnlichem Titel** – genau dafür ist die Vorschau
-gedacht. Ein Lied **ohne** Notenblatt ist als Gegenprobe nützlich.
+**Das brauchst du:** Einen **Test-Termin**, zwei Lieder mit **gleichem oder ähnlichem Titel** und ein
+Lied **ohne** Notenblatt als Gegenprobe. Für Schritt 6 ff. ein Konto mit SongSelect-Lizenz.
 
-**Das muss passieren:** Ein Tipp auf „Text zeigen" holt den Anfang des Liedtexts, **ohne das Lied zu
-öffnen**. Beim Durchsehen der Liste passiert von allein nichts.
+**Das muss passieren:** Ein Antippen zeigt **erst den Liedtext**, und darin steht der Knopf zum
+Einfügen. Beim Durchsehen der Liste passiert von allein nichts.
 
-1. Unten auf **Lieder**: Unter jedem Lied steht klein **„Text zeigen"**.
-2. Bei einem Lied antippen. Es muss der **Textanfang** erscheinen – lesbar, mit Groß- und
-   Kleinschreibung. **Das Lied darf sich dabei NICHT öffnen** – das ist der wichtigste Punkt.
-3. **ausblenden** antippen: Der Text verschwindet, der Knopf ist wieder da.
-4. Zweimal dasselbe Lied auf- und zuklappen: Beim zweiten Mal muss der Text **sofort** da sein.
-5. Bei einem Lied **ohne Notenblatt**: Es muss dastehen, dass kein Liedtext vorliegt – **keine leere
-   Fläche** und keine Fehlermeldung.
-6. Jetzt der Sinn der Sache: zwei gleichnamige Lieder nebeneinander aufklappen und am Text erkennen,
-   welches das gesuchte ist.
-7. Über den Reiter **Liedtexte** ein Wort suchen. Bei jedem Treffer stehen **zwei verschiedene** Dinge:
-   oben der **Ausschnitt um die Fundstelle** (kleingeschrieben – so wurde gesucht), darunter über „Text
-   zeigen" der **Anfang** des Liedes. Beides muss unterscheidbar sein und darf nicht dasselbe zeigen.
-8. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**: Auch dort steht „Text zeigen" unter
-   den Liedern.
-9. Bei einem **SongSelect**-Treffer gibt es **keine** Vorschau – das ist richtig und bleibt so, bis
-   geklärt ist, ob CCLI einen Textabruf als Nutzung vermerkt.
+1. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**.
+2. Ein Lied **antippen**: Es muss die **Vorschau** kommen – Titel, Autor, Tonart und der Liedtext –
+   **und das Lied darf NICHT sofort im Ablauf landen.**
+3. In der Vorschau **„Zum Ablauf hinzufügen"**: Jetzt steht es im Ablauf, genau einmal.
+4. Erneut **Hinzufügen → Lied**, diesmal den **„+"**-Knopf rechts in der Zeile: Das Lied muss **sofort**
+   eingefügt werden, **ohne** Vorschau. Das ist der kurze Weg für den Gottesdienst.
+5. Ein Lied **ohne Notenblatt** antippen: Es muss dastehen, dass kein Liedtext vorliegt – und
+   **Einfügen muss trotzdem gehen**. Keine leere Fläche, keine Fehlermeldung.
+6. Auf **SongSelect** wechseln, einen Titel suchen, einen Treffer **antippen**: Die Vorschau zeigt
+   CCLIs Liedtext **mit Abschnitten** („Vers 1", „Chorus 1"), Autoren, **CCLI-Nummer** rechts oben und
+   darunter den **CCLI-Lizenzhinweis** („For use solely with the SongSelect Terms of Use …").
+   **Der Hinweis MUSS da sein** – CCLI schickt ihn mit dem Text mit.
+7. **Zurück** und denselben Treffer **erneut** antippen: Der Text muss **sofort** da sein. Das belegt den
+   Zwischenspeicher – ein Lied wird bei CCLI nur **einmal** abgerufen.
+8. In der Vorschau **„Als neues Lied anlegen …"**: Es öffnet sich das gefüllte Formular. (Weiter wie in
+   TF-LIB-03 – **Achtung, das legt ein echtes Lied in ChurchTools an.**)
+9. Zwei gleichnamige Lieder nacheinander in der Vorschau ansehen und am Text erkennen, welches das
+   gesuchte ist. Das ist der eigentliche Zweck.
 
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/LiedtextVorschau.tsx`, `client/src/hooks/useServices.ts`, `client/src/pages/AllSongs.tsx`, `client/src/components/SongPicker.tsx`, `client/src/components/LiedtextTrefferListe.tsx`, `server/src/services/songTextIndex.ts`, `server/src/controllers/setlistController.ts`
-- **Automatisiert:** teilweise – `client/src/components/LiedtextVorschau.test.tsx` (ohne Antippen keine Anfrage, „kein Text" ≠ Fehler, der Klick geht nicht an die Zeile), `server/src/services/songTextIndex.test.ts` (Index wird benutzt statt gebaut, genau ein Download, Original statt App-Fassung, Wortgrenze); von Hand bleibt das Zusammenspiel mit ChurchTools und die Frage, ob die Liste dadurch unruhig wirkt
-- **Historie:** #379
+- **Betrifft:** `client/src/components/LiedVorschau.tsx`, `client/src/components/SongPicker.tsx`, `client/src/hooks/useServices.ts`, `server/src/services/ctSongSelect.ts`, `server/src/services/songTextIndex.ts`, `server/src/controllers/setlistController.ts`
+- **Automatisiert:** teilweise – `client/src/components/SongPicker.test.tsx` (in der Liste wird NICHT abgefragt, Antippen führt in die Vorschau, „+" fügt sofort ein), `client/src/components/LiedVorschau.test.tsx` (ohne Text bleibt Einfügen möglich, Fehler ≠ „kein Text", der CCLI-Hinweis wird gezeigt), `server/src/services/songTextIndex.test.ts` (Index wird benutzt statt gebaut, genau ein Download); von Hand bleibt das Zusammenspiel mit CCLI und die Frage, ob die Vorschau im Gottesdienst als Umweg stört
+- **Historie:** #379, als Zwischenschritt umgebaut #381
 
 </details>

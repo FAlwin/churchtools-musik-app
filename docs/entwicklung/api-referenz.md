@@ -67,6 +67,13 @@
   Speicher; gebündelt (fünf gleichzeitige Suchen = ein Aufbau) und bei einer Drosselung mit Sperrfrist.
   Unter `LIEDTEXT_SUCHE_MIN_ZEICHEN` (3) wird nicht gesucht – die Grenze steht in `@shared/types`, weil
   Client und Server sie beide prüfen. Gemessen: Weder `/api/songs?query=` noch CCLI können das.
+- `GET  /api/songselect/songs/:songNumber/liedtext` → `SongSelectLiedtext` – **CCLIs Liedtext** zu einer
+  Nummer (#381), Grundlage der Vorschau vor dem Anlegen. Gemessen am 14.08.2026: Der Aufruf heißt
+  `getCCLILyrics` und nimmt `songNumber`; CCLI liefert den Text **strukturiert** (`lyricParts` mit
+  „Vers 1", „Chorus 1") und dazu einen **`disclaimer`**, der **angezeigt werden muss**.
+  ⚠️ **Nur beim bewussten Öffnen eines Treffers aufrufen, nie beim Durchsehen:** Ob CCLI den Abruf als
+  Nutzung verbucht, ist offen (die Antwort enthält keinen Hinweis darauf – das beweist nichts). Der Client
+  speichert je Nummer zwischen (`staleTime: Infinity`).
 - `GET  /api/songs/:songId/liedtext-vorschau` → `LiedtextVorschau` (`{vorschau: string | null}`) – der
   **Textanfang eines Liedes** für die Vorschau bei gleichnamigen Liedern (#379). **Baut den Suchindex
   NICHT:** Steht er frisch, kommt die Antwort daraus (keine Anfrage an ChurchTools); sonst wird **genau

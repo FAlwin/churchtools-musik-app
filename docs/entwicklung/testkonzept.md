@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand 14.08.2026 (nach #378 und #379): **134 Testdateien** –
-**91 Client (992 Tests)** + **43 Server (517 Tests)** mit Vitest + **11 Playwright-E2E in 6 Dateien**
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand 14.08.2026 (nach #378, #379 und #381): **135 Testdateien** –
+**92 Client (1003 Tests)** + **43 Server (519 Tests)** mit Vitest + **11 Playwright-E2E in 6 Dateien**
 (Render-Smoke, voller Auth-Flow, Vollbild-Geometrie, Tempo-Menü-Geometrie,
 Arrangement-Migration,
 Arrangement-Wechsel). Die Zahlen sind mit
@@ -138,11 +138,17 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
     Antwort-Objekt) und der Unterscheidung „nichts gefunden" / „konnte nicht suchen" (#270). Dazu, dass
     ohne Begriff gar nicht abgefragt wird – geprüft am **Argument**, nicht am Ladehinweis, sonst prüfte
     der Test nur den Mock.
-- `components/LiedtextVorschau` (#379): **Ohne Antippen wird nicht abgefragt** – geprüft am
-  `enabled`-Argument, denn eine Vorschau je Zeile hieße eine Anfrage je Zeile. Dazu die drei Zustände, die
-  man leicht verwechselt: „kein Liedtext vorhanden" (`vorschau: null`), ein **Fehler** und eine leere
-  Anzeige sind drei verschiedene Aussagen. Und: **der Klick geht nicht an die Zeile darunter** – ohne
-  `stopPropagation` würde „Text zeigen" das Lied öffnen, also das Gegenteil des Gewollten.
+- **Die Vorschau vor dem Einfügen (#379, #381):**
+  - `components/SongPicker`: **Beim Durchsehen der Liste wird KEIN Liedtext abgefragt** – geprüft am
+    `enabled`-Argument beider Hooks, denn eine Vorschau je Zeile hieße eine Anfrage je Zeile. Bei CCLI ist
+    das mehr als Sparsamkeit: Ob ein Textabruf dort als Nutzung verbucht wird, ist offen. Dazu die zwei
+    Wege, die beide gewollt sind: **Antippen → Vorschau** und **„+" → sofort einfügen** (der zweite darf
+    keine Textabfrage auslösen). Der Hook `useLiedSuche` ist hier **nicht gemockt** – ein Mock müsste
+    seine Quellen-Logik nachbauen; stattdessen läuft er echt, mit Fake-Timern für die Entprellung.
+  - `components/LiedVorschau`: **handlungsfähig in jedem Zustand** – ohne Liedtext, bei einem Ladefehler
+    und während des Holens muss Einfügen möglich bleiben. „Kein Text vorhanden", ein **Fehler** und eine
+    leere Anzeige sind drei verschiedene Aussagen. Und: **der CCLI-Hinweis wird angezeigt**, wenn die
+    Quelle ihn mitschickt – das ist eine Lizenzbedingung, keine Zierde.
 - `utils/strokes` (`mergeStrokes`, reine null-Zweige), `utils/vanishedRows` (lokale
   Auflöse-Platzhalter #178) und `utils/annotationKeys` (Schlüssel-Grammatik: Ebenen-Präfix,
   nicht-leere Notizen je Ebene, Ebenen-Gruppierung unter Namensraum) rein getestet.

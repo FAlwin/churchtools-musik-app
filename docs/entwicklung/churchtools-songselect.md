@@ -122,7 +122,7 @@ geraten" gilt für zwei der drei Fragen nicht mehr:
 
 | Funktion                      | Befund                                                                                                                                                                                                                                                 |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `getCCLILyrics`               | **existiert** – der Aufruf ging bis `api.ccli.com/ss/v2/songs//lyrics` und scheiterte nur an der fehlenden Song-ID. Holt also den **Text zu EINER Nummer**.                                                                                            |
+| `getCCLILyrics`               | **existiert und ist am 14.08.2026 vollständig gemessen** – Parameter `songNumber`, Antwortform unten. (Am 13.08. ging der Aufruf nur bis `api.ccli.com/ss/v2/songs//lyrics` und scheiterte an der fehlenden ID.)                                       |
 | Textsuche bei CCLI            | **gibt es nicht** – acht naheliegende Namen abgelehnt: `getCCLISongsMatchingLyrics`, `…MatchingText`, `…MatchingContent`, `…MatchingAuthor`, `…Matching`, `searchCCLISongs`, `getCCLISongs`. Antwort jeweils `Function … was not defined as Function!` |
 | Akkord-PDF, Lead-/Vocal-Sheet | weiterhin **nicht gemessen** – wer sie ergänzt, misst vorher.                                                                                                                                                                                          |
 
@@ -136,8 +136,50 @@ Login-Token. Mit reinem Token antwortet ChurchTools mit einer Weiterleitung auf 
 erste Erkundungsskript lief deshalb in „redirect count exceeded". Der Token lässt sich über
 `GET /api/whoami?login_token=…` in eine Sitzung einlösen; die Antwort setzt das Cookie.
 
-Blindes Ausprobieren gegen die Gemeinde-Instanz bleibt tabu: Ein Abruf legt dort eine Datei an und wird
-bei CCLI vermerkt.
+Blindes Ausprobieren gegen die Gemeinde-Instanz bleibt tabu: Ein Abruf legt dort eine Datei an, und die
+Nutzung wird bei CCLI vermutlich vermerkt.
+
+> ⚠️ **„wird bei CCLI vermerkt" ist eine ANNAHME, keine Messung** (nachgeprüft am 14.08.2026). Dieser Satz
+> stand hier ohne Beleg. Er ist plausibel und die Vorsicht bleibt richtig – aber wer ihn zitiert, zitiert
+> keine Messung. **Belastbar wäre nur:** die Nutzungs-/Download-Historie im SongSelect-Konto der Gemeinde
+> oder eine Auskunft von CCLI bzw. dem ChurchTools-Support. Über die Schnittstelle ist die Frage
+> grundsätzlich **nicht** beantwortbar: Eine Verbuchung passiert bei CCLI und müsste sich in der Antwort
+> nicht spiegeln.
+
+### 4b. Liedtext holen: `getCCLILyrics` — gemessen am 14.08.2026
+
+`server/scripts/probe-ccli-lyrics.ts`, streng lesend, **ein** Abruf für **eine** Nummer.
+
+```
+func=getCCLILyrics
+songNumber=4336851
+```
+
+Parameter ist **`songNumber`** (nicht die interne `songID`); `ccliNumber`, `songId` und `id` wurden nicht
+gebraucht, weil der erste Name traf. Die Antwort trägt die drei bekannten Ebenen
+(`{status,data}` → `{success,content}` → JSON-String) und darin:
+
+| Feld         | Inhalt (gemessen an „All die Fülle ist in dir")                                      |
+| ------------ | ------------------------------------------------------------------------------------ |
+| `type`       | `songLyrics`                                                                         |
+| `songID`     | interne CCLI-UUID                                                                    |
+| `songNumber` | `4336851`                                                                            |
+| `title`      | `All die Fülle ist in dir`                                                           |
+| `cclid`      | `2395145`                                                                            |
+| `authors`    | `["Norbert Jagode"]`                                                                 |
+| `copyrights` | `["2001 Gerth Medien"]`                                                              |
+| `disclaimer` | `For use solely with the SongSelect Terms of Use. All rights reserved. www.ccli.com` |
+| `lyricParts` | Liste mit `partLabel` („Vers 1", „Chorus 1"), `partType`, `partTypeNumber`, `lyrics` |
+
+🔴 **`disclaimer` MUSS angezeigt werden.** CCLI liefert ihn mit jedem Text mit – das ist eine
+Lizenzbedingung, keine Beigabe. Er geht deshalb bis in die Oberfläche durch (`LiedVorschau`).
+
+**Kein Feld deutet auf eine Verbuchung hin** – gesucht wurde nach `report`, `usage`, `logged`, `licence`,
+`count`, `billing`, `track`, `quota`. Das ist **kein Beweis**, nur kein Indiz dafür (siehe den Kasten
+oben). **Die Vorkehrung in der App ist deshalb strukturell:** Der Abruf passiert nur, wenn jemand einen
+Treffer bewusst öffnet – nie beim Durchsehen einer Liste –, und das Ergebnis bleibt je Nummer
+zwischengespeichert (`useSongSelectLiedtext`, `staleTime: Infinity`). Damit ist die Zahl der Abrufe die
+Zahl der wirklich angesehenen Lieder.
 
 ### 3. Suchen: `getCCLISongsMatchingTitle`
 

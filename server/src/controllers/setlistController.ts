@@ -26,7 +26,11 @@ import { getCtServices, getSong } from '../services/ctRead.js';
 import { getEditableSongCategories } from '../services/ctSongCategories.js';
 import { liedAendern, liedAnlegen, liedLoeschen } from '../services/songVerwaltung.js';
 import { liedtextVorschau, sucheImLiedtext } from '../services/songTextIndex.js';
-import { getSongSelectSong, searchSongSelect } from '../services/ctSongSelect.js';
+import {
+  getSongSelectLyrics,
+  getSongSelectSong,
+  searchSongSelect,
+} from '../services/ctSongSelect.js';
 import {
   createAgendaItem,
   deleteAgendaItem,
@@ -691,6 +695,21 @@ export async function getSongSelectSearch(req: Request, res: Response): Promise<
 export async function getSongSelectByNumber(req: Request, res: Response): Promise<void> {
   const songNumber = idSchema.parse(req.params.songNumber);
   res.json(await getSongSelectSong(ctCookie(req), songNumber));
+}
+
+/**
+ * GET /api/songselect/songs/:songNumber/liedtext – **der Liedtext eines SongSelect-Liedes** (#381).
+ *
+ * Grundlage der Vorschau: Bei 147 Treffern zu einem Titel entscheidet nur der Text, welches Lied gemeint
+ * ist. Der `disclaimer` von CCLI geht mit durch – er **muss** angezeigt werden.
+ *
+ * **Nur beim bewussten Öffnen eines Treffers aufrufen, nie beim Durchsehen einer Liste:** Ob CCLI den
+ * Abruf als Nutzung verbucht, ist offen (siehe `getSongSelectLyrics`). Der Client speichert je Nummer
+ * zwischen, damit Auf- und Zuklappen nicht mehrfach fragt.
+ */
+export async function getSongSelectLyricsCtrl(req: Request, res: Response): Promise<void> {
+  const songNumber = idSchema.parse(req.params.songNumber);
+  res.json(await getSongSelectLyrics(ctCookie(req), songNumber));
 }
 
 /**

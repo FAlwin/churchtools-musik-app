@@ -4,8 +4,36 @@
   padding: 14px 16px 2px;
   flex-shrink: 0;
 }
-// Das Suchfeld selbst steht seit #378 im gemeinsamen `LiedSucheKopf` – hier lag vorher eine eigene Kopie
-// davon, eine zweite in `SongPicker.module.scss`.
+
+// Ein einfaches Suchfeld – **kein Quellen-Umschalter** (#381, Entscheidung Alwin): Im Liederheft schlägt
+// man ein Lied nach; SongSelect und die Textsuche als Reiter darüber wirkten fremd. Der Umschalter steht
+// in `LiedSucheKopf`, benutzt nur vom Einfüge-Dialog (`SongPicker`).
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface3);
+  border-radius: 8px;
+  padding: 9px 12px;
+
+  input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    color: var(--text);
+    font-family: var(--ui);
+
+    &::placeholder {
+      color: var(--text3);
+    }
+  }
+}
+.searchIcon {
+  color: var(--text3);
+  flex-shrink: 0;
+}
 
 /**
  * Der Listenkopf: **Anzahl links, „Neues Lied" rechts – auf einer Höhe** (#322).
@@ -47,18 +75,6 @@
 // Text") steht jetzt in `LiedTreffer.module.scss`, weil dieselbe Liste auch in den Sheets erscheint.
 .cardList {
   @include m.card-list;
-}
-
-// Zeile + Liedtext-Vorschau als ein Eintrag (#379). Die Vorschau liegt NEBEN dem Zeilen-Knopf, nicht
-// darin: ein `<button>` in einem `<button>` ist ungültiges HTML.
-.eintrag {
-  display: flex;
-  flex-direction: column;
-
-  // Die Vorschau rückt auf die Textkante ein – also hinter die Noten-Kachel der Zeile darüber.
-  > :nth-child(2) {
-    padding: 0 16px 8px 62px;
-  }
 }
 
 .rowWrap {

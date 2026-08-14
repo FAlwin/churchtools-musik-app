@@ -9,33 +9,32 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
-- **Liedtext-Vorschau in der Auswahl (#379).** Heißen mehrere Lieder gleich und ist der Autor unbekannt
-  oder ebenfalls gleich, war die Entscheidung ohne Öffnen nicht zu treffen. Jetzt steht unter jedem Lied
-  ein kleines **„Text zeigen"** – im Liederheft, beim Hinzufügen zum Ablauf und bei den
-  Liedtext-Treffern.
+- **Liedtext-Vorschau beim Einfügen (#379, #381).** Heißen mehrere Lieder gleich und ist der Autor
+  unbekannt oder ebenfalls gleich, war die Entscheidung ohne Öffnen nicht zu treffen. Jetzt zeigt ein
+  Antippen im Dialog **„Lied hinzufügen"** zuerst den **Liedtext**, und darin steht der Knopf zum
+  Einfügen – nach dem Vorbild von ProPresenter. Der Text ist damit die Entscheidungsgrundlage, nicht
+  eine Randnotiz.
 
-  **Auf Verlangen, nicht dauerhaft:** Erst der Tipp holt den Text. Eine Vorschau unter jedem Titel hieße
-  eine Anfrage je Zeile – für eine Liste, die man nur durchsieht. Und wer gerade in den Liedtexten
-  gesucht hat, bekommt sie ohne jede weitere Anfrage: Der Server nimmt sie dann aus dem Bestand, den die
-  Suche ohnehin angelegt hat. Sonst lädt er **genau dieses eine** Notenblatt.
+  Bei **SongSelect** wirkt das am stärksten: Eine Titelsuche liefert dort bis zu 100 Treffer, viele mit
+  demselben Namen. Die Vorschau zeigt CCLIs Text **mit den Abschnitten** („Vers 1", „Chorus 1"), dazu
+  Autoren, CCLI-Nummer und den Lizenzhinweis von CCLI, der mit jedem Text mitkommt.
 
-  Bei den Liedtext-Treffern stehen jetzt zwei verschiedene Dinge übereinander, und das ist Absicht: der
-  **Ausschnitt um die Fundstelle** (so wurde gesucht, deshalb kleingeschrieben) und darunter auf Wunsch
-  der **Anfang des Liedes**, lesbar mit Groß- und Kleinschreibung.
+  **Der kurze Weg bleibt:** In der Bibliotheksliste steht neben jedem Lied weiter ein **„+"** – ein
+  Tipp, sofort im Ablauf, ohne Umweg. Im Gottesdienst zählt das.
 
-  Ein Lied ohne Notenblatt sagt das ausdrücklich, statt eine leere Vorschau zu zeigen.
-
-  Für **SongSelect**-Treffer gibt es die Vorschau noch nicht: Dort ist erst zu klären, ob CCLI einen
-  Textabruf als Nutzung vermerkt – wie beim Notenblatt. Solange das offen ist, wird nicht abgerufen.
+  **Abgerufen wird nur, was du wirklich ansiehst.** Beim Durchsehen der Liste entsteht keine einzige
+  Anfrage, und ein Lied, das du zweimal öffnest, wird nur einmal geholt. Für die eigenen Lieder nutzt
+  der Server ohnehin den Bestand, den die Liedtextsuche schon angelegt hat.
 
 - **Ein Suchfeld, und darunter steht, wo gesucht wird (#378).** Über der Liedliste gibt es jetzt einen
   Umschalter: **Bibliothek · Liedtexte · SongSelect**. Der eingetippte Begriff bleibt beim Wechseln
   stehen – man tippt einmal und entscheidet danach, wo gesucht werden soll.
 
-  **Überall dieselbe Anordnung:** im Liederheft, beim Hinzufügen eines Liedes zum Ablauf und beim
-  Verknüpfen. Nur beim **Verknüpfen** fehlt SongSelect, und zwar mit Absicht: Dort wird einem
-  vorhandenen Ablaufpunkt ein Lied zugeordnet, ein neu angelegtes könnte dort nicht landen. Ein Reiter
-  dorthin wäre eine Sackgasse. Ohne SongSelect-Lizenz erscheint er ebenfalls nicht.
+  **Dort, wo du ein Lied einfügst** – also in „Lied hinzufügen" und „Lied verknüpfen". **Im Liederheft
+  bewusst nicht:** Dort schlägst du ein Lied nach, und drei Quellen über der Liste wirken dort fremd
+  (Rückmeldung Alwin, 14.08.2026). Beim **Verknüpfen** fehlt SongSelect, und zwar mit Absicht: Dort wird
+  einem vorhandenen Ablaufpunkt ein Lied zugeordnet, ein neu angelegtes könnte dort nicht landen. Ohne
+  SongSelect-Lizenz erscheint der Reiter ebenfalls nicht.
 
   **Das Blatt „Neues Lied" ist dadurch einfacher geworden:** Die vorgeschaltete Frage „Bei SongSelect
   suchen oder selbst eintippen?" ist weg. „Neues Lied" führt direkt ins leere Formular, und ein Treffer
@@ -54,9 +53,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Dort entscheidet die Trefferart nur bei Gleichstand.
 
 - **Man kann jetzt im Liedtext suchen (#322).** Wer nur eine Zeile im Kopf hat, aber nicht den Titel,
-  tippt sie ins Suchfeld und schaltet auf **Liedtexte** um. Die Treffer erscheinen mit der
-  **Fundstelle**, sodass man sieht, warum ein Lied dabei ist. Findet die Bibliothek nichts, steht unter
-  der leeren Liste eine Abkürzung dorthin.
+  tippt sie ins Suchfeld – findet die Titelsuche nichts, steht darunter **„Auch in den Liedtexten nach
+  … suchen"**. Die Treffer erscheinen mit der **Fundstelle**, sodass man sieht, warum ein Lied dabei
+  ist. Im Einfüge-Dialog ist es zusätzlich ein Reiter neben Bibliothek und SongSelect.
 
   Beim ersten Mal dauert es einen Moment: Die App holt dafür jeden Liedtext einmal von ChurchTools.
   Danach ist es sofort da – der Bestand wird eine Stunde vorgehalten.

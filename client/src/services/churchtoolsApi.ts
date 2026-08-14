@@ -19,6 +19,7 @@ import type {
   SongSelectSuchergebnis,
   SongTextTreffer,
   LiedtextVorschau,
+  SongSelectLiedtext,
   SongVersion,
   UserCapabilities,
 } from '@shared/types/index';
@@ -178,6 +179,17 @@ export function sucheImLiedtext(q: string): Promise<SongTextTreffer[]> {
  */
 export function holeLiedtextVorschau(songId: number): Promise<LiedtextVorschau> {
   return apiFetch<LiedtextVorschau>(`/api/songs/${songId}/liedtext-vorschau`);
+}
+
+/**
+ * Den Liedtext eines **SongSelect**-Liedes holen (#381) – die Vorschau vor dem Anlegen.
+ *
+ * **Nur beim bewussten Öffnen eines Treffers**, nie beim Durchsehen: Ob CCLI den Abruf als Nutzung
+ * verbucht, ist offen (gemessen wurde nur, dass die Antwort keinen Hinweis darauf enthält). Der Hook
+ * darüber speichert je Nummer zwischen.
+ */
+export function holeSongSelectLiedtext(songNumber: number): Promise<SongSelectLiedtext> {
+  return apiFetch<SongSelectLiedtext>(`/api/songselect/songs/${songNumber}/liedtext`);
 }
 
 /**
