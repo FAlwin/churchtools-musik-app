@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type {
-  LiedAnlegenAuftrag,
-  LiedStammdaten,
-  SongSelectSuchergebnis,
+import {
+  LIEDTEXT_SUCHE_MIN_ZEICHEN,
+  type LiedAnlegenAuftrag,
+  type LiedStammdaten,
+  type SongSelectSuchergebnis,
 } from '@shared/types/index';
 import { sucheArt } from '../utils/liedFormular';
 import * as api from '../services/churchtoolsApi';
@@ -258,7 +259,8 @@ export function useSongCategories(enabled: boolean) {
  *
  * **Erst auf Verlangen**, nicht automatisch: Der erste Aufruf lässt den Server einen Index bauen (ein
  * Datei-Download je Lied). Das ist zu teuer, um es bei jedem Tippen im Liederheft mitlaufen zu lassen –
- * die Titelsuche filtert ohnehin schon lokal und deckt den Normalfall ab.
+ * die Titelsuche filtert ohnehin schon lokal und deckt den Normalfall ab. Seit #378 ist „Liedtexte" eine
+ * eigene Quelle im Umschalter; das Verlangen ist dann der gewählte Reiter, die Schwelle bleibt.
  *
  * Danach ist es billig: Der Index hält eine Stunde, weitere Suchen antworten aus dem Speicher.
  */
@@ -267,7 +269,7 @@ export function useLiedtextSuche(begriff: string, enabled: boolean) {
   return useQuery({
     queryKey: ['song-text-search', q],
     queryFn: () => api.sucheImLiedtext(q),
-    enabled: enabled && q.length >= 3,
+    enabled: enabled && q.length >= LIEDTEXT_SUCHE_MIN_ZEICHEN,
     staleTime: 1000 * 60 * 10,
     // Kein automatischer zweiter Versuch: Ist ChurchTools gedrosselt (503), hilft Wiederholen nicht –
     // die Meldung ist die nützlichere Antwort.
@@ -303,6 +305,27 @@ export function useSongSelectSuche(eingabe: string, enabled: boolean) {
       return { treffer: [lied], gesamt: 1, vollstaendig: true };
     },
     enabled: enabled && begriff.length >= SONGSELECT_MIN_ZEICHEN,
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+  });
+}
+
+/**
+ * Holt zu einer CCLI-Nummer die **Einzelangaben** – vor allem das Copyright (#378).
+ *
+ * Die Trefferliste von CCLI enthält es nicht; erst diese Abfrage liefert es. Sie lief vorher als `await`
+ * im Klick-Handler von `NewSongSheet`. Seit der Treffer von außen kommt (Quellen-Umschalter), ist es eine
+ * Abfrage: **kein Effekt, der nachlädt** – der lief bei einem neu erzeugten Prop-Objekt endlos – und das
+ * Ergebnis liegt danach im Cache, wenn dieselbe Nummer nochmal gebraucht wird.
+ *
+ * **Ein Fehlschlag ist kein Grund, das Anlegen zu verhindern:** Der Aufrufer zeigt das Formular ohne
+ * Copyright, statt eine Meldung zu bringen.
+ */
+export function useSongSelectSong(songNumber: number | null) {
+  return useQuery({
+    queryKey: ['songselect-song', songNumber],
+    queryFn: () => api.getSongSelectSong(songNumber as number),
+    enabled: songNumber !== null,
     staleTime: 1000 * 60 * 5,
     retry: false,
   });

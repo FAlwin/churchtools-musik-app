@@ -1,8 +1,11 @@
-import type { SongLibraryEntry } from '@shared/types/index';
-import { Icon } from './icons';
+import type { SongLibraryEntry, SongSelectTreffer } from '@shared/types/index';
 import { CenterMessage } from './CenterMessage';
 import { SongStatsBar } from './SongStatsBar';
+import { LiedSucheKopf } from './LiedSucheKopf';
+import { LiedtextTrefferListe } from './LiedtextTrefferListe';
+import { SongSelectTrefferListe } from './SongSelectTrefferListe';
 import { useSongFilter } from '../hooks/useSongFilter';
+import { useLiedSuche } from '../hooks/useLiedSuche';
 import { statLabel } from '../utils/songFilter';
 import { useCapabilities, useSongLibrary, useSongUsage } from '../hooks/useServices';
 import styles from './SongPicker.module.scss';
@@ -10,39 +13,72 @@ import styles from './SongPicker.module.scss';
 interface SongPickerProps {
   /** Wird mit dem gewählten (Standard-)Arrangement + Songname aufgerufen. */
   onPick: (arrangementId: number, songName: string) => void;
+  /**
+   * Ein Treffer aus der Quelle „SongSelect" (#378) – der Aufrufer öffnet damit „Neues Lied".
+   *
+   * **Fehlt dieser Weg, erscheint der Reiter „SongSelect" gar nicht.** In „Lied verknüpfen" ist das so:
+   * Dort wird einem vorhandenen Ablaufpunkt ein Lied zugeordnet, ein neu angelegtes Lied müsste in
+   * diesen Punkt hineingeschrieben werden – das kann der Anlege-Weg nicht. Ein Reiter dorthin wäre eine
+   * Sackgasse.
+   */
+  onSongSelectTreffer?: (treffer: SongSelectTreffer) => void;
   /** Deaktiviert die Treffer (z. B. während ein Vorgang läuft). */
   busy?: boolean;
   autoFocus?: boolean;
 }
 
 /**
- * Lied-Auswahl beim Hinzufügen/Verknüpfen: zeigt sofort alle Lieder (eine Zeile pro Lied,
- * Standard-Arrangement) – wie die Bibliothek, mit Suche, Sortierung (A–Z/Häufigkeit/Zuletzt) und
- * Zeitfilter. Holt Lieder + Statistik selbst; Statistik nur für Ablauf-Berechtigte.
+ * Lied-Auswahl beim Hinzufügen/Verknüpfen – **mit dem gemeinsamen Suchkopf** (#378).
+ *
+ * Zeigt zuerst alle Lieder (eine Zeile pro Lied, Standard-Arrangement) wie die Bibliothek, mit Suche,
+ * Sortierung (A–Z/Häufigkeit/Zuletzt) und Zeitfilter. Über den Umschalter kommen dieselben zwei weiteren
+ * Quellen hinzu wie im Liederheft: Suche im Liedtext und – wo ein Lied entstehen darf – SongSelect.
+ *
+ * Holt Lieder + Statistik selbst; Statistik nur für Ablauf-Berechtigte.
  */
-export function SongPicker({ onPick, busy, autoFocus }: SongPickerProps) {
+export function SongPicker({ onPick, onSongSelectTreffer, busy, autoFocus }: SongPickerProps) {
   const caps = useCapabilities(true);
   const showStats = caps.data?.canViewAgendas ?? false;
   const lib = useSongLibrary(true);
   const usage = useSongUsage(showStats);
   const f = useSongFilter(lib.data ?? [], usage.data, showStats, 'name', !usage.isError);
   const query = f.q.trim();
+  const suche = useLiedSuche({
+    eingabe: f.q,
+    canUseCcli: caps.data?.canUseCcli ?? false,
+    kannAnlegen: onSongSelectTreffer !== undefined,
+  });
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.search}>
-        <Icon name="search" size={18} stroke={2} className={styles.searchIcon} />
-        <input
-          placeholder="Lied oder Autor suchen…"
-          value={f.q}
-          autoFocus={autoFocus}
-          onChange={(e) => f.setQ(e.target.value)}
-        />
-      </div>
-      {showStats && <SongStatsBar {...f} />}
+      <LiedSucheKopf
+        eingabe={f.q}
+        onEingabe={f.setQ}
+        quelle={suche.quelle}
+        quellen={suche.quellen}
+        onQuelle={suche.setQuelle}
+        onJetztSuchen={suche.jetztSuchen}
+        autoFocus={autoFocus}
+      />
+      {/* Nur bei der Bibliothek: Bei SongSelect sortiert CCLI, und für Liedtext-Treffer gibt es keine
+          Spielstatistik. Eine Leiste, die nichts bewirkt, ist schlimmer als keine. */}
+      {showStats && suche.inBibliothek && <SongStatsBar {...f} />}
 
       <div className={styles.results}>
-        {lib.isLoading ? (
+        {suche.quelle === 'liedtext' ? (
+          <LiedtextTrefferListe
+            begriff={suche.liedtextBegriff}
+            songs={lib.data ?? []}
+            busy={busy}
+            onPick={(s) => onPick(s.arrangementId, s.name)}
+          />
+        ) : suche.quelle === 'songselect' && onSongSelectTreffer ? (
+          <SongSelectTrefferListe
+            begriff={suche.songSelectBegriff}
+            busy={busy}
+            onPick={onSongSelectTreffer}
+          />
+        ) : lib.isLoading ? (
           <CenterMessage loading text="Lieder werden geladen…" />
         ) : lib.isError ? (
           <CenterMessage

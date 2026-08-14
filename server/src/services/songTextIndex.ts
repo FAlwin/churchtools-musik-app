@@ -23,7 +23,7 @@
  * ChordPro-Direktiven. Er ist bewusst org-weit und kontenunabhängig – wie die Statistik: Liedtexte sind
  * für alle dieselben, und der Bestand ist ohnehin für jeden mit Lieder-Recht sichtbar.
  */
-import type { SongTextTreffer } from '@shared/types/index';
+import { LIEDTEXT_SUCHE_MIN_ZEICHEN, type SongTextTreffer } from '@shared/types/index';
 import { CtOverloadedError, isCtOverloaded } from './ctHttp.js';
 import { downloadFileText } from './ctFiles.js';
 import { getAllSongs } from './ctRead.js';
@@ -150,7 +150,7 @@ async function baueIndex(cookie: string): Promise<IndexEintrag[]> {
  */
 export async function sucheImLiedtext(cookie: string, begriff: string): Promise<SongTextTreffer[]> {
   const gesucht = begriff.trim().toLocaleLowerCase('de-DE');
-  if (gesucht.length < 3) return [];
+  if (gesucht.length < LIEDTEXT_SUCHE_MIN_ZEICHEN) return [];
 
   const vorhanden = index;
   const frisch = vorhanden !== null && Date.now() - vorhanden.at < INDEX_TTL_MS;

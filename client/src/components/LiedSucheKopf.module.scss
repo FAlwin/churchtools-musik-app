@@ -1,0 +1,65 @@
+// Der gemeinsame Suchkopf (#378): ein Feld, darunter die Quellen.
+// Das Feld übernimmt bewusst die Optik der Bibliothek (Lupe innen, `--surface3`) – sie war die
+// vertrauteste der drei vorherigen Suchen, und der Kopf steht jetzt überall.
+
+.kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.zeile {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.feld {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  background: var(--surface3);
+  border-radius: 8px;
+  padding: 9px 12px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    color: var(--text);
+    font-family: var(--ui);
+
+    &::placeholder {
+      color: var(--text3);
+    }
+  }
+}
+
+.lupe {
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+// Nur bei SongSelect. Schmal gehalten, damit vom Suchfeld möglichst viel bleibt.
+.knopf {
+  flex-shrink: 0;
+  padding: 0 15px;
+  border: none;
+  border-radius: 8px;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+}

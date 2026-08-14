@@ -298,6 +298,19 @@ export interface SongTextTreffer {
   ausschnitt: string;
 }
 
+/**
+ * Ab wie vielen Zeichen im Liedtext gesucht wird – **die Zahl steht hier, weil beide Seiten sie
+ * brauchen** (#378).
+ *
+ * Kürzere Begriffe treffen fast jedes Lied und wären nur Rauschen. Der Server prüft es ebenfalls: Eine
+ * Grenze, die nur der Client zieht, umgeht jeder, der den Endpunkt direkt aufruft.
+ *
+ * **Sie stand vorher an vier Stellen** (`useServices`, zweimal `AllSongs`, `songTextIndex`) – jede eine
+ * eigene `3`. Beim Umbau auf den Quellen-Umschalter wäre eine fünfte dazugekommen; wer die Grenze
+ * später anhebt, hätte vier davon gefunden und eine vergessen.
+ */
+export const LIEDTEXT_SUCHE_MIN_ZEICHEN = 3;
+
 /** Ein anzeigbares Dokument (PDF oder Bild) eines Arrangements. */
 export interface SongDocument {
   fileId: number;

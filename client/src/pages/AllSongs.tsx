@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import type { Service, SongLibraryEntry } from '@shared/types/index';
+import {
+  LIEDTEXT_SUCHE_MIN_ZEICHEN,
+  type Service,
+  type SongLibraryEntry,
+  type SongSelectTreffer,
+} from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
@@ -9,9 +14,13 @@ import { AddToAgendaSheet } from '../components/AddToAgendaSheet';
 import { NewSongSheet } from '../components/NewSongSheet';
 import { EditSongSheet } from '../components/EditSongSheet';
 import { SongStatsBar } from '../components/SongStatsBar';
+import { LiedSucheKopf } from '../components/LiedSucheKopf';
+import { LiedtextTrefferListe } from '../components/LiedtextTrefferListe';
+import { SongSelectTrefferListe } from '../components/SongSelectTrefferListe';
 import { useSongFilter } from '../hooks/useSongFilter';
-import { useLiedtextSuche } from '../hooks/useServices';
-import { statLabel } from '../utils/songFilter';
+import { useLiedSuche } from '../hooks/useLiedSuche';
+import { useCapabilities } from '../hooks/useServices';
+import { liedAnzahl, statLabel } from '../utils/songFilter';
 import type { SongUsageMap } from '../services/churchtoolsApi';
 import styles from './AllSongs.module.scss';
 
@@ -56,107 +65,42 @@ export function AllSongs({
   onToast,
 }: AllSongsProps) {
   const [addSong, setAddSong] = useState<SongLibraryEntry | null>(null);
-  const [neuesLied, setNeuesLied] = useState(false);
+  /**
+   * Das Blatt „Neues Lied" – `null` = zu. Offen trägt es **optional den SongSelect-Treffer**, mit dem es
+   * geöffnet wurde (#378): Aus der Quelle „SongSelect" heraus ist das Formular dann schon gefüllt.
+   */
+  const [neuesLied, setNeuesLied] = useState<{ treffer?: SongSelectTreffer } | null>(null);
   /** Lied, dessen Stammdaten geändert werden (#322, Schritt 11) – `null` = kein Blatt offen. */
   const [editSong, setEditSong] = useState<SongLibraryEntry | null>(null);
-  /**
-   * Im Liedtext gesucht wird **auf Verlangen** (#322).
-   *
-   * Nicht automatisch: Der erste Aufruf lässt den Server einen Index über alle Liedtexte bauen (ein
-   * Datei-Download je Lied). Die Titelsuche filtert dagegen lokal und deckt den Normalfall ab. Der
-   * Knopf erscheint deshalb dort, wo man ihn braucht – wenn der Titel nichts hergibt.
-   */
-  const [textSuche, setTextSuche] = useState('');
   const f = useSongFilter(songs, usage, showStats, 'name', !usageError);
   const query = f.q.trim();
-  /**
-   * Die Textsuche gilt nur, solange der Suchbegriff **unverändert** ist – sonst stünden Treffer zu
-   * einem Begriff da, der nicht mehr im Feld steht.
-   *
-   * Bewusst **abgeleitet** und nicht zurückgesetzt: Ein `setTextSuche('')` mitten im Rendern wäre ein
-   * Zustandswechsel während des Aufbaus – erlaubt, aber unnötig und leicht zu übersehen. Der Vergleich
-   * hier kostet nichts und kann nicht in eine Schleife laufen.
-   */
-  const textSucheAktiv = textSuche !== '' && textSuche === query;
-  const imText = useLiedtextSuche(textSuche, textSucheAktiv);
+  /** Anlegen geht nur mit dem Recht – und nur, wenn die Seite das fertige Lied auch öffnen kann. */
+  const kannAnlegen = canCreateSong && onOpenSong !== undefined;
+  const caps = useCapabilities(true);
+  const suche = useLiedSuche({
+    eingabe: f.q,
+    canUseCcli: caps.data?.canUseCcli ?? false,
+    kannAnlegen,
+  });
 
   /**
-   * „Auch im Liedtext suchen" – Knopf, Ladehinweis und Trefferliste (#322).
+   * Abkürzung zum Reiter „Liedtexte" – **kein zweiter Suchweg**, nur ein Umschalten (#378).
    *
-   * Als lokale Komponente, weil sie den Zustand der Seite braucht (Suchbegriff, Trefferauswahl) und
-   * an zwei Stellen erscheint: unter den Titel-Treffern und statt der leeren Liste. Zwei Kopien des
-   * JSX wären die nächste Dopplung.
+   * Der Reiter oben ist der eigentliche Weg. Dieser Knopf steht dort, wo der Wunsch entsteht: unter einer
+   * Trefferliste, die nicht das Gesuchte enthält. Er ruft nur `setQuelle` – die Suche selbst liegt an
+   * einer Stelle, sonst wäre es die nächste Dopplung.
+   *
+   * Als **Zuweisung**, nicht als lokale Komponente: Er erscheint an zwei Stellen (leere Liste und unter
+   * den Treffern), und zwei Kopien desselben JSX wären genau der Anfang, an dem später eine Änderung nur
+   * die Hälfte trifft.
    */
-  function LiedtextSuche() {
-    if (!textSucheAktiv) {
-      return (
-        <button className={styles.textSucheBtn} onClick={() => setTextSuche(query)}>
-          <Icon name="search" size={15} stroke={2.2} />
-          Auch im Liedtext nach „{query}" suchen
-        </button>
-      );
-    }
-
-    if (imText.isLoading) {
-      return (
-        <div className={styles.textSucheHinweis}>
-          Liedtexte werden durchsucht … Beim ersten Mal dauert das einen Moment – dafür holt die App
-          jeden Liedtext einmal von ChurchTools.
-        </div>
-      );
-    }
-
-    if (imText.isError) {
-      // Der Grund kommt vom Server: „ChurchTools bremst uns aus" ist etwas anderes als ein Fehler (#270).
-      return (
-        <div className={styles.textSucheHinweis}>
-          {imText.error instanceof Error
-            ? imText.error.message
-            : 'Die Suche in den Liedtexten hat nicht geklappt.'}
-        </div>
-      );
-    }
-
-    const treffer = imText.data ?? [];
-    if (treffer.length === 0) {
-      return (
-        <div className={styles.textSucheHinweis}>
-          Auch in den Liedtexten steht „{textSuche}" nicht.
-        </div>
-      );
-    }
-
-    return (
-      <div className={styles.group}>
-        <div className={styles.groupHdr}>
-          {treffer.length} {treffer.length === 1 ? 'Lied' : 'Lieder'} mit „{textSuche}" im Text
-        </div>
-        <div className={styles.cardList}>
-          {treffer.map((t) => {
-            const bekannt = songs.find((s) => s.songId === t.songId);
-            return (
-              <div key={t.songId} className={styles.rowWrap}>
-                <button
-                  className={styles.row}
-                  onClick={() => bekannt && onSelect(bekannt)}
-                  disabled={!bekannt}
-                >
-                  <NoteTile />
-                  <div className={styles.info}>
-                    <div className={styles.name}>{t.name}</div>
-                    {/* Der Ausschnitt zeigt, WARUM das Lied gefunden wurde – sonst müsste man jedes
-                        öffnen und nachsehen. */}
-                    <div className={styles.sub}>{t.ausschnitt}</div>
-                  </div>
-                  <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+  const zuLiedtexten =
+    query.length >= LIEDTEXT_SUCHE_MIN_ZEICHEN ? (
+      <button className={styles.textSucheBtn} onClick={() => suche.setQuelle('liedtext')}>
+        <Icon name="search" size={15} stroke={2.2} />
+        Auch in den Liedtexten nach „{query}" suchen
+      </button>
+    ) : null;
 
   return (
     <Screen>
@@ -167,15 +111,17 @@ export function AllSongs({
       <NavBar title="Lieder" />
 
       <div className={styles.searchWrap}>
-        <div className={styles.search}>
-          <Icon name="search" size={18} stroke={2} className={styles.searchIcon} />
-          <input
-            placeholder="Lied oder Autor suchen…"
-            value={f.q}
-            onChange={(e) => f.setQ(e.target.value)}
-          />
-        </div>
-        {showStats && <SongStatsBar {...f} />}
+        <LiedSucheKopf
+          eingabe={f.q}
+          onEingabe={f.setQ}
+          quelle={suche.quelle}
+          quellen={suche.quellen}
+          onQuelle={suche.setQuelle}
+          onJetztSuchen={suche.jetztSuchen}
+        />
+        {/* Nur bei der Bibliothek: Bei SongSelect sortiert CCLI, und für Liedtext-Treffer gibt es keine
+            Spielstatistik. Eine Leiste, die nichts bewirkt, ist schlimmer als keine. */}
+        {showStats && suche.inBibliothek && <SongStatsBar {...f} />}
 
         {/**
          * Listenkopf: **Anzahl links, „Neues Lied" rechts – auf einer Höhe** (Wunsch Alwin,
@@ -186,16 +132,19 @@ export function AllSongs({
          * genau in dem Moment, in dem ein Lied fehlt und angelegt werden soll. Innerhalb der Liste
          * würde sie mit ihr verschwinden.
          *
-         * Die Anzahl erscheint nur, wenn es etwas zu zählen gibt; „Neues Lied" nur mit dem
-         * ChurchTools-Recht und nur, wenn die App das fertige Lied auch öffnen kann.
+         * **Die Anzahl gilt nur für die Bibliothek** (#378): Bei den anderen Quellen zählt die
+         * Trefferliste selbst, und „49 Lieder" über zwei SongSelect-Treffern wäre schlicht falsch.
+         * „Neues Lied" bleibt in jeder Quelle stehen – wie das „+ Erstelle" bei WorshipTools.
          */}
-        {(f.list.length > 0 || (canCreateSong && onOpenSong)) && (
+        {(f.list.length > 0 || kannAnlegen) && (
           <div className={styles.listHdr}>
             <span className={styles.listCount}>
-              {f.list.length > 0 && !isLoading && !isError ? `${f.list.length} Lieder` : ''}
+              {suche.inBibliothek && f.list.length > 0 && !isLoading && !isError
+                ? liedAnzahl(f.list.length)
+                : ''}
             </span>
-            {canCreateSong && onOpenSong && (
-              <button className={styles.newSongBtn} onClick={() => setNeuesLied(true)}>
+            {kannAnlegen && (
+              <button className={styles.newSongBtn} onClick={() => setNeuesLied({})}>
                 <Icon name="plus" size={16} stroke={2.4} />
                 Neues Lied
               </button>
@@ -205,7 +154,20 @@ export function AllSongs({
       </div>
 
       <Scroll onRefresh={onRetry}>
-        {isLoading ? (
+        {suche.quelle === 'liedtext' ? (
+          <div className={styles.group}>
+            <LiedtextTrefferListe begriff={suche.liedtextBegriff} songs={songs} onPick={onSelect} />
+          </div>
+        ) : suche.quelle === 'songselect' ? (
+          <div className={styles.group}>
+            {/* Ein Treffer führt ins Anlege-Formular, nicht direkt nach ChurchTools: Die Kategorie ist
+                Pflicht und wird bewusst nicht vorbelegt (#378). */}
+            <SongSelectTrefferListe
+              begriff={suche.songSelectBegriff}
+              onPick={(treffer) => setNeuesLied({ treffer })}
+            />
+          </div>
+        ) : isLoading ? (
           <CenterMessage loading text="Lieder werden geladen…" />
         ) : isError ? (
           <CenterMessage icon="⚠️" text="Lieder konnten nicht geladen werden." onRetry={onRetry} />
@@ -221,9 +183,9 @@ export function AllSongs({
                     : 'Keine Lieder gefunden.'
               }
             />
-            {/* Genau hier gehört die Textsuche hin: Der Titel hat nichts gefunden – vielleicht kennt man
-                ihn nicht genau, sondern nur eine Zeile. */}
-            {query.length >= 3 && <LiedtextSuche />}
+            {/* Genau hier gehört der Weg zu den Liedtexten hin: Der Titel hat nichts gefunden –
+                vielleicht kennt man ihn nicht genau, sondern nur eine Zeile. */}
+            {zuLiedtexten}
           </>
         ) : (
           <div className={styles.group}>
@@ -280,7 +242,7 @@ export function AllSongs({
             </div>
             {/* Auch bei Titel-Treffern anbieten: „Gnade" findet zwei Titel, das gesuchte Lied kann
                 trotzdem ein anderes sein, das das Wort nur im Text hat. */}
-            {query.length >= 3 && <LiedtextSuche />}
+            {zuLiedtexten}
           </div>
         )}
         <div style={{ height: 16 }} />
@@ -304,11 +266,12 @@ export function AllSongs({
 
       {neuesLied && onOpenSong && (
         <NewSongSheet
+          startTreffer={neuesLied.treffer}
           onOpenSong={(songId, arrangementId) => {
-            setNeuesLied(false);
+            setNeuesLied(null);
             onOpenSong(songId, arrangementId);
           }}
-          onClose={() => setNeuesLied(false)}
+          onClose={() => setNeuesLied(null)}
         />
       )}
     </Screen>

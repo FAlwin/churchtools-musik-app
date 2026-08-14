@@ -10,6 +10,21 @@ export function fmtPlayDate(iso: string | null): string {
   return `${d}.${m}.${y}`;
 }
 
+/**
+ * „1 Lied" oder „7 Lieder" – **die Einzahl an einer Stelle** (#378).
+ *
+ * Gefunden beim Durchklicken: Der Listenkopf im Liederheft schrieb `${length} Lieder` und zeigte bei
+ * einem einzigen Lied **„1 LIEDER"**. Die Regel stand an drei Stellen – im Ablauf („Liederheft öffnen
+ * (1 Lied)") und in der Liedtext-Trefferliste richtig, nur hier nicht. Das ist genau die Fehlerklasse
+ * „die Regel gilt für A, B, C – und C fehlt".
+ *
+ * Aufgefallen ist es nur, weil der E2E-Stub **ein** Lied hat; mit den 49 Liedern der ECG hätte es
+ * niemand gesehen.
+ */
+export function liedAnzahl(n: number): string {
+  return `${n} ${n === 1 ? 'Lied' : 'Lieder'}`;
+}
+
 export interface SongFilterOpts {
   /** Freitext (Name/Autor). */
   query: string;
