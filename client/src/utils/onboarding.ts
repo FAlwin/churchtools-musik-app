@@ -5,10 +5,21 @@ import type { CoachStep } from '../components/Coachmarks';
  * in localStorage (pro Gerät); „Einführung nochmal ansehen" im Mehr-Tab setzt ihn zurück.
  */
 const PREFIX = 'worship:onboard-';
+//
+// ═══ Wann die Version erhöht werden MUSS ═══════════════════════════════════════════════════════
+// Nur wenn die bisherige Fassung **ausgeliefert** war: Wer die Tour einmal weggeklickt hat, sieht
+// einen nachgezogenen Text sonst nie wieder. War sie nie draußen, kennt sie niemand – dann genügt
+// das Nachziehen. **Diese Frage wird gemessen, nicht geschätzt** (siehe chart-v4 unten, wo die
+// Schätzung falsch war): `git show <letzter-Tag>:client/src/utils/onboarding.ts | grep <version>`.
+//
 // termine-v3: Der Schritt „Die Bereiche" nennt jetzt das Anlegen neuer Lieder (#322) – der +-Knopf
 // im Liederheft ist neu und sieht nach nichts aus. Version erhöht, damit Bestandsnutzer den
 // geänderten Schritt sehen.
 // (termine-v2 hatte den Schritt „geändert"-Hinweis (#143) ergänzt.)
+// #378 (14.08.2026): Der Schritt nennt jetzt den Quellen-Umschalter „Bibliothek | Liedtexte |
+// SongSelect". **Ohne Versionssprung, und diesmal belegt:** `termine-v3` kam erst mit dem Squash
+// `3964bdf` in den Code und steckt in v2.21.0 nicht (`git show v2.21.0:… | grep -c` → 0); produktiv
+// läuft v2.20.0. Die Fassung war also nie draußen.
 export const TOUR_TERMINE = 'termine-v3';
 // chart-v4: Der Tempo-Knopf oeffnet jetzt ein MENUE (#145 Folge) statt nur den Puls zu schalten –
 // und er ist neuerdings auch bei Liedern OHNE gepflegtes Tempo da, weil man genau dort eins
@@ -38,6 +49,9 @@ export const HINT_VOLLBILD = 'hinweis-vollbild';
 export const TOUR_SETLIST = 'setlist-v1';
 // setlist-edit-v2: „Hinzufügen" kann jetzt auch ein Lied ANLEGEN (#322) – bisher konnte man nur
 // vorhandene wählen. Version erhöht, damit Bestandsnutzer den geänderten Schritt sehen.
+// #378 (14.08.2026): Der Schritt sprach von „bei SongSelect gesucht oder selbst eingetippt" – das
+// war die **Wegwahl**, die es nicht mehr gibt. Jetzt nennt er den Umschalter. Ohne Versionssprung,
+// aus demselben belegten Grund wie bei `termine-v3` oben: nie ausgeliefert.
 export const TOUR_SETLIST_EDIT = 'setlist-edit-v2';
 
 export function isTourDone(key: string): boolean {
@@ -93,7 +107,7 @@ export const TERMINE_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="tabbar"]',
     title: 'Die Bereiche',
-    body: 'Unter „Lieder" durchsuchst du alle Lieder – und legst über „Neues Lied" im Listenkopf eines an, wenn du in ChurchTools Lieder bearbeiten darfst. Unter „Mehr" findest du Einstellungen und kannst diese Einführung erneut starten.',
+    body: 'Unter „Lieder" suchst du in einem Feld – der Umschalter darunter wählt, wo: in unserer Bibliothek, in den Liedtexten oder bei SongSelect. Über „Neues Lied" legst du eines an, wenn du in ChurchTools Lieder bearbeiten darfst. Unter „Mehr" findest du Einstellungen und kannst diese Einführung erneut starten.',
   },
 ];
 
@@ -166,6 +180,6 @@ export const SETLIST_EDIT_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="edit-add"]',
     title: 'Hinzufügen',
-    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Ist das Lied noch nicht in ChurchTools, kannst du es dort gleich anlegen – bei SongSelect gesucht oder selbst eingetippt.',
+    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Der Umschalter über der Liste wählt, wo gesucht wird – in unserer Bibliothek, in den Liedtexten oder bei SongSelect. Ein SongSelect-Treffer wird gleich als neues Lied angelegt und in den Ablauf eingetragen.',
   },
 ];

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { SongLibraryEntry } from '@shared/types/index';
 import type { SongUsageMap } from '../services/churchtoolsApi';
-import { filterSongs, statLabel, type SongFilterOpts } from './songFilter';
+import { filterSongs, liedAnzahl, statLabel, type SongFilterOpts } from './songFilter';
 
 const SONGS: SongLibraryEntry[] = [
   { songId: 1, name: 'Anker', author: 'Autor X', key: 'C', arrangementId: 11 },
@@ -174,5 +174,27 @@ describe('filterSongs – ohne Statistik keine leere Liste (#300)', () => {
   it('ohne die Angabe verhaelt es sich wie bisher (Vorgabe true)', () => {
     const r = filterSongs(SONGS, USAGE, opts({ sort: 'count' }));
     expect(names(r.list)).toEqual(['Berg', 'Anker']);
+  });
+});
+
+/**
+ * Die Einzahl (#378) – **beim Durchklicken gefunden**, nicht von einem Test.
+ *
+ * Der Listenkopf im Liederheft schrieb „1 LIEDER". Die Regel stand an drei Stellen, zwei davon richtig;
+ * mit den 49 Liedern der ECG wäre der Fehler nie aufgefallen – erst der E2E-Stub mit **einem** Lied
+ * machte ihn sichtbar. Der Test steht hier, weil die Regel jetzt genau eine Stelle hat.
+ */
+describe('liedAnzahl – Einzahl und Mehrzahl', () => {
+  it('bei einem Lied die Einzahl', () => {
+    expect(liedAnzahl(1)).toBe('1 Lied');
+  });
+
+  it('bei mehreren die Mehrzahl', () => {
+    expect(liedAnzahl(2)).toBe('2 Lieder');
+    expect(liedAnzahl(49)).toBe('49 Lieder');
+  });
+
+  it('bei null ebenfalls die Mehrzahl – „0 Lied" gibt es nicht', () => {
+    expect(liedAnzahl(0)).toBe('0 Lieder');
   });
 });

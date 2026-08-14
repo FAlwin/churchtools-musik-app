@@ -1,98 +1,14 @@
-// „Neues Lied" (#322) – Wegwahl, CCLI-Suche, Formular, Erfolgsansicht.
+// „Neues Lied" (#322) – Formular und Erfolgsansicht. Auch genutzt von „Stammdaten ändern".
 // Die Felder und Knöpfe folgen bewusst dem „Eintrag hinzufügen"-Dialog (AddItemSheet): Ein zweites
 // Formular-Aussehen für dieselbe Sorte Eingabe wäre eine zweite Sprache in derselben App.
-
+//
+// **Mit #378 sind Suchzeile und Wegwahl von hier verschwunden** (`.input`, `.searchRow`, `.choice*`,
+// `.pickRow`, `.primary`): Gesucht wird jetzt im gemeinsamen `LiedSucheKopf`, die Trefferzeilen liegen in
+// `LiedTreffer.module.scss`. `.form` war schon davor verwaist – das Formular nimmt `SongFields.module.scss`.
 .form {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-// Nur für die Suchzeile; die Formularfelder liegen in SongFields.module.scss.
-.input {
-  flex: 1;
-  min-width: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface2);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 16px;
-
-  &:focus {
-    outline: none;
-    border-color: var(--blue);
-  }
-}
-
-.searchRow {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.choices {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.choice,
-.pickRow {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  width: 100%;
-  text-align: left;
-  padding: 13px 15px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface2);
-  color: var(--text);
-  font-family: var(--ui);
-  cursor: pointer;
-  transition: background 0.12s;
-
-  @media (hover: hover) {
-    &:hover {
-      background: var(--surface3);
-    }
-  }
-  &:active {
-    background: var(--surface3);
-  }
-}
-
-.pickRow {
-  margin-bottom: 7px;
-}
-
-.choiceIcon {
-  color: var(--text2);
-  flex-shrink: 0;
-}
-
-.choiceText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.choiceTitle {
-  font-size: 15.5px;
-  font-weight: 600;
-}
-
-.choiceMeta {
-  font-size: 12.5px;
-  color: var(--text2);
-  // Autorenlisten von CCLI sind lang – abschneiden statt die Zeile umbrechen zu lassen.
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .err {
@@ -115,24 +31,6 @@
   color: var(--text2);
   font-size: 13px;
   line-height: 1.45;
-}
-
-.primary {
-  padding: 12px 18px;
-  border: none;
-  border-radius: 10px;
-  background: var(--blue);
-  color: #fff;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
 }
 
 .primaryWide {

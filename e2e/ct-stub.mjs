@@ -127,11 +127,76 @@ const permissions = {
   churchservice: {
     'view agenda': [1],
     'edit agenda': [1],
-    'view songcategory': [1],
-    'edit songcategory': [1],
+    'view songcategory': [0, 1],
+    'edit songcategory': [0, 1],
+    // Ohne dieses Recht meldet der Server `canUseCcli: false` und der Reiter „SongSelect" (#378)
+    // erschiene nie – dann liesse sich der Umschalter nicht durchklicken.
+    'use ccli': [1],
   },
   churchcore: {},
 };
+
+/**
+ * Die alte churchservice-Schnittstelle (`POST /index.php?q=churchservice/ajax`) – **so weit, wie der
+ * Quellen-Umschalter sie braucht** (#378).
+ *
+ * `data` hat je Funktion eine andere Form, und das ist keine Erfindung des Stubs, sondern gemessen
+ * (siehe `ctAjax.ts`): Bei SongSelect ist `data` eine **Zeichenkette** mit JSON darin, bei
+ * `getMasterData` direkt ein Objekt. Ein Stub, der das glättet, würde genau den Fehler verdecken, den
+ * die Grenze zu ChurchTools produziert.
+ */
+const CCLI_TREFFER = [
+  {
+    songNumber: 5841527,
+    title: 'Stub-Lied bei SongSelect',
+    authors: ['CCLI-Autor A', 'CCLI-Autor B'],
+    defaultKey: ['E'],
+    isPublicDomain: false,
+    content: { ChordPro: {}, Lyrics: {} },
+  },
+  {
+    songNumber: 7654321,
+    title: 'Stub-Lied bei SongSelect (andere Fassung)',
+    authors: ['CCLI-Autor C'],
+    defaultKey: ['G'],
+    isPublicDomain: true,
+    content: { Lyrics: {} },
+  },
+];
+
+function ajaxAntwort(func) {
+  if (func === 'getMasterData') {
+    // Kategorien: alles als Zeichenkette, Name als `bezeichnung` – so liefert es das alte Modul.
+    return {
+      status: 'success',
+      data: {
+        songcategory: [
+          { id: '0', bezeichnung: 'Aktive Songs', sortkey: '0' },
+          { id: '1', bezeichnung: 'Inaktive Songs', sortkey: '1' },
+        ],
+      },
+    };
+  }
+  if (func === 'getCCLISongsMatchingTitle') {
+    return {
+      status: 'success',
+      // Absichtlich mehr `totalItems` als Treffer: So ist der Hinweis „such genauer" sichtbar.
+      data: JSON.stringify({
+        pagination: { totalItems: 147 },
+        data: { results: CCLI_TREFFER },
+      }),
+    };
+  }
+  if (func === 'getCCLISongData') {
+    return {
+      status: 'success',
+      data: JSON.stringify({
+        data: { ...CCLI_TREFFER[0], copyrights: ['© 2019 Stub-Verlag'] },
+      }),
+    };
+  }
+  return null;
+}
 
 function json(res, body, status = 200, headers = {}) {
   const payload = JSON.stringify(body);
@@ -156,6 +221,20 @@ const server = createServer((req, res) => {
     return;
   }
 
+  // Die alte churchservice-Schnittstelle: Kategorien und SongSelect (#378).
+  if (path === '/index.php' && url.searchParams.get('q') === 'churchservice/ajax') {
+    let body = '';
+    req.on('data', (c) => (body += c));
+    req.on('end', () => {
+      const func = new URLSearchParams(body).get('func') ?? '';
+      const antwort = ajaxAntwort(func);
+      if (antwort) return json(res, antwort);
+      console.warn(`[ct-stub] ajax-Funktion nicht abgedeckt: ${func}`);
+      json(res, { status: 'error', message: `stub: ${func} nicht abgedeckt` });
+    });
+    return;
+  }
+
   if (path === '/api/login' && req.method === 'POST') {
     // Der Stub prüft nichts – falsche Zugangsdaten sind ein eigener Testfall am echten CT.
     json(res, { data: PERSON }, 200, { 'Set-Cookie': `${SESSION}; Path=/; HttpOnly` });
@@ -168,7 +247,14 @@ const server = createServer((req, res) => {
   if (path === '/api/events') return json(res, { data: events });
   if (path === `/api/events/${EVENT_ID}/agenda`) return json(res, { data: agenda });
   if (path === `/api/songs/${SONG.id}`) return json(res, { data: SONG });
-  if (path === '/api/songs') return json(res, { data: [] }); // Liederliste: leer genügt
+  /**
+   * Die Liederliste. **Nicht mehr leer** (#378): Sie ist die Quelle „Bibliothek" und liefert dem
+   * Liedtext-Index die ChordPro-Datei – ohne ein Lied darin liesse sich der Umschalter nicht anfassen.
+   * Die Kategorie muss mit, sonst kennt die App das Lied ohne Zuordnung.
+   */
+  if (path === '/api/songs') {
+    return json(res, { data: [{ ...SONG, category: { id: 0, name: 'Aktive Songs' } }] });
+  }
   if (path.startsWith('/api/persons/') && path.endsWith('/groups')) return json(res, { data: [] });
   if (path === '/api/groups') return json(res, { data: [] });
   if (path === '/api/services') return json(res, { data: [] });
