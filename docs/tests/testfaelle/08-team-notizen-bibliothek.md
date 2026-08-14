@@ -344,3 +344,37 @@ neue Versionsnummer.
 - **Historie:** –
 
 </details>
+
+### TF-LIB-07 · Liedtext-Vorschau („Text zeigen")
+
+**Das brauchst du:** Zwei Lieder mit **gleichem oder ähnlichem Titel** – genau dafür ist die Vorschau
+gedacht. Ein Lied **ohne** Notenblatt ist als Gegenprobe nützlich.
+
+**Das muss passieren:** Ein Tipp auf „Text zeigen" holt den Anfang des Liedtexts, **ohne das Lied zu
+öffnen**. Beim Durchsehen der Liste passiert von allein nichts.
+
+1. Unten auf **Lieder**: Unter jedem Lied steht klein **„Text zeigen"**.
+2. Bei einem Lied antippen. Es muss der **Textanfang** erscheinen – lesbar, mit Groß- und
+   Kleinschreibung. **Das Lied darf sich dabei NICHT öffnen** – das ist der wichtigste Punkt.
+3. **ausblenden** antippen: Der Text verschwindet, der Knopf ist wieder da.
+4. Zweimal dasselbe Lied auf- und zuklappen: Beim zweiten Mal muss der Text **sofort** da sein.
+5. Bei einem Lied **ohne Notenblatt**: Es muss dastehen, dass kein Liedtext vorliegt – **keine leere
+   Fläche** und keine Fehlermeldung.
+6. Jetzt der Sinn der Sache: zwei gleichnamige Lieder nebeneinander aufklappen und am Text erkennen,
+   welches das gesuchte ist.
+7. Über den Reiter **Liedtexte** ein Wort suchen. Bei jedem Treffer stehen **zwei verschiedene** Dinge:
+   oben der **Ausschnitt um die Fundstelle** (kleingeschrieben – so wurde gesucht), darunter über „Text
+   zeigen" der **Anfang** des Liedes. Beides muss unterscheidbar sein und darf nicht dasselbe zeigen.
+8. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**: Auch dort steht „Text zeigen" unter
+   den Liedern.
+9. Bei einem **SongSelect**-Treffer gibt es **keine** Vorschau – das ist richtig und bleibt so, bis
+   geklärt ist, ob CCLI einen Textabruf als Nutzung vermerkt.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/components/LiedtextVorschau.tsx`, `client/src/hooks/useServices.ts`, `client/src/pages/AllSongs.tsx`, `client/src/components/SongPicker.tsx`, `client/src/components/LiedtextTrefferListe.tsx`, `server/src/services/songTextIndex.ts`, `server/src/controllers/setlistController.ts`
+- **Automatisiert:** teilweise – `client/src/components/LiedtextVorschau.test.tsx` (ohne Antippen keine Anfrage, „kein Text" ≠ Fehler, der Klick geht nicht an die Zeile), `server/src/services/songTextIndex.test.ts` (Index wird benutzt statt gebaut, genau ein Download, Original statt App-Fassung, Wortgrenze); von Hand bleibt das Zusammenspiel mit ChurchTools und die Frage, ob die Liste dadurch unruhig wirkt
+- **Historie:** #379
+
+</details>

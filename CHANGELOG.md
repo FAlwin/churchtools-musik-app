@@ -9,6 +9,25 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
+- **Liedtext-Vorschau in der Auswahl (#379).** Heißen mehrere Lieder gleich und ist der Autor unbekannt
+  oder ebenfalls gleich, war die Entscheidung ohne Öffnen nicht zu treffen. Jetzt steht unter jedem Lied
+  ein kleines **„Text zeigen"** – im Liederheft, beim Hinzufügen zum Ablauf und bei den
+  Liedtext-Treffern.
+
+  **Auf Verlangen, nicht dauerhaft:** Erst der Tipp holt den Text. Eine Vorschau unter jedem Titel hieße
+  eine Anfrage je Zeile – für eine Liste, die man nur durchsieht. Und wer gerade in den Liedtexten
+  gesucht hat, bekommt sie ohne jede weitere Anfrage: Der Server nimmt sie dann aus dem Bestand, den die
+  Suche ohnehin angelegt hat. Sonst lädt er **genau dieses eine** Notenblatt.
+
+  Bei den Liedtext-Treffern stehen jetzt zwei verschiedene Dinge übereinander, und das ist Absicht: der
+  **Ausschnitt um die Fundstelle** (so wurde gesucht, deshalb kleingeschrieben) und darunter auf Wunsch
+  der **Anfang des Liedes**, lesbar mit Groß- und Kleinschreibung.
+
+  Ein Lied ohne Notenblatt sagt das ausdrücklich, statt eine leere Vorschau zu zeigen.
+
+  Für **SongSelect**-Treffer gibt es die Vorschau noch nicht: Dort ist erst zu klären, ob CCLI einen
+  Textabruf als Nutzung vermerkt – wie beim Notenblatt. Solange das offen ist, wird nicht abgerufen.
+
 - **Ein Suchfeld, und darunter steht, wo gesucht wird (#378).** Über der Liedliste gibt es jetzt einen
   Umschalter: **Bibliothek · Liedtexte · SongSelect**. Der eingetippte Begriff bleibt beim Wechseln
   stehen – man tippt einmal und entscheidet danach, wo gesucht werden soll.
@@ -144,6 +163,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Warnung: ChurchTools ersetzt nicht, die Datei läge danach zweimal da.
 
 ### Behoben
+
+- **Die Suche im Liedtext konnte die falsche Fassung eines Liedes durchsuchen (#379).** Wer über die App
+  eine eigene Fassung eines Notenblatts angelegt hat, hatte am Arrangement zwei ChordPro-Dateien: das
+  Original und die bearbeitete Fassung. Der Suchindex sollte immer das Original nehmen, erkannte aber nur
+  das heutige Namensmuster – **ältere Bestandsfassungen** („… (ECG).chordpro", „… — Bearbeitet.chordpro")
+  gingen als Original durch. Stand so eine Datei in der Antwort von ChurchTools vor dem Original, wurde
+  der bearbeitete Text durchsucht statt des echten.
+
+  Gefunden beim Bau der Vorschau, weil dieselbe Regel dort noch einmal gebraucht wurde – und sie gab es
+  längst als geprüfte Funktion. Jetzt nutzen beide Stellen sie, statt sie nachzubauen.
 
 - **Auch beim Speichern wird eine Drosselung jetzt als solche gemeldet.** Bremste ChurchTools einen
   Schreibvorgang aus (Lied anlegen, Datei hochladen, Tempo speichern), stand da „fehlgeschlagen" – statt

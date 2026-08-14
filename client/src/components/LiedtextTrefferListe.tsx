@@ -12,6 +12,7 @@ import type { SongLibraryEntry } from '@shared/types/index';
 import { LIEDTEXT_SUCHE_MIN_ZEICHEN } from '@shared/types/index';
 import { useLiedtextSuche } from '../hooks/useServices';
 import { liedAnzahl } from '../utils/songFilter';
+import { LiedtextVorschau } from './LiedtextVorschau';
 import { Icon } from './icons';
 import styles from './LiedTreffer.module.scss';
 
@@ -76,18 +77,27 @@ export function LiedtextTrefferListe({ begriff, songs, onPick, busy }: LiedtextT
          */
         const bekannt = songs.find((s) => s.songId === t.songId);
         return (
-          <button
-            key={t.songId}
-            className={styles.zeile}
-            disabled={busy || !bekannt}
-            onClick={() => bekannt && onPick(bekannt)}
-          >
-            <span className={styles.text}>
-              <span className={styles.titel}>{t.name}</span>
-              <span className={styles.meta}>{t.ausschnitt}</span>
-            </span>
-            <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-          </button>
+          /**
+           * Zeile und Vorschau liegen **nebeneinander, nicht ineinander** (#379): Die Vorschau bringt
+           * einen eigenen Knopf mit, und ein `<button>` in einem `<button>` ist ungültiges HTML – der
+           * innere Klick wäre nicht verlässlich zu behandeln.
+           */
+          <div key={t.songId} className={styles.eintrag}>
+            <button
+              className={styles.zeile}
+              disabled={busy || !bekannt}
+              onClick={() => bekannt && onPick(bekannt)}
+            >
+              <span className={styles.text}>
+                <span className={styles.titel}>{t.name}</span>
+                {/* Der Ausschnitt zeigt die FUNDSTELLE (kleingeschrieben, so wurde gesucht) – die
+                    Vorschau darunter den ANFANG des Liedes. Zwei verschiedene Aussagen. */}
+                <span className={styles.meta}>{t.ausschnitt}</span>
+              </span>
+              <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
+            </button>
+            {bekannt && <LiedtextVorschau songId={t.songId} songName={t.name} />}
+          </div>
         );
       })}
     </div>

@@ -277,6 +277,26 @@ export function useLiedtextSuche(begriff: string, enabled: boolean) {
   });
 }
 
+/**
+ * Der Textanfang **eines** Liedes für die Vorschau (#379) – **nur auf Verlangen.**
+ *
+ * `enabled` steuert der Aufrufer: Erst wenn jemand „Text zeigen" antippt, geht die Anfrage los. Eine
+ * Vorschau je Listenzeile wäre eine Anfrage je Zeile – für eine Liste, die man nur durchsieht.
+ *
+ * **`staleTime: Infinity`**, weil Liedtexte sich praktisch nie ändern: Wer zwei gleichnamige Lieder
+ * vergleicht, klappt sie mehrfach auf und zu – das darf nicht jedes Mal fragen. Und **kein Retry**: Ein
+ * Lied ohne Notenblatt bleibt eines, da hilft Wiederholen nicht.
+ */
+export function useLiedtextVorschau(songId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['liedtext-vorschau', songId],
+    queryFn: () => api.holeLiedtextVorschau(songId),
+    enabled,
+    staleTime: Infinity,
+    retry: false,
+  });
+}
+
 /** Ab wie vielen Zeichen bei CCLI gesucht wird – kürzere Eingaben ergeben nur Rauschen. */
 export const SONGSELECT_MIN_ZEICHEN = 3;
 

@@ -2,8 +2,8 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand 14.08.2026 (nach #378): **133 Testdateien** –
-**90 Client (982 Tests)** + **43 Server (507 Tests)** mit Vitest + **11 Playwright-E2E in 6 Dateien**
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand 14.08.2026 (nach #378 und #379): **134 Testdateien** –
+**91 Client (992 Tests)** + **43 Server (517 Tests)** mit Vitest + **11 Playwright-E2E in 6 Dateien**
 (Render-Smoke, voller Auth-Flow, Vollbild-Geometrie, Tempo-Menü-Geometrie,
 Arrangement-Migration,
 Arrangement-Wechsel). Die Zahlen sind mit
@@ -49,7 +49,11 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
   dazu „leeren heißt weglassen" und die Pflichtfelder
 - `services/songTextIndex` – Suche im Liedtext (#322): Akkorde fallen **ersatzlos** weg (sonst wird
   „ge[Am]liebt" nicht bei „geliebt" gefunden), fünf gleichzeitige Suchen ergeben **einen** Index-Aufbau,
-  eine Drosselung wird gemeldet statt eine halbe Trefferliste ausgeliefert
+  eine Drosselung wird gemeldet statt eine halbe Trefferliste ausgeliefert.
+  Dazu die **Vorschau** (#379): Sie **baut den Index nicht** – steht er frisch, kostet sie keinen
+  Download, sonst genau **einen** (gezählt im Test). Und sie nimmt das **Original**-ChordPro, auch wenn
+  App-Fassungen davor stehen: Das Testmaterial listet sie deshalb absichtlich **vor** dem Original –
+  mit dem Original zuerst wäre der Fehler unsichtbar, und genau daran blieb die erste Gegenprobe grün
 - `services/gebuendelterLauf` – Bündelung + Sperrfrist teurer org-weiter Läufe (#300): fünf gleichzeitige
   Aufrufe = ein Lauf, Freigabe auch nach einem Fehler, Sperrfrist mit `Retry-After`
 - `services/churchtools.ratelimit` – 429 ist eine **Drosselung, kein Serverfehler** (#300), inzwischen an
@@ -134,6 +138,11 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
     Antwort-Objekt) und der Unterscheidung „nichts gefunden" / „konnte nicht suchen" (#270). Dazu, dass
     ohne Begriff gar nicht abgefragt wird – geprüft am **Argument**, nicht am Ladehinweis, sonst prüfte
     der Test nur den Mock.
+- `components/LiedtextVorschau` (#379): **Ohne Antippen wird nicht abgefragt** – geprüft am
+  `enabled`-Argument, denn eine Vorschau je Zeile hieße eine Anfrage je Zeile. Dazu die drei Zustände, die
+  man leicht verwechselt: „kein Liedtext vorhanden" (`vorschau: null`), ein **Fehler** und eine leere
+  Anzeige sind drei verschiedene Aussagen. Und: **der Klick geht nicht an die Zeile darunter** – ohne
+  `stopPropagation` würde „Text zeigen" das Lied öffnen, also das Gegenteil des Gewollten.
 - `utils/strokes` (`mergeStrokes`, reine null-Zweige), `utils/vanishedRows` (lokale
   Auflöse-Platzhalter #178) und `utils/annotationKeys` (Schlüssel-Grammatik: Ebenen-Präfix,
   nicht-leere Notizen je Ebene, Ebenen-Gruppierung unter Namensraum) rein getestet.

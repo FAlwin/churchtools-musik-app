@@ -311,6 +311,21 @@ export interface SongTextTreffer {
  */
 export const LIEDTEXT_SUCHE_MIN_ZEICHEN = 3;
 
+/**
+ * Die Antwort auf `GET /api/songs/:songId/liedtext-vorschau` (#379).
+ *
+ * **Ein Objekt, keine nackte Zeichenkette** – und `vorschau: null` ist ein eigener, gültiger Fall: „Dieses
+ * Lied hat keinen Text." Die Oberfläche zeigt dann gar keine Vorschau, statt eine leere.
+ *
+ * Der Typ steht hier und nicht im Client, weil er über die **HTTP-Grenze** geht: Dort prüft TypeScript
+ * nichts nach – `apiFetch<T>` castet nur. Am 13.08.2026 hat genau das die App zum Absturz gebracht
+ * (Client erwartete eine Liste, Server lieferte ein Objekt), und der Test war grün, weil sein Mock
+ * dieselbe falsche Form hatte.
+ */
+export interface LiedtextVorschau {
+  vorschau: string | null;
+}
+
 /** Ein anzeigbares Dokument (PDF oder Bild) eines Arrangements. */
 export interface SongDocument {
   fileId: number;
