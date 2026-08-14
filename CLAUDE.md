@@ -39,6 +39,23 @@
     - `EditSongSheet`, Einstiege im Lied-Menü und im Liederheft). **Noch nicht auf Staging
       durchgeklickt**, weil jeder Lauf echte Lieder in ChurchTools anlegt bzw. löscht (TF-LIB-03,
       TF-LIB-04).
+  - der **Quellen-Umschalter „Bibliothek · Liedtexte · SongSelect"** (#378): ein Suchfeld, die Quelle
+    darunter, **überall dieselbe Anordnung** (Liederheft, „Lied hinzufügen", „Lied verknüpfen" – dort
+    ohne SongSelect, weil ein neues Lied in einem vorhandenen Ablaufpunkt nicht landen kann). Die Regeln
+    stehen **einmal** in `hooks/useLiedSuche.ts`, die Optik in `components/LiedSucheKopf.tsx`, die
+    Trefferlisten in `SongSelectTrefferListe`/`LiedtextTrefferListe`.
+
+    **Dabei fiel die Wegwahl in `NewSongSheet` weg** (Entscheidung Alwin, 14.08.2026): Die
+    SongSelect-Suche gab es sonst an zwei Stellen. „Neues Lied" führt jetzt direkt ins leere Formular,
+    ein Treffer öffnet es über `startTreffer` gefüllt. Das Copyright holt seitdem eine Abfrage
+    (`useSongSelectSong`) statt ein `await` im Klick-Handler – **ein Effekt an einem Prop-Objekt wäre
+    endlos gelaufen**.
+
+    ⚠️ **Zwei Dopplungen dabei zusammengeführt:** die Mindestlänge der Liedtextsuche (stand als nackte
+    `3` an **vier** Stellen, jetzt `LIEDTEXT_SUCHE_MIN_ZEICHEN` in `@shared/types` – Client **und**
+    Server brauchen sie) und die Plural-Regel „1 Lied / N Lieder" (drei Stellen, **eine falsch**: der
+    Listenkopf schrieb „1 LIEDER"). Letzteres fand nur das **Durchklicken** mit dem E2E-Stub, der ein
+    einziges Lied hat – bei den 49 Liedern der ECG wäre es nie aufgefallen.
 
     Dazu die **Suche im Liedtext** (`GET /api/song-text-search`): Weder ChurchTools noch CCLI können
     das (gemessen, `probe-songsuche.ts`), also durchsucht unser Server die ChordPro-Dateien selbst –

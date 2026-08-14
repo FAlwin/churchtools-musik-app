@@ -172,3 +172,44 @@ Alle liegen deshalb in `services/`, nicht in Controllern: So sind sie an einer S
 statt zwischen Routing-Code versteckt. **Zwei Bausteine tragen die gemeinsame Mechanik:** `ttlMemo.ts`
 (Verfallszeit) und `gebuendelterLauf.ts` (Bündelung + Sperrfrist der teuren org-weiten Läufe – Statistik
 und Suchindex).
+
+## Ein Suchfeld mit Quellen-Umschalter – die Wegwahl in „Neues Lied" fiel dafür weg _(14.08.2026, #378)_
+
+Gesucht wird in **einem** Feld; ein `Segment` darunter wählt die Quelle: **Bibliothek · Liedtexte ·
+SongSelect**. Vorbilder waren ProPresenter und WorshipTools Planning, von Alwin als Muster benannt. Der
+Suchbegriff gehört dem Nutzer, die Quelle ist eine Umschaltung daneben – kein zweiter Dialog.
+
+**Die Folge war ein Rückbau, und der ist der eigentliche Gewinn:** Das Blatt „Neues Lied" hatte davor eine
+vorgeschaltete Wahl („Bei SongSelect suchen" / „Selbst eintippen") und darin eine **zweite**
+SongSelect-Suche. Mit dem Reiter gab es sie damit zweimal – genau die Regel-Dopplung, die dieses Projekt
+mehrfach Geld gekostet hat. Jetzt führt „Neues Lied" direkt ins leere Formular, und ein Treffer aus dem
+Reiter öffnet dasselbe Formular über `startTreffer` gefüllt.
+
+**Was wo liegt** (die Aufteilung ist die Entscheidung, nicht nur der Ort):
+
+| Wo                                              | Was                                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------------------- |
+| `hooks/useLiedSuche.ts`                         | die **Regeln**: welche Quelle gilt, was an sie geschickt wird, Entprellung |
+| `components/LiedSucheKopf.tsx`                  | Feld + Umschalter (die Optik, an allen drei Stellen dieselbe)              |
+| `SongSelectTrefferListe`/`LiedtextTrefferListe` | die zwei Trefferlisten, die überall gleich aussehen                        |
+| die Aufrufer                                    | **nur** die Bibliotheksliste – sie ist je Ansicht verschieden              |
+
+**Der Suchtext liegt bewusst NICHT im Hook**, sondern weiterhin in `useSongFilter` beim Aufrufer: Der
+filtert die Bibliothek ohnehin lokal, und zwei Zustände für denselben Text wären zwei Stellen, die
+auseinanderlaufen.
+
+**Warum „SongSelect" in „Lied verknüpfen" fehlt:** Dort wird einem **vorhandenen** Ablaufpunkt ein Lied
+zugeordnet; der Anlege-Weg erzeugt mit `eventId` aber einen **neuen** Punkt. Ein Reiter dorthin wäre eine
+Sackgasse. `SongPicker` bietet ihn deshalb nur an, wenn der Aufrufer einen `onSongSelectTreffer`-Weg
+mitgibt – die Verfügbarkeit hängt am tatsächlich vorhandenen Ziel, nicht an einem Schalter, den man
+vergessen kann.
+
+**Die Kosten je Quelle bestimmen die Mechanik:** Die Bibliothek filtert im Browser (gratis, bei jedem
+Tastendruck). Die Liedtexte brauchen serverseitig einen Index – **ein Datei-Download je Lied** –, deshalb
+erst ab `LIEDTEXT_SUCHE_MIN_ZEICHEN` und entprellt; ein Tipp auf den Reiter allein löst nichts aus.
+SongSelect geht über ChurchTools an CCLI (~800 ms gemessen), deshalb entprellt und erst bei „reifer"
+Eingabe – eine CCLI-Nummer also erst vollständig (7 Stellen, am Bestand gemessen).
+
+**Die letzte Quelle wird NICHT gemerkt** (Entscheidung Alwin): Jeder Einstieg beginnt bei der Bibliothek.
+Auf einem geteilten iPad am Notenpult soll nicht plötzlich der CCLI-Katalog offen stehen, weil zuletzt
+jemand Lieder eingepflegt hat.
