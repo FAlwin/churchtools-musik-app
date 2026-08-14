@@ -13,13 +13,16 @@ Datenquelle – die App hat keine eigene Datenbank.
 - **Ablaufpläne & Setlists** aus ChurchTools anzeigen (kompletter Ablauf, nicht nur Lieder)
 - **Chord Charts als PDF** (SongSelect-Look) mit automatischer Transponierung, Kapo, Spalten- und
   Schrift-Optionen; im Querformat zwei Seiten nebeneinander, als PDF teil-/druckbar
+- **Ein Suchfeld, drei Quellen** – ein Umschalter darunter wählt **Bibliothek · Liedtexte ·
+  SongSelect**; der Begriff bleibt beim Wechseln stehen. Dieselbe Anordnung im Liederheft und beim
+  Lied-Hinzufügen/Verknüpfen im Ablauf (beim Verknüpfen ohne SongSelect – dort könnte ein neu
+  angelegtes Lied nicht landen)
 - **Alle Lieder** durchsuchbar inkl. Nutzungs-Statistik (Häufigkeit / zuletzt gespielt, mit
-  wählbarem Zeitraum) – dieselbe Auswahl auch beim Lied-Hinzufügen/Verknüpfen im Ablauf. Gesucht wird
-  in Titel und Autor, Titel-Treffer stehen vorn; auf Wunsch **auch im Liedtext**, wenn man nur eine
-  Zeile kennt
-- **Lieder anlegen** – bei CCLI SongSelect gesucht (Titel oder CCLI-Nummer; Autoren, Copyright und
-  Tonart kommen mit, das Notenblatt gleich dazu) oder selbst eingetippt. Aus dem Liederheft oder
-  direkt beim Ergänzen eines Ablaufs
+  wählbarem Zeitraum). Gesucht wird in Titel und Autor, Titel-Treffer stehen vorn; über die Quelle
+  **Liedtexte** auch im Text, wenn man nur eine Zeile kennt
+- **Lieder anlegen** – über die Quelle **SongSelect** gefunden (Titel oder CCLI-Nummer; Autoren,
+  Copyright und Tonart kommen mit, das Notenblatt gleich dazu) oder über „Neues Lied" selbst
+  eingetippt. Aus dem Liederheft oder direkt beim Ergänzen eines Ablaufs
 - **Stammdaten pflegen** – Name, Kategorie, Autor, CCLI-Nummer und Copyright eines vorhandenen Liedes
   ändern; Löschen mit Rückfrage, die die Folgen nennt
 - **Live-Aktualisierung**: Änderungen am Ablauf erscheinen zeitnah bei allen; geänderte Punkte
