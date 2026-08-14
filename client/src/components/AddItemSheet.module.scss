@@ -1,3 +1,5 @@
+@use '../styles/mixins' as m;
+
 .err {
   margin: 0 0 10px;
   padding: 8px 10px;
@@ -116,4 +118,18 @@
     opacity: 0.5;
     cursor: default;
   }
+}
+
+/**
+ * Kopfzeile über der Lied-Auswahl (#322): rechtsbündig „Neues Lied" – **dieselbe Aktion wie im
+ * Liederheft**, deshalb aus demselben Mixin.
+ */
+.songHdr {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.newSongBtn {
+  @include m.neues-lied-aktion;
 }

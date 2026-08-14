@@ -19,18 +19,44 @@
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
   extern unter `https://musik.ecg-donrath.de` live.
 
-  **Stand 13.08.2026: Produktiv läuft noch `v2.16.3`.** In `main` und getaggt, aber NICHT
-  ausgeliefert: **v2.17.0 bis v2.21.0** – der Prod-Deploy liegt bei Alwin. Getestet ist alles auf
-  Staging (`musik-test.ecg-donrath.de`). **v2.16.2 wurde übersprungen**, siehe unten.
+  **Stand 13.08.2026: Produktiv läuft `v2.20.0`** – **gemessen**, nicht aus der Doku übernommen: Der
+  Versionsstring steckt im ausgelieferten Bundle
+  (`curl -s https://musik.ecg-donrath.de/ | grep -oE 'assets/index-[^"]+\.js'`, dann diese Datei
+  holen und nach `v2.` greppen). Diese Datei behauptete bis dahin `v2.16.3`; dieselbe überholte Zahl
+  stand in der Memory und in einem Code-Kommentar (`onboarding.ts`) – ein Lehrstück zur
+  Regel-Dopplung in der Doku. `/api/health` nennt **keine** Version und taugt dafür nicht.
+
+  Nicht ausgeliefert ist damit noch **v2.21.0** – der Prod-Deploy liegt bei Alwin. Getestet wird auf
+  Staging (`musik-test.ecg-donrath.de`); dort läuft immer der Stand von `main` (`staging-<sha>`).
+  **v2.16.2 wurde übersprungen**, siehe unten.
 
   Seit v2.21.0 liegt zusätzlich **ungetaggt** in `main`:
   - die **Dateiverwaltung** eines Arrangements (#321) und die **CCLI-SongSelect-Anbindung**
     (#322, Suche/Abfrage/Notenblatt holen) – beides von Alwin auf Staging geprüft;
-  - die **Grundlage der Liedverwaltung** (#322, Schritte 6/7/10a, PRs #373–#375): Lied-Kategorien
-    samt Rechte-Schnitt (`GET /api/song-categories`) und das **Anlegen von Liedern** serverseitig
-    (`POST /api/songs`). **Dafür gibt es noch keine Oberfläche** – für Nutzer ist davon nichts
-    sichtbar, und `useSongCategories`/`getSongCategories` im Client haben bewusst noch keinen
-    Aufrufer. Was der Oberfläche fehlt, steht in `docs/entwicklung/plan-liedverwaltung.md` (10b).
+  - die **Liedverwaltung KOMPLETT** (#322, Schritte 6–11): Lied-Kategorien samt Rechte-Schnitt
+    (`GET /api/song-categories`), **Anlegen** (`POST /api/songs` + `NewSongSheet`, Einstiege im
+    Liederheft und im Ablauf) und **Stammdaten ändern/löschen** (`GET …/stammdaten`, `PUT`, `DELETE`
+    - `EditSongSheet`, Einstiege im Lied-Menü und im Liederheft). **Noch nicht auf Staging
+      durchgeklickt**, weil jeder Lauf echte Lieder in ChurchTools anlegt bzw. löscht (TF-LIB-03,
+      TF-LIB-04).
+
+    Dazu die **Suche im Liedtext** (`GET /api/song-text-search`): Weder ChurchTools noch CCLI können
+    das (gemessen, `probe-songsuche.ts`), also durchsucht unser Server die ChordPro-Dateien selbst –
+    mit Index, eine Stunde gecacht, gebündelt und gedrosselt (`songTextIndex.ts`). **Neue geteilte
+    Bausteine dabei:** `gebuendelterLauf.ts` (Bündelung + Sperrfrist, jetzt auch von der Song-Statistik
+    genutzt) und `mapLimit.ts` (war privat in `setlistBuilder`).
+
+    ⚠️ **Dabei ein Fund über #322 hinaus – und er saß an DREI Stellen:** Die Regel „429 ist eine
+    Drosselung, kein Serverfehler" (#300) galt nur in `ctGet`. `fileDownloadError` machte aus jedem
+    Status außer 404 einen 502, `schreibe()` in `ctWrite` ebenso. Läufe mit vielen Dateien konnten eine
+    Drosselung also nicht erkennen, und beim Speichern stand „fehlgeschlagen" statt „ChurchTools bremst
+    uns aus". Jetzt werfen **alle drei** `CtOverloadedError` mit `Retry-After`. Die dritte Stelle fand
+    erst die Dopplungs-Suche beim `/festhalten` – genau dafür ist sie da.
+
+    ⚠️ **Der gefährlichste Punkt darin, gemessen:** `PUT /api/songs/{id}` **ersetzt den ganzen
+    Datensatz** – ein Teil-`PUT` löscht Autor, CCLI-Nummer, Copyright und `shouldPractice`. Deshalb
+    lesen–ändern–schreiben über `songWritePayload` (wie beim Arrangement-Tempo). Wer dort ein Feld
+    ergänzt, muss es in `ZU_ERHALTEN` nennen, sonst geht es beim nächsten Speichern verloren.
 
   **Deploy-Falle:** Prod zieht den Tag `:2`, und der liegt lokal auf dem NAS bereits – ein
   „Erstellen" im Container Manager nimmt sonst das **alte** Abbild. Erst das Abbild holen
@@ -435,7 +461,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
     `ctId` (0 gültig, `null`/`''`/`true` nicht). `songIdsFromQuery` taugt dafür nicht: Der verlangt
     `n > 0`.
 
-- **In `main` seit v2.16.0 (NICHT in Prod): die vier hohen Code-Check-Funde behoben** – #273, #274,
+- **Seit v2.16.0 in `main` (längst ausgeliefert): die vier hohen Code-Check-Funde behoben** – #273, #274,
   #275, #276. Alle vier waren dieselbe Lehre („vorübergehend ≠ ungültig"), und bei jedem wurde zuerst
   nach der zweiten Stelle gesucht:
   - **#273** `read()` cachte `{}` bei JEDEM Lesefehler → der nächste Schreibvorgang überschrieb die
@@ -488,7 +514,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   ⚠️ **ChurchTools' Limit ist weiterhin unbekannt** – deshalb steht im Code KEINE geratene Rate.
   Klärung per Anfrage an ChurchTools oder mit `server/scripts/probe-ratelimit.ts` (Messung an der
   echten Instanz – nur wochentags abends, stoppt beim ersten 429, Trockenlauf ohne `--ja-ich-will`).
-- **In `main` nach v2.16.3 (NICHT in Prod): #280 – der letzte Monolith ist aufgeteilt.**
+- **Nach v2.16.3 in `main` (inzwischen mit v2.17.0–v2.20.0 ausgeliefert): #280 – der letzte Monolith ist aufgeteilt.**
   `churchtools.ts` (1137 Z.) → neun Module, größtes 244 Z., Abhängigkeiten nur in eine Richtung:
   `ctTypes`/`ctHttp`/`ctSessionMemos` als Wurzeln, darüber `ctAuth`/`ctRead`/`ctFiles`/`ctCsrf`,
   darüber `ctCapabilities` (→ ctAuth) und `ctWrite` (→ ctCsrf, ctRead). **In ZWEI Schritten:** erst
@@ -517,7 +543,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   Liste entscheidet über Bearbeitungsrechte mit) und `getAllSongs` (blättert). Tests **Server 322 →
   345**, an `main` gemessen.
 
-- **In `main` nach v2.16.3 (NICHT in Prod): die Lehre aus #306 auf alle Speicher übertragen.**
+- **Nach v2.16.3 in `main` (inzwischen mit v2.17.0–v2.20.0 ausgeliefert): die Lehre aus #306 auf alle Speicher übertragen.**
   Beim `/festhalten` nach dem Deploy zeigte die Dopplungs-Suche, dass ich `ttlMemo` zwar herausgezogen,
   die Lehre aber nur auf `versionMemo` übertragen hatte – **drei weitere** handgeschriebene TTL-Maps
   standen weiter in `churchtools.ts` (Konto-ID, Rechte, CSRF-Token), eine davon mit dem Kommentar
@@ -531,7 +557,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   (9 Fälle). Drei getrennte Gegenproben, jede lässt genau ihren Teil fallen (1 / 3 / 1 Test).
   Tests **Client 433 / Server 322 / 5 E2E**, 60 manuelle Fälle.
 
-- **In `main` nach v2.16.3 (NICHT in Prod): #314 – auch der letzte Monolith im CLIENT ist aufgeteilt.**
+- **Nach v2.16.3 in `main` (inzwischen mit v2.17.0–v2.20.0 ausgeliefert): #314 – auch der letzte Monolith im CLIENT ist aufgeteilt.**
   `ChordChart.tsx` 860 → 503 Zeilen. Der Grund war nicht die Zeilenzahl: Die Datei hatte **keinen
   einzigen Test** und enthielt dabei die Entscheidung, auf welcher Ebene ein gezeichneter Strich
   landet – genau dort saßen #199 und #250. Diese Entscheidung steht jetzt rein und geprüft in

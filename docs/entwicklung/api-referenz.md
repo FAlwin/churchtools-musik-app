@@ -62,6 +62,20 @@
   → **201** `{songId, arrangementId, imAblauf?, ablaufFehler?}` – ein neues Lied anlegen (#322).
   Legt **immer auch ein Arrangement** an (`isDefault: true`; ohne das Flag hätte das Lied kein
   Standard-Arrangement – gemessen). Mit `eventId` wandert es zusätzlich in den Ablauf dieses Termins.
+- `GET  /api/song-text-search?q=…` → `SongTextTreffer[]` – **Suche in den Liedtexten** (#322). Baut beim
+  ersten Aufruf einen Index über alle Lieder (ein Datei-Download je Lied), danach eine Stunde aus dem
+  Speicher; gebündelt (fünf gleichzeitige Suchen = ein Aufbau) und bei einer Drosselung mit Sperrfrist.
+  Unter drei Zeichen wird nicht gesucht. Gemessen: Weder `/api/songs?query=` noch CCLI können das.
+- `GET  /api/songs/:songId/stammdaten` → `LiedStammdatenAnsicht` – Name, Kategorie, Autor, CCLI,
+  Copyright eines Liedes (fürs Änderungsformular; die Bibliothek kennt diese Felder nicht).
+- `PUT  /api/songs/:songId` `{name?, categoryId?, author?, ccli?, copyright?}` → `LiedStammdatenAnsicht`
+  – Stammdaten ändern (#322, Schritt 11). **Nur die geänderten Felder schicken**; ein leerer Text heißt
+  „löschen". Der Server macht daraus ein vollständiges `PUT` gegen ChurchTools (lesen–ändern–schreiben,
+  `songWritePayload`), weil ChurchTools bei einem Teil-`PUT` die nicht gesendeten Felder leert
+  (gemessen). Prüft das Recht an der **alten und der neuen** Kategorie und lehnt eine CCLI-Nummer ab,
+  die ein anderes Lied hat (409). `note` wird nicht angenommen – ChurchTools speichert es nicht.
+- `DELETE /api/songs/:songId` → `{name}` – Lied samt Arrangements und Dateien löschen. Prüft das Recht
+  an seiner Kategorie; gibt den Namen zurück, weil es ihn danach nicht mehr gibt.
 
   **Zwei Regeln erzwingt der Server, nicht das Formular:** Die Kategorie muss im Recht des Nutzers
   vorkommen (403), und dieselbe **CCLI-Nummer** wird blockiert (409, die Meldung nennt das vorhandene

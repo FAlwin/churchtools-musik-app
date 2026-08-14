@@ -24,7 +24,8 @@ import { getCapabilities } from '../services/ctCapabilities.js';
 import { fetchFileBytes } from '../services/ctFiles.js';
 import { getCtServices, getSong } from '../services/ctRead.js';
 import { getEditableSongCategories } from '../services/ctSongCategories.js';
-import { liedAnlegen } from '../services/songErstellen.js';
+import { liedAendern, liedAnlegen, liedLoeschen } from '../services/songVerwaltung.js';
+import { sucheImLiedtext } from '../services/songTextIndex.js';
 import { getSongSelectSong, searchSongSelect } from '../services/ctSongSelect.js';
 import {
   createAgendaItem,
@@ -36,7 +37,13 @@ import {
 } from '../services/ctWrite.js';
 import { getSeenSetlists, markSeenSetlist } from '../services/seenSetlists.js';
 import { MAX_BPM, MIN_BPM } from '@shared/tempo/index';
-import type { AgendaServiceOption, SongArrangementOption } from '@shared/types/index';
+import { LIED_GRENZEN } from '@shared/types/index';
+import type {
+  AgendaServiceOption,
+  LiedStammdatenAnsicht,
+  SongArrangementOption,
+} from '@shared/types/index';
+import type { CtSong } from '../services/ctTypes.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { ctCookie } from '../utils/ctCookie.js';
 import { accountKey } from '../middleware/session.js';
@@ -275,20 +282,28 @@ export async function getSongCategoriesCtrl(req: Request, res: Response): Promis
  * Ein neues Lied, wie es aus dem Formular kommt (#322, Schritt 10).
  *
  * **Die Grenzen stammen von ChurchTools selbst** (gemessen mit leerem Rumpf, 07.08.2026): Name 2–200
- * Zeichen, `categoryId` eine Ganzzahl. Sie stehen hier trotzdem, damit ein Tippfehler eine
+ * Zeichen, `categoryId` eine Ganzzahl. Geprüft wird hier trotzdem, damit ein Tippfehler eine
  * verständliche deutsche Meldung ergibt und nicht erst nach einer Runde durch ChurchTools auffällt.
+ *
+ * **Die Zahlen kommen aus `LIED_GRENZEN` (`@shared/types`), nicht aus der Hand.** Das Formular richtet
+ * seine `maxLength` nach derselben Liste; hier ein zweites Mal hingeschriebene Werte wären zwei
+ * Stellen, die auseinanderlaufen, sobald ChurchTools eine Grenze verschiebt.
  *
  * **`categoryId` ist `nonnegative`, nicht `positive`:** Kategorie **0** ist echt („Aktive Songs").
  * Mit `positive()` wäre ausgerechnet die Kategorie unmöglich, in der bei der ECG alle Lieder liegen.
  */
 const neuesLiedSchema = z.object({
-  name: z.string().trim().min(2, 'Der Liedname braucht mindestens 2 Zeichen.').max(200),
+  name: z
+    .string()
+    .trim()
+    .min(LIED_GRENZEN.name.min, `Der Liedname braucht mindestens ${LIED_GRENZEN.name.min} Zeichen.`)
+    .max(LIED_GRENZEN.name.max),
   categoryId: z.number().int().nonnegative(),
-  author: z.string().trim().max(200).optional(),
-  ccli: z.string().trim().max(50).optional(),
-  copyright: z.string().trim().max(500).optional(),
-  key: z.string().trim().max(10).optional(),
-  arrangementName: z.string().trim().max(50).optional(),
+  author: z.string().trim().max(LIED_GRENZEN.author).optional(),
+  ccli: z.string().trim().max(LIED_GRENZEN.ccli).optional(),
+  copyright: z.string().trim().max(LIED_GRENZEN.copyright).optional(),
+  key: z.string().trim().max(LIED_GRENZEN.key).optional(),
+  arrangementName: z.string().trim().max(LIED_GRENZEN.arrangementName).optional(),
   /** Optional: das fertige Lied gleich in den Ablauf dieses Termins eintragen. */
   eventId: z.number().int().positive().optional(),
 });
@@ -307,6 +322,111 @@ export async function postSong(req: Request, res: Response): Promise<void> {
   // Statistik dieses Termins (#300: nur bei beigetragenem Termin).
   if (daten.eventId !== undefined && ergebnis.imAblauf) invalidateSongUsageCache(daten.eventId);
   res.status(201).json(ergebnis);
+}
+
+/**
+ * Was sich an den Stammdaten ändern lässt (#322, Schritt 11).
+ *
+ * **Jedes Feld ist optional – aber nicht beliebig leer.** Ein fehlendes Feld heißt „nicht geändert",
+ * ein leerer Text heißt „löschen" (Autor, CCLI-Nummer, Copyright dürfen weg). Beim **Namen** gilt das
+ * nicht: Er ist in ChurchTools Pflicht, deshalb dieselbe Mindestlänge wie beim Anlegen.
+ *
+ * Die Grenzen kommen aus `LIED_GRENZEN` – dieselbe Liste, die auch das Anlegen und das Formular
+ * benutzen.
+ */
+const liedAendernSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(
+        LIED_GRENZEN.name.min,
+        `Der Liedname braucht mindestens ${LIED_GRENZEN.name.min} Zeichen.`,
+      )
+      .max(LIED_GRENZEN.name.max)
+      .optional(),
+    categoryId: z.number().int().nonnegative().optional(),
+    author: z.string().trim().max(LIED_GRENZEN.author).optional(),
+    ccli: z.string().trim().max(LIED_GRENZEN.ccli).optional(),
+    copyright: z.string().trim().max(LIED_GRENZEN.copyright).optional(),
+  })
+  .refine((d) => Object.values(d).some((v) => v !== undefined), {
+    message: 'Es wurde keine Änderung mitgeschickt.',
+  });
+
+/**
+ * Die Antwortform für Stammdaten – **einmal, für Lesen und Schreiben** (#322, Schritt 11).
+ *
+ * `GET …/stammdaten` und `PUT /api/songs/:songId` antworten gleich; die Oberfläche liest beides mit
+ * demselben Typ. Als zwei Abbildungen nebeneinander hätte eine davon irgendwann ein Feld weniger.
+ */
+function stammdatenAnsicht(song: CtSong): LiedStammdatenAnsicht {
+  return {
+    songId: song.id,
+    name: song.name,
+    author: song.author,
+    ccli: song.ccli,
+    copyright: song.copyright ?? null,
+    categoryId: song.category?.id ?? null,
+  };
+}
+
+/**
+ * GET /api/songs/:songId/stammdaten – was im Änderungsformular stehen soll (#322, Schritt 11).
+ *
+ * **Warum ein eigener Weg und nicht die Bibliothek:** `SongLibraryEntry` kennt CCLI-Nummer, Copyright
+ * und Kategorie nicht. Sie dort zu ergänzen hieße, sie in **jede** Liedliste mitzuschleppen – Felder,
+ * die kein Bildschirm anzeigt. Hier werden sie für genau ein Lied geholt, wenn das Formular aufgeht.
+ */
+export async function getSongStammdaten(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  res.json(stammdatenAnsicht(await getSong(ctCookie(req), songId)));
+}
+
+/**
+ * PUT /api/songs/:songId – Stammdaten eines Liedes ändern (#322, Schritt 11).
+ *
+ * Rechte an alter und neuer Kategorie, die CCLI-Blockade und das **lesen–ändern–schreiben** stecken im
+ * Dienst; der Controller prüft nur die Form. Zurück kommt das Lied, wie ChurchTools es **danach**
+ * liest – nicht das, was das Formular geschickt hat.
+ */
+export async function putSong(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const aenderung = liedAendernSchema.parse(req.body);
+  res.json(stammdatenAnsicht(await liedAendern(ctCookie(req), songId, aenderung)));
+}
+
+/**
+ * DELETE /api/songs/:songId – ein Lied samt allem, was daran hängt, löschen (#322, Schritt 11).
+ *
+ * **Die Rückfrage steht in der Oberfläche**, nicht hier: Sie muss die Folgen nennen (Arrangements,
+ * Notenblätter, Dateien), und dafür braucht sie den Zusammenhang. Hier wird das Recht geprüft und der
+ * Name zurückgegeben – nach dem Löschen gibt es ihn nicht mehr, die Meldung braucht ihn aber.
+ *
+ * **Kein `invalidateSongUsageCache`:** Die Statistik zählt, welche Lieder an welchem Datum gespielt
+ * wurden; ein gelöschtes Lied verschwindet ohnehin aus der Bibliothek. Ein Lauf mit ~250
+ * ChurchTools-Anfragen für nichts war die Ursache der Drosselung in #300.
+ */
+export async function deleteSongCtrl(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const { name } = await liedLoeschen(ctCookie(req), songId);
+  res.json({ name });
+}
+
+/**
+ * GET /api/song-text-search?q=… – **Suche in den Liedtexten** (#322).
+ *
+ * Der Index wird beim ersten Aufruf gebaut (ein Datei-Download je Lied) und dann eine Stunde gehalten;
+ * gebündelt und gedrosselt, siehe `songTextIndex.ts`. Unter drei Zeichen wird nicht gesucht – kürzere
+ * Begriffe treffen fast jedes Lied und der Aufwand wäre für nichts.
+ */
+export async function getSongTextSearch(req: Request, res: Response): Promise<void> {
+  const q = z
+    .string()
+    .trim()
+    .max(100)
+    .parse(req.query.q ?? '');
+  res.json(await sucheImLiedtext(ctCookie(req), q));
 }
 
 /** GET /api/capabilities – was der angemeldete Nutzer laut ChurchTools darf. */

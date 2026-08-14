@@ -43,7 +43,7 @@ export async function downloadFileText(cookie: string, fileUrl: string): Promise
       redirect: 'manual',
       signal: ctSignal(CT_FILE_TIMEOUT_MS),
     });
-    if (!res.ok) fileDownloadError(res.status);
+    if (!res.ok) fileDownloadError(res.status, res.headers.get('retry-after'));
     // Auch ChordPro-Text gedeckelt (#248): Es ist eine Datei aus ChurchTools und kann alles sein.
     return (await readLimited(res, MAX_FILE_BYTES)).toString('utf8');
   } catch (e) {
@@ -71,7 +71,7 @@ export async function fetchFileBytes(
       redirect: 'manual',
       signal: ctSignal(CT_FILE_TIMEOUT_MS),
     });
-    if (!res.ok) fileDownloadError(res.status);
+    if (!res.ok) fileDownloadError(res.status, res.headers.get('retry-after'));
     // Gedeckelt lesen statt `arrayBuffer()` (#248) – sonst landet eine beliebig große Datei
     // vollständig im Speicher des Containers.
     const buffer = await readLimited(res, MAX_FILE_BYTES);

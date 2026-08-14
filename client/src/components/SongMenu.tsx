@@ -44,6 +44,8 @@ interface SongMenuProps {
   onEditCurrent: () => void;
   /** Dateien des Arrangements verwalten (#321) – nur für Berechtigte. */
   onOpenFiles: () => void;
+  /** Stammdaten des Liedes ändern (#322, Schritt 11) – nur für Berechtigte. */
+  onEditSong: () => void;
   onNewVersion: () => void;
   onDeleteVersion: () => void;
   onChange: (patch: Partial<SongSettings>) => void;
@@ -69,6 +71,7 @@ export function SongMenu({
   onSharePdf,
   onEditCurrent,
   onOpenFiles,
+  onEditSong,
   onNewVersion,
   onDeleteVersion,
   onChange,
@@ -136,6 +139,14 @@ export function SongMenu({
           <button className={styles.mmItem} onClick={pick(onOpenFiles)}>
             <span>Dateien …</span>
             <span className={styles.mmValue}>📎</span>
+          </button>
+        )}
+        {/* Stammdaten (#322, Schritt 11) – direkt unter den Dateien, weil beides das LIED pflegt und
+            nicht die Anzeige. Wer hier merkt, dass der Autor fehlt, soll ihn hier ergaenzen koennen. */}
+        {canEditSong && (
+          <button className={styles.mmItem} onClick={pick(onEditSong)}>
+            <span>Stammdaten …</span>
+            <span className={styles.mmValue}>&#x270E;</span>
           </button>
         )}
 

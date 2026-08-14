@@ -31,8 +31,41 @@
   flex-shrink: 0;
 }
 
+/**
+ * Der Listenkopf: **Anzahl links, „Neues Lied" rechts – auf einer Höhe** (#322).
+ *
+ * Er sitzt außerhalb des Scroll-Bereichs und bleibt deshalb sichtbar: beim Blättern und auch dann,
+ * wenn die Suche keinen Treffer hat. Der Knopf stand zuerst in der Kopfzeile – dort wirkte er fremd
+ * und machte die Leiste höher als die der anderen Bereiche.
+ *
+ * `min-height` hält die Zeile gleich hoch, egal ob gerade eine Anzahl oder ein Knopf darin steht –
+ * sonst würde die Liste beim Suchen um wenige Pixel hüpfen.
+ */
+.listHdr {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-bottom: 8px;
+  // Die Zeile bleibt gleich hoch, ob mit oder ohne Anzahl (bei einer Suche ohne Treffer ist sie leer) –
+  // sonst rutscht die Liste beim Tippen um ein paar Pixel.
+  min-height: 28px;
+}
+
+.listCount {
+  @include m.group-header;
+  // Der Abstand nach unten sitzt an `.listHdr`, damit Anzahl und Knopf gemeinsam ausgerichtet sind.
+  padding-bottom: 0;
+}
+
+.newSongBtn {
+  @include m.neues-lied-aktion;
+}
+
 .group {
-  margin: 18px 16px 0;
+  // Kein Abstand oben mehr: Den bringt jetzt `.listHdr` mit, der über dem Scroll-Bereich sitzt.
+  margin: 0 16px;
 }
 .groupHdr {
   @include m.group-header;
@@ -128,4 +161,27 @@
   display: flex;
   flex-shrink: 0;
   margin-left: -2px;
+}
+
+/**
+ * „Auch im Liedtext suchen" (#322) – bewusst zurückhaltend und **unter** den Titel-Treffern.
+ *
+ * Die Titelsuche filtert lokal und ist sofort da; die Textsuche kostet beim ersten Mal einen
+ * Index-Aufbau auf dem Server. Deshalb ist sie ein Angebot, kein Automatismus – und sieht auch so aus.
+ */
+.textSucheBtn {
+  @include m.neues-lied-aktion;
+  margin: 14px auto 0;
+  font-size: 14.5px;
+}
+
+.textSucheHinweis {
+  margin: 14px 16px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface3);
+  color: var(--text2);
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-align: center;
 }

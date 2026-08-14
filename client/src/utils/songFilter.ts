@@ -75,11 +75,43 @@ export function filterSongs(
   const statistikDa = opts.usageAvailable !== false;
   const visible = statMode && statistikDa ? withStat.filter(([, st]) => st.count > 0) : withStat;
 
+  /**
+   * **Titel-Treffer zuerst** (Wunsch Alwin, 13.08.2026).
+   *
+   * Gesucht wird in Titel **und** Autor. Vorher stand die Liste rein alphabetisch – ein Lied, das das
+   * Wort nur im Autor trug, konnte damit vor dem stehen, das es im Titel hat. Wer „Gnade" tippt, meint
+   * fast immer den Titel.
+   *
+   * `0` = Treffer im Titel, `1` = nur im Autor.
+   *
+   * **Ohne Suche braucht es keinen Sonderfall:** `''.includes('')` ist `true`, also bekommen dann alle
+   * Lieder `0` und es bleibt bei der reinen Alphabetik. Ein zusätzliches `!query ||` stand hier zuerst –
+   * die Gegenprobe entlarvte es als wirkungslos: Der Test blieb auch ohne die Bedingung grün, weil der
+   * Code sie nie braucht. Eine Bedingung, die nichts entscheidet, behauptet eine Regel, die es nicht
+   * gibt.
+   */
+  const trefferArt = (s: SongLibraryEntry): number =>
+    s.name.toLowerCase().includes(query) ? 0 : 1;
+
   visible.sort(([a, sa], [b, sb]) => {
-    if (opts.sort === 'count') return sb.count - sa.count || a.name.localeCompare(b.name, 'de');
-    if (opts.sort === 'recent')
-      return (sb.last ?? '').localeCompare(sa.last ?? '') || a.name.localeCompare(b.name, 'de');
-    return a.name.localeCompare(b.name, 'de');
+    /**
+     * **Nur bei „A–Z".** Bei Häufigkeit und Zuletzt müssen die Zahlen gewinnen, sonst wäre der
+     * Umschalter wirkungslos: Ein zehnmal gespieltes Lied gehört nach vorn, auch wenn das Wort bei ihm
+     * im Autor steht. Die Trefferart bleibt dort der Tie-Break vor dem Namen – siehe unten.
+     */
+    if (opts.sort === 'count') {
+      return (
+        sb.count - sa.count || trefferArt(a) - trefferArt(b) || a.name.localeCompare(b.name, 'de')
+      );
+    }
+    if (opts.sort === 'recent') {
+      return (
+        (sb.last ?? '').localeCompare(sa.last ?? '') ||
+        trefferArt(a) - trefferArt(b) ||
+        a.name.localeCompare(b.name, 'de')
+      );
+    }
+    return trefferArt(a) - trefferArt(b) || a.name.localeCompare(b.name, 'de');
   });
 
   return {

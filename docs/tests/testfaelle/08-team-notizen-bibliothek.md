@@ -52,7 +52,8 @@ Beim Lied stehen das letzte Spieldatum und wie oft es gespielt wurde – **künf
 dabei nicht mit.
 
 1. Unten auf **Lieder** tippen.
-2. Oben einen Teil eines Liedtitels eintippen (drei, vier Buchstaben).
+2. Oben einen Teil eines Liedtitels eintippen (drei, vier Buchstaben). Prüfen: Lieder, die das Wort im
+   **Titel** haben, stehen **vor** denen, die es nur im Autor tragen (bei „A–Z").
 3. Den Zeitraum-Filter umstellen, z. B. auf **letzte 12 Monate**.
 4. Ein Lied antippen, das kürzlich im Gottesdienst war.
 
@@ -84,6 +85,110 @@ richtiger **Lied-Punkt** mit Arrangement – kein reiner Text-Punkt.
 - **Betrifft:** `client/src/components/AddToAgendaSheet.tsx`, `client/src/pages/AllSongs.tsx`, `server/src/services/agendaPayload.ts`
 - **Automatisiert:** teilweise – `server/src/services/agendaPayload.test.ts`
 - **Historie:** #15
+
+</details>
+
+### TF-LIB-05 · Im Liedtext suchen
+
+**Das brauchst du:** Ein Wort, das du in einem Liedtext kennst und das **nicht** im Titel vorkommt.
+
+**Das muss passieren:** Das Lied wird gefunden, und die Zeile mit dem Wort steht darunter. Beim ersten
+Mal dauert es ein paar Sekunden (die App holt dafür jeden Liedtext einmal), danach ist es sofort da.
+
+1. Unten auf **Lieder** tippen und das Wort eingeben – die normale Liste zeigt vermutlich keine Treffer.
+2. Unter der Liste **„Auch im Liedtext nach … suchen"** antippen.
+3. Warten: Es muss ein Hinweis erscheinen, dass die Liedtexte durchsucht werden.
+4. Die Trefferliste ansehen: Liedname und darunter der **Textausschnitt** mit dem Wort.
+5. Einen Treffer antippen – das Lied öffnet sich wie aus der normalen Liste.
+6. Dasselbe Wort erneut suchen: Jetzt muss die Antwort **sofort** kommen (der Bestand ist vorgehalten).
+7. Ein Wort suchen, das **nirgends** vorkommt: Es muss dastehen, dass es auch in den Texten nicht steht –
+   nicht einfach eine leere Liste.
+8. Die Eingabe ändern: Die alten Text-Treffer müssen verschwinden (sie gehören zum alten Begriff), und
+   der Knopf muss wieder erscheinen.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `server/src/services/songTextIndex.ts`, `server/src/services/gebuendelterLauf.ts`, `server/src/services/mapLimit.ts`, `client/src/pages/AllSongs.tsx`, `client/src/hooks/useServices.ts`
+- **Automatisiert:** teilweise – `server/src/services/songTextIndex.test.ts` (Akkorde ersatzlos entfernen, ein Aufbau bei fünf Suchen, Drosselung), `server/src/services/gebuendelterLauf.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und die Wartezeit beim ersten Aufbau
+- **Historie:** #322
+
+</details>
+
+### TF-LIB-03 · Neues Lied anlegen (CCLI und selbst eingetippt)
+
+**Das brauchst du:** Ein Konto, das in ChurchTools Lieder bearbeiten darf. **Achtung: Dieser Test
+legt echte Lieder in ChurchTools an** – auch von der Test-Instanz aus, denn beide sprechen dieselbe
+ChurchTools-Instanz. Räum sie hinterher in ChurchTools wieder weg; die App kann keine Lieder löschen.
+
+**Das muss passieren:** Das Lied steht in ChurchTools mit Kategorie, Autor, CCLI-Nummer, Copyright
+und einem **Standard-Arrangement** in der gewählten Tonart. Beim CCLI-Weg hängt am Arrangement auch
+gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas hochladen muss.
+
+1. Unten auf **Lieder** tippen, dann im Listenkopf rechts auf **„Neues Lied"** (auf einer Höhe mit
+   der Liedanzahl).
+2. **Bei SongSelect suchen** und einen Titel eintippen (mindestens drei Zeichen): Die Suche läuft **von
+   selbst**, kurz nachdem du aufhörst zu tippen – ohne Knopfdruck. Achte darauf, dass sie nicht bei
+   jedem Buchstaben neu lädt.
+   Dann dasselbe mit einer **CCLI-Nummer** (nur Ziffern): Der Knopf muss **Abfragen** heißen und genau
+   ein Lied liefern. Eine erfundene Nummer muss den Hinweis bringen, dass man auch den Titel eintippen
+   kann.
+3. Einen Treffer antippen. Prüfen: Titel, Autoren, Nummer und Tonart stehen im Formular, das
+   Copyright erscheint einen Moment später.
+4. **Ohne Kategorie** prüfen, dass „Lied anlegen" **gesperrt** ist. Dann eine Kategorie antippen.
+5. **Lied anlegen** – und in der Erfolgsansicht **Lied öffnen** wählen. Das Blatt muss Akkorde zeigen.
+6. In ChurchTools nachsehen: Kategorie, Autor, CCLI, Copyright, Arrangement, Notenblatt.
+7. Noch einmal **+**, diesmal **Selbst eintippen**: nur Name und Kategorie füllen, anlegen. Das Lied
+   entsteht ohne Notenblatt – das ist richtig.
+8. Einen Namen eintippen, den es schon gibt: Es muss eine **Warnung** erscheinen, das Anlegen aber
+   erlaubt bleiben.
+9. Dasselbe mit einer **CCLI-Nummer, die es schon gibt**: Hier muss der Server **ablehnen** und sagen,
+   welches Lied sie schon hat.
+10. Zum Schluss den Ablauf-Weg: Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied** →
+    **Neues Lied anlegen …**. Danach muss das Lied im Ablauf stehen – genau einmal.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/components/NewSongSheet.tsx`, `client/src/hooks/useNeuesLied.ts`, `client/src/utils/liedFormular.ts`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctSongCategories.ts`
+- **Automatisiert:** teilweise – `client/src/utils/liedFormular.test.ts`, `client/src/hooks/useNeuesLied.test.tsx`, `client/src/components/NewSongSheet.test.tsx`, `server/src/services/songVerwaltung.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und CCLI
+- **Historie:** #322
+
+</details>
+
+### TF-LIB-04 · Stammdaten eines Liedes ändern und löschen
+
+**Das brauchst du:** Ein Konto, das in ChurchTools Lieder bearbeiten darf, und ein **Testlied** aus
+TF-LIB-03 – **nicht ein echtes Gemeindelied.** Dieser Test schreibt und löscht in ChurchTools.
+
+**Das muss passieren:** Geänderte Felder stehen in ChurchTools – und **die nicht angefassten Felder
+stehen unverändert daneben.** Das ist der eigentliche Prüfpunkt: ChurchTools ersetzt beim Speichern
+den ganzen Datensatz, und die App muss den Rest bewahren.
+
+1. Ein Lied öffnen, auf den Titel tippen, **„Stammdaten …"** wählen. Prüfen: Alle Felder sind mit dem
+   gefüllt, was in ChurchTools steht.
+2. **Speichern muss gesperrt sein**, solange nichts geändert ist.
+3. Nur den **Namen** ändern und speichern. Danach in ChurchTools nachsehen: Der Name ist neu –
+   **Autor, CCLI-Nummer und Copyright stehen unverändert da.**
+4. Den **Autor leeren** und speichern. In ChurchTools muss das Feld nun leer sein, die übrigen
+   unberührt.
+5. Die **Kategorie** wechseln (z. B. auf „Inaktive Songs") und speichern; in ChurchTools prüfen.
+6. Eine **CCLI-Nummer eintragen, die ein anderes Lied schon hat**: Das muss abgelehnt werden, mit
+   Nennung des anderen Liedes. Die eigene Nummer erneut zu speichern muss dagegen gehen.
+7. Zurück im **Liederheft**: den **Stift** in der Liedzeile antippen – dasselbe Blatt, gleicher Ablauf.
+8. **Löschen:** unten „Lied löschen …". Die Rückfrage muss die **Folgen** nennen (Arrangements,
+   Notenblätter, Dateien, Ablauf). **Abbrechen** darf nichts tun.
+9. Nun wirklich löschen. Aus dem geöffneten Lied heraus muss die App die Blatt-Ansicht **verlassen**;
+   im Liederheft verschwindet das Lied aus der Liste. In ChurchTools nachsehen: Es ist weg.
+10. Zum Schluss mit einem Konto **ohne** das Recht „Lieder bearbeiten" nachsehen: Weder „Stammdaten …"
+    im Lied-Menü noch der Stift im Liederheft dürfen erscheinen.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/components/EditSongSheet.tsx`, `client/src/components/SongFields.tsx`, `client/src/utils/liedFormular.ts`, `client/src/components/SongMenu.tsx`, `client/src/pages/AllSongs.tsx`, `server/src/services/songPayload.ts`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctWrite.ts`
+- **Automatisiert:** teilweise – `server/src/services/songPayload.test.ts` (Feld-Erhalt!), `server/src/services/songVerwaltung.test.ts`, `client/src/utils/liedFormular.test.ts`, `client/src/components/EditSongSheet.test.tsx`; von Hand bleibt, dass ChurchTools die Felder wirklich behält
+- **Historie:** #322
 
 </details>
 

@@ -91,7 +91,20 @@ export async function readLimited(res: Response, maxBytes: number): Promise<Buff
  * Steht als Helfer da, weil die Zeile vorher an ZWEI Stellen wortgleich stand (`downloadFileText`
  * und `fetchFileBytes`) – eine davon zu ändern wäre die nächste halb umgesetzte Regel gewesen.
  */
-export function fileDownloadError(status: number): never {
+export function fileDownloadError(status: number, retryAfter?: string | null): never {
+  /**
+   * **429 ist eine Drosselung, kein Serverfehler** – gefunden am 13.08.2026 beim Bau des Suchindex.
+   *
+   * `ctGet` erkennt 429 seit #300 und wirft `CtOverloadedError`, damit Massenläufe beim ERSTEN
+   * Vorkommen abbrechen können. Der DATEI-Pfad tat das nicht: Er machte aus jedem Status außer 404
+   * einen 502. Folge: Ein Lauf, der viele Dateien lädt (Suchindex ~50, Setlist-Aufbau ähnlich), konnte
+   * die Drosselung nicht erkennen und schickte weiter Anfragen in ein erschöpftes Limit – genau das
+   * Muster, das in #300 die ganze App lahmgelegt hat.
+   *
+   * Die Regel steht jetzt an beiden Stellen gleich. `retryAfter` wird durchgereicht, weil ChurchTools
+   * dort manchmal selbst sagt, wie lange es gebremst sein will.
+   */
+  if (status === 429) throw new CtOverloadedError(parseRetryAfter(retryAfter ?? null));
   throw new HttpError(status === 404 ? 404 : 502, `Datei-Download fehlgeschlagen (${status}).`);
 }
 

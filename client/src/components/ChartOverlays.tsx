@@ -44,6 +44,8 @@ interface ChartOverlaysProps {
   onSharePdf: () => void;
   onEditCurrent: () => void;
   onOpenFiles: () => void;
+  /** Stammdaten des Liedes ändern (#322, Schritt 11). */
+  onEditSong: () => void;
   onNewVersion: () => void;
   onDeleteVersion: () => void;
 }
@@ -68,6 +70,7 @@ export function ChartOverlays({
   onSharePdf,
   onEditCurrent,
   onOpenFiles,
+  onEditSong,
   onNewVersion,
   onDeleteVersion,
 }: ChartOverlaysProps) {
@@ -106,6 +109,7 @@ export function ChartOverlays({
         onSharePdf={onSharePdf}
         onEditCurrent={onEditCurrent}
         onOpenFiles={onOpenFiles}
+        onEditSong={onEditSong}
         onNewVersion={onNewVersion}
         onDeleteVersion={onDeleteVersion}
         onChange={onSetting}

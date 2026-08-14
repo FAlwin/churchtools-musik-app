@@ -332,7 +332,13 @@ export function Setlist({
       )}
 
       {showAdd && (
-        <AddItemSheet onClose={() => setShowAdd(false)} onAdd={handleAdd} services={services} />
+        <AddItemSheet
+          eventId={service.id}
+          eventName={service.name}
+          onClose={() => setShowAdd(false)}
+          onAdd={handleAdd}
+          services={services}
+        />
       )}
 
       {actionItem && (

@@ -20,7 +20,11 @@
  */
 import { HttpError } from '../middleware/errorHandler.js';
 import { ctAjax, type AjaxMeldungen } from './ctAjax.js';
-import type { SongSelectSong, SongSelectTreffer } from '@shared/types/index';
+import type {
+  SongSelectSong,
+  SongSelectSuchergebnis,
+  SongSelectTreffer,
+} from '@shared/types/index';
 
 /**
  * Die SongSelect-Wortlaute – **wortgleich wie vor dem Herausziehen**.
@@ -102,7 +106,7 @@ function treffer(r: CtSongSelectRoh): SongSelectTreffer {
 export async function searchSongSelect(
   cookie: string,
   songTitle: string,
-): Promise<{ treffer: SongSelectTreffer[]; gesamt: number; vollstaendig: boolean }> {
+): Promise<SongSelectSuchergebnis> {
   const titel = songTitle.trim();
   if (!titel) throw new HttpError(400, 'Bitte einen Titel eingeben.');
 

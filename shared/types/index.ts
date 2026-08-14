@@ -124,6 +124,87 @@ export interface SongCategory {
 }
 
 /**
+ * Die Stammdaten eines neuen Liedes (#322) – **die einzige Stelle, die diese Felder aufzählt.**
+ *
+ * Sie stehen hier und nicht im Server, weil das Formular sie füllt und ChurchTools sie annimmt: Eine
+ * zweite Fassung im Client wäre die Regel-Dopplung, die dieses Projekt am häufigsten getroffen hat.
+ * `server/services/ctWrite.ts` verwendet denselben Typ (`NeuesLied`).
+ *
+ * `note` fehlt mit Absicht: `POST /api/songs` ignoriert das Feld (gemessen 13.08.2026) – die Notiz
+ * kommt über „Stammdaten ändern" (#322, Schritt 11).
+ */
+export interface LiedStammdaten {
+  name: string;
+  categoryId: number;
+  author?: string;
+  ccli?: string;
+  copyright?: string;
+}
+
+/**
+ * Die Feldgrenzen beim Anlegen eines Liedes (#322) – **eine Quelle für Formular und Zod-Schema.**
+ *
+ * Die Werte stammen von ChurchTools selbst (gemessen mit leerem Rumpf, 07.08.2026: Name 2–200
+ * Zeichen). Sie stehen hier, weil beide Seiten sie brauchen: das Formular für `maxLength` und die
+ * Freigabe des Knopfs, der Server zum Prüfen. Zweimal hingeschriebene Zahlen wären zwei Stellen, an
+ * denen eine Korrektur landen muss – und die zweite wird vergessen.
+ */
+export const LIED_GRENZEN = {
+  name: { min: 2, max: 200 },
+  author: 200,
+  ccli: 50,
+  copyright: 500,
+  key: 10,
+  arrangementName: 50,
+} as const;
+
+/** Der Auftrag aus dem Formular „Neues Lied" (#322): Stammdaten + erstes Arrangement (+ Ablauf). */
+export interface LiedAnlegenAuftrag extends LiedStammdaten {
+  /** Tonart des ersten Arrangements (aus SongSelect vorbelegt, änderbar). */
+  key?: string | null;
+  /** Name des ersten Arrangements; leer = „Standard". */
+  arrangementName?: string;
+  /** Wenn gesetzt: das fertige Lied zusätzlich in den Ablauf dieses Termins eintragen. */
+  eventId?: number;
+}
+
+/**
+ * Die Stammdaten eines Liedes, wie die App sie anzeigt und zurückbekommt (#322, Schritt 11).
+ *
+ * **Eine Form für zwei Wege:** `GET /api/songs/:songId/stammdaten` liefert sie, und `PUT` antwortet mit
+ * derselben Form – das, was danach wirklich in ChurchTools steht. Zwei verschiedene Formen für „so
+ * sieht das Lied aus" wären zwei Stellen, die auseinanderlaufen.
+ *
+ * Leere Felder sind `null`, nicht `''`: Das ist der Zustand, den ChurchTools liefert, und die
+ * Oberfläche macht daraus ein leeres Eingabefeld.
+ */
+export interface LiedStammdatenAnsicht {
+  songId: number;
+  name: string;
+  author: string | null;
+  ccli: string | null;
+  copyright: string | null;
+  /** `null`, wenn ChurchTools keine Kategorie mitliefert – dann lässt sich das Lied nicht speichern. */
+  categoryId: number | null;
+}
+
+/**
+ * Was beim Anlegen herauskam – **auch der Teilerfolg wird benannt**, nicht verschwiegen (#322).
+ *
+ * Ein Lied entsteht in zwei bis drei Schreibvorgängen ohne Transaktion (siehe
+ * `server/services/songErstellen.ts`). Deshalb sagt die Antwort nicht nur „hat geklappt", sondern
+ * auch, was davon: Ein fehlender Ablauf-Eintrag ist kein Grund, das angelegte Lied zu verschweigen.
+ */
+export interface LiedAngelegt {
+  songId: number;
+  arrangementId: number;
+  /** Nur gesetzt, wenn ein Termin mitgegeben wurde: Hat der Ablauf-Eintrag geklappt? */
+  imAblauf?: boolean;
+  /** Warum der Ablauf-Eintrag nicht geklappt hat – für die Meldung an den Nutzer. */
+  ablaufFehler?: string;
+}
+
+/**
  * Die Art einer Arrangement-Datei (#321) – nur für das Symbol in der Liste.
  *
  * **Kein Sortier- oder Schutzmerkmal.** Die Liste ist bewusst flach und behandelt alle Dateien
@@ -180,9 +261,41 @@ export interface SongSelectTreffer {
   hasChordSheet: boolean;
 }
 
+/**
+ * Das Ergebnis einer SongSelect-Suche (#322) – **Treffer PLUS die Auskunft über Vollständigkeit.**
+ *
+ * Der Typ steht hier und nicht nur im Server, und das ist die Lehre aus einem Absturz vom 13.08.2026:
+ * Der Client behauptete `SongSelectTreffer[]`, der Server lieferte dieses Objekt. `apiFetch<T>` ist über
+ * die HTTP-Grenze nur eine **Behauptung** – TypeScript prüft dort nichts nach. Die Trefferliste rief
+ * dann `.map` auf einem Objekt auf und die App zeigte den Fehlerschirm.
+ *
+ * `vollstaendig` beantwortet, ob noch mehr Treffer da wären: ChurchTools holt 100 auf einmal und kennt
+ * keinen Weg zu weiteren Seiten (gemessen: 147 zu „Wo ich auch stehe"). **Diese Rechnung gehört nicht
+ * in die Oberfläche** – dort stand vorher ein geratenes `treffer.length >= 100` daneben.
+ */
+export interface SongSelectSuchergebnis {
+  treffer: SongSelectTreffer[];
+  /** Wie viele Treffer CCLI insgesamt hat – auch die, die nicht mitkamen. */
+  gesamt: number;
+  vollstaendig: boolean;
+}
+
 /** Ein per CCLI-Nummer abgefragtes Lied – wie ein Treffer, plus Copyright fürs Anlegen. */
 export interface SongSelectSong extends SongSelectTreffer {
   copyright: string | null;
+}
+
+/**
+ * Ein Treffer der **Suche im Liedtext** (#322).
+ *
+ * Der Ausschnitt zeigt die Fundstelle – ohne ihn müsste man jedes Lied öffnen, um zu sehen, warum es
+ * gefunden wurde. Er kommt aus dem Suchtext (kleingeschrieben, ohne Akkorde) und ist damit ehrlich:
+ * So wurde gesucht.
+ */
+export interface SongTextTreffer {
+  songId: number;
+  name: string;
+  ausschnitt: string;
 }
 
 /** Ein anzeigbares Dokument (PDF oder Bild) eines Arrangements. */

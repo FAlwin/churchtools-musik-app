@@ -13,6 +13,8 @@ import type {
 } from '@shared/types/index';
 import { downloadFileText, fileIdFromUrl } from './ctFiles.js';
 import { CtOverloadedError, isCtOverloaded } from './ctHttp.js';
+import { createGebuendelterLauf } from './gebuendelterLauf.js';
+import { mapLimit } from './mapLimit.js';
 import {
   getAgenda,
   getAllSongs,
@@ -339,12 +341,17 @@ let usageCache: {
   eventIds: Set<number>;
 } | null = null;
 
-/** Läuft gerade ein Statistik-Lauf? Dann mitnutzen statt einen zweiten starten (#300). */
-let usageInflight: Promise<Record<number, SongUsage>> | null = null;
-/** Bis wann nach einer Drosselung nicht erneut versucht wird (#300). */
-let usageRetryAfter = 0;
 /** Sperrfrist nach einer Drosselung – lang genug, dass sich das CT-Limit erholt. */
 const USAGE_COOLDOWN_MS = 120_000;
+/**
+ * Bündelung und Sperrfrist des Statistik-Laufs (#300) – **im Baustein, nicht mehr handgeschrieben.**
+ *
+ * Vorher standen `usageInflight` und `usageRetryAfter` hier als eigene Variablen. Mit dem Suchindex
+ * über die Liedtexte kam ein zweiter Lauf derselben Art dazu; eine Kopie der Mechanik wäre genau die
+ * Fehlerklasse, die dieses Projekt am häufigsten getroffen hat. Der Zwischenspeicher selbst bleibt
+ * hier – was gecacht wird und wann es verfällt, ist bei beiden verschieden.
+ */
+const usageLauf = createGebuendelterLauf<Record<number, SongUsage>>(USAGE_COOLDOWN_MS);
 
 /**
  * Leert den Statistik-Cache – **nur wenn dieser Termin überhaupt mitgezählt wurde** (#300).
@@ -373,24 +380,7 @@ export function invalidateSongUsageCache(eventId?: number): void {
 /** Nur für Tests: Cache, laufender Abruf und Sperrfrist zurücksetzen. */
 export function __resetSongUsageForTests(): void {
   usageCache = null;
-  usageInflight = null;
-  usageRetryAfter = 0;
-}
-
-/** Führt `fn` über alle Items aus, aber maximal `limit` gleichzeitig (schont die CT-API). */
-async function mapLimit<T>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<void>,
-): Promise<void> {
-  let i = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (i < items.length) {
-      const idx = i++;
-      await fn(items[idx]);
-    }
-  });
-  await Promise.all(workers);
+  usageLauf.reset();
 }
 
 /** Wie viele Jahre zurück Spieltermine gesammelt werden – deckt den „Alle"-Zeitfilter ab. */
@@ -404,20 +394,15 @@ const USAGE_LOOKBACK_YEARS = 4;
  */
 export async function getSongUsageMap(cookie: string): Promise<Record<number, SongUsage>> {
   if (usageCache && Date.now() - usageCache.at < 3_600_000) return usageCache.data;
-  // Läuft schon einer? Dann mitnutzen (#300). Ohne das starten fünf iPads, die gleichzeitig
-  // „Alle Lieder" öffnen, FÜNF volle Läufe – rund 1.235 ChurchTools-Anfragen statt 250.
-  if (usageInflight) return usageInflight;
   // Nach einer Drosselung eine Weile gar nicht erst versuchen – sonst rennt jeder Aufruf erneut in
   // die Wand und verlängert die Drosselung, die er gerade abwarten sollte.
-  if (Date.now() < usageRetryAfter) {
+  if (usageLauf.istGesperrt()) {
     if (usageCache) return usageCache.data; // letzter bekannter Stand ist besser als nichts
-    throw new CtOverloadedError(usageRetryAfter - Date.now());
+    throw new CtOverloadedError(usageLauf.restMs());
   }
-
-  usageInflight = runSongUsage(cookie).finally(() => {
-    usageInflight = null;
-  });
-  return usageInflight;
+  // Läuft schon einer? `fuehreAus` hängt sich an (#300). Ohne das starten fünf iPads, die gleichzeitig
+  // „Alle Lieder" öffnen, FÜNF volle Läufe – rund 1.235 ChurchTools-Anfragen statt 250.
+  return usageLauf.fuehreAus(() => runSongUsage(cookie));
 }
 
 /** Der eigentliche Lauf – getrennt, damit `getSongUsageMap` nur noch Cache/Bündelung/Sperrfrist regelt. */
@@ -484,7 +469,7 @@ async function runSongUsage(cookie: string): Promise<Record<number, SongUsage>> 
   // Termine je Lied absteigend sortieren (neuester zuerst) → Client nimmt [0] als „zuletzt".
   for (const u of Object.values(usage)) u.dates.sort((a, b) => b.localeCompare(a));
   usageCache = { at: Date.now(), data: usage, eventIds };
-  usageRetryAfter = 0;
+  usageLauf.entsperren();
   console.warn(
     `[songUsage] Lauf beendet: ${eventIds.size} mit Ablauf, ${ohneAblauf} ohne (normal), ` +
       `${skipped} fehlerhaft, vollständig=${skipped === 0}, ` +
@@ -508,7 +493,7 @@ async function runSongUsage(cookie: string): Promise<Record<number, SongUsage>> 
  */
 function bailOut(e: unknown, geplant: number, started: number): Record<number, SongUsage> {
   const retryAfterMs = (e instanceof HttpError ? e.retryAfterMs : undefined) ?? USAGE_COOLDOWN_MS;
-  usageRetryAfter = Date.now() + retryAfterMs;
+  usageLauf.sperren(retryAfterMs);
   console.warn(
     `[songUsage] Lauf ABGEBROCHEN (ChurchTools drosselt) nach ` +
       `${((Date.now() - started) / 1000).toFixed(1)} s von ${geplant} Terminen; ` +

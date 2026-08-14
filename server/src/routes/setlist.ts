@@ -20,7 +20,11 @@ import {
   getSongArrangementsCtrl,
   getSongLibraryCtrl,
   getSongCategoriesCtrl,
+  getSongTextSearch,
   postSong,
+  putSong,
+  getSongStammdaten,
+  deleteSongCtrl,
   getSongChartCtrl,
   getSongUsageCtrl,
   getCapabilitiesCtrl,
@@ -43,8 +47,17 @@ router.get('/services/:eventId/setlist/version', asyncHandler(getSetlistVersion)
 router.post('/services/:eventId/seen', asyncHandler(markSetlistSeen));
 router.get('/song-library', asyncHandler(getSongLibraryCtrl));
 router.get('/song-categories', asyncHandler(getSongCategoriesCtrl));
+// Suche in den Liedtexten (#322). Baut beim ersten Aufruf einen Index (ein Download je Lied) –
+// gebündelt, gedrosselt und eine Stunde gecacht, siehe songTextIndex.ts.
+router.get('/song-text-search', asyncHandler(getSongTextSearch));
 // Ein neues Lied (#322). Rechte und Doppel-Erkennung prüft der Dienst, nicht die Oberfläche.
 router.post('/songs', asyncHandler(postSong));
+// Stammdaten ändern und löschen (#322, Schritt 11). Der PUT ist lesen–ändern–schreiben: Ein
+// Teil-PUT auf /api/songs/{id} löscht in ChurchTools die nicht gesendeten Felder (gemessen).
+// Die Stammdaten eines Liedes lesen (fürs Änderungsformular) …
+router.get('/songs/:songId/stammdaten', asyncHandler(getSongStammdaten));
+router.put('/songs/:songId', asyncHandler(putSong));
+router.delete('/songs/:songId', asyncHandler(deleteSongCtrl));
 router.get('/song-usage', asyncHandler(getSongUsageCtrl));
 router.get('/capabilities', asyncHandler(getCapabilitiesCtrl));
 router.get('/agenda-services', asyncHandler(getAgendaServicesCtrl));

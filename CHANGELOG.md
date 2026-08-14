@@ -9,6 +9,89 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
+- **Bei der Liedsuche stehen Titel-Treffer zuerst.** Gesucht wird in Titel **und** Autor; bisher stand
+  die Liste rein alphabetisch, ein Lied mit dem Wort nur im Autor konnte also vor dem stehen, das es im
+  Titel hat. Wer ein Wort eintippt, meint fast immer den Titel.
+
+  Bei **Häufigkeit** und **Zuletzt** gewinnen weiter die Zahlen – sonst wäre der Umschalter wirkungslos.
+  Dort entscheidet die Trefferart nur bei Gleichstand.
+
+- **Man kann jetzt im Liedtext suchen (#322).** Wer nur eine Zeile im Kopf hat, aber nicht den Titel,
+  tippt sie ins Suchfeld im Liederheft und wählt darunter **„Auch im Liedtext nach … suchen"**. Die
+  Treffer erscheinen mit der **Fundstelle**, sodass man sieht, warum ein Lied dabei ist.
+
+  Beim ersten Mal dauert es einen Moment: Die App holt dafür jeden Liedtext einmal von ChurchTools.
+  Danach ist es sofort da – der Bestand wird eine Stunde vorgehalten.
+
+  **Warum es nicht einfach mitläuft:** Weder ChurchTools noch CCLI können im Liedtext suchen – gemessen
+  am 13.08.2026: Ein Wort aus dem Text ergab bei ChurchTools 0 Treffer, dasselbe Wort aus dem Titel 1.
+  Die Texte liegen dort als Datei am Arrangement. Unsere App durchsucht sie deshalb selbst, und das
+  kostet einmal einen Durchgang durch alle Lieder. Ein Angebot auf Knopfdruck statt bei jedem
+  Tastendruck ist der schonende Weg – auch gegenüber ChurchTools, das uns bei zu vielen Anfragen
+  bremst.
+
+- **Die Stammdaten eines Liedes lassen sich in der App ändern (#322).** Im Lied-Menü steht unter
+  „Dateien …" nun **„Stammdaten …"**, und im Liederheft gibt es je Zeile einen Stift. Dort ändert man
+  **Name, Kategorie, Autor, CCLI-Nummer und Copyright** – ohne den Umweg über ChurchTools.
+
+  **Gespeichert wird nur, was du geändert hast.** Ein Feld, das du leerst, wird auch in ChurchTools
+  leer; alles andere bleibt unangetastet. Das ist kein Selbstläufer: ChurchTools ersetzt beim
+  Speichern den **ganzen** Datensatz, und alles, was nicht mitgeschickt wird, ist danach weg. Die App
+  liest deshalb vor jedem Speichern den aktuellen Stand und legt nur deine Änderung darüber – wer
+  einen Liednamen korrigiert, verliert dabei nicht den Autor.
+
+  **Ein Lied kann hier auch gelöscht werden** – mit einer Rückfrage, die sagt, was mitgeht:
+  Arrangements, Notenblätter und Dateien, und im Ablauf fehlt es danach. Über die App ist das nicht
+  rückholbar. Nach dem Löschen aus einem geöffneten Lied heraus schließt sich die Ansicht.
+
+  Zur Wahl stehen wieder nur die Kategorien, in denen ChurchTools dich arbeiten lässt – und zwar für
+  **beide** Seiten: Du kannst nur Lieder ändern, die in einer deiner Kategorien liegen, und nur in
+  eine deiner Kategorien verschieben. Eine CCLI-Nummer, die ein **anderes** Lied schon hat, wird
+  abgelehnt; die eigene Nummer bleibt selbstverständlich erlaubt.
+
+  **Ein Notiz-Feld gibt es bewusst nicht:** ChurchTools speichert die Lied-Notiz über diesen Weg gar
+  nicht (gemessen) und hat sie selbst als veraltet markiert. Ein Feld, das nichts behält, wäre eine
+  Falle.
+
+- **Lieder lassen sich in der App anlegen (#322).** Im Liederheft steht rechts unter der Suche
+  **„Neues Lied"**, und
+  beim Bearbeiten eines Ablaufs gibt es unter „Hinzufügen → Lied" den Punkt **„Neues Lied anlegen …"**.
+  Beides sieht nur, wer in ChurchTools Lieder bearbeiten darf.
+
+  **Gesucht wird beim Tippen.** Ein Knopfdruck ist nicht mehr nötig; die App wartet kurz, bis man
+  aufhört zu tippen, und sucht dann. Der Knopf bleibt daneben – er löst sofort aus.
+
+  **Suchen geht mit dem Titel ODER mit der CCLI-Nummer** – im selben Feld. Text landet in der Suche
+  nach dem Namen, reine Ziffern gehen direkt an die Nummer: Das ergibt genau einen Treffer statt einer
+  langen Liste, denn die Titelsuche von SongSelect ist unscharf (147 Treffer für „Wo ich auch stehe"). Der
+  Knopf heißt dann „Abfragen" statt „Suchen", und findet SongSelect zu der Nummer nichts, nennt der Hinweis
+  den anderen Weg. Beim Tippen wird eine Nummer erst abgefragt, wenn sie **sieben Stellen** hat – so
+  lang sind alle 46 Nummern im Bestand (nachgezählt). Sonst stünde viermal „nicht gefunden" da, während
+  man noch tippt. Kürzere Nummern gehen weiter über den Knopf.
+
+  **Zwei gleichrangige Wege.** Entweder **bei SongSelect suchen** – dann kommen Titel, Autoren, Nummer,
+  Copyright und Tonart mit, und nach dem Anlegen holt die App auch gleich **das Notenblatt**, sodass
+  das Lied sofort Akkorde hat. Oder **selbst eintippen**, für eigene Lieder, Übersetzungen und alles,
+  was nicht bei CCLI steht. Ohne SongSelect-Lizenz gibt es nur den zweiten Weg – und keinen Knopf,
+  der ins Leere führt.
+
+  **Die Kategorie ist ein Pflichtfeld ohne Vorbelegung.** Zur Wahl stehen genau die Kategorien, in
+  denen ChurchTools dich arbeiten lässt. Ist dir keine freigegeben, sagt die App das, statt ein
+  Formular anzubieten, das am Ende abgelehnt würde.
+
+  **Gleiche Namen sind erlaubt, gleiche CCLI-Nummern nicht.** Ein Lied darf so heißen wie ein
+  vorhandenes – Übersetzungen und zweite Fassungen sind normal, es kommt nur eine Warnung. Eine
+  CCLI-Nummer, die es schon gibt, lehnt die App ab und nennt das Lied, das sie hat.
+
+  Nach dem Anlegen entscheidest du, wie es weitergeht: **Lied öffnen**, **noch ein Lied anlegen** oder
+  **fertig**.
+
+  **Was nicht glattgebügelt wird:** Ein Lied entsteht in ChurchTools in mehreren Schritten, und
+  ChurchTools kennt dafür keine Transaktion. Klappt der Ablauf-Eintrag nicht oder kommt das Notenblatt
+  nicht, steht das Lied trotzdem da – und die App sagt genau, was fehlt, statt einen Fehler zu melden,
+  der wie „nichts passiert" aussieht. Nach einem unklaren Fehlschlag heißt der Knopf „Trotzdem erneut
+  anlegen": Ein beiläufiger zweiter Versuch würde das Lied doppelt anlegen.
+
 - **Das Notenblatt lässt sich aus CCLI SongSelect holen (#322).** Hat ein Lied eine CCLI-Nummer und
   eure Gemeinde die SongSelect-Integration, steht in „Dateien …" ein zweiter Knopf:
   **„Notenblatt aus SongSelect holen …"**. ChurchTools holt es dann bei CCLI – **in der Tonart des
@@ -41,12 +124,70 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   werden **vor** dem Hochladen abgelehnt, und bei einem Namen, den es schon gibt, kommt eine
   Warnung: ChurchTools ersetzt nicht, die Datei läge danach zweimal da.
 
+### Behoben
+
+- **Auch beim Speichern wird eine Drosselung jetzt als solche gemeldet.** Bremste ChurchTools einen
+  Schreibvorgang aus (Lied anlegen, Datei hochladen, Tempo speichern), stand da „fehlgeschlagen" – statt
+  „ChurchTools bremst uns gerade aus, bitte einen Moment warten". Das eine klingt nach einem Fehler, den
+  man nicht lösen kann, das andere nach „gleich nochmal". Damit gilt die Regel an allen drei Stellen:
+  beim Lesen, beim Datei-Download und beim Schreiben.
+
+- **Datei-Downloads erkannten eine Drosselung durch ChurchTools nicht.** Aufgefallen beim Bau der
+  Textsuche: Ein `429` („zu viele Anfragen") wurde im Datei-Pfad wie ein normaler Serverfehler
+  behandelt. Damit konnte ein Vorgang, der viele Dateien lädt, die Bremse nicht erkennen und schickte
+  weiter Anfragen in ein erschöpftes Limit – genau das Muster, das im Juli die ganze App lahmgelegt hat.
+  Die Regel gilt jetzt für Dateien genauso wie für alle anderen Abfragen.
+
+- **Die Kopfzeile zeigte eine andere Überschrift als das Blatt** (gemeldet von Alwin). Sichtbar wurde
+  es an einer überzähligen Klammer: „Die Schöpfung singt (Grosser Gott)**]**" oben, aber korrekt auf dem
+  Blatt. Die Klammer steht tatsächlich im Original-ChordPro, das von CCLI kommt
+  (`{title: … (Grosser Gott)]}`); die von der App gepflegte Version hat sie nicht.
+
+  Der Fehler war, dass es **zwei Wege zur Überschrift** gab: Das Blatt las sie aus dem gerade
+  angezeigten Text, die Kopfzeile aus dem Original. Bei einem Lied mit eigener Version standen damit
+  zwei verschiedene Titel übereinander. Jetzt gehen beide durch dieselbe Funktion – wie es der
+  Kommentar an dieser Funktion ohnehin versprach.
+
+  **Die Klammer selbst bleibt sichtbar, wenn man das Original ansieht** – sie steht in der Datei, und
+  die App zeigt, was drinsteht. Korrigieren lässt sie sich in ChurchTools oder in der Version.
+
+- **„Neues Lied" sieht im Ablauf jetzt genauso aus wie im Liederheft**: eine ruhige Textaktion oben
+  rechts statt einer breiten Karte, die neben der Liedliste wie ein eigener Menüpunkt wirkte. Der Stil
+  liegt als gemeinsamer Baustein an einer Stelle.
+
+- **Die Kopfzeilen waren unterschiedlich hoch** (gemeldet von Alwin). Bis auf 52 Pixel schrumpfte eine
+  Leiste ohne Aktions-Knopf, während eine mit Knopf 63 Pixel hoch war – beim Wechsel zwischen
+  „Termine", „Lieder" und „Mehr" sprang die Leiste sichtbar. Grund: Der Inhalt bestimmte die Höhe, und
+  ein Knopf ist höher als eine Zeile Text.
+
+  Jetzt hat die Kopfzeile eine feste Inhaltshöhe – gemessen mit dem echten CSS: **63 Pixel in allen
+  Fällen**, mit Aktion, ohne Aktion und mit Untertitel. Aufgefallen ist es, als das Liederheft seine
+  erste Kopfzeilen-Aktion bekam; betroffen war aber die ganze App.
+
+- **„Neues Lied" sitzt nicht mehr in der Kopfzeile**, sondern im Listenkopf – **auf einer Höhe mit der
+  Liedanzahl**, links „49 Lieder", rechts „Neues Lied". Die Zeile steht über dem Bereich, der beim
+  Aktualisieren nach unten gezogen wird, und bleibt deshalb sichtbar: beim Blättern und auch dann, wenn
+  die Suche **keinen Treffer** hat – also genau in dem Moment, in dem ein Lied fehlt.
+
+- **Die CCLI-Suche stürzte beim ersten Treffer ab** (`e.map is not a function`, #322). Der Client
+  erwartete eine Liste, der Server liefert `{treffer, gesamt, vollstaendig}` – und über die
+  HTTP-Grenze prüft TypeScript nichts nach, `apiFetch<T>` ist dort nur eine Behauptung. Der Typ steht
+  jetzt in `@shared/types` (`SongSelectSuchergebnis`), also nutzen Server und Oberfläche dieselbe
+  Definition.
+
+  Der Test hat es nicht gefunden, weil sein Mock **dieselbe falsche Annahme** hatte wie der Code.
+  Die Testdaten sind jetzt gegen den geteilten Typ typisiert – so kann ein Mock die Form nicht mehr
+  erfinden. Dazu drei Tests, die die Trefferliste wirklich rendern.
+
+  Nebenbei aufgefallen: Der Hinweis „Liste unvollständig" rechnete mit einem geratenen
+  `treffer.length >= 100`, obwohl der Server `vollstaendig` und `gesamt` mitliefert. Jetzt nennt der
+  Hinweis die echte Zahl („CCLI hat 147 Treffer, angezeigt werden 100").
+
 ### Intern
 
-- **Die Lied-Kategorien stehen der App jetzt zur Verfügung (#322, Schritt 7).** Grundlage für das
-  Anlegen von Liedern: Der Server kennt die Kategorien der Instanz **mit Namen** und weiß, in welchen
-  davon der Anmeldete arbeiten darf. Noch ist nichts davon zu sehen – die Oberfläche kommt mit dem
-  Anlege-Formular.
+- **Die Lied-Kategorien stehen der App zur Verfügung (#322, Schritt 7).** Grundlage für das Anlegen
+  von Liedern: Der Server kennt die Kategorien der Instanz **mit Namen** und weiß, in welchen davon
+  der Anmeldete arbeiten darf. Zu sehen ist das in der Kategorie-Auswahl des Anlege-Formulars.
 
   Bemerkenswert daran ist, wo die Namen herkommen: Einen `/api`-Endpunkt für Lied-Kategorien gibt es
   **nicht** (fünf Pfade geprüft, alle 404). Sie stecken in `getMasterData` der alten
@@ -59,15 +200,45 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   beim Aufrufer, damit ein Fehler beim Liedersuchen weiter anders klingt als einer beim Laden der
   Kategorien.
 
-- **Der Server kann Lieder anlegen (#322, Schritt 10a).** `POST /api/songs` legt ein Lied **samt
-  Arrangement** an und trägt es auf Wunsch gleich in den Ablauf eines Termins ein. **Die Oberfläche
-  dazu fehlt noch** – zu sehen ist davon also nichts.
+- **Der Server legt Lieder an (#322, Schritt 10a).** `POST /api/songs` legt ein Lied **samt
+  Arrangement** an und trägt es auf Wunsch gleich in den Ablauf eines Termins ein.
 
   Die Sorgfalt steckt in den halben Durchläufen: ChurchTools kennt keine Transaktion. Scheitert das
   Arrangement, liegt dort ein Lied ohne eines – die Meldung sagt genau das und warnt vor einem
   zweiten Versuch, der es doppeln würde. Scheitert nur der Ablauf-Eintrag, ist das kein Fehler: Das
   Lied existiert, und die Antwort sagt beides. Doppelte CCLI-Nummern und fremde Kategorien lehnt der
   Server selbst ab, nicht erst das Formular.
+
+- **Die Stammdaten-Felder gibt es genau einmal** (`SongFields`) – „Neues Lied" und „Stammdaten ändern"
+  zeigen dieselben fünf Angaben. Als zwei Formulare nebeneinander wäre jede Korrektur an einem davon
+  gelandet. Die Regeln beider Formulare liegen zusammen in `utils/liedFormular.ts`, der Schreibweg in
+  `services/songVerwaltung.ts` (vorher `songErstellen.ts` – der Name stimmte nicht mehr).
+
+- **`songWritePayload` baut den Lied-`PUT` aus dem gelesenen Ist-Zustand** – die dritte riskante reine
+  Funktion des Projekts nach `agendaItemWritePayload` und `arrangementWritePayload`. Gemessen an der
+  ChurchTools-Test-Instanz: Ein `PUT {name, categoryId}` setzte Autor, CCLI-Nummer und Copyright auf
+  `null` und `shouldPractice` auf `false`.
+
+  Beim Messen ist mir die Frage zuerst **falsch** geraten: Der erste Versuch schickte nur `{name}` und
+  bekam 400, weil `categoryId` Pflicht ist – dass danach alle Felder noch standen, sah nach
+  „ungefährlich" aus, obwohl gar nicht geschrieben worden war. Ein Messaufbau, der den geprüften
+  Vorgang nicht auslöst, belegt nichts.
+
+- **Auftrag, Ergebnis und Feldgrenzen des Anlegens stehen an EINER Stelle** (`@shared/types`:
+  `LiedStammdaten`, `LiedAnlegenAuftrag`, `LiedAngelegt`, `LIED_GRENZEN`). Vorher hätte das Formular
+  seine `maxLength` und der Server sein Zod-Schema je eigene Zahlen gehabt – zwei Listen über dieselben
+  ChurchTools-Grenzen, von denen die zweite bei einer Änderung vergessen wird. `ctWrite.NeuesLied` ist
+  jetzt nur ein anderer Name für `LiedStammdaten`.
+
+- **Ein Lied aus dem Liederheft zu öffnen, passiert nur noch an einer Stelle** (`openLibrarySong` in
+  `App.tsx`). Beim Antippen in der Liste und nach dem Anlegen sind es dieselben zwei Zustände; als
+  zwei Kopien wäre die nächste Änderung an genau einer davon gelandet.
+
+- **Die geführte Einführung nennt beide neuen Einstiege** (`termine-v3`, `setlist-edit-v2`).
+  Nebenbefund dabei, gemessen im ausgelieferten Bundle: Produktiv läuft **v2.20.0**, nicht das in
+  Doku und Code-Kommentaren behauptete v2.16.3. Damit ist `chart-v4` sehr wohl draußen – die nächste
+  Textänderung an den Chart-Schritten braucht also `chart-v5`. Der irreführende Kommentar in
+  `onboarding.ts` ist berichtigt.
 
 ## [2.21.0] – 2026-08-11
 

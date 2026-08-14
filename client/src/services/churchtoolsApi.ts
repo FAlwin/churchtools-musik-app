@@ -6,11 +6,18 @@ import type {
   AgendaServiceOption,
   ArrangementFileEntry,
   AuthStatus,
+  LiedAngelegt,
+  LiedAnlegenAuftrag,
+  LiedStammdaten,
+  LiedStammdatenAnsicht,
   Service,
   SetlistSong,
   SongArrangementOption,
   SongCategory,
   SongLibraryEntry,
+  SongSelectSong,
+  SongSelectSuchergebnis,
+  SongTextTreffer,
   SongVersion,
   UserCapabilities,
 } from '@shared/types/index';
@@ -148,6 +155,85 @@ export function getSongLibrary(): Promise<SongLibraryEntry[]> {
  */
 export function getSongCategories(): Promise<SongCategory[]> {
   return apiFetch<SongCategory[]>('/api/song-categories');
+}
+
+/**
+ * Im **Liedtext** des eigenen Bestands suchen (#322).
+ *
+ * Beim ersten Aufruf baut der Server dafür einen Index (ein Datei-Download je Lied) – das dauert
+ * spürbar, danach kommt die Antwort aus dem Speicher. Gemessen: Weder ChurchTools noch CCLI können im
+ * Liedtext suchen, deshalb macht es unser Server selbst (siehe `songTextIndex.ts`).
+ */
+export function sucheImLiedtext(q: string): Promise<SongTextTreffer[]> {
+  return apiFetch<SongTextTreffer[]>(`/api/song-text-search?q=${encodeURIComponent(q)}`);
+}
+
+/**
+ * Bei CCLI SongSelect nach einem Titel suchen (#322) – über ChurchTools als Vermittler.
+ *
+ * **Die Trefferliste ist nicht unbedingt vollständig:** ChurchTools holt 100 Treffer und zeigt keinen
+ * Weg weiter (gemessen: 147 zu „Wo ich auch stehe"). Die Oberfläche sagt das, statt Vollständigkeit
+ * vorzutäuschen.
+ */
+export function sucheSongSelect(title: string): Promise<SongSelectSuchergebnis> {
+  return apiFetch<SongSelectSuchergebnis>(
+    `/api/songselect/search?title=${encodeURIComponent(title)}`,
+  );
+}
+
+/** Ein CCLI-Lied per Nummer abfragen (#322) – liefert zusätzlich das Copyright fürs Formular. */
+export function getSongSelectSong(songNumber: number): Promise<SongSelectSong> {
+  return apiFetch<SongSelectSong>(`/api/songselect/songs/${songNumber}`);
+}
+
+/**
+ * Die Stammdaten eines Liedes lesen (#322, Schritt 11) – für das Änderungsformular.
+ *
+ * **Nicht aus der Bibliothek:** `SongLibraryEntry` kennt CCLI-Nummer, Copyright und Kategorie nicht.
+ * Sie dort mitzuschleppen hieße, sie in jeder Liedliste zu laden, obwohl kein Bildschirm sie anzeigt.
+ */
+export function getSongStammdaten(songId: number): Promise<LiedStammdatenAnsicht> {
+  return apiFetch<LiedStammdatenAnsicht>(`/api/songs/${songId}/stammdaten`);
+}
+
+/**
+ * Stammdaten ändern (#322, Schritt 11) – **nur die geänderten Felder.**
+ *
+ * Der Server macht daraus ein vollständiges `PUT` (lesen–ändern–schreiben), weil ChurchTools bei einem
+ * Teil-`PUT` die nicht gesendeten Felder löscht. Zurück kommt, was danach wirklich drinsteht.
+ */
+export function aendereLied(
+  songId: number,
+  aenderung: Partial<LiedStammdaten>,
+): Promise<LiedStammdatenAnsicht> {
+  return apiFetch<LiedStammdatenAnsicht>(`/api/songs/${songId}`, {
+    method: 'PUT',
+    body: JSON.stringify(aenderung),
+  });
+}
+
+/**
+ * Ein Lied löschen (#322, Schritt 11) – **samt allem, was daran hängt.**
+ *
+ * Die Rückfrage steht in der Oberfläche und nennt die Folgen. Zurück kommt der Name, weil es ihn danach
+ * nicht mehr gibt, die Meldung ihn aber braucht.
+ */
+export function loescheLied(songId: number): Promise<{ name: string }> {
+  return apiFetch<{ name: string }>(`/api/songs/${songId}`, { method: 'DELETE' });
+}
+
+/**
+ * Ein neues Lied anlegen (#322) – Lied + erstes Arrangement, auf Wunsch samt Ablauf-Eintrag.
+ *
+ * **Rechte, Kategorie und die CCLI-Doppelprüfung macht der Server**, nicht das Formular: Eine Prüfung,
+ * die nur in der Oberfläche steht, umgeht jeder, der den Endpunkt direkt aufruft. Die Antwort nennt
+ * auch den Teilerfolg (`imAblauf: false`) – die Oberfläche gibt ihn als Text weiter.
+ */
+export function legeLiedAn(auftrag: LiedAnlegenAuftrag): Promise<LiedAngelegt> {
+  return apiFetch<LiedAngelegt>('/api/songs', {
+    method: 'POST',
+    body: JSON.stringify(auftrag),
+  });
 }
 
 /**

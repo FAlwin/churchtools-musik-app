@@ -117,10 +117,27 @@ Reihenfolge „erst die neue Datei, dann die alte weg" ist eine echte Zusage sta
 Bei der ECG standen daraufhin zwei Arrangements ohne Blatt da – während die App „Notenblatt aus
 SongSelect geholt" meldete. **Ein Erfolgssignal ist kein Beleg dafür, dass etwas entstanden ist.**
 
-**Nicht bestätigt:** Für Text, Akkord-PDF, Lead- und Vocal-Sheet gibt es vermutlich entsprechende
-Funktionen (`getCCLILyrics`, …) – **das ist geraten**, nicht gemessen. Wer sie ergänzt, misst sie
-vorher; blindes Ausprobieren gegen die Gemeinde-Instanz legt bei jedem Versuch eine Datei an
-(siehe unten).
+**Nachgemessen am 13.08.2026** (`probe-songsuche.ts`, streng lesend) – der frühere Satz „das ist
+geraten" gilt für zwei der drei Fragen nicht mehr:
+
+| Funktion                      | Befund                                                                                                                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `getCCLILyrics`               | **existiert** – der Aufruf ging bis `api.ccli.com/ss/v2/songs//lyrics` und scheiterte nur an der fehlenden Song-ID. Holt also den **Text zu EINER Nummer**.                                                                                            |
+| Textsuche bei CCLI            | **gibt es nicht** – acht naheliegende Namen abgelehnt: `getCCLISongsMatchingLyrics`, `…MatchingText`, `…MatchingContent`, `…MatchingAuthor`, `…Matching`, `searchCCLISongs`, `getCCLISongs`. Antwort jeweils `Function … was not defined as Function!` |
+| Akkord-PDF, Lead-/Vocal-Sheet | weiterhin **nicht gemessen** – wer sie ergänzt, misst vorher.                                                                                                                                                                                          |
+
+**Folge für die Suche im Liedtext:** Sie ist über CCLI nicht möglich. Auch ChurchTools kann es nicht –
+`/api/songs?query=…` filtert nur Stammdaten (Wort aus dem Liedtext: 0 Treffer, dasselbe Wort aus dem
+Titel: 1 Treffer, Gegenprobe). Deshalb baut unser Server einen eigenen Index über die ChordPro-Dateien
+(`songTextIndex.ts`).
+
+**Nebenbefund für künftige Erkundungen:** Die alte Schnittstelle braucht ein **Sitzungs-Cookie**, kein
+Login-Token. Mit reinem Token antwortet ChurchTools mit einer Weiterleitung auf die Anmeldeseite – das
+erste Erkundungsskript lief deshalb in „redirect count exceeded". Der Token lässt sich über
+`GET /api/whoami?login_token=…` in eine Sitzung einlösen; die Antwort setzt das Cookie.
+
+Blindes Ausprobieren gegen die Gemeinde-Instanz bleibt tabu: Ein Abruf legt dort eine Datei an und wird
+bei CCLI vermerkt.
 
 ### 3. Suchen: `getCCLISongsMatchingTitle`
 

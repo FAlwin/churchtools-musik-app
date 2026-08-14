@@ -31,7 +31,7 @@ import { SharersSheet } from '../components/SharersSheet';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { deriveActiveSongView } from '../utils/activeSongView';
-import { generateChordPdf } from '../utils/chordPdf';
+import { chartHead, generateChordPdf } from '../utils/chordPdf';
 import { pdfOptionsForSong } from '../utils/chartPdfOptions';
 import { sharePdf } from '../utils/sharePdf';
 import { DEFAULT_SETTINGS } from '../utils/chartSettings';
@@ -50,6 +50,7 @@ import {
 } from '../hooks/useArrangementUeberschreibung';
 import { setArrangementTempo } from '../services/churchtoolsApi';
 import { ArrangementFilesSheet } from '../components/ArrangementFilesSheet';
+import { EditSongSheet } from '../components/EditSongSheet';
 import { useArrangementDateien } from '../hooks/useArrangementDateien';
 import { loeschFrage } from '../utils/dateiVerwaltung';
 import { useSetlistPages } from '../hooks/useSetlistPages';
@@ -165,7 +166,7 @@ export function ChordChart({
    * wäre es die dritte Fassung geworden – und die Namen, die `ChartOverlays` gar nicht rendert
    * (`tempo`, `files`), stehen jetzt sichtbar getrennt statt in einer Liste vermischt.
    */
-  const [overlay, setOverlay] = useState<ChartOverlay | 'tempo' | 'files'>(null);
+  const [overlay, setOverlay] = useState<ChartOverlay | 'tempo' | 'files' | 'stammdaten'>(null);
   /** Ein Overlay umschalten (nochmal derselbe Knopf schließt es). */
   const toggleOverlay = (o: 'appearance' | 'menu' | 'tempo') =>
     setOverlay((cur) => (cur === o ? null : o));
@@ -589,7 +590,21 @@ export function ChordChart({
       <>
         {!leistenAus && (
           <ChartHeader
-            songTitle={song.title}
+            /**
+             * **Derselbe Titel wie auf dem Blatt** – über `chartHead`, nicht über `song.title`.
+             *
+             * Vorher gab es zwei Wege zur Überschrift: Das Blatt las sie aus dem **angezeigten** Text
+             * (also auch aus einer Version), die Kopfzeile nahm den Titel des **Originals**. Bei einem
+             * Lied mit App-Version standen damit zwei verschiedene Überschriften übereinander –
+             * gemeldet von Alwin am 13.08.2026, sichtbar an einer überzähligen Klammer, die im
+             * Original-ChordPro von CCLI steht (`{title: … (Grosser Gott)]}`) und in der
+             * App-Version nicht mehr. Der Kommentar an `chartHead` versprach schon, die eine Quelle zu
+             * sein; diese Stelle hielt sich nicht daran.
+             */
+            songTitle={
+              chartHead({ title: song.title, author: song.author, chordpro: displayedChordpro })
+                .title
+            }
             headInfo={headInfo}
             menuOpen={overlay === 'menu'}
             appearanceOpen={overlay === 'appearance'}
@@ -667,8 +682,11 @@ export function ChordChart({
           // Tempo-Menü und Dateiverwaltung sind bewusst KEINE `ChartOverlay`: Sie teilen sich zwar
           // die Regel „höchstens eines offen", haben aber eine ganz andere Bedienung. Deshalb hier
           // herausgefiltert, statt den Typ dort aufzuweichen.
-          overlay={overlay === 'tempo' || overlay === 'files' ? null : overlay}
-          onOverlay={setOverlay}
+          overlay={
+            overlay === 'tempo' || overlay === 'files' || overlay === 'stammdaten' ? null : overlay
+          }
+          /* Eigener Pfeil statt `setOverlay`: Der Zustand kennt mehr Werte als `ChartOverlay`. */
+          onOverlay={(o) => setOverlay(o)}
           song={song}
           set={set}
           curKey={curKey}
@@ -683,6 +701,7 @@ export function ChordChart({
           onSelectVersion={(versionKey) => selectVersion(song.id, versionKey)}
           onSharePdf={shareCurrentAsPdf}
           onOpenFiles={() => setOverlay('files')}
+          onEditSong={() => setOverlay('stammdaten')}
           onEditCurrent={openEditCurrent}
           onNewVersion={openNewVersion}
           onDeleteVersion={() => setConfirmDelEdited(true)}
@@ -794,6 +813,25 @@ export function ChordChart({
           />
         )}
 
+        {/**
+         * Stammdaten ändern (#322, Schritt 11).
+         *
+         * **Nach dem Löschen wird die Chart-Ansicht verlassen** (`onBack`): Ein Blatt zu einem Lied,
+         * das es nicht mehr gibt, wäre eine Sackgasse – der nächste Abruf endete im Fehler.
+         */}
+        {overlay === 'stammdaten' && (
+          <EditSongSheet
+            songId={song.id}
+            songName={song.title}
+            onSaved={showToast}
+            onDeleted={(meldung) => {
+              showToast(meldung);
+              onBack();
+            }}
+            onClose={() => setOverlay(null)}
+          />
+        )}
+
         {/* Dateien des Arrangements (#321). Hochladen/Löschen folgt in Schritt 4. */}
         {overlay === 'files' && (
           <ArrangementFilesSheet
@@ -831,7 +869,7 @@ export function ChordChart({
         {songSelectFrage && song.ccli && (
           <ConfirmDialog
             title="Notenblatt aus SongSelect holen?"
-            message={`Für „${song.title}" (CCLI ${song.ccli}) wird das Notenblatt bei CCLI geholt und in „${song.arrangementName}" abgelegt – in der Tonart des Arrangements. Ein vorhandenes Notenblatt dieses Arrangements wird dabei ERSETZT; deine eigenen Versionen bleiben.`}
+            message={`Für „${song.title}" (CCLI-Nummer ${song.ccli}) wird das Notenblatt bei SongSelect geholt und in „${song.arrangementName}" abgelegt – in der Tonart des Arrangements. Ein vorhandenes Notenblatt dieses Arrangements wird dabei ERSETZT; deine eigenen Versionen bleiben.`}
             confirmLabel="Holen"
             onConfirm={() => {
               setSongSelectFrage(false);

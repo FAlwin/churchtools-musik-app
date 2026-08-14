@@ -1,0 +1,88 @@
+// Die Stammdaten-Felder eines Liedes (#322) – von „Neues Lied" UND „Stammdaten ändern" genutzt.
+// Sie folgen bewusst dem „Eintrag hinzufügen"-Dialog (AddItemSheet): Ein zweites Aussehen für
+// dieselbe Sorte Eingabe wäre eine zweite Sprache in derselben App.
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text2);
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  // 16px, damit iOS beim Fokussieren nicht hineinzoomt.
+  font-size: 16px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+}
+.textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+}
+// Kategorie-Auswahl: Chips statt Auswahlliste. Es sind wenige, sie sind alle erlaubt (der Server
+// schneidet zu), und keiner ist vorbelegt – ein leeres <select> mit Platzhalter sähe dagegen wie ein
+// Versehen aus.
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.chip {
+  padding: 9px 13px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+
+  @media (hover: hover) {
+    &:hover {
+      background: var(--surface3);
+    }
+  }
+}
+.chipActive {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue-ink);
+}
+// Warnung direkt am Feld (gleicher Liedname): gedeckt, nicht rot. Anlegen ist erlaubt – ein roter
+// Fehlerkasten würde einen Riegel behaupten, den es hier nicht gibt.
+.warn {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text2);
+}

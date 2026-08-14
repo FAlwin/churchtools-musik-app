@@ -51,6 +51,7 @@ function setup(
     onSharePdf: vi.fn(),
     onEditCurrent: vi.fn(),
     onOpenFiles: vi.fn(),
+    onEditSong: vi.fn(),
     onNewVersion: vi.fn(),
     onDeleteVersion: vi.fn(),
     onChange: vi.fn(),
