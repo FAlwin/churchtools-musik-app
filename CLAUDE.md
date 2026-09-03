@@ -51,7 +51,9 @@
     Status außer 404 einen 502, `schreibe()` in `ctWrite` ebenso. Läufe mit vielen Dateien konnten eine
     Drosselung also nicht erkennen, und beim Speichern stand „fehlgeschlagen" statt „ChurchTools bremst
     uns aus". Jetzt werfen **alle drei** `CtOverloadedError` mit `Retry-After`. Die dritte Stelle fand
-    erst die Dopplungs-Suche beim `/festhalten` – genau dafür ist sie da.
+    erst die Dopplungs-Suche beim `/festhalten` – genau dafür ist sie da. **Eine VIERTE kam am
+    03.09.2026 dazu** (#381): `login()` in `ctAuth` machte aus einem 429 ebenfalls einen 502 – gefunden
+    beim Nachforschen zu einem fehlgeschlagenen Login, nicht bei einer Dopplungs-Suche.
 
     ⚠️ **Der gefährlichste Punkt darin, gemessen:** `PUT /api/songs/{id}` **ersetzt den ganzen
     Datensatz** – ein Teil-`PUT` löscht Autor, CCLI-Nummer, Copyright und `shouldPractice`. Deshalb
@@ -186,6 +188,24 @@ churchtools-musik-app/
   grundlos abmelden. Umgekehrt mappt `getCsrfToken` eine tote CT-Session bewusst auf **401** (nicht
   502), damit ein Aussetzer beim Speichern ebenfalls sauber zum Re-Login führt statt als „offline"
   zu erscheinen.
+- ⚠️ **Eine tote CT-Session kommt NICHT mehr als 401 (#381, gemessen 03.09.2026 an CT 3.136.2):**
+  `GET /api/whoami` antwortet ohne gültige Session mit **200** und einem Phantom-Nutzer
+  `{"id":-1,"lastName":"Anonymous"}`; `GET /api/permissions/global` mit **200** und lauter `false`.
+  Nur `/api/csrftoken` liefert noch 401. Der gesamte Ausgesperrt-Schutz hing an diesem 401 – ohne ihn
+  hielt die App den Phantom-Nutzer für angemeldet und zeigte „kein Zugriff" (Sackgasse, heraus nur
+  über das Löschen der Website-Daten). **`whoami()` in `ctAuth` prüft deshalb per `ctId`, ob die
+  Antwort überhaupt eine Person beschreibt (`id > 0`), und wirft sonst 401.** Das ist die **einzige**
+  Stelle im Projekt, die `/api/whoami` ruft – alle Aufrufer (`getUserId`, `getMe`, Team-Notizen,
+  `getCapabilities`, Anmerkungen, Einstellungen, Setlist) gehen darüber. Merkmal ist die **ID**, nicht
+  `lastName === 'Anonymous'`: Der Name ist Anzeigetext und in einer anderen Spracheinstellung anders.
+  Nebenwirkung, die damit ebenfalls weg ist: Die `-1` floss über `getUserId` in Dateinamen
+  (`annotations.ts` → `-1.json`, `userSettings.ts` → `settings--1.json`) – zwei Menschen mit toter
+  Session hätten sich eine Anmerkungs-Datei geteilt.
+- ⚠️ **Ein fehlgeschlagener Login war stumm (#381):** Der `errorHandler` loggt nur nicht-`HttpError`,
+  ein Request-Log gibt es nicht – die beiden 502-Zweige in `login()` hinterließen also **keine** Spur
+  im Container-Log. Genau daran scheiterte die Aufklärung des Vorfalls vom 03.09.2026. Beide loggen
+  jetzt den echten CT-Status (dieselbe Lehre wie `ctCsrf` seit #296); ein 401 („falsches Passwort")
+  bewusst **nicht**, das würde nur Rauschen erzeugen.
 - ChurchTools-Login-Daten verlassen den Browser nicht dauerhaft –
   Session läuft serverseitig, Client bekommt signiertes httpOnly-Cookie
 

@@ -6,8 +6,9 @@
  * `Authorization`-Header nicht annimmt.
  */
 import { HttpError } from '../middleware/errorHandler.js';
-import { BASE, ctGet, ctSignal } from './ctHttp.js';
+import { BASE, CtOverloadedError, ctGet, ctSignal, parseRetryAfter } from './ctHttp.js';
 import { forgetSession, userIdMemo } from './ctSessionMemos.js';
+import { ctId } from '../utils/ctId.js';
 import type { ChurchToolsUser } from './ctTypes.js';
 
 /** Liest aus den Set-Cookie-Headern das ChurchTools-Session-Cookie (name=value). */
@@ -34,6 +35,10 @@ export async function login(
   username: string,
   password: string,
 ): Promise<{ cookie: string; user: ChurchToolsUser }> {
+  // Eine Zeitüberschreitung bleibt hier bewusst eine rohe `TimeoutError` – wie in `ctGet`. Sie
+  // wird vom `errorHandler` zu 500 und landet als „Unerwarteter Fehler" im Log, ist also sichtbar;
+  // und `isCtOverloaded` erkennt sie genau in dieser Form (#300). Sie hier allein zu einem 504 zu
+  // übersetzen wäre eine fünfte Variante derselben Regel statt einer Regel.
   const res = await fetch(`${BASE}/api/login`, {
     signal: ctSignal(),
     method: 'POST',
@@ -45,12 +50,28 @@ export async function login(
   if (res.status === 400 || res.status === 401 || res.status === 403) {
     throw new HttpError(401, 'E-Mail oder Passwort falsch.');
   }
+  // **429 ist eine Drosselung, kein Serverfehler** – die VIERTE Stelle dieser Regel (#381).
+  // `ctGet` (#300), der Datei-Download und `ctWrite` (13.08.2026) unterscheiden das; der
+  // Anmeldepfad machte daraus einen 502 und damit „am Passwort liegt es nicht" statt „bitte einen
+  // Moment warten".
+  if (res.status === 429) {
+    throw new CtOverloadedError(parseRetryAfter(res.headers.get('retry-after')));
+  }
   if (!res.ok) {
-    throw new HttpError(502, 'ChurchTools-Anmeldung fehlgeschlagen.');
+    // **Diagnostisch (#381).** Dieser Zweig war stumm: Der `errorHandler` loggt nur
+    // nicht-`HttpError`, ein Request-Log gibt es nicht. Ein fehlgeschlagener Login – die häufigste
+    // Störung überhaupt – hinterließ damit keine Spur im Container-Log, und der Vorfall vom
+    // 03.09.2026 war deshalb nicht aufklärbar. `ctCsrf.ts` hat dieselbe Lehre seit #296.
+    console.error(`[churchtools] login → HTTP ${res.status}`);
+    throw new HttpError(502, `ChurchTools-Anmeldung fehlgeschlagen (HTTP ${res.status}).`);
   }
 
   const cookie = extractSessionCookie(res);
   if (!cookie) {
+    // Ebenfalls stumm gewesen (#381). Tritt auf, wenn ChurchTools mit 200 antwortet, aber kein
+    // `ChurchTools_*`-Cookie mitschickt – ohne diese Zeile ist das von einem echten Serverfehler
+    // nicht zu unterscheiden.
+    console.error('[churchtools] login → 200, aber kein ChurchTools_*-Cookie in der Antwort');
     throw new HttpError(502, 'Keine Session von ChurchTools erhalten.');
   }
 
@@ -58,9 +79,45 @@ export async function login(
   return { cookie, user };
 }
 
+/**
+ * „Wer bin ich" – **und die Stelle, die eine tote CT-Session als solche erkennt** (#381).
+ *
+ * ChurchTools antwortet auf `/api/whoami` **ohne gültige Session nicht mit 401**, sondern mit
+ * **HTTP 200** und einem Phantom-Nutzer:
+ *
+ * ```
+ * {"data":{"id":-1,"firstName":"","lastName":"Anonymous", …}}
+ * ```
+ *
+ * Gemessen an 3.136.2 (Build 32882) am 03.09.2026. Früher kam hier ein 401 – darauf ist der ganze
+ * Ausgesperrt-Schutz gebaut: `getMe` verwirft die Session nur bei 401 (#270), `getCapabilities`
+ * führt nur bei 401 zum Login statt in die „Erneut versuchen"-Sackgasse (#149, Bezug #104). Ohne
+ * dieses 401 hält die App den Phantom-Nutzer für angemeldet und zeigt „kein Zugriff" – heraus kam
+ * man nur durch Löschen der Website-Daten.
+ *
+ * **Die ID ist das Merkmal, nicht der Name.** `lastName === 'Anonymous'` wäre Anzeigetext und in
+ * einer anderen Spracheinstellung ein anderer; eine Person mit `id <= 0` gibt es nicht. Gelesen wird
+ * sie mit `ctId` – der vorhandenen Stelle für „ID aus einem unbekannten Wert" (#322): `ctGet<T>`
+ * **behauptet** den Typ nur (castet), und die ChurchTools-Schnittstellen liefern IDs teils als
+ * Zeichenkette. Eine eigene Zahlenprüfung hier wäre eine zweite Fassung derselben Regel.
+ *
+ * **Warum hier und nur hier:** `whoami` ist die einzige Stelle im Projekt, die `/api/whoami` ruft.
+ * Alle Aufrufer (`getUserId`, `getMe`, Team-Notizen, `getCapabilities`, Anmerkungen, Einstellungen,
+ * Setlist) gehen darüber – die Prüfung ein zweites Mal daneben zu stellen wäre genau die
+ * Regel-Dopplung, die dieses Projekt am häufigsten getroffen hat.
+ *
+ * Nebeneffekt, der ebenfalls hier verschwindet: Die `-1` floss über `getUserId` ungeprüft in
+ * Dateinamen (`annotations.ts` → `-1.json`, `userSettings.ts` → `settings--1.json`). Zwei
+ * verschiedene Menschen mit toter Session wären beide „Konto -1" gewesen – und hätten sich eine
+ * Anmerkungs-Datei geteilt.
+ */
 export async function whoami(cookie: string): Promise<ChurchToolsUser> {
   const me = await ctGet<ChurchToolsUser>(cookie, '/api/whoami');
-  return { id: me.id, firstName: me.firstName, lastName: me.lastName };
+  const id = ctId(me?.id);
+  if (id === null || id <= 0) {
+    throw new HttpError(401, 'Session abgelaufen. Bitte neu anmelden.');
+  }
+  return { id, firstName: me.firstName, lastName: me.lastName };
 }
 
 /** Liefert die ChurchTools-Person-ID zum Session-Cookie (gecacht). */

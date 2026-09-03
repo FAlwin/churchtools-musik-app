@@ -18,6 +18,12 @@
 > („Session abgelaufen"), ein **403** von ChurchTools bleibt **403** – denn jeder 401 löst im Client
 > einen Zwangs-Logout aus (#152/#186). `getCsrfToken` mappt eine tote CT-Session dagegen bewusst auf
 > **401** (nicht 502), damit auch ein Aussetzer beim Speichern sauber zum Re-Login führt.
+>
+> ⚠️ **ChurchTools liefert bei toter Session kein 401 mehr** (#381, gemessen 03.09.2026 an 3.136.2):
+> `/api/whoami` antwortet mit **200** und `{"id":-1,"lastName":"Anonymous"}`, `/api/permissions/global`
+> mit **200** und lauter `false`. Nur `/api/csrftoken` verhält sich noch wie früher. `whoami()` erzeugt
+> das 401 deshalb selbst, wenn die Antwort keine Person beschreibt (`id > 0`, gelesen mit `ctId`) –
+> sonst hielte die App den Phantom-Nutzer für angemeldet.
 
 ## System / Auth / Konfiguration
 

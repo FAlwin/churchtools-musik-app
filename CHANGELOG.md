@@ -126,11 +126,36 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Behoben
 
+- **Eine abgelaufene ChurchTools-Anmeldung führt wieder zur Anmeldemaske (#381).** Wer die App offen
+  ließ, bis die ChurchTools-Sitzung ablief, landete in einer Sackgasse: Die App hielt einen für
+  angemeldet, zeigte aber „kein Zugriff" – heraus kam man nur durch Löschen der Website-Daten.
+
+  **Die Ursache lag nicht in der App.** ChurchTools antwortet auf die Frage „wer ist angemeldet?"
+  seit einer Aktualisierung nicht mehr mit „niemand" (401), sondern mit einem Platzhalter-Nutzer
+  namens „Anonymous" – also scheinbar mit einer gültigen Antwort. Der gesamte Schutz gegen
+  Aussperren hing an diesem 401. Gemessen am 03.09.2026 an ChurchTools 3.136.2.
+
+  Erkennbar war das daran, dass beide Instanzen gleichzeitig betroffen waren, während die
+  produktive App seit Wochen unveränderten Code auslieferte.
+
+  Die App prüft jetzt an einer Stelle, ob die Antwort überhaupt eine Person beschreibt. Damit
+  greifen alle vorhandenen Vorkehrungen wieder – ohne dass eine davon angefasst werden musste.
+
+- **Ein fehlgeschlagener Login hinterlässt jetzt eine Spur im Protokoll (#381).** Zwei Fehlerfälle
+  beim Anmelden waren stumm: Im Container-Protokoll stand nichts, obwohl die App „Der Server
+  antwortet gerade nicht" zeigte. Damit war die häufigste Störung überhaupt nicht aufklärbar. Der
+  echte ChurchTools-Statuscode steht nun im Protokoll und in der Meldung. Falsche Zugangsdaten
+  werden weiterhin **nicht** protokolliert – das würde nur Rauschen erzeugen.
+
+- **Auch beim Anmelden wird eine Drosselung als solche gemeldet (#381).** Bremste ChurchTools den
+  Anmeldeversuch aus, stand da „am Passwort liegt es nicht" statt „bitte einen Moment warten".
+  Damit gilt die Regel jetzt an allen vier Stellen: Lesen, Datei-Download, Schreiben und Anmelden.
+
 - **Auch beim Speichern wird eine Drosselung jetzt als solche gemeldet.** Bremste ChurchTools einen
   Schreibvorgang aus (Lied anlegen, Datei hochladen, Tempo speichern), stand da „fehlgeschlagen" – statt
   „ChurchTools bremst uns gerade aus, bitte einen Moment warten". Das eine klingt nach einem Fehler, den
-  man nicht lösen kann, das andere nach „gleich nochmal". Damit gilt die Regel an allen drei Stellen:
-  beim Lesen, beim Datei-Download und beim Schreiben.
+  man nicht lösen kann, das andere nach „gleich nochmal". Damit galt die Regel beim Lesen, beim
+  Datei-Download und beim Schreiben – der Anmeldepfad kam mit #381 als vierte Stelle dazu.
 
 - **Datei-Downloads erkannten eine Drosselung durch ChurchTools nicht.** Aufgefallen beim Bau der
   Textsuche: Ein `429` („zu viele Anfragen") wurde im Datei-Pfad wie ein normaler Serverfehler
