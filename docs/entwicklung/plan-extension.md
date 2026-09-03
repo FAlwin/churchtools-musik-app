@@ -103,6 +103,8 @@ eine Stunde.
 - [ ] Custom Module in der Test-Instanz anlegen, ZIP hochladen, Menüpunkt öffnen
 - [ ] Belegen – jeweils am **Netzwerk-Mitschnitt**, nicht am Gefühl:
   - [ ] `/whoami` liefert ohne eigene Anmeldung den angemeldeten Nutzer
+        ⚠️ Prüfen heißt hier: **`id > 0`**, nicht „hat geantwortet". Ohne gültige Session antwortet
+        ChurchTools mit 200 und `{"id":-1,"lastName":"Anonymous"}` (#381, gemessen 03.09.2026).
   - [ ] Rechte lesbar (`/permissions/global`)
   - [ ] Termine, Ablauf und eine ChordPro-Datei ladbar
   - [ ] **Ein Wert in den Custom-Module-Daten schreib- und lesbar mit einem Konto OHNE

@@ -17,9 +17,15 @@ kommt wieder die Anmeldemaske, und du kannst dich sofort neu anmelden – ohne d
 <details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
-- **Betrifft:** `client/src/pages/Login.tsx`, `client/src/services/api.ts`, `server/src/routes/auth.ts`, `server/src/middleware/session.ts`
-- **Automatisiert:** nein – voller Anmelde-Ablauf braucht einen ChurchTools-Ersatz (#174)
-- **Historie:** –
+- **Betrifft:** `client/src/pages/Login.tsx`, `client/src/services/api.ts`, `server/src/routes/auth.ts`, `server/src/middleware/session.ts`, `server/src/services/ctAuth.ts`
+- **Automatisiert:** teilweise – `server/src/services/ctAuth.test.ts` deckt die Cookie-Formen und die
+  Fehlerzweige ab; der volle Anmelde-Ablauf braucht einen ChurchTools-Ersatz (#174)
+- **Historie:** #381
+- **Achtung (#381):** Dieser Fall fängt auch einen **Vertragsbruch von ChurchTools** – am 03.09.2026
+  hatte CT das Session-Cookie von `ChurchTools_…` auf `ChurchToolsV2_…` umbenannt, worauf sich
+  **niemand** mehr anmelden konnte. Bleibt die Anmeldung mit „Der Server antwortet gerade nicht"
+  hängen, während ChurchTools im Browser läuft: im Container-Protokoll nach
+  `[churchtools] login → …` sehen.
 
 </details>
 
@@ -60,12 +66,24 @@ Neuanmelden raus.
 2. Im Browser bei ChurchTools abmelden.
 3. In der App unten auf **Termine** und einen Gottesdienst öffnen.
 
+**Dieser Fall ist am 03.09.2026 in der Praxis durchgefallen – und er hängt an ChurchTools, nicht an
+unserem Code (#381).** Der Schutz setzt voraus, dass ChurchTools eine tote Session mit **401**
+beantwortet. Tut es das nicht mehr, ist die Sackgasse zurück, ohne dass sich hier eine Zeile ändert.
+Vorprüfung in zwei Sekunden, ohne Anmeldung – am eigenen ChurchTools:
+
+```
+curl -s https://<instanz>.church.tools/api/whoami
+```
+
+Kommt eine Antwort mit `"id":-1` und `"lastName":"Anonymous"` (statt 401), muss die App das erkennen –
+seit #381 tut sie das in `whoami()`. Kommt dagegen ein 401, gilt noch das alte Verhalten.
+
 <details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
 - **Betrifft:** `client/src/services/api.ts`, `client/src/App.tsx`, `server/src/middleware/session.ts`, `server/src/services/ctAuth.ts`
-- **Automatisiert:** teilweise – `client/src/services/api.session401.test.ts`
-- **Historie:** #186, #104, #149
+- **Automatisiert:** teilweise – `client/src/services/api.session401.test.ts`, `server/src/services/ctAuth.test.ts`
+- **Historie:** #186, #104, #149, #381
 
 </details>
 

@@ -74,10 +74,65 @@ Beim ersten Aufruf holt die App **jeden Liedtext einmal** von ChurchTools (bei 5
 Dateien). Danach antwortet sie eine Stunde lang aus dem Zwischenspeicher. Das ist so gebaut, weil weder
 ChurchTools noch CCLI im Liedtext suchen können; die Texte liegen dort als Datei am Arrangement.
 
+### „Der Server antwortet gerade nicht" beim Anmelden – obwohl das Passwort stimmt
+
+**Häufigste Ursache: ChurchTools hat sein Sitzungs-Merkmal umbenannt** (behoben mit #381; älterer
+Stand betroffen). Seit ChurchTools 3.136.2 heisst das Cookie `ChurchToolsV2_ct_<gemeinde>`, das alte
+`ChurchTools_ct_<gemeinde>` wird beim Anmelden aktiv gelöscht. Eine App auf älterem Stand sucht nur
+den alten Namen, findet nichts und meldet „Der Server antwortet gerade nicht".
+
+Erkennungsmerkmal: **ChurchTools selbst funktioniert im Browser einwandfrei**, und im
+Container-Protokoll steht zum Anmeldeversuch **nichts** (der Fehlerzweig war stumm; seit #381 loggt
+er `[churchtools] login → …`).
+
+Ins Protokoll sehen – **erst den Namen des laufenden Containers ermitteln**, er kann von dem in der
+Compose-Datei abweichen (bei der ECG heisst er `worship-charts`, nicht `musik-app`):
+
+```
+sudo docker ps --format "{{.Names}}\t{{.Image}}\t{{.Status}}"
+```
+
+Dann mit dem gefundenen Namen:
+
+```
+sudo docker logs --since 2h <name> 2>&1 | grep -i churchtools | tail -30
+```
+
+→ App auf einen Stand mit #381 aktualisieren. Eine Umgehung ohne Update gibt es nicht.
+
+Selbst prüfen lässt sich das im Browser: In ChurchTools **F12** → **Netzwerk**, eine beliebige
+Anfrage anklicken → **Headers** → unter _Request Headers_ die Zeile `Cookie:`. Steht dort
+`ChurchToolsV2_…`, liefert die Instanz das neue Merkmal.
+
 ### Keine Lieder oder Abläufe sichtbar
 
-Die angemeldete Person hat in ChurchTools nicht die nötigen Rechte.
-→ In ChurchTools die Rechte prüfen: „Veranstaltungen sehen" + „Song-Kategorien sehen".
+**Zwei Ursachen – die zweite sieht wie die erste aus.**
+
+**1. Es fehlen wirklich Rechte.** → In ChurchTools die Rechte prüfen: „Veranstaltungen sehen" +
+„Song-Kategorien sehen".
+
+**2. Die ChurchTools-Sitzung ist abgelaufen, die App merkt es aber nicht** (behoben mit #381; älterer
+Stand betroffen). ChurchTools antwortet auf „wer ist angemeldet?" bei toter Sitzung nicht mit
+„niemand", sondern mit einem Platzhalter-Nutzer namens „Anonymous" – die App hält einen dann für
+angemeldet, hat aber keine Rechte. **Ausgelöst wurde das bei der ECG durch die Umbenennung des
+Sitzungs-Merkmals** (siehe voriger Abschnitt): Bestehende Anmeldungen liefen ab diesem Moment mit
+einem entwerteten Cookie weiter. Erkennbar an dieser Zeile im Container-Protokoll:
+
+```
+[capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer); nicht überbrückt: …
+```
+
+→ **Sofort-Abhilfe:** die Website-Daten für die App-Adresse im Browser löschen (oder ein privates
+Fenster nutzen) und neu anmelden.
+→ **Dauerhaft:** App auf einen Stand mit #381 aktualisieren.
+
+Ob die eigene ChurchTools-Instanz betroffen ist, zeigt ein Aufruf ohne Anmeldung:
+
+```
+curl -s https://<instanz>.church.tools/api/whoami
+```
+
+Kommt `"id":-1` und `"lastName":"Anonymous"` statt einer 401-Antwort, ist es dieses Verhalten.
 
 ### Admin-Funktionen (Gemeindename, Links) fehlen
 
