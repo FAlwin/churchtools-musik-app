@@ -85,6 +85,19 @@ Erkennungsmerkmal: **ChurchTools selbst funktioniert im Browser einwandfrei**, u
 Container-Protokoll steht zum Anmeldeversuch **nichts** (der Fehlerzweig war stumm; seit #381 loggt
 er `[churchtools] login → …`).
 
+Ins Protokoll sehen – **erst den Namen des laufenden Containers ermitteln**, er kann von dem in der
+Compose-Datei abweichen (bei der ECG heisst er `worship-charts`, nicht `musik-app`):
+
+```
+sudo docker ps --format "{{.Names}}\t{{.Image}}\t{{.Status}}"
+```
+
+Dann mit dem gefundenen Namen:
+
+```
+sudo docker logs --since 2h <name> 2>&1 | grep -i churchtools | tail -30
+```
+
 → App auf einen Stand mit #381 aktualisieren. Eine Umgehung ohne Update gibt es nicht.
 
 Selbst prüfen lässt sich das im Browser: In ChurchTools **F12** → **Netzwerk**, eine beliebige
