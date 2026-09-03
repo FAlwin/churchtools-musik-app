@@ -45,12 +45,7 @@ function zeige(begriff: string, songs = BESTAND) {
 const trefferZeile = () => screen.getByRole('button', { name: /deine treue trägt/ });
 
 describe('LiedtextTrefferListe – ohne Begriff wird nicht gesucht', () => {
-  it('erklärt die Mindestlänge, statt eine leere Liste zu zeigen', () => {
-    zeige('');
-    expect(screen.getByText(/mindestens 3 Zeichen/)).toBeTruthy();
-  });
-
-  it('schaltet die Abfrage ab – der Reiter allein baut keinen Index', () => {
+  it('schaltet die Abfrage ab – ohne Begriff wird kein Index gebaut', () => {
     // Geprüft wird das Argument: Nur so fällt der Test, wenn die Abschaltung bricht.
     zeige('');
     expect(suche).toHaveBeenCalledWith('', false);

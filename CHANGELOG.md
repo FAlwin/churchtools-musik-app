@@ -26,32 +26,39 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Anfrage, und ein Lied, das du zweimal öffnest, wird nur einmal geholt. Für die eigenen Lieder nutzt
   der Server ohnehin den Bestand, den die Liedtextsuche schon angelegt hat.
 
-- **Ein Suchfeld, und darunter steht, wo gesucht wird (#378).** Über der Liedliste gibt es jetzt einen
-  Umschalter: **Bibliothek · Liedtexte · SongSelect**. Der eingetippte Begriff bleibt beim Wechseln
-  stehen – man tippt einmal und entscheidet danach, wo gesucht werden soll.
+- **Ein Suchfeld – die Bibliothek zuerst, SongSelect und Liedtexte darunter (#378).** Beim Einfügen eines
+  Liedes tippst du einmal, und die eigene Bibliothek filtert sofort. Unter den Treffern stehen zwei
+  Angebote: **„Auch in den Liedtexten nach … suchen"** und **„Bei SongSelect nach … suchen"**. Ein Tipp,
+  und die Treffer erscheinen darunter als eigene, beschriftete Gruppe – ein SongSelect-Treffer sieht einem
+  eigenen Lied sonst zum Verwechseln ähnlich, führt aber zu etwas anderem (anlegen statt einfügen).
 
-  **Dort, wo du ein Lied einfügst** – also in „Lied hinzufügen" und „Lied verknüpfen". **Im Liederheft
-  bewusst nicht:** Dort schlägst du ein Lied nach, und drei Quellen über der Liste wirken dort fremd
-  (Rückmeldung Alwin, 14.08.2026). Beim **Verknüpfen** fehlt SongSelect, und zwar mit Absicht: Dort wird
-  einem vorhandenen Ablaufpunkt ein Lied zugeordnet, ein neu angelegtes könnte dort nicht landen. Ohne
-  SongSelect-Lizenz erscheint der Reiter ebenfalls nicht.
+  **Findet die Bibliothek nichts, sucht SongSelect von selbst mit** – dann ist die Anfrage ja nötig.
+  Findet sie etwas, bleibt SongSelect ein Angebot. So kostet der häufigste Fall („das Lied ist bei uns")
+  keine einzige Anfrage an CCLI, und der zweithäufigste („das Lied ist neu") keinen zusätzlichen Tipp.
+
+  Ein erster Anlauf hatte dafür einen **Umschalter** „Bibliothek · Liedtexte · SongSelect" über der Liste.
+  Der verlangte die Entscheidung, _wo_ gesucht wird, vor dem Tippen – obwohl man sie erst nach dem
+  Ergebnis treffen kann (Rückmeldung Alwin, 03.09.2026). Jetzt folgt die App der Reihenfolge, in der man
+  tatsächlich sucht.
+
+  **SongSelect gibt es nur dort, wo aus einem Treffer ein Lied werden kann:** in „Lied hinzufügen". Beim
+  **Verknüpfen** und im **Liederheft** fehlt es mit Absicht – einem vorhandenen Ablaufpunkt kann kein neu
+  angelegtes Lied zugeordnet werden, und im Liederheft schlägt man nach. Ohne SongSelect-Lizenz erscheint
+  das Angebot ebenfalls nicht. Die Liedtexte gibt es überall – Suchen darf jeder.
 
   **Das Blatt „Neues Lied" ist dadurch einfacher geworden:** Die vorgeschaltete Frage „Bei SongSelect
   suchen oder selbst eintippen?" ist weg. „Neues Lied" führt direkt ins leere Formular, und ein Treffer
-  aus dem Reiter SongSelect öffnet dasselbe Formular gefüllt. Damit gibt es die SongSelect-Suche genau
-  **einmal** statt an zwei Stellen.
+  aus SongSelect öffnet dasselbe Formular gefüllt. Damit gibt es die SongSelect-Suche genau **einmal**.
 
-  Kleinigkeiten am Rand: Sortierleiste und Liedanzahl erscheinen nur bei der Bibliothek – bei den
-  anderen Quellen hätten sie nichts zu sagen. Und der Zähler schreibt bei einem einzigen Lied jetzt
-  **„1 Lied"** statt „1 Lieder"; der Fehler stand seit #322 drin und fiel bei 49 Liedern nie auf.
+  Kleinigkeit am Rand: Der Zähler schreibt bei einem einzigen Lied jetzt **„1 Lied"** statt „1 Lieder";
+  der Fehler stand seit #322 drin und fiel bei 49 Liedern nie auf.
 
 ### Geändert
 
-- **Die Suche im Liedtext ist jetzt an zwei Wegen erreichbar (#378).** Im Liederheft steht sie
-  weiterhin als Angebot unter der leeren Liste – der Wortlaut heißt jetzt **„Auch in den Liedtexten
-  nach … suchen"** –, im Einfüge-Dialog ist sie zusätzlich ein Reiter neben Bibliothek und SongSelect.
-  Ausgelöst wird sie erst ab **drei Zeichen**; ein Tipp auf den Reiter allein holt noch nichts. Das
-  bleibt der schonende Weg gegenüber ChurchTools, das uns bei zu vielen Anfragen bremst.
+- **Die Suche im Liedtext gibt es jetzt auch beim Einfügen (#378)** – als dasselbe Angebot wie im
+  Liederheft: **„Auch in den Liedtexten nach … suchen"** unter der Liste, ab **drei Zeichen**. Sie läuft
+  nie von selbst, denn beim ersten Mal holt sie jeden Liedtext einmal von ChurchTools. Das bleibt der
+  schonende Weg gegenüber ChurchTools, das uns bei zu vielen Anfragen bremst.
 
 ### Behoben
 

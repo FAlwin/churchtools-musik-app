@@ -1,21 +1,26 @@
 /**
- * **Ein Suchfeld, mehrere Quellen** (#378, Wunsch Alwin: „links Bibliothek, daneben dann SongSelect").
+ * **Ein Suchfeld – die Bibliothek zuerst, die anderen Quellen als Angebot darunter** (#378, zweiter
+ * Anlauf nach Alwins Rückmeldung vom 03.09.2026).
  *
- * Vorbilder sind ProPresenter und WorshipTools Planning: Der Suchbegriff gehört dem Nutzer, die Quelle
- * ist eine Umschaltung daneben – **kein zweiter Dialog**. Vorher war das Nachschlagen im eigenen Bestand
- * ein anderer Weg als das Anlegen aus SongSelect, jeder mit eigenem Suchfeld.
+ * Der erste Anlauf hatte einen Umschalter „Bibliothek · Liedtexte · SongSelect" **über** der Liste. Das
+ * verlangte die Entscheidung, *wo* gesucht wird, **vor** dem Tippen – obwohl man sie erst nach dem
+ * Ergebnis treffen kann („ist es bei uns? nein? dann SongSelect"). Jetzt gilt:
+ *
+ *  1. Die **Bibliothek** filtert beim Tippen, immer. Sie kostet nichts.
+ *  2. **Liedtexte** und **SongSelect** sind **Angebote unter der Liste** – ein Tipp, und die Treffer
+ *     erscheinen darunter als beschriftete Gruppe. Dasselbe Muster, das das Liederheft für die
+ *     Liedtextsuche schon vor #378 hatte; es steht jetzt einmal hier statt zweimal.
+ *  3. **Die Ausnahme:** Findet die Bibliothek zu einem reifen Begriff **nichts**, fragt SongSelect von
+ *     selbst – dann ist die Anfrage ja nötig. Findet sie etwas, bleibt SongSelect ein Angebot.
+ *
+ * Warum die Quellen unterschiedlich behandelt werden, hängt an ihren Kosten: Jede SongSelect-Suche geht
+ * über ChurchTools weiter an CCLI (~800 ms gemessen, zählt gegen die Drosselung – #300 hat damit die
+ * ganze App lahmgelegt). Die Liedtextsuche baut beim ersten Mal einen Index über **einen Download je
+ * Lied**. Beides darf nicht bei jedem Tastendruck laufen; deshalb kein „alles auf einmal".
  *
  * **Was hier liegt, sind die Regeln – nicht der Suchtext.** Der Text bleibt beim Aufrufer (in
  * `useSongFilter`, das ohnehin lokal filtert): Zwei Zustände für denselben Text wären zwei Stellen, die
- * auseinanderlaufen. Dieser Hook beantwortet nur: **welche Quelle gilt, und was wird an sie geschickt?**
- *
- * Die drei Quellen sind unterschiedlich teuer, und daran hängt die ganze Mechanik:
- *
- *  - **Bibliothek** filtert lokal im Browser. Kostet nichts, läuft bei jedem Tastendruck.
- *  - **Liedtexte** braucht serverseitig einen Index über alle Liedtexte – **ein Datei-Download je Lied**
- *    beim ersten Mal. Deshalb erst ab `LIEDTEXT_SUCHE_MIN_ZEICHEN`, und entprellt.
- *  - **SongSelect** geht über ChurchTools weiter zu CCLI (~800 ms gemessen). Entprellt, und erst wenn
- *    die Eingabe „reif" ist (`automatischSuchen`) – eine CCLI-Nummer also erst vollständig.
+ * auseinanderlaufen.
  */
 import { useEffect, useState } from 'react';
 import { LIEDTEXT_SUCHE_MIN_ZEICHEN } from '@shared/types/index';
@@ -23,26 +28,18 @@ import { useEntprellt } from './useEntprellt';
 import { SONGSELECT_MIN_ZEICHEN } from './useServices';
 import { automatischSuchen } from '../utils/liedFormular';
 
-export type LiedQuelle = 'bibliothek' | 'liedtext' | 'songselect';
+/** Die beiden Quellen, die als Gruppe unter der Bibliothek erscheinen – ihre Überschrift. */
+export type LiedQuelle = 'liedtext' | 'songselect';
 
-/**
- * Die Beschriftungen der Reiter.
- *
- * „Bibliothek" statt „Lieder" (Entscheidung Alwin, 14.08.2026): Neben „SongSelect" wäre „Lieder" blass –
- * dort stehen ja auch Lieder. „Bibliothek" ist der Begriff, den ProPresenter und WorshipTools ebenfalls
- * benutzen, und er sagt: **unser** Bestand.
- */
 export const QUELLE_BESCHRIFTUNG: Record<LiedQuelle, string> = {
-  bibliothek: 'Bibliothek',
   liedtext: 'Liedtexte',
   songselect: 'SongSelect',
 };
 
 /**
- * Wie lange nach dem letzten Tastendruck gewartet wird, bevor eine **teure** Quelle gefragt wird.
- *
- * Stand vorher in `NewSongSheet`. Ohne Entprellung löst „Wo ich auch stehe" fünfzehn CCLI-Suchen aus,
- * von denen vierzehn niemand sehen will – und alle belasten die Gegenstelle (#300).
+ * Wie lange nach dem letzten Tastendruck gewartet wird, bevor eine **teure** Quelle von selbst gefragt
+ * wird. Ohne Entprellung löst „Wo ich auch stehe" fünfzehn CCLI-Suchen aus, von denen vierzehn niemand
+ * sehen will – und alle belasten die Gegenstelle (#300).
  */
 export const SUCH_ENTPRELLUNG_MS = 400;
 
@@ -54,91 +51,82 @@ interface Optionen {
   /**
    * Kann aus einem SongSelect-Treffer an dieser Stelle überhaupt ein Lied werden?
    *
-   * **Ohne diesen Weg darf der Reiter nicht erscheinen.** In „Lied verknüpfen" (`ItemActionSheet`) wird
+   * **Ohne diesen Weg gibt es SongSelect hier nicht.** In „Lied verknüpfen" (`ItemActionSheet`) wird
    * einem **vorhandenen** Ablaufpunkt ein Lied zugeordnet; ein neu angelegtes Lied müsste dort in diesen
-   * Punkt hineingeschrieben werden, was der Anlege-Weg nicht kann. Ein Reiter dorthin wäre eine
-   * Sackgasse – genau das, was `NewSongSheet` schon bei fehlender Lizenz vermeidet.
+   * Punkt hineingeschrieben werden, was der Anlege-Weg nicht kann. Ein Angebot dorthin wäre eine
+   * Sackgasse. Im Liederheft ist es ebenso: Dort schlägt man nach, SongSelect hat dort nichts zu suchen.
    */
   kannAnlegen: boolean;
+  /**
+   * Hat die Bibliothek zum aktuellen Begriff **keinen** Treffer? Der Aufrufer weiß das, weil er filtert.
+   * Nur dann fragt SongSelect von selbst.
+   */
+  bibliothekLeer: boolean;
 }
 
-export function useLiedSuche({ eingabe, canUseCcli, kannAnlegen }: Optionen) {
-  const [gewaehlt, setQuelle] = useState<LiedQuelle>('bibliothek');
+export function useLiedSuche({ eingabe, canUseCcli, kannAnlegen, bibliothekLeer }: Optionen) {
+  const begriff = eingabe.trim();
   const entprellt = useEntprellt(eingabe, SUCH_ENTPRELLUNG_MS).trim();
+  const songSelectMoeglich = canUseCcli && kannAnlegen;
 
   /**
-   * Welche Quellen es hier gibt. „Bibliothek" und „Liedtexte" immer – beide lesen nur den eigenen
-   * Bestand. „SongSelect" nur mit Lizenz **und** einem Weg zum Anlegen.
+   * Was zuletzt **abgeschickt** wurde – je Quelle ein Zustand, nicht der Feldinhalt.
+   *
+   * Zwei Wege setzen den SongSelect-Begriff: die automatische Suche bei leerer Bibliothek (unten) und
+   * das Angebot bzw. die Eingabetaste (`songSelectSuchen`). Ein einzelner Zustand mit zwei Quellen ist
+   * hier richtig – zwei Zustände, von denen der „neuere" gilt, wären nicht entscheidbar.
    */
-  const quellen: LiedQuelle[] = ['bibliothek', 'liedtext'];
-  if (canUseCcli && kannAnlegen) quellen.push('songselect');
-
-  /**
-   * Die **geltende** Quelle – abgeleitet, nicht in einem Effekt korrigiert.
-   *
-   * Beim ersten Rendern sind die Rechte noch nicht geladen; „SongSelect" fehlt dann in `quellen`. Wäre
-   * die Quelle rein aus dem Zustand gelesen, könnte man auf einem Reiter stehen, den es nicht (mehr)
-   * gibt – etwa wenn die Lizenz in ChurchTools wegfällt. Dann gilt wieder die Bibliothek.
-   *
-   * Die App hat sich an genau dieser Sorte Zustand schon einmal verbrannt (#283): Nach einer
-   * Zusammenlegung war die Reihenfolge der Setter plötzlich bedeutsam, und ein Menüpunkt tat still
-   * nichts mehr. Ein abgeleiteter Wert kann das nicht.
-   */
-  const quelle: LiedQuelle = quellen.includes(gewaehlt) ? gewaehlt : 'bibliothek';
-
-  /**
-   * Was zuletzt **an SongSelect abgeschickt** wurde – nicht, was im Feld steht.
-   *
-   * Zwei Wege setzen es: die automatische Suche beim Tippen (unten) und der Knopf „Suchen/Abfragen"
-   * (`jetztSuchen`). Ein einzelner Zustand mit zwei Quellen ist hier richtig – zwei Zustände, von denen
-   * der „neuere" gilt, wären nicht entscheidbar.
-   *
-   * Die Meldungen nennen immer **diesen** Begriff, nicht die laufende Eingabe: „147 Treffer zu ‚Gnade'"
-   * bleibt wahr, während schon das nächste Wort getippt wird.
-   */
-  const [songSelectBegriff, setSongSelectBegriff] = useState('');
+  const [ssAbgeschickt, setSsAbgeschickt] = useState('');
+  const [ltAbgeschickt, setLtAbgeschickt] = useState('');
 
   useEffect(() => {
     /**
-     * **Nur, wenn SongSelect auch angezeigt wird.** Sonst löst ein Reiterwechsel – oder schon das Tippen
-     * in der Bibliothek – eine CCLI-Anfrage aus, die niemand wollte.
-     *
-     * `quelle` steht mit in den Abhängigkeiten, und das ist Absicht: Wer „Gnade" in der Bibliothek
-     * getippt hat und dann auf SongSelect schaltet, will Ergebnisse sehen, ohne noch einen Buchstaben
-     * zu tippen. Ist die Eingabe dagegen nicht reif (eine dreistellige Zahl), passiert weiter nichts –
-     * dafür gibt es den Knopf.
+     * **Nur bei leerer Bibliothek – und nur, wenn die Eingabe reif ist.** Wer „Gnade" tippt und dazu
+     * eigene Lieder hat, bekommt keine CCLI-Anfrage; wer „Wo ich auch stehe" tippt und nichts hat, bekommt
+     * sie ohne weiteren Tipp. Eine dreistellige Zahl ist nicht reif (die Nummern haben 7 Stellen) – dafür
+     * gibt es das Angebot.
      */
-    if (quelle !== 'songselect') return;
-    if (automatischSuchen(entprellt, SONGSELECT_MIN_ZEICHEN)) setSongSelectBegriff(entprellt);
-  }, [entprellt, quelle]);
+    if (!songSelectMoeglich || !bibliothekLeer) return;
+    if (automatischSuchen(entprellt, SONGSELECT_MIN_ZEICHEN)) setSsAbgeschickt(entprellt);
+  }, [entprellt, bibliothekLeer, songSelectMoeglich]);
 
   /**
-   * Was **im Liedtext** gesucht wird – abgeleitet, weil es keine zweite Auslösung gibt.
-   *
-   * Anders als bei SongSelect kann man hier nichts „trotzdem" abschicken: Unter der Mindestlänge trifft
-   * ein Begriff fast jedes Lied. Und die Schwelle schützt vor allem den ersten Aufruf, der den Index
-   * baut – **ein Tipp auf den Reiter allein löst also nichts aus**, es braucht einen Begriff.
+   * Ein abgeschickter Begriff **gilt nur, solange er noch im Feld steht** – abgeleitet, nicht in einem
+   * Effekt zurückgesetzt. Sonst stünden Treffer zu einem Wort da, das längst überschrieben ist. Dieselbe
+   * Regel hatte das Liederheft als `textSuche === query`; sie steht jetzt einmal hier.
    */
-  const liedtextBegriff =
-    quelle === 'liedtext' && entprellt.length >= LIEDTEXT_SUCHE_MIN_ZEICHEN ? entprellt : '';
+  const songSelectBegriff =
+    songSelectMoeglich && ssAbgeschickt !== '' && ssAbgeschickt === begriff ? ssAbgeschickt : '';
+  const liedtextBegriff = ltAbgeschickt !== '' && ltAbgeschickt === begriff ? ltAbgeschickt : '';
 
   /**
-   * Sofort bei SongSelect abfragen (Knopf oder Eingabetaste).
-   *
-   * Wartet die Entprellung nicht ab und erlaubt auch das, was die automatische Regel zurückhält – eine
-   * kurze CCLI-Nummer etwa. Die Schwelle ist eine Beobachtung an einem Bestand, kein Gesetz von CCLI,
-   * und darf niemandem den Weg versperren.
+   * Sofort bei SongSelect suchen (Angebot oder Eingabetaste). Wartet die Entprellung nicht ab und erlaubt
+   * auch das, was die automatische Regel zurückhält – eine kurze CCLI-Nummer etwa. Die 7 Stellen sind eine
+   * Beobachtung an einem Bestand, kein Gesetz von CCLI, und dürfen niemandem den Weg versperren.
    */
-  const jetztSuchen = (): void => setSongSelectBegriff(eingabe.trim());
+  const songSelectSuchen = (): void => {
+    if (songSelectMoeglich && begriff.length >= SONGSELECT_MIN_ZEICHEN) setSsAbgeschickt(begriff);
+  };
+
+  /**
+   * In den Liedtexten suchen – **nur auf Wunsch, nie von selbst.** Unter der Mindestlänge trifft ein
+   * Begriff fast jedes Lied, und die Schwelle schützt vor allem den ersten Aufruf, der den Index baut.
+   */
+  const liedtexteSuchen = (): void => {
+    if (begriff.length >= LIEDTEXT_SUCHE_MIN_ZEICHEN) setLtAbgeschickt(begriff);
+  };
 
   return {
-    quelle,
-    setQuelle,
-    quellen,
+    songSelectMoeglich,
+    /** `''` = es läuft nichts; sonst der Begriff, zu dem gerade SongSelect-Treffer gehören. */
     songSelectBegriff,
+    songSelectSuchen,
+    /** Das Angebot zeigen? Nur, wenn es die Quelle gibt, die Eingabe lang genug ist und noch nichts läuft. */
+    angebotSongSelect:
+      songSelectMoeglich && begriff.length >= SONGSELECT_MIN_ZEICHEN && songSelectBegriff === '',
+    /** `''` = es läuft nichts; sonst der Begriff, zu dem gerade Liedtext-Treffer gehören. */
     liedtextBegriff,
-    jetztSuchen,
-    /** Steht in der Bibliothek – der Aufrufer zeigt dann seine eigene, lokal gefilterte Liste. */
-    inBibliothek: quelle === 'bibliothek',
+    liedtexteSuchen,
+    angebotLiedtexte: begriff.length >= LIEDTEXT_SUCHE_MIN_ZEICHEN && liedtextBegriff === '',
   };
 }

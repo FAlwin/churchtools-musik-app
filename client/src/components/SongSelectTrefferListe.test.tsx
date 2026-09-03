@@ -103,19 +103,6 @@ describe('SongSelectTrefferListe – Titel oder Nummer', () => {
   });
 });
 
-describe('SongSelectTrefferListe – ohne Begriff läuft nichts', () => {
-  it('fragt bei leerem Begriff nicht ab, sondern erklärt das Feld', () => {
-    /**
-     * Der Reiter allein darf keine CCLI-Anfrage auslösen (#378): Jede geht über ChurchTools weiter an
-     * CCLI (~800 ms gemessen), und ein Wechsel ist kein Suchauftrag.
-     */
-    zeige('');
-
-    expect(screen.getByText(/Tippe einen Liedtitel/)).toBeTruthy();
-    expect(screen.queryByText(/Keine Treffer/)).toBeNull();
-  });
-});
-
 describe('SongSelectTrefferListe – Fehler', () => {
   it('zeigt die Meldung des Servers, statt sie zu erfinden', () => {
     // Fehlende Lizenz klingt anders als ein Aussetzer (#270) – den Unterschied kennt nur der Server.

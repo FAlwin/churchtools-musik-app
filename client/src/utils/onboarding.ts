@@ -16,10 +16,12 @@ const PREFIX = 'worship:onboard-';
 // im Liederheft ist neu und sieht nach nichts aus. Version erhöht, damit Bestandsnutzer den
 // geänderten Schritt sehen.
 // (termine-v2 hatte den Schritt „geändert"-Hinweis (#143) ergänzt.)
-// #378 (14.08.2026): Der Schritt nennt jetzt den Quellen-Umschalter „Bibliothek | Liedtexte |
-// SongSelect". **Ohne Versionssprung, und diesmal belegt:** `termine-v3` kam erst mit dem Squash
-// `3964bdf` in den Code und steckt in v2.21.0 nicht (`git show v2.21.0:… | grep -c` → 0); produktiv
-// läuft v2.20.0. Die Fassung war also nie draußen.
+// #378 (14.08.2026): Der Schritt nannte kurz den Quellen-Umschalter „Bibliothek | Liedtexte |
+// SongSelect" – der ist am 03.09.2026 wieder weg (Rückmeldung Alwin). Der Text beschreibt jetzt, was
+// das Liederheft tut: ein Suchfeld, darunter das Angebot „Auch in den Liedtexten suchen". **Ohne
+// Versionssprung, belegt:** `termine-v3` steckt in v2.22.0 (Prod) mit einem Text, der genau dieses
+// Verhalten beschreibt („durchsuchst du alle Lieder"); der Umschalter-Text war nie draußen. Für
+// Bestandsnutzer hat sich am Liederheft nichts geändert – ein erneutes Zeigen wäre Lärm.
 export const TOUR_TERMINE = 'termine-v3';
 // chart-v4: Der Tempo-Knopf oeffnet jetzt ein MENUE (#145 Folge) statt nur den Puls zu schalten –
 // und er ist neuerdings auch bei Liedern OHNE gepflegtes Tempo da, weil man genau dort eins
@@ -50,9 +52,13 @@ export const TOUR_SETLIST = 'setlist-v1';
 // setlist-edit-v2: „Hinzufügen" kann jetzt auch ein Lied ANLEGEN (#322) – bisher konnte man nur
 // vorhandene wählen. Version erhöht, damit Bestandsnutzer den geänderten Schritt sehen.
 // #378 (14.08.2026): Der Schritt sprach von „bei SongSelect gesucht oder selbst eingetippt" – das
-// war die **Wegwahl**, die es nicht mehr gibt. Jetzt nennt er den Umschalter. Ohne Versionssprung,
-// aus demselben belegten Grund wie bei `termine-v3` oben: nie ausgeliefert.
-export const TOUR_SETLIST_EDIT = 'setlist-edit-v2';
+// war die **Wegwahl**, die es nicht mehr gibt. Kurz nannte er den Umschalter (nie ausgeliefert).
+// setlist-edit-v3 (03.09.2026): Jetzt nennt er das eine Suchfeld mit den Angeboten darunter – und
+// hier ist der Sprung nötig, **gemessen**: `git show v2.22.0:client/src/utils/onboarding.ts` enthält
+// `setlist-edit-v2` mit dem Wegwahl-Text, und v2.22.0 läuft produktiv. Wer die Tour dort weggeklickt
+// hat, sähe den geänderten Einfüge-Dialog sonst nie erklärt. (Die Begründung „nie ausgeliefert" ist
+// genau die, die bei chart-v4 schon einmal falsch war – siehe oben.)
+export const TOUR_SETLIST_EDIT = 'setlist-edit-v3';
 
 export function isTourDone(key: string): boolean {
   try {
@@ -107,7 +113,7 @@ export const TERMINE_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="tabbar"]',
     title: 'Die Bereiche',
-    body: 'Unter „Lieder" suchst du in einem Feld – der Umschalter darunter wählt, wo: in unserer Bibliothek, in den Liedtexten oder bei SongSelect. Über „Neues Lied" legst du eines an, wenn du in ChurchTools Lieder bearbeiten darfst. Unter „Mehr" findest du Einstellungen und kannst diese Einführung erneut starten.',
+    body: 'Unter „Lieder" durchsuchst du alle Lieder; findet der Titel nichts, kannst du darunter auch in den Liedtexten suchen. Über „Neues Lied" legst du eines an, wenn du in ChurchTools Lieder bearbeiten darfst. Unter „Mehr" findest du Einstellungen und kannst diese Einführung erneut starten.',
   },
 ];
 
@@ -180,6 +186,6 @@ export const SETLIST_EDIT_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="edit-add"]',
     title: 'Hinzufügen',
-    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Der Umschalter über der Liste wählt, wo gesucht wird – in unserer Bibliothek, in den Liedtexten oder bei SongSelect. Ein SongSelect-Treffer wird gleich als neues Lied angelegt und in den Ablauf eingetragen.',
+    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Ein Suchfeld genügt: Zuerst findest du eure eigenen Lieder, darunter kannst du in den Liedtexten oder bei SongSelect weitersuchen – und ist ein Lied bei euch nicht da, sucht SongSelect von selbst mit. Ein SongSelect-Treffer wird als neues Lied angelegt und in den Ablauf eingetragen.',
   },
 ];

@@ -2,8 +2,8 @@
  * „Neues Lied" – ein Lied in ChurchTools anlegen (#322, Schritt 10b; umgebaut in #378).
  *
  * **Das Blatt ist nur noch das Formular.** Die Wegwahl („Bei SongSelect suchen / Selbst eintippen") und
- * die CCLI-Suche standen hier, bis der Quellen-Umschalter kam (#378, Entscheidung Alwin, 14.08.2026):
- * Gesucht wird jetzt oben im Suchkopf, bei der Quelle „SongSelect". Ein Treffer dort öffnet dieses Blatt
+ * die CCLI-Suche standen hier, bis die Suche in den Einfüge-Dialog wanderte (#378, Entscheidung Alwin, 14.08.2026):
+ * Gesucht wird dort im einen Suchfeld; SongSelect steht als Angebot darunter. Ein Treffer öffnet dieses Blatt
  * mit `startTreffer` – vorbelegt, aber noch nicht angelegt.
  *
  * Damit gibt es die SongSelect-Suche **genau einmal**. Zwei Fassungen wären zwei Stellen, an denen jede

@@ -1,17 +1,18 @@
 /**
  * Die Trefferliste der Quelle **„SongSelect"** (#378) – vorher inmitten von `NewSongSheet`.
  *
- * Herausgezogen, weil die Suche seit dem Quellen-Umschalter nicht mehr nur im Anlege-Blatt steht, sondern
- * im Liederheft und in „Lied hinzufügen". Ohne diesen Schritt gäbe es sie zweimal – und die zweite Fassung
- * hätte bei der nächsten Korrektur gefehlt. Genau diese Fehlerklasse hat das Projekt schon mehrfach
- * getroffen.
+ * Herausgezogen, weil die Suche nicht mehr nur im Anlege-Blatt steht. Seit dem 03.09.2026 erscheint sie
+ * als **Gruppe unter der Bibliothek** – deshalb trägt sie eine Überschrift, die die Quelle nennt: Ein
+ * SongSelect-Treffer und ein eigenes Lied sehen sonst zum Verwechseln ähnlich aus, führen aber zu ganz
+ * Verschiedenem (anlegen vs. einfügen).
  *
  * **Ein Treffer führt ins Anlege-Formular, nicht direkt in ChurchTools** (Entscheidung Alwin,
  * 14.08.2026): Die Kategorie ist Pflicht und wird bewusst nicht vorbelegt – ohne sie kann ChurchTools kein
  * Lied annehmen.
  */
 import type { SongSelectTreffer } from '@shared/types/index';
-import { useSongSelectSuche, SONGSELECT_MIN_ZEICHEN } from '../hooks/useServices';
+import { useSongSelectSuche } from '../hooks/useServices';
+import { QUELLE_BESCHRIFTUNG } from '../hooks/useLiedSuche';
 import { sucheArt, trefferUnterzeile } from '../utils/liedFormular';
 import { CenterMessage } from './CenterMessage';
 import { Icon } from './icons';
@@ -28,15 +29,6 @@ export function SongSelectTrefferListe({ begriff, onPick, busy }: SongSelectTref
   const suche = useSongSelectSuche(begriff, begriff !== '');
   /** Was zuletzt abgeschickt wurde – bestimmt nur die Wortwahl der Meldungen. */
   const gesucht = sucheArt(begriff);
-
-  if (begriff === '') {
-    return (
-      <div className={styles.hinweis}>
-        Tippe einen Liedtitel (ab {SONGSELECT_MIN_ZEICHEN} Zeichen) oder eine CCLI-Nummer. Aus einem
-        Treffer wird ein neues Lied – Titel, Autoren und Tonart kommen mit, das Notenblatt auch.
-      </div>
-    );
-  }
 
   if (suche.isLoading) {
     return (
@@ -77,6 +69,10 @@ export function SongSelectTrefferListe({ begriff, onPick, busy }: SongSelectTref
 
   return (
     <div className={styles.liste}>
+      {/* Die Quelle steht dran – wie „N Lieder mit … im Text" bei den Liedtexten. */}
+      <div className={styles.kopf}>
+        {QUELLE_BESCHRIFTUNG.songselect} · {liste.length} Treffer zu „{begriff}"
+      </div>
       {liste.map((t) => (
         <button
           key={t.songNumber}

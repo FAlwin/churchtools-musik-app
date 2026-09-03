@@ -36,9 +36,9 @@ vi.mock('../hooks/useServices', () => ({
 /**
  * **`useLiedSuche` wird NICHT gemockt** – bewusst.
  *
- * Ein Mock müsste seine Quellen-Logik nachbauen (welcher Reiter existiert, welcher gilt), und ein
- * nachgebauter Regelsatz im Test ist genau die Dopplung, die dieses Projekt teuer bezahlt hat. Stattdessen
- * läuft der echte Hook, und die Entprellung wird mit **Fake-Timern** vorgespult.
+ * Ein Mock müsste seine Regeln nachbauen (wann SongSelect von selbst fragt, wann nur ein Angebot steht),
+ * und ein nachgebauter Regelsatz im Test ist genau die Dopplung, die dieses Projekt teuer bezahlt hat.
+ * Stattdessen läuft der echte Hook, und die Entprellung wird mit **Fake-Timern** vorgespult.
  */
 const warten = () => act(() => void vi.advanceTimersByTime(500));
 
@@ -92,10 +92,12 @@ function zeige(props: Partial<Parameters<typeof SongPicker>[0]> = {}) {
 const liedZeile = () => screen.getByRole('button', { name: /Autor T/ });
 const direktKnopf = () => screen.getByRole('button', { name: /ohne Vorschau hinzufügen/ });
 
-/** Auf SongSelect umschalten und tippen, damit ein Begriff abgeschickt wird (entprellt). */
+/**
+ * Einen Begriff tippen, den die Bibliothek NICHT kennt („stub" trifft „Treu" nicht) – dann fragt
+ * SongSelect nach der Entprellung von selbst (Regel aus `useLiedSuche`, 03.09.2026).
+ */
 function zuSongSelect() {
-  fireEvent.click(screen.getByRole('button', { name: 'SongSelect' }));
-  fireEvent.change(screen.getByPlaceholderText(/Liedtitel/), { target: { value: 'stub' } });
+  fireEvent.change(screen.getByPlaceholderText(/Lied oder Autor/), { target: { value: 'stub' } });
   warten();
 }
 
@@ -174,9 +176,47 @@ describe('SongPicker – SongSelect', () => {
     expect(onSongSelectTreffer).toHaveBeenCalledWith(SS_TREFFER.treffer[0]);
   });
 
-  it('ohne Weg zum Anlegen fehlt der Reiter – kein Treffer ohne Ziel', () => {
+  it('findet die Bibliothek etwas, gibt es SongSelect nur als ANGEBOT – keine Anfrage von selbst', () => {
+    /**
+     * Die teuerste Zusicherung: „Tre" trifft „Treu", also darf niemand bei CCLI nachfragen. Das Angebot
+     * steht darunter; erst der Tipp darauf schickt ab.
+     */
+    zeige({ onSongSelectTreffer });
+    fireEvent.change(screen.getByPlaceholderText(/Lied oder Autor/), { target: { value: 'Tre' } });
+    warten();
+
+    expect(screen.queryByText(/Stub-Lied/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Bei SongSelect nach „Tre" suchen/ }));
+    expect(screen.getByRole('button', { name: /Stub-Lied/ })).toBeTruthy();
+    // Die Gruppe ist beschriftet – ein CCLI-Treffer sieht einem eigenen Lied sonst zum Verwechseln ähnlich.
+    expect(screen.getByText(/SongSelect · 1 Treffer zu „Tre"/)).toBeTruthy();
+  });
+
+  it('findet sie NICHTS, fragt SongSelect von selbst – ohne Tipp', () => {
+    zeige({ onSongSelectTreffer });
+    zuSongSelect();
+    expect(screen.getByRole('button', { name: /Stub-Lied/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Bei SongSelect nach/ })).toBeNull();
+  });
+
+  it('ohne Weg zum Anlegen gibt es SongSelect gar nicht – kein Treffer ohne Ziel', () => {
+    // „Lied verknüpfen": Einem vorhandenen Ablaufpunkt wird ein Lied zugeordnet, ein neues könnte dort
+    // nicht landen. Weder Angebot noch automatische Suche.
     zeige();
+    zuSongSelect();
+    expect(screen.queryByText(/Stub-Lied/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Bei SongSelect nach/ })).toBeNull();
+    // Die Liedtexte bleiben – Suchen darf jeder.
+    expect(
+      screen.getByRole('button', { name: /Auch in den Liedtexten nach „stub" suchen/ }),
+    ).toBeTruthy();
+  });
+
+  it('es gibt keinen Umschalter mehr', () => {
+    // Gegenprobe zur Entscheidung vom 03.09.2026.
+    zeige({ onSongSelectTreffer });
+    expect(screen.queryByRole('button', { name: 'Bibliothek' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Liedtexte' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'SongSelect' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Liedtexte' })).toBeTruthy();
   });
 });

@@ -259,8 +259,9 @@ export function useSongCategories(enabled: boolean) {
  *
  * **Erst auf Verlangen**, nicht automatisch: Der erste Aufruf lässt den Server einen Index bauen (ein
  * Datei-Download je Lied). Das ist zu teuer, um es bei jedem Tippen im Liederheft mitlaufen zu lassen –
- * die Titelsuche filtert ohnehin schon lokal und deckt den Normalfall ab. Seit #378 ist „Liedtexte" eine
- * eigene Quelle im Umschalter; das Verlangen ist dann der gewählte Reiter, die Schwelle bleibt.
+ * die Titelsuche filtert ohnehin schon lokal und deckt den Normalfall ab. Das Verlangen ist der Tipp auf
+ * das Angebot „Auch in den Liedtexten nach … suchen" (`SucheAngebot`, #378) – im Liederheft wie im
+ * Einfüge-Dialog; die Schwelle bleibt.
  *
  * Danach ist es billig: Der Index hält eine Stunde, weitere Suchen antworten aus dem Speicher.
  */
@@ -354,7 +355,7 @@ export function useSongSelectSuche(eingabe: string, enabled: boolean) {
  * Holt zu einer CCLI-Nummer die **Einzelangaben** – vor allem das Copyright (#378).
  *
  * Die Trefferliste von CCLI enthält es nicht; erst diese Abfrage liefert es. Sie lief vorher als `await`
- * im Klick-Handler von `NewSongSheet`. Seit der Treffer von außen kommt (Quellen-Umschalter), ist es eine
+ * im Klick-Handler von `NewSongSheet`. Seit der Treffer von außen kommt (Suche im Einfüge-Dialog, #378), ist es eine
  * Abfrage: **kein Effekt, der nachlädt** – der lief bei einem neu erzeugten Prop-Objekt endlos – und das
  * Ergebnis liegt danach im Cache, wenn dieselbe Nummer nochmal gebraucht wird.
  *

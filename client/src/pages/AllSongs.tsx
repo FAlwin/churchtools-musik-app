@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import {
-  LIEDTEXT_SUCHE_MIN_ZEICHEN,
-  type Service,
-  type SongLibraryEntry,
-} from '@shared/types/index';
+import { type Service, type SongLibraryEntry } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
@@ -14,6 +10,9 @@ import { NewSongSheet } from '../components/NewSongSheet';
 import { EditSongSheet } from '../components/EditSongSheet';
 import { SongStatsBar } from '../components/SongStatsBar';
 import { LiedtextTrefferListe } from '../components/LiedtextTrefferListe';
+import { LiedSucheKopf } from '../components/LiedSucheKopf';
+import { SucheAngebot } from '../components/SucheAngebot';
+import { useLiedSuche } from '../hooks/useLiedSuche';
 import { useSongFilter } from '../hooks/useSongFilter';
 import { liedAnzahl, statLabel } from '../utils/songFilter';
 import type { SongUsageMap } from '../services/churchtoolsApi';
@@ -70,34 +69,32 @@ export function AllSongs({
   const kannAnlegen = canCreateSong && onOpenSong !== undefined;
 
   /**
-   * **Im Liederheft gibt es KEINEN Quellen-Umschalter** (Entscheidung Alwin, 14.08.2026, #378).
+   * **Im Liederheft gibt es nur die Bibliothek und die Liedtexte – kein SongSelect** (Entscheidung
+   * Alwin, 14.08.2026, #378). Hier schlägt man ein Lied **nach**; SongSelect gehört dorthin, wo man ein
+   * Lied **einfügt** (`SongPicker`). Deshalb `kannAnlegen: false` – damit fehlt die Quelle.
    *
-   * Er stand hier kurzzeitig (#378) und war falsch: Hier schlägt man ein Lied **nach** – SongSelect und
-   * die Textsuche als gleichrangige Reiter darüber wirkten fremd. Der Umschalter gehört dorthin, wo man
-   * ein Lied **einfügt** (`SongPicker`), genau wie bei WorshipTools.
-   *
-   * Die Suche im Liedtext bleibt trotzdem erreichbar – als **Angebot unter der Liste**, wie vor #378:
-   * Wer nur eine Liedzeile im Kopf hat, findet sie dort, wo der Wunsch entsteht.
+   * Die Regel „das Angebot erscheint ab drei Zeichen, die Treffer gelten nur, solange der Begriff
+   * unverändert ist" stand hier bis zum 03.09.2026 als eigener Zustand (`textSuche === query`). Sie liegt
+   * jetzt in `useLiedSuche` – einmal, für das Liederheft und den Einfüge-Dialog.
    */
-  const [textSuche, setTextSuche] = useState('');
-  /**
-   * Die Textsuche gilt nur, solange der Suchbegriff **unverändert** ist – sonst stünden Treffer zu einem
-   * Begriff da, der nicht mehr im Feld steht. Abgeleitet statt in einem Effekt zurückgesetzt.
-   */
-  const textSucheAktiv = textSuche !== '' && textSuche === query;
+  const suche = useLiedSuche({
+    eingabe: f.q,
+    canUseCcli: false,
+    kannAnlegen: false,
+    bibliothekLeer: f.list.length === 0,
+  });
 
   /**
    * „Auch in den Liedtexten suchen" – als **Zuweisung**, nicht als lokale Komponente: Der Knopf erscheint
-   * an zwei Stellen (leere Liste und unter den Treffern), und zwei Kopien desselben JSX wären der Anfang,
-   * an dem später eine Änderung nur die Hälfte trifft.
+   * an zwei Stellen (leere Liste und unter den Treffern), und zwei Kopien wären der Anfang, an dem später
+   * eine Änderung nur die Hälfte trifft.
    */
-  const zuLiedtexten =
-    !textSucheAktiv && query.length >= LIEDTEXT_SUCHE_MIN_ZEICHEN ? (
-      <button className={styles.textSucheBtn} onClick={() => setTextSuche(query)}>
-        <Icon name="search" size={15} stroke={2.2} />
-        Auch in den Liedtexten nach „{query}" suchen
-      </button>
-    ) : null;
+  const zuLiedtexten = suche.angebotLiedtexte ? (
+    <SucheAngebot
+      text={`Auch in den Liedtexten nach „${query}" suchen`}
+      onClick={suche.liedtexteSuchen}
+    />
+  ) : null;
 
   return (
     <Screen>
@@ -108,15 +105,8 @@ export function AllSongs({
       <NavBar title="Lieder" />
 
       <div className={styles.searchWrap}>
-        {/* Ein einfaches Suchfeld – kein Quellen-Umschalter (#378). Siehe die Begründung oben. */}
-        <div className={styles.search}>
-          <Icon name="search" size={18} stroke={2} className={styles.searchIcon} />
-          <input
-            placeholder="Lied oder Autor suchen…"
-            value={f.q}
-            onChange={(e) => f.setQ(e.target.value)}
-          />
-        </div>
+        {/* Dasselbe Suchfeld wie im Einfüge-Dialog – ohne SongSelect-Weg, deshalb tut Enter hier nichts. */}
+        <LiedSucheKopf eingabe={f.q} onEingabe={f.setQ} />
         {showStats && <SongStatsBar {...f} />}
 
         {/**
@@ -165,9 +155,13 @@ export function AllSongs({
             {/* Genau hier gehört der Weg zu den Liedtexten hin: Der Titel hat nichts gefunden –
                 vielleicht kennt man ihn nicht genau, sondern nur eine Zeile. */}
             {zuLiedtexten}
-            {textSucheAktiv && (
+            {suche.liedtextBegriff !== '' && (
               <div className={styles.group}>
-                <LiedtextTrefferListe begriff={textSuche} songs={songs} onPick={onSelect} />
+                <LiedtextTrefferListe
+                  begriff={suche.liedtextBegriff}
+                  songs={songs}
+                  onPick={onSelect}
+                />
               </div>
             )}
           </>
@@ -229,8 +223,12 @@ export function AllSongs({
             {/* Auch bei Titel-Treffern anbieten: „Gnade" findet zwei Titel, das gesuchte Lied kann
                 trotzdem ein anderes sein, das das Wort nur im Text hat. */}
             {zuLiedtexten}
-            {textSucheAktiv && (
-              <LiedtextTrefferListe begriff={textSuche} songs={songs} onPick={onSelect} />
+            {suche.liedtextBegriff !== '' && (
+              <LiedtextTrefferListe
+                begriff={suche.liedtextBegriff}
+                songs={songs}
+                onPick={onSelect}
+              />
             )}
           </div>
         )}

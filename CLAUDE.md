@@ -39,30 +39,21 @@
     - `EditSongSheet`, Einstiege im Lied-Menü und im Liederheft). **Noch nicht auf Staging
       durchgeklickt**, weil jeder Lauf echte Lieder in ChurchTools anlegt bzw. löscht (TF-LIB-03,
       TF-LIB-04).
-  - der **Quellen-Umschalter „Bibliothek · Liedtexte · SongSelect"** (#378, nach Alwins Rückmeldung vom 14.08.2026 überarbeitet): ein
-    Suchfeld, die Quelle darunter – **nur beim EINFÜGEN** („Lied hinzufügen", „Lied verknüpfen"; dort
-    ohne SongSelect, weil ein neues Lied in einem vorhandenen Ablaufpunkt nicht landen kann).
-    **Im Liederheft ausdrücklich NICHT** (Rückmeldung Alwin, 14.08.2026): Dort schlägt man ein Lied
-    **nach**, und drei gleichrangige Quellen darüber wirken fremd. Das Liederheft hat wieder ein
-    einfaches Suchfeld, die Textsuche dort wieder als Knopf unter der Liste. Die Regeln stehen **einmal**
-    in `hooks/useLiedSuche.ts`, die Optik in `components/LiedSucheKopf.tsx`.
-
-    ⚠️ **Die Lehre daraus:** „gilt überall" war als Festlegung gemeint und als Anweisung verstanden. Dass
-    derselbe Baustein an einer Stelle richtig und an einer anderen fremd ist, sah man erst **am
-    Bildschirm** – nicht in der Beschreibung. Bei sichtbaren Bedienelementen also früh einen Durchklick
-    anbieten, statt eine Festlegung wörtlich auf jede Ansicht zu übertragen.
-
-    **Dabei fiel die Wegwahl in `NewSongSheet` weg** (Entscheidung Alwin, 14.08.2026): Die
-    SongSelect-Suche gab es sonst an zwei Stellen. „Neues Lied" führt jetzt direkt ins leere Formular,
-    ein Treffer öffnet es über `startTreffer` gefüllt. Das Copyright holt seitdem eine Abfrage
-    (`useSongSelectSong`) statt ein `await` im Klick-Handler – **ein Effekt an einem Prop-Objekt wäre
-    endlos gelaufen**.
-
-    ⚠️ **Zwei Dopplungen dabei zusammengeführt:** die Mindestlänge der Liedtextsuche (stand als nackte
-    `3` an **vier** Stellen, jetzt `LIEDTEXT_SUCHE_MIN_ZEICHEN` in `@shared/types` – Client **und**
-    Server brauchen sie) und die Plural-Regel „1 Lied / N Lieder" (drei Stellen, **eine falsch**: der
-    Listenkopf schrieb „1 LIEDER"). Letzteres fand nur das **Durchklicken** mit dem E2E-Stub, der ein
-    einziges Lied hat – bei den 49 Liedern der ECG wäre es nie aufgefallen.
+  - **ein Suchfeld – die Bibliothek zuerst, Liedtexte und SongSelect als Angebot darunter** (#378, zweiter
+    Anlauf nach Alwins Rückmeldung vom 03.09.2026). Die Bibliothek filtert live; unter der Liste stehen
+    `SucheAngebot`-Knöpfe („Auch in den Liedtexten nach … suchen", „Bei SongSelect nach … suchen"), ein
+    Tipp öffnet die Treffer als beschriftete Gruppe. **Die Ausnahme:** Ist die Bibliothek zu einem reifen
+    Begriff leer, fragt SongSelect von selbst (`bibliothekLeer` kommt vom Aufrufer, der ja filtert).
+    Regeln in `hooks/useLiedSuche.ts`, Feld in `components/LiedSucheKopf.tsx`, Knopf in
+    `components/SucheAngebot.tsx` – **alle drei nutzt jetzt auch das Liederheft**, das bis dahin eine eigene
+    Suchfeld-Kopie und eine eigene `textSuche === query`-Regel hatte.
+    **Der erste Anlauf (14.08.2026) war ein Umschalter** „Bibliothek · Liedtexte · SongSelect" über der
+    Liste. Alwins Einwand: Das verlangt die Entscheidung, WO gesucht wird, vor dem Tippen – man kann sie
+    aber erst nach dem Ergebnis treffen. Also weg damit; `Segment` bleibt für Sortierung/Termine.
+    **SongSelect gibt es nur mit Lizenz UND einem Weg zum Anlegen** (`kannAnlegen`): in „Lied hinzufügen".
+    Beim Verknüpfen und im Liederheft fehlt es – ein Treffer ohne Ziel wäre eine Sackgasse. Liedtexte
+    gibt es überall. Dazu `liedAnzahl()` für „1 Lied"/„N Lieder" (der Listenkopf schrieb „1 LIEDER") –
+    gefunden nur durch **Durchklicken** mit dem E2E-Stub, der ein einziges Lied hat.
 
   - die **Liedtext-Vorschau als Zwischenschritt beim Einfügen** (#379, nach Alwins Rückmeldung vom 14.08.2026 umgebaut): Ein Antippen
     zeigt **erst den Text**, darin steht der Knopf zum Einfügen (Muster ProPresenter).

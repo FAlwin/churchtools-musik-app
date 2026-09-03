@@ -5,35 +5,8 @@
   flex-shrink: 0;
 }
 
-// Ein einfaches Suchfeld – **kein Quellen-Umschalter** (#378, Entscheidung Alwin 14.08.2026): Im Liederheft schlägt
-// man ein Lied nach; SongSelect und die Textsuche als Reiter darüber wirkten fremd. Der Umschalter steht
-// in `LiedSucheKopf`, benutzt nur vom Einfüge-Dialog (`SongPicker`).
-.search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--surface3);
-  border-radius: 8px;
-  padding: 9px 12px;
-
-  input {
-    flex: 1;
-    background: none;
-    border: none;
-    outline: none;
-    font-size: 15px;
-    color: var(--text);
-    font-family: var(--ui);
-
-    &::placeholder {
-      color: var(--text3);
-    }
-  }
-}
-.searchIcon {
-  color: var(--text3);
-  flex-shrink: 0;
-}
+// Das Suchfeld ist seit dem 03.09.2026 der gemeinsame `LiedSucheKopf` – die Kopie, die hier stand,
+// ist weg (#378).
 
 /**
  * Der Listenkopf: **Anzahl links, „Neues Lied" rechts – auf einer Höhe** (#322).
@@ -166,15 +139,6 @@
   margin-left: -2px;
 }
 
-/**
- * „Auch in den Liedtexten suchen" – bewusst zurückhaltend und **unter** den Titel-Treffern.
- *
- * Seit #378 ist es nur noch eine **Abkürzung zum Reiter „Liedtexte"**, keine zweite Suche: Der Knopf steht
- * dort, wo der Wunsch entsteht (eine Trefferliste ohne das Gesuchte), und schaltet die Quelle um. Die
- * Meldungen und Trefferzeilen dazu liegen in `LiedTreffer.module.scss`.
- */
-.textSucheBtn {
-  @include m.neues-lied-aktion;
-  margin: 14px auto 0;
-  font-size: 14.5px;
-}
+// „Auch in den Liedtexten suchen" steht bewusst zurückhaltend **unter** den Titel-Treffern – dort, wo der
+// Wunsch entsteht. Der Knopf ist seit dem 03.09.2026 `SucheAngebot`, die Regel dazu liegt in
+// `useLiedSuche`, die Trefferzeilen in `LiedTreffer.module.scss` (#378).

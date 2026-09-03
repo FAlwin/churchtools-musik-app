@@ -2,7 +2,7 @@
 
 Schwerpunkt auf **reiner Logik und serverseitigem Verhalten, das man von Hand kaum
 vollständig durchprüfen kann**. Die App hat keine eigene DB; UI-Feinheiten werden
-zusätzlich manuell (bzw. auf Staging) geprüft. Stand 14.08.2026 (nach #378 und #379): **135 Testdateien** –
+zusätzlich manuell (bzw. auf Staging) geprüft. Stand 03.09.2026 (nach #378, #379 und #381): **137 Testdateien** –
 **92 Client (1003 Tests)** + **43 Server (519 Tests)** mit Vitest + **11 Playwright-E2E in 6 Dateien**
 (Render-Smoke, voller Auth-Flow, Vollbild-Geometrie, Tempo-Menü-Geometrie,
 Arrangement-Migration,
@@ -120,24 +120,27 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
   jeweilige Seite. Bewusst ohne echtes Canvas (Strich-Persistenz bleibt manuell/Staging).
 - `components/Coachmarks`: Schritte durchlaufen (Fertig → onClose), Überspringen, Auto-Ende ohne
   Ziel-Element, Auto-Skip fehlender Schritte.
-- **Der Quellen-Umschalter (#378)** – hier liegt das Teure, denn die drei Quellen kosten sehr
-  Unterschiedliches:
-  - `hooks/useLiedSuche` (jsdom, **Fake-Timer**): Welche Quellen es überhaupt gibt (SongSelect nur mit
-    Lizenz **und** einem Weg zum Anlegen) und der **Rückfall auf die Bibliothek**, wenn die gewählte
-    Quelle wegfällt – abgeleitet, nicht in einem Effekt korrigiert (#283). Vor allem aber: **in der
-    Bibliothek getippter Text löst KEINE CCLI-Anfrage aus**, nach dem Wechsel wird der stehende Begriff
-    ohne neuen Tastendruck abgeschickt, eine unvollständige CCLI-Nummer läuft nicht von selbst (7
-    Stellen, gemessen) – über den Knopf aber doch. Die Liedtextsuche startet erst ab drei Zeichen; ein
-    Reitertipp allein baut keinen Index. **Fake-Timer sind Pflicht:** Mit echten erledigt die
-    Entprellung die Arbeit, die der Test der Regel zuschreibt.
-  - `components/LiedSucheKopf`: Platzhalter je Quelle, Knopf **nur** bei SongSelect („Abfragen" bei
-    reinen Ziffern), Eingabetaste löst in der Bibliothek nichts aus, und der Begriff bleibt beim Wechsel
-    stehen.
+- **Das eine Suchfeld (#378, zweiter Anlauf 03.09.2026)** – hier liegt das Teure, denn die Quellen kosten
+  sehr Unterschiedliches:
+  - `hooks/useLiedSuche` (jsdom, **Fake-Timer**): **SongSelect fragt von selbst NUR, wenn die Bibliothek
+    zum Begriff leer ist** – findet sie etwas, läuft keine CCLI-Anfrage, nur das Angebot steht. Nie unter
+    drei Zeichen, nie ohne Lizenz **und** Anlege-Weg (`kannAnlegen`), eine unvollständige CCLI-Nummer nicht
+    von selbst (7 Stellen, gemessen) – über das Angebot aber doch. Ein abgeschickter Begriff gilt nur,
+    solange er im Feld steht (die Regel, die vorher im Liederheft als `textSuche === query` stand). Fällt
+    die Lizenz weg, verschwinden laufende Treffer – abgeleitet, nicht per Effekt (#283). Die Liedtextsuche
+    läuft **nie** von selbst, auch nicht bei leerer Bibliothek. **Fake-Timer sind Pflicht:** Mit echten
+    erledigt die Entprellung die Arbeit, die der Test der Regel zuschreibt. Und: **Der Startwert ist nicht
+    entprellt** (`useEntprellt` gibt ihn sofort weiter) – ein Test, der „vorher leer" am Startwert prüft,
+    prüft eine Annahme, die der Hook nicht macht; das ist am 03.09.2026 einmal passiert.
+  - `components/LiedSucheKopf`: ein Platzhalter, die Eingabetaste schickt nur an SongSelect, wenn es den
+    Weg gibt, und es gibt **keinen** Umschalter und keinen Such-Knopf mehr (Gegenprobe zur Entscheidung).
+  - `components/SucheAngebot`: zeigt den Text, meldet den Tipp – die Regeln, WANN er erscheint, liegen im
+    Hook.
   - `components/SongSelectTrefferListe` + `components/LiedtextTrefferListe`: die Trefferlisten samt der
     **Regression zum Absturz vom 13.08.2026** (Treffer kommen aus `data.treffer`, nicht aus dem
-    Antwort-Objekt) und der Unterscheidung „nichts gefunden" / „konnte nicht suchen" (#270). Dazu, dass
-    ohne Begriff gar nicht abgefragt wird – geprüft am **Argument**, nicht am Ladehinweis, sonst prüfte
-    der Test nur den Mock.
+    Antwort-Objekt), der Unterscheidung „nichts gefunden" / „konnte nicht suchen" (#270) und der
+    Gruppen-Überschrift („SongSelect · N Treffer zu …"). Der Leer-Begriff-Zweig ist weg: Beide werden nur
+    noch mit einem abgeschickten Begriff gerendert.
 - **Die Vorschau vor dem Einfügen (#379):**
   - `components/SongPicker`: **Beim Durchsehen der Liste wird KEIN Liedtext abgefragt** – geprüft am
     `enabled`-Argument beider Hooks, denn eine Vorschau je Zeile hieße eine Anfrage je Zeile. Bei CCLI ist

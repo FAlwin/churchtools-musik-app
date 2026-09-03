@@ -1,0 +1,10 @@
+@use '../styles/variables' as *;
+@use '../styles/mixins' as m;
+
+// Dieselbe Optik wie „Neues Lied" im Listenkopf – ein ruhiger Textknopf in Blau. Vorher `.textSucheBtn`
+// in `AllSongs.module.scss`.
+.angebot {
+  @include m.neues-lied-aktion;
+  margin: 14px auto 0;
+  font-size: 14.5px;
+}

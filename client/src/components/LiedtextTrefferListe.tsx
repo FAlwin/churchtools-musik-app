@@ -1,15 +1,15 @@
 /**
  * Die Trefferliste der Quelle **„Liedtexte"** (#378) – vorher als lokale Komponente in `AllSongs`.
  *
- * Herausgezogen, weil sie seit dem Quellen-Umschalter an drei Stellen erscheint (Liederheft, „Lied
- * hinzufügen", „Lied verknüpfen"). Als lokale Komponente wäre sie dreimal entstanden.
+ * Herausgezogen, weil sie an drei Stellen erscheint (Liederheft, „Lied hinzufügen", „Lied verknüpfen").
+ * Als lokale Komponente wäre sie dreimal entstanden. Sie wird nur mit einem **abgeschickten** Begriff
+ * gerendert – wann das Angebot erscheint, entscheidet `useLiedSuche`.
  *
  * **Der Ausschnitt ist das Wesentliche:** Er zeigt, *warum* ein Lied gefunden wurde. Ohne ihn müsste man
  * jedes öffnen und nachsehen. Er kommt kleingeschrieben und ohne Akkorde vom Server – so wurde gesucht,
  * und das darzustellen ist ehrlicher, als einen geglätteten Text vorzuzeigen, der anders klingt.
  */
 import type { SongLibraryEntry } from '@shared/types/index';
-import { LIEDTEXT_SUCHE_MIN_ZEICHEN } from '@shared/types/index';
 import { useLiedtextSuche } from '../hooks/useServices';
 import { liedAnzahl } from '../utils/songFilter';
 import { Icon } from './icons';
@@ -27,15 +27,6 @@ interface LiedtextTrefferListeProps {
 
 export function LiedtextTrefferListe({ begriff, songs, onPick, busy }: LiedtextTrefferListeProps) {
   const suche = useLiedtextSuche(begriff, begriff !== '');
-
-  if (begriff === '') {
-    return (
-      <div className={styles.hinweis}>
-        Tippe mindestens {LIEDTEXT_SUCHE_MIN_ZEICHEN} Zeichen – gesucht wird dann in den Liedtexten,
-        nicht nur im Titel.
-      </div>
-    );
-  }
 
   if (suche.isLoading) {
     return (

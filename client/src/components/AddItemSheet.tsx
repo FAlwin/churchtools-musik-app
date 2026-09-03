@@ -36,7 +36,7 @@ export function AddItemSheet({ eventId, eventName, onClose, onAdd, services }: A
    * „Neues Lied" ersetzt dieses Blatt, statt sich darüberzulegen – zwei Dialoge übereinander.
    *
    * `null` = zu. Offen trägt es **optional den SongSelect-Treffer** (#378), mit dem es geöffnet wurde:
-   * Wer über den Reiter „SongSelect" gesucht hat, findet das Formular gefüllt vor.
+   * Wer über das Angebot „Bei SongSelect nach … suchen" gesucht hat, findet das Formular gefüllt vor.
    */
   const [neuesLied, setNeuesLied] = useState<{ treffer?: SongSelectTreffer } | null>(null);
   const canEditSongs = useCapabilities(true).data?.canEditSongs ?? false;
@@ -203,7 +203,7 @@ export function AddItemSheet({ eventId, eventName, onClose, onAdd, services }: A
             onPick={(arrangementId, songName) =>
               add({ type: 'song', title: songName, arrangementId })
             }
-            /* Ohne das Recht, Lieder zu bearbeiten, erscheint der Reiter „SongSelect" gar nicht –
+            /* Ohne das Recht, Lieder zu bearbeiten, erscheint SongSelect gar nicht –
                ein Treffer, aus dem nichts werden kann, wäre eine Sackgasse (#378). */
             onSongSelectTreffer={canEditSongs ? (treffer) => setNeuesLied({ treffer }) : undefined}
           />

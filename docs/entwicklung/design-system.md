@@ -49,13 +49,14 @@ nutzt bewusst Monospace (`'JetBrains Mono', monospace`) für die Roh-Bearbeitung
   `Icon` (`components/icons.tsx`, Line-Icons – keine Emojis in der UI), `NavBar`, `TabBar`,
   `Sheet`, `ConfirmDialog`, `SongFields` (die Stammdaten-Felder eines Liedes – von „Neues Lied" und
   „Stammdaten ändern" gemeinsam genutzt, damit es die fünf Felder nur einmal gibt).
-- **Lied suchen – ein Kopf für alle drei Stellen** (#378): `LiedSucheKopf` (Suchfeld + Quellen-`Segment`)
-  mit `LiedTreffer.module.scss` für die Trefferzeilen von „Liedtexte" und „SongSelect". Vorher hatte
-  jede Ansicht ihre eigene Kopie des Suchfelds (`AllSongs` und `SongPicker` je eine, dazu eine dritte
-  Zeile in `NewSongSheet`). **Regel daraus:** Das Suchfeld gibt es nur noch hier – wer eine vierte Suche
-  braucht, nimmt den Kopf, statt seine Optik nachzubauen.
-  Der Umschalter erscheint nur bei **mehr als einer** Quelle, und die Sortierleiste (`SongStatsBar`) nur
-  bei der Bibliothek: Eine Leiste, die nichts bewirkt, ist schlimmer als keine.
+- **Lied suchen – ein Feld für alle drei Stellen** (#378): `LiedSucheKopf` (nur das Suchfeld, Lupe innen,
+  `--surface3`), `SucheAngebot` (der ruhige Textknopf „Auch in den Liedtexten …" / „Bei SongSelect …",
+  Optik wie „Neues Lied" im Listenkopf) und `LiedTreffer.module.scss` für die Trefferzeilen von
+  „Liedtexte" und „SongSelect" samt Gruppen-Überschrift (`.kopf`). Vorher hatte jede Ansicht ihre eigene
+  Kopie des Suchfelds (`AllSongs` und `SongPicker` je eine, dazu eine dritte Zeile in `NewSongSheet`);
+  seit dem 03.09.2026 nutzt auch das Liederheft diese drei Bausteine. **Regel daraus:** Das Suchfeld und
+  das Angebot gibt es nur noch hier – wer eine vierte Suche braucht, nimmt sie, statt ihre Optik
+  nachzubauen. Der Quellen-`Segment` über der Liste (erster Anlauf 14.08.2026) ist weg.
 
 ## Theme
 

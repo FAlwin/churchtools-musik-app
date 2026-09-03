@@ -173,7 +173,7 @@ statt zwischen Routing-Code versteckt. **Zwei Bausteine tragen die gemeinsame Me
 (Verfallszeit) und `gebuendelterLauf.ts` (Bündelung + Sperrfrist der teuren org-weiten Läufe – Statistik
 und Suchindex).
 
-## Ein Suchfeld mit Quellen-Umschalter – die Wegwahl in „Neues Lied" fiel dafür weg _(14.08.2026, #378)_
+## Ein Suchfeld mit Quellen-Umschalter – die Wegwahl in „Neues Lied" fiel dafür weg _(14.08.2026, #378 – **der Umschalter ist seit 03.09.2026 überholt, siehe oben; der Rückbau der Wegwahl gilt weiter**)_
 
 Gesucht wird in **einem** Feld; ein `Segment` darunter wählt die Quelle: **Bibliothek · Liedtexte ·
 SongSelect**. Vorbilder waren ProPresenter und WorshipTools Planning, von Alwin als Muster benannt. Der
@@ -214,7 +214,37 @@ Eingabe – eine CCLI-Nummer also erst vollständig (7 Stellen, am Bestand gemes
 Auf einem geteilten iPad am Notenpult soll nicht plötzlich der CCLI-Katalog offen stehen, weil zuletzt
 jemand Lieder eingepflegt hat.
 
-## Der Quellen-Umschalter gehört zum EINFÜGEN, nicht in das Liederheft _(14.08.2026, #378)_
+## Ein Suchfeld ohne Umschalter – die Bibliothek zuerst, die Quellen als Angebot darunter _(03.09.2026, #378)_
+
+**Zweiter Anlauf, nach Alwins Rückmeldung an der fertigen Oberfläche.** Der Umschalter „Bibliothek ·
+Liedtexte · SongSelect" verlangte die Entscheidung, _wo_ gesucht wird, **vor** dem Tippen. Die kann man
+aber erst nach dem Ergebnis treffen: „Ist es bei uns? Nein? Dann SongSelect." Alwins Wunsch war
+wörtlich: _ein_ Suchfeld; erst die Bibliothek, und wenn da nichts ist, SongSelect – oder beides auf
+einmal mit Kennzeichnung.
+
+**Gewählt: nacheinander, mit einer Ausnahme.** Die Bibliothek filtert live (kostet nichts). Darunter
+stehen **Angebote** – „Auch in den Liedtexten nach … suchen", „Bei SongSelect nach … suchen" –, ein Tipp
+öffnet die Treffer als **beschriftete Gruppe**. **Findet die Bibliothek zu einem reifen Begriff nichts,
+fragt SongSelect von selbst.** So kostet der häufigste Fall („das Lied ist bei uns") keine CCLI-Anfrage,
+und der zweithäufigste („das Lied ist neu") keinen zusätzlichen Tipp.
+
+**Warum nicht „alles auf einmal":** Jede SongSelect-Suche geht über ChurchTools an CCLI (~800 ms) und
+zählt gegen die Drosselung, die in #300 die ganze App lahmgelegt hat. Bei „Wo ich auch stehe" wären das
+trotz Entprellung mehrere Anfragen, von denen niemand die Ergebnisse ansieht. Die Liedtextsuche baut
+beim ersten Mal einen Index über einen Download je Lied – sie läuft deshalb **nie** von selbst.
+
+**Was die Umstellung nebenbei aufgeräumt hat:** Das Liederheft hatte bis dahin eine eigene Kopie des
+Suchfeld-Markups (`AllSongs.module.scss` `.search`) und eine eigene Fassung der Regel „die Textsuche gilt
+nur, solange der Begriff unverändert ist" (`textSuche === query`). Beides liegt jetzt einmal:
+`LiedSucheKopf` (Feld), `SucheAngebot` (Knopf), `useLiedSuche` (Regeln, inklusive `bibliothekLeer` vom
+Aufrufer). Der Einfüge-Dialog und das Liederheft unterscheiden sich nur noch in `kannAnlegen`.
+
+**Die Lehre, zum zweiten Mal in diesem Feature:** „Links Bibliothek, daneben SongSelect" war Alwins
+Formulierung vom 13.08. – und ich habe sie als Reiter gebaut. Was er meinte, war die Reihenfolge, in der
+man sucht. Bei Bedienelementen entscheidet der Durchklick, nicht die Beschreibung (siehe den Abschnitt
+darunter, dieselbe Lehre schon einmal).
+
+## Der Quellen-Umschalter gehört zum EINFÜGEN, nicht in das Liederheft _(14.08.2026, #378 – **überholt am 03.09.2026: es gibt keinen Umschalter mehr; dass SongSelect nur beim Einfügen erscheint, gilt weiter**)_
 
 **Korrektur an #378, nach dem Durchklicken.** Der Umschalter „Bibliothek · Liedtexte · SongSelect" stand
 zuerst **auch** im Liederheft – dort war er falsch (Rückmeldung Alwin): Im Liederheft **schlägt man ein

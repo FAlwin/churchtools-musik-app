@@ -3,6 +3,7 @@ import type { SongLibraryEntry, SongSelectTreffer } from '@shared/types/index';
 import { CenterMessage } from './CenterMessage';
 import { SongStatsBar } from './SongStatsBar';
 import { LiedSucheKopf } from './LiedSucheKopf';
+import { SucheAngebot } from './SucheAngebot';
 import { LiedtextTrefferListe } from './LiedtextTrefferListe';
 import { SongSelectTrefferListe } from './SongSelectTrefferListe';
 import { LiedVorschau } from './LiedVorschau';
@@ -25,10 +26,10 @@ interface SongPickerProps {
   /**
    * Ein Treffer aus der Quelle „SongSelect" (#378) – der Aufrufer öffnet damit „Neues Lied".
    *
-   * **Fehlt dieser Weg, erscheint der Reiter „SongSelect" gar nicht.** In „Lied verknüpfen" ist das so:
-   * Dort wird einem vorhandenen Ablaufpunkt ein Lied zugeordnet, ein neu angelegtes Lied müsste in
-   * diesen Punkt hineingeschrieben werden – das kann der Anlege-Weg nicht. Ein Reiter dorthin wäre eine
-   * Sackgasse.
+   * **Fehlt dieser Weg, gibt es SongSelect hier gar nicht** – weder das Angebot noch die automatische
+   * Suche. In „Lied verknüpfen" ist das so: Dort wird einem vorhandenen Ablaufpunkt ein Lied zugeordnet,
+   * ein neu angelegtes Lied müsste in diesen Punkt hineingeschrieben werden – das kann der Anlege-Weg
+   * nicht. Ein Angebot dorthin wäre eine Sackgasse.
    */
   onSongSelectTreffer?: (treffer: SongSelectTreffer) => void;
   /** Beschriftung der Hauptaktion in der Vorschau, z. B. „Zum Ablauf hinzufügen". */
@@ -45,12 +46,16 @@ type Vorschau =
   | null;
 
 /**
- * Lied-Auswahl beim Hinzufügen/Verknüpfen – **der Ort des Quellen-Umschalters** (#378, #379).
+ * Lied-Auswahl beim Hinzufügen/Verknüpfen (#378, #379).
  *
- * Hier wird ein Lied **eingefügt**, und nur hier gibt es die Reiter **Bibliothek · Liedtexte ·
- * SongSelect**. Im Liederheft stehen sie ausdrücklich **nicht** (Entscheidung Alwin, 14.08.2026): Dort
- * schlägt man nach, und drei Quellen über der Liste wirkten fremd. Dasselbe Muster wie bei WorshipTools,
- * wo die Quellen im Dialog „Lied zum Set hinzufügen" sitzen.
+ * **Ein Suchfeld, die Bibliothek zuerst.** Darunter stehen die anderen Quellen als **Angebote**: „Auch in
+ * den Liedtexten nach … suchen" und – nur wo aus einem Treffer ein Lied werden kann – „Bei SongSelect
+ * nach … suchen". Findet die Bibliothek nichts, fragt SongSelect von selbst. Die Regeln dazu liegen in
+ * `useLiedSuche`.
+ *
+ * Bis zum 03.09.2026 stand hier ein Umschalter „Bibliothek · Liedtexte · SongSelect" über der Liste.
+ * Alwins Rückmeldung: Das verlangt die Entscheidung, WO gesucht wird, vor dem Tippen – man kann sie aber
+ * erst nach dem Ergebnis treffen. Deshalb jetzt die Reihenfolge, in der man tatsächlich sucht.
  *
  * **Ein Antippen führt in die Vorschau, nicht direkt zum Einfügen** (#379, Muster ProPresenter): Der
  * Liedtext ist die Entscheidungsgrundlage – bei gleichnamigen Liedern das Einzige, was sie unterscheidet.
@@ -74,6 +79,9 @@ export function SongPicker({
     eingabe: f.q,
     canUseCcli: caps.data?.canUseCcli ?? false,
     kannAnlegen: onSongSelectTreffer !== undefined,
+    // „Leer" heißt: Die Liste steht und hat zu diesem Begriff nichts. Während des Ladens oder bei
+    // einem Fehler ist sie nicht leer, sondern unbekannt – dann darf SongSelect nicht von selbst starten.
+    bibliothekLeer: !lib.isLoading && !lib.isError && query !== '' && f.list.length === 0,
   });
 
   const [vorschau, setVorschau] = useState<Vorschau>(null);
@@ -152,31 +160,14 @@ export function SongPicker({
       <LiedSucheKopf
         eingabe={f.q}
         onEingabe={f.setQ}
-        quelle={suche.quelle}
-        quellen={suche.quellen}
-        onQuelle={suche.setQuelle}
-        onJetztSuchen={suche.jetztSuchen}
+        onSongSelectSuchen={suche.songSelectMoeglich ? suche.songSelectSuchen : undefined}
         autoFocus={autoFocus}
       />
-      {/* Nur bei der Bibliothek: Bei SongSelect sortiert CCLI, und für Liedtext-Treffer gibt es keine
-          Spielstatistik. Eine Leiste, die nichts bewirkt, ist schlimmer als keine. */}
-      {showStats && suche.inBibliothek && <SongStatsBar {...f} />}
+      {/* Die Sortierleiste gilt der Bibliothek – und die steht immer oben. */}
+      {showStats && <SongStatsBar {...f} />}
 
       <div className={styles.results}>
-        {suche.quelle === 'liedtext' ? (
-          <LiedtextTrefferListe
-            begriff={suche.liedtextBegriff}
-            songs={lib.data ?? []}
-            busy={busy}
-            onPick={(s) => setVorschau({ art: 'bibliothek', song: s })}
-          />
-        ) : suche.quelle === 'songselect' && onSongSelectTreffer ? (
-          <SongSelectTrefferListe
-            begriff={suche.songSelectBegriff}
-            busy={busy}
-            onPick={(treffer) => setVorschau({ art: 'songselect', treffer })}
-          />
-        ) : lib.isLoading ? (
+        {lib.isLoading ? (
           <CenterMessage loading text="Lieder werden geladen…" />
         ) : lib.isError ? (
           <CenterMessage
@@ -232,6 +223,44 @@ export function SongPicker({
               </div>
             );
           })
+        )}
+
+        {/**
+         * Die anderen Quellen – **unter** der Bibliothek, egal ob sie etwas gefunden hat. Erst der eigene
+         * Bestand (Liedtexte: „vielleicht heißt es bei uns anders"), dann außen (SongSelect). Solange die
+         * Bibliothek lädt oder gescheitert ist, gibt es nichts anzubieten: Man wüsste nicht, ob das
+         * Gesuchte nicht doch da ist.
+         */}
+        {!lib.isLoading && !lib.isError && (
+          <>
+            {suche.angebotLiedtexte && (
+              <SucheAngebot
+                text={`Auch in den Liedtexten nach „${query}" suchen`}
+                onClick={suche.liedtexteSuchen}
+              />
+            )}
+            {suche.liedtextBegriff !== '' && (
+              <LiedtextTrefferListe
+                begriff={suche.liedtextBegriff}
+                songs={lib.data ?? []}
+                busy={busy}
+                onPick={(s) => setVorschau({ art: 'bibliothek', song: s })}
+              />
+            )}
+            {suche.angebotSongSelect && (
+              <SucheAngebot
+                text={`Bei SongSelect nach „${query}" suchen`}
+                onClick={suche.songSelectSuchen}
+              />
+            )}
+            {suche.songSelectBegriff !== '' && onSongSelectTreffer && (
+              <SongSelectTrefferListe
+                begriff={suche.songSelectBegriff}
+                busy={busy}
+                onPick={(treffer) => setVorschau({ art: 'songselect', treffer })}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

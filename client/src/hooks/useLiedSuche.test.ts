@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useLiedSuche, SUCH_ENTPRELLUNG_MS, type LiedQuelle } from './useLiedSuche';
+import { useLiedSuche, SUCH_ENTPRELLUNG_MS } from './useLiedSuche';
 
 /**
- * Die Regeln des Quellen-Umschalters (#378) – **hier liegt das Teure.**
+ * Die Regeln des einen Suchfelds (#378, zweiter Anlauf 03.09.2026) – **hier liegt das Teure.**
  *
- * Die drei Quellen kosten sehr Unterschiedliches: Die Bibliothek filtert im Browser, die Liedtexte lassen
- * den Server beim ersten Mal **einen Datei-Download je Lied** machen, und jede SongSelect-Suche geht über
- * ChurchTools weiter an CCLI (~800 ms gemessen). Was hier schiefgeht, merkt man nicht in der Oberfläche,
- * sondern an der Gegenstelle – so ist in #300 das ChurchTools-Limit gerissen.
+ * Jede SongSelect-Suche geht über ChurchTools weiter an CCLI (~800 ms gemessen) und zählt gegen die
+ * Drosselung; die Liedtextsuche baut beim ersten Mal einen Index über einen Download je Lied. Was hier
+ * schiefgeht, merkt man nicht in der Oberfläche, sondern an der Gegenstelle – so ist in #300 das
+ * ChurchTools-Limit gerissen.
  *
  * **Mit Fake-Timern**, und das ist keine Kosmetik: Mit echten Timern erledigt die Entprellung nach ~400 ms
  * die Arbeit, die der Test der Regel zuschreibt – er wäre auch ohne sie grün. Genau dieser Fehler ist im
@@ -21,179 +21,197 @@ afterEach(() => vi.useRealTimers());
 /** Lässt die Entprellung ablaufen. */
 const warten = (ms = SUCH_ENTPRELLUNG_MS) => act(() => void vi.advanceTimersByTime(ms));
 
-function baue(eingabe = '', canUseCcli = true, kannAnlegen = true) {
-  return renderHook(
-    ({ e }: { e: string }) => useLiedSuche({ eingabe: e, canUseCcli, kannAnlegen }),
-    { initialProps: { e: eingabe } },
+interface Props {
+  e: string;
+  leer: boolean;
+  ccli?: boolean;
+  anlegen?: boolean;
+}
+
+function baue(eingabe: string, bibliothekLeer: boolean, ccli = true, anlegen = true) {
+  // Der Generic sagt renderHook, dass `ccli`/`anlegen` beim `rerender` fehlen dürfen – sonst leitet es
+  // den Typ aus dem ersten Aufruf ab, wo alle vier stehen.
+  return renderHook<ReturnType<typeof useLiedSuche>, Props>(
+    ({ e, leer, ccli: c = true, anlegen: a = true }) =>
+      useLiedSuche({ eingabe: e, canUseCcli: c, kannAnlegen: a, bibliothekLeer: leer }),
+    { initialProps: { e: eingabe, leer: bibliothekLeer, ccli, anlegen } },
   );
 }
 
-describe('useLiedSuche – welche Quellen es gibt', () => {
-  it('mit Lizenz und Anlege-Weg alle drei, Bibliothek zuerst', () => {
-    const { result } = baue();
-    expect(result.current.quellen).toEqual<LiedQuelle[]>(['bibliothek', 'liedtext', 'songselect']);
-    expect(result.current.quelle).toBe('bibliothek');
-  });
-
-  it('ohne SongSelect-Lizenz bleiben zwei', () => {
-    const { result } = baue('', false, true);
-    expect(result.current.quellen).toEqual<LiedQuelle[]>(['bibliothek', 'liedtext']);
-  });
-
-  it('ohne Weg zum Anlegen ebenfalls zwei – ein Treffer ohne Ziel wäre eine Sackgasse', () => {
+describe('useLiedSuche – SongSelect fragt von selbst NUR bei leerer Bibliothek', () => {
+  it('findet die Bibliothek etwas, läuft KEINE CCLI-Anfrage', () => {
     /**
-     * Der Fall „Lied verknüpfen": Dort wird einem **vorhandenen** Ablaufpunkt ein Lied zugeordnet; ein
-     * neu angelegtes Lied könnte dort nicht landen. Deshalb fehlt der Reiter.
+     * Die teuerste Zusicherung dieser Datei. „Gnade" trifft bei den meisten Gemeinden eigene Lieder – dann
+     * darf niemand bei CCLI nachfragen, bei jedem Anwender, den ganzen Tag.
      */
-    const { result } = baue('', true, false);
-    expect(result.current.quellen).toEqual<LiedQuelle[]>(['bibliothek', 'liedtext']);
-  });
-
-  it('fällt auf die Bibliothek zurück, wenn die gewählte Quelle verschwindet', () => {
-    /**
-     * Beim ersten Rendern sind die Rechte noch nicht geladen, und eine Lizenz kann in ChurchTools auch
-     * wegfallen. Dann darf man nicht auf einem Reiter stehen, den es nicht mehr gibt. Abgeleitet statt in
-     * einem Effekt korrigiert – ein Zustand, der sich selbst nachträglich richtigstellt, war in #283 die
-     * Ursache für einen Menüpunkt, der still nichts mehr tat.
-     */
-    const { result, rerender } = renderHook(
-      ({ ccli }: { ccli: boolean }) =>
-        useLiedSuche({ eingabe: 'Gnade', canUseCcli: ccli, kannAnlegen: true }),
-      { initialProps: { ccli: true } },
-    );
-
-    act(() => result.current.setQuelle('songselect'));
-    expect(result.current.quelle).toBe('songselect');
-
-    rerender({ ccli: false });
-    expect(result.current.quelle).toBe('bibliothek');
-  });
-});
-
-describe('useLiedSuche – SongSelect wird nur gefragt, wenn es sichtbar ist', () => {
-  it('in der Bibliothek getippter Text löst KEINE CCLI-Abfrage aus', () => {
-    /**
-     * Die teuerste Zusicherung dieser Datei. Ohne sie fragte jedes Tippen im Liederheft bei CCLI nach –
-     * bei jedem Anwender, den ganzen Tag.
-     */
-    const { result } = baue('Gnade');
+    const { result } = baue('Gnade', false);
     warten();
     expect(result.current.songSelectBegriff).toBe('');
+    expect(result.current.angebotSongSelect).toBe(true);
   });
 
-  it('nach dem Wechsel wird der stehende Begriff abgeschickt – ohne neuen Tastendruck', () => {
-    const { result } = baue('Gnade');
+  it('findet sie nichts, wird der Begriff abgeschickt', () => {
+    // Der STARTWERT ist nicht entprellt (`useEntprellt` gibt ihn sofort weiter) – entprellt wird das
+    // Tippen danach. Deshalb hier keine Zusicherung „vorher leer"; die steht im Test zum Weitertippen.
+    const { result } = baue('Wo ich auch stehe', true);
     warten();
-    act(() => result.current.setQuelle('songselect'));
-    expect(result.current.songSelectBegriff).toBe('Gnade');
+    expect(result.current.songSelectBegriff).toBe('Wo ich auch stehe');
+    // Läuft schon – das Angebot dazu wäre doppelt.
+    expect(result.current.angebotSongSelect).toBe(false);
   });
 
   it('wartet die Entprellung ab, statt bei jedem Buchstaben zu fragen', () => {
-    const { result, rerender } = baue('Gna');
-    act(() => result.current.setQuelle('songselect'));
+    const { result, rerender } = baue('Gna', true);
     warten();
     expect(result.current.songSelectBegriff).toBe('Gna');
 
-    rerender({ e: 'Gnade' });
-    // Kurz vor Ablauf steht noch der alte Begriff – der neue ist noch nicht abgeschickt.
+    rerender({ e: 'Gnade', leer: true });
+    // Kurz vor Ablauf gilt nichts mehr: Der alte Begriff steht nicht mehr im Feld, der neue ist noch
+    // nicht abgeschickt. Genau in dieser Lücke darf keine Trefferliste zu „Gna" stehen.
     warten(SUCH_ENTPRELLUNG_MS - 1);
-    expect(result.current.songSelectBegriff).toBe('Gna');
+    expect(result.current.songSelectBegriff).toBe('');
     warten(1);
     expect(result.current.songSelectBegriff).toBe('Gnade');
   });
 
-  it('unter drei Zeichen läuft nichts', () => {
-    const { result } = baue('Gn');
-    act(() => result.current.setQuelle('songselect'));
+  it('wird die Bibliothek erst beim Weitertippen leer, startet SongSelect dann', () => {
+    // „Tre" trifft „Treu"; „Treue Lie" trifft nichts mehr – ab da fragt CCLI.
+    const { result, rerender } = baue('Tre', false);
     warten();
     expect(result.current.songSelectBegriff).toBe('');
+
+    rerender({ e: 'Treue Lie', leer: true });
+    warten();
+    expect(result.current.songSelectBegriff).toBe('Treue Lie');
+  });
+
+  it('unter drei Zeichen läuft nichts – auch bei leerer Bibliothek', () => {
+    const { result } = baue('Gn', true);
+    warten();
+    expect(result.current.songSelectBegriff).toBe('');
+    expect(result.current.angebotSongSelect).toBe(false);
   });
 
   it('eine unvollständige CCLI-Nummer wird NICHT von selbst abgefragt', () => {
     /**
      * Gemessen (13.08.2026): Alle 46 vergebenen Nummern im Bestand der ECG haben 7 Stellen. Ohne diese
      * Regel meldete die App beim Eintippen viermal „findet CCLI kein Lied", bevor die Nummer fertig ist.
+     * Das Angebot bleibt – wer die Nummer so meint, tippt darauf.
      */
-    const { result } = baue('584');
-    act(() => result.current.setQuelle('songselect'));
+    const { result } = baue('584', true);
     warten();
     expect(result.current.songSelectBegriff).toBe('');
+    expect(result.current.angebotSongSelect).toBe(true);
   });
 
   it('eine vollständige Nummer schon', () => {
-    const { result } = baue('5841527');
-    act(() => result.current.setQuelle('songselect'));
+    const { result } = baue('5841527', true);
     warten();
     expect(result.current.songSelectBegriff).toBe('5841527');
   });
 
-  it('`jetztSuchen` übergeht die Schwelle – eine kurze Nummer darf man abfragen', () => {
-    // Die 7 Stellen sind eine Beobachtung an einem Bestand, kein Gesetz von CCLI.
-    const { result } = baue('584');
-    act(() => result.current.setQuelle('songselect'));
+  it('ohne Lizenz gibt es SongSelect nicht – weder von selbst noch als Angebot', () => {
+    const { result } = baue('Wo ich auch stehe', true, false, true);
     warten();
-    act(() => result.current.jetztSuchen());
+    expect(result.current.songSelectMoeglich).toBe(false);
+    expect(result.current.songSelectBegriff).toBe('');
+    expect(result.current.angebotSongSelect).toBe(false);
+  });
+
+  it('ohne Weg zum Anlegen ebenfalls nicht – ein Treffer ohne Ziel wäre eine Sackgasse', () => {
+    /**
+     * Der Fall „Lied verknüpfen" und das Liederheft: Dort kann aus einem SongSelect-Treffer kein Lied
+     * werden. Ein Angebot dorthin führte ins Leere.
+     */
+    const { result } = baue('Wo ich auch stehe', true, true, false);
+    warten();
+    expect(result.current.songSelectBegriff).toBe('');
+    expect(result.current.angebotSongSelect).toBe(false);
+  });
+
+  it('fällt die Lizenz weg, verschwinden laufende Treffer – abgeleitet, nicht per Effekt', () => {
+    // Beim ersten Rendern sind die Rechte noch nicht geladen; eine Lizenz kann in ChurchTools auch
+    // wegfallen. Ein Zustand, der sich nachträglich selbst richtigstellt, war in #283 die Ursache für
+    // einen Menüpunkt, der still nichts mehr tat.
+    const { result, rerender } = baue('Wo ich auch stehe', true);
+    warten();
+    expect(result.current.songSelectBegriff).toBe('Wo ich auch stehe');
+    rerender({ e: 'Wo ich auch stehe', leer: true, ccli: false });
+    expect(result.current.songSelectBegriff).toBe('');
+  });
+});
+
+describe('useLiedSuche – das Angebot „Bei SongSelect suchen"', () => {
+  it('schickt sofort ab, ohne die Entprellung abzuwarten', () => {
+    const { result } = baue('Gnade', false);
+    act(() => result.current.songSelectSuchen());
+    expect(result.current.songSelectBegriff).toBe('Gnade');
+  });
+
+  it('übergeht die 7-Stellen-Regel – eine kurze Nummer darf man abfragen', () => {
+    // Die 7 Stellen sind eine Beobachtung an einem Bestand, kein Gesetz von CCLI.
+    const { result } = baue('584', true);
+    warten();
+    expect(result.current.songSelectBegriff).toBe('');
+    act(() => result.current.songSelectSuchen());
     expect(result.current.songSelectBegriff).toBe('584');
   });
 
-  it('`jetztSuchen` wartet die Entprellung nicht ab', () => {
-    const { result, rerender } = baue('Gna');
-    act(() => result.current.setQuelle('songselect'));
-    warten();
-    rerender({ e: 'Gnade' });
-    act(() => result.current.jetztSuchen());
+  it('unter drei Zeichen tut es nichts', () => {
+    const { result } = baue('Gn', false);
+    act(() => result.current.songSelectSuchen());
+    expect(result.current.songSelectBegriff).toBe('');
+  });
+
+  it('die Treffer gelten nur, solange der Begriff im Feld steht', () => {
+    const { result, rerender } = baue('Gnade', false);
+    act(() => result.current.songSelectSuchen());
     expect(result.current.songSelectBegriff).toBe('Gnade');
+
+    rerender({ e: 'Gnad', leer: false });
+    // Ein Zeichen gelöscht: Die alten Treffer sind weg, das Angebot ist wieder da.
+    expect(result.current.songSelectBegriff).toBe('');
+    expect(result.current.angebotSongSelect).toBe(true);
   });
 });
 
-describe('useLiedSuche – die Liedtextsuche und ihr Index', () => {
-  it('ein Wechsel auf den Reiter allein baut noch keinen Index', () => {
+describe('useLiedSuche – die Liedtextsuche läuft NIE von selbst', () => {
+  it('auch bei leerer Bibliothek und reifem Begriff nicht', () => {
     /**
-     * Der erste Aufruf kostet serverseitig einen Download je Lied. Ein Reitertipp ist kein Suchauftrag –
-     * deshalb braucht es einen Begriff.
+     * Der erste Aufruf kostet serverseitig einen Download je Lied. Anders als bei SongSelect gibt es hier
+     * keine Ausnahme: Ein Wort, das kein Titel enthält, ist noch kein Grund, alle Texte zu holen.
      */
-    const { result } = baue('');
-    act(() => result.current.setQuelle('liedtext'));
+    const { result } = baue('gnade', true);
     warten();
+    expect(result.current.liedtextBegriff).toBe('');
+    expect(result.current.angebotLiedtexte).toBe(true);
+  });
+
+  it('das Angebot fehlt unter drei Zeichen – das träfe fast jedes Lied', () => {
+    const { result } = baue('gn', true);
+    expect(result.current.angebotLiedtexte).toBe(false);
+    act(() => result.current.liedtexteSuchen());
     expect(result.current.liedtextBegriff).toBe('');
   });
 
-  it('unter drei Zeichen wird nicht gesucht – das träfe fast jedes Lied', () => {
-    const { result } = baue('gn');
-    act(() => result.current.setQuelle('liedtext'));
-    warten();
-    expect(result.current.liedtextBegriff).toBe('');
-  });
-
-  it('ab drei Zeichen und nach der Entprellung', () => {
-    const { result } = baue('gnade');
-    act(() => result.current.setQuelle('liedtext'));
-    warten();
+  it('ab drei Zeichen schickt das Angebot ab', () => {
+    const { result } = baue('gnade', false);
+    act(() => result.current.liedtexteSuchen());
     expect(result.current.liedtextBegriff).toBe('gnade');
+    expect(result.current.angebotLiedtexte).toBe(false);
   });
 
-  it('in einer anderen Quelle bleibt sie still', () => {
-    // Gegenprobe zur Zeile darüber: Derselbe Begriff, andere Quelle – kein Index-Aufbau.
-    const { result } = baue('gnade');
-    act(() => result.current.setQuelle('songselect'));
-    warten();
+  it('die Treffer gelten nur, solange der Begriff im Feld steht', () => {
+    // Die Regel aus dem Liederheft (`textSuche === query`), jetzt einmal hier.
+    const { result, rerender } = baue('gnade', false);
+    act(() => result.current.liedtexteSuchen());
+    rerender({ e: 'gnaden', leer: false });
     expect(result.current.liedtextBegriff).toBe('');
+    expect(result.current.angebotLiedtexte).toBe(true);
   });
 
-  it('anders als bei SongSelect gibt es hier kein „trotzdem abschicken"', () => {
-    const { result } = baue('gn');
-    act(() => result.current.setQuelle('liedtext'));
-    act(() => result.current.jetztSuchen());
-    warten();
-    expect(result.current.liedtextBegriff).toBe('');
-  });
-});
-
-describe('useLiedSuche – inBibliothek', () => {
-  it('sagt dem Aufrufer, wann er seine eigene Liste zeigt', () => {
-    const { result } = baue('Gnade');
-    expect(result.current.inBibliothek).toBe(true);
-    act(() => result.current.setQuelle('liedtext'));
-    expect(result.current.inBibliothek).toBe(false);
+  it('gibt es auch ohne SongSelect – Suchen darf jeder', () => {
+    const { result } = baue('gnade', true, false, false);
+    expect(result.current.angebotLiedtexte).toBe(true);
   });
 });
