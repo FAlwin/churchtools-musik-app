@@ -186,6 +186,6 @@ export const SETLIST_EDIT_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="edit-add"]',
     title: 'Hinzufügen',
-    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Ein Suchfeld genügt: Zuerst findest du eure eigenen Lieder, darunter kannst du in den Liedtexten oder bei SongSelect weitersuchen – und ist ein Lied bei euch nicht da, sucht SongSelect von selbst mit. Ein SongSelect-Treffer wird als neues Lied angelegt und in den Ablauf eingetragen.',
+    body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Tippe Titel, Autor oder CCLI-Nummer – eure Lieder stehen oben, SongSelect darunter. Das Auge zeigt den Liedtext, das Plus fügt ein; bei SongSelect legst du das Lied damit gleich an. Ist ein Lied bei euch nicht da, sucht SongSelect von selbst mit.',
   },
 ];

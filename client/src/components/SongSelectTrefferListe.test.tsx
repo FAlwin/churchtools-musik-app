@@ -40,7 +40,8 @@ const MIT_TREFFERN: SongSelectSuchergebnis = {
   vollstaendig: false,
 };
 
-const onPick = vi.fn();
+const onVorschau = vi.fn();
+const onEinfuegen = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -48,7 +49,9 @@ beforeEach(() => {
 });
 
 function zeige(begriff: string) {
-  return render(<SongSelectTrefferListe begriff={begriff} onPick={onPick} />);
+  return render(
+    <SongSelectTrefferListe begriff={begriff} onVorschau={onVorschau} onEinfuegen={onEinfuegen} />,
+  );
 }
 
 describe('SongSelectTrefferListe – Regression zum Absturz vom 13.08.2026', () => {
@@ -118,12 +121,30 @@ describe('SongSelectTrefferListe – Fehler', () => {
   });
 });
 
-describe('SongSelectTrefferListe – Auswahl', () => {
-  it('gibt den ganzen Treffer weiter – das Formular braucht mehr als den Titel', () => {
+describe('SongSelectTrefferListe – zwei Knöpfe je Zeile (04.09.2026)', () => {
+  it('die Zeile öffnet die Vorschau – und gibt den ganzen Treffer weiter', () => {
     suche.mockReturnValue({ data: MIT_TREFFERN, isLoading: false, isError: false });
     zeige('Treu');
-    fireEvent.click(screen.getByRole('button', { name: /Treu/ }));
+    // Über die Unterzeile benannt: Der Titel steht auch im Vorlesetext des Plus-Knopfs.
+    fireEvent.click(screen.getByRole('button', { name: /Autor A/ }));
 
-    expect(onPick).toHaveBeenCalledWith(MIT_TREFFERN.treffer[0]);
+    expect(onVorschau).toHaveBeenCalledWith(MIT_TREFFERN.treffer[0]);
+    expect(onEinfuegen).not.toHaveBeenCalled();
+  });
+
+  it('das Plus geht direkt zum Anlegen – ohne Vorschau', () => {
+    // Das Formular braucht mehr als den Titel, deshalb der ganze Treffer.
+    suche.mockReturnValue({ data: MIT_TREFFERN, isLoading: false, isError: false });
+    zeige('Treu');
+    fireEvent.click(screen.getByRole('button', { name: /ohne Vorschau hinzufügen/ }));
+
+    expect(onEinfuegen).toHaveBeenCalledWith(MIT_TREFFERN.treffer[0]);
+    expect(onVorschau).not.toHaveBeenCalled();
+  });
+
+  it('die Gruppe ist beschriftet – ein CCLI-Treffer sieht einem eigenen Lied sonst zum Verwechseln ähnlich', () => {
+    suche.mockReturnValue({ data: MIT_TREFFERN, isLoading: false, isError: false });
+    zeige('Treu');
+    expect(screen.getByText(/SongSelect · 1 Treffer zu „Treu"/)).toBeTruthy();
   });
 });

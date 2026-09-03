@@ -45,7 +45,7 @@ const IST: LiedStammdatenAnsicht = {
 };
 
 const BESTAND: SongLibraryEntry[] = [
-  { songId: 7, name: 'Treu', author: null, key: null, arrangementId: 70 },
+  { songId: 7, name: 'Treu', author: null, ccli: null, key: null, arrangementId: 70 },
 ];
 
 beforeEach(() => {

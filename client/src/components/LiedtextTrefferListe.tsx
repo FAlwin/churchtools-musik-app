@@ -8,11 +8,15 @@
  * **Der Ausschnitt ist das Wesentliche:** Er zeigt, *warum* ein Lied gefunden wurde. Ohne ihn müsste man
  * jedes öffnen und nachsehen. Er kommt kleingeschrieben und ohne Akkorde vom Server – so wurde gesucht,
  * und das darzustellen ist ehrlicher, als einen geglätteten Text vorzuzeigen, der anders klingt.
+ *
+ * **Zwei Gesichter, eine Zeile** (`LiedZeile`, 04.09.2026): Im Einfüge-Dialog gibt es `onEinfuegen`, dann
+ * hat die Zeile Auge und Plus wie alle anderen dort. Im Liederheft fehlt es – ein Tipp führt direkt ins
+ * Lied, und es gibt nichts einzufügen.
  */
 import type { SongLibraryEntry } from '@shared/types/index';
 import { useLiedtextSuche } from '../hooks/useServices';
 import { liedAnzahl } from '../utils/songFilter';
-import { Icon } from './icons';
+import { LiedZeile } from './LiedZeile';
 import styles from './LiedTreffer.module.scss';
 
 interface LiedtextTrefferListeProps {
@@ -20,12 +24,21 @@ interface LiedtextTrefferListeProps {
   begriff: string;
   /** Die Bibliothek – über sie wird aus einer `songId` ein anklickbares Lied. */
   songs: SongLibraryEntry[];
+  /** Der Tipp auf die Zeile: im Einfüge-Dialog die Vorschau, im Liederheft das Lied. */
   onPick: (song: SongLibraryEntry) => void;
+  /** Das Plus – nur im Einfüge-Dialog. */
+  onEinfuegen?: { label: string; onClick: (song: SongLibraryEntry) => void };
   /** Deaktiviert die Treffer, während ein Vorgang läuft. */
   busy?: boolean;
 }
 
-export function LiedtextTrefferListe({ begriff, songs, onPick, busy }: LiedtextTrefferListeProps) {
+export function LiedtextTrefferListe({
+  begriff,
+  songs,
+  onPick,
+  onEinfuegen,
+  busy,
+}: LiedtextTrefferListeProps) {
   const suche = useLiedtextSuche(begriff, begriff !== '');
 
   if (suche.isLoading) {
@@ -67,21 +80,18 @@ export function LiedtextTrefferListe({ begriff, songs, onPick, busy }: LiedtextT
          */
         const bekannt = songs.find((s) => s.songId === t.songId);
         return (
-          <button
+          <LiedZeile
             key={t.songId}
-            className={styles.zeile}
+            titel={t.name}
+            unterzeile={t.ausschnitt}
+            onZeile={() => bekannt && onPick(bekannt)}
+            aktion={
+              onEinfuegen && bekannt
+                ? { label: onEinfuegen.label, onClick: () => onEinfuegen.onClick(bekannt) }
+                : undefined
+            }
             disabled={busy || !bekannt}
-            onClick={() => bekannt && onPick(bekannt)}
-          >
-            <span className={styles.text}>
-              <span className={styles.titel}>{t.name}</span>
-              {/* Der Ausschnitt zeigt die **Fundstelle** (kleingeschrieben, so wurde gesucht). Den
-                  ganzen Liedanfang zeigt im Einfüge-Dialog die Vorschau nach dem Antippen (#379) – im
-                  Liederheft führt ein Tipp direkt ins Lied. */}
-              <span className={styles.meta}>{t.ausschnitt}</span>
-            </span>
-            <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-          </button>
+          />
         );
       })}
     </div>

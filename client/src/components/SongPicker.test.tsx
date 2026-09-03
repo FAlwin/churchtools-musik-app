@@ -45,7 +45,7 @@ const warten = () => act(() => void vi.advanceTimersByTime(500));
 const { SongPicker } = await import('./SongPicker');
 
 const BESTAND: SongLibraryEntry[] = [
-  { songId: 3, name: 'Treu', author: 'Autor T', key: 'D', arrangementId: 30 },
+  { songId: 3, name: 'Treu', author: 'Autor T', ccli: '1234567', key: 'D', arrangementId: 30 },
 ];
 
 const SS_TREFFER: SongSelectSuchergebnis = {
@@ -160,20 +160,42 @@ describe('SongPicker – SongSelect', () => {
   it('ein Treffer führt in die Vorschau, und DORT wird CCLI gefragt', () => {
     zeige({ onSongSelectTreffer });
     zuSongSelect();
-    fireEvent.click(screen.getByRole('button', { name: /Stub-Lied/ }));
+    fireEvent.click(screen.getByRole('button', { name: /CCLI-Autor/ }));
 
     expect(ccliText).toHaveBeenLastCalledWith(5841527, true);
     // Noch ist nichts angelegt – erst die Aktion in der Vorschau führt weiter.
     expect(onSongSelectTreffer).not.toHaveBeenCalled();
   });
 
-  it('die Aktion heißt „Als neues Lied anlegen …" und gibt den Treffer weiter', () => {
+  it('die Aktion in der Vorschau heißt „Als neues Lied anlegen …" und gibt den Treffer weiter', () => {
     zeige({ onSongSelectTreffer });
     zuSongSelect();
-    fireEvent.click(screen.getByRole('button', { name: /Stub-Lied/ }));
+    fireEvent.click(screen.getByRole('button', { name: /CCLI-Autor/ }));
     fireEvent.click(screen.getByRole('button', { name: /Als neues Lied anlegen/ }));
 
     expect(onSongSelectTreffer).toHaveBeenCalledWith(SS_TREFFER.treffer[0]);
+  });
+
+  it('das Plus an der SongSelect-Zeile öffnet das Formular direkt – ohne Vorschau, ohne CCLI-Textabruf', () => {
+    // Alwins Wunsch vom 04.09.2026: zwei Knöpfe je Zeile, auch bei SongSelect.
+    zeige({ onSongSelectTreffer });
+    zuSongSelect();
+    fireEvent.click(screen.getByRole('button', { name: /„Stub-Lied" ohne Vorschau hinzufügen/ }));
+
+    expect(onSongSelectTreffer).toHaveBeenCalledWith(SS_TREFFER.treffer[0]);
+    expect(ccliText).not.toHaveBeenCalledWith(5841527, true);
+  });
+
+  it('die Bibliothek findet ein Lied auch über seine CCLI-Nummer – SongSelect wird dann nicht gefragt', () => {
+    // „Ich tippe Titel oder Nummer und das Lied erscheint": Liegt es bei uns, ist das die erste Zeile.
+    zeige({ onSongSelectTreffer });
+    fireEvent.change(screen.getByPlaceholderText(/Lied oder Autor/), {
+      target: { value: '1234567' },
+    });
+    warten();
+
+    expect(screen.getByRole('button', { name: /Autor T · Nr. 1234567/ })).toBeTruthy();
+    expect(screen.queryByText(/Stub-Lied/)).toBeNull();
   });
 
   it('findet die Bibliothek etwas, gibt es SongSelect nur als ANGEBOT – keine Anfrage von selbst', () => {
@@ -187,7 +209,7 @@ describe('SongPicker – SongSelect', () => {
 
     expect(screen.queryByText(/Stub-Lied/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Bei SongSelect nach „Tre" suchen/ }));
-    expect(screen.getByRole('button', { name: /Stub-Lied/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /CCLI-Autor/ })).toBeTruthy();
     // Die Gruppe ist beschriftet – ein CCLI-Treffer sieht einem eigenen Lied sonst zum Verwechseln ähnlich.
     expect(screen.getByText(/SongSelect · 1 Treffer zu „Tre"/)).toBeTruthy();
   });
@@ -195,7 +217,7 @@ describe('SongPicker – SongSelect', () => {
   it('findet sie NICHTS, fragt SongSelect von selbst – ohne Tipp', () => {
     zeige({ onSongSelectTreffer });
     zuSongSelect();
-    expect(screen.getByRole('button', { name: /Stub-Lied/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /CCLI-Autor/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Bei SongSelect nach/ })).toBeNull();
   });
 

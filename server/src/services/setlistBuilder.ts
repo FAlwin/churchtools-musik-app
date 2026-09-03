@@ -520,6 +520,8 @@ export async function getSongLibrary(cookie: string): Promise<SongLibraryEntry[]
         songId: s.id,
         name: s.name,
         author: s.author ?? null,
+        // Leer in ChurchTools kommt als `null` oder `""` – beides heißt „keine Nummer" (#378).
+        ccli: s.ccli ? String(s.ccli) : null,
         key: arr.keyOfArrangement ?? arr.key ?? null,
         arrangementId: arr.id,
       };

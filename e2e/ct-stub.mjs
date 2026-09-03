@@ -280,7 +280,11 @@ const server = createServer((req, res) => {
    * Die Kategorie muss mit, sonst kennt die App das Lied ohne Zuordnung.
    */
   if (path === '/api/songs') {
-    return json(res, { data: [{ ...SONG, category: { id: 0, name: 'Aktive Songs' } }] });
+    // Mit CCLI-Nummer, damit die Bibliothekssuche nach der Nummer prüfbar ist (#378). Bewusst eine
+    // ANDERE als die SongSelect-Treffer des Stubs – sonst wäre nicht zu sehen, welche Quelle gefunden hat.
+    return json(res, {
+      data: [{ ...SONG, ccli: '1234567', category: { id: 0, name: 'Aktive Songs' } }],
+    });
   }
   if (path.startsWith('/api/persons/') && path.endsWith('/groups')) return json(res, { data: [] });
   if (path === '/api/groups') return json(res, { data: [] });

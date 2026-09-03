@@ -1,31 +1,40 @@
 /**
  * Die Trefferliste der Quelle **„SongSelect"** (#378) – vorher inmitten von `NewSongSheet`.
  *
- * Herausgezogen, weil die Suche nicht mehr nur im Anlege-Blatt steht. Seit dem 03.09.2026 erscheint sie
- * als **Gruppe unter der Bibliothek** – deshalb trägt sie eine Überschrift, die die Quelle nennt: Ein
- * SongSelect-Treffer und ein eigenes Lied sehen sonst zum Verwechseln ähnlich aus, führen aber zu ganz
- * Verschiedenem (anlegen vs. einfügen).
+ * Seit dem 04.09.2026 sind ihre Zeilen **dieselben wie die der Bibliothek** (`LiedZeile`): Titel,
+ * darunter Autoren · Nummer · Formate, rechts Auge und Plus. Alwins Wunsch war eine Liste, in der das Lied
+ * einfach erscheint – gleich, woher es kommt. Die Herkunft steht trotzdem dran: in der Überschrift der
+ * Gruppe und in der Nummer der Unterzeile. Ein SongSelect-Treffer und ein eigenes Lied führen zu
+ * Verschiedenem (anlegen vs. einfügen), das darf man sehen.
  *
- * **Ein Treffer führt ins Anlege-Formular, nicht direkt in ChurchTools** (Entscheidung Alwin,
- * 14.08.2026): Die Kategorie ist Pflicht und wird bewusst nicht vorbelegt – ohne sie kann ChurchTools kein
- * Lied annehmen.
+ * **Das Plus legt hier nicht sofort an, sondern öffnet „Neues Lied" vorbelegt** (Entscheidung Alwin,
+ * 04.09.2026): Die Kategorie ist Pflicht und wird bewusst nicht vorbelegt – ohne sie kann ChurchTools kein
+ * Lied annehmen. Titel, Autoren, Nummer und Tonart stehen dann schon drin.
  */
 import type { SongSelectTreffer } from '@shared/types/index';
 import { useSongSelectSuche } from '../hooks/useServices';
 import { QUELLE_BESCHRIFTUNG } from '../hooks/useLiedSuche';
 import { sucheArt, trefferUnterzeile } from '../utils/liedFormular';
 import { CenterMessage } from './CenterMessage';
-import { Icon } from './icons';
+import { LiedZeile } from './LiedZeile';
 import styles from './LiedTreffer.module.scss';
 
 interface SongSelectTrefferListeProps {
-  /** Der **abgeschickte** Begriff – nicht der Feldinhalt (`''` = es läuft noch nichts). */
+  /** Der **abgeschickte** Begriff – nicht der Feldinhalt. Wird nur mit Begriff gerendert. */
   begriff: string;
-  onPick: (treffer: SongSelectTreffer) => void;
+  /** Der Tipp auf die Zeile: die Vorschau mit dem Liedtext von CCLI. */
+  onVorschau: (treffer: SongSelectTreffer) => void;
+  /** Das Plus: „Neues Lied" vorbelegt öffnen. */
+  onEinfuegen: (treffer: SongSelectTreffer) => void;
   busy?: boolean;
 }
 
-export function SongSelectTrefferListe({ begriff, onPick, busy }: SongSelectTrefferListeProps) {
+export function SongSelectTrefferListe({
+  begriff,
+  onVorschau,
+  onEinfuegen,
+  busy,
+}: SongSelectTrefferListeProps) {
   const suche = useSongSelectSuche(begriff, begriff !== '');
   /** Was zuletzt abgeschickt wurde – bestimmt nur die Wortwahl der Meldungen. */
   const gesucht = sucheArt(begriff);
@@ -74,18 +83,14 @@ export function SongSelectTrefferListe({ begriff, onPick, busy }: SongSelectTref
         {QUELLE_BESCHRIFTUNG.songselect} · {liste.length} Treffer zu „{begriff}"
       </div>
       {liste.map((t) => (
-        <button
+        <LiedZeile
           key={t.songNumber}
-          className={styles.zeile}
+          titel={t.title}
+          unterzeile={trefferUnterzeile(t)}
+          onZeile={() => onVorschau(t)}
+          aktion={{ label: 'Als neues Lied anlegen …', onClick: () => onEinfuegen(t) }}
           disabled={busy}
-          onClick={() => onPick(t)}
-        >
-          <span className={styles.text}>
-            <span className={styles.titel}>{t.title}</span>
-            <span className={styles.meta}>{trefferUnterzeile(t)}</span>
-          </span>
-          <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-        </button>
+        />
       ))}
 
       {/**

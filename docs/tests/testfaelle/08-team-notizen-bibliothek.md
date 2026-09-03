@@ -359,33 +359,36 @@ neue Versionsnummer.
 **Das brauchst du:** Einen **Test-Termin**, zwei Lieder mit **gleichem oder ähnlichem Titel** und ein
 Lied **ohne** Notenblatt als Gegenprobe. Für Schritt 6 ff. ein Konto mit SongSelect-Lizenz.
 
-**Das muss passieren:** Ein Antippen zeigt **erst den Liedtext**, und darin steht der Knopf zum
-Einfügen. Beim Durchsehen der Liste passiert von allein nichts.
+**Das muss passieren:** Jede Zeile hat **zwei Knöpfe**: das **Auge** (oder ein Tipp auf die Zeile) zeigt
+**erst den Liedtext**, und darin steht der Knopf zum Einfügen; das **Plus** fügt sofort ein. Beim
+Durchsehen der Liste passiert von allein nichts.
 
 1. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**.
-2. Ein Lied **antippen**: Es muss die **Vorschau** kommen – Titel, Autor, Tonart und der Liedtext –
-   **und das Lied darf NICHT sofort im Ablauf landen.**
+2. Ein Lied **antippen** (oder auf das **Auge** rechts in der Zeile): Es muss die **Vorschau** kommen –
+   Titel, Autor, Tonart und der Liedtext – **und das Lied darf NICHT sofort im Ablauf landen.**
 3. In der Vorschau **„Zum Ablauf hinzufügen"**: Jetzt steht es im Ablauf, genau einmal.
-4. Erneut **Hinzufügen → Lied**, diesmal den **„+"**-Knopf rechts in der Zeile: Das Lied muss **sofort**
+4. Erneut **Hinzufügen → Lied**, diesmal das **Plus** rechts in der Zeile: Das Lied muss **sofort**
    eingefügt werden, **ohne** Vorschau. Das ist der kurze Weg für den Gottesdienst.
 5. Ein Lied **ohne Notenblatt** antippen: Es muss dastehen, dass kein Liedtext vorliegt – und
    **Einfügen muss trotzdem gehen**. Keine leere Fläche, keine Fehlermeldung.
-6. Auf **SongSelect** wechseln, einen Titel suchen, einen Treffer **antippen**: Die Vorschau zeigt
-   CCLIs Liedtext **mit Abschnitten** („Vers 1", „Chorus 1"), Autoren, **CCLI-Nummer** rechts oben und
-   darunter den **CCLI-Lizenzhinweis** („For use solely with the SongSelect Terms of Use …").
-   **Der Hinweis MUSS da sein** – CCLI schickt ihn mit dem Text mit.
+6. Einen Titel tippen, den es bei euch **nicht** gibt – die Gruppe **„SongSelect · N Treffer"**
+   erscheint darunter. Eine SongSelect-Zeile **antippen**: Die Vorschau zeigt CCLIs Liedtext **mit
+   Abschnitten** („Vers 1", „Chorus 1"), Autoren, **CCLI-Nummer** rechts oben und darunter den
+   **CCLI-Lizenzhinweis** („For use solely with the SongSelect Terms of Use …"). **Der Hinweis MUSS da
+   sein** – CCLI schickt ihn mit dem Text mit.
 7. **Zurück** und denselben Treffer **erneut** antippen: Der Text muss **sofort** da sein. Das belegt den
    Zwischenspeicher – ein Lied wird bei CCLI nur **einmal** abgerufen.
-8. In der Vorschau **„Als neues Lied anlegen …"**: Es öffnet sich das gefüllte Formular. (Weiter wie in
-   TF-LIB-03 – **Achtung, das legt ein echtes Lied in ChurchTools an.**)
+8. In der Vorschau **„Als neues Lied anlegen …"**: Es öffnet sich das gefüllte Formular. Dasselbe muss
+   das **Plus** an einer SongSelect-Zeile tun – direkt, ohne Vorschau. (Weiter wie in TF-LIB-03 –
+   **Achtung, das legt ein echtes Lied in ChurchTools an.**)
 9. Zwei gleichnamige Lieder nacheinander in der Vorschau ansehen und am Text erkennen, welches das
    gesuchte ist. Das ist der eigentliche Zweck.
 
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/LiedVorschau.tsx`, `client/src/components/SongPicker.tsx`, `client/src/hooks/useServices.ts`, `server/src/services/ctSongSelect.ts`, `server/src/services/songTextIndex.ts`, `server/src/controllers/setlistController.ts`
-- **Automatisiert:** teilweise – `client/src/components/SongPicker.test.tsx` (in der Liste wird NICHT abgefragt, Antippen führt in die Vorschau, „+" fügt sofort ein), `client/src/components/LiedVorschau.test.tsx` (ohne Text bleibt Einfügen möglich, Fehler ≠ „kein Text", der CCLI-Hinweis wird gezeigt), `server/src/services/songTextIndex.test.ts` (Index wird benutzt statt gebaut, genau ein Download); von Hand bleibt das Zusammenspiel mit CCLI und die Frage, ob die Vorschau im Gottesdienst als Umweg stört
-- **Historie:** #379 (als Zwischenschritt umgebaut, Rückmeldung Alwin 14.08.2026)
+- **Betrifft:** `client/src/components/LiedVorschau.tsx`, `client/src/components/LiedZeile.tsx`, `client/src/components/SongPicker.tsx`, `client/src/hooks/useServices.ts`, `server/src/services/ctSongSelect.ts`, `server/src/services/songTextIndex.ts`, `server/src/controllers/setlistController.ts`
+- **Automatisiert:** teilweise – `client/src/components/LiedZeile.test.tsx` (Zeile = Vorschau, Plus = einfügen, getrennt), `client/src/components/SongPicker.test.tsx` (in der Liste wird NICHT abgefragt, Antippen führt in die Vorschau, Plus fügt sofort ein, Plus an der SongSelect-Zeile öffnet das Formular ohne Textabruf), `client/src/components/LiedVorschau.test.tsx` (ohne Text bleibt Einfügen möglich, Fehler ≠ „kein Text", der CCLI-Hinweis wird gezeigt), `server/src/services/songTextIndex.test.ts` (Index wird benutzt statt gebaut, genau ein Download); von Hand bleibt das Zusammenspiel mit CCLI und die Frage, ob die Vorschau im Gottesdienst als Umweg stört
+- **Historie:** #379 (als Zwischenschritt umgebaut, Rückmeldung Alwin 14.08.2026; zwei Knöpfe je Zeile, Rückmeldung Alwin 04.09.2026)
 
 </details>

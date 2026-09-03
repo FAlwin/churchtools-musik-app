@@ -47,6 +47,7 @@ const lied = (songId: number, name: string): SongLibraryEntry => ({
   songId,
   name,
   author: null,
+  ccli: null,
   key: null,
   arrangementId: songId * 10,
 });

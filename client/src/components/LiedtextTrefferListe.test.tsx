@@ -23,7 +23,7 @@ vi.mock('../hooks/useServices', () => ({
 const { LiedtextTrefferListe } = await import('./LiedtextTrefferListe');
 
 const BESTAND: SongLibraryEntry[] = [
-  { songId: 3, name: 'Treu', author: null, key: 'D', arrangementId: 30 },
+  { songId: 3, name: 'Treu', author: null, ccli: null, key: 'D', arrangementId: 30 },
 ];
 
 const TREFFER: SongTextTreffer[] = [
@@ -79,16 +79,28 @@ describe('LiedtextTrefferListe – Treffer', () => {
     expect(onPick).toHaveBeenCalledWith(BESTAND[0]);
   });
 
-  it('bringt KEINEN eigenen Vorschau-Knopf mit (#379)', () => {
-    /**
-     * Kurzzeitig stand hier ein „Text zeigen" je Zeile (#379). Das ist zurückgebaut: Der Liedtext ist die
-     * **Entscheidungsgrundlage**, nicht eine Zusatzinfo – im Einfüge-Dialog führt ein Antippen deshalb in
-     * die Vorschau (`LiedVorschau`), im Liederheft direkt ins Lied. Ein dritter Weg daneben wäre genau
-     * die Sorte Bedienelement, die eine Liste unruhig macht.
-     */
+  it('im Liederheft (ohne `onEinfuegen`) ist es eine einfache Zeile – kein Plus', () => {
+    // Dort führt der Tipp direkt ins Lied; es gibt nichts einzufügen.
     suche.mockReturnValue({ data: TREFFER, isLoading: false, isError: false });
     zeige('treue');
-    expect(screen.queryByRole('button', { name: /Text zeigen|Liedtext-Anfang/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /ohne Vorschau hinzufügen/ })).toBeNull();
+  });
+
+  it('im Einfüge-Dialog (mit `onEinfuegen`) hat die Zeile das Plus – und es fügt den Bibliothekseintrag ein', () => {
+    // Dieselbe Zeile wie bei Bibliothek und SongSelect (04.09.2026): Auge = Vorschau, Plus = einfügen.
+    suche.mockReturnValue({ data: TREFFER, isLoading: false, isError: false });
+    const onEinfuegen = vi.fn();
+    render(
+      <LiedtextTrefferListe
+        begriff="treue"
+        songs={BESTAND}
+        onPick={onPick}
+        onEinfuegen={{ label: 'Zum Ablauf hinzufügen', onClick: onEinfuegen }}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /ohne Vorschau hinzufügen/ }));
+    expect(onEinfuegen).toHaveBeenCalledWith(BESTAND[0]);
+    expect(onPick).not.toHaveBeenCalled();
   });
 
   it('ein Treffer, den die Bibliothek nicht kennt, ist gesperrt statt versteckt', () => {

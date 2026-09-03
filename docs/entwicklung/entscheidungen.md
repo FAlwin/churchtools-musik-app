@@ -244,6 +244,18 @@ Formulierung vom 13.08. – und ich habe sie als Reiter gebaut. Was er meinte, w
 man sucht. Bei Bedienelementen entscheidet der Durchklick, nicht die Beschreibung (siehe den Abschnitt
 darunter, dieselbe Lehre schon einmal).
 
+**Nachtrag 04.09.2026 – dritter Anlauf, diesmal mit Varianten vorab.** Auch die Angebots-Knöpfe waren
+noch nicht, was Alwin meinte: _„Ich will einfach einen Titel oder eine CCLI-Nummer eingeben und dann
+erscheint das Lied. In der Liedzeile gibt es dann zwei Buttons – Vorschau und direkt einfügen."_ Ich habe
+drei Varianten vorgelegt (alles automatisch / SongSelect wenn nötig / heutige Regel ohne Knöpfe) und drei
+Fragen geklärt: **SongSelect von selbst nur bei 0 Treffern** (Regel bleibt), **das Plus bei SongSelect
+öffnet das Formular vorbelegt** (Kategorie bleibt Pflicht), **die CCLI-Nummer gehört zur
+Bibliothekssuche** (`SongLibraryEntry.ccli`, pflichtig – ein optionales Feld, das der Server vergisst,
+fällt niemandem auf). Ergebnis: **eine Liste, alle Zeilen `LiedZeile`** (Auge + Plus), SongSelect als
+beschriftete Gruppe darunter, die Angebote als dezente Zeilen statt Knöpfe. Was sich gegenüber dem
+03.09. **nicht** geändert hat: wann SongSelect gefragt wird. Geändert hat sich, **wie es aussieht** – und
+genau das war der Punkt.
+
 ## Der Quellen-Umschalter gehört zum EINFÜGEN, nicht in das Liederheft _(14.08.2026, #378 – **überholt am 03.09.2026: es gibt keinen Umschalter mehr; dass SongSelect nur beim Einfügen erscheint, gilt weiter**)_
 
 **Korrektur an #378, nach dem Durchklicken.** Der Umschalter „Bibliothek · Liedtexte · SongSelect" stand

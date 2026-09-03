@@ -39,21 +39,22 @@
     - `EditSongSheet`, Einstiege im Lied-Menü und im Liederheft). **Noch nicht auf Staging
       durchgeklickt**, weil jeder Lauf echte Lieder in ChurchTools anlegt bzw. löscht (TF-LIB-03,
       TF-LIB-04).
-  - **ein Suchfeld – die Bibliothek zuerst, Liedtexte und SongSelect als Angebot darunter** (#378, zweiter
-    Anlauf nach Alwins Rückmeldung vom 03.09.2026). Die Bibliothek filtert live; unter der Liste stehen
-    `SucheAngebot`-Knöpfe („Auch in den Liedtexten nach … suchen", „Bei SongSelect nach … suchen"), ein
-    Tipp öffnet die Treffer als beschriftete Gruppe. **Die Ausnahme:** Ist die Bibliothek zu einem reifen
-    Begriff leer, fragt SongSelect von selbst (`bibliothekLeer` kommt vom Aufrufer, der ja filtert).
-    Regeln in `hooks/useLiedSuche.ts`, Feld in `components/LiedSucheKopf.tsx`, Knopf in
-    `components/SucheAngebot.tsx` – **alle drei nutzt jetzt auch das Liederheft**, das bis dahin eine eigene
-    Suchfeld-Kopie und eine eigene `textSuche === query`-Regel hatte.
-    **Der erste Anlauf (14.08.2026) war ein Umschalter** „Bibliothek · Liedtexte · SongSelect" über der
-    Liste. Alwins Einwand: Das verlangt die Entscheidung, WO gesucht wird, vor dem Tippen – man kann sie
-    aber erst nach dem Ergebnis treffen. Also weg damit; `Segment` bleibt für Sortierung/Termine.
-    **SongSelect gibt es nur mit Lizenz UND einem Weg zum Anlegen** (`kannAnlegen`): in „Lied hinzufügen".
-    Beim Verknüpfen und im Liederheft fehlt es – ein Treffer ohne Ziel wäre eine Sackgasse. Liedtexte
-    gibt es überall. Dazu `liedAnzahl()` für „1 Lied"/„N Lieder" (der Listenkopf schrieb „1 LIEDER") –
-    gefunden nur durch **Durchklicken** mit dem E2E-Stub, der ein einziges Lied hat.
+  - **ein Suchfeld, eine Liste, zwei Knöpfe je Zeile** (#378, dritter Anlauf nach Alwins Rückmeldungen vom
+    03./04.09.2026). Gesucht wird in Titel, Autor **und CCLI-Nummer** (`SongLibraryEntry.ccli`, pflichtig,
+    vom Server aus `CtSongListEntry.ccli`). Eigene Lieder oben, SongSelect darunter mit Überschrift
+    („SongSelect · N Treffer zu …") und Nummer in der Unterzeile, am Ende die Liedtexte. **Alle drei Quellen
+    rendern dieselbe `components/LiedZeile.tsx`:** Zeile (mit Auge) = Vorschau, **Plus** = einfügen; bei
+    SongSelect öffnet das Plus `NewSongSheet` vorbelegt (Kategorie bleibt Pflicht, Entscheidung Alwin).
+    Ohne `aktion` ist `LiedZeile` eine einfache Pfeil-Zeile – so nutzt sie das Liederheft für
+    Liedtext-Treffer. **SongSelect fragt von selbst NUR bei leerer Bibliothek** (`bibliothekLeer` vom
+    Aufrufer); sonst steht am Ende eine dezente `SucheAngebot`-Zeile („Bei SongSelect nach … suchen"),
+    Tipp oder Enter holt nach. Liedtexte laufen nie von selbst. Regeln in `hooks/useLiedSuche.ts`, Feld in
+    `LiedSucheKopf.tsx` – **das Liederheft nutzt dieselben Bausteine** (hatte eigene Suchfeld-Kopie +
+    eigene `textSuche === query`-Regel → weg). **Zwei Anläufe davor:** Umschalter über der Liste (14.08.,
+    verlangte die Quellenwahl VOR dem Tippen) und blaue Angebots-Knöpfe unter der Liste (03.09., wirkten
+    wie Aktionen zwischen Treffern). Lehre: Bei Bedienelementen entscheidet der Durchklick, nicht die
+    Beschreibung – zweimal in einem Feature. **SongSelect nur mit Lizenz UND `kannAnlegen`** („Lied
+    hinzufügen"); beim Verknüpfen und im Liederheft fehlt es. Dazu `liedAnzahl()` für „1 Lied"/„N Lieder".
 
   - die **Liedtext-Vorschau als Zwischenschritt beim Einfügen** (#379, nach Alwins Rückmeldung vom 14.08.2026 umgebaut): Ein Antippen
     zeigt **erst den Text**, darin steht der Knopf zum Einfügen (Muster ProPresenter).

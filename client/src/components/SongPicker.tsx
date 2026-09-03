@@ -7,7 +7,7 @@ import { SucheAngebot } from './SucheAngebot';
 import { LiedtextTrefferListe } from './LiedtextTrefferListe';
 import { SongSelectTrefferListe } from './SongSelectTrefferListe';
 import { LiedVorschau } from './LiedVorschau';
-import { Icon } from './icons';
+import { LiedZeile } from './LiedZeile';
 import { useSongFilter } from '../hooks/useSongFilter';
 import { useLiedSuche } from '../hooks/useLiedSuche';
 import { statLabel } from '../utils/songFilter';
@@ -57,10 +57,14 @@ type Vorschau =
  * Alwins Rückmeldung: Das verlangt die Entscheidung, WO gesucht wird, vor dem Tippen – man kann sie aber
  * erst nach dem Ergebnis treffen. Deshalb jetzt die Reihenfolge, in der man tatsächlich sucht.
  *
- * **Ein Antippen führt in die Vorschau, nicht direkt zum Einfügen** (#379, Muster ProPresenter): Der
- * Liedtext ist die Entscheidungsgrundlage – bei gleichnamigen Liedern das Einzige, was sie unterscheidet.
- * Für den Alltag im Gottesdienst bleibt der **„+"-Knopf** in der Bibliothekszeile: ein Tipp, sofort
- * eingefügt, ohne Umweg.
+ * **Jede Zeile hat zwei Knöpfe** (#379 und Alwins Rückmeldung vom 04.09.2026): Die Zeile selbst – mit
+ * dem Auge – öffnet die Vorschau; der Liedtext ist die Entscheidungsgrundlage, bei gleichnamigen Liedern
+ * das Einzige, was sie unterscheidet. Das **Plus** fügt sofort ein (bei SongSelect: öffnet „Neues Lied"
+ * vorbelegt). Bibliothek, SongSelect und Liedtexte nutzen dafür **dieselbe** `LiedZeile` – vorher sahen
+ * die drei verschieden aus und verhielten sich verschieden.
+ *
+ * **Eine Liste, drei Gruppen:** eigene Lieder oben, darunter SongSelect (mit Überschrift), am Ende die
+ * Liedtexte. Die Angebote dazwischen sind dezente Zeilen, keine Knöpfe.
  */
 export function SongPicker({
   onPick,
@@ -186,17 +190,14 @@ export function SongPicker({
         ) : (
           f.list.map((s: SongLibraryEntry) => {
             const st = f.stats.get(s.songId);
+            const unter = [s.author, s.ccli ? `Nr. ${s.ccli}` : null].filter(Boolean).join(' · ');
             return (
-              <div key={s.songId} className={styles.zeile}>
-                {/* Antippen führt in die Vorschau (#379) … */}
-                <button
-                  className={styles.result}
-                  disabled={busy}
-                  onClick={() => setVorschau({ art: 'bibliothek', song: s })}
-                >
-                  <div className={styles.info}>
-                    <span className={styles.songName}>{s.name}</span>
-                    {s.author && <span className={styles.sub}>{s.author}</span>}
+              <LiedZeile
+                key={s.songId}
+                titel={s.name}
+                unterzeile={unter || null}
+                zusatz={
+                  <>
                     {showStats && f.sort !== 'name' && (
                       <span className={styles.stat}>
                         {statLabel(
@@ -206,33 +207,39 @@ export function SongPicker({
                         )}
                       </span>
                     )}
-                  </div>
-                  {s.key && <span className={styles.keyPill}>{s.key}</span>}
-                </button>
-                {/* … und dieser Knopf bleibt der kurze Weg: sofort einfügen, ohne Vorschau. Im
-                    Gottesdienst zählt das (Entscheidung Alwin, 14.08.2026). */}
-                <button
-                  className={styles.direkt}
-                  disabled={busy}
-                  onClick={() => onPick(s.arrangementId, s.name)}
-                  aria-label={`„${s.name}" ohne Vorschau hinzufügen`}
-                  title={aktionLabel}
-                >
-                  <Icon name="plus" size={19} stroke={2.4} />
-                </button>
-              </div>
+                    {s.key && <span className={styles.keyPill}>{s.key}</span>}
+                  </>
+                }
+                onZeile={() => setVorschau({ art: 'bibliothek', song: s })}
+                aktion={{ label: aktionLabel, onClick: () => onPick(s.arrangementId, s.name) }}
+                disabled={busy}
+              />
             );
           })
         )}
 
         {/**
-         * Die anderen Quellen – **unter** der Bibliothek, egal ob sie etwas gefunden hat. Erst der eigene
-         * Bestand (Liedtexte: „vielleicht heißt es bei uns anders"), dann außen (SongSelect). Solange die
-         * Bibliothek lädt oder gescheitert ist, gibt es nichts anzubieten: Man wüsste nicht, ob das
-         * Gesuchte nicht doch da ist.
+         * Die anderen Quellen – **unter** der Bibliothek, egal ob sie etwas gefunden hat. Erst SongSelect
+         * (Alwins Satz: „Titel oder Nummer eingeben, und das Lied erscheint" – das ist der Hauptweg für
+         * ein neues Lied), am Ende die Liedtexte als Nebenweg. Solange die Bibliothek lädt oder
+         * gescheitert ist, gibt es nichts anzubieten: Man wüsste nicht, ob das Gesuchte nicht doch da ist.
          */}
         {!lib.isLoading && !lib.isError && (
           <>
+            {suche.angebotSongSelect && (
+              <SucheAngebot
+                text={`Bei SongSelect nach „${query}" suchen`}
+                onClick={suche.songSelectSuchen}
+              />
+            )}
+            {suche.songSelectBegriff !== '' && onSongSelectTreffer && (
+              <SongSelectTrefferListe
+                begriff={suche.songSelectBegriff}
+                busy={busy}
+                onVorschau={(treffer) => setVorschau({ art: 'songselect', treffer })}
+                onEinfuegen={onSongSelectTreffer}
+              />
+            )}
             {suche.angebotLiedtexte && (
               <SucheAngebot
                 text={`Auch in den Liedtexten nach „${query}" suchen`}
@@ -245,19 +252,10 @@ export function SongPicker({
                 songs={lib.data ?? []}
                 busy={busy}
                 onPick={(s) => setVorschau({ art: 'bibliothek', song: s })}
-              />
-            )}
-            {suche.angebotSongSelect && (
-              <SucheAngebot
-                text={`Bei SongSelect nach „${query}" suchen`}
-                onClick={suche.songSelectSuchen}
-              />
-            )}
-            {suche.songSelectBegriff !== '' && onSongSelectTreffer && (
-              <SongSelectTrefferListe
-                begriff={suche.songSelectBegriff}
-                busy={busy}
-                onPick={(treffer) => setVorschau({ art: 'songselect', treffer })}
+                onEinfuegen={{
+                  label: aktionLabel,
+                  onClick: (s) => onPick(s.arrangementId, s.name),
+                }}
               />
             )}
           </>

@@ -102,6 +102,15 @@ export interface SongLibraryEntry {
   songId: number;
   name: string;
   author: string | null;
+  /**
+   * CCLI-Nummer, wie ChurchTools sie am Lied führt – `null`, wenn keine eingetragen ist (#378).
+   *
+   * Seit dem 04.09.2026 Teil der Bibliothekssuche: Wer „5841527" tippt und das Lied liegt schon bei
+   * uns, soll es in der Bibliothek finden – nicht erst über SongSelect. Bewusst **pflichtig**, nicht
+   * optional: Ein optionales Feld, das der Server vergisst, fällt niemandem auf; ein fehlendes
+   * Pflichtfeld zeigt der Compiler.
+   */
+  ccli: string | null;
   /** Tonart des Standard-Arrangements */
   key: string | null;
   arrangementId: number;

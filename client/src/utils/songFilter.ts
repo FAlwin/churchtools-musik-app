@@ -77,10 +77,18 @@ export function filterSongs(
   };
 
   const query = opts.query.trim().toLowerCase();
+  /**
+   * Gesucht wird in Titel, Autor **und CCLI-Nummer** (#378, 04.09.2026). Die Nummer ist der Weg, den
+   * Alwin meint, wenn er sagt „ich tippe Titel oder Nummer und das Lied erscheint": Liegt es schon bei
+   * uns, steht es hier – SongSelect wird dann gar nicht gefragt. Verglichen wird per `includes`, damit
+   * auch eine angefangene Nummer schon trifft.
+   */
   const searched = query
     ? songs.filter(
         (s) =>
-          s.name.toLowerCase().includes(query) || (s.author ?? '').toLowerCase().includes(query),
+          s.name.toLowerCase().includes(query) ||
+          (s.author ?? '').toLowerCase().includes(query) ||
+          (s.ccli ?? '').includes(query),
       )
     : [...songs];
 
@@ -97,7 +105,8 @@ export function filterSongs(
    * Wort nur im Autor trug, konnte damit vor dem stehen, das es im Titel hat. Wer „Gnade" tippt, meint
    * fast immer den Titel.
    *
-   * `0` = Treffer im Titel, `1` = nur im Autor.
+   * `0` = Treffer im Titel **oder in der CCLI-Nummer** (die Nummer ist eindeutig, sie meint genau dieses
+   * Lied), `1` = nur im Autor.
    *
    * **Ohne Suche braucht es keinen Sonderfall:** `''.includes('')` ist `true`, also bekommen dann alle
    * Lieder `0` und es bleibt bei der reinen Alphabetik. Ein zusätzliches `!query ||` stand hier zuerst –
@@ -106,7 +115,7 @@ export function filterSongs(
    * gibt.
    */
   const trefferArt = (s: SongLibraryEntry): number =>
-    s.name.toLowerCase().includes(query) ? 0 : 1;
+    s.name.toLowerCase().includes(query) || (s.ccli ?? '').includes(query) ? 0 : 1;
 
   visible.sort(([a, sa], [b, sb]) => {
     /**

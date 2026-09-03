@@ -58,7 +58,7 @@ const KATEGORIEN: SongCategory[] = [
 ];
 
 const BESTAND: SongLibraryEntry[] = [
-  { songId: 3, name: 'Treu', author: null, key: null, arrangementId: 30 },
+  { songId: 3, name: 'Treu', author: null, ccli: null, key: null, arrangementId: 30 },
 ];
 
 /**

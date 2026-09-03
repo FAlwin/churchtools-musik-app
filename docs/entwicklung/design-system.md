@@ -49,14 +49,15 @@ nutzt bewusst Monospace (`'JetBrains Mono', monospace`) für die Roh-Bearbeitung
   `Icon` (`components/icons.tsx`, Line-Icons – keine Emojis in der UI), `NavBar`, `TabBar`,
   `Sheet`, `ConfirmDialog`, `SongFields` (die Stammdaten-Felder eines Liedes – von „Neues Lied" und
   „Stammdaten ändern" gemeinsam genutzt, damit es die fünf Felder nur einmal gibt).
-- **Lied suchen – ein Feld für alle drei Stellen** (#378): `LiedSucheKopf` (nur das Suchfeld, Lupe innen,
-  `--surface3`), `SucheAngebot` (der ruhige Textknopf „Auch in den Liedtexten …" / „Bei SongSelect …",
-  Optik wie „Neues Lied" im Listenkopf) und `LiedTreffer.module.scss` für die Trefferzeilen von
-  „Liedtexte" und „SongSelect" samt Gruppen-Überschrift (`.kopf`). Vorher hatte jede Ansicht ihre eigene
-  Kopie des Suchfelds (`AllSongs` und `SongPicker` je eine, dazu eine dritte Zeile in `NewSongSheet`);
-  seit dem 03.09.2026 nutzt auch das Liederheft diese drei Bausteine. **Regel daraus:** Das Suchfeld und
-  das Angebot gibt es nur noch hier – wer eine vierte Suche braucht, nimmt sie, statt ihre Optik
-  nachzubauen. Der Quellen-`Segment` über der Liste (erster Anlauf 14.08.2026) ist weg.
+- **Lied suchen – ein Feld, eine Zeile, ein Angebot** (#378): `LiedSucheKopf` (nur das Suchfeld, Lupe
+  innen, `--surface3`), **`LiedZeile`** (die Liedzeile mit Auge = Vorschau und Plus = einfügen; ohne
+  `aktion` eine Pfeil-Zeile – dieselbe Optik für Bibliothek, SongSelect und Liedtexte, vorher drei
+  verschiedene) und `SucheAngebot` (die dezente gestrichelte Zeile „Bei SongSelect nach …" / „Auch in den
+  Liedtexten nach …" am Listenende – ein Weg, keine Aktion). `LiedTreffer.module.scss` trägt nur noch
+  Gruppen-Überschrift (`.kopf`) und Hinweise (`.hinweis`). Vorher hatte jede Ansicht ihre eigene Kopie des
+  Suchfelds; seit dem 03.09.2026 nutzt auch das Liederheft diese Bausteine. **Regel daraus:** Wer eine
+  vierte Suche oder eine weitere Liedliste braucht, nimmt diese drei, statt ihre Optik nachzubauen. Zwei
+  frühere Anläufe (Quellen-`Segment` über der Liste, blaue Angebots-Knöpfe darunter) sind weg.
 
 ## Theme
 

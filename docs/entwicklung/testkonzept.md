@@ -136,11 +136,18 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
     Weg gibt, und es gibt **keinen** Umschalter und keinen Such-Knopf mehr (Gegenprobe zur Entscheidung).
   - `components/SucheAngebot`: zeigt den Text, meldet den Tipp – die Regeln, WANN er erscheint, liegen im
     Hook.
+  - `components/LiedZeile` (04.09.2026): **Zeile öffnet die Vorschau, Plus fügt ein – getrennt.** Ein Tipp
+    auf die Zeile darf NICHT einfügen, das Plus NICHT die Vorschau öffnen; ohne `aktion` gibt es kein
+    Plus (Liederheft). Genau diese Trennung ist der Grund für zwei Knöpfe.
+  - `utils/songFilter`: **die CCLI-Nummer gehört zur Suche** – Treffer über die Nummer und ihren Anfang,
+    Nummern-Treffer zählen wie Titel-Treffer (vor Autor-Treffern), `null` stürzt nicht.
   - `components/SongSelectTrefferListe` + `components/LiedtextTrefferListe`: die Trefferlisten samt der
     **Regression zum Absturz vom 13.08.2026** (Treffer kommen aus `data.treffer`, nicht aus dem
     Antwort-Objekt), der Unterscheidung „nichts gefunden" / „konnte nicht suchen" (#270) und der
-    Gruppen-Überschrift („SongSelect · N Treffer zu …"). Der Leer-Begriff-Zweig ist weg: Beide werden nur
-    noch mit einem abgeschickten Begriff gerendert.
+    Gruppen-Überschrift („SongSelect · N Treffer zu …"). Beide rendern `LiedZeile`: Zeile → Vorschau, Plus →
+    einfügen bzw. (SongSelect) „Neues Lied" vorbelegt; die Liedtext-Liste ohne `onEinfuegen` (Liederheft)
+    hat kein Plus. Der Leer-Begriff-Zweig ist weg: Beide werden nur noch mit abgeschicktem Begriff gerendert.
+
 - **Die Vorschau vor dem Einfügen (#379):**
   - `components/SongPicker`: **Beim Durchsehen der Liste wird KEIN Liedtext abgefragt** – geprüft am
     `enabled`-Argument beider Hooks, denn eine Vorschau je Zeile hieße eine Anfrage je Zeile. Bei CCLI ist

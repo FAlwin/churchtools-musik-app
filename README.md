@@ -16,9 +16,10 @@ Datenquelle – die App hat keine eigene Datenbank.
 - **Alle Lieder** durchsuchbar inkl. Nutzungs-Statistik (Häufigkeit / zuletzt gespielt, mit
   wählbarem Zeitraum). Gesucht wird in Titel und Autor, Titel-Treffer stehen vorn; findet der Titel
   nichts, lässt sich **auch im Liedtext** suchen – für den Fall, dass man nur eine Zeile kennt
-- **Beim Einfügen eines Liedes: ein Suchfeld, die Bibliothek zuerst** – darunter die Angebote „Auch in
-  den Liedtexten suchen" und „Bei SongSelect suchen"; findet die Bibliothek nichts, sucht SongSelect von
-  selbst mit (beim Verknüpfen ohne SongSelect – dort könnte ein neu angelegtes Lied nicht landen)
+- **Beim Einfügen eines Liedes: ein Suchfeld, eine Liste** – Titel, Autor oder CCLI-Nummer tippen, eigene
+  Lieder oben, SongSelect darunter; jede Zeile mit Auge (Vorschau) und Plus (einfügen). Findet die
+  Bibliothek nichts, sucht SongSelect von selbst mit (beim Verknüpfen ohne SongSelect – dort könnte ein
+  neu angelegtes Lied nicht landen)
 - **Liedtext-Vorschau vor dem Einfügen** – ein Antippen zeigt erst den Text, dann den Knopf zum
   Hinzufügen; so unterscheidet man gleichnamige Lieder, ohne sie zu öffnen. Bei SongSelect mit
   Abschnitten, Autoren und CCLI-Nummer. Für den Alltag bleibt der **„+"**-Knopf: sofort einfügen

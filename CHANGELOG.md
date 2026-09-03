@@ -26,20 +26,25 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Anfrage, und ein Lied, das du zweimal öffnest, wird nur einmal geholt. Für die eigenen Lieder nutzt
   der Server ohnehin den Bestand, den die Liedtextsuche schon angelegt hat.
 
-- **Ein Suchfeld – die Bibliothek zuerst, SongSelect und Liedtexte darunter (#378).** Beim Einfügen eines
-  Liedes tippst du einmal, und die eigene Bibliothek filtert sofort. Unter den Treffern stehen zwei
-  Angebote: **„Auch in den Liedtexten nach … suchen"** und **„Bei SongSelect nach … suchen"**. Ein Tipp,
-  und die Treffer erscheinen darunter als eigene, beschriftete Gruppe – ein SongSelect-Treffer sieht einem
-  eigenen Lied sonst zum Verwechseln ähnlich, führt aber zu etwas anderem (anlegen statt einfügen).
+- **Ein Suchfeld, eine Liste, zwei Knöpfe je Zeile (#378).** Beim Einfügen eines Liedes tippst du Titel,
+  Autor **oder CCLI-Nummer** – und das Lied erscheint. Eigene Lieder stehen oben, SongSelect-Treffer
+  darunter mit eigener Überschrift und der Nummer in der Zeile, damit man die Herkunft sieht. **Jede Zeile
+  hat ein Auge und ein Plus:** Das Auge (oder ein Tipp auf die Zeile) öffnet die Liedtext-Vorschau, das
+  Plus fügt sofort ein – bei einem SongSelect-Treffer öffnet es „Neues Lied" vorbelegt, du wählst die
+  Kategorie, und das Lied steht angelegt im Ablauf.
+
+  **Die CCLI-Nummer gehört jetzt zur Bibliothekssuche.** Liegt das Lied schon bei euch, findet es die
+  Bibliothek über seine Nummer – SongSelect wird dann gar nicht gefragt und es entsteht kein Doppel.
 
   **Findet die Bibliothek nichts, sucht SongSelect von selbst mit** – dann ist die Anfrage ja nötig.
-  Findet sie etwas, bleibt SongSelect ein Angebot. So kostet der häufigste Fall („das Lied ist bei uns")
-  keine einzige Anfrage an CCLI, und der zweithäufigste („das Lied ist neu") keinen zusätzlichen Tipp.
+  Findet sie etwas, steht am Ende der Liste eine dezente Zeile **„Bei SongSelect nach … suchen"**; ein
+  Tipp darauf oder die Eingabetaste holt die Treffer nach. Ebenso dezent am Ende: **„Auch in den Liedtexten
+  nach … suchen"**. So kostet der häufigste Fall („das Lied ist bei uns") keine einzige Anfrage an CCLI.
 
-  Ein erster Anlauf hatte dafür einen **Umschalter** „Bibliothek · Liedtexte · SongSelect" über der Liste.
-  Der verlangte die Entscheidung, _wo_ gesucht wird, vor dem Tippen – obwohl man sie erst nach dem
-  Ergebnis treffen kann (Rückmeldung Alwin, 03.09.2026). Jetzt folgt die App der Reihenfolge, in der man
-  tatsächlich sucht.
+  Zwei Anläufe davor: ein **Umschalter** „Bibliothek · Liedtexte · SongSelect" über der Liste (verlangte
+  die Entscheidung, _wo_ gesucht wird, vor dem Tippen) und danach **Angebots-Knöpfe** unter der Liste
+  (wirkten wie Aktionen zwischen den Treffern). Beides nach Alwins Rückmeldung am 03./04.09.2026 wieder
+  ausgebaut – jetzt ist es eine Liste, in der das Lied einfach erscheint.
 
   **SongSelect gibt es nur dort, wo aus einem Treffer ein Lied werden kann:** in „Lied hinzufügen". Beim
   **Verknüpfen** und im **Liederheft** fehlt es mit Absicht – einem vorhandenen Ablaufpunkt kann kein neu
