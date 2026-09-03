@@ -188,7 +188,16 @@ churchtools-musik-app/
   grundlos abmelden. Umgekehrt mappt `getCsrfToken` eine tote CT-Session bewusst auf **401** (nicht
   502), damit ein Aussetzer beim Speichern ebenfalls sauber zum Re-Login führt statt als „offline"
   zu erscheinen.
-- ⚠️ **Eine tote CT-Session kommt NICHT mehr als 401 (#381, gemessen 03.09.2026 an CT 3.136.2):**
+- 🔴 **CT hat das Session-Cookie UMBENANNT (#381, gemessen 03.09.2026 an CT 3.136.2):** Die Antwort
+  auf `/api/login` traegt `ChurchToolsV2_ct_<gemeinde>=<wert>` und **loescht** das alte
+  `ChurchTools_ct_<gemeinde>` mit zwei `Set-Cookie`-Zeilen (`Max-Age=0`, `expires=1970`). Der frühere
+  Ausdruck in `extractSessionCookie` (`/^(ChurchTools_[^=]+=[^;]+)/`) fand davon **nichts** – beim
+  neuen Namen steht hinter `ChurchTools` ein `V2` statt `_`, beim alten ist der Wert leer. Folge:
+  **niemand konnte sich mehr anmelden** (`502 Keine Session von ChurchTools erhalten.`, und der
+  Zweig war stumm). `extractSessionCookie` liest jetzt `ChurchTools(V<n>)?_…` und nimmt bei mehreren
+  Treffern die **hoechste Fassungsnummer** – ein kuenftiges `V3` traegt die Stelle damit von selbst.
+  Der Wert darf **nicht leer** sein (`[^;]+`, kein `*`): Ein Loesch-Cookie ist keine Sitzung.
+- ⚠️ **Und die Folge davon: Eine tote CT-Session kommt NICHT als 401 (#381):**
   `GET /api/whoami` antwortet ohne gültige Session mit **200** und einem Phantom-Nutzer
   `{"id":-1,"lastName":"Anonymous"}`; `GET /api/permissions/global` mit **200** und lauter `false`.
   Nur `/api/csrftoken` liefert noch 401. Der gesamte Ausgesperrt-Schutz hing an diesem 401 – ohne ihn

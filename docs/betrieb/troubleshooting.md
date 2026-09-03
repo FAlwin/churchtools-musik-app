@@ -74,6 +74,23 @@ Beim ersten Aufruf holt die App **jeden Liedtext einmal** von ChurchTools (bei 5
 Dateien). Danach antwortet sie eine Stunde lang aus dem Zwischenspeicher. Das ist so gebaut, weil weder
 ChurchTools noch CCLI im Liedtext suchen können; die Texte liegen dort als Datei am Arrangement.
 
+### „Der Server antwortet gerade nicht" beim Anmelden – obwohl das Passwort stimmt
+
+**Häufigste Ursache: ChurchTools hat sein Sitzungs-Merkmal umbenannt** (behoben mit #381; älterer
+Stand betroffen). Seit ChurchTools 3.136.2 heisst das Cookie `ChurchToolsV2_ct_<gemeinde>`, das alte
+`ChurchTools_ct_<gemeinde>` wird beim Anmelden aktiv gelöscht. Eine App auf älterem Stand sucht nur
+den alten Namen, findet nichts und meldet „Der Server antwortet gerade nicht".
+
+Erkennungsmerkmal: **ChurchTools selbst funktioniert im Browser einwandfrei**, und im
+Container-Protokoll steht zum Anmeldeversuch **nichts** (der Fehlerzweig war stumm; seit #381 loggt
+er `[churchtools] login → …`).
+
+→ App auf einen Stand mit #381 aktualisieren. Eine Umgehung ohne Update gibt es nicht.
+
+Selbst prüfen lässt sich das im Browser: In ChurchTools **F12** → **Netzwerk**, eine beliebige
+Anfrage anklicken → **Headers** → unter _Request Headers_ die Zeile `Cookie:`. Steht dort
+`ChurchToolsV2_…`, liefert die Instanz das neue Merkmal.
+
 ### Keine Lieder oder Abläufe sichtbar
 
 **Zwei Ursachen – die zweite sieht wie die erste aus.**
@@ -84,7 +101,9 @@ ChurchTools noch CCLI im Liedtext suchen können; die Texte liegen dort als Date
 **2. Die ChurchTools-Sitzung ist abgelaufen, die App merkt es aber nicht** (behoben mit #381; älterer
 Stand betroffen). ChurchTools antwortet auf „wer ist angemeldet?" bei toter Sitzung nicht mit
 „niemand", sondern mit einem Platzhalter-Nutzer namens „Anonymous" – die App hält einen dann für
-angemeldet, hat aber keine Rechte. Erkennbar an dieser Zeile im Container-Protokoll:
+angemeldet, hat aber keine Rechte. **Ausgelöst wurde das bei der ECG durch die Umbenennung des
+Sitzungs-Merkmals** (siehe voriger Abschnitt): Bestehende Anmeldungen liefen ab diesem Moment mit
+einem entwerteten Cookie weiter. Erkennbar an dieser Zeile im Container-Protokoll:
 
 ```
 [capabilities] keine Lieder/Abläufe-Rechte geliefert (evtl. ChurchTools-Aussetzer); nicht überbrückt: …

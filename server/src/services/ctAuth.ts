@@ -11,7 +11,31 @@ import { forgetSession, userIdMemo } from './ctSessionMemos.js';
 import { ctId } from '../utils/ctId.js';
 import type { ChurchToolsUser } from './ctTypes.js';
 
-/** Liest aus den Set-Cookie-Headern das ChurchTools-Session-Cookie (name=value). */
+/**
+ * Das ChurchTools-Session-Cookie aus den `Set-Cookie`-Headern lesen (`name=value`).
+ *
+ * **Der Name trägt eine Fassungsnummer, und ChurchTools hat sie erhoeht (#381).** Gemessen am
+ * 03.09.2026 an 3.136.2 antwortet die Anmeldung mit drei `Set-Cookie`-Zeilen:
+ *
+ * ```
+ * ChurchTools_ct_<gemeinde>=;   expires=Thu, 01-Jan-1970 …  Max-Age=0   <- wird gelöscht
+ * ChurchTools_ct_<gemeinde>=;   expires=Thu, 01-Jan-1970 …  Max-Age=0   <- nochmal, Partitioned
+ * ChurchToolsV2_ct_<gemeinde>=<wert>; Max-Age=86399                      <- das gültige
+ * ```
+ *
+ * Der frühere Ausdruck `/^(ChurchTools_[^=]+=[^;]+)/` fand davon **nichts**: Beim neuen Namen steht
+ * hinter `ChurchTools` ein `V2` statt des `_`, und beim alten ist der Wert leer. Ergebnis war
+ * `502 Keine Session von ChurchTools erhalten.` – und weil dieser Zweig stumm war, stand im
+ * Container-Log dazu keine Zeile.
+ *
+ * **Zwei Regeln, damit das nicht wieder bricht:**
+ *  - Der **Wert darf nicht leer sein** – ein Lösch-Cookie (`Max-Age=0`) ist keine Sitzung. Das
+ *    erledigt `[^;]+`, aber es ist der Grund, warum dort kein `*` stehen darf.
+ *  - Bei mehreren Treffern gewinnt die **höhere Fassungsnummer**. Damit trägt diese Stelle ein
+ *    künftiges `ChurchToolsV3_` von selbst, statt beim nächsten Mal wieder auszufallen. Ein
+ *    „nimm das erste" oder „nimm das letzte" wäre eine Annahme ueber die Reihenfolge der Header –
+ *    die Fassungsnummer ist die Aussage, die ChurchTools selbst mitschickt.
+ */
 export function extractSessionCookie(res: Response): string | null {
   // Node 18+/undici: getSetCookie() liefert alle Set-Cookie-Header einzeln
   const cookies =
@@ -20,11 +44,19 @@ export function extractSessionCookie(res: Response): string | null {
       : res.headers.get('set-cookie')
         ? [res.headers.get('set-cookie') as string]
         : [];
+  let bestes: string | null = null;
+  let besteFassung = -1;
   for (const c of cookies) {
-    const match = c.match(/^(ChurchTools_[^=]+=[^;]+)/);
-    if (match) return match[1];
+    // Ohne Fassungsnummer (`ChurchTools_…`) gilt Fassung 1 – sie ist die älteste bekannte Form.
+    const match = c.match(/^(ChurchTools(?:V(\d+))?_[^=]+=[^;]+)/);
+    if (!match) continue;
+    const fassung = match[2] === undefined ? 1 : Number(match[2]);
+    if (fassung > besteFassung) {
+      besteFassung = fassung;
+      bestes = match[1];
+    }
   }
-  return null;
+  return bestes;
 }
 
 /**
@@ -75,7 +107,31 @@ export async function login(
     throw new HttpError(502, 'Keine Session von ChurchTools erhalten.');
   }
 
-  const user = await whoami(cookie);
+  /**
+   * Ein 401 aus `whoami` bedeutet hier etwas ANDERES als sonst (#381).
+   *
+   * Ueberall sonst heisst es „deine Sitzung ist abgelaufen, melde dich neu an". Genau das ist im
+   * Anmeldeformular aber unbrauchbar: Der Mensch meldet sich in diesem Moment an, und die Meldung
+   * „Session abgelaufen. Bitte neu anmelden." schickt ihn im Kreis. Dieselbe Überlegung wie #218,
+   * das „Bitte E-Mail und Passwort pruefen" fuer Verbindungsfehler abgeschafft hat: Eine Meldung, die
+   * die falsche Ursache behauptet, kostet Leute mehr Zeit als gar keine.
+   *
+   * Hier heisst ein 401 nach erfolgreicher Passwortprüfung: ChurchTools hat uns ein Cookie gegeben,
+   * mit dem es uns selbst nicht wiedererkennt. Das ist kein Fehler des Nutzers und nichts, was er
+   * beheben kann – also 502, was im Client zu „Der Server antwortet gerade nicht … am Passwort liegt
+   * es nicht" wird. Mit Logzeile, denn dieser Fall trat am 03.09.2026 real auf (er hinterliess vier
+   * `Konto -1`-Zeilen im Rechte-Log und keine einzige beim Anmelden).
+   */
+  let user: ChurchToolsUser;
+  try {
+    user = await whoami(cookie);
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 401) {
+      console.error('[churchtools] login → Cookie erhalten, aber whoami erkennt es nicht an');
+      throw new HttpError(502, 'ChurchTools hat keine gültige Sitzung geliefert.');
+    }
+    throw e;
+  }
   return { cookie, user };
 }
 

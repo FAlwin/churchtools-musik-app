@@ -130,10 +130,18 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   ließ, bis die ChurchTools-Sitzung ablief, landete in einer Sackgasse: Die App hielt einen für
   angemeldet, zeigte aber „kein Zugriff" – heraus kam man nur durch Löschen der Website-Daten.
 
-  **Die Ursache lag nicht in der App.** ChurchTools antwortet auf die Frage „wer ist angemeldet?"
-  seit einer Aktualisierung nicht mehr mit „niemand" (401), sondern mit einem Platzhalter-Nutzer
-  namens „Anonymous" – also scheinbar mit einer gültigen Antwort. Der gesamte Schutz gegen
-  Aussperren hing an diesem 401. Gemessen am 03.09.2026 an ChurchTools 3.136.2.
+  **Die Ursache lag nicht in der App: ChurchTools hat mit einer Aktualisierung sein
+  Sitzungs-Merkmal umbenannt** und das alte dabei aktiv gelöscht. Die App suchte nach dem alten
+  Namen und fand nichts – deshalb liess sich **gar nicht mehr anmelden** („Der Server antwortet
+  gerade nicht"), obwohl das Passwort stimmte und ChurchTools selbst einwandfrei lief.
+
+  Wer noch angemeldet war, war ab dem Moment mit einem entwerteten Merkmal unterwegs. Auf die Frage
+  „wer ist angemeldet?" antwortete ChurchTools dann nicht mehr mit „niemand", sondern mit einem
+  Platzhalter-Nutzer namens „Anonymous" – also scheinbar gültig. Der gesamte Schutz gegen Aussperren
+  hing aber an dieser „niemand"-Antwort. Gemessen am 03.09.2026 an ChurchTools 3.136.2.
+
+  Die App kennt jetzt beide Namensformen und bevorzugt die neuere – eine künftige dritte Fassung
+  trägt sie damit von selbst.
 
   Erkennbar war das daran, dass beide Instanzen gleichzeitig betroffen waren, während die
   produktive App seit Wochen unveränderten Code auslieferte.

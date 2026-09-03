@@ -17,9 +17,15 @@ kommt wieder die Anmeldemaske, und du kannst dich sofort neu anmelden – ohne d
 <details><summary>Technisches</summary>
 
 - **Priorität:** kritisch
-- **Betrifft:** `client/src/pages/Login.tsx`, `client/src/services/api.ts`, `server/src/routes/auth.ts`, `server/src/middleware/session.ts`
-- **Automatisiert:** nein – voller Anmelde-Ablauf braucht einen ChurchTools-Ersatz (#174)
-- **Historie:** –
+- **Betrifft:** `client/src/pages/Login.tsx`, `client/src/services/api.ts`, `server/src/routes/auth.ts`, `server/src/middleware/session.ts`, `server/src/services/ctAuth.ts`
+- **Automatisiert:** teilweise – `server/src/services/ctAuth.test.ts` deckt die Cookie-Formen und die
+  Fehlerzweige ab; der volle Anmelde-Ablauf braucht einen ChurchTools-Ersatz (#174)
+- **Historie:** #381
+- **Achtung (#381):** Dieser Fall fängt auch einen **Vertragsbruch von ChurchTools** – am 03.09.2026
+  hatte CT das Session-Cookie von `ChurchTools_…` auf `ChurchToolsV2_…` umbenannt, worauf sich
+  **niemand** mehr anmelden konnte. Bleibt die Anmeldung mit „Der Server antwortet gerade nicht"
+  hängen, während ChurchTools im Browser läuft: im Container-Protokoll nach
+  `[churchtools] login → …` sehen.
 
 </details>
 

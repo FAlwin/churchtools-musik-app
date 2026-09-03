@@ -19,7 +19,13 @@
 > einen Zwangs-Logout aus (#152/#186). `getCsrfToken` mappt eine tote CT-Session dagegen bewusst auf
 > **401** (nicht 502), damit auch ein Aussetzer beim Speichern sauber zum Re-Login führt.
 >
-> ⚠️ **ChurchTools liefert bei toter Session kein 401 mehr** (#381, gemessen 03.09.2026 an 3.136.2):
+> 🔴 **Das Session-Cookie heisst seit CT 3.136.2 `ChurchToolsV2_ct_<gemeinde>`** (#381, gemessen
+> 03.09.2026); das alte `ChurchTools_ct_<gemeinde>` wird von der Anmeldung aktiv geloescht
+> (`Max-Age=0`). `extractSessionCookie` akzeptiert `ChurchTools(V<n>)?_…` mit **nicht-leerem** Wert
+> und nimmt bei mehreren Treffern die hoechste Fassungsnummer. Wurde der alte Name allein gesucht,
+> schlug **jede** Anmeldung mit `502 Keine Session von ChurchTools erhalten.` fehl.
+>
+> ⚠️ **Folge davon: bei toter Session kommt kein 401 mehr** (#381):
 > `/api/whoami` antwortet mit **200** und `{"id":-1,"lastName":"Anonymous"}`, `/api/permissions/global`
 > mit **200** und lauter `false`. Nur `/api/csrftoken` verhält sich noch wie früher. `whoami()` erzeugt
 > das 401 deshalb selbst, wenn die Antwort keine Person beschreibt (`id > 0`, gelesen mit `ctId`) –
