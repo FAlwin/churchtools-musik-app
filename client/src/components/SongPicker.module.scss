@@ -6,6 +6,16 @@
   gap: 8px;
 }
 
+// „Neues Lied“ / „Selbst eintippen“ oben rechts – die ruhige Textaktion aus dem Listenkopf des
+// Liederhefts. Stand vorher als `.songHdr`/`.newSongBtn` im `AddItemSheet` (04.09.2026 hierher).
+.kopfzeile {
+  display: flex;
+  justify-content: flex-end;
+}
+.neuesLied {
+  @include m.neues-lied-aktion;
+}
+
 // Das Suchfeld steht seit #378 im gemeinsamen `LiedSucheKopf` – hier lag es vorher als eigene Kopie.
 
 .results {

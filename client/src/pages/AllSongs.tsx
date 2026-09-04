@@ -1,3 +1,4 @@
+import type { SongSelectTreffer } from '@shared/types/index';
 import { useState } from 'react';
 import { type Service, type SongLibraryEntry } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
@@ -11,6 +12,8 @@ import { EditSongSheet } from '../components/EditSongSheet';
 import { SongStatsBar } from '../components/SongStatsBar';
 import { LiedtextTrefferListe } from '../components/LiedtextTrefferListe';
 import { LiedSucheKopf } from '../components/LiedSucheKopf';
+import { Sheet } from '../components/Sheet';
+import { SongPicker } from '../components/SongPicker';
 import { SucheAngebot } from '../components/SucheAngebot';
 import { useLiedSuche } from '../hooks/useLiedSuche';
 import { useSongFilter } from '../hooks/useSongFilter';
@@ -59,8 +62,17 @@ export function AllSongs({
   onToast,
 }: AllSongsProps) {
   const [addSong, setAddSong] = useState<SongLibraryEntry | null>(null);
-  /** Das Blatt „Neues Lied" – hier immer leer; gefüllt wird es nur aus dem Einfüge-Dialog (#378). */
-  const [neuesLied, setNeuesLied] = useState(false);
+  /**
+   * „Neues Lied" öffnet zuerst die **Suche** – dieselbe wie im Ablauf (Entscheidung Alwin, 04.09.2026):
+   * Titel oder CCLI-Nummer tippen; liegt das Lied schon bei uns, öffnet ein Tipp das Blatt (nichts
+   * anzulegen), ein SongSelect-Treffer führt ins vorbelegte Formular, „Selbst eintippen" ins leere – mit
+   * dem Suchbegriff als Titel. Vorher kam hier direkt das leere Formular.
+   */
+  const [sucheOffen, setSucheOffen] = useState(false);
+  /** Das Blatt „Neues Lied" – vorbelegt aus SongSelect oder mit dem getippten Titel. */
+  const [formular, setFormular] = useState<{ treffer?: SongSelectTreffer; name?: string } | null>(
+    null,
+  );
   /** Lied, dessen Stammdaten geändert werden (#322, Schritt 11) – `null` = kein Blatt offen. */
   const [editSong, setEditSong] = useState<SongLibraryEntry | null>(null);
   const f = useSongFilter(songs, usage, showStats, 'name', !usageError);
@@ -126,7 +138,7 @@ export function AllSongs({
               {f.list.length > 0 && !isLoading && !isError ? liedAnzahl(f.list.length) : ''}
             </span>
             {kannAnlegen && (
-              <button className={styles.newSongBtn} onClick={() => setNeuesLied(true)}>
+              <button className={styles.newSongBtn} onClick={() => setSucheOffen(true)}>
                 <Icon name="plus" size={16} stroke={2.4} />
                 Neues Lied
               </button>
@@ -251,13 +263,38 @@ export function AllSongs({
         />
       )}
 
-      {neuesLied && onOpenSong && (
+      {sucheOffen && onOpenSong && (
+        <Sheet title="Neues Lied" onClose={() => setSucheOffen(false)}>
+          <SongPicker
+            autoFocus
+            oeffnen={(s) => {
+              setSucheOffen(false);
+              onSelect(s);
+            }}
+            onSongSelectTreffer={(treffer) => {
+              setSucheOffen(false);
+              setFormular({ treffer });
+            }}
+            neuesLied={{
+              label: 'Selbst eintippen',
+              onClick: (name) => {
+                setSucheOffen(false);
+                setFormular({ name });
+              },
+            }}
+          />
+        </Sheet>
+      )}
+
+      {formular && onOpenSong && (
         <NewSongSheet
+          startTreffer={formular.treffer}
+          startName={formular.name}
           onOpenSong={(songId, arrangementId) => {
-            setNeuesLied(false);
+            setFormular(null);
             onOpenSong(songId, arrangementId);
           }}
-          onClose={() => setNeuesLied(false)}
+          onClose={() => setFormular(null)}
         />
       )}
     </Screen>

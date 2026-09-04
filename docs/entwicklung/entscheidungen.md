@@ -256,6 +256,14 @@ beschriftete Gruppe darunter, die Angebote als dezente Zeilen statt Knöpfe. Was
 03.09. **nicht** geändert hat: wann SongSelect gefragt wird. Geändert hat sich, **wie es aussieht** – und
 genau das war der Punkt.
 
+Drei Ergänzungen vom selben Tag, nach Alwins Durchklick auf Test: **(1)** „Neues Lied" im Liederheft
+öffnet erst die Suche (`SongPicker` im `oeffnen`-Modus – Bibliothekstreffer öffnen das Blatt, SongSelect
+wie im Ablauf, „Selbst eintippen" belegt den Titel vor). **(2)** Die Vorschau zeigt den **ganzen** Text
+mit Abschnitten – der Server liefert das rohe ChordPro, der Client zerlegt es mit dem Parser des Blattes;
+der gekürzte Anfang war zu wenig („manchmal braucht man genau den Chorus"). **(3)** Beim Verknüpfen hieß
+der untere Knopf „Zurück", verließ aber die Suche ganz, während der Pfeil in der Vorschau zur Liste
+führte – zwei Ziele, ein Wort. Alwins Wahl: Pfeil bleibt, unten steht „Abbrechen".
+
 ## Der Quellen-Umschalter gehört zum EINFÜGEN, nicht in das Liederheft _(14.08.2026, #378 – **überholt am 03.09.2026: es gibt keinen Umschalter mehr; dass SongSelect nur beim Einfügen erscheint, gilt weiter**)_
 
 **Korrektur an #378, nach dem Durchklicken.** Der Umschalter „Bibliothek · Liedtexte · SongSelect" stand

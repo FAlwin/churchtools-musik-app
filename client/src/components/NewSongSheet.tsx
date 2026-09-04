@@ -56,6 +56,12 @@ interface NewSongSheetProps {
    */
   startTreffer?: SongSelectTreffer;
   /**
+   * Ein vorbelegter **Titel** – für den Weg „Selbst eintippen" aus der Suche (04.09.2026): Was man ins
+   * Suchfeld getippt und nirgends gefunden hat, ist mit hoher Wahrscheinlichkeit der Titel des neuen
+   * Liedes. Nochmal tippen wäre eine Zumutung.
+   */
+  startName?: string;
+  /**
    * Öffnet das fertige Lied (Chart-Ansicht) – **optional.**
    *
    * Im Liederheft gibt es diesen Weg; aus dem Ablauf heraus nicht, denn dort steht das Lied nach dem
@@ -70,6 +76,7 @@ export function NewSongSheet({
   eventId,
   eventName,
   startTreffer,
+  startName,
   onOpenSong,
   onClose,
 }: NewSongSheetProps) {
@@ -97,7 +104,11 @@ export function NewSongSheet({
   const treffer = details.data ?? vorbelegung;
 
   const [formular, setFormular] = useState<NeuesLiedFormular>(() =>
-    startTreffer ? formularAusTreffer(startTreffer) : LEERES_FORMULAR,
+    startTreffer
+      ? formularAusTreffer(startTreffer)
+      : startName
+        ? { ...LEERES_FORMULAR, name: startName }
+        : LEERES_FORMULAR,
   );
 
   /**

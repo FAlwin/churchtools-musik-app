@@ -6,7 +6,6 @@ import {
   chordproZuText,
   liedtextVorschau,
   sucheImLiedtext,
-  vorschauAus,
   zuSuchform,
 } from './songTextIndex.js';
 
@@ -257,27 +256,6 @@ describe('chordproZuLesetext – dieselbe Aufbereitung, aber LESBAR (#379)', () 
   });
 });
 
-describe('vorschauAus – der Textanfang für die Auswahl (#379)', () => {
-  it('kurze Texte stehen ganz da, OHNE Auslassungszeichen', () => {
-    // Es soll nur behaupten, dass mehr kommt, wenn wirklich mehr kommt.
-    expect(vorschauAus('Deine Treue trägt mich', 220)).toBe('Deine Treue trägt mich');
-  });
-
-  it('schneidet an der Wortgrenze ab, nicht mitten im Wort', () => {
-    const lang = 'Deine Treue trägt mich jeden einzelnen Tag durch alles hindurch';
-    const kurz = vorschauAus(lang, 20);
-    expect(kurz.endsWith(' …')).toBe(true);
-    // Kein halbes Wort vor dem Auslassungszeichen.
-    expect(lang.startsWith(kurz.replace(' …', ''))).toBe(true);
-    expect(kurz.replace(' …', '').split(' ').pop()).not.toBe('trä');
-  });
-
-  it('bei einem einzigen überlangen Wort wird hart geschnitten, statt leer zu bleiben', () => {
-    const kurz = vorschauAus('x'.repeat(50), 20);
-    expect(kurz.length).toBeGreaterThan(10);
-  });
-});
-
 describe('liedtextVorschau – auf Verlangen, für EIN Lied (#379)', () => {
   it('nimmt den Text aus dem Index, wenn der frisch dasteht – OHNE neuen Download', async () => {
     mockCt();
@@ -286,7 +264,11 @@ describe('liedtextVorschau – auf Verlangen, für EIN Lied (#379)', () => {
     const nachSuche = downloads;
 
     const v = await liedtextVorschau(COOKIE, 1);
-    expect(v).toBe('Ich bin geliebt und frei');
+    // Seit 04.09.2026 das ROHE ChordPro (mit Akkorden/Direktiven) – die Abschnitte baut der Client.
+    // Deshalb nicht `toContain('geliebt')` am Rohtext: Dort steht „ge[Am]liebt", der Akkord sitzt im
+    // Wort. Erst der Lesetext daraus muss das Wort tragen.
+    expect(chordproZuLesetext(v ?? '')).toContain('geliebt');
+    expect(v).toMatch(/\[/);
     expect(downloads).toBe(nachSuche);
   });
 
@@ -299,7 +281,8 @@ describe('liedtextVorschau – auf Verlangen, für EIN Lied (#379)', () => {
     mockCt();
     const v = await liedtextVorschau(COOKIE, 2);
 
-    expect(v).toBe('Deine Treue trägt mich jeden Tag');
+    // Das rohe ChordPro der Original-Datei – so, wie es der Parser des Blattes erwartet.
+    expect(v).toBe('{title: Treu}\n[D]Deine Treue trägt mich [A]jeden Tag\n');
     expect(downloads).toBe(1); // nur das eine Lied, nicht alle
   });
 

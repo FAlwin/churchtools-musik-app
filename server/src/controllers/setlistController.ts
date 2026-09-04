@@ -445,7 +445,8 @@ export async function getSongTextSearch(req: Request, res: Response): Promise<vo
  */
 export async function getLiedtextVorschau(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
-  res.json({ vorschau: await liedtextVorschau(ctCookie(req), songId) });
+  // Das rohe ChordPro – die Abschnitte baut der Client mit dem Parser des Blattes (04.09.2026).
+  res.json({ chordpro: await liedtextVorschau(ctCookie(req), songId) });
 }
 
 /** GET /api/capabilities – was der angemeldete Nutzer laut ChurchTools darf. */

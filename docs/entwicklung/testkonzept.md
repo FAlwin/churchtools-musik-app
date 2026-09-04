@@ -139,6 +139,9 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
   - `components/LiedZeile` (04.09.2026): **Zeile öffnet die Vorschau, Plus fügt ein – getrennt.** Ein Tipp
     auf die Zeile darf NICHT einfügen, das Plus NICHT die Vorschau öffnen; ohne `aktion` gibt es kein
     Plus (Liederheft). Genau diese Trennung ist der Grund für zwei Knöpfe.
+  - `utils/liedtextTeile` (04.09.2026): ChordPro → Abschnitte für die Vorschau, **mit dem Parser des
+    Blattes** – beide Dialekte (Standard `{start_of_verse}`, SongSelect `{comment: …}`), Akkorde raus,
+    Zeilenumbrüche bleiben, ein Lied nur aus Direktiven ergibt keine Abschnitte.
   - `utils/songFilter`: **die CCLI-Nummer gehört zur Suche** – Treffer über die Nummer und ihren Anfang,
     Nummern-Treffer zählen wie Titel-Treffer (vor Autor-Treffern), `null` stürzt nicht.
   - `components/SongSelectTrefferListe` + `components/LiedtextTrefferListe`: die Trefferlisten samt der

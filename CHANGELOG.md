@@ -26,6 +26,21 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Anfrage, und ein Lied, das du zweimal öffnest, wird nur einmal geholt. Für die eigenen Lieder nutzt
   der Server ohnehin den Bestand, den die Liedtextsuche schon angelegt hat.
 
+  **Der ganze Text, mit Abschnitten** (04.09.2026): Bei eigenen Liedern zeigte die Vorschau erst nur
+  einen gekürzten Anfang in einer Zeile. Jetzt steht der komplette Liedtext da – Vers 1, Chorus, Bridge,
+  so wie das Blatt sie kennt –, scrollbar. Alwin: „Manchmal braucht man genau den Chorus und die eine
+  Passage, um auf das Lied zu kommen."
+
+  **Der Pfeil in der Vorschau führt zur Liste, der Knopf unten heißt „Abbrechen"** (04.09.2026) – er
+  verlässt die Suche. Vorher hieß er beim Verknüpfen „Zurück" und tat dasselbe wie der Pfeil scheinbar,
+  in Wahrheit aber etwas anderes: Er warf einen zwei Schritte zurück.
+
+- **„Neues Lied" im Liederheft öffnet zuerst die Suche (#378, 04.09.2026).** Dieselbe Suche wie im
+  Ablauf: Titel oder CCLI-Nummer tippen. Liegt das Lied schon bei euch, öffnet ein Tipp das Blatt – nichts
+  anzulegen. Ein SongSelect-Treffer führt ins vorbelegte Formular, **„Selbst eintippen"** oben rechts ins
+  leere – mit dem Suchbegriff als Titel, denn was man getippt und nirgends gefunden hat, ist mit hoher
+  Wahrscheinlichkeit der Titel. Vorher kam hier direkt das leere Formular.
+
 - **Ein Suchfeld, eine Liste, zwei Knöpfe je Zeile (#378).** Beim Einfügen eines Liedes tippst du Titel,
   Autor **oder CCLI-Nummer** – und das Lied erscheint. Eigene Lieder stehen oben, SongSelect-Treffer
   darunter mit eigener Überschrift und der Nummer in der Zeile, damit man die Herkunft sieht. **Jede Zeile

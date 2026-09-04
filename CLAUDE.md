@@ -54,10 +54,19 @@
     verlangte die Quellenwahl VOR dem Tippen) und blaue Angebots-Knöpfe unter der Liste (03.09., wirkten
     wie Aktionen zwischen Treffern). Lehre: Bei Bedienelementen entscheidet der Durchklick, nicht die
     Beschreibung – zweimal in einem Feature. **SongSelect nur mit Lizenz UND `kannAnlegen`** („Lied
-    hinzufügen"); beim Verknüpfen und im Liederheft fehlt es. Dazu `liedAnzahl()` für „1 Lied"/„N Lieder".
+    hinzufügen"); beim Verknüpfen und im Liederheft fehlt es. Dazu `liedAnzahl()` für „1 Lied"/„N Lieder". **Seit 04.09.2026 öffnet „Neues Lied" im Liederheft dieselbe Suche**
+    (`SongPicker` mit `oeffnen`: Bibliothekstreffer öffnen das Blatt, kein Plus, keine Vorschau; SongSelect
+    wie im Ablauf; `neuesLied={{ label: 'Selbst eintippen' }}` gibt den Suchbegriff als `startName` ins
+    leere Formular). Der „Neues Lied"-Kopf rendert im `SongPicker`, nicht mehr im `AddItemSheet` – nur
+    dort ist der Suchbegriff bekannt.
 
   - die **Liedtext-Vorschau als Zwischenschritt beim Einfügen** (#379, nach Alwins Rückmeldung vom 14.08.2026 umgebaut): Ein Antippen
-    zeigt **erst den Text**, darin steht der Knopf zum Einfügen (Muster ProPresenter).
+    zeigt **erst den Text**, darin steht der Knopf zum Einfügen (Muster ProPresenter). **Seit 04.09.2026 der
+    GANZE Text mit Abschnitten:** `GET /api/songs/:id/liedtext-vorschau` liefert das rohe ChordPro
+    (`LiedtextVorschau.chordpro`, im Index gehalten), `utils/liedtextTeile.ts` zerlegt es mit
+    `parseChordPro`/`parseLine` – demselben Parser wie das Blatt. Kein zweiter Abschnitts-Parser. Der
+    gekürzte 220-Zeichen-Anfang (`vorschauAus`) ist weg. Beim Verknüpfen heißt der untere Knopf
+    „Abbrechen" (verlässt die Suche); zur Liste führt nur der Pfeil in der Vorschau (Entscheidung Alwin).
     `components/LiedVorschau.tsx`, für beide Quellen. Daneben bleibt ein **„+"** in der Bibliothekszeile,
     das sofort einfügt – im Gottesdienst zählt der kurze Weg. Der erste Entwurf („Text zeigen"-Knopf je
     Zeile) ist zurückgebaut: Der Text ist die **Entscheidungsgrundlage**, nicht eine Randnotiz.

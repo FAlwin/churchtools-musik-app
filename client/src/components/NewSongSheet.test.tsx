@@ -227,3 +227,12 @@ describe('NewSongSheet – Ablauf-Einstieg', () => {
     expect(screen.getByText(/in den Ablauf von Gottesdienst eingetragen/)).toBeTruthy();
   });
 });
+
+describe('NewSongSheet – „Selbst eintippen" belegt den Titel vor (04.09.2026)', () => {
+  it('der Suchbegriff steht als Liedname im Formular', () => {
+    zeige({ startName: 'Wo ich auch stehe' });
+    expect(screen.getByPlaceholderText<HTMLInputElement>('Titel des Liedes').value).toBe(
+      'Wo ich auch stehe',
+    );
+  });
+});

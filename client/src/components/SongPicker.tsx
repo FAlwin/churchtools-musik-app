@@ -8,6 +8,8 @@ import { LiedtextTrefferListe } from './LiedtextTrefferListe';
 import { SongSelectTrefferListe } from './SongSelectTrefferListe';
 import { LiedVorschau } from './LiedVorschau';
 import { LiedZeile } from './LiedZeile';
+import { Icon } from './icons';
+import { chordproZuTeile } from '../utils/liedtextTeile';
 import { useSongFilter } from '../hooks/useSongFilter';
 import { useLiedSuche } from '../hooks/useLiedSuche';
 import { statLabel } from '../utils/songFilter';
@@ -21,8 +23,22 @@ import {
 import styles from './SongPicker.module.scss';
 
 interface SongPickerProps {
-  /** Wird mit dem gewählten (Standard-)Arrangement + Songname aufgerufen. */
-  onPick: (arrangementId: number, songName: string) => void;
+  /** Einfügen: wird mit dem gewählten (Standard-)Arrangement + Songname aufgerufen. */
+  onPick?: (arrangementId: number, songName: string) => void;
+  /**
+   * **Öffnen statt Einfügen** – der Modus des Liederhefts (Entscheidung Alwin, 04.09.2026).
+   *
+   * „Neues Lied" im Liederheft öffnet dieselbe Suche wie der Ablauf. Findet sie das Lied in der eigenen
+   * Bibliothek, gibt es nichts einzufügen: Ein Tipp auf die Zeile **öffnet das Blatt** – kein Plus,
+   * keine Vorschau, denn das Blatt ist der ganze Text. SongSelect-Treffer haben weiter Auge und Plus.
+   */
+  oeffnen?: (song: SongLibraryEntry) => void;
+  /**
+   * Der Weg zum leeren Formular, oben rechts („Neues Lied" im Ablauf, „Selbst eintippen" im Liederheft).
+   * Bekommt den **Suchbegriff** mit: Was man getippt und nirgends gefunden hat, ist mit hoher
+   * Wahrscheinlichkeit der Titel. Liegt hier und nicht beim Aufrufer, weil nur hier der Begriff bekannt ist.
+   */
+  neuesLied?: { label: string; onClick: (vorbelegterName: string) => void };
   /**
    * Ein Treffer aus der Quelle „SongSelect" (#378) – der Aufrufer öffnet damit „Neues Lied".
    *
@@ -68,6 +84,8 @@ type Vorschau =
  */
 export function SongPicker({
   onPick,
+  oeffnen,
+  neuesLied,
   onSongSelectTreffer,
   aktionLabel = 'Zum Ablauf hinzufügen',
   busy,
@@ -113,8 +131,8 @@ export function SongPicker({
         titel={s.name}
         autoren={s.author}
         kennung={s.key ? `Tonart ${s.key}` : null}
-        // Ein Block ohne Beschriftung: Der Index kennt keine Abschnitte, nur den Textanfang.
-        teile={eigenerText.data?.vorschau ? [{ label: '', text: eigenerText.data.vorschau }] : []}
+        // Der ganze Text, in Abschnitten – derselbe Parser wie beim Blatt (04.09.2026).
+        teile={eigenerText.data?.chordpro ? chordproZuTeile(eigenerText.data.chordpro) : []}
         laeuft={eigenerText.isLoading}
         fehler={
           eigenerText.isError
@@ -124,7 +142,7 @@ export function SongPicker({
             : null
         }
         aktion={aktionLabel}
-        onAktion={() => onPick(s.arrangementId, s.name)}
+        onAktion={() => onPick?.(s.arrangementId, s.name)}
         onZurueck={() => setVorschau(null)}
         busy={busy}
       />
@@ -161,6 +179,16 @@ export function SongPicker({
 
   return (
     <div className={styles.wrap}>
+      {/* Oben rechts als ruhige Textaktion – dieselbe Optik wie im Listenkopf des Liederhefts. Stand
+          vorher im `AddItemSheet`; hier, weil nur hier der Suchbegriff für die Vorbelegung bekannt ist. */}
+      {neuesLied && (
+        <div className={styles.kopfzeile}>
+          <button className={styles.neuesLied} onClick={() => neuesLied.onClick(query)}>
+            <Icon name="plus" size={16} stroke={2.4} />
+            {neuesLied.label}
+          </button>
+        </div>
+      )}
       <LiedSucheKopf
         eingabe={f.q}
         onEingabe={f.setQ}
@@ -210,8 +238,12 @@ export function SongPicker({
                     {s.key && <span className={styles.keyPill}>{s.key}</span>}
                   </>
                 }
-                onZeile={() => setVorschau({ art: 'bibliothek', song: s })}
-                aktion={{ label: aktionLabel, onClick: () => onPick(s.arrangementId, s.name) }}
+                onZeile={() => (oeffnen ? oeffnen(s) : setVorschau({ art: 'bibliothek', song: s }))}
+                aktion={
+                  oeffnen || !onPick
+                    ? undefined
+                    : { label: aktionLabel, onClick: () => onPick(s.arrangementId, s.name) }
+                }
                 disabled={busy}
               />
             );
@@ -251,11 +283,12 @@ export function SongPicker({
                 begriff={suche.liedtextBegriff}
                 songs={lib.data ?? []}
                 busy={busy}
-                onPick={(s) => setVorschau({ art: 'bibliothek', song: s })}
-                onEinfuegen={{
-                  label: aktionLabel,
-                  onClick: (s) => onPick(s.arrangementId, s.name),
-                }}
+                onPick={(s) => (oeffnen ? oeffnen(s) : setVorschau({ art: 'bibliothek', song: s }))}
+                onEinfuegen={
+                  oeffnen || !onPick
+                    ? undefined
+                    : { label: aktionLabel, onClick: (s) => onPick(s.arrangementId, s.name) }
+                }
               />
             )}
           </>

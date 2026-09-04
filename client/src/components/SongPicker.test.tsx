@@ -242,3 +242,47 @@ describe('SongPicker – SongSelect', () => {
     expect(screen.queryByRole('button', { name: 'SongSelect' })).toBeNull();
   });
 });
+
+describe('SongPicker – der Öffnen-Modus des Liederhefts (04.09.2026)', () => {
+  /**
+   * „Neues Lied" im Liederheft öffnet dieselbe Suche wie der Ablauf. Findet sie das Lied in der eigenen
+   * Bibliothek, gibt es nichts einzufügen – ein Tipp öffnet das Blatt. Kein Plus, keine Vorschau.
+   */
+  it('ein Tipp auf ein eigenes Lied öffnet es – ohne Vorschau, ohne Plus', () => {
+    const oeffnen = vi.fn();
+    render(<SongPicker oeffnen={oeffnen} onSongSelectTreffer={onSongSelectTreffer} />);
+    fireEvent.click(liedZeile());
+
+    expect(oeffnen).toHaveBeenCalledWith(BESTAND[0]);
+    expect(screen.queryByRole('button', { name: /ohne Vorschau hinzufügen/ })).toBeNull();
+    expect(eigenerText).not.toHaveBeenCalledWith(3, true);
+  });
+
+  it('SongSelect-Zeilen behalten Auge und Plus – dort gibt es etwas anzulegen', () => {
+    render(<SongPicker oeffnen={vi.fn()} onSongSelectTreffer={onSongSelectTreffer} />);
+    zuSongSelect();
+    expect(
+      screen.getByRole('button', { name: /„Stub-Lied" ohne Vorschau hinzufügen/ }),
+    ).toBeTruthy();
+  });
+});
+
+describe('SongPicker – „Neues Lied" / „Selbst eintippen" oben rechts (04.09.2026)', () => {
+  it('gibt den Suchbegriff mit – der wird der Titel', () => {
+    // Was man getippt und nirgends gefunden hat, ist mit hoher Wahrscheinlichkeit der Titel.
+    const neuesLied = vi.fn();
+    render(
+      <SongPicker onPick={onPick} neuesLied={{ label: 'Selbst eintippen', onClick: neuesLied }} />,
+    );
+    fireEvent.change(screen.getByPlaceholderText(/Lied oder Autor/), {
+      target: { value: '  Wo ich auch stehe ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Selbst eintippen/ }));
+    expect(neuesLied).toHaveBeenCalledWith('Wo ich auch stehe');
+  });
+
+  it('fehlt der Weg, fehlt der Knopf', () => {
+    zeige();
+    expect(screen.queryByRole('button', { name: /Selbst eintippen|Neues Lied/ })).toBeNull();
+  });
+});

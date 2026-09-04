@@ -144,9 +144,12 @@ gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas 
 4. **Ohne Kategorie** prüfen, dass „Lied anlegen" **gesperrt** ist. Dann eine Kategorie antippen.
 5. **Lied anlegen** – und in der Erfolgsansicht **Lied öffnen** wählen. Das Blatt muss Akkorde zeigen.
 6. In ChurchTools nachsehen: Kategorie, Autor, CCLI, Copyright, Arrangement, Notenblatt.
-7. Jetzt der Weg für **eigene** Lieder: im Listenkopf rechts auf **„Neues Lied"**. Es muss **direkt das
-   leere Formular** kommen – keine Wahl zwischen zwei Wegen. Nur Name und Kategorie füllen, anlegen. Das
-   Lied entsteht ohne Notenblatt – das ist richtig.
+7. Jetzt der Weg für **eigene** Lieder: unten auf **Lieder**, im Listenkopf rechts auf **„Neues Lied"**.
+   Es öffnet sich **dieselbe Suche** wie im Ablauf (04.09.2026). Einen Titel tippen, den es bei euch
+   gibt: Ein Tipp auf die Zeile **öffnet das Blatt** – kein Plus, keine Vorschau (nichts anzulegen).
+   Einen Titel tippen, den es nirgends gibt, dann oben rechts **„Selbst eintippen"**: Das leere Formular
+   kommt **mit dem getippten Titel als Liedname**. Nur Kategorie wählen, anlegen. Das Lied entsteht
+   ohne Notenblatt – das ist richtig.
 8. Einen Namen eintippen, den es schon gibt: Es muss eine **Warnung** erscheinen, das Anlegen aber
    erlaubt bleiben.
 9. Dasselbe mit einer **CCLI-Nummer, die es schon gibt**: Hier muss der Server **ablehnen** und sagen,
@@ -191,7 +194,8 @@ und **„Bei SongSelect nach … suchen"**. Findet die Bibliothek **nichts**, su
    Lied könnte in einem vorhandenen Punkt nicht landen). Die Liedtexte gibt es.
 7. Unten auf **Lieder** (Liederheft): dasselbe Suchfeld, dieselbe Sortierleiste, **kein SongSelect**.
    Unter einer leeren oder gefüllten Liste steht „Auch in den Liedtexten nach … suchen". Bei **einem**
-   Lied muss im Listenkopf **„1 Lied"** stehen, nicht „1 Lieder".
+   Lied muss im Listenkopf **„1 Lied"** stehen, nicht „1 Lieder". Erst **„Neues Lied"** im Listenkopf
+   öffnet die Suche **mit** SongSelect (siehe TF-LIB-03, Schritt 7).
 8. Mit einem Konto **ohne** das Recht, Lieder zu bearbeiten: **SongSelect** fehlt überall, „Neues Lied"
    ebenso. **Liedtexte** bleibt – Suchen darf jeder.
 
@@ -365,7 +369,10 @@ Durchsehen der Liste passiert von allein nichts.
 
 1. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**.
 2. Ein Lied **antippen** (oder auf das **Auge** rechts in der Zeile): Es muss die **Vorschau** kommen –
-   Titel, Autor, Tonart und der Liedtext – **und das Lied darf NICHT sofort im Ablauf landen.**
+   Titel, Autor, Tonart und der **ganze Liedtext mit Abschnitten** (Vers 1, Chorus …, wie auf dem
+   Blatt), bei langen Liedern **scrollbar** – **und das Lied darf NICHT sofort im Ablauf landen.**
+   Der **Pfeil** neben dem Titel führt zur Liste zurück, der Suchbegriff steht noch da. Beim
+   **Verknüpfen** heißt der Knopf unten **„Abbrechen"** und verlässt die Suche ganz.
 3. In der Vorschau **„Zum Ablauf hinzufügen"**: Jetzt steht es im Ablauf, genau einmal.
 4. Erneut **Hinzufügen → Lied**, diesmal das **Plus** rechts in der Zeile: Das Lied muss **sofort**
    eingefügt werden, **ohne** Vorschau. Das ist der kurze Weg für den Gottesdienst.

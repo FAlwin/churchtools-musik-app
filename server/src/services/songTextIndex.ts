@@ -39,28 +39,21 @@ const INDEX_COOLDOWN_MS = 120_000;
 /** Gleichzeitige Datei-Downloads. Bewusst niedriger als die 8 der Statistik: Dateien sind schwerer. */
 const PARALLEL = 6;
 
-/**
- * Wie viele Zeichen die Vorschau zeigt (#379).
- *
- * Genug, um zwei gleichnamige Lieder zu unterscheiden – der Anfang reicht dafür, denn schon die erste
- * Zeile ist bei verschiedenen Fassungen verschieden. Mehr würde die Liste zumüllen.
- */
-const VORSCHAU_ZEICHEN = 220;
-
 interface IndexEintrag {
   songId: number;
   name: string;
   /** Kleingeschrieben, ohne Akkorde und Direktiven – nur zum Suchen. */
   text: string;
   /**
-   * Der **lesbare** Anfang des Liedtexts (#379) – mit Groß-/Kleinschreibung.
+   * Das **rohe ChordPro** des Original-Notenblatts (#379, seit 04.09.2026 statt eines gekürzten Anfangs).
    *
    * Getrennt von `text`, weil beide verschiedene Aufgaben haben: `text` ist zum **Suchen** gebaut
-   * (kleingeschrieben, damit der Vergleich ohne Umschalten funktioniert), die Vorschau zum **Lesen**.
-   * Bei ~50 Liedern sind das wenige Kilobyte – deutlich billiger, als für eine Vorschau eine Datei zu
-   * laden, die schon einmal durch die Leitung ging.
+   * (kleingeschrieben, ohne Akkorde), das ChordPro für die **Vorschau** – der Client zerlegt es mit
+   * demselben Parser wie das Blatt in Abschnitte (Vers, Chorus). Alwin: „Manchmal braucht man genau den
+   * Chorus, um auf das Lied zu kommen." Bei ~50 Liedern sind das ein paar hundert Kilobyte – deutlich
+   * billiger, als für eine Vorschau eine Datei zu laden, die schon einmal durch die Leitung ging.
    */
-  vorschau: string;
+  chordpro: string;
 }
 
 let index: { at: number; eintraege: IndexEintrag[] } | null = null;
@@ -111,20 +104,6 @@ export function zuSuchform(text: string): string {
  */
 export function chordproZuText(chordpro: string): string {
   return zuSuchform(chordproZuLesetext(chordpro));
-}
-
-/**
- * Der Anfang eines Liedtexts als Vorschau (#379) – **an der Wortgrenze abgeschnitten.**
- *
- * Mitten im Wort zu trennen sieht nach einem Fehler aus. Ist der Text kürzer als die Grenze, steht er
- * ganz da und bekommt **kein** Auslassungszeichen: Es soll nur behaupten, dass mehr kommt, wenn wirklich
- * mehr kommt.
- */
-export function vorschauAus(lesetext: string, laenge = VORSCHAU_ZEICHEN): string {
-  if (lesetext.length <= laenge) return lesetext;
-  const teil = lesetext.slice(0, laenge);
-  const luecke = teil.lastIndexOf(' ');
-  return (luecke > laenge * 0.6 ? teil.slice(0, luecke) : teil).trimEnd() + ' …';
 }
 
 /**
@@ -179,14 +158,15 @@ async function baueIndex(cookie: string): Promise<IndexEintrag[]> {
       // Einmal aufbereiten, zweimal genutzt: Suchtext und Vorschau (lesbar) aus demselben Lauf.
       // Die Kleinschreibung läuft über `zuSuchform` – dieselbe Funktion, die auch den Suchbegriff
       // normalisiert. Zwei Fassungen davon würden die Suche still ins Leere laufen lassen.
-      const lesetext = chordproZuLesetext(await downloadFileText(cookie, datei.fileUrl));
+      const chordpro = await downloadFileText(cookie, datei.fileUrl);
+      const lesetext = chordproZuLesetext(chordpro);
       const text = zuSuchform(lesetext);
       if (text) {
         eintraege.push({
           songId: song.id,
           name: song.name,
           text,
-          vorschau: vorschauAus(lesetext),
+          chordpro,
         });
       } else ohneText++;
     } catch (e) {
@@ -276,7 +256,7 @@ export async function liedtextVorschau(cookie: string, songId: number): Promise<
     const treffer = vorhanden.eintraege.find((e) => e.songId === songId);
     // Nur wenn das Lied im Index steht. Fehlt es dort, hat es beim Aufbau keinen Text gehabt – dann
     // lohnt der Versuch unten trotzdem, denn seitdem kann eines hinzugekommen sein.
-    if (treffer) return treffer.vorschau;
+    if (treffer) return treffer.chordpro;
   }
 
   const songs = await getAllSongs(cookie);
@@ -285,6 +265,9 @@ export async function liedtextVorschau(cookie: string, songId: number): Promise<
   const datei = originalChordpro(song);
   if (!datei) return null;
 
-  const lesetext = chordproZuLesetext(await downloadFileText(cookie, datei.fileUrl));
-  return lesetext ? vorschauAus(lesetext) : null;
+  const chordpro = await downloadFileText(cookie, datei.fileUrl);
+  const lesetext = chordproZuLesetext(chordpro);
+  // Nur mit Text: Eine Datei aus lauter Direktiven ist kein Liedtext – die Oberfläche sagt dann
+  // „kein Liedtext“ statt eine leere Vorschau zu zeigen.
+  return lesetext ? chordpro : null;
 }

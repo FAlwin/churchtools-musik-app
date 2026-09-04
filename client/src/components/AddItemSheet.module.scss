@@ -124,12 +124,4 @@
  * Kopfzeile über der Lied-Auswahl (#322): rechtsbündig „Neues Lied" – **dieselbe Aktion wie im
  * Liederheft**, deshalb aus demselben Mixin.
  */
-.songHdr {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
-}
-
-.newSongBtn {
-  @include m.neues-lied-aktion;
-}
+// „Neues Lied“ oben rechts rendert seit dem 04.09.2026 der `SongPicker` selbst (`.kopfzeile`).

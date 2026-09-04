@@ -332,7 +332,16 @@ export const LIEDTEXT_SUCHE_MIN_ZEICHEN = 3;
  * dieselbe falsche Form hatte.
  */
 export interface LiedtextVorschau {
-  vorschau: string | null;
+  /**
+   * Das **rohe ChordPro** des Original-Notenblatts – `null`, wenn das Lied keines hat (#379).
+   *
+   * Bis zum 04.09.2026 kam hier ein gekürzter Textanfang (220 Zeichen, eine Zeile). Alwin: „In der
+   * Vorschau wäre es cool, wenn der ganze Text scrollbar sichtbar ist – manchmal braucht man genau den
+   * Chorus, um auf das Lied zu kommen." Die Abschnitte (Vers, Chorus, Bridge) baut der **Client** mit
+   * `parseChordPro` – demselben Parser, der auch das Blatt zerlegt. Ein zweiter Abschnitts-Parser auf
+   * dem Server wäre dieselbe Regel zweimal.
+   */
+  chordpro: string | null;
 }
 
 /**
