@@ -42,7 +42,7 @@ beforeEach(() => {
     matches: true,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-  }) as unknown as typeof window.matchMedia;
+  });
 });
 
 describe('ChordEditor – Speichern ohne Versionsname-Feld (04.09.2026)', () => {
