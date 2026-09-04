@@ -139,6 +139,14 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
   - `components/LiedZeile` (04.09.2026): **Zeile öffnet die Vorschau, Plus fügt ein – getrennt.** Ein Tipp
     auf die Zeile darf NICHT einfügen, das Plus NICHT die Vorschau öffnen; ohne `aktion` gibt es kein
     Plus (Liederheft). Genau diese Trennung ist der Grund für zwei Knöpfe.
+  - **Der Editor nach dem Anlegen (04.09.2026):** `hooks/useNeuesLied` – Starttext ist das Gerüst aus dem
+    Formular (Titel, Tonart, Nummer) und fragt das Blatt NICHT ab; mit SongSelect-Blatt kommt genau
+    dieses; Speichern trifft den Server und zieht das Ergebnis nach; ein Fehlschlag nennt den Grund.
+    `components/NewSongSheet` – der Knopf heißt „schreiben" ohne und „bearbeiten" mit Blatt, der Editor
+    (Attrappe) bekommt den Text und `mitVersionsname={false}`, **nichts öffnet sich von selbst**.
+    Serverseitig `services/arrangementFileVerwaltung.test.ts` → `originalNotenblattSchreiben`: erst
+    hochladen, dann das alte Original löschen (am protokollierten `fetch`), Versionen und PDF bleiben,
+    scheitert der Upload wird nichts gelöscht.
   - `utils/liedtextTeile` (04.09.2026): ChordPro → Abschnitte für die Vorschau, **mit dem Parser des
     Blattes** – beide Dialekte (Standard `{start_of_verse}`, SongSelect `{comment: …}`), Akkorde raus,
     Zeilenumbrüche bleiben, ein Lied nur aus Direktiven ergibt keine Abschnitte.

@@ -3,6 +3,7 @@ import {
   addArrangementFile,
   holeChordProAusSongSelect,
   listArrangementFiles,
+  originalNotenblattSchreiben,
   removeArrangementFile,
 } from './setlistBuilder.js';
 import { __resetSessionMemosForTests } from './ctSessionMemos.js';
@@ -315,5 +316,64 @@ describe('holeChordProAusSongSelect – erst holen, dann ersetzen', () => {
       /Arrangement nicht gefunden/,
     );
     expect(w).toHaveLength(0);
+  });
+});
+
+/**
+ * `originalNotenblattSchreiben` – das Original aus eigenem Text (Editor nach dem Anlegen, 04.09.2026).
+ *
+ * Dieselbe Regel wie beim SongSelect-Import, jetzt an EINER Stelle: pro Arrangement genau ein Original,
+ * erst hochladen, dann das alte löschen, die `(App)`-Versionen bleiben. Geprüft am protokollierten
+ * `fetch`, damit Reihenfolge und Ziel-IDs wirklich stimmen – nicht an gemockten Service-Funktionen.
+ */
+describe('originalNotenblattSchreiben – erst hochladen, dann ersetzen', () => {
+  /** Wie `mockCt`, aber der Upload kann scheitern. */
+  function mockUpload(opts: { uploadScheitert?: boolean } = {}) {
+    const w: { method: string; url: string }[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
+      const u = String(url);
+      const method = init?.method ?? 'GET';
+      if (u.includes('/api/csrftoken')) return Promise.resolve(jsonRes('token'));
+      if (method === 'GET' && /\/api\/songs\/12$/.test(u)) return Promise.resolve(jsonRes(LIED));
+      w.push({ method, url: u });
+      if (opts.uploadScheitert && u.includes('/api/files/song_arrangement/')) {
+        return Promise.resolve(jsonRes(null, 502));
+      }
+      return Promise.resolve(jsonRes(null, 200));
+    });
+    return w;
+  }
+
+  it('lädt als `<Titel>.chordpro` hoch und löscht das alte Original ERST danach', async () => {
+    const w = mockUpload();
+    await originalNotenblattSchreiben(COOKIE, 12, 500, '{title: Treu}\n[D]Neu');
+
+    const hochladen = w.findIndex((x) => x.url.includes('/api/files/song_arrangement/500'));
+    const loeschen = w.findIndex((x) => x.method === 'DELETE');
+    expect(hochladen).toBeGreaterThanOrEqual(0);
+    expect(loeschen).toBeGreaterThan(hochladen);
+    expect(w[loeschen].url).toContain('/api/files/1'); // das alte Original …
+  });
+
+  it('lässt die verwaltete Version `(App)` und die PDF in Ruhe', async () => {
+    const w = mockUpload();
+    await originalNotenblattSchreiben(COOKIE, 12, 500, 'x');
+    const geloescht = w.filter((x) => x.method === 'DELETE').map((x) => x.url);
+    expect(geloescht.some((u) => u.endsWith('/api/files/3'))).toBe(false); // … nicht die Version
+    expect(geloescht.some((u) => u.endsWith('/api/files/2'))).toBe(false); // … und nicht die PDF
+    expect(geloescht).toHaveLength(1);
+  });
+
+  it('löscht NICHTS, wenn der Upload scheitert – ein Lied ohne Blatt wäre schlimmer als ein Doppel', async () => {
+    const w = mockUpload({ uploadScheitert: true });
+    await expect(originalNotenblattSchreiben(COOKIE, 12, 500, 'x')).rejects.toBeTruthy();
+    expect(w.some((x) => x.method === 'DELETE')).toBe(false);
+  });
+
+  it('schreibt an das Arrangement, das zum Lied gehört – ein fremdes gibt es nicht', async () => {
+    mockUpload();
+    await expect(originalNotenblattSchreiben(COOKIE, 12, 999, 'x')).rejects.toMatchObject({
+      status: 404,
+    });
   });
 });

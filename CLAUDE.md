@@ -67,6 +67,16 @@
     `parseChordPro`/`parseLine` – demselben Parser wie das Blatt. Kein zweiter Abschnitts-Parser. Der
     gekürzte 220-Zeichen-Anfang (`vorschauAus`) ist weg. Beim Verknüpfen heißt der untere Knopf
     „Abbrechen" (verlässt die Suche); zur Liste führt nur der Pfeil in der Vorschau (Entscheidung Alwin).
+    **Editor nach dem Anlegen (04.09.2026, Idee Alwin):** In der Erfolgsansicht von `NewSongSheet` steht
+    „Notenblatt schreiben" (ohne Blatt: Gerüst aus Titel/Tonart/Nummer via `chordproVorlage`) bzw.
+    „Notenblatt bearbeiten" (mit SongSelect-Blatt: dessen ChordPro zum Anpassen). **Ein Angebot, kein
+    Schritt** – nichts öffnet sich von selbst (Entscheidung Alwin). Speichern → `PUT
+/api/songs/:id/arrangements/:arrId/chordpro` → `originalNotenblattSchreiben` in `setlistBuilder.ts`:
+    die aus `holeChordProAusSongSelect` herausgezogene Regel „ein Original pro Arrangement, erst hochladen,
+    dann löschen, `(App)`-Versionen bleiben" – jetzt EINE Stelle für beide Wege. `ChordEditor` hat dafür
+    `mitVersionsname={false}`. Die ChurchTools-Aufrufe liegen in `useNeuesLied`
+    (`notenblattText`/`notenblattSpeichern`), nicht in der Komponente. **Gegen den Stub nicht
+    durchklickbar** – er kann keine Lieder anlegen (kein `POST /api/songs`); der Weg ist TF-LIB-03.
     `components/LiedVorschau.tsx`, für beide Quellen. Daneben bleibt ein **„+"** in der Bibliothekszeile,
     das sofort einfügt – im Gottesdienst zählt der kurze Weg. Der erste Entwurf („Text zeigen"-Knopf je
     Zeile) ist zurückgebaut: Der Text ist die **Entscheidungsgrundlage**, nicht eine Randnotiz.

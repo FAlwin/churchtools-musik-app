@@ -290,6 +290,18 @@ const server = createServer((req, res) => {
   if (path === '/api/groups') return json(res, { data: [] });
   if (path === '/api/services') return json(res, { data: [] });
 
+  // Datei-Upload an ein Arrangement und Löschen einer Datei – der Editor nach dem Anlegen schreibt das
+  // Original-Notenblatt darüber (04.09.2026). Der Stub bestätigt nur; was hochgeladen wurde, prüft der
+  // Server-Test am protokollierten fetch.
+  if (path.startsWith('/api/files/song_arrangement/') && req.method === 'POST') {
+    return json(res, { data: [] });
+  }
+  if (path.startsWith('/api/files/') && req.method === 'DELETE') return json(res, { data: {} });
+  // Einzelnes Lied (getArrangement liest es vor dem Schreiben).
+  if (/^\/api\/songs\/\d+$/.test(path)) {
+    return json(res, { data: { ...SONG, ccli: '1234567', category: { id: 0, name: 'Aktive Songs' } } });
+  }
+
   // Alles Übrige laut protokollieren, statt still 404 zu liefern – so fällt beim Erweitern des
   // Flows sofort auf, welcher Endpunkt noch fehlt.
   console.warn(`[ct-stub] nicht abgedeckt: ${req.method} ${req.url}`);

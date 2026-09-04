@@ -18,9 +18,13 @@ import type { SongSelectTreffer } from '@shared/types/index';
  */
 const legeLiedAn = vi.fn();
 const holeChordProAusSongSelect = vi.fn();
+const speichereNotenblatt = vi.fn();
+const getSongChart = vi.fn();
 vi.mock('../services/churchtoolsApi', () => ({
   legeLiedAn: (...a: unknown[]) => legeLiedAn(...a),
   holeChordProAusSongSelect: (...a: unknown[]) => holeChordProAusSongSelect(...a),
+  speichereNotenblatt: (...a: unknown[]) => speichereNotenblatt(...a),
+  getSongChart: (...a: unknown[]) => getSongChart(...a),
 }));
 
 const { ApiError } = await import('../services/api');
@@ -54,6 +58,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   legeLiedAn.mockResolvedValue({ songId: 77, arrangementId: 500 });
   holeChordProAusSongSelect.mockResolvedValue([]);
+  speichereNotenblatt.mockResolvedValue([]);
+  getSongChart.mockResolvedValue({ chordpro: '{title: Treu}\n[E]Aus SongSelect' });
 });
 
 describe('useNeuesLied – der gute Fall', () => {
@@ -178,5 +184,62 @@ describe('useNeuesLied – Fehlschläge', () => {
     await waitFor(() => expect(result.current.fehler).toBeNull());
     expect(result.current.ungewiss).toBe(false);
     expect(result.current.ergebnis).toBeNull();
+  });
+});
+
+/**
+ * Der Editor nach dem Anlegen (Wunsch Alwin, 04.09.2026) – ein Angebot, kein Schritt.
+ *
+ * Geprüft wird, woher der Starttext kommt (Gerüst aus dem Formular vs. das geholte Blatt) und dass
+ * Speichern den Server trifft und das Ergebnis nachzieht. Der ChurchTools-Aufruf läuft im Hook, nicht in
+ * der Komponente – deshalb hier.
+ */
+describe('useNeuesLied – Notenblatt schreiben/bearbeiten', () => {
+  it('ohne Blatt kommt das Gerüst aus dem Formular – und das Blatt wird NICHT abgefragt', async () => {
+    const { result } = starte({ canUseCcli: false });
+    await result.current.anlegen(FORMULAR, 0, null);
+    await waitFor(() => expect(result.current.ergebnis).not.toBeNull());
+
+    const text = await result.current.notenblattText(FORMULAR);
+    expect(text).toContain('{title: Treu}');
+    expect(text).toContain('{key: E}');
+    expect(text).toContain('{ccli: 5841527}');
+    expect(getSongChart).not.toHaveBeenCalled();
+  });
+
+  it('mit Blatt aus SongSelect kommt genau dieses zum Anpassen', async () => {
+    const { result } = starte();
+    await result.current.anlegen(FORMULAR, 0, TREFFER);
+    await waitFor(() => expect(result.current.ergebnis?.notenblatt).toBe(true));
+
+    expect(await result.current.notenblattText(FORMULAR)).toBe('{title: Treu}\n[E]Aus SongSelect');
+    expect(getSongChart).toHaveBeenCalledWith(77, 500);
+  });
+
+  it('Speichern schreibt das Original und zieht das Ergebnis nach', async () => {
+    const { result } = starte({ canUseCcli: false });
+    await result.current.anlegen(FORMULAR, 0, null);
+    await waitFor(() => expect(result.current.ergebnis).not.toBeNull());
+    expect(result.current.ergebnis?.notenblatt).toBe(false);
+
+    const ok = await result.current.notenblattSpeichern('{title: Treu}\n[E]Neu');
+    expect(ok).toBe(true);
+    expect(speichereNotenblatt).toHaveBeenCalledWith(77, 500, '{title: Treu}\n[E]Neu');
+    await waitFor(() => expect(result.current.ergebnis?.notenblatt).toBe(true));
+    expect(result.current.ergebnis?.notenblattQuelle).toBe('eigenes');
+  });
+
+  it('ein Fehlschlag beim Speichern nennt den Grund vom Server und lässt den Editor offen', async () => {
+    speichereNotenblatt.mockRejectedValue(
+      new Error('Keine Berechtigung, Dateien in ChurchTools zu speichern.'),
+    );
+    const { result } = starte({ canUseCcli: false });
+    await result.current.anlegen(FORMULAR, 0, null);
+    await waitFor(() => expect(result.current.ergebnis).not.toBeNull());
+
+    const ok = await result.current.notenblattSpeichern('x');
+    expect(ok).toBe(false);
+    await waitFor(() => expect(result.current.notenblattFehler).toContain('Keine Berechtigung'));
+    expect(result.current.ergebnis?.notenblatt).toBe(false);
   });
 });

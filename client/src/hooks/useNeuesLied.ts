@@ -19,9 +19,15 @@
 import { useState } from 'react';
 import type { SongSelectTreffer } from '@shared/types/index';
 import { ApiError } from '../services/api';
-import { holeChordProAusSongSelect } from '../services/churchtoolsApi';
+import {
+  getSongChart,
+  holeChordProAusSongSelect,
+  speichereNotenblatt,
+} from '../services/churchtoolsApi';
 import { useLiedAnlegen } from './useServices';
 import { auftragAus, notenblattPlan, type NeuesLiedFormular } from '../utils/liedFormular';
+import { chordproVorlage } from '../utils/activeSongView';
+import { useQueryClient } from '@tanstack/react-query';
 
 /** Was aus dem Anlegen wurde – **einschließlich der Teilerfolge.** */
 export interface NeuesLiedErgebnis {
@@ -31,6 +37,8 @@ export interface NeuesLiedErgebnis {
   name: string;
   /** Hat das Lied jetzt ein Notenblatt aus SongSelect? */
   notenblatt: boolean;
+  /** Woher das Notenblatt kam – für den Satz in der Erfolgsansicht. */
+  notenblattQuelle: 'songselect' | 'eigenes' | null;
   /**
    * Was außerdem gesagt werden muss: Notenblatt nicht geholt, Ablauf-Eintrag fehlgeschlagen.
    *
@@ -64,6 +72,54 @@ export function useNeuesLied({ eventId, canUseCcli }: Args) {
     setFehler(null);
     setUngewiss(false);
     setErgebnis(null);
+    setNotenblattFehler(null);
+  };
+
+  /* ---------------------------------------------- Notenblatt bearbeiten (Editor nach dem Anlegen) */
+
+  /**
+   * **Der Editor nach dem Anlegen** (Wunsch Alwin, 04.09.2026) – als Angebot, nicht als Schritt.
+   *
+   * Ein selbst eingetipptes Lied war bis dahin nach dem Anlegen leer: Man musste es öffnen, eine
+   * Version anlegen, den Text tippen. Jetzt steht in der Erfolgsansicht „Notenblatt bearbeiten":
+   * leerer Editor mit Titel/Tonart/Nummer als ChordPro-Gerüst – oder, wenn SongSelect ein Blatt
+   * geliefert hat, genau dieses zum Anpassen. Gespeichert wird als **Original** (nicht als Version),
+   * über dieselbe Server-Stelle wie der SongSelect-Import.
+   */
+  const [notenblattLaeuft, setNotenblattLaeuft] = useState(false);
+  const [notenblattFehler, setNotenblattFehler] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  /** Der Text, mit dem der Editor startet: das vorhandene Blatt oder das Gerüst aus dem Formular. */
+  const notenblattText = async (formular: NeuesLiedFormular): Promise<string> => {
+    if (!ergebnis) return '';
+    if (ergebnis.notenblatt) {
+      const chart = await getSongChart(ergebnis.songId, ergebnis.arrangementId);
+      if (chart.chordpro) return chart.chordpro;
+    }
+    return chordproVorlage({ title: ergebnis.name, key: formular.key, ccli: formular.ccli });
+  };
+
+  /** Speichert den Text als Original-Notenblatt. `true` = geklappt (der Editor darf zu). */
+  const notenblattSpeichern = async (text: string): Promise<boolean> => {
+    if (!ergebnis || notenblattLaeuft) return false;
+    setNotenblattLaeuft(true);
+    setNotenblattFehler(null);
+    try {
+      await speichereNotenblatt(ergebnis.songId, ergebnis.arrangementId, text);
+      // Das Blatt hat sich geändert – wer das Lied gleich öffnet, soll es sehen, nicht den Cache.
+      void queryClient.invalidateQueries({ queryKey: ['song-chart', ergebnis.songId] });
+      setErgebnis({ ...ergebnis, notenblatt: true, notenblattQuelle: 'eigenes' });
+      return true;
+    } catch (e) {
+      // Der Grund kommt vom Server (Rechte, Netz) – damit klar ist, ob ein zweiter Versuch Sinn hat.
+      setNotenblattFehler(
+        e instanceof Error ? e.message : 'Das Notenblatt konnte nicht gespeichert werden.',
+      );
+      return false;
+    } finally {
+      setNotenblattLaeuft(false);
+    }
   };
 
   const anlegen = async (
@@ -114,6 +170,7 @@ export function useNeuesLied({ eventId, canUseCcli }: Args) {
         arrangementId: angelegt.arrangementId,
         name: formular.name.trim(),
         notenblatt,
+        notenblattQuelle: notenblatt ? 'songselect' : null,
         hinweise,
       });
     } catch (e) {
@@ -124,5 +181,16 @@ export function useNeuesLied({ eventId, canUseCcli }: Args) {
     }
   };
 
-  return { anlegen, laeuft, fehler, ungewiss, ergebnis, zuruecksetzen };
+  return {
+    anlegen,
+    laeuft,
+    fehler,
+    ungewiss,
+    ergebnis,
+    zuruecksetzen,
+    notenblattText,
+    notenblattSpeichern,
+    notenblattLaeuft,
+    notenblattFehler,
+  };
 }

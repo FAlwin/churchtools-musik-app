@@ -283,6 +283,27 @@ verstanden. Dass derselbe Baustein an einer Stelle richtig und an einer anderen 
 Bildschirm – nicht in der Beschreibung. Bei sichtbaren Bedienelementen also **früh einen Durchklick
 anbieten**, statt die Festlegung wörtlich auf jede Ansicht zu übertragen.
 
+## Der Editor nach dem Anlegen – ein Angebot, kein Schritt _(04.09.2026, #322)_
+
+Alwins Idee: _„Beim Hinzufügen direkt den Editor öffnen und das Lied bearbeiten – insbesondere bei
+Liedern, die es bei SongSelect nicht gibt."_ Ein selbst eingetipptes Lied war nach dem Anlegen leer;
+der Weg zum Text führte über Öffnen → Neue Version → tippen.
+
+Drei Varianten vorgelegt (Editor als Schritt nach dem Anlegen / Knopf in der Erfolgsansicht / Textfeld im
+Formular). Alwins Antwort präzisierte die erste: **für alle Lieder, auch aus SongSelect – aber nur als
+Option, nicht automatisch.** Also der Knopf: „Notenblatt schreiben" (ohne Blatt, Gerüst aus
+Titel/Tonart/Nummer) bzw. „Notenblatt bearbeiten" (mit Blatt aus SongSelect, zum Anpassen).
+
+**Was dabei zusammengelegt wurde:** Die Regel „pro Arrangement genau ein Original-ChordPro, erst
+hochladen, dann das alte löschen, die `(App)`-Versionen bleiben" stand nur im SongSelect-Import
+(`holeChordProAusSongSelect`). Sie heißt jetzt `originalNotenblattSchreiben` und wird von beiden Wegen
+genutzt – ein zweiter Schreibweg mit eigener Fassung dieser Regel wäre die nächste Stelle, an der eine
+Korrektur nur die Hälfte trifft. Ebenso die Editor-Vorlage: `chordproVorlage()` liefert das Gerüst für
+das Blatt **und** für den frisch angelegten Song, der noch kein `SetlistSong` ist.
+
+`ChordEditor` bekam `mitVersionsname={false}`: Ein Original hat keinen Versionsnamen, das Feld wäre eine
+Frage ohne Antwort.
+
 ## Liedtext-Vorschau: der Zwischenschritt beim Einfügen _(14.08.2026, #379)_
 
 **Ein Antippen führt in die Vorschau, nicht direkt zum Einfügen** (Muster ProPresenter, von Alwin

@@ -721,17 +721,10 @@ export async function holeChordProAusSongSelect(
     );
   }
 
-  // Vor dem Holen merken, was ersetzt werden soll – danach ist die neue Datei nicht mehr von der
-  // alten zu unterscheiden (beide heißen `<Titel>.chordpro`).
-  const vorher = arrangement.files.filter(isOriginalChordpro).map((f) => fileIdFromUrl(f.fileUrl));
-
   /**
-   * **Erst den Text holen, dann selbst hochladen, dann aufräumen.**
-   *
-   * Der Aufruf bei CCLI liefert nur den Text – er legt nichts an (gemessen). Hochgeladen wird über
-   * `uploadFile`, unsere eigene geprüfte Stelle: Sie wirft bei einem Fehlschlag, und erst danach
-   * wird gelöscht. Damit ist die Reihenfolge eine echte Zusage und nicht mehr die Hoffnung, dass ein
-   * `status: success` auch bedeutet, dass etwas entstanden ist.
+   * **Erst den Text holen, dann schreiben.** Der Aufruf bei CCLI liefert nur den Text – er legt nichts
+   * an (gemessen). Das Schreiben samt Ersetzen des alten Originals macht `originalNotenblattSchreiben`
+   * – dieselbe Stelle, die auch der Editor nach dem Anlegen nutzt (04.09.2026).
    */
   const text = await fetchChordProText(cookie, {
     arrangementId,
@@ -739,6 +732,37 @@ export async function holeChordProAusSongSelect(
     title: song.name,
     tonality,
   });
+  return originalNotenblattSchreiben(cookie, songId, arrangementId, text);
+}
+
+/**
+ * **Das Original-Notenblatt eines Arrangements schreiben** – aus eigenem Text (Editor nach dem Anlegen,
+ * Wunsch Alwin 04.09.2026) oder aus SongSelect (`holeChordProAusSongSelect`).
+ *
+ * Herausgezogen, weil die Regel „pro Arrangement genau EIN Original, ersetzt statt danebengelegt, erst
+ * hochladen und dann das alte löschen" bis dahin nur im SongSelect-Import stand. Ein zweiter Schreibweg
+ * mit einer eigenen Fassung dieser Regel wäre genau die Dopplung, bei der die nächste Korrektur eine
+ * Stelle trifft und die andere nicht.
+ *
+ * **Erst hochladen, dann aufräumen:** `uploadFile` ist unsere geprüfte Stelle und wirft bei einem
+ * Fehlschlag – erst danach wird gelöscht. Andersherum stünde das Lied ohne Blatt da, sobald der Upload
+ * scheitert. Im schlimmsten Fall bleibt ein Doppel liegen; das ist ärgerlich, aber behebbar – ein Lied
+ * ohne Blatt im Gottesdienst ist es nicht.
+ *
+ * **Die verwalteten Versionen `(App)` bleiben unangetastet** – ersetzt wird nur das Original.
+ */
+export async function originalNotenblattSchreiben(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+  text: string,
+): Promise<ArrangementFileEntry[]> {
+  const { song, arrangement } = await getArrangement(cookie, songId, arrangementId);
+
+  // Vor dem Schreiben merken, was ersetzt werden soll – danach ist die neue Datei nicht mehr von der
+  // alten zu unterscheiden (beide heißen `<Titel>.chordpro`).
+  const vorher = arrangement.files.filter(isOriginalChordpro).map((f) => fileIdFromUrl(f.fileUrl));
+
   await uploadFile(cookie, arrangementId, {
     filename: `${safeFileName(song.name)}.chordpro`,
     mime: 'text/plain',
