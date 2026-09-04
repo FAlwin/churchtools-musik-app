@@ -18,6 +18,8 @@ import type {
   SongSelectSong,
   SongSelectSuchergebnis,
   SongTextTreffer,
+  LiedtextVorschau,
+  SongSelectLiedtext,
   SongVersion,
   UserCapabilities,
 } from '@shared/types/index';
@@ -166,6 +168,28 @@ export function getSongCategories(): Promise<SongCategory[]> {
  */
 export function sucheImLiedtext(q: string): Promise<SongTextTreffer[]> {
   return apiFetch<SongTextTreffer[]>(`/api/song-text-search?q=${encodeURIComponent(q)}`);
+}
+
+/**
+ * Den Textanfang **eines** Liedes holen (#379) – für die Vorschau bei gleichnamigen Liedern.
+ *
+ * Baut den Suchindex **nicht**: Steht er beim Server frisch, kommt die Antwort daraus; sonst lädt er
+ * genau dieses eine Notenblatt. Deshalb ist der Aufruf je Lied vertretbar – anders als ein
+ * Index-Aufbau, der ~50 Downloads kostet.
+ */
+export function holeLiedtextVorschau(songId: number): Promise<LiedtextVorschau> {
+  return apiFetch<LiedtextVorschau>(`/api/songs/${songId}/liedtext-vorschau`);
+}
+
+/**
+ * Den Liedtext eines **SongSelect**-Liedes holen (#379) – die Vorschau vor dem Anlegen.
+ *
+ * **Nur beim bewussten Öffnen eines Treffers**, nie beim Durchsehen: Ob CCLI den Abruf als Nutzung
+ * verbucht, ist offen (gemessen wurde nur, dass die Antwort keinen Hinweis darauf enthält). Der Hook
+ * darüber speichert je Nummer zwischen.
+ */
+export function holeSongSelectLiedtext(songNumber: number): Promise<SongSelectLiedtext> {
+  return apiFetch<SongSelectLiedtext>(`/api/songselect/songs/${songNumber}/liedtext`);
 }
 
 /**

@@ -1,44 +1,201 @@
-import type { SongLibraryEntry } from '@shared/types/index';
-import { Icon } from './icons';
+import { useState } from 'react';
+import type { SongLibraryEntry, SongSelectTreffer } from '@shared/types/index';
 import { CenterMessage } from './CenterMessage';
 import { SongStatsBar } from './SongStatsBar';
+import { LiedSucheKopf } from './LiedSucheKopf';
+import { SucheAngebot } from './SucheAngebot';
+import { LiedtextTrefferListe } from './LiedtextTrefferListe';
+import { SongSelectTrefferListe } from './SongSelectTrefferListe';
+import { LiedVorschau } from './LiedVorschau';
+import { LiedZeile } from './LiedZeile';
+import { Icon } from './icons';
+import { chordproZuTeile } from '../utils/liedtextTeile';
 import { useSongFilter } from '../hooks/useSongFilter';
+import { useLiedSuche } from '../hooks/useLiedSuche';
 import { statLabel } from '../utils/songFilter';
-import { useCapabilities, useSongLibrary, useSongUsage } from '../hooks/useServices';
+import {
+  useCapabilities,
+  useLiedtextVorschau,
+  useSongLibrary,
+  useSongSelectLiedtext,
+  useSongUsage,
+} from '../hooks/useServices';
 import styles from './SongPicker.module.scss';
 
 interface SongPickerProps {
-  /** Wird mit dem gewählten (Standard-)Arrangement + Songname aufgerufen. */
-  onPick: (arrangementId: number, songName: string) => void;
+  /** Einfügen: wird mit dem gewählten (Standard-)Arrangement + Songname aufgerufen. */
+  onPick?: (arrangementId: number, songName: string) => void;
+  /**
+   * **Öffnen statt Einfügen** – der Modus des Liederhefts (Entscheidung Alwin, 04.09.2026).
+   *
+   * „Neues Lied" im Liederheft öffnet dieselbe Suche wie der Ablauf. Findet sie das Lied in der eigenen
+   * Bibliothek, gibt es nichts einzufügen: Ein Tipp auf die Zeile **öffnet das Blatt** – kein Plus,
+   * keine Vorschau, denn das Blatt ist der ganze Text. SongSelect-Treffer haben weiter Auge und Plus.
+   */
+  oeffnen?: (song: SongLibraryEntry) => void;
+  /**
+   * Der Weg zum leeren Formular, oben rechts („Neues Lied" im Ablauf, „Selbst eintippen" im Liederheft).
+   * Bekommt den **Suchbegriff** mit: Was man getippt und nirgends gefunden hat, ist mit hoher
+   * Wahrscheinlichkeit der Titel. Liegt hier und nicht beim Aufrufer, weil nur hier der Begriff bekannt ist.
+   */
+  neuesLied?: { label: string; onClick: (vorbelegterName: string) => void };
+  /**
+   * Ein Treffer aus der Quelle „SongSelect" (#378) – der Aufrufer öffnet damit „Neues Lied".
+   *
+   * **Fehlt dieser Weg, gibt es SongSelect hier gar nicht** – weder das Angebot noch die automatische
+   * Suche. In „Lied verknüpfen" ist das so: Dort wird einem vorhandenen Ablaufpunkt ein Lied zugeordnet,
+   * ein neu angelegtes Lied müsste in diesen Punkt hineingeschrieben werden – das kann der Anlege-Weg
+   * nicht. Ein Angebot dorthin wäre eine Sackgasse.
+   */
+  onSongSelectTreffer?: (treffer: SongSelectTreffer) => void;
+  /** Beschriftung der Hauptaktion in der Vorschau, z. B. „Zum Ablauf hinzufügen". */
+  aktionLabel?: string;
   /** Deaktiviert die Treffer (z. B. während ein Vorgang läuft). */
   busy?: boolean;
   autoFocus?: boolean;
 }
 
+/** Was gerade in der Vorschau steht – `null` = die Liste ist zu sehen. */
+type Vorschau =
+  | { art: 'bibliothek'; song: SongLibraryEntry }
+  | { art: 'songselect'; treffer: SongSelectTreffer }
+  | null;
+
 /**
- * Lied-Auswahl beim Hinzufügen/Verknüpfen: zeigt sofort alle Lieder (eine Zeile pro Lied,
- * Standard-Arrangement) – wie die Bibliothek, mit Suche, Sortierung (A–Z/Häufigkeit/Zuletzt) und
- * Zeitfilter. Holt Lieder + Statistik selbst; Statistik nur für Ablauf-Berechtigte.
+ * Lied-Auswahl beim Hinzufügen/Verknüpfen (#378, #379).
+ *
+ * **Ein Suchfeld, die Bibliothek zuerst.** Darunter stehen die anderen Quellen als **Angebote**: „Auch in
+ * den Liedtexten nach … suchen" und – nur wo aus einem Treffer ein Lied werden kann – „Bei SongSelect
+ * nach … suchen". Findet die Bibliothek nichts, fragt SongSelect von selbst. Die Regeln dazu liegen in
+ * `useLiedSuche`.
+ *
+ * Bis zum 03.09.2026 stand hier ein Umschalter „Bibliothek · Liedtexte · SongSelect" über der Liste.
+ * Alwins Rückmeldung: Das verlangt die Entscheidung, WO gesucht wird, vor dem Tippen – man kann sie aber
+ * erst nach dem Ergebnis treffen. Deshalb jetzt die Reihenfolge, in der man tatsächlich sucht.
+ *
+ * **Jede Zeile hat zwei Knöpfe** (#379 und Alwins Rückmeldung vom 04.09.2026): Die Zeile selbst – mit
+ * dem Auge – öffnet die Vorschau; der Liedtext ist die Entscheidungsgrundlage, bei gleichnamigen Liedern
+ * das Einzige, was sie unterscheidet. Das **Plus** fügt sofort ein (bei SongSelect: öffnet „Neues Lied"
+ * vorbelegt). Bibliothek, SongSelect und Liedtexte nutzen dafür **dieselbe** `LiedZeile` – vorher sahen
+ * die drei verschieden aus und verhielten sich verschieden.
+ *
+ * **Eine Liste, drei Gruppen:** eigene Lieder oben, darunter SongSelect (mit Überschrift), am Ende die
+ * Liedtexte. Die Angebote dazwischen sind dezente Zeilen, keine Knöpfe.
  */
-export function SongPicker({ onPick, busy, autoFocus }: SongPickerProps) {
+export function SongPicker({
+  onPick,
+  oeffnen,
+  neuesLied,
+  onSongSelectTreffer,
+  aktionLabel = 'Zum Ablauf hinzufügen',
+  busy,
+  autoFocus,
+}: SongPickerProps) {
   const caps = useCapabilities(true);
   const showStats = caps.data?.canViewAgendas ?? false;
   const lib = useSongLibrary(true);
   const usage = useSongUsage(showStats);
   const f = useSongFilter(lib.data ?? [], usage.data, showStats, 'name', !usage.isError);
   const query = f.q.trim();
+  const suche = useLiedSuche({
+    eingabe: f.q,
+    canUseCcli: caps.data?.canUseCcli ?? false,
+    kannAnlegen: onSongSelectTreffer !== undefined,
+    // „Leer" heißt: Die Liste steht und hat zu diesem Begriff nichts. Während des Ladens oder bei
+    // einem Fehler ist sie nicht leer, sondern unbekannt – dann darf SongSelect nicht von selbst starten.
+    bibliothekLeer: !lib.isLoading && !lib.isError && query !== '' && f.list.length === 0,
+  });
+
+  const [vorschau, setVorschau] = useState<Vorschau>(null);
+
+  /**
+   * Die zwei Textquellen. **Beide sind abgeschaltet, solange die Liste zu sehen ist** – das ist die
+   * eigentliche Vorkehrung: Beim Durchsehen entsteht keine einzige Anfrage, und bei SongSelect (wo offen
+   * ist, ob CCLI einen Textabruf verbucht) auch kein Abruf.
+   */
+  const eigenerText = useLiedtextVorschau(
+    vorschau?.art === 'bibliothek' ? vorschau.song.songId : 0,
+    vorschau?.art === 'bibliothek',
+  );
+  const ccliText = useSongSelectLiedtext(
+    vorschau?.art === 'songselect' ? vorschau.treffer.songNumber : null,
+    vorschau?.art === 'songselect',
+  );
+
+  /* ------------------------------------------------------------------ Vorschau */
+
+  if (vorschau?.art === 'bibliothek') {
+    const s = vorschau.song;
+    return (
+      <LiedVorschau
+        titel={s.name}
+        autoren={s.author}
+        kennung={s.key ? `Tonart ${s.key}` : null}
+        // Der ganze Text, in Abschnitten – derselbe Parser wie beim Blatt (04.09.2026).
+        teile={eigenerText.data?.chordpro ? chordproZuTeile(eigenerText.data.chordpro) : []}
+        laeuft={eigenerText.isLoading}
+        fehler={
+          eigenerText.isError
+            ? eigenerText.error instanceof Error
+              ? eigenerText.error.message
+              : 'Der Liedtext konnte nicht geholt werden.'
+            : null
+        }
+        aktion={aktionLabel}
+        onAktion={() => onPick?.(s.arrangementId, s.name)}
+        onZurueck={() => setVorschau(null)}
+        busy={busy}
+      />
+    );
+  }
+
+  if (vorschau?.art === 'songselect' && onSongSelectTreffer) {
+    const t = vorschau.treffer;
+    return (
+      <LiedVorschau
+        titel={ccliText.data?.title ?? t.title}
+        autoren={(ccliText.data?.authors ?? t.authors).join(', ') || null}
+        kennung={`CCLI-Nr. ${t.songNumber}`}
+        teile={ccliText.data?.teile ?? []}
+        laeuft={ccliText.isLoading}
+        fehler={
+          ccliText.isError
+            ? ccliText.error instanceof Error
+              ? ccliText.error.message
+              : 'Der Liedtext konnte nicht von SongSelect geholt werden.'
+            : null
+        }
+        // Pflicht, sobald CCLI ihn mitschickt.
+        disclaimer={ccliText.data?.disclaimer}
+        aktion="Als neues Lied anlegen …"
+        onAktion={() => onSongSelectTreffer(t)}
+        onZurueck={() => setVorschau(null)}
+        busy={busy}
+      />
+    );
+  }
+
+  /* --------------------------------------------------------------------- Liste */
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.search}>
-        <Icon name="search" size={18} stroke={2} className={styles.searchIcon} />
-        <input
-          placeholder="Lied oder Autor suchen…"
-          value={f.q}
-          autoFocus={autoFocus}
-          onChange={(e) => f.setQ(e.target.value)}
-        />
-      </div>
+      {/* Oben rechts als ruhige Textaktion – dieselbe Optik wie im Listenkopf des Liederhefts. Stand
+          vorher im `AddItemSheet`; hier, weil nur hier der Suchbegriff für die Vorbelegung bekannt ist. */}
+      {neuesLied && (
+        <div className={styles.kopfzeile}>
+          <button className={styles.neuesLied} onClick={() => neuesLied.onClick(query)}>
+            <Icon name="plus" size={16} stroke={2.4} />
+            {neuesLied.label}
+          </button>
+        </div>
+      )}
+      <LiedSucheKopf
+        eingabe={f.q}
+        onEingabe={f.setQ}
+        onSongSelectSuchen={suche.songSelectMoeglich ? suche.songSelectSuchen : undefined}
+        autoFocus={autoFocus}
+      />
+      {/* Die Sortierleiste gilt der Bibliothek – und die steht immer oben. */}
       {showStats && <SongStatsBar {...f} />}
 
       <div className={styles.results}>
@@ -61,30 +218,80 @@ export function SongPicker({ onPick, busy, autoFocus }: SongPickerProps) {
         ) : (
           f.list.map((s: SongLibraryEntry) => {
             const st = f.stats.get(s.songId);
+            const unter = [s.author, s.ccli ? `Nr. ${s.ccli}` : null].filter(Boolean).join(' · ');
             return (
-              <button
+              <LiedZeile
                 key={s.songId}
-                className={styles.result}
+                titel={s.name}
+                unterzeile={unter || null}
+                zusatz={
+                  <>
+                    {showStats && f.sort !== 'name' && (
+                      <span className={styles.stat}>
+                        {statLabel(
+                          f.sort,
+                          st,
+                          usage.isError ? 'error' : usage.isLoading ? 'loading' : 'ok',
+                        )}
+                      </span>
+                    )}
+                    {s.key && <span className={styles.keyPill}>{s.key}</span>}
+                  </>
+                }
+                onZeile={() => (oeffnen ? oeffnen(s) : setVorschau({ art: 'bibliothek', song: s }))}
+                aktion={
+                  oeffnen || !onPick
+                    ? undefined
+                    : { label: aktionLabel, onClick: () => onPick(s.arrangementId, s.name) }
+                }
                 disabled={busy}
-                onClick={() => onPick(s.arrangementId, s.name)}
-              >
-                <div className={styles.info}>
-                  <span className={styles.songName}>{s.name}</span>
-                  {s.author && <span className={styles.sub}>{s.author}</span>}
-                  {showStats && f.sort !== 'name' && (
-                    <span className={styles.stat}>
-                      {statLabel(
-                        f.sort,
-                        st,
-                        usage.isError ? 'error' : usage.isLoading ? 'loading' : 'ok',
-                      )}
-                    </span>
-                  )}
-                </div>
-                {s.key && <span className={styles.keyPill}>{s.key}</span>}
-              </button>
+              />
             );
           })
+        )}
+
+        {/**
+         * Die anderen Quellen – **unter** der Bibliothek, egal ob sie etwas gefunden hat. Erst SongSelect
+         * (Alwins Satz: „Titel oder Nummer eingeben, und das Lied erscheint" – das ist der Hauptweg für
+         * ein neues Lied), am Ende die Liedtexte als Nebenweg. Solange die Bibliothek lädt oder
+         * gescheitert ist, gibt es nichts anzubieten: Man wüsste nicht, ob das Gesuchte nicht doch da ist.
+         */}
+        {!lib.isLoading && !lib.isError && (
+          <>
+            {suche.angebotSongSelect && (
+              <SucheAngebot
+                text={`Bei SongSelect nach „${query}" suchen`}
+                onClick={suche.songSelectSuchen}
+              />
+            )}
+            {suche.songSelectBegriff !== '' && onSongSelectTreffer && (
+              <SongSelectTrefferListe
+                begriff={suche.songSelectBegriff}
+                busy={busy}
+                onVorschau={(treffer) => setVorschau({ art: 'songselect', treffer })}
+                onEinfuegen={onSongSelectTreffer}
+              />
+            )}
+            {suche.angebotLiedtexte && (
+              <SucheAngebot
+                text={`Auch in den Liedtexten nach „${query}" suchen`}
+                onClick={suche.liedtexteSuchen}
+              />
+            )}
+            {suche.liedtextBegriff !== '' && (
+              <LiedtextTrefferListe
+                begriff={suche.liedtextBegriff}
+                songs={lib.data ?? []}
+                busy={busy}
+                onPick={(s) => (oeffnen ? oeffnen(s) : setVorschau({ art: 'bibliothek', song: s }))}
+                onEinfuegen={
+                  oeffnen || !onPick
+                    ? undefined
+                    : { label: aktionLabel, onClick: (s) => onPick(s.arrangementId, s.name) }
+                }
+              />
+            )}
+          </>
         )}
       </div>
     </div>

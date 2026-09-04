@@ -172,3 +172,161 @@ Alle liegen deshalb in `services/`, nicht in Controllern: So sind sie an einer S
 statt zwischen Routing-Code versteckt. **Zwei Bausteine tragen die gemeinsame Mechanik:** `ttlMemo.ts`
 (Verfallszeit) und `gebuendelterLauf.ts` (Bündelung + Sperrfrist der teuren org-weiten Läufe – Statistik
 und Suchindex).
+
+## Ein Suchfeld mit Quellen-Umschalter – die Wegwahl in „Neues Lied" fiel dafür weg _(14.08.2026, #378 – **der Umschalter ist seit 03.09.2026 überholt, siehe oben; der Rückbau der Wegwahl gilt weiter**)_
+
+Gesucht wird in **einem** Feld; ein `Segment` darunter wählt die Quelle: **Bibliothek · Liedtexte ·
+SongSelect**. Vorbilder waren ProPresenter und WorshipTools Planning, von Alwin als Muster benannt. Der
+Suchbegriff gehört dem Nutzer, die Quelle ist eine Umschaltung daneben – kein zweiter Dialog.
+
+**Die Folge war ein Rückbau, und der ist der eigentliche Gewinn:** Das Blatt „Neues Lied" hatte davor eine
+vorgeschaltete Wahl („Bei SongSelect suchen" / „Selbst eintippen") und darin eine **zweite**
+SongSelect-Suche. Mit dem Reiter gab es sie damit zweimal – genau die Regel-Dopplung, die dieses Projekt
+mehrfach Geld gekostet hat. Jetzt führt „Neues Lied" direkt ins leere Formular, und ein Treffer aus dem
+Reiter öffnet dasselbe Formular über `startTreffer` gefüllt.
+
+**Was wo liegt** (die Aufteilung ist die Entscheidung, nicht nur der Ort):
+
+| Wo                                              | Was                                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------------------- |
+| `hooks/useLiedSuche.ts`                         | die **Regeln**: welche Quelle gilt, was an sie geschickt wird, Entprellung |
+| `components/LiedSucheKopf.tsx`                  | Feld + Umschalter (die Optik, an allen drei Stellen dieselbe)              |
+| `SongSelectTrefferListe`/`LiedtextTrefferListe` | die zwei Trefferlisten, die überall gleich aussehen                        |
+| die Aufrufer                                    | **nur** die Bibliotheksliste – sie ist je Ansicht verschieden              |
+
+**Der Suchtext liegt bewusst NICHT im Hook**, sondern weiterhin in `useSongFilter` beim Aufrufer: Der
+filtert die Bibliothek ohnehin lokal, und zwei Zustände für denselben Text wären zwei Stellen, die
+auseinanderlaufen.
+
+**Warum „SongSelect" in „Lied verknüpfen" fehlt:** Dort wird einem **vorhandenen** Ablaufpunkt ein Lied
+zugeordnet; der Anlege-Weg erzeugt mit `eventId` aber einen **neuen** Punkt. Ein Reiter dorthin wäre eine
+Sackgasse. `SongPicker` bietet ihn deshalb nur an, wenn der Aufrufer einen `onSongSelectTreffer`-Weg
+mitgibt – die Verfügbarkeit hängt am tatsächlich vorhandenen Ziel, nicht an einem Schalter, den man
+vergessen kann.
+
+**Die Kosten je Quelle bestimmen die Mechanik:** Die Bibliothek filtert im Browser (gratis, bei jedem
+Tastendruck). Die Liedtexte brauchen serverseitig einen Index – **ein Datei-Download je Lied** –, deshalb
+erst ab `LIEDTEXT_SUCHE_MIN_ZEICHEN` und entprellt; ein Tipp auf den Reiter allein löst nichts aus.
+SongSelect geht über ChurchTools an CCLI (~800 ms gemessen), deshalb entprellt und erst bei „reifer"
+Eingabe – eine CCLI-Nummer also erst vollständig (7 Stellen, am Bestand gemessen).
+
+**Die letzte Quelle wird NICHT gemerkt** (Entscheidung Alwin): Jeder Einstieg beginnt bei der Bibliothek.
+Auf einem geteilten iPad am Notenpult soll nicht plötzlich der CCLI-Katalog offen stehen, weil zuletzt
+jemand Lieder eingepflegt hat.
+
+## Ein Suchfeld ohne Umschalter – die Bibliothek zuerst, die Quellen als Angebot darunter _(03.09.2026, #378)_
+
+**Zweiter Anlauf, nach Alwins Rückmeldung an der fertigen Oberfläche.** Der Umschalter „Bibliothek ·
+Liedtexte · SongSelect" verlangte die Entscheidung, _wo_ gesucht wird, **vor** dem Tippen. Die kann man
+aber erst nach dem Ergebnis treffen: „Ist es bei uns? Nein? Dann SongSelect." Alwins Wunsch war
+wörtlich: _ein_ Suchfeld; erst die Bibliothek, und wenn da nichts ist, SongSelect – oder beides auf
+einmal mit Kennzeichnung.
+
+**Gewählt: nacheinander, mit einer Ausnahme.** Die Bibliothek filtert live (kostet nichts). Darunter
+stehen **Angebote** – „Auch in den Liedtexten nach … suchen", „Bei SongSelect nach … suchen" –, ein Tipp
+öffnet die Treffer als **beschriftete Gruppe**. **Findet die Bibliothek zu einem reifen Begriff nichts,
+fragt SongSelect von selbst.** So kostet der häufigste Fall („das Lied ist bei uns") keine CCLI-Anfrage,
+und der zweithäufigste („das Lied ist neu") keinen zusätzlichen Tipp.
+
+**Warum nicht „alles auf einmal":** Jede SongSelect-Suche geht über ChurchTools an CCLI (~800 ms) und
+zählt gegen die Drosselung, die in #300 die ganze App lahmgelegt hat. Bei „Wo ich auch stehe" wären das
+trotz Entprellung mehrere Anfragen, von denen niemand die Ergebnisse ansieht. Die Liedtextsuche baut
+beim ersten Mal einen Index über einen Download je Lied – sie läuft deshalb **nie** von selbst.
+
+**Was die Umstellung nebenbei aufgeräumt hat:** Das Liederheft hatte bis dahin eine eigene Kopie des
+Suchfeld-Markups (`AllSongs.module.scss` `.search`) und eine eigene Fassung der Regel „die Textsuche gilt
+nur, solange der Begriff unverändert ist" (`textSuche === query`). Beides liegt jetzt einmal:
+`LiedSucheKopf` (Feld), `SucheAngebot` (Knopf), `useLiedSuche` (Regeln, inklusive `bibliothekLeer` vom
+Aufrufer). Der Einfüge-Dialog und das Liederheft unterscheiden sich nur noch in `kannAnlegen`.
+
+**Die Lehre, zum zweiten Mal in diesem Feature:** „Links Bibliothek, daneben SongSelect" war Alwins
+Formulierung vom 13.08. – und ich habe sie als Reiter gebaut. Was er meinte, war die Reihenfolge, in der
+man sucht. Bei Bedienelementen entscheidet der Durchklick, nicht die Beschreibung (siehe den Abschnitt
+darunter, dieselbe Lehre schon einmal).
+
+**Nachtrag 04.09.2026 – dritter Anlauf, diesmal mit Varianten vorab.** Auch die Angebots-Knöpfe waren
+noch nicht, was Alwin meinte: _„Ich will einfach einen Titel oder eine CCLI-Nummer eingeben und dann
+erscheint das Lied. In der Liedzeile gibt es dann zwei Buttons – Vorschau und direkt einfügen."_ Ich habe
+drei Varianten vorgelegt (alles automatisch / SongSelect wenn nötig / heutige Regel ohne Knöpfe) und drei
+Fragen geklärt: **SongSelect von selbst nur bei 0 Treffern** (Regel bleibt), **das Plus bei SongSelect
+öffnet das Formular vorbelegt** (Kategorie bleibt Pflicht), **die CCLI-Nummer gehört zur
+Bibliothekssuche** (`SongLibraryEntry.ccli`, pflichtig – ein optionales Feld, das der Server vergisst,
+fällt niemandem auf). Ergebnis: **eine Liste, alle Zeilen `LiedZeile`** (Auge + Plus), SongSelect als
+beschriftete Gruppe darunter, die Angebote als dezente Zeilen statt Knöpfe. Was sich gegenüber dem
+03.09. **nicht** geändert hat: wann SongSelect gefragt wird. Geändert hat sich, **wie es aussieht** – und
+genau das war der Punkt.
+
+Drei Ergänzungen vom selben Tag, nach Alwins Durchklick auf Test: **(1)** „Neues Lied" im Liederheft
+öffnet erst die Suche (`SongPicker` im `oeffnen`-Modus – Bibliothekstreffer öffnen das Blatt, SongSelect
+wie im Ablauf, „Selbst eintippen" belegt den Titel vor). **(2)** Die Vorschau zeigt den **ganzen** Text
+mit Abschnitten – der Server liefert das rohe ChordPro, der Client zerlegt es mit dem Parser des Blattes;
+der gekürzte Anfang war zu wenig („manchmal braucht man genau den Chorus"). **(3)** Beim Verknüpfen hieß
+der untere Knopf „Zurück", verließ aber die Suche ganz, während der Pfeil in der Vorschau zur Liste
+führte – zwei Ziele, ein Wort. Alwins Wahl: Pfeil bleibt, unten steht „Abbrechen".
+
+## Der Quellen-Umschalter gehört zum EINFÜGEN, nicht in das Liederheft _(14.08.2026, #378 – **überholt am 03.09.2026: es gibt keinen Umschalter mehr; dass SongSelect nur beim Einfügen erscheint, gilt weiter**)_
+
+**Korrektur an #378, nach dem Durchklicken.** Der Umschalter „Bibliothek · Liedtexte · SongSelect" stand
+zuerst **auch** im Liederheft – dort war er falsch (Rückmeldung Alwin): Im Liederheft **schlägt man ein
+Lied nach**; drei gleichrangige Quellen darüber wirken fremd, und SongSelect hat dort nichts zu suchen.
+
+Er sitzt jetzt nur noch in `SongPicker`, also in „Lied hinzufügen" und „Lied verknüpfen" – **dort, wo man
+ein Lied einfügt.** Genau so macht es WorshipTools: Die Quellen liegen im Dialog „Lied zum Set
+hinzufügen", nicht in der Bibliotheksübersicht.
+
+Das Liederheft hat wieder **ein einfaches Suchfeld**, und die Suche im Liedtext ist dort wieder ein
+**Angebot unter der Liste** („Auch in den Liedtexten nach … suchen") – wie vor #378. Sie bleibt damit
+erreichbar, wo der Wunsch entsteht, ohne die Ansicht zu belasten.
+
+**Die Lehre für künftige Entwürfe:** „Gilt überall" war als Festlegung gemeint und als Anweisung
+verstanden. Dass derselbe Baustein an einer Stelle richtig und an einer anderen fremd ist, sah man erst am
+Bildschirm – nicht in der Beschreibung. Bei sichtbaren Bedienelementen also **früh einen Durchklick
+anbieten**, statt die Festlegung wörtlich auf jede Ansicht zu übertragen.
+
+## Liedtext-Vorschau: der Zwischenschritt beim Einfügen _(14.08.2026, #379)_
+
+**Ein Antippen führt in die Vorschau, nicht direkt zum Einfügen** (Muster ProPresenter, von Alwin
+benannt). Der Liedtext ist die **Entscheidungsgrundlage**: Bei 147 SongSelect-Treffern zu einem Titel ist
+er das Einzige, was die Fassungen unterscheidet.
+
+**Erster Entwurf war ein „Text zeigen"-Knopf je Zeile (#379) – zurückgebaut.** Er behandelte den Text als
+Zusatzinfo neben dem Titel und machte jede Liste unruhig. Die Vorschau als Zwischenschritt sagt dasselbe
+mit weniger Bedienelementen.
+
+**Der kurze Weg bleibt daneben:** Ein **„+"** in der Bibliothekszeile fügt sofort ein, ohne Vorschau
+(Entscheidung Alwin). Im Gottesdienst zählt das – die eigenen Lieder kennt das Team.
+
+Was vom ersten Entwurf **bleibt** – die Sparsamkeit:
+
+Unter jedem Lied steht ein kleines **„Text zeigen"**. Erst der Tipp holt den Textanfang – **keine Vorschau
+unter jedem Titel** (Entscheidung Alwin). Zwei Gründe, und beide zählen:
+
+- **Kosten.** Eine Vorschau je Zeile ist eine Anfrage je Zeile. Bei 49 Liedern wären das 49 Abrufe, nur um
+  eine Liste durchzusehen.
+- **Ruhe.** Auf einem Notenpult im Gottesdienst ist eine ruhige Liste wichtiger als Vollständigkeit.
+
+**Der Suchindex aus #322 wird benutzt, aber NIE für die Vorschau gebaut** – das ist der Kern:
+
+| Lage                                   | Kosten der Vorschau              |
+| -------------------------------------- | -------------------------------- |
+| Index frisch (es wurde gerade gesucht) | **keine** Anfrage an ChurchTools |
+| Index fehlt oder ist alt               | **ein** Datei-Download           |
+
+Ein Index-Aufbau kostet einen Download je Lied. Ihn für zwei Zeilen Vorschau anzustoßen wäre grob
+unverhältnismäßig – und genau die Sorte Last, die in #300 das ChurchTools-Limit gerissen hat.
+
+**Der Index hält seitdem zwei Texte je Lied**, und die Trennung ist Absicht: `text` ist kleingeschrieben
+und ohne Akkorde – zum **Suchen** gebaut; `vorschau` ist der lesbare Anfang mit Groß-/Kleinschreibung – zum
+**Lesen**. Bei ~50 Liedern kostet das wenige Kilobyte, deutlich weniger als eine Datei erneut zu laden.
+Damit die Regel „Akkorde fallen ersatzlos weg" nur **einmal** existiert, baut `chordproZuText` auf
+`chordproZuLesetext` auf.
+
+**Bei den Liedtext-Treffern stehen bewusst zwei Dinge übereinander:** der Ausschnitt um die **Fundstelle**
+(aus dem Suchtext, also kleingeschrieben – das ist ehrlich: so wurde gesucht) und darunter auf Wunsch der
+**Anfang** des Liedes. Zwei verschiedene Aussagen; eine davon weglassen hieße, die andere für beides
+ausgeben.
+
+**Für SongSelect-Treffer gibt es die Vorschau noch nicht.** `getCCLILyrics` existiert (am 13.08.2026
+gemessen), aber es ist **offen, ob CCLI einen Textabruf als Nutzung vermerkt** – beim Notenblatt ist das so.
+Solange das nicht gemessen ist, wird nicht abgerufen: Ein Abruf bei jedem Durchsehen könnte der Gemeinde
+Nutzungen verbuchen, die niemand wollte.

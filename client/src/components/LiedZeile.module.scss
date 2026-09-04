@@ -1,0 +1,96 @@
+@use '../styles/mixins' as m;
+
+// Die gemeinsame Liedzeile (#378): Zeile = Vorschau/Öffnen, rechts daneben das Plus.
+// Vorher lagen diese Stile doppelt – in `SongPicker.module.scss` (Bibliothek) und
+// `LiedTreffer.module.scss` (SongSelect, Liedtexte), leicht verschieden. Eine Optik für alle drei.
+
+.zeile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.haupt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--surface2);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-family: var(--ui);
+  cursor: pointer;
+  transition: background 0.12s;
+
+  @media (hover: hover) {
+    &:hover {
+      background: var(--surface3);
+    }
+  }
+  &:active {
+    background: var(--surface3);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titel {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.symbol {
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+// Das Plus: der kurze Weg, sofort einfügen. Bewusst als eigener runder Knopf – ein bewusster Griff.
+.plus {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: var(--blue-soft);
+  color: var(--blue-ink);
+  cursor: pointer;
+
+  &:active {
+    background: var(--surface3);
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+}

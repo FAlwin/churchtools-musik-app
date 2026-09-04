@@ -49,6 +49,15 @@ nutzt bewusst Monospace (`'JetBrains Mono', monospace`) für die Roh-Bearbeitung
   `Icon` (`components/icons.tsx`, Line-Icons – keine Emojis in der UI), `NavBar`, `TabBar`,
   `Sheet`, `ConfirmDialog`, `SongFields` (die Stammdaten-Felder eines Liedes – von „Neues Lied" und
   „Stammdaten ändern" gemeinsam genutzt, damit es die fünf Felder nur einmal gibt).
+- **Lied suchen – ein Feld, eine Zeile, ein Angebot** (#378): `LiedSucheKopf` (nur das Suchfeld, Lupe
+  innen, `--surface3`), **`LiedZeile`** (die Liedzeile mit Auge = Vorschau und Plus = einfügen; ohne
+  `aktion` eine Pfeil-Zeile – dieselbe Optik für Bibliothek, SongSelect und Liedtexte, vorher drei
+  verschiedene) und `SucheAngebot` (die dezente gestrichelte Zeile „Bei SongSelect nach …" / „Auch in den
+  Liedtexten nach …" am Listenende – ein Weg, keine Aktion). `LiedTreffer.module.scss` trägt nur noch
+  Gruppen-Überschrift (`.kopf`) und Hinweise (`.hinweis`). Vorher hatte jede Ansicht ihre eigene Kopie des
+  Suchfelds; seit dem 03.09.2026 nutzt auch das Liederheft diese Bausteine. **Regel daraus:** Wer eine
+  vierte Suche oder eine weitere Liedliste braucht, nimmt diese drei, statt ihre Optik nachzubauen. Zwei
+  frühere Anläufe (Quellen-`Segment` über der Liste, blaue Angebots-Knöpfe darunter) sind weg.
 
 ## Theme
 

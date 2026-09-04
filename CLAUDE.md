@@ -39,6 +39,62 @@
     - `EditSongSheet`, Einstiege im Lied-Menü und im Liederheft). **Noch nicht auf Staging
       durchgeklickt**, weil jeder Lauf echte Lieder in ChurchTools anlegt bzw. löscht (TF-LIB-03,
       TF-LIB-04).
+  - **ein Suchfeld, eine Liste, zwei Knöpfe je Zeile** (#378, dritter Anlauf nach Alwins Rückmeldungen vom
+    03./04.09.2026). Gesucht wird in Titel, Autor **und CCLI-Nummer** (`SongLibraryEntry.ccli`, pflichtig,
+    vom Server aus `CtSongListEntry.ccli`). Eigene Lieder oben, SongSelect darunter mit Überschrift
+    („SongSelect · N Treffer zu …") und Nummer in der Unterzeile, am Ende die Liedtexte. **Alle drei Quellen
+    rendern dieselbe `components/LiedZeile.tsx`:** Zeile (mit Auge) = Vorschau, **Plus** = einfügen; bei
+    SongSelect öffnet das Plus `NewSongSheet` vorbelegt (Kategorie bleibt Pflicht, Entscheidung Alwin).
+    Ohne `aktion` ist `LiedZeile` eine einfache Pfeil-Zeile – so nutzt sie das Liederheft für
+    Liedtext-Treffer. **SongSelect fragt von selbst NUR bei leerer Bibliothek** (`bibliothekLeer` vom
+    Aufrufer); sonst steht am Ende eine dezente `SucheAngebot`-Zeile („Bei SongSelect nach … suchen"),
+    Tipp oder Enter holt nach. Liedtexte laufen nie von selbst. Regeln in `hooks/useLiedSuche.ts`, Feld in
+    `LiedSucheKopf.tsx` – **das Liederheft nutzt dieselben Bausteine** (hatte eigene Suchfeld-Kopie +
+    eigene `textSuche === query`-Regel → weg). **Zwei Anläufe davor:** Umschalter über der Liste (14.08.,
+    verlangte die Quellenwahl VOR dem Tippen) und blaue Angebots-Knöpfe unter der Liste (03.09., wirkten
+    wie Aktionen zwischen Treffern). Lehre: Bei Bedienelementen entscheidet der Durchklick, nicht die
+    Beschreibung – zweimal in einem Feature. **SongSelect nur mit Lizenz UND `kannAnlegen`** („Lied
+    hinzufügen"); beim Verknüpfen und im Liederheft fehlt es. Dazu `liedAnzahl()` für „1 Lied"/„N Lieder". **Seit 04.09.2026 öffnet „Neues Lied" im Liederheft dieselbe Suche**
+    (`SongPicker` mit `oeffnen`: Bibliothekstreffer öffnen das Blatt, kein Plus, keine Vorschau; SongSelect
+    wie im Ablauf; `neuesLied={{ label: 'Selbst eintippen' }}` gibt den Suchbegriff als `startName` ins
+    leere Formular). Der „Neues Lied"-Kopf rendert im `SongPicker`, nicht mehr im `AddItemSheet` – nur
+    dort ist der Suchbegriff bekannt.
+
+  - die **Liedtext-Vorschau als Zwischenschritt beim Einfügen** (#379, nach Alwins Rückmeldung vom 14.08.2026 umgebaut): Ein Antippen
+    zeigt **erst den Text**, darin steht der Knopf zum Einfügen (Muster ProPresenter). **Seit 04.09.2026 der
+    GANZE Text mit Abschnitten:** `GET /api/songs/:id/liedtext-vorschau` liefert das rohe ChordPro
+    (`LiedtextVorschau.chordpro`, im Index gehalten), `utils/liedtextTeile.ts` zerlegt es mit
+    `parseChordPro`/`parseLine` – demselben Parser wie das Blatt. Kein zweiter Abschnitts-Parser. Der
+    gekürzte 220-Zeichen-Anfang (`vorschauAus`) ist weg. Beim Verknüpfen heißt der untere Knopf
+    „Abbrechen" (verlässt die Suche); zur Liste führt nur der Pfeil in der Vorschau (Entscheidung Alwin).
+    `components/LiedVorschau.tsx`, für beide Quellen. Daneben bleibt ein **„+"** in der Bibliothekszeile,
+    das sofort einfügt – im Gottesdienst zählt der kurze Weg. Der erste Entwurf („Text zeigen"-Knopf je
+    Zeile) ist zurückgebaut: Der Text ist die **Entscheidungsgrundlage**, nicht eine Randnotiz.
+
+    **Beim Durchsehen der Liste wird nichts abgefragt** – geprüft am `enabled`-Argument beider Hooks.
+    Für eigene Lieder nutzt der Server den Suchindex, wenn er frisch ist, sonst lädt er genau ein
+    Notenblatt (`GET /api/songs/:songId/liedtext-vorschau`).
+
+    🔑 **CCLIs Liedtext ist jetzt gemessen** (14.08.2026, `probe-ccli-lyrics.ts`): `getCCLILyrics` nimmt
+    **`songNumber`** und liefert den Text **strukturiert** (`lyricParts` mit „Vers 1", „Chorus 1") plus
+    einen **`disclaimer`**, der **angezeigt werden MUSS** – Lizenzbedingung, keine Zierde
+    (`GET /api/songselect/songs/:songNumber/liedtext`).
+
+    ⚠️ **Ob CCLI einen Textabruf als Nutzung verbucht, bleibt offen – und ist per API NICHT messbar.**
+    Die Antwort enthält kein Feld, das darauf hindeutet (gesucht nach `report`, `usage`, `count` …), aber
+    das beweist nichts. Auch die Warnung „wird bei CCLI vermerkt" in `churchtools-songselect.md` ist eine
+    **Annahme ohne Beleg**. Belastbar wären nur die Nutzungs-Historie im SongSelect-Konto oder eine
+    Auskunft von CCLI/ChurchTools. **Die Vorkehrung ist deshalb strukturell:** Abruf nur beim bewussten
+    Öffnen eines Treffers, Zwischenspeicher je Nummer (`staleTime: Infinity`).
+
+    ⚠️ **Dabei ein echter Fehler gefunden – und die erste Diagnose war falsch:** Der Suchindex prüfte mit
+    einem **selbst nachgebauten** `!/\(App\)\.chordpro$/i`, obwohl `isOriginalChordpro` in
+    `arrangementFiles.ts` genau das schon kann – und zwar für alle drei Marker (`(App)`, `(ECG)`,
+    `— Bearbeitet`). Die Folge war **nicht** „das Lied steht doppelt im Index" (`.find()` liefert nur eine
+    Datei), sondern: Steht eine alte App-Fassung in der ChurchTools-Antwort **vor** dem Original, wurde
+    der **bearbeitete** Text durchsucht. **Meine erste Gegenprobe blieb grün, weil im Testmaterial das
+    Original zuerst stand** – erst die umgedrehte Reihenfolge deckte es auf. Merksatz: Bleibt eine
+    Gegenprobe grün, ist meist die Diagnose falsch, nicht der Test schwach.
 
     Dazu die **Suche im Liedtext** (`GET /api/song-text-search`): Weder ChurchTools noch CCLI können
     das (gemessen, `probe-songsuche.ts`), also durchsucht unser Server die ChordPro-Dateien selbst –

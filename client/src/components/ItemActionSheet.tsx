@@ -117,15 +117,18 @@ export function ItemActionSheet({
           {err && <div className={styles.err}>{err}</div>}
           <SongPicker
             autoFocus
+            aktionLabel="Mit diesem Eintrag verknüpfen"
             onPick={(arrangementId, songName) => {
               setLinkState({ kind: 'link', arrangementId, name: songName });
               setErr(null);
               setSongMode(false);
             }}
           />
+          {/* „Abbrechen", nicht „Zurück" (Entscheidung Alwin, 04.09.2026): Dieser Knopf verlässt die
+              Suche ganz. Zur Trefferliste zurück führt der Pfeil oben in der Vorschau – zwei Knöpfe
+              mit demselben Wort und verschiedenen Zielen hatten in die Irre geführt. */}
           <button className={styles.backBtn} onClick={() => setSongMode(false)} disabled={busy}>
-            <Icon name="chev-left" size={18} stroke={2.2} />
-            Zurück
+            Abbrechen
           </button>
         </div>
       </div>

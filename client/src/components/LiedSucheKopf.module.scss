@@ -1,0 +1,32 @@
+// Das eine Suchfeld (#378): Lupe innen, `--surface3`. Diese Optik hatte die Bibliothek schon vor dem
+// Quellen-Umschalter; sie gilt jetzt überall, weil das Feld überall dasselbe ist.
+
+.feld {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  background: var(--surface3);
+  border-radius: 8px;
+  padding: 9px 12px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    color: var(--text);
+    font-family: var(--ui);
+
+    &::placeholder {
+      color: var(--text3);
+    }
+  }
+}
+
+.lupe {
+  color: var(--text3);
+  flex-shrink: 0;
+}

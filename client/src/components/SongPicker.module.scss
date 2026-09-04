@@ -6,34 +6,17 @@
   gap: 8px;
 }
 
-// Suchfeld mit Lupe (wie in der Bibliothek).
-.search {
+// „Neues Lied“ / „Selbst eintippen“ oben rechts – die ruhige Textaktion aus dem Listenkopf des
+// Liederhefts. Stand vorher als `.songHdr`/`.newSongBtn` im `AddItemSheet` (04.09.2026 hierher).
+.kopfzeile {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--surface3);
-  border-radius: 8px;
-  padding: 9px 12px;
-
-  input {
-    flex: 1;
-    min-width: 0;
-    background: none;
-    border: none;
-    outline: none;
-    font-size: 15px;
-    color: var(--text);
-    font-family: var(--ui);
-
-    &::placeholder {
-      color: var(--text3);
-    }
-  }
+  justify-content: flex-end;
 }
-.searchIcon {
-  color: var(--text3);
-  flex-shrink: 0;
+.neuesLied {
+  @include m.neues-lied-aktion;
 }
+
+// Das Suchfeld steht seit #378 im gemeinsamen `LiedSucheKopf` – hier lag es vorher als eigene Kopie.
 
 .results {
   display: flex;
@@ -44,49 +27,9 @@
   margin-top: 2px;
 }
 
-.result {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 10px;
-  background: var(--surface2);
-  box-shadow: var(--shadow);
-  cursor: pointer;
+// Die Zeilen selbst (Lied-Knopf + Plus) liegen seit dem 04.09.2026 in `LiedZeile.module.scss` – eine
+// Optik für Bibliothek, SongSelect und Liedtexte. Hier bleiben nur die Zusätze rechts.
 
-  &:active {
-    background: var(--surface3);
-  }
-  &:disabled {
-    opacity: 0.5;
-  }
-}
-.info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-.songName {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.sub {
-  font-size: 12.5px;
-  color: var(--text2);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 // Statistik-Pille (Häufigkeit bzw. Zuletzt) – wie in der Bibliothek.
 .stat {
   align-self: flex-start;

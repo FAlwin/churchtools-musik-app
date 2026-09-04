@@ -5,6 +5,93 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Neu
+
+- **Liedtext-Vorschau beim Einfügen (#379).** Heißen mehrere Lieder gleich und ist der Autor
+  unbekannt oder ebenfalls gleich, war die Entscheidung ohne Öffnen nicht zu treffen. Jetzt zeigt ein
+  Antippen im Dialog **„Lied hinzufügen"** zuerst den **Liedtext**, und darin steht der Knopf zum
+  Einfügen – nach dem Vorbild von ProPresenter. Der Text ist damit die Entscheidungsgrundlage, nicht
+  eine Randnotiz.
+
+  Bei **SongSelect** wirkt das am stärksten: Eine Titelsuche liefert dort bis zu 100 Treffer, viele mit
+  demselben Namen. Die Vorschau zeigt CCLIs Text **mit den Abschnitten** („Vers 1", „Chorus 1"), dazu
+  Autoren, CCLI-Nummer und den Lizenzhinweis von CCLI, der mit jedem Text mitkommt.
+
+  **Der kurze Weg bleibt:** In der Bibliotheksliste steht neben jedem Lied weiter ein **„+"** – ein
+  Tipp, sofort im Ablauf, ohne Umweg. Im Gottesdienst zählt das.
+
+  **Abgerufen wird nur, was du wirklich ansiehst.** Beim Durchsehen der Liste entsteht keine einzige
+  Anfrage, und ein Lied, das du zweimal öffnest, wird nur einmal geholt. Für die eigenen Lieder nutzt
+  der Server ohnehin den Bestand, den die Liedtextsuche schon angelegt hat.
+
+  **Der ganze Text, mit Abschnitten** (04.09.2026): Bei eigenen Liedern zeigte die Vorschau erst nur
+  einen gekürzten Anfang in einer Zeile. Jetzt steht der komplette Liedtext da – Vers 1, Chorus, Bridge,
+  so wie das Blatt sie kennt –, scrollbar. Alwin: „Manchmal braucht man genau den Chorus und die eine
+  Passage, um auf das Lied zu kommen."
+
+  **Der Pfeil in der Vorschau führt zur Liste, der Knopf unten heißt „Abbrechen"** (04.09.2026) – er
+  verlässt die Suche. Vorher hieß er beim Verknüpfen „Zurück" und tat dasselbe wie der Pfeil scheinbar,
+  in Wahrheit aber etwas anderes: Er warf einen zwei Schritte zurück.
+
+- **„Neues Lied" im Liederheft öffnet zuerst die Suche (#378, 04.09.2026).** Dieselbe Suche wie im
+  Ablauf: Titel oder CCLI-Nummer tippen. Liegt das Lied schon bei euch, öffnet ein Tipp das Blatt – nichts
+  anzulegen. Ein SongSelect-Treffer führt ins vorbelegte Formular, **„Selbst eintippen"** oben rechts ins
+  leere – mit dem Suchbegriff als Titel, denn was man getippt und nirgends gefunden hat, ist mit hoher
+  Wahrscheinlichkeit der Titel. Vorher kam hier direkt das leere Formular.
+
+- **Ein Suchfeld, eine Liste, zwei Knöpfe je Zeile (#378).** Beim Einfügen eines Liedes tippst du Titel,
+  Autor **oder CCLI-Nummer** – und das Lied erscheint. Eigene Lieder stehen oben, SongSelect-Treffer
+  darunter mit eigener Überschrift und der Nummer in der Zeile, damit man die Herkunft sieht. **Jede Zeile
+  hat ein Auge und ein Plus:** Das Auge (oder ein Tipp auf die Zeile) öffnet die Liedtext-Vorschau, das
+  Plus fügt sofort ein – bei einem SongSelect-Treffer öffnet es „Neues Lied" vorbelegt, du wählst die
+  Kategorie, und das Lied steht angelegt im Ablauf.
+
+  **Die CCLI-Nummer gehört jetzt zur Bibliothekssuche.** Liegt das Lied schon bei euch, findet es die
+  Bibliothek über seine Nummer – SongSelect wird dann gar nicht gefragt und es entsteht kein Doppel.
+
+  **Findet die Bibliothek nichts, sucht SongSelect von selbst mit** – dann ist die Anfrage ja nötig.
+  Findet sie etwas, steht am Ende der Liste eine dezente Zeile **„Bei SongSelect nach … suchen"**; ein
+  Tipp darauf oder die Eingabetaste holt die Treffer nach. Ebenso dezent am Ende: **„Auch in den Liedtexten
+  nach … suchen"**. So kostet der häufigste Fall („das Lied ist bei uns") keine einzige Anfrage an CCLI.
+
+  Zwei Anläufe davor: ein **Umschalter** „Bibliothek · Liedtexte · SongSelect" über der Liste (verlangte
+  die Entscheidung, _wo_ gesucht wird, vor dem Tippen) und danach **Angebots-Knöpfe** unter der Liste
+  (wirkten wie Aktionen zwischen den Treffern). Beides nach Alwins Rückmeldung am 03./04.09.2026 wieder
+  ausgebaut – jetzt ist es eine Liste, in der das Lied einfach erscheint.
+
+  **SongSelect gibt es nur dort, wo aus einem Treffer ein Lied werden kann:** in „Lied hinzufügen". Beim
+  **Verknüpfen** und im **Liederheft** fehlt es mit Absicht – einem vorhandenen Ablaufpunkt kann kein neu
+  angelegtes Lied zugeordnet werden, und im Liederheft schlägt man nach. Ohne SongSelect-Lizenz erscheint
+  das Angebot ebenfalls nicht. Die Liedtexte gibt es überall – Suchen darf jeder.
+
+  **Das Blatt „Neues Lied" ist dadurch einfacher geworden:** Die vorgeschaltete Frage „Bei SongSelect
+  suchen oder selbst eintippen?" ist weg. „Neues Lied" führt direkt ins leere Formular, und ein Treffer
+  aus SongSelect öffnet dasselbe Formular gefüllt. Damit gibt es die SongSelect-Suche genau **einmal**.
+
+  Kleinigkeit am Rand: Der Zähler schreibt bei einem einzigen Lied jetzt **„1 Lied"** statt „1 Lieder";
+  der Fehler stand seit #322 drin und fiel bei 49 Liedern nie auf.
+
+### Geändert
+
+- **Die Suche im Liedtext gibt es jetzt auch beim Einfügen (#378)** – als dasselbe Angebot wie im
+  Liederheft: **„Auch in den Liedtexten nach … suchen"** unter der Liste, ab **drei Zeichen**. Sie läuft
+  nie von selbst, denn beim ersten Mal holt sie jeden Liedtext einmal von ChurchTools. Das bleibt der
+  schonende Weg gegenüber ChurchTools, das uns bei zu vielen Anfragen bremst.
+
+### Behoben
+
+- **Die Suche im Liedtext konnte die falsche Fassung eines Liedes durchsuchen (#379).** Wer über die App
+  eine eigene Fassung eines Notenblatts angelegt hat, hatte am Arrangement zwei ChordPro-Dateien: das
+  Original und die bearbeitete Fassung. Der Suchindex sollte immer das Original nehmen, erkannte aber nur
+  das heutige Namensmuster – **ältere Bestandsfassungen** („… (ECG).chordpro", „… — Bearbeitet.chordpro")
+  gingen als Original durch. Stand so eine Datei in der Antwort von ChurchTools vor dem Original, wurde
+  der bearbeitete Text durchsucht statt des echten.
+
+  Gefunden beim Bau der Vorschau, weil dieselbe Regel dort noch einmal gebraucht wurde – und sie gab es
+  längst als geprüfte Funktion. Jetzt nutzen beide Stellen sie, statt sie nachzubauen.
+
 ## [2.22.0] – 2026-09-03
 
 ### Neu

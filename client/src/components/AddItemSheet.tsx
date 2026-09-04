@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AgendaServiceOption } from '@shared/types/index';
+import type { AgendaServiceOption, SongSelectTreffer } from '@shared/types/index';
 import { Sheet } from './Sheet';
 import { SongPicker } from './SongPicker';
 import { NewSongSheet } from './NewSongSheet';
@@ -32,8 +32,15 @@ type Mode = 'choose' | 'header' | 'text' | 'song';
 /** Sheet zum Hinzufügen eines Ablaufpunkts: Überschrift, Text oder Lied (per Songsuche). */
 export function AddItemSheet({ eventId, eventName, onClose, onAdd, services }: AddItemSheetProps) {
   const [mode, setMode] = useState<Mode>('choose');
-  /** „Neues Lied" ersetzt dieses Blatt, statt sich darüberzulegen – zwei Dialoge übereinander. */
-  const [neuesLied, setNeuesLied] = useState(false);
+  /**
+   * „Neues Lied" ersetzt dieses Blatt, statt sich darüberzulegen – zwei Dialoge übereinander.
+   *
+   * `null` = zu. Offen trägt es **optional den SongSelect-Treffer** (#378), mit dem es geöffnet wurde:
+   * Wer über das Angebot „Bei SongSelect nach … suchen" gesucht hat, findet das Formular gefüllt vor.
+   */
+  const [neuesLied, setNeuesLied] = useState<{ treffer?: SongSelectTreffer; name?: string } | null>(
+    null,
+  );
   const canEditSongs = useCapabilities(true).data?.canEditSongs ?? false;
   const [title, setTitle] = useState('');
   const [responsible, setResponsible] = useState('');
@@ -88,7 +95,15 @@ export function AddItemSheet({ eventId, eventName, onClose, onAdd, services }: A
    * Einstieg dort bräuchte also einen anderen Schreibweg; er fehlt nicht aus Versehen.
    */
   if (neuesLied) {
-    return <NewSongSheet eventId={eventId} eventName={eventName} onClose={onClose} />;
+    return (
+      <NewSongSheet
+        eventId={eventId}
+        eventName={eventName}
+        startTreffer={neuesLied.treffer}
+        startName={neuesLied.name}
+        onClose={onClose}
+      />
+    );
   }
 
   return (
@@ -173,23 +188,23 @@ export function AddItemSheet({ eventId, eventName, onClose, onAdd, services }: A
 
       {mode === 'song' && (
         <>
-          {/* Oben rechts als ruhige Textaktion – **dieselbe Optik wie im Liederheft** (Wunsch Alwin,
-              13.08.2026). Vorher stand hier eine breite Karte, die neben der Liedliste wie ein
-              eigener Menüpunkt wirkte. Nur mit dem ChurchTools-Recht, Lieder zu bearbeiten. */}
-          {canEditSongs && (
-            <div className={styles.songHdr}>
-              <button className={styles.newSongBtn} onClick={() => setNeuesLied(true)}>
-                <Icon name="plus" size={16} stroke={2.4} />
-                Neues Lied
-              </button>
-            </div>
-          )}
           <SongPicker
             autoFocus
             busy={busy}
+            aktionLabel="Zum Ablauf hinzufügen"
+            /* „Neues Lied" oben rechts – seit 04.09.2026 im SongPicker, weil nur dort der Suchbegriff
+               bekannt ist, der das Formular vorbelegt. Nur mit dem Recht, Lieder zu bearbeiten. */
+            neuesLied={
+              canEditSongs
+                ? { label: 'Neues Lied', onClick: (name) => setNeuesLied({ name }) }
+                : undefined
+            }
             onPick={(arrangementId, songName) =>
               add({ type: 'song', title: songName, arrangementId })
             }
+            /* Ohne das Recht, Lieder zu bearbeiten, erscheint SongSelect gar nicht –
+               ein Treffer, aus dem nichts werden kann, wäre eine Sackgasse (#378). */
+            onSongSelectTreffer={canEditSongs ? (treffer) => setNeuesLied({ treffer }) : undefined}
           />
         </>
       )}

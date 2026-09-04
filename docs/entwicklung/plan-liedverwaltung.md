@@ -244,6 +244,17 @@ Client, Einstiege im Liederheft („Neues Lied" im Listenkopf) und im Ablauf (�
 Lied anlegen …"), Erfolgsansicht mit drei Wegen (öffnen / noch eins / fertig), Einführung auf
 `termine-v3` und `setlist-edit-v2`, Testfall **TF-LIB-03**, CHANGELOG.
 
+> **Überholt am 14.08.2026 durch #378, Stand 03.09.2026.** Die **Wegwahl gibt es nicht mehr**: Gesucht
+> wird im einen Suchfeld des Einfüge-Dialogs; die Bibliothek filtert live, „Bei SongSelect nach … suchen"
+> steht als Angebot darunter (und läuft von selbst, wenn die Bibliothek nichts findet). Ein Treffer öffnet
+> `NewSongSheet` über `startTreffer` gefüllt, und „Neues Lied" führt direkt ins leere Formular. Damit
+> existiert die SongSelect-Suche **einmal** statt zweimal. Der erste Anlauf (14.08.2026) war ein Umschalter
+> „Bibliothek · Liedtexte · SongSelect" – nach Alwins Rückmeldung wieder ausgebaut. Auch der Absatz
+> „Bewusst NICHT gebaut" unten gilt weiter: In „Lied verknüpfen" gibt es SongSelect gar nicht, weil
+> `SongPicker` es nur mit einem `onSongSelectTreffer`-Weg anbietet. Die Entscheidungen dazu stehen in #378,
+> `docs/entwicklung/entscheidungen.md` und im CHANGELOG; die Regeln selbst in
+> `client/src/hooks/useLiedSuche.ts`.
+
 Die Regeln liegen bewusst **nicht** in der Komponente: `utils/liedFormular.ts` (Formularstand, Warnung,
 Auftrag, Entscheidung über das Notenblatt) und `hooks/useNeuesLied.ts` (die Abfolge samt
 Teilerfolgen). Beides ist geprüft, jede Regel einzeln per Gegenprobe – 46 neue Tests.

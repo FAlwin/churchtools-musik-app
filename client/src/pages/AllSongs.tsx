@@ -1,5 +1,6 @@
+import type { SongSelectTreffer } from '@shared/types/index';
 import { useState } from 'react';
-import type { Service, SongLibraryEntry } from '@shared/types/index';
+import { type Service, type SongLibraryEntry } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
@@ -9,9 +10,14 @@ import { AddToAgendaSheet } from '../components/AddToAgendaSheet';
 import { NewSongSheet } from '../components/NewSongSheet';
 import { EditSongSheet } from '../components/EditSongSheet';
 import { SongStatsBar } from '../components/SongStatsBar';
+import { LiedtextTrefferListe } from '../components/LiedtextTrefferListe';
+import { LiedSucheKopf } from '../components/LiedSucheKopf';
+import { Sheet } from '../components/Sheet';
+import { SongPicker } from '../components/SongPicker';
+import { SucheAngebot } from '../components/SucheAngebot';
+import { useLiedSuche } from '../hooks/useLiedSuche';
 import { useSongFilter } from '../hooks/useSongFilter';
-import { useLiedtextSuche } from '../hooks/useServices';
-import { statLabel } from '../utils/songFilter';
+import { liedAnzahl, statLabel } from '../utils/songFilter';
 import type { SongUsageMap } from '../services/churchtoolsApi';
 import styles from './AllSongs.module.scss';
 
@@ -56,107 +62,51 @@ export function AllSongs({
   onToast,
 }: AllSongsProps) {
   const [addSong, setAddSong] = useState<SongLibraryEntry | null>(null);
-  const [neuesLied, setNeuesLied] = useState(false);
+  /**
+   * „Neues Lied" öffnet zuerst die **Suche** – dieselbe wie im Ablauf (Entscheidung Alwin, 04.09.2026):
+   * Titel oder CCLI-Nummer tippen; liegt das Lied schon bei uns, öffnet ein Tipp das Blatt (nichts
+   * anzulegen), ein SongSelect-Treffer führt ins vorbelegte Formular, „Selbst eintippen" ins leere – mit
+   * dem Suchbegriff als Titel. Vorher kam hier direkt das leere Formular.
+   */
+  const [sucheOffen, setSucheOffen] = useState(false);
+  /** Das Blatt „Neues Lied" – vorbelegt aus SongSelect oder mit dem getippten Titel. */
+  const [formular, setFormular] = useState<{ treffer?: SongSelectTreffer; name?: string } | null>(
+    null,
+  );
   /** Lied, dessen Stammdaten geändert werden (#322, Schritt 11) – `null` = kein Blatt offen. */
   const [editSong, setEditSong] = useState<SongLibraryEntry | null>(null);
-  /**
-   * Im Liedtext gesucht wird **auf Verlangen** (#322).
-   *
-   * Nicht automatisch: Der erste Aufruf lässt den Server einen Index über alle Liedtexte bauen (ein
-   * Datei-Download je Lied). Die Titelsuche filtert dagegen lokal und deckt den Normalfall ab. Der
-   * Knopf erscheint deshalb dort, wo man ihn braucht – wenn der Titel nichts hergibt.
-   */
-  const [textSuche, setTextSuche] = useState('');
   const f = useSongFilter(songs, usage, showStats, 'name', !usageError);
   const query = f.q.trim();
-  /**
-   * Die Textsuche gilt nur, solange der Suchbegriff **unverändert** ist – sonst stünden Treffer zu
-   * einem Begriff da, der nicht mehr im Feld steht.
-   *
-   * Bewusst **abgeleitet** und nicht zurückgesetzt: Ein `setTextSuche('')` mitten im Rendern wäre ein
-   * Zustandswechsel während des Aufbaus – erlaubt, aber unnötig und leicht zu übersehen. Der Vergleich
-   * hier kostet nichts und kann nicht in eine Schleife laufen.
-   */
-  const textSucheAktiv = textSuche !== '' && textSuche === query;
-  const imText = useLiedtextSuche(textSuche, textSucheAktiv);
+  /** Anlegen geht nur mit dem Recht – und nur, wenn die Seite das fertige Lied auch öffnen kann. */
+  const kannAnlegen = canCreateSong && onOpenSong !== undefined;
 
   /**
-   * „Auch im Liedtext suchen" – Knopf, Ladehinweis und Trefferliste (#322).
+   * **Im Liederheft gibt es nur die Bibliothek und die Liedtexte – kein SongSelect** (Entscheidung
+   * Alwin, 14.08.2026, #378). Hier schlägt man ein Lied **nach**; SongSelect gehört dorthin, wo man ein
+   * Lied **einfügt** (`SongPicker`). Deshalb `kannAnlegen: false` – damit fehlt die Quelle.
    *
-   * Als lokale Komponente, weil sie den Zustand der Seite braucht (Suchbegriff, Trefferauswahl) und
-   * an zwei Stellen erscheint: unter den Titel-Treffern und statt der leeren Liste. Zwei Kopien des
-   * JSX wären die nächste Dopplung.
+   * Die Regel „das Angebot erscheint ab drei Zeichen, die Treffer gelten nur, solange der Begriff
+   * unverändert ist" stand hier bis zum 03.09.2026 als eigener Zustand (`textSuche === query`). Sie liegt
+   * jetzt in `useLiedSuche` – einmal, für das Liederheft und den Einfüge-Dialog.
    */
-  function LiedtextSuche() {
-    if (!textSucheAktiv) {
-      return (
-        <button className={styles.textSucheBtn} onClick={() => setTextSuche(query)}>
-          <Icon name="search" size={15} stroke={2.2} />
-          Auch im Liedtext nach „{query}" suchen
-        </button>
-      );
-    }
+  const suche = useLiedSuche({
+    eingabe: f.q,
+    canUseCcli: false,
+    kannAnlegen: false,
+    bibliothekLeer: f.list.length === 0,
+  });
 
-    if (imText.isLoading) {
-      return (
-        <div className={styles.textSucheHinweis}>
-          Liedtexte werden durchsucht … Beim ersten Mal dauert das einen Moment – dafür holt die App
-          jeden Liedtext einmal von ChurchTools.
-        </div>
-      );
-    }
-
-    if (imText.isError) {
-      // Der Grund kommt vom Server: „ChurchTools bremst uns aus" ist etwas anderes als ein Fehler (#270).
-      return (
-        <div className={styles.textSucheHinweis}>
-          {imText.error instanceof Error
-            ? imText.error.message
-            : 'Die Suche in den Liedtexten hat nicht geklappt.'}
-        </div>
-      );
-    }
-
-    const treffer = imText.data ?? [];
-    if (treffer.length === 0) {
-      return (
-        <div className={styles.textSucheHinweis}>
-          Auch in den Liedtexten steht „{textSuche}" nicht.
-        </div>
-      );
-    }
-
-    return (
-      <div className={styles.group}>
-        <div className={styles.groupHdr}>
-          {treffer.length} {treffer.length === 1 ? 'Lied' : 'Lieder'} mit „{textSuche}" im Text
-        </div>
-        <div className={styles.cardList}>
-          {treffer.map((t) => {
-            const bekannt = songs.find((s) => s.songId === t.songId);
-            return (
-              <div key={t.songId} className={styles.rowWrap}>
-                <button
-                  className={styles.row}
-                  onClick={() => bekannt && onSelect(bekannt)}
-                  disabled={!bekannt}
-                >
-                  <NoteTile />
-                  <div className={styles.info}>
-                    <div className={styles.name}>{t.name}</div>
-                    {/* Der Ausschnitt zeigt, WARUM das Lied gefunden wurde – sonst müsste man jedes
-                        öffnen und nachsehen. */}
-                    <div className={styles.sub}>{t.ausschnitt}</div>
-                  </div>
-                  <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+  /**
+   * „Auch in den Liedtexten suchen" – als **Zuweisung**, nicht als lokale Komponente: Der Knopf erscheint
+   * an zwei Stellen (leere Liste und unter den Treffern), und zwei Kopien wären der Anfang, an dem später
+   * eine Änderung nur die Hälfte trifft.
+   */
+  const zuLiedtexten = suche.angebotLiedtexte ? (
+    <SucheAngebot
+      text={`Auch in den Liedtexten nach „${query}" suchen`}
+      onClick={suche.liedtexteSuchen}
+    />
+  ) : null;
 
   return (
     <Screen>
@@ -167,14 +117,8 @@ export function AllSongs({
       <NavBar title="Lieder" />
 
       <div className={styles.searchWrap}>
-        <div className={styles.search}>
-          <Icon name="search" size={18} stroke={2} className={styles.searchIcon} />
-          <input
-            placeholder="Lied oder Autor suchen…"
-            value={f.q}
-            onChange={(e) => f.setQ(e.target.value)}
-          />
-        </div>
+        {/* Dasselbe Suchfeld wie im Einfüge-Dialog – ohne SongSelect-Weg, deshalb tut Enter hier nichts. */}
+        <LiedSucheKopf eingabe={f.q} onEingabe={f.setQ} />
         {showStats && <SongStatsBar {...f} />}
 
         {/**
@@ -186,16 +130,15 @@ export function AllSongs({
          * genau in dem Moment, in dem ein Lied fehlt und angelegt werden soll. Innerhalb der Liste
          * würde sie mit ihr verschwinden.
          *
-         * Die Anzahl erscheint nur, wenn es etwas zu zählen gibt; „Neues Lied" nur mit dem
-         * ChurchTools-Recht und nur, wenn die App das fertige Lied auch öffnen kann.
+         * Die Anzahl zeigt die gefilterte Bibliotheksliste – die Liedtext-Treffer zählen sich selbst.
          */}
-        {(f.list.length > 0 || (canCreateSong && onOpenSong)) && (
+        {(f.list.length > 0 || kannAnlegen) && (
           <div className={styles.listHdr}>
             <span className={styles.listCount}>
-              {f.list.length > 0 && !isLoading && !isError ? `${f.list.length} Lieder` : ''}
+              {f.list.length > 0 && !isLoading && !isError ? liedAnzahl(f.list.length) : ''}
             </span>
-            {canCreateSong && onOpenSong && (
-              <button className={styles.newSongBtn} onClick={() => setNeuesLied(true)}>
+            {kannAnlegen && (
+              <button className={styles.newSongBtn} onClick={() => setSucheOffen(true)}>
                 <Icon name="plus" size={16} stroke={2.4} />
                 Neues Lied
               </button>
@@ -221,17 +164,28 @@ export function AllSongs({
                     : 'Keine Lieder gefunden.'
               }
             />
-            {/* Genau hier gehört die Textsuche hin: Der Titel hat nichts gefunden – vielleicht kennt man
-                ihn nicht genau, sondern nur eine Zeile. */}
-            {query.length >= 3 && <LiedtextSuche />}
+            {/* Genau hier gehört der Weg zu den Liedtexten hin: Der Titel hat nichts gefunden –
+                vielleicht kennt man ihn nicht genau, sondern nur eine Zeile. */}
+            {zuLiedtexten}
+            {suche.liedtextBegriff !== '' && (
+              <div className={styles.group}>
+                <LiedtextTrefferListe
+                  begriff={suche.liedtextBegriff}
+                  songs={songs}
+                  onPick={onSelect}
+                />
+              </div>
+            )}
           </>
         ) : (
           <div className={styles.group}>
-            {/* Die Anzahl steht jetzt oben im festen Listenkopf – auf einer Höhe mit „Neues Lied". */}
+            {/* Die Anzahl steht oben im festen Listenkopf – auf einer Höhe mit „Neues Lied". */}
             <div className={styles.cardList}>
               {f.list.map((s) => {
                 const st = f.stats.get(s.songId);
                 return (
+                  /* Ohne Vorschau: Im Liederheft schlägt man nach; die Vorschau gehört in den
+                     Einfüge-Dialog (#378, Entscheidung Alwin). */
                   <div key={s.songId} className={styles.rowWrap}>
                     <button className={styles.row} onClick={() => onSelect(s)}>
                       <NoteTile />
@@ -280,7 +234,14 @@ export function AllSongs({
             </div>
             {/* Auch bei Titel-Treffern anbieten: „Gnade" findet zwei Titel, das gesuchte Lied kann
                 trotzdem ein anderes sein, das das Wort nur im Text hat. */}
-            {query.length >= 3 && <LiedtextSuche />}
+            {zuLiedtexten}
+            {suche.liedtextBegriff !== '' && (
+              <LiedtextTrefferListe
+                begriff={suche.liedtextBegriff}
+                songs={songs}
+                onPick={onSelect}
+              />
+            )}
           </div>
         )}
         <div style={{ height: 16 }} />
@@ -302,13 +263,38 @@ export function AllSongs({
         />
       )}
 
-      {neuesLied && onOpenSong && (
+      {sucheOffen && onOpenSong && (
+        <Sheet title="Neues Lied" onClose={() => setSucheOffen(false)}>
+          <SongPicker
+            autoFocus
+            oeffnen={(s) => {
+              setSucheOffen(false);
+              onSelect(s);
+            }}
+            onSongSelectTreffer={(treffer) => {
+              setSucheOffen(false);
+              setFormular({ treffer });
+            }}
+            neuesLied={{
+              label: 'Selbst eintippen',
+              onClick: (name) => {
+                setSucheOffen(false);
+                setFormular({ name });
+              },
+            }}
+          />
+        </Sheet>
+      )}
+
+      {formular && onOpenSong && (
         <NewSongSheet
+          startTreffer={formular.treffer}
+          startName={formular.name}
           onOpenSong={(songId, arrangementId) => {
-            setNeuesLied(false);
+            setFormular(null);
             onOpenSong(songId, arrangementId);
           }}
-          onClose={() => setNeuesLied(false)}
+          onClose={() => setFormular(null)}
         />
       )}
     </Screen>

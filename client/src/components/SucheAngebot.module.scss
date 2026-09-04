@@ -1,0 +1,43 @@
+// Das Angebot als Listenzeile (#378, 04.09.2026): dezent, kein Kasten, kein Blau. Es steht am Ende der
+// Treffer und sagt „hier geht es weiter" – nicht „hier musst du drücken".
+.angebot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: none;
+  color: var(--text2);
+  font-family: var(--ui);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover {
+      background: var(--surface2);
+    }
+  }
+  &:active {
+    background: var(--surface2);
+  }
+}
+
+.lupe {
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pfeil {
+  color: var(--text3);
+  flex-shrink: 0;
+}

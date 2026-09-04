@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import type { SongLibraryEntry } from '@shared/types/index';
 import type { SongUsageMap } from '../services/churchtoolsApi';
-import { filterSongs, statLabel, type SongFilterOpts } from './songFilter';
+import { filterSongs, liedAnzahl, statLabel, type SongFilterOpts } from './songFilter';
 
 const SONGS: SongLibraryEntry[] = [
-  { songId: 1, name: 'Anker', author: 'Autor X', key: 'C', arrangementId: 11 },
-  { songId: 2, name: 'Berg', author: 'Autor Y', key: 'D', arrangementId: 22 },
-  { songId: 3, name: 'Cedar', author: null, key: null, arrangementId: 33 },
+  { songId: 1, name: 'Anker', author: 'Autor X', ccli: '5841527', key: 'C', arrangementId: 11 },
+  { songId: 2, name: 'Berg', author: 'Autor Y', ccli: null, key: 'D', arrangementId: 22 },
+  { songId: 3, name: 'Cedar', author: null, ccli: '7654321', key: null, arrangementId: 33 },
 ];
 
 // Termine absteigend (neuester zuerst), wie vom Server geliefert.
@@ -75,10 +75,24 @@ describe('filterSongs', () => {
   describe('Titel-Treffer stehen vor Autor-Treffern', () => {
     const GEMISCHT: SongLibraryEntry[] = [
       // Alphabetisch zuerst, aber „gnade" steht nur im Autor.
-      { songId: 1, name: 'Anker', author: 'Peter Gnade', key: 'C', arrangementId: 11 },
+      { songId: 1, name: 'Anker', author: 'Peter Gnade', ccli: null, key: 'C', arrangementId: 11 },
       // Alphabetisch zuletzt, hat „Gnade" aber im Titel.
-      { songId: 2, name: 'Zenit der Gnade', author: 'Autor Y', key: 'D', arrangementId: 22 },
-      { songId: 3, name: 'Gnade genügt', author: 'Autor Z', key: 'E', arrangementId: 33 },
+      {
+        songId: 2,
+        name: 'Zenit der Gnade',
+        author: 'Autor Y',
+        ccli: null,
+        key: 'D',
+        arrangementId: 22,
+      },
+      {
+        songId: 3,
+        name: 'Gnade genügt',
+        author: 'Autor Z',
+        ccli: null,
+        key: 'E',
+        arrangementId: 33,
+      },
     ];
 
     it('A–Z: erst die Titel-Treffer (alphabetisch), dann die Autor-Treffer', () => {
@@ -174,5 +188,80 @@ describe('filterSongs – ohne Statistik keine leere Liste (#300)', () => {
   it('ohne die Angabe verhaelt es sich wie bisher (Vorgabe true)', () => {
     const r = filterSongs(SONGS, USAGE, opts({ sort: 'count' }));
     expect(names(r.list)).toEqual(['Berg', 'Anker']);
+  });
+});
+
+/**
+ * Die Einzahl (#378) – **beim Durchklicken gefunden**, nicht von einem Test.
+ *
+ * Der Listenkopf im Liederheft schrieb „1 LIEDER". Die Regel stand an drei Stellen, zwei davon richtig;
+ * mit den 49 Liedern der ECG wäre der Fehler nie aufgefallen – erst der E2E-Stub mit **einem** Lied
+ * machte ihn sichtbar. Der Test steht hier, weil die Regel jetzt genau eine Stelle hat.
+ */
+describe('liedAnzahl – Einzahl und Mehrzahl', () => {
+  it('bei einem Lied die Einzahl', () => {
+    expect(liedAnzahl(1)).toBe('1 Lied');
+  });
+
+  it('bei mehreren die Mehrzahl', () => {
+    expect(liedAnzahl(2)).toBe('2 Lieder');
+    expect(liedAnzahl(49)).toBe('49 Lieder');
+  });
+
+  it('bei null ebenfalls die Mehrzahl – „0 Lied" gibt es nicht', () => {
+    expect(liedAnzahl(0)).toBe('0 Lieder');
+  });
+});
+
+describe('filterSongs – die CCLI-Nummer gehört zur Suche (#378)', () => {
+  /**
+   * Alwins Satz: „Ich tippe Titel oder Nummer und das Lied erscheint." Liegt das Lied schon bei uns,
+   * muss es die Bibliothek finden – sonst führt die Nummer über SongSelect zu einem Doppel.
+   */
+  it('findet ein Lied über seine Nummer', () => {
+    const r = filterSongs(SONGS, undefined, {
+      query: '5841527',
+      sort: 'name',
+      from: '',
+      to: '',
+      showStats: false,
+    });
+    expect(r.list.map((s) => s.name)).toEqual(['Anker']);
+  });
+
+  it('auch über den Anfang der Nummer – man tippt sie ja Stelle für Stelle', () => {
+    const r = filterSongs(SONGS, undefined, {
+      query: '584',
+      sort: 'name',
+      from: '',
+      to: '',
+      showStats: false,
+    });
+    expect(r.list.map((s) => s.name)).toEqual(['Anker']);
+  });
+
+  it('ein Nummern-Treffer steht wie ein Titel-Treffer vor einem Autor-Treffer', () => {
+    // „7" steckt in Cedars Nummer (7654321) und in Ankers Nummer (5841527) – beide sind Nummern-Treffer
+    // und damit gleichrangig; danach entscheidet der Name. Ein Lied ohne Nummer und ohne „7" im Titel
+    // fehlt.
+    const r = filterSongs(SONGS, undefined, {
+      query: '7',
+      sort: 'name',
+      from: '',
+      to: '',
+      showStats: false,
+    });
+    expect(r.list.map((s) => s.name)).toEqual(['Anker', 'Cedar']);
+  });
+
+  it('ohne Nummer (`null`) stürzt nichts ab', () => {
+    const r = filterSongs(SONGS, undefined, {
+      query: 'berg',
+      sort: 'name',
+      from: '',
+      to: '',
+      showStats: false,
+    });
+    expect(r.list.map((s) => s.name)).toEqual(['Berg']);
   });
 });

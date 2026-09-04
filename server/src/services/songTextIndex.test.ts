@@ -2,8 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   __resetSongTextIndexForTests,
   ausschnitt,
+  chordproZuLesetext,
   chordproZuText,
+  liedtextVorschau,
   sucheImLiedtext,
+  zuSuchform,
 } from './songTextIndex.js';
 
 /**
@@ -48,11 +51,23 @@ const LIEDER = [
         name: 'Standard',
         key: 'D',
         keyOfArrangement: 'D',
+        /**
+         * **Die App-Fassungen stehen ABSICHTLICH VOR dem Original** (#379) – und darauf kommt es an:
+         *
+         * Gesucht wird mit `.find()`, also gewinnt die **erste** Datei, die als Original durchgeht. Der
+         * Index prüfte vorher mit einem eigenen `!/\(App\)\.chordpro$/i` und erkannte nur den heutigen
+         * Marker; `— <Name> (ECG).chordpro` und `— Bearbeitet.chordpro` gingen damit als Original durch.
+         * Steht so eine Bestandsdatei in der ChurchTools-Antwort **vor** dem Original, wurde die
+         * **bearbeitete Fassung indexiert statt des Originals** – die Suche fand dann den falschen Text.
+         *
+         * Mit dem Original an erster Stelle wäre der Fehler unsichtbar: Genau daran blieb meine erste
+         * Gegenprobe grün. Die Reihenfolge ist hier das Werkzeug, nicht Zufall.
+         */
         files: [
-          { name: 'Treu.chordpro', fileUrl: 'https://test.church.tools/f/2' },
-          // Die von der App gepflegte Fassung wird NICHT indexiert – sonst stünde dasselbe Lied
-          // zweimal im Index und ein Treffer wäre doppelt.
+          { name: 'Treu — Jugend (ECG).chordpro', fileUrl: 'https://test.church.tools/f/5' },
+          { name: 'Treu — Bearbeitet.chordpro', fileUrl: 'https://test.church.tools/f/6' },
           { name: 'Treu — ECGD (App).chordpro', fileUrl: 'https://test.church.tools/f/3' },
+          { name: 'Treu.chordpro', fileUrl: 'https://test.church.tools/f/2' },
         ],
       },
     ],
@@ -76,7 +91,11 @@ const LIEDER = [
 const TEXTE: Record<string, string> = {
   'https://test.church.tools/f/1': '{title: Befreit}\n[G]Ich bin ge[Am]liebt und frei\n',
   'https://test.church.tools/f/2': '{title: Treu}\n[D]Deine Treue trägt mich [A]jeden Tag\n',
-  'https://test.church.tools/f/3': '{title: Treu}\n[D]Sollte nicht indexiert werden\n',
+  // Die drei App-Fassungen. Jede trägt ein eigenes Wort: So zeigt ein Treffer darauf, WELCHER Marker
+  // durchgerutscht ist – ein gemeinsames Wort hätte nur „irgendeine" verraten.
+  'https://test.church.tools/f/3': '{title: Treu}\n[D]Appfassung nicht indexieren\n',
+  'https://test.church.tools/f/5': '{title: Treu}\n[D]Ecgfassung nicht indexieren\n',
+  'https://test.church.tools/f/6': '{title: Treu}\n[D]Bearbeitetfassung nicht indexieren\n',
 };
 
 /** Zählt die Downloads – daran hängt die Aussage „ein Aufbau, nicht fünf". */
@@ -152,9 +171,21 @@ describe('sucheImLiedtext', () => {
     expect(treffer[0].ausschnitt).toContain('geliebt');
   });
 
-  it('indexiert die App-Fassung NICHT – sonst stünde ein Lied doppelt drin', async () => {
+  it('nimmt das ORIGINAL, auch wenn App-Fassungen davor stehen (#379)', async () => {
+    /**
+     * **Der Fehler war echt, aber anders als zuerst gedacht** (14.08.2026): Der Index prüfte mit einem
+     * eigenen `!/\(App\)\.chordpro$/i` statt mit `isOriginalChordpro` und kannte damit nur den heutigen
+     * Marker. Weil `.find()` die **erste** passende Datei nimmt, wurde eine Bestandsfassung
+     * (`(ECG)`, `— Bearbeitet`) indexiert, sobald sie vor dem Original stand – die Suche fand dann den
+     * **bearbeiteten** Text und nicht den echten.
+     *
+     * Nicht „das Lied stand doppelt drin": `find` liefert genau eine Datei. Meine erste Fassung dieses
+     * Tests behauptete das und blieb ohne den Fix grün – die Gegenprobe hat die Diagnose korrigiert.
+     */
     mockCt();
-    expect(await sucheImLiedtext(COOKIE, 'indexiert')).toEqual([]);
+    for (const wort of ['appfassung', 'ecgfassung', 'bearbeitetfassung']) {
+      expect(await sucheImLiedtext(COOKIE, wort)).toEqual([]);
+    }
     const treu = await sucheImLiedtext(COOKIE, 'treue trägt');
     expect(treu).toHaveLength(1);
   });
@@ -210,5 +241,92 @@ describe('sucheImLiedtext', () => {
      */
     mockCt({ drosselAb: 0 });
     await expect(sucheImLiedtext(COOKIE, 'geliebt')).rejects.toThrow(/bremst uns/);
+  });
+});
+
+describe('chordproZuLesetext – dieselbe Aufbereitung, aber LESBAR (#379)', () => {
+  it('behält Groß-/Kleinschreibung', () => {
+    expect(chordproZuLesetext('[G]Ich bin ge[Am]liebt')).toBe('Ich bin geliebt');
+  });
+
+  it('entfernt Akkorde trotzdem ersatzlos – die Regel gibt es nur einmal', () => {
+    // `chordproZuText` baut auf dieser Funktion auf; ein Bruch hier bräche auch die Suche.
+    expect(chordproZuLesetext('ge[Am]liebt')).toBe('geliebt');
+    expect(chordproZuText('ge[Am]liebt')).toBe('geliebt');
+  });
+});
+
+describe('liedtextVorschau – auf Verlangen, für EIN Lied (#379)', () => {
+  it('nimmt den Text aus dem Index, wenn der frisch dasteht – OHNE neuen Download', async () => {
+    mockCt();
+    // Erst suchen (baut den Index: zwei Downloads), dann die Vorschau holen.
+    await sucheImLiedtext(COOKIE, 'geliebt');
+    const nachSuche = downloads;
+
+    const v = await liedtextVorschau(COOKIE, 1);
+    // Seit 04.09.2026 das ROHE ChordPro (mit Akkorden/Direktiven) – die Abschnitte baut der Client.
+    // Deshalb nicht `toContain('geliebt')` am Rohtext: Dort steht „ge[Am]liebt", der Akkord sitzt im
+    // Wort. Erst der Lesetext daraus muss das Wort tragen.
+    expect(chordproZuLesetext(v ?? '')).toContain('geliebt');
+    expect(v).toMatch(/\[/);
+    expect(downloads).toBe(nachSuche);
+  });
+
+  it('baut den Index NICHT, wenn er fehlt – sondern lädt genau ein Notenblatt', async () => {
+    /**
+     * Die teuerste Zusicherung: Ein Index-Aufbau kostet einen Download je Lied (~50 bei der ECG). Für
+     * eine Vorschau von zwei Zeilen wäre das grob unverhältnismäßig – und genau die Sorte Last, die in
+     * #300 das ChurchTools-Limit gerissen hat.
+     */
+    mockCt();
+    const v = await liedtextVorschau(COOKIE, 2);
+
+    // Das rohe ChordPro der Original-Datei – so, wie es der Parser des Blattes erwartet.
+    expect(v).toBe('{title: Treu}\n[D]Deine Treue trägt mich [A]jeden Tag\n');
+    expect(downloads).toBe(1); // nur das eine Lied, nicht alle
+  });
+
+  it('liefert `null` für ein Lied ohne ChordPro – kein Fehler', async () => {
+    // Die Oberfläche zeigt dann gar keine Vorschau statt einer leeren.
+    mockCt();
+    expect(await liedtextVorschau(COOKIE, 3)).toBeNull();
+    expect(downloads).toBe(0);
+  });
+
+  it('liefert `null` für eine unbekannte Lied-ID', async () => {
+    mockCt();
+    expect(await liedtextVorschau(COOKIE, 999)).toBeNull();
+  });
+
+  it('nimmt auch hier die ORIGINAL-Datei, nicht eine App-Fassung', async () => {
+    // Dieselbe Regel wie beim Index – über `isOriginalChordpro`, nicht nachgebaut.
+    mockCt();
+    const v = await liedtextVorschau(COOKIE, 2);
+    expect(v).not.toContain('nicht indexieren');
+  });
+});
+
+/**
+ * `zuSuchform` – die Form, in der Index und Suchbegriff verglichen werden (#379).
+ *
+ * Gesucht wird mit `text.includes(gesucht)`. Laufen die beiden Seiten auseinander, findet die Suche
+ * **nichts mehr** – ohne Fehler und ohne Hinweis.
+ *
+ * **Ehrlich zum Umfang dieser Tests:** Ein Auseinanderlaufen im Index-Aufbau fangen sie **heute nicht** ab –
+ * `toLowerCase()` und `toLocaleLowerCase('de-DE')` liefern für deutsche Texte dasselbe, ein Austausch bliebe
+ * also unbeobachtbar. Genau das hat die Gegenprobe gezeigt. Der Wert der einen Funktion ist deshalb
+ * **struktureller Art**: Wird die Form später erweitert (Umlaute zusammenziehen, Bindestriche entfernen),
+ * treffen die Änderungen beide Seiten automatisch. Prüfbar ist die **Verkettung** – und die steht unten.
+ */
+describe('zuSuchform – eine Form für Index und Suchbegriff (#379)', () => {
+  it('`chordproZuText` bezieht die Form über `zuSuchform`, statt sie nachzubauen', () => {
+    // DAS ist die beobachtbare Zusicherung: Wer die Form in `chordproZuText` nachbaut, fällt hier durch.
+    const text = 'Deine TREUE trägt';
+    expect(chordproZuText(text)).toBe(zuSuchform(text));
+  });
+
+  it('der aufbereitete Liedtext enthält den normalisierten Begriff – so sucht `sucheImLiedtext`', () => {
+    expect(chordproZuText('[G]Große FREUDE')).toContain(zuSuchform('Große Freude'));
+    expect(chordproZuText('{c: x}\n[Am]Deine TREUE trägt')).toContain(zuSuchform('Treue Trägt'));
   });
 });

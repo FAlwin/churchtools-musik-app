@@ -21,6 +21,7 @@
 import { HttpError } from '../middleware/errorHandler.js';
 import { ctAjax, type AjaxMeldungen } from './ctAjax.js';
 import type {
+  SongSelectLiedtext,
   SongSelectSong,
   SongSelectSuchergebnis,
   SongSelectTreffer,
@@ -141,6 +142,59 @@ export async function getSongSelectSong(
     throw new HttpError(404, `Zur CCLI-Nummer ${songNumber} wurde nichts gefunden.`);
   }
   return { ...treffer(roh), copyright: roh.copyrights?.[0] ?? null };
+}
+
+/** So liefert CCLI den Liedtext – gemessen am 14.08.2026 (`probe-ccli-lyrics.ts`). */
+interface CtLyricsRoh {
+  songNumber?: number;
+  title?: string;
+  authors?: string[];
+  copyrights?: string[];
+  disclaimer?: string;
+  lyricParts?: { partLabel?: string; lyrics?: string }[];
+}
+
+/**
+ * Den **Liedtext** eines SongSelect-Liedes holen (#379) – für die Vorschau vor dem Anlegen.
+ *
+ * **Gemessen, nicht geraten** (14.08.2026, `server/scripts/probe-ccli-lyrics.ts`): Der Aufruf heißt
+ * `getCCLILyrics` und nimmt **`songNumber`** (nicht die interne `songID`). CCLI liefert den Text
+ * **strukturiert** in `lyricParts` mit `partLabel` („Vers 1", „Chorus 1") – das wird durchgereicht,
+ * statt es zu einem Block plattzumachen.
+ *
+ * ⚠️ **`disclaimer` MUSS mit angezeigt werden.** CCLI schickt ihn mit jedem Text mit („For use solely
+ * with the SongSelect Terms of Use…"). Er ist eine Lizenzbedingung, keine Beigabe – deshalb geht er hier
+ * durch bis in die Oberfläche.
+ *
+ * ⚠️ **Offen: Ob CCLI diesen Abruf als Nutzung verbucht.** Die Antwort enthält **kein** Feld, das darauf
+ * hindeutet (gemessen: kein `reported`, `usage`, `count`) – das beweist aber nichts, denn eine Verbuchung
+ * passiert bei CCLI und müsste sich hier nicht spiegeln. Belastbar wäre nur die Nutzungs-Historie im
+ * SongSelect-Konto der Gemeinde. **Deshalb die Vorkehrung: Der Aufruf passiert nur, wenn jemand einen
+ * Treffer bewusst öffnet – nie beim Durchsehen einer Liste –, und das Ergebnis wird je Nummer
+ * zwischengespeichert.** Damit ist die Zahl der Abrufe die Zahl der wirklich angesehenen Lieder.
+ */
+export async function getSongSelectLyrics(
+  cookie: string,
+  songNumber: number,
+): Promise<SongSelectLiedtext> {
+  const antwort = (await ssAjax(cookie, 'getCCLILyrics', {
+    songNumber: String(songNumber),
+  })) as { data?: CtLyricsRoh };
+  const roh = antwort.data;
+  if (!roh?.lyricParts) {
+    throw new HttpError(404, `Zur CCLI-Nummer ${songNumber} liefert SongSelect keinen Liedtext.`);
+  }
+  return {
+    songNumber: roh.songNumber ?? songNumber,
+    title: roh.title ?? '',
+    authors: roh.authors ?? [],
+    copyright: roh.copyrights?.[0] ?? null,
+    // Abschnitte ohne Text fallen weg – eine leere Überschrift hilft niemandem.
+    teile: roh.lyricParts
+      .filter((t) => (t.lyrics ?? '').trim() !== '')
+      .map((t) => ({ label: (t.partLabel ?? '').trim(), text: (t.lyrics ?? '').trim() })),
+    disclaimer: roh.disclaimer?.trim() ?? null,
+  };
 }
 
 /**

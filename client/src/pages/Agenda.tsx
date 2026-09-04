@@ -12,6 +12,7 @@ import { usePastServices } from '../hooks/useServices';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useOfflineServices } from '../hooks/useOfflineServices';
 import { saveServiceOffline } from '../services/offline';
+import { liedAnzahl } from '../utils/songFilter';
 import { queryClient } from '../queryClient';
 import * as api from '../services/churchtoolsApi';
 import styles from './Agenda.module.scss';
@@ -185,7 +186,7 @@ export function Agenda({
             className={styles.songBook}
             data-tour="songbook"
             onClick={() => (blocked ? showToast(OFFLINE_HINT) : onOpenSongs(s))}
-            aria-label={`Liederheft öffnen (${s.songCount} ${s.songCount === 1 ? 'Lied' : 'Lieder'})`}
+            aria-label={`Liederheft öffnen (${liedAnzahl(s.songCount)})`}
             title="Liederheft öffnen"
           >
             <Icon name="music" size={21} stroke={2.2} />

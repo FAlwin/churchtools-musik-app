@@ -51,7 +51,7 @@ Menü.
 Beim Lied stehen das letzte Spieldatum und wie oft es gespielt wurde – **künftige** Termine zählen
 dabei nicht mit.
 
-1. Unten auf **Lieder** tippen.
+1. Unten auf **Lieder** tippen – über der Liste steht nur das Suchfeld (das ist der Anfang).
 2. Oben einen Teil eines Liedtitels eintippen (drei, vier Buchstaben). Prüfen: Lieder, die das Wort im
    **Titel** haben, stehen **vor** denen, die es nur im Autor tragen (bei „A–Z").
 3. Den Zeitraum-Filter umstellen, z. B. auf **letzte 12 Monate**.
@@ -95,23 +95,27 @@ richtiger **Lied-Punkt** mit Arrangement – kein reiner Text-Punkt.
 **Das muss passieren:** Das Lied wird gefunden, und die Zeile mit dem Wort steht darunter. Beim ersten
 Mal dauert es ein paar Sekunden (die App holt dafür jeden Liedtext einmal), danach ist es sofort da.
 
-1. Unten auf **Lieder** tippen und das Wort eingeben – die normale Liste zeigt vermutlich keine Treffer.
-2. Unter der Liste **„Auch im Liedtext nach … suchen"** antippen.
+1. Unten auf **Lieder** tippen und das Wort eingeben – die Liste zeigt vermutlich keine Treffer.
+2. Unter der leeren Liste **„Auch in den Liedtexten nach … suchen"** antippen. Das Angebot verschwindet,
+   darunter erscheinen die Treffer als eigene Gruppe („N Lieder mit … im Text").
 3. Warten: Es muss ein Hinweis erscheinen, dass die Liedtexte durchsucht werden.
 4. Die Trefferliste ansehen: Liedname und darunter der **Textausschnitt** mit dem Wort.
 5. Einen Treffer antippen – das Lied öffnet sich wie aus der normalen Liste.
 6. Dasselbe Wort erneut suchen: Jetzt muss die Antwort **sofort** kommen (der Bestand ist vorgehalten).
 7. Ein Wort suchen, das **nirgends** vorkommt: Es muss dastehen, dass es auch in den Texten nicht steht –
    nicht einfach eine leere Liste.
-8. Die Eingabe ändern: Die alten Text-Treffer müssen verschwinden (sie gehören zum alten Begriff), und
-   der Knopf muss wieder erscheinen.
+8. Das Feld **leeren** und nur **zwei** Zeichen eintippen: Das Angebot „Auch in den Liedtexten …" darf
+   **nicht** erscheinen – und **nichts geladen werden.** Das ist der teure Fall: Erst ab dem dritten
+   Zeichen gibt es das Angebot, und erst der Tipp darauf baut den Index.
+9. Ein Zeichen im Suchfeld ändern, während Treffer zu sehen sind: Die Gruppe verschwindet, das Angebot
+   ist wieder da – Treffer gelten nur für den Begriff, für den sie geholt wurden.
 
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `server/src/services/songTextIndex.ts`, `server/src/services/gebuendelterLauf.ts`, `server/src/services/mapLimit.ts`, `client/src/pages/AllSongs.tsx`, `client/src/hooks/useServices.ts`
-- **Automatisiert:** teilweise – `server/src/services/songTextIndex.test.ts` (Akkorde ersatzlos entfernen, ein Aufbau bei fünf Suchen, Drosselung), `server/src/services/gebuendelterLauf.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und die Wartezeit beim ersten Aufbau
-- **Historie:** #322
+- **Betrifft:** `server/src/services/songTextIndex.ts`, `server/src/services/gebuendelterLauf.ts`, `server/src/services/mapLimit.ts`, `client/src/components/LiedtextTrefferListe.tsx`, `client/src/hooks/useLiedSuche.ts`, `client/src/pages/AllSongs.tsx`, `client/src/hooks/useServices.ts`
+- **Automatisiert:** teilweise – `server/src/services/songTextIndex.test.ts` (Akkorde ersatzlos entfernen, ein Aufbau bei fünf Suchen, Drosselung), `server/src/services/gebuendelterLauf.test.ts`, `client/src/hooks/useLiedSuche.test.ts` (Schwelle und dass ein Reiterwechsel allein nichts auslöst), `client/src/components/LiedtextTrefferListe.test.tsx`; von Hand bleibt das Zusammenspiel mit ChurchTools und die Wartezeit beim ersten Aufbau
+- **Historie:** #322, #378
 
 </details>
 
@@ -125,34 +129,82 @@ ChurchTools-Instanz. Räum sie hinterher in ChurchTools wieder weg; die App kann
 und einem **Standard-Arrangement** in der gewählten Tonart. Beim CCLI-Weg hängt am Arrangement auch
 gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas hochladen muss.
 
-1. Unten auf **Lieder** tippen, dann im Listenkopf rechts auf **„Neues Lied"** (auf einer Höhe mit
-   der Liedanzahl).
-2. **Bei SongSelect suchen** und einen Titel eintippen (mindestens drei Zeichen): Die Suche läuft **von
-   selbst**, kurz nachdem du aufhörst zu tippen – ohne Knopfdruck. Achte darauf, dass sie nicht bei
-   jedem Buchstaben neu lädt.
-   Dann dasselbe mit einer **CCLI-Nummer** (nur Ziffern): Der Knopf muss **Abfragen** heißen und genau
-   ein Lied liefern. Eine erfundene Nummer muss den Hinweis bringen, dass man auch den Titel eintippen
-   kann.
-3. Einen Treffer antippen. Prüfen: Titel, Autoren, Nummer und Tonart stehen im Formular, das
+1. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**. SongSelect gibt es **nur hier**
+   (und nur mit SongSelect-Lizenz) – nicht im Liederheft, nicht beim Verknüpfen.
+2. Einen Titel eintippen, den es bei euch **nicht** gibt (mindestens drei Zeichen): Die Bibliothek zeigt
+   „Keine Treffer", und kurz nachdem du aufhörst zu tippen, erscheint **von selbst** die Gruppe
+   **„SongSelect · N Treffer zu …"** – ohne Knopfdruck. Achte darauf, dass sie nicht bei jedem Buchstaben
+   neu lädt. Gibt es das Wort bei euch doch, steht stattdessen **„Bei SongSelect nach … suchen"** unter
+   den Treffern – antippen. Dann dasselbe mit einer **CCLI-Nummer** (7 Ziffern): genau ein Treffer. Eine
+   kürzere Nummer läuft nicht von selbst, nur über das Angebot. Eine erfundene Nummer muss den Hinweis
+   bringen, dass man auch den Titel eintippen kann.
+3. Einen Treffer antippen: erst die **Vorschau** mit dem Liedtext (TF-LIB-07), darin **„Als neues Lied
+   anlegen …"**. **„Neues Lied" öffnet sich gefüllt:** Titel, Autoren, Nummer und Tonart stehen drin, das
    Copyright erscheint einen Moment später.
 4. **Ohne Kategorie** prüfen, dass „Lied anlegen" **gesperrt** ist. Dann eine Kategorie antippen.
 5. **Lied anlegen** – und in der Erfolgsansicht **Lied öffnen** wählen. Das Blatt muss Akkorde zeigen.
 6. In ChurchTools nachsehen: Kategorie, Autor, CCLI, Copyright, Arrangement, Notenblatt.
-7. Noch einmal **+**, diesmal **Selbst eintippen**: nur Name und Kategorie füllen, anlegen. Das Lied
-   entsteht ohne Notenblatt – das ist richtig.
+7. Jetzt der Weg für **eigene** Lieder: unten auf **Lieder**, im Listenkopf rechts auf **„Neues Lied"**.
+   Es öffnet sich **dieselbe Suche** wie im Ablauf (04.09.2026). Einen Titel tippen, den es bei euch
+   gibt: Ein Tipp auf die Zeile **öffnet das Blatt** – kein Plus, keine Vorschau (nichts anzulegen).
+   Einen Titel tippen, den es nirgends gibt, dann oben rechts **„Selbst eintippen"**: Das leere Formular
+   kommt **mit dem getippten Titel als Liedname**. Nur Kategorie wählen, anlegen. Das Lied entsteht
+   ohne Notenblatt – das ist richtig.
 8. Einen Namen eintippen, den es schon gibt: Es muss eine **Warnung** erscheinen, das Anlegen aber
    erlaubt bleiben.
 9. Dasselbe mit einer **CCLI-Nummer, die es schon gibt**: Hier muss der Server **ablehnen** und sagen,
    welches Lied sie schon hat.
-10. Zum Schluss den Ablauf-Weg: Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied** →
-    **Neues Lied anlegen …**. Danach muss das Lied im Ablauf stehen – genau einmal.
+10. Zum Schluss den Ablauf-Weg zu Ende: Nach dem Anlegen aus Schritt 1–5 muss das Lied **im Ablauf**
+    stehen – genau einmal. (Das Formular hat vorher gesagt, dass es zusätzlich in den Ablauf eingetragen
+    wird.)
 
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/NewSongSheet.tsx`, `client/src/hooks/useNeuesLied.ts`, `client/src/utils/liedFormular.ts`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctSongCategories.ts`
-- **Automatisiert:** teilweise – `client/src/utils/liedFormular.test.ts`, `client/src/hooks/useNeuesLied.test.tsx`, `client/src/components/NewSongSheet.test.tsx`, `server/src/services/songVerwaltung.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und CCLI
-- **Historie:** #322
+- **Betrifft:** `client/src/components/NewSongSheet.tsx`, `client/src/components/SongPicker.tsx`, `client/src/hooks/useLiedSuche.ts`, `client/src/components/SongSelectTrefferListe.tsx`, `client/src/hooks/useNeuesLied.ts`, `client/src/utils/liedFormular.ts`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctSongCategories.ts`
+- **Automatisiert:** teilweise – `client/src/utils/liedFormular.test.ts`, `client/src/hooks/useNeuesLied.test.tsx`, `client/src/components/NewSongSheet.test.tsx`, `client/src/components/SongSelectTrefferListe.test.tsx`, `server/src/services/songVerwaltung.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und CCLI
+- **Historie:** #322, #378 (Wegwahl weg, Suche im Einfüge-Dialog)
+
+</details>
+
+### TF-LIB-06 · Ein Suchfeld beim Einfügen – Bibliothek zuerst, SongSelect und Liedtexte darunter
+
+**Das brauchst du:** Einen **Test-Termin** und ein Konto **mit** dem Recht, Lieder zu bearbeiten – wenn
+möglich zusätzlich eines **ohne**.
+
+**Das muss passieren:** Es gibt **keinen Umschalter** über der Liste – nur ein Suchfeld. Die Bibliothek
+filtert beim Tippen; **unter** den Treffern stehen die Angebote **„Auch in den Liedtexten nach … suchen"**
+und **„Bei SongSelect nach … suchen"**. Findet die Bibliothek **nichts**, sucht SongSelect **von selbst**.
+
+1. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**. Über der Liste steht **nur ein
+   Suchfeld** – kein Bibliothek/Liedtexte/SongSelect.
+2. Ein Wort tippen, das ein eigenes Lied trifft (z. B. den Anfang eines Titels): Die Bibliothek zeigt
+   Treffer. **Darunter** stehen die beiden Angebote. Es darf **keine** SongSelect-Anfrage gelaufen sein –
+   keine SongSelect-Treffer, kein Ladehinweis.
+3. Auf **„Bei SongSelect nach … suchen"** tippen: Die Treffer erscheinen darunter mit der Überschrift
+   **„SongSelect · N Treffer zu …"**. Ein Zeichen im Suchfeld ändern: Die SongSelect-Gruppe verschwindet,
+   das Angebot ist wieder da.
+4. Ein Wort tippen, das **kein** eigenes Lied trifft (z. B. „Wo ich auch stehe"): Unter „Keine Treffer"
+   erscheint **ohne weiteren Tipp** die SongSelect-Gruppe – nach einem kurzen Moment (die Suche wartet, bis
+   man aufhört zu tippen).
+5. Auf **„Auch in den Liedtexten nach … suchen"** tippen: Die Treffer erscheinen mit dem Ausschnitt um die
+   Fundstelle. Die Liedtextsuche läuft **nie** von selbst – auch nicht bei „Keine Treffer".
+6. Jetzt der wichtige Unterschied: Im Ablauf einen **vorhandenen** Eintrag antippen → **Lied
+   verknüpfen**. Dort gibt es **kein SongSelect** – weder als Angebot noch von selbst (ein neu angelegtes
+   Lied könnte in einem vorhandenen Punkt nicht landen). Die Liedtexte gibt es.
+7. Unten auf **Lieder** (Liederheft): dasselbe Suchfeld, dieselbe Sortierleiste, **kein SongSelect**.
+   Unter einer leeren oder gefüllten Liste steht „Auch in den Liedtexten nach … suchen". Bei **einem**
+   Lied muss im Listenkopf **„1 Lied"** stehen, nicht „1 Lieder". Erst **„Neues Lied"** im Listenkopf
+   öffnet die Suche **mit** SongSelect (siehe TF-LIB-03, Schritt 7).
+8. Mit einem Konto **ohne** das Recht, Lieder zu bearbeiten: **SongSelect** fehlt überall, „Neues Lied"
+   ebenso. **Liedtexte** bleibt – Suchen darf jeder.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `client/src/hooks/useLiedSuche.ts`, `client/src/components/LiedSucheKopf.tsx`, `client/src/components/SucheAngebot.tsx`, `client/src/components/SongPicker.tsx`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `client/src/components/ItemActionSheet.tsx`
+- **Automatisiert:** teilweise – `client/src/hooks/useLiedSuche.test.ts` (SongSelect fragt von selbst NUR bei leerer Bibliothek, nie unter drei Zeichen, nie ohne Lizenz/Anlege-Weg; Angebot schickt sofort; Treffer gelten nur, solange der Begriff steht; Liedtexte nie von selbst), `client/src/components/SongPicker.test.tsx` (Angebot statt Anfrage bei Treffern, automatische Suche bei leerer Bibliothek, kein SongSelect ohne Anlege-Weg, kein Umschalter), `client/src/components/LiedSucheKopf.test.tsx`, `client/src/components/SucheAngebot.test.tsx`, `client/src/utils/songFilter.test.ts` (die Einzahl); von Hand bleibt das Zusammenspiel gegen echtes SongSelect und dass im Liederheft und beim Verknüpfen wirklich kein SongSelect erscheint
+- **Historie:** #378 (erster Anlauf Umschalter 14.08.2026, umgebaut nach Rückmeldung Alwin 03.09.2026)
 
 </details>
 
@@ -303,5 +355,47 @@ neue Versionsnummer.
 - **Betrifft:** `client/src/hooks/useUpdateCheck.ts`, `client/src/components/UpdateBanner.tsx`, `server/src/services/updateCheck.ts`
 - **Automatisiert:** teilweise – `server/src/services/updateCheck.test.ts`
 - **Historie:** –
+
+</details>
+
+### TF-LIB-07 · Liedtext-Vorschau vor dem Einfügen
+
+**Das brauchst du:** Einen **Test-Termin**, zwei Lieder mit **gleichem oder ähnlichem Titel** und ein
+Lied **ohne** Notenblatt als Gegenprobe. Für Schritt 6 ff. ein Konto mit SongSelect-Lizenz.
+
+**Das muss passieren:** Jede Zeile hat **zwei Knöpfe**: das **Auge** (oder ein Tipp auf die Zeile) zeigt
+**erst den Liedtext**, und darin steht der Knopf zum Einfügen; das **Plus** fügt sofort ein. Beim
+Durchsehen der Liste passiert von allein nichts.
+
+1. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**.
+2. Ein Lied **antippen** (oder auf das **Auge** rechts in der Zeile): Es muss die **Vorschau** kommen –
+   Titel, Autor, Tonart und der **ganze Liedtext mit Abschnitten** (Vers 1, Chorus …, wie auf dem
+   Blatt), bei langen Liedern **scrollbar** – **und das Lied darf NICHT sofort im Ablauf landen.**
+   Der **Pfeil** neben dem Titel führt zur Liste zurück, der Suchbegriff steht noch da. Beim
+   **Verknüpfen** heißt der Knopf unten **„Abbrechen"** und verlässt die Suche ganz.
+3. In der Vorschau **„Zum Ablauf hinzufügen"**: Jetzt steht es im Ablauf, genau einmal.
+4. Erneut **Hinzufügen → Lied**, diesmal das **Plus** rechts in der Zeile: Das Lied muss **sofort**
+   eingefügt werden, **ohne** Vorschau. Das ist der kurze Weg für den Gottesdienst.
+5. Ein Lied **ohne Notenblatt** antippen: Es muss dastehen, dass kein Liedtext vorliegt – und
+   **Einfügen muss trotzdem gehen**. Keine leere Fläche, keine Fehlermeldung.
+6. Einen Titel tippen, den es bei euch **nicht** gibt – die Gruppe **„SongSelect · N Treffer"**
+   erscheint darunter. Eine SongSelect-Zeile **antippen**: Die Vorschau zeigt CCLIs Liedtext **mit
+   Abschnitten** („Vers 1", „Chorus 1"), Autoren, **CCLI-Nummer** rechts oben und darunter den
+   **CCLI-Lizenzhinweis** („For use solely with the SongSelect Terms of Use …"). **Der Hinweis MUSS da
+   sein** – CCLI schickt ihn mit dem Text mit.
+7. **Zurück** und denselben Treffer **erneut** antippen: Der Text muss **sofort** da sein. Das belegt den
+   Zwischenspeicher – ein Lied wird bei CCLI nur **einmal** abgerufen.
+8. In der Vorschau **„Als neues Lied anlegen …"**: Es öffnet sich das gefüllte Formular. Dasselbe muss
+   das **Plus** an einer SongSelect-Zeile tun – direkt, ohne Vorschau. (Weiter wie in TF-LIB-03 –
+   **Achtung, das legt ein echtes Lied in ChurchTools an.**)
+9. Zwei gleichnamige Lieder nacheinander in der Vorschau ansehen und am Text erkennen, welches das
+   gesuchte ist. Das ist der eigentliche Zweck.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/components/LiedVorschau.tsx`, `client/src/components/LiedZeile.tsx`, `client/src/components/SongPicker.tsx`, `client/src/hooks/useServices.ts`, `server/src/services/ctSongSelect.ts`, `server/src/services/songTextIndex.ts`, `server/src/controllers/setlistController.ts`
+- **Automatisiert:** teilweise – `client/src/components/LiedZeile.test.tsx` (Zeile = Vorschau, Plus = einfügen, getrennt), `client/src/components/SongPicker.test.tsx` (in der Liste wird NICHT abgefragt, Antippen führt in die Vorschau, Plus fügt sofort ein, Plus an der SongSelect-Zeile öffnet das Formular ohne Textabruf), `client/src/components/LiedVorschau.test.tsx` (ohne Text bleibt Einfügen möglich, Fehler ≠ „kein Text", der CCLI-Hinweis wird gezeigt), `server/src/services/songTextIndex.test.ts` (Index wird benutzt statt gebaut, genau ein Download); von Hand bleibt das Zusammenspiel mit CCLI und die Frage, ob die Vorschau im Gottesdienst als Umweg stört
+- **Historie:** #379 (als Zwischenschritt umgebaut, Rückmeldung Alwin 14.08.2026; zwei Knöpfe je Zeile, Rückmeldung Alwin 04.09.2026)
 
 </details>
