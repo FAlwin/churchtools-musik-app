@@ -19,6 +19,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   **Ein Angebot, kein Schritt** (Entscheidung Alwin): Der Editor öffnet sich nur auf den Knopf, nie von
   selbst – wer den Text später tippt oder gar keinen braucht, wird nicht aufgehalten.
 
+  **Auch im Stammdaten-Blatt** (Stift im Liederheft, „Stammdaten …" im Lied-Menü) steht jetzt
+  **„Notenblatt bearbeiten"** – der Weg zum Text ohne den Umweg Öffnen → Neue Version. Geschrieben wird
+  das Original des Arrangements; eigene Fassungen bleiben unangetastet.
+
   Technisch schreibt das dieselbe Stelle wie der SongSelect-Import: pro Arrangement genau ein Original,
   erst hochladen, dann das alte ersetzen, die eigenen Fassungen bleiben unangetastet.
 

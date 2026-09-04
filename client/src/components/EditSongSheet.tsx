@@ -21,6 +21,8 @@ import { Icon } from './icons';
 import { CenterMessage } from './CenterMessage';
 import { ConfirmDialog } from './ConfirmDialog';
 import { SongFields } from './SongFields';
+import { ChordEditor } from './ChordEditor';
+import { useNotenblatt } from '../hooks/useNotenblatt';
 // Die Feld-Stile direkt aus dem Modul: Ein Re-Export über die Komponente bricht Fast Refresh.
 import feld from './SongFields.module.scss';
 import {
@@ -43,6 +45,14 @@ import styles from './NewSongSheet.module.scss';
 
 interface EditSongSheetProps {
   songId: number;
+  /**
+   * Das Arrangement, dessen **Original-Notenblatt** der Editor schreibt (Wunsch Alwin, 04.09.2026:
+   * „im Bearbeitungsmodus auch direkt in den Editor kommen"). Aus dem Liederheft das Standard-Arrangement,
+   * aus dem Blatt das gerade angezeigte.
+   */
+  arrangementId: number;
+  /** Tonart für das Gerüst, falls es noch kein Blatt gibt – die Stammdaten kennen sie nicht. */
+  tonart?: string | null;
   /** Der bekannte Name – steht im Titel, bis die Stammdaten geladen sind. */
   songName?: string;
   /**
@@ -61,6 +71,8 @@ interface EditSongSheetProps {
 
 export function EditSongSheet({
   songId,
+  arrangementId,
+  tonart,
   songName,
   onDeleted,
   onSaved,
@@ -78,7 +90,32 @@ export function EditSongSheet({
   const [fehler, setFehler] = useState<string | null>(null);
   const [loeschFrage, setLoeschFrage] = useState(false);
 
+  /**
+   * **Notenblatt bearbeiten** – derselbe Weg wie nach dem Anlegen (`useNotenblatt`). Ob es schon ein
+   * Blatt gibt, weiß dieses Blatt nicht; der Hook sieht nach und liefert sonst das Gerüst.
+   */
+  const notenblatt = useNotenblatt({ songId, arrangementId });
+  const [editor, setEditor] = useState<{ text: string } | null>(null);
+  const [editorLaedt, setEditorLaedt] = useState(false);
+
   const ist = stammdaten.data ?? null;
+
+  const editorOeffnen = async (): Promise<void> => {
+    setEditorLaedt(true);
+    try {
+      const text = await notenblatt.text(
+        {
+          title: formular.name.trim() || ist?.name || songName || '',
+          key: tonart,
+          ccli: formular.ccli,
+        },
+        null,
+      );
+      setEditor({ text });
+    } finally {
+      setEditorLaedt(false);
+    }
+  };
 
   /**
    * Das Formular **einmal** aus den geladenen Daten füllen – nicht bei jedem Render.
@@ -173,6 +210,16 @@ export function EditSongSheet({
               {aendern.isPending ? 'Wird gespeichert …' : 'Speichern'}
             </button>
 
+            {/* Der Weg zum Text – ohne Umweg über Öffnen → Neue Version (04.09.2026). Schreibt das
+                ORIGINAL des Arrangements; die eigenen Fassungen bleiben. */}
+            <button
+              className={styles.secondaryWide}
+              disabled={editorLaedt}
+              onClick={() => void editorOeffnen()}
+            >
+              {editorLaedt ? 'Notenblatt wird geladen …' : 'Notenblatt bearbeiten'}
+            </button>
+
             {/* Löschen steht unten und getrennt: Es ist der seltene, folgenreiche Weg. */}
             <button
               className={styles.dangerWide}
@@ -185,6 +232,28 @@ export function EditSongSheet({
           </div>
         )}
       </Sheet>
+
+      {editor && (
+        <ChordEditor
+          songTitle={ist?.name ?? songName ?? ''}
+          initialText={editor.text}
+          initialName=""
+          isNew
+          mitVersionsname={false}
+          saving={notenblatt.laeuft}
+          error={notenblatt.fehler}
+          onSave={(text) => {
+            void notenblatt.speichern(text).then((ok) => {
+              if (!ok) return;
+              setEditor(null);
+              onSaved?.(
+                `Das Notenblatt von „${ist?.name ?? songName ?? 'diesem Lied'}" wurde gespeichert.`,
+              );
+            });
+          }}
+          onClose={() => setEditor(null)}
+        />
+      )}
 
       {loeschFrage && ist && (
         <ConfirmDialog

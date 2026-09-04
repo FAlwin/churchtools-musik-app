@@ -28,6 +28,33 @@ vi.mock('../hooks/useServices', () => ({
   useLiedLoeschen: () => ({ mutateAsync: loeschenFn, isPending: false }),
 }));
 
+const notenblattText = vi.fn();
+const notenblattSpeichern = vi.fn();
+vi.mock('../hooks/useNotenblatt', () => ({
+  useNotenblatt: () => ({
+    text: notenblattText,
+    speichern: notenblattSpeichern,
+    laeuft: false,
+    fehler: null,
+    zuruecksetzen: vi.fn(),
+  }),
+}));
+
+/** Der Editor als Attrappe – geprüft wird die Verdrahtung, nicht sein Innenleben (siehe NewSongSheet.test). */
+vi.mock('./ChordEditor', () => ({
+  ChordEditor: (p: {
+    initialText: string;
+    mitVersionsname?: boolean;
+    onSave: (t: string, n: string) => void;
+  }) => (
+    <div>
+      <div data-testid="editor-text">{p.initialText}</div>
+      <div data-testid="editor-versionsname">{String(p.mitVersionsname)}</div>
+      <button onClick={() => p.onSave('{title: Treu}\n[D]Geaendert', '')}>Editor speichern</button>
+    </div>
+  ),
+}));
+
 const { EditSongSheet } = await import('./EditSongSheet');
 
 const KATEGORIEN: SongCategory[] = [
@@ -55,10 +82,12 @@ beforeEach(() => {
   bibliothek.mockReturnValue({ data: BESTAND });
   aendernFn.mockResolvedValue(IST);
   loeschenFn.mockResolvedValue({ name: 'Treu' });
+  notenblattText.mockResolvedValue('{title: Treu}\n[D]Vorhanden');
+  notenblattSpeichern.mockResolvedValue(true);
 });
 
 function zeige(props: Partial<Parameters<typeof EditSongSheet>[0]> = {}) {
-  return render(<EditSongSheet songId={7} onClose={vi.fn()} {...props} />);
+  return render(<EditSongSheet songId={7} arrangementId={70} onClose={vi.fn()} {...props} />);
 }
 
 const speichernKnopf = () => screen.getByRole('button', { name: 'Speichern' });
@@ -154,5 +183,36 @@ describe('EditSongSheet – Sonderfälle', () => {
     stammdaten.mockReturnValue({ data: undefined, isError: true, refetch: vi.fn() });
     zeige();
     expect(screen.getByText(/konnten nicht geladen werden/)).toBeTruthy();
+  });
+});
+
+describe('EditSongSheet – „Notenblatt bearbeiten" (04.09.2026)', () => {
+  it('der Knopf öffnet den Editor mit dem Text des Hooks – ohne Versionsname, und fragt mit `null` nach', async () => {
+    zeige({ tonart: 'D' });
+    fireEvent.click(screen.getByRole('button', { name: 'Notenblatt bearbeiten' }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('editor-text').textContent).toContain('[D]Vorhanden'),
+    );
+    expect(screen.getByTestId('editor-versionsname').textContent).toBe('false');
+    // Ob ein Blatt existiert, weiß das Stammdaten-Blatt nicht – der Hook sieht nach (`null`).
+    expect(notenblattText).toHaveBeenCalledWith({ title: 'Treu', key: 'D', ccli: '5841527' }, null);
+  });
+
+  it('Speichern trifft den Hook, schließt den Editor und meldet es', async () => {
+    const onSaved = vi.fn();
+    zeige({ onSaved });
+    fireEvent.click(screen.getByRole('button', { name: 'Notenblatt bearbeiten' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Editor speichern' }));
+
+    expect(notenblattSpeichern).toHaveBeenCalledWith('{title: Treu}\n[D]Geaendert');
+    await waitFor(() => expect(screen.queryByTestId('editor-text')).toBeNull());
+    expect(onSaved).toHaveBeenCalledWith(expect.stringContaining('Notenblatt von „Treu"'));
+  });
+
+  it('nichts öffnet sich von selbst – der Editor ist ein Angebot', () => {
+    zeige();
+    expect(screen.queryByTestId('editor-text')).toBeNull();
+    expect(notenblattText).not.toHaveBeenCalled();
   });
 });

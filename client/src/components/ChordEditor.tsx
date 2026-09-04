@@ -92,7 +92,9 @@ export function ChordEditor({
   const editorRef = useRef<ChordProHandle>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
-  const canSave = name.trim().length > 0 && text.trim().length > 0;
+  // Ohne Versionsname-Feld (Original-Notenblatt) darf der fehlende Name nicht sperren – sonst ist
+  // Speichern dauerhaft grau. Im Browser gefunden (04.09.2026), 1034 grüne Tests hatten den Editor gemockt.
+  const canSave = (!mitVersionsname || name.trim().length > 0) && text.trim().length > 0;
   const transposeLabel = semitones === 0 ? '±0' : semitones > 0 ? `+${semitones}` : `${semitones}`;
   // „Beide" gibt es nur auf breiten Fenstern; sonst als „Editor" behandeln.
   const effView: View = !wide && view === 'both' ? 'editor' : view;

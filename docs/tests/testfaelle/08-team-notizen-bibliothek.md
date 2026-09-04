@@ -236,6 +236,11 @@ den ganzen Datensatz, und die App muss den Rest bewahren.
 6. Eine **CCLI-Nummer eintragen, die ein anderes Lied schon hat**: Das muss abgelehnt werden, mit
    Nennung des anderen Liedes. Die eigene Nummer erneut zu speichern muss dagegen gehen.
 7. Zurück im **Liederheft**: den **Stift** in der Liedzeile antippen – dasselbe Blatt, gleicher Ablauf.
+   Dort auf **„Notenblatt bearbeiten"** (04.09.2026): Der Editor öffnet sich **ohne Versionsname-Feld**
+   mit dem aktuellen Original-Notenblatt (oder einem Gerüst, wenn es keines gibt). Eine Zeile ändern,
+   **Speichern**: Editor zu, Meldung „Das Notenblatt von … wurde gespeichert." Das Lied öffnen – das
+   Blatt zeigt die Änderung. In ChurchTools: weiter genau **eine** `<Titel>.chordpro`, eigene Fassungen
+   `(App)` unverändert.
 8. **Löschen:** unten „Lied löschen …". Die Rückfrage muss die **Folgen** nennen (Arrangements,
    Notenblätter, Dateien, Ablauf). **Abbrechen** darf nichts tun.
 9. Nun wirklich löschen. Aus dem geöffneten Lied heraus muss die App die Blatt-Ansicht **verlassen**;
@@ -246,8 +251,8 @@ den ganzen Datensatz, und die App muss den Rest bewahren.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/EditSongSheet.tsx`, `client/src/components/SongFields.tsx`, `client/src/utils/liedFormular.ts`, `client/src/components/SongMenu.tsx`, `client/src/pages/AllSongs.tsx`, `server/src/services/songPayload.ts`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctWrite.ts`
-- **Automatisiert:** teilweise – `server/src/services/songPayload.test.ts` (Feld-Erhalt!), `server/src/services/songVerwaltung.test.ts`, `client/src/utils/liedFormular.test.ts`, `client/src/components/EditSongSheet.test.tsx`; von Hand bleibt, dass ChurchTools die Felder wirklich behält
+- **Betrifft:** `client/src/components/EditSongSheet.tsx`, `client/src/hooks/useNotenblatt.ts`, `client/src/components/SongFields.tsx`, `client/src/utils/liedFormular.ts`, `client/src/components/SongMenu.tsx`, `client/src/pages/AllSongs.tsx`, `server/src/services/songPayload.ts`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctWrite.ts`
+- **Automatisiert:** teilweise – `server/src/services/songPayload.test.ts` (Feld-Erhalt!), `server/src/services/songVerwaltung.test.ts`, `client/src/utils/liedFormular.test.ts`, `client/src/components/EditSongSheet.test.tsx` (auch „Notenblatt bearbeiten": Editor ohne Versionsname, Speichern meldet), `client/src/hooks/useNotenblatt.test.tsx`; von Hand bleibt, dass ChurchTools die Felder wirklich behält und das Original ersetzt statt danebengelegt wird
 - **Historie:** #322
 
 </details>

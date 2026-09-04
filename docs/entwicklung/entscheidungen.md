@@ -304,6 +304,17 @@ das Blatt **und** für den frisch angelegten Song, der noch kein `SetlistSong` i
 `ChordEditor` bekam `mitVersionsname={false}`: Ein Original hat keinen Versionsnamen, das Feld wäre eine
 Frage ohne Antwort.
 
+**Nachtrag, dieselbe Stunde:** Alwin wollte den Weg auch im **Stammdaten-Blatt**. Beim zweiten Aufrufer
+wanderte die Mechanik aus `useNeuesLied` in `useNotenblatt` – der Zeitpunkt, an dem aus einer Stelle
+sonst zwei geworden wären. `EditSongSheet` braucht dafür `arrangementId` und `tonart` vom Aufrufer, denn
+die Stammdaten kennen weder Arrangement noch Tonart.
+
+**Fund beim Durchklicken (04.09.2026):** `ChordEditor.canSave` verlangte den Versionsnamen auch dann,
+wenn das Feld gar nicht angezeigt wird – Speichern blieb in beiden neuen Wegen grau. 1034 Tests waren
+grün, weil `NewSongSheet.test` und `EditSongSheet.test` den Editor mocken. Seitdem prüft
+`ChordEditor.test` die Regel an der echten Komponente – und die Regel bleibt: **Einen UI-Umbau im
+Browser durchklicken**, die Suite beweist nicht, dass die Bedienung funktioniert.
+
 ## Liedtext-Vorschau: der Zwischenschritt beim Einfügen _(14.08.2026, #379)_
 
 **Ein Antippen führt in die Vorschau, nicht direkt zum Einfügen** (Muster ProPresenter, von Alwin

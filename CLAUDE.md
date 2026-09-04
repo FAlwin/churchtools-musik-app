@@ -77,8 +77,10 @@
     Schritt** – nichts öffnet sich von selbst (Entscheidung Alwin). Speichern → `PUT /api/songs/:id/arrangements/:arrId/chordpro` → `originalNotenblattSchreiben` in `setlistBuilder.ts`:
     die aus `holeChordProAusSongSelect` herausgezogene Regel „ein Original pro Arrangement, erst hochladen,
     dann löschen, `(App)`-Versionen bleiben" – jetzt EINE Stelle für beide Wege. `ChordEditor` hat dafür
-    `mitVersionsname={false}`. Die ChurchTools-Aufrufe liegen in `useNeuesLied`
-    (`notenblattText`/`notenblattSpeichern`), nicht in der Komponente. **Gegen den Stub nicht
+    `mitVersionsname={false}`. Die ChurchTools-Aufrufe liegen in **`hooks/useNotenblatt.ts`** (Starttext
+    holen oder Gerüst, speichern, `['song-chart', songId]` verwerfen) – **eine** Stelle für `NewSongSheet`
+    (über `useNeuesLied`) **und** `EditSongSheet` („Notenblatt bearbeiten" im Stammdaten-Blatt, braucht
+    dafür `arrangementId` + `tonart` vom Aufrufer). Nicht in den Komponenten. **Gegen den Stub nicht
     durchklickbar** – er kann keine Lieder anlegen (kein `POST /api/songs`); der Weg ist TF-LIB-03.
 
     **Beim Durchsehen der Liste wird nichts abgefragt** – geprüft am `enabled`-Argument beider Hooks.

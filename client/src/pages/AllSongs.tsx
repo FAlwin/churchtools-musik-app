@@ -256,6 +256,8 @@ export function AllSongs({
       {editSong && (
         <EditSongSheet
           songId={editSong.songId}
+          arrangementId={editSong.arrangementId}
+          tonart={editSong.key}
           songName={editSong.name}
           onSaved={onToast}
           onDeleted={onToast}

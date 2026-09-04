@@ -139,7 +139,15 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
   - `components/LiedZeile` (04.09.2026): **Zeile öffnet die Vorschau, Plus fügt ein – getrennt.** Ein Tipp
     auf die Zeile darf NICHT einfügen, das Plus NICHT die Vorschau öffnen; ohne `aktion` gibt es kein
     Plus (Liederheft). Genau diese Trennung ist der Grund für zwei Knöpfe.
-  - **Der Editor nach dem Anlegen (04.09.2026):** `hooks/useNeuesLied` – Starttext ist das Gerüst aus dem
+  - **Der Editor nach dem Anlegen und im Stammdaten-Blatt (04.09.2026):** `hooks/useNotenblatt` – der
+    gemeinsame Kern: Gerüst ohne Abfrage (`hatBlatt: false`), geholtes Blatt (`true`), nachsehen (`null`),
+    Speichern verwirft `['song-chart', songId]`, Fehler nennt den Grund, ohne Ziel passiert nichts.
+    `components/EditSongSheet` – „Notenblatt bearbeiten" fragt mit `null` nach, Editor ohne Versionsname,
+    Speichern meldet über `onSaved`, nichts öffnet sich von selbst. `components/ChordEditor` – die
+    Speichern-Regel gegen die **echte** Komponente: Ohne Versionsname-Feld sperrt der fehlende Name nicht,
+    leerer Text sperrt immer. **Lehre (04.09.2026):** Beide Aufrufer-Tests mocken den Editor als Attrappe;
+    der Knopf war im Browser dauerhaft grau, die Suite grün. Wer eine Komponente mockt, muss ihre
+    Regeln, auf die er sich verlässt, an der Komponente selbst prüfen. `hooks/useNeuesLied` – Starttext ist das Gerüst aus dem
     Formular (Titel, Tonart, Nummer) und fragt das Blatt NICHT ab; mit SongSelect-Blatt kommt genau
     dieses; Speichern trifft den Server und zieht das Ergebnis nach; ein Fehlschlag nennt den Grund.
     `components/NewSongSheet` – der Knopf heißt „schreiben" ohne und „bearbeiten" mit Blatt, der Editor

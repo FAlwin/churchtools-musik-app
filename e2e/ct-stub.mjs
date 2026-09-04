@@ -273,7 +273,6 @@ const server = createServer((req, res) => {
   if (path === '/api/permissions/global') return json(res, { data: permissions });
   if (path === '/api/events') return json(res, { data: events });
   if (path === `/api/events/${EVENT_ID}/agenda`) return json(res, { data: agenda });
-  if (path === `/api/songs/${SONG.id}`) return json(res, { data: SONG });
   /**
    * Die Liederliste. **Nicht mehr leer** (#378): Sie ist die Quelle „Bibliothek" und liefert dem
    * Liedtext-Index die ChordPro-Datei – ohne ein Lied darin liesse sich der Umschalter nicht anfassen.
@@ -297,7 +296,9 @@ const server = createServer((req, res) => {
     return json(res, { data: [] });
   }
   if (path.startsWith('/api/files/') && req.method === 'DELETE') return json(res, { data: {} });
-  // Einzelnes Lied (getArrangement liest es vor dem Schreiben).
+  // Einzelnes Lied (getArrangement liest es vor dem Schreiben, das Stammdaten-Blatt zeigt es an). MIT
+  // Kategorie – ohne sie zeigt das Stammdaten-Blatt nur den Hinweis statt des Formulars. Stand hier
+  // zweimal (einmal ohne Kategorie, der Treffer davor schattete diesen ab) – die klassische Dopplung.
   if (/^\/api\/songs\/\d+$/.test(path)) {
     return json(res, { data: { ...SONG, ccli: '1234567', category: { id: 0, name: 'Aktive Songs' } } });
   }
