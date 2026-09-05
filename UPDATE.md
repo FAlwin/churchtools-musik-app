@@ -26,6 +26,23 @@ docker image prune -f     # optional: altes Image aufräumen
 > **Das Daten-Volume `musik-data` NICHT löschen.** Dort liegen eure Einstellungen
 > (Gemeindename, Links). Nur `docker compose pull` + `up -d` anwenden – dann bleiben sie erhalten.
 
+## Synology Container Manager (ohne `docker compose` in der Oberfläche)
+
+Der Container Manager zieht bei vorhandenem Tag **kein** neues Image und hat keinen Knopf dafür.
+Deshalb **zuerst** per SSH das Image holen – als Trockenlauf, **bevor** der laufende Container
+angefasst wird. Scheitert der Pull, läuft die alte Version einfach weiter; nichts ist kaputt.
+
+```bash
+sudo docker pull ghcr.io/falwin/churchtools-musik-app:2
+```
+
+Erst wenn dort `Status: Downloaded newer image` oder `Image is up to date` steht:
+Projekt öffnen → **Stopp** → **Aktion › Löschen** (Volumes **nicht** mitlöschen) → **Projekt › Erstellen**.
+
+> Meldet der Pull `denied: denied`, obwohl das Image öffentlich ist, hat Docker ein altes, abgelaufenes
+> Login für `ghcr.io` gespeichert und schickt es mit. Abhilfe: `sudo docker logout ghcr.io` – ein Login
+> ist für dieses Image gar nicht nötig. Dann den Pull wiederholen.
+
 ## Welche Version zieht ihr? (Image-Tag)
 
 In der `docker-compose.yml` steht hinter `image:` ein Tag. Empfohlen ist **`:2`**:

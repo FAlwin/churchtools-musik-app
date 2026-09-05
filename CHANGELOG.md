@@ -5,6 +5,30 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Behoben
+
+- **429 ist eine Drosselung – jetzt an allen sechs Stellen (#383).** `ctAjax` (SongSelect-Suche und
+  -Download, Lied-Kategorien, Liedtext-Vorschau) und das CSRF-Token machten aus einer Drosselung von
+  ChurchTools einen „abgelehnt"-Serverfehler; der Wiederholversuch beim Token schickte 300 ms später
+  die nächste Anfrage in dieselbe Bremse. Beide werfen jetzt wie `ctGet`, Datei-Download, Schreibpfad
+  und Anmeldung `CtOverloadedError` mit `Retry-After`; die Drosselung wird nicht wiederholt.
+
+### Geändert
+
+- **Prod-Update mit Trockenlauf (#387).** `UPDATE.md`, `docs/betrieb/DEPLOYMENT.md`, die
+  Störungshilfe und die Entwickler-Notizen beschreiben denselben Schritt 0: **erst**
+  `docker pull …:2`, **dann** den laufenden Container anfassen – und was `denied: denied` bedeutet
+  (`docker logout ghcr.io`). Die Doppelklick-Skripte `update.command`/`update.bat` machten es schon
+  richtig (`compose pull` bricht vor `up -d` ab).
+- **Staging-Image auch für `fix/**`-Branches (#386)\*\* – Fehlerbehebungen sind vor dem Merge auf der
+  Test-Instanz durchklickbar.
+- **`container_name` der ECG-Prod-Compose heißt `worship-charts` (#385)** – wie der laufende Container.
+- **`CHURCHTOOLS_LOGIN_TOKEN` ist als reines Entwickler-Werkzeug gekennzeichnet (#384).** Der Server
+  liest die Variable nicht; `.env.example` sagt das jetzt, damit hostende Gemeinden keinen zwecklosen
+  Token anlegen.
+
 ## [2.24.0] – 2026-09-05
 
 ### Neu
