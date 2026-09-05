@@ -139,7 +139,10 @@ pflegen, kein Service-Token für die App-Eingabe nötig.**
 
 ## 6. Client
 
-`pages/Availability.tsx` (+ `.module.scss`), `services/availability.ts`,
+`pages/Availability.tsx` (+ `.module.scss`) – **Variante C „Wochenstreifen“** (Entscheidung Alwin
+05.09.2026 nach drei Entwürfen: A Monatskalender, B Monatsblöcke, C Wochenstreifen; ein Zeitraum
+entsteht auf **beiden** Wegen – zwei Tipps im Streifen oder Von/Bis-Felder) mit
+`components/WochenStreifen.tsx` und `utils/wochen.ts`, `services/availability.ts`,
 Hooks `useMyAbsences/useUpcomingServices/useToggleAbsence`, NavBar-Tab „Verfügbarkeit"
 (nur Musikteam). UI: Gottesdienst-Schnellauswahl + freie Datumsauswahl + Kommentar;
 eigene Liste mit Löschen; manuelle CT-Einträge angezeigt, aber gesperrt. Onboarding-Tour

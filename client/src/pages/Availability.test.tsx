@@ -133,3 +133,72 @@ describe('Availability – eigene Liste', () => {
     expect(screen.getByRole<HTMLButtonElement>('button', { name: /löschen/ }).disabled).toBe(true);
   });
 });
+
+/**
+ * Variante C (05.09.2026): der Wochenstreifen. „Heute" ist hier fest (Mo 05.10.2026), damit die
+ * Woche 5.–11. Oktober gezeigt wird – mit dem Gottesdienst am 11. (abgemeldet) und dem Start des
+ * manuellen Urlaubs. Die Tests prüfen die Bedienung: blättern, zwei Tipps = Zeitraum, Leiste, Blatt.
+ */
+describe('Availability – Wochenstreifen (Variante C)', () => {
+  const HEUTE = '2026-10-05';
+  function zeigeWoche(online = true) {
+    render(<Availability online={online} onToast={vi.fn()} heute={HEUTE} />);
+  }
+
+  it('zeigt die Woche von heute mit Beschriftung und den Zuständen der Tage', () => {
+    zeigeWoche();
+    expect(screen.getByText('5. – 11. Oktober')).not.toBeNull();
+    // So 11.: Termin UND selbst abgemeldet – beides steht im Namen der Kachel.
+    expect(screen.getByRole('button', { name: 'So 11., Termin, abgemeldet' })).not.toBeNull();
+    // „Diese Woche" listet den Gottesdienst genau einmal, mit „Abgemeldet".
+    expect(screen.getAllByRole('button', { name: /zurücknehmen/ })).toHaveLength(1);
+  });
+
+  it('blättert mit dem Pfeil eine Woche weiter – dort liegt der manuelle Urlaub (grau, gesperrt)', () => {
+    zeigeWoche();
+    fireEvent.click(screen.getByRole('button', { name: 'Nächste Woche' }));
+    expect(screen.getByText('12. – 18. Oktober')).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Fr 16., Termin, in ChurchTools eingetragen' }),
+    ).not.toBeNull();
+    // Der Jugendabend fällt in den Urlaub: in „In dieser Woche" nur das Schloss, kein Knopf.
+    expect(screen.getByTitle('In ChurchTools eingetragen')).not.toBeNull();
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Vorige Woche' }).disabled).toBe(
+      false,
+    );
+  });
+
+  it('zwei Tipps wählen einen Zeitraum, die Leiste zählt die Tage, „Eintragen" belegt das Blatt vor', () => {
+    zeigeWoche();
+    fireEvent.click(screen.getByRole('button', { name: 'Di 6.' }));
+    expect(screen.getByText('Endtag antippen – oder nur diesen Tag eintragen')).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Fr 9.' }));
+    expect(screen.getByText('4 Tage gewählt')).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Eintragen' }));
+    expect(screen.getByLabelText<HTMLInputElement>('Von').value).toBe('2026-10-06');
+    expect(screen.getByLabelText<HTMLInputElement>('Bis').value).toBe('2026-10-09');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Eintragen' }).at(-1)!);
+    expect(anlegen).toHaveBeenCalledWith(
+      { startDate: '2026-10-06', endDate: '2026-10-09', comment: undefined },
+      expect.anything(),
+    );
+  });
+
+  it('verkehrte Reihenfolge wird getauscht, ein Tipp auf den Anfang hebt die Auswahl auf', () => {
+    zeigeWoche();
+    fireEvent.click(screen.getByRole('button', { name: 'Fr 9.' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Di 6.' }));
+    expect(screen.getByText('4 Tage gewählt')).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    expect(screen.queryByText('4 Tage gewählt')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Mi 7.' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mi 7., gewählt' }));
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('vergangene Tage lassen sich nicht antippen', () => {
+    render(<Availability online onToast={vi.fn()} heute="2026-10-07" />);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Mo 5.' }).disabled).toBe(true);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Mi 7.' }).disabled).toBe(false);
+  });
+});
