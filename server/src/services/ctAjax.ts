@@ -22,7 +22,13 @@
  */
 import { HttpError } from '../middleware/errorHandler.js';
 import { csrfWriteDenied, getCsrfToken } from './ctCsrf.js';
-import { BASE, CT_FILE_TIMEOUT_MS, ctSignal } from './ctHttp.js';
+import {
+  BASE,
+  CT_FILE_TIMEOUT_MS,
+  CtOverloadedError,
+  ctSignal,
+  parseRetryAfter,
+} from './ctHttp.js';
 
 /**
  * Die Meldungen eines Aufrufs – **durchgereicht, nicht generisch** (Muster von `uploadFile`).
@@ -96,6 +102,12 @@ export async function ctAjax(
   });
 
   if (res.status === 401 || res.status === 403) csrfWriteDenied(cookie, verweigert);
+  // 429 ist eine Drosselung, kein Serverfehler (#383) – dieselbe Regel wie in `ctGet` (#300),
+  // `fileDownloadError`, `ctWrite` und `login` (#381). Nur so erkennt ein Massenlauf die Bremse per
+  // `isCtOverloaded`, und der Nutzer liest „bitte einen Moment warten" statt „abgelehnt".
+  if (res.status === 429) {
+    throw new CtOverloadedError(parseRetryAfter(res.headers.get('retry-after')));
+  }
   if (!res.ok) {
     throw new HttpError(502, `${abgelehnt} (${res.status}).`);
   }
