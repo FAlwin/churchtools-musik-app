@@ -22,6 +22,7 @@ import { ApiError } from '../services/api';
 import { holeChordProAusSongSelect } from '../services/churchtoolsApi';
 import { useLiedAnlegen } from './useServices';
 import { auftragAus, notenblattPlan, type NeuesLiedFormular } from '../utils/liedFormular';
+import { useNotenblatt } from './useNotenblatt';
 
 /** Was aus dem Anlegen wurde – **einschließlich der Teilerfolge.** */
 export interface NeuesLiedErgebnis {
@@ -31,6 +32,8 @@ export interface NeuesLiedErgebnis {
   name: string;
   /** Hat das Lied jetzt ein Notenblatt aus SongSelect? */
   notenblatt: boolean;
+  /** Woher das Notenblatt kam – für den Satz in der Erfolgsansicht. */
+  notenblattQuelle: 'songselect' | 'eigenes' | null;
   /**
    * Was außerdem gesagt werden muss: Notenblatt nicht geholt, Ablauf-Eintrag fehlgeschlagen.
    *
@@ -64,6 +67,36 @@ export function useNeuesLied({ eventId, canUseCcli }: Args) {
     setFehler(null);
     setUngewiss(false);
     setErgebnis(null);
+    notenblatt.zuruecksetzen();
+  };
+
+  /* ---------------------------------------------- Notenblatt bearbeiten (Editor nach dem Anlegen) */
+
+  /**
+   * **Der Editor nach dem Anlegen** (Wunsch Alwin, 04.09.2026) – als Angebot, nicht als Schritt.
+   *
+   * Ein selbst eingetipptes Lied war bis dahin nach dem Anlegen leer: Man musste es öffnen, eine
+   * Version anlegen, den Text tippen. Jetzt steht in der Erfolgsansicht „Notenblatt schreiben":
+   * leerer Editor mit Titel/Tonart/Nummer als ChordPro-Gerüst – oder, wenn SongSelect ein Blatt
+   * geliefert hat, genau dieses zum Anpassen. Die Mechanik liegt in `useNotenblatt` – dieselbe wie im
+   * Stammdaten-Blatt.
+   */
+  const notenblatt = useNotenblatt(
+    ergebnis ? { songId: ergebnis.songId, arrangementId: ergebnis.arrangementId } : null,
+  );
+
+  const notenblattText = (formular: NeuesLiedFormular): Promise<string> =>
+    ergebnis
+      ? notenblatt.text(
+          { title: ergebnis.name, key: formular.key, ccli: formular.ccli },
+          ergebnis.notenblatt,
+        )
+      : Promise.resolve('');
+
+  const notenblattSpeichern = async (text: string): Promise<boolean> => {
+    const ok = await notenblatt.speichern(text);
+    if (ok && ergebnis) setErgebnis({ ...ergebnis, notenblatt: true, notenblattQuelle: 'eigenes' });
+    return ok;
   };
 
   const anlegen = async (
@@ -114,6 +147,7 @@ export function useNeuesLied({ eventId, canUseCcli }: Args) {
         arrangementId: angelegt.arrangementId,
         name: formular.name.trim(),
         notenblatt,
+        notenblattQuelle: notenblatt ? 'songselect' : null,
         hinweise,
       });
     } catch (e) {
@@ -124,5 +158,16 @@ export function useNeuesLied({ eventId, canUseCcli }: Args) {
     }
   };
 
-  return { anlegen, laeuft, fehler, ungewiss, ergebnis, zuruecksetzen };
+  return {
+    anlegen,
+    laeuft,
+    fehler,
+    ungewiss,
+    ergebnis,
+    zuruecksetzen,
+    notenblattText,
+    notenblattSpeichern,
+    notenblattLaeuft: notenblatt.laeuft,
+    notenblattFehler: notenblatt.fehler,
+  };
 }

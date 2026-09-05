@@ -142,14 +142,22 @@ gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas 
    anlegen …"**. **„Neues Lied" öffnet sich gefüllt:** Titel, Autoren, Nummer und Tonart stehen drin, das
    Copyright erscheint einen Moment später.
 4. **Ohne Kategorie** prüfen, dass „Lied anlegen" **gesperrt** ist. Dann eine Kategorie antippen.
-5. **Lied anlegen** – und in der Erfolgsansicht **Lied öffnen** wählen. Das Blatt muss Akkorde zeigen.
+5. **Lied anlegen** – in der Erfolgsansicht steht bei einem SongSelect-Lied **„Notenblatt bearbeiten"**
+   (04.09.2026): Antippen zeigt das geholte ChordPro im Editor; eine Zeile ändern, **Speichern**. Dann
+   **Lied öffnen**: Das Blatt muss Akkorde **und die Änderung** zeigen. In ChurchTools liegt weiter genau
+   **eine** `<Titel>.chordpro` – ersetzt, nicht danebengelegt.
 6. In ChurchTools nachsehen: Kategorie, Autor, CCLI, Copyright, Arrangement, Notenblatt.
 7. Jetzt der Weg für **eigene** Lieder: unten auf **Lieder**, im Listenkopf rechts auf **„Neues Lied"**.
    Es öffnet sich **dieselbe Suche** wie im Ablauf (04.09.2026). Einen Titel tippen, den es bei euch
    gibt: Ein Tipp auf die Zeile **öffnet das Blatt** – kein Plus, keine Vorschau (nichts anzulegen).
    Einen Titel tippen, den es nirgends gibt, dann oben rechts **„Selbst eintippen"**: Das leere Formular
-   kommt **mit dem getippten Titel als Liedname**. Nur Kategorie wählen, anlegen. Das Lied entsteht
-   ohne Notenblatt – das ist richtig.
+   kommt **mit dem getippten Titel als Liedname**. Nur Kategorie wählen, anlegen. In der Erfolgsansicht
+   steht jetzt **„Notenblatt schreiben"** (04.09.2026): Antippen öffnet den Editor **ohne
+   Versionsname-Feld**, mit `{title: …}`, `{key: …}` und – falls eingetragen – `{ccli: …}` als Gerüst.
+   Ein paar Zeilen tippen, **Speichern**: Der Editor schließt sich, der Satz heißt „… ist angelegt – mit
+   Notenblatt". **Lied öffnen**: Das Blatt zeigt den Text. In ChurchTools liegt am Arrangement genau
+   **eine** Datei `<Titel>.chordpro`. Nichts öffnet sich von selbst – der Editor ist ein Angebot.
+   Wer den Knopf nicht drückt, bekommt ein Lied ohne Notenblatt – das ist weiterhin richtig.
 8. Einen Namen eintippen, den es schon gibt: Es muss eine **Warnung** erscheinen, das Anlegen aber
    erlaubt bleiben.
 9. Dasselbe mit einer **CCLI-Nummer, die es schon gibt**: Hier muss der Server **ablehnen** und sagen,
@@ -161,8 +169,8 @@ gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas 
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/NewSongSheet.tsx`, `client/src/components/SongPicker.tsx`, `client/src/hooks/useLiedSuche.ts`, `client/src/components/SongSelectTrefferListe.tsx`, `client/src/hooks/useNeuesLied.ts`, `client/src/utils/liedFormular.ts`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctSongCategories.ts`
-- **Automatisiert:** teilweise – `client/src/utils/liedFormular.test.ts`, `client/src/hooks/useNeuesLied.test.tsx`, `client/src/components/NewSongSheet.test.tsx`, `client/src/components/SongSelectTrefferListe.test.tsx`, `server/src/services/songVerwaltung.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und CCLI
+- **Betrifft:** `client/src/components/NewSongSheet.tsx`, `client/src/components/ChordEditor.tsx`, `client/src/components/SongPicker.tsx`, `client/src/hooks/useLiedSuche.ts`, `client/src/components/SongSelectTrefferListe.tsx`, `client/src/hooks/useNeuesLied.ts`, `server/src/services/setlistBuilder.ts`, `client/src/utils/liedFormular.ts`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctSongCategories.ts`
+- **Automatisiert:** teilweise – `client/src/utils/liedFormular.test.ts`, `client/src/hooks/useNeuesLied.test.tsx` (Gerüst vs. geholtes Blatt, Speichern zieht das Ergebnis nach), `client/src/components/NewSongSheet.test.tsx` (Knopf, Editor ohne Versionsname, nichts öffnet sich von selbst), `server/src/services/arrangementFileVerwaltung.test.ts` (`originalNotenblattSchreiben`: erst hochladen, dann ersetzen; Versionen bleiben), `client/src/components/SongSelectTrefferListe.test.tsx`, `server/src/services/songVerwaltung.test.ts`; von Hand bleibt das Zusammenspiel mit ChurchTools und CCLI
 - **Historie:** #322, #378 (Wegwahl weg, Suche im Einfüge-Dialog)
 
 </details>
@@ -228,6 +236,11 @@ den ganzen Datensatz, und die App muss den Rest bewahren.
 6. Eine **CCLI-Nummer eintragen, die ein anderes Lied schon hat**: Das muss abgelehnt werden, mit
    Nennung des anderen Liedes. Die eigene Nummer erneut zu speichern muss dagegen gehen.
 7. Zurück im **Liederheft**: den **Stift** in der Liedzeile antippen – dasselbe Blatt, gleicher Ablauf.
+   Dort auf **„Notenblatt bearbeiten"** (04.09.2026): Der Editor öffnet sich **ohne Versionsname-Feld**
+   mit dem aktuellen Original-Notenblatt (oder einem Gerüst, wenn es keines gibt). Eine Zeile ändern,
+   **Speichern**: Editor zu, Meldung „Das Notenblatt von … wurde gespeichert." Das Lied öffnen – das
+   Blatt zeigt die Änderung. In ChurchTools: weiter genau **eine** `<Titel>.chordpro`, eigene Fassungen
+   `(App)` unverändert.
 8. **Löschen:** unten „Lied löschen …". Die Rückfrage muss die **Folgen** nennen (Arrangements,
    Notenblätter, Dateien, Ablauf). **Abbrechen** darf nichts tun.
 9. Nun wirklich löschen. Aus dem geöffneten Lied heraus muss die App die Blatt-Ansicht **verlassen**;
@@ -238,8 +251,8 @@ den ganzen Datensatz, und die App muss den Rest bewahren.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/components/EditSongSheet.tsx`, `client/src/components/SongFields.tsx`, `client/src/utils/liedFormular.ts`, `client/src/components/SongMenu.tsx`, `client/src/pages/AllSongs.tsx`, `server/src/services/songPayload.ts`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctWrite.ts`
-- **Automatisiert:** teilweise – `server/src/services/songPayload.test.ts` (Feld-Erhalt!), `server/src/services/songVerwaltung.test.ts`, `client/src/utils/liedFormular.test.ts`, `client/src/components/EditSongSheet.test.tsx`; von Hand bleibt, dass ChurchTools die Felder wirklich behält
+- **Betrifft:** `client/src/components/EditSongSheet.tsx`, `client/src/hooks/useNotenblatt.ts`, `client/src/components/SongFields.tsx`, `client/src/utils/liedFormular.ts`, `client/src/components/SongMenu.tsx`, `client/src/pages/AllSongs.tsx`, `server/src/services/songPayload.ts`, `server/src/services/songVerwaltung.ts`, `server/src/services/ctWrite.ts`
+- **Automatisiert:** teilweise – `server/src/services/songPayload.test.ts` (Feld-Erhalt!), `server/src/services/songVerwaltung.test.ts`, `client/src/utils/liedFormular.test.ts`, `client/src/components/EditSongSheet.test.tsx` (auch „Notenblatt bearbeiten": Editor ohne Versionsname, Speichern meldet), `client/src/hooks/useNotenblatt.test.tsx`; von Hand bleibt, dass ChurchTools die Felder wirklich behält und das Original ersetzt statt danebengelegt wird
 - **Historie:** #322
 
 </details>

@@ -35,6 +35,7 @@ import {
   getSongSelectSearch,
   getSongSelectByNumber,
   postSongSelectChordPro,
+  putNotenblatt,
   getLiedtextVorschau,
   getSongSelectLyricsCtrl,
 } from '../controllers/setlistController.js';
@@ -108,5 +109,8 @@ router.post(
   '/songs/:songId/arrangements/:arrangementId/songselect/chordpro',
   asyncHandler(postSongSelectChordPro),
 );
+// Das Original-Notenblatt aus eigenem Text schreiben (Editor nach dem Anlegen, 04.09.2026) – dieselbe
+// Ersetzen-Regel wie beim SongSelect-Import, an EINER Stelle im Dienst.
+router.put('/songs/:songId/arrangements/:arrangementId/chordpro', asyncHandler(putNotenblatt));
 
 export default router;

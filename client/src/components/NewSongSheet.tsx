@@ -25,6 +25,7 @@ import { Sheet } from './Sheet';
 import { Icon } from './icons';
 import { CenterMessage } from './CenterMessage';
 import { SongFields } from './SongFields';
+import { ChordEditor } from './ChordEditor';
 // Die Feld-Stile direkt aus dem Modul: Ein Re-Export über die Komponente bricht Fast Refresh.
 import feld from './SongFields.module.scss';
 import {
@@ -126,6 +127,22 @@ export function NewSongSheet({
   const neuesLied = useNeuesLied({ eventId, canUseCcli });
   const ergebnis = neuesLied.ergebnis;
 
+  /**
+   * Der Editor nach dem Anlegen – **ein Angebot, kein Schritt** (Entscheidung Alwin, 04.09.2026):
+   * Er öffnet sich nur auf den Knopf „Notenblatt bearbeiten", für jedes Lied. `text` ist der
+   * Startinhalt (das geholte Blatt oder das Gerüst aus dem Formular); `null` = Editor zu.
+   */
+  const [editor, setEditor] = useState<{ text: string } | null>(null);
+  const [editorLaedt, setEditorLaedt] = useState(false);
+  const editorOeffnen = async (): Promise<void> => {
+    setEditorLaedt(true);
+    try {
+      setEditor({ text: await neuesLied.notenblattText(formular) });
+    } finally {
+      setEditorLaedt(false);
+    }
+  };
+
   const setzeFeld = (feld: keyof NeuesLiedFormular, wert: string): void =>
     setFormular((f) => ({ ...f, [feld]: wert }));
 
@@ -144,7 +161,11 @@ export function NewSongSheet({
           </span>
           <div>
             „{ergebnis.name}" ist angelegt
-            {ergebnis.notenblatt ? ' – mit Notenblatt aus SongSelect' : ''}
+            {ergebnis.notenblattQuelle === 'songselect'
+              ? ' – mit Notenblatt aus SongSelect'
+              : ergebnis.notenblatt
+                ? ' – mit Notenblatt'
+                : ''}
             {eventId !== undefined && ergebnis.hinweise.length === 0 && eventName
               ? ` und steht im Ablauf von ${eventName}`
               : ''}
@@ -160,6 +181,10 @@ export function NewSongSheet({
           </div>
         ))}
 
+        {neuesLied.notenblattFehler && (
+          <div className={styles.err}>{neuesLied.notenblattFehler}</div>
+        )}
+
         <div className={styles.actions}>
           {onOpenSong && (
             <button
@@ -169,6 +194,18 @@ export function NewSongSheet({
               Lied öffnen
             </button>
           )}
+          {/* Für JEDES Lied: ohne Blatt das Gerüst, mit Blatt (aus SongSelect) den Text zum Anpassen. */}
+          <button
+            className={onOpenSong ? styles.secondaryWide : styles.primaryWide}
+            disabled={editorLaedt}
+            onClick={() => void editorOeffnen()}
+          >
+            {editorLaedt
+              ? 'Notenblatt wird geladen …'
+              : ergebnis.notenblatt
+                ? 'Notenblatt bearbeiten'
+                : 'Notenblatt schreiben'}
+          </button>
           <button
             className={onOpenSong ? styles.secondaryWide : styles.primaryWide}
             onClick={() => {
@@ -181,6 +218,24 @@ export function NewSongSheet({
             Noch ein Lied anlegen
           </button>
         </div>
+
+        {/* Als Überlagerung über dem Blatt – dieselbe Komponente wie im Lied, ohne Versionsname:
+            geschrieben wird das ORIGINAL. */}
+        {editor && (
+          <ChordEditor
+            songTitle={ergebnis.name}
+            initialText={editor.text}
+            initialName=""
+            isNew
+            mitVersionsname={false}
+            saving={neuesLied.notenblattLaeuft}
+            error={neuesLied.notenblattFehler}
+            onSave={(text) => {
+              void neuesLied.notenblattSpeichern(text).then((ok) => ok && setEditor(null));
+            }}
+            onClose={() => setEditor(null)}
+          />
+        )}
       </Sheet>
     );
   }

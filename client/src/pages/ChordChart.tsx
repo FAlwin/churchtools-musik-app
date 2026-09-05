@@ -822,6 +822,8 @@ export function ChordChart({
         {overlay === 'stammdaten' && (
           <EditSongSheet
             songId={song.id}
+            arrangementId={song.arrangementId}
+            tonart={song.targetKey || song.originalKey}
             songName={song.title}
             onSaved={showToast}
             onDeleted={(meldung) => {

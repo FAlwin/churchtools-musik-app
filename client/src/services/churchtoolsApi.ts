@@ -348,6 +348,22 @@ export function holeChordProAusSongSelect(
   );
 }
 
+/**
+ * Das **Original**-Notenblatt eines Arrangements aus eigenem Text schreiben – der Editor nach dem
+ * Anlegen (Wunsch Alwin, 04.09.2026). Ersetzt ein vorhandenes Original; die verwalteten Versionen
+ * bleiben. Dieselbe Server-Stelle wie der SongSelect-Import.
+ */
+export function speichereNotenblatt(
+  songId: number,
+  arrangementId: number,
+  text: string,
+): Promise<ArrangementFileEntry[]> {
+  return apiFetch<ArrangementFileEntry[]>(
+    `/api/songs/${songId}/arrangements/${arrangementId}/chordpro`,
+    { method: 'PUT', body: JSON.stringify({ text }) },
+  );
+}
+
 /** Löscht eine Datei des Lieds (#321). Der Server prüft, dass sie wirklich zu ihm gehört. */
 export function deleteSongFile(songId: number, fileId: number): Promise<void> {
   return apiFetch<void>(`/api/songs/${songId}/files/${fileId}`, { method: 'DELETE' });

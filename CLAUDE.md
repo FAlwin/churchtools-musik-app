@@ -71,6 +71,18 @@
     das sofort einfügt – im Gottesdienst zählt der kurze Weg. Der erste Entwurf („Text zeigen"-Knopf je
     Zeile) ist zurückgebaut: Der Text ist die **Entscheidungsgrundlage**, nicht eine Randnotiz.
 
+    **Editor nach dem Anlegen (04.09.2026, Idee Alwin):** In der Erfolgsansicht von `NewSongSheet` steht
+    „Notenblatt schreiben" (ohne Blatt: Gerüst aus Titel/Tonart/Nummer via `chordproVorlage`) bzw.
+    „Notenblatt bearbeiten" (mit SongSelect-Blatt: dessen ChordPro zum Anpassen). **Ein Angebot, kein
+    Schritt** – nichts öffnet sich von selbst (Entscheidung Alwin). Speichern → `PUT /api/songs/:id/arrangements/:arrId/chordpro` → `originalNotenblattSchreiben` in `setlistBuilder.ts`:
+    die aus `holeChordProAusSongSelect` herausgezogene Regel „ein Original pro Arrangement, erst hochladen,
+    dann löschen, `(App)`-Versionen bleiben" – jetzt EINE Stelle für beide Wege. `ChordEditor` hat dafür
+    `mitVersionsname={false}`. Die ChurchTools-Aufrufe liegen in **`hooks/useNotenblatt.ts`** (Starttext
+    holen oder Gerüst, speichern, `['song-chart', songId]` verwerfen) – **eine** Stelle für `NewSongSheet`
+    (über `useNeuesLied`) **und** `EditSongSheet` („Notenblatt bearbeiten" im Stammdaten-Blatt, braucht
+    dafür `arrangementId` + `tonart` vom Aufrufer). Nicht in den Komponenten. **Gegen den Stub nicht
+    durchklickbar** – er kann keine Lieder anlegen (kein `POST /api/songs`); der Weg ist TF-LIB-03.
+
     **Beim Durchsehen der Liste wird nichts abgefragt** – geprüft am `enabled`-Argument beider Hooks.
     Für eigene Lieder nutzt der Server den Suchindex, wenn er frisch ist, sonst lädt er genau ein
     Notenblatt (`GET /api/songs/:songId/liedtext-vorschau`).

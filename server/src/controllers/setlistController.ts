@@ -17,6 +17,7 @@ import {
   addArrangementFile,
   removeArrangementFile,
   holeChordProAusSongSelect,
+  originalNotenblattSchreiben,
 } from '../services/setlistBuilder.js';
 import { getMemoizedVersion, rememberVersion } from '../services/versionMemo.js';
 import { getUserId } from '../services/ctAuth.js';
@@ -724,4 +725,25 @@ export async function postSongSelectChordPro(req: Request, res: Response): Promi
   const arrangementId = idSchema.parse(req.params.arrangementId);
   const { songNumber } = z.object({ songNumber: z.number().int().positive() }).parse(req.body);
   res.json(await holeChordProAusSongSelect(ctCookie(req), songId, arrangementId, songNumber));
+}
+
+/**
+ * PUT /api/songs/:songId/arrangements/:arrangementId/chordpro
+ *
+ * Schreibt das **Original**-Notenblatt aus eigenem Text – der Editor nach dem Anlegen (Wunsch Alwin,
+ * 04.09.2026). Ersetzt ein vorhandenes Original über dieselbe Stelle wie der SongSelect-Import
+ * (`originalNotenblattSchreiben`); die verwalteten Versionen `(App)` bleiben unangetastet.
+ *
+ * Obergrenze wie beim Datei-Upload gedacht: Ein Notenblatt hat ein paar Kilobyte, 200 kB sind weit
+ * darüber – eine Grenze gegen Versehen, nicht gegen Nutzer.
+ */
+export async function putNotenblatt(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const arrangementId = idSchema.parse(req.params.arrangementId);
+  const { text } = z
+    .object({
+      text: z.string().trim().min(1, 'Der Text ist leer.').max(200_000, 'Der Text ist zu lang.'),
+    })
+    .parse(req.body);
+  res.json(await originalNotenblattSchreiben(ctCookie(req), songId, arrangementId, text));
 }

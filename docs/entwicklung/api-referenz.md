@@ -141,6 +141,11 @@
   **alte** ChurchTools-Schnittstelle (`index.php?q=churchservice/ajax`), gekapselt in `ctAjax.ts`
   (die einzige Stelle, die sie kennt), CCLI-Aufrufe in `ctSongSelect.ts` – Einzelheiten in
   [`churchtools-songselect.md`](./churchtools-songselect.md)
+- `PUT /api/songs/:songId/arrangements/:arrangementId/chordpro` {text} → schreibt das **Original**-
+  Notenblatt aus eigenem Text (der Editor nach dem Anlegen, 04.09.2026) → frische Dateiliste. Dieselbe
+  Stelle wie der SongSelect-Import (`originalNotenblattSchreiben`): pro Arrangement genau ein Original,
+  erst hochladen, dann das alte löschen, die `(App)`-Versionen bleiben. `text` getrimmt, 1–200 000
+  Zeichen; das Arrangement muss zu **diesem Lied** gehören (sonst 404).
 - `DELETE /api/songs/:songId/files/:fileId` → Datei löschen. Die Datei muss zu **diesem Lied**
   gehören (sonst 404) – ohne diese Prüfung wäre der Weg ein „lösche beliebige Datei", denn
   ChurchTools prüft nur das Bearbeiten-Recht, nicht welche Datei gemeint war (#321, vgl. #199)

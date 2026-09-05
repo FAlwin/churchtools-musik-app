@@ -39,15 +39,42 @@ vi.mock('../hooks/useServices', () => ({
 }));
 
 const anlegen = vi.fn();
+const notenblattText = vi.fn();
+const notenblattSpeichern = vi.fn();
+/** Das Ergebnis des Anlegens – `null` = Formular, sonst Erfolgsansicht. Je Test setzbar. */
+const hookErgebnis = vi.fn();
 vi.mock('../hooks/useNeuesLied', () => ({
   useNeuesLied: () => ({
     anlegen,
     laeuft: false,
     fehler: null,
     ungewiss: false,
-    ergebnis: null,
+    ergebnis: hookErgebnis(),
     zuruecksetzen: vi.fn(),
+    notenblattText,
+    notenblattSpeichern,
+    notenblattLaeuft: false,
+    notenblattFehler: null,
   }),
+}));
+
+/**
+ * Der Editor ist im Test eine Attrappe: Sein Innenleben (Cursor, Akkord-Baukasten) gehört nicht
+ * hierher, und in jsdom rendert es nicht sauber. Geprüft wird die VERDRAHTUNG – welcher Text hinein
+ * kommt und dass Speichern den Hook trifft.
+ */
+vi.mock('./ChordEditor', () => ({
+  ChordEditor: (p: {
+    initialText: string;
+    mitVersionsname?: boolean;
+    onSave: (t: string, n: string) => void;
+  }) => (
+    <div>
+      <div data-testid="editor-text">{p.initialText}</div>
+      <div data-testid="editor-versionsname">{String(p.mitVersionsname)}</div>
+      <button onClick={() => p.onSave('{title: Neu}\n[D]Text', '')}>Editor speichern</button>
+    </div>
+  ),
 }));
 
 const { NewSongSheet } = await import('./NewSongSheet');
@@ -93,6 +120,9 @@ const nameFeld = () => screen.getByPlaceholderText<HTMLInputElement>('Titel des 
 
 beforeEach(() => {
   vi.clearAllMocks();
+  hookErgebnis.mockReturnValue(null);
+  notenblattText.mockResolvedValue('{title: Wo ich auch stehe}\n{key: C}');
+  notenblattSpeichern.mockResolvedValue(true);
   caps.mockReturnValue(rechte(false));
   kategorien.mockReturnValue({ data: KATEGORIEN, isLoading: false, isError: false });
   bibliothek.mockReturnValue({ data: BESTAND });
@@ -234,5 +264,53 @@ describe('NewSongSheet – „Selbst eintippen" belegt den Titel vor (04.09.2026
     expect(screen.getByPlaceholderText<HTMLInputElement>('Titel des Liedes').value).toBe(
       'Wo ich auch stehe',
     );
+  });
+});
+
+describe('NewSongSheet – „Notenblatt schreiben/bearbeiten" nach dem Anlegen (04.09.2026)', () => {
+  const ERGEBNIS = {
+    songId: 77,
+    arrangementId: 770,
+    name: 'Wo ich auch stehe',
+    notenblatt: false,
+    notenblattQuelle: null,
+    hinweise: [],
+  };
+
+  it('ohne Blatt heißt der Knopf „schreiben" und öffnet den Editor mit dem Gerüst – ohne Versionsname', async () => {
+    hookErgebnis.mockReturnValue(ERGEBNIS);
+    zeige();
+    fireEvent.click(screen.getByRole('button', { name: 'Notenblatt schreiben' }));
+
+    expect((await screen.findByTestId('editor-text')).textContent).toContain(
+      '{title: Wo ich auch stehe}',
+    );
+    // Das Original hat keinen Versionsnamen – das Feld wäre eine Frage ohne Antwort.
+    expect(screen.getByTestId('editor-versionsname').textContent).toBe('false');
+  });
+
+  it('mit Blatt aus SongSelect heißt er „bearbeiten"', () => {
+    hookErgebnis.mockReturnValue({ ...ERGEBNIS, notenblatt: true, notenblattQuelle: 'songselect' });
+    zeige();
+    expect(screen.getByRole('button', { name: 'Notenblatt bearbeiten' })).toBeTruthy();
+    expect(screen.getByText(/mit Notenblatt aus SongSelect/)).toBeTruthy();
+  });
+
+  it('Speichern trifft den Hook und schließt den Editor', async () => {
+    hookErgebnis.mockReturnValue(ERGEBNIS);
+    zeige();
+    fireEvent.click(screen.getByRole('button', { name: 'Notenblatt schreiben' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Editor speichern' }));
+
+    expect(notenblattSpeichern).toHaveBeenCalledWith('{title: Neu}\n[D]Text');
+    await vi.waitFor(() => expect(screen.queryByTestId('editor-text')).toBeNull());
+  });
+
+  it('der Editor ist ein Angebot – nichts öffnet sich von selbst', () => {
+    // Entscheidung Alwin: „nur als Option, nicht automatisch".
+    hookErgebnis.mockReturnValue(ERGEBNIS);
+    zeige();
+    expect(screen.queryByTestId('editor-text')).toBeNull();
+    expect(notenblattText).not.toHaveBeenCalled();
   });
 });

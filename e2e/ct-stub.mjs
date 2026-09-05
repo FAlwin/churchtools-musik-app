@@ -273,7 +273,6 @@ const server = createServer((req, res) => {
   if (path === '/api/permissions/global') return json(res, { data: permissions });
   if (path === '/api/events') return json(res, { data: events });
   if (path === `/api/events/${EVENT_ID}/agenda`) return json(res, { data: agenda });
-  if (path === `/api/songs/${SONG.id}`) return json(res, { data: SONG });
   /**
    * Die Liederliste. **Nicht mehr leer** (#378): Sie ist die Quelle „Bibliothek" und liefert dem
    * Liedtext-Index die ChordPro-Datei – ohne ein Lied darin liesse sich der Umschalter nicht anfassen.
@@ -289,6 +288,20 @@ const server = createServer((req, res) => {
   if (path.startsWith('/api/persons/') && path.endsWith('/groups')) return json(res, { data: [] });
   if (path === '/api/groups') return json(res, { data: [] });
   if (path === '/api/services') return json(res, { data: [] });
+
+  // Datei-Upload an ein Arrangement und Löschen einer Datei – der Editor nach dem Anlegen schreibt das
+  // Original-Notenblatt darüber (04.09.2026). Der Stub bestätigt nur; was hochgeladen wurde, prüft der
+  // Server-Test am protokollierten fetch.
+  if (path.startsWith('/api/files/song_arrangement/') && req.method === 'POST') {
+    return json(res, { data: [] });
+  }
+  if (path.startsWith('/api/files/') && req.method === 'DELETE') return json(res, { data: {} });
+  // Einzelnes Lied (getArrangement liest es vor dem Schreiben, das Stammdaten-Blatt zeigt es an). MIT
+  // Kategorie – ohne sie zeigt das Stammdaten-Blatt nur den Hinweis statt des Formulars. Stand hier
+  // zweimal (einmal ohne Kategorie, der Treffer davor schattete diesen ab) – die klassische Dopplung.
+  if (/^\/api\/songs\/\d+$/.test(path)) {
+    return json(res, { data: { ...SONG, ccli: '1234567', category: { id: 0, name: 'Aktive Songs' } } });
+  }
 
   // Alles Übrige laut protokollieren, statt still 404 zu liefern – so fällt beim Erweitern des
   // Flows sofort auf, welcher Endpunkt noch fehlt.

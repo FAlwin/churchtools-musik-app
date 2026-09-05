@@ -108,8 +108,33 @@ export function deriveActiveSongView(song: SetlistSong, set: SongSettings): Acti
   };
 }
 
-/** Startgerüst für ein Lied, zu dem es noch keinen ChordPro-Text gibt. */
+/**
+ * Startgerüst für ein Lied, zu dem es noch keinen ChordPro-Text gibt.
+ *
+ * **Eine Vorlage, zwei Aufrufer** (04.09.2026): das Blatt (`buildEditorTemplate`) und der Editor direkt
+ * nach dem Anlegen (`NewSongSheet`). Vorher stand das Gerüst hier fest verdrahtet an ein `SetlistSong`;
+ * das neue Lied hat noch keins – nur Titel, Tonart und ggf. CCLI-Nummer aus dem Formular.
+ */
+export function chordproVorlage(lied: {
+  title: string;
+  key?: string | null;
+  ccli?: string | null;
+}): string {
+  const key = lied.key || 'C';
+  const kopf = [
+    `{title: ${lied.title}}`,
+    `{key: ${key}}`,
+    lied.ccli ? `{ccli: ${lied.ccli}}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+  return `${kopf}\n\n{comment: Vers 1}\n[${key}]Hier Text mit Akkorden eingeben\n\n{comment: Chorus}\n`;
+}
+
 function buildEditorTemplate(song: SetlistSong): string {
-  const key = song.targetKey || song.originalKey || 'C';
-  return `{title: ${song.title}}\n{key: ${key}}\n\n{comment: Vers 1}\n[${song.targetKey || 'C'}]Hier Text mit Akkorden eingeben\n\n{comment: Chorus}\n`;
+  return chordproVorlage({
+    title: song.title,
+    key: song.targetKey || song.originalKey,
+    ccli: song.ccli,
+  });
 }

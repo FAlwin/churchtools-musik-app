@@ -5,6 +5,27 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Neu
+
+- **Nach dem Anlegen gleich das Notenblatt schreiben (#322, 04.09.2026).** Ein selbst eingetipptes Lied
+  war bisher nach dem Anlegen **leer** – man musste es öffnen, eine Version anlegen und dann den Text
+  tippen. Jetzt steht in der Erfolgsansicht **„Notenblatt schreiben"**: Der Editor öffnet sich mit Titel,
+  Tonart und CCLI-Nummer als Gerüst, Speichern legt das **Original**-Notenblatt an – im Liederheft wie im
+  Ablauf. Bei einem Lied aus SongSelect heißt der Knopf **„Notenblatt bearbeiten"** und zeigt das geholte
+  Blatt zum Anpassen.
+
+  **Ein Angebot, kein Schritt** (Entscheidung Alwin): Der Editor öffnet sich nur auf den Knopf, nie von
+  selbst – wer den Text später tippt oder gar keinen braucht, wird nicht aufgehalten.
+
+  **Auch im Stammdaten-Blatt** (Stift im Liederheft, „Stammdaten …" im Lied-Menü) steht jetzt
+  **„Notenblatt bearbeiten"** – der Weg zum Text ohne den Umweg Öffnen → Neue Version. Geschrieben wird
+  das Original des Arrangements; eigene Fassungen bleiben unangetastet.
+
+  Technisch schreibt das dieselbe Stelle wie der SongSelect-Import: pro Arrangement genau ein Original,
+  erst hochladen, dann das alte ersetzen, die eigenen Fassungen bleiben unangetastet.
+
 ## [2.23.0] – 2026-09-04
 
 ### Neu
