@@ -1,0 +1,175 @@
+@use '../styles/mixins' as m;
+
+.wrap {
+  padding: 14px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.hinweis {
+  font-family: var(--ui);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text2);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--blue-soft);
+}
+
+.kopf {
+  @include m.group-header;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.liste {
+  @include m.card-list;
+}
+
+.zeile {
+  @include m.list-row;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.titel {
+  font-family: var(--ui);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub {
+  font-family: var(--ui);
+  font-size: 13px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Rechter Knopf einer Terminzeile: „Kann nicht" (frei) bzw. „Abgemeldet" (gesetzt).
+.aktion {
+  flex-shrink: 0;
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--blue);
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+}
+
+.gesetzt {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+// Manuell in ChurchTools eingetragen – sichtbar, aber gesperrt.
+.gesperrt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--ui);
+  font-size: 13px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.loeschen {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--red);
+  cursor: pointer;
+}
+
+.leer {
+  font-family: var(--ui);
+  font-size: 14px;
+  color: var(--text3);
+  padding: 10px 2px;
+}
+
+.neu {
+  @include m.neues-lied-aktion;
+}
+
+// Formular im Sheet
+.feld {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  label {
+    font-family: var(--ui);
+    font-size: 13px;
+    color: var(--text2);
+  }
+  input,
+  textarea {
+    font-family: var(--ui);
+    font-size: 16px;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+}
+
+.zwei {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.primaryWide {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--ui);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.fehler {
+  font-family: var(--ui);
+  font-size: 13px;
+  color: var(--red);
+  margin-bottom: 10px;
+}

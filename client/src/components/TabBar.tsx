@@ -1,11 +1,13 @@
 import { Icon, type IconName } from './icons';
 import styles from './TabBar.module.scss';
 
-export type TabId = 'termine' | 'lieder' | 'mehr';
+export type TabId = 'termine' | 'lieder' | 'verfuegbarkeit' | 'mehr';
 
 const TAB_META: Record<TabId, { label: string; icon: IconName }> = {
   termine: { label: 'Termine', icon: 'calendar' },
   lieder: { label: 'Lieder', icon: 'music' },
+  // Verfügbarkeit (#177): nur für aktive Mitglieder der gewählten Musikteam-Gruppen sichtbar.
+  verfuegbarkeit: { label: 'Verfügbar', icon: 'clock' },
   mehr: { label: 'Mehr', icon: 'cog-fill' },
 };
 

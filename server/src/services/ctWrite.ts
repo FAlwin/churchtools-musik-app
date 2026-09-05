@@ -498,3 +498,36 @@ export async function updateArrangementTempo(
     fehler: 'Tempo speichern fehlgeschlagen',
   });
 }
+
+/**
+ * Legt eine Abwesenheit an (#177). Der Rumpf kommt fertig aus `absences.ts` (Marker, Grund) – hier
+ * nur der Schreibvorgang über `schreibe`, wie bei allen anderen. Antwort `201 {data:{id}}` wie beim
+ * Lied-Anlegen; die ID wird gebraucht, damit die App den Eintrag ohne Neuladen zeigen kann.
+ */
+export async function createAbsence(
+  cookie: string,
+  personId: number,
+  body: { startDate: string; endDate: string; absenceReasonId: number; comment: string },
+): Promise<number> {
+  const res = await schreibe(cookie, `/api/persons/${personId}/absences`, {
+    method: 'POST',
+    json: body,
+    verweigert: 'Keine Berechtigung, Abwesenheiten in ChurchTools einzutragen.',
+    fehler: 'Abwesenheit eintragen fehlgeschlagen',
+  });
+  return neueId(res, 'Die Abwesenheit');
+}
+
+/** Löscht eine Abwesenheit (#177). Ob sie angefasst werden darf, prüft `absences.ts` vorher. */
+export async function deleteAbsence(
+  cookie: string,
+  personId: number,
+  absenceId: number,
+): Promise<void> {
+  await schreibe(cookie, `/api/persons/${personId}/absences/${absenceId}`, {
+    method: 'DELETE',
+    verweigert: 'Keine Berechtigung, Abwesenheiten in ChurchTools zu löschen.',
+    fehler: 'Abwesenheit löschen fehlgeschlagen',
+    okBei404: true, // schon weg ist auch weg
+  });
+}

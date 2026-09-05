@@ -59,6 +59,8 @@ export const TOUR_SETLIST = 'setlist-v1';
 // hat, sähe den geänderten Einfüge-Dialog sonst nie erklärt. (Die Begründung „nie ausgeliefert" ist
 // genau die, die bei chart-v4 schon einmal falsch war – siehe oben.)
 export const TOUR_SETLIST_EDIT = 'setlist-edit-v3';
+/** Gruppe 5 – Verfügbarkeit (#177), beim ersten Öffnen des Bereichs. */
+export const TOUR_VERFUEGBARKEIT = 'verfuegbarkeit-v1';
 
 export function isTourDone(key: string): boolean {
   try {
@@ -187,5 +189,24 @@ export const SETLIST_EDIT_STEPS: CoachStep[] = [
     selector: '[data-tour="edit-add"]',
     title: 'Hinzufügen',
     body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Tippe Titel, Autor oder CCLI-Nummer – eure Lieder stehen oben, SongSelect darunter. Das Auge zeigt den Liedtext, das Plus fügt ein; bei SongSelect legst du das Lied damit gleich an. Ist ein Lied bei euch nicht da, sucht SongSelect von selbst mit.',
+  },
+];
+
+/** Gruppe 5 – Verfügbarkeit: eigene Abwesenheiten (#177). */
+export const VERFUEGBARKEIT_STEPS: CoachStep[] = [
+  {
+    selector: '[data-tour="verf-hinweis"]',
+    title: 'Wann kannst du nicht?',
+    body: 'Hier trägst du deine Abwesenheiten ein. Sie landen als Abwesenheit in ChurchTools – genau dort, wo die Einteilung hinschaut.',
+  },
+  {
+    selector: '[data-tour="verf-termine"]',
+    title: 'Schnell abmelden',
+    body: 'Bei den kommenden Terminen reicht ein Tipp auf „Kann nicht". Ein zweiter Tipp auf „Abgemeldet" nimmt es wieder zurück.',
+  },
+  {
+    selector: '[data-tour="verf-zeitraum"]',
+    title: 'Längere Zeit weg?',
+    body: 'Über „Zeitraum" trägst du Urlaub oder eine Reise von–bis ein. Einträge, die direkt in ChurchTools gemacht wurden, siehst du hier mit einem Schloss – ändern kannst du sie nur dort.',
   },
 ];

@@ -464,6 +464,51 @@ export interface UserCapabilities {
    * immer scheitert, ist schlimmer als keiner.
    */
   canUseCcli: boolean;
+  /**
+   * Darf den Bereich „Verfügbarkeit" nutzen (#177) – aktives Mitglied einer der unter „Anmerkungen →
+   * Gruppen-Zuweisung" gewählten Gruppen (`musicianGroupIds`), **ohne** Rollen-Filter: Die Rollen aus
+   * `noteRoles` regeln nur, wer fremde Notizen sieht. Eigene Abwesenheiten darf jedes Teammitglied
+   * pflegen. Leere Gruppenauswahl = Bereich aus.
+   */
+  canUseAvailability: boolean;
+}
+
+// ── Verfügbarkeit / Abwesenheiten (#177) ──────────────────────────────────
+// Der generische Kern: nur ChurchTools-Abwesenheiten, kein Excel-Bezug (siehe
+// docs/entwicklung/plan-verfuegbarkeit-phase1.md §12). Marker-Konvention in @shared/absences.
+
+/** Eine Abwesenheit des angemeldeten Kontos, wie die App sie zeigt. */
+export interface Absence {
+  id: number;
+  /** `YYYY-MM-DD`, einschließlich. */
+  startDate: string;
+  endDate: string;
+  /** Freitext ohne Marker – für die Anzeige. */
+  comment: string;
+  /** Name des ChurchTools-Abwesenheitsgrunds (z. B. „Abwesend", „Urlaub"); null wenn unbekannt. */
+  reason: string | null;
+  /**
+   * Von der App oder dem Sync angelegt (Kommentar trägt den Marker) → darf hier gelöscht werden.
+   * Manuelle ChurchTools-Einträge werden angezeigt, aber nie angefasst.
+   */
+  eigene: boolean;
+}
+
+/** Was die App zum Anlegen schickt. Der Marker kommt serverseitig dazu. */
+export interface NeueAbsence {
+  startDate: string;
+  endDate: string;
+  comment?: string;
+}
+
+/** Ein kommender Termin als Schnellauswahl – Name und Tag reichen, um sich abzumelden. */
+export interface AbsenceEvent {
+  id: number;
+  name: string;
+  /** `YYYY-MM-DD` des Termintags. */
+  date: string;
+  /** ISO-Startzeitpunkt (für Uhrzeit und Sortierung). */
+  startDate: string;
 }
 
 /** Antwort des Login-Endpunkts. */

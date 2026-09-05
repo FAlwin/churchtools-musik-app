@@ -18,6 +18,19 @@ const PORT = Number(process.env.PORT ?? 4599);
 const SESSION = 'ChurchTools_stubsid=abc123';
 const PERSON = { id: 4711, firstName: 'Test', lastName: 'Musiker' };
 
+/** Abwesenheiten (#177): eine manuelle (ohne Marker) liegt vor, damit das Schloss zu sehen ist. */
+let absenceId = 9000;
+const ABSENCES = [
+  {
+    id: ++absenceId,
+    personId: PERSON.id,
+    startDate: '2099-12-24',
+    endDate: '2099-12-26',
+    comment: 'Weihnachten',
+    absenceReason: { id: 3, name: 'Urlaub' },
+  },
+];
+
 /** Ein Lied mit Arrangement + ChordPro-Datei. Die Datei-ID taucht in der fileUrl auf. */
 const SONG = {
   id: 501,
@@ -285,7 +298,48 @@ const server = createServer((req, res) => {
       data: [{ ...SONG, ccli: '1234567', category: { id: 0, name: 'Aktive Songs' } }],
     });
   }
-  if (path.startsWith('/api/persons/') && path.endsWith('/groups')) return json(res, { data: [] });
+  // Mitgliedschaft im „Musikteam" (Gruppe 9, Rolle 1). Wirkt nur, wenn die site.json des Servers die
+  // Gruppe 9 unter musicianGroupIds führt – die E2E-Läufe tun das nicht (Standard leer), der lokale
+  // Durchklick der Verfügbarkeit (#177) schon.
+  if (path.startsWith('/api/persons/') && path.endsWith('/groups')) {
+    return json(res, {
+      data: [{ group: { domainIdentifier: '9' }, groupTypeRoleId: 1, groupMemberStatus: 'active', memberEndDate: null }],
+    });
+  }
+  // Abwesenheiten (#177) – ein kleiner Speicher im Prozess, damit Anlegen/Löschen sichtbar wird.
+  const absMatch = path.match(/^\/api\/persons\/(\d+)\/absences(?:\/(\d+))?$/);
+  if (absMatch) {
+    const personId = Number(absMatch[1]);
+    if (req.method === 'GET') {
+      return json(res, { data: ABSENCES.filter((a) => a.personId === personId) });
+    }
+    if (req.method === 'POST') {
+      // Der Handler ist synchron – den Rumpf deshalb über die Ereignisse lesen.
+      let body = '';
+      req.on('data', (chunk) => (body += chunk));
+      req.on('end', () => {
+        const neu = JSON.parse(body || '{}');
+        const eintrag = {
+          id: ++absenceId,
+          personId,
+          startDate: neu.startDate,
+          endDate: neu.endDate,
+          comment: neu.comment ?? null,
+          absenceReason: { id: neu.absenceReasonId, name: 'Abwesend' },
+        };
+        ABSENCES.push(eintrag);
+        res.statusCode = 201;
+        json(res, { data: { id: eintrag.id } });
+      });
+      return;
+    }
+    if (req.method === 'DELETE' && absMatch[2]) {
+      const idx = ABSENCES.findIndex((a) => a.id === Number(absMatch[2]));
+      if (idx >= 0) ABSENCES.splice(idx, 1);
+      res.statusCode = 204;
+      return res.end();
+    }
+  }
   if (path === '/api/groups') return json(res, { data: [] });
   if (path === '/api/services') return json(res, { data: [] });
 

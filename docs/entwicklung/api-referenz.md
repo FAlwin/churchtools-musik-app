@@ -171,6 +171,14 @@ Client, damit eine Version mit eigener Überschrift auch ihre eigene trägt.
 - `GET  /api/annotations/of/:personId` → geteilte Anmerkungen einer Person (schreibgeschützt ansehen)
 - `GET  /api/settings/of/:personId` → Ansicht-Einstellungen dieser Person (damit man in DEREN Darstellung schaut)
 
+## Verfügbarkeit / Abwesenheiten (#177 – eigenes Konto, Nutzer-Cookie)
+
+- `GET  /api/absences?from=&to=` → eigene Abwesenheiten (Standard: heute bis in einem Jahr); `eigene: true` = Marker-Eintrag der App/des Syncs
+- `POST /api/absences` `{startDate, endDate, comment?}` → legt eine ChurchTools-Abwesenheit mit Marker `[Musikteam] …` an; **201** neu, **200** wenn derselbe Zeitraum schon stand (kein Doppel); 400 bei Ende vor Anfang / > 1 Jahr
+- `DELETE /api/absences/:id` → nur Marker-Einträge (**403** bei manuellen ChurchTools-Einträgen, 404 unbekannt)
+- `GET  /api/absences/events?weeks=` → kommende Termine (1–26 Wochen, Standard 10) als Schnellauswahl
+- Die Personen-ID kommt **immer** aus der Sitzung; Grund = `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1). Kein Excel-Bezug – der Sync ist ein eigener Dienst.
+
 ## Admin (nur mit Admin-Recht)
 
 - `GET  /api/groups` → ChurchTools-Gruppen (Dropdown „Gruppen-Zuweisung" für Team-Notizen)

@@ -5,6 +5,24 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Neu
+
+- **Bereich „Verfügbar" – eigene Abwesenheiten in der App (#177, Phase 1 / PR 1).** Wer aktives
+  Mitglied einer unter „Anmerkungen → Gruppen-Zuweisung" gewählten Gruppe ist, bekommt einen
+  vierten Tab. Dort stehen die **kommenden Termine** mit einem Tipp „Kann nicht" (und „Abgemeldet"
+  zum Zurücknehmen) sowie die **eigene Liste**, in die sich per „Zeitraum" auch Urlaub von–bis
+  eintragen lässt. Jeder Eintrag ist eine echte **ChurchTools-Abwesenheit** mit dem Kommentar-Marker
+  `[Musikteam] …`; nur solche Einträge lassen sich hier löschen. Manuell in ChurchTools eingetragene
+  Abwesenheiten werden mit Schloss gezeigt und nie angefasst. Löst die Weboberfläche des alten
+  Musik-Planners ab. **Kein Excel in der App** – der Abgleich mit der ECG-Excel wird ein eigener
+  Dienst (PR 2); Release erst mit beiden.
+  - Server: `GET/POST /api/absences`, `DELETE /api/absences/:id`, `GET /api/absences/events`
+    (Personen-ID immer aus der Sitzung), neues Recht `canUseAvailability`, Env
+    `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1 = „Abwesend").
+  - Geführte Einführung für den neuen Bereich (`verfuegbarkeit-v1`).
+
 ## [2.24.1] – 2026-09-05
 
 ### Behoben

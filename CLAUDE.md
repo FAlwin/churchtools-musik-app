@@ -994,6 +994,13 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   eigentlichen Team-Notizen sind **seit v2.9.0 fertig** (#124 geschlossen, PCO-Modell: Anmerkungen
   bleiben pro Konto, wer mag teilt sie, Berechtigte sehen/importieren sie – `teamNotesController.ts`).
   Die früher geplante gemeinsame „Team-Ebene" (`_shared.json`) wurde bewusst verworfen.
+- **Verfügbarkeit (#177, 05.09.2026):** `canUseAvailability` = aktives Mitglied **einer** der
+  `musicianGroupIds` – **ohne** Rollen-Filter (die `noteRoles` regeln nur Team-Notizen). Dieselbe
+  Mitgliedschafts-Abfrage liefert beide Ableitungen (`computeTeamNotesAllowed` /
+  `computeAvailabilityAllowed`). Der Bereich arbeitet nur auf dem eigenen Konto: Die Personen-ID kommt
+  aus der Sitzung, Löschen nur bei Marker-Einträgen (`@shared/absences`), ChurchTools entscheidet den
+  Rest. Kern: `services/absences.ts`, Client `pages/Availability.tsx` + `hooks/useAvailability.ts`.
+  **Kein Excel im App-Code** – der ECG-Sync ist ein eigener Dienst (`excel-sync/`, PR 2).
 
 ## Schreibzugriff (Editor) – ChurchTools-Eigenheiten
 
