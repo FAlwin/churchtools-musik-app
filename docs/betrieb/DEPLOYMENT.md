@@ -175,6 +175,10 @@ Beim normalen „Erstellen" verwendet Docker manchmal einen alten Zwischenstand 
 besonders, wenn die Dateien über das Netzwerk kopiert wurden. Wenn ein Update **nicht greift**,
 sicheren Weg gehen:
 
+0. **Zuerst das Image holen – als Trockenlauf, solange der alte Container noch läuft** (#387):
+   per SSH `sudo docker pull ghcr.io/falwin/churchtools-musik-app:2`. Scheitert er, läuft die alte
+   Version weiter, und es gibt etwas zu untersuchen – statt eines Ausfalls ohne Rückfall.
+   `denied: denied` heißt dabei fast immer: altes gespeichertes GHCR-Login → `sudo docker logout ghcr.io`.
 1. Container Manager → **Projekt** → **Aktion → Stoppen**
 2. **Aktion → Löschen** (löscht nur Projekt/Container, **nicht** die Dateien; ein Daten-Volume bleibt erhalten).
 3. **Projekt → Erstellen** (baut alles frisch, ohne Cache)

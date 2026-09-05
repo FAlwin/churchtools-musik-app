@@ -10,7 +10,7 @@
  *    erneut – eine Sackgasse, aus der nur ein Neustart hülfe.
  */
 import { HttpError } from '../middleware/errorHandler.js';
-import { BASE, ctSignal } from './ctHttp.js';
+import { BASE, CtOverloadedError, ctSignal, parseRetryAfter } from './ctHttp.js';
 import { csrfCache, csrfInflight } from './ctSessionMemos.js';
 
 /** Ein einzelner Versuch, ein CSRF-Token zu holen. */
@@ -23,6 +23,13 @@ async function fetchCsrfTokenOnce(cookie: string): Promise<string> {
   // und der globale Re-Login greift nicht → „CSRF-Token konnte nicht geholt werden"-Sackgasse (#186).
   if (res.status === 401 || res.status === 403) {
     throw new HttpError(401, 'Session abgelaufen. Bitte neu anmelden.');
+  }
+  // 429 ist eine Drosselung, kein Serverfehler (#383) – dieselbe Regel wie an den fünf anderen
+  // Stellen, die ChurchTools direkt ansprechen. Der Kommentar unten nannte 429 seit #296 als eine der
+  // zu unterscheidenden Möglichkeiten, behandelt wurde sie nicht: Aus der Bremse wurde ein 502.
+  if (res.status === 429) {
+    console.error('[churchtools] csrftoken → HTTP 429 (Drosselung)');
+    throw new CtOverloadedError(parseRetryAfter(res.headers.get('retry-after')));
   }
   if (!res.ok) {
     // Diagnostisch (#296): den ECHTEN ChurchTools-Status mitgeben. Dieser Fehler trat reproduzierbar
@@ -55,13 +62,16 @@ export const CSRF_RETRY_DELAY_MS = 300;
 
 /**
  * Der Wiederholversuch aus #294 – Begründung steht vollständig an `getCsrfToken` (dem einzigen
- * Aufrufer). Hier nur die Regel: 401 nicht wiederholen, alles andere genau einmal.
+ * Aufrufer). Hier nur die Regel: 401 und 429 nicht wiederholen, alles andere genau einmal.
  */
 async function fetchCsrfTokenWithRetry(cookie: string): Promise<string> {
   try {
     return await fetchCsrfTokenOnce(cookie);
   } catch (e) {
     if (e instanceof HttpError && e.status === 401) throw e; // tote Session → nicht wiederholen
+    // Eine Drosselung (#383) ebenfalls nicht: In 300 ms ist sie nicht vorbei, und der zweite Versuch
+    // wäre genau die Anfrage zu viel. Der Aufrufer bekommt `Retry-After` und meldet es dem Nutzer.
+    if (e instanceof CtOverloadedError) throw e;
     // Alles andere ist vorübergehend: einmal kurz warten und erneut versuchen. Klappt es wieder
     // nicht, fliegt der Fehler des ZWEITEN Versuchs (der aktuelle Zustand, nicht der alte).
     await new Promise((r) => setTimeout(r, CSRF_RETRY_DELAY_MS));

@@ -1,6 +1,8 @@
 name: Staging-Image
 
-# Bei jedem Push (main oder feature/**) ein Test-Image bauen und als :staging nach GHCR pushen.
+# Bei jedem Push (main, feature/** oder fix/**) ein Test-Image bauen und als :staging nach GHCR pushen.
+# fix/** seit #386: Gerade Fehlerbehebungen müssen VOR dem Merge auf der Test-Instanz durchklickbar
+# sein. chore/** und docs/** bleiben bewusst draußen – ein Doku-Branch braucht kein Image.
 # Der NAS (x86_64) zieht es automatisch (Watchtower) → kein manueller Rebuild der Test-Instanz mehr.
 # Nur amd64 (Test-NAS ist x86_64) → schnell, ein einziger nativer Build.
 on:
@@ -8,6 +10,7 @@ on:
     branches:
       - main
       - 'feature/**'
+      - 'fix/**'
 
 env:
   IMAGE: ghcr.io/falwin/churchtools-musik-app

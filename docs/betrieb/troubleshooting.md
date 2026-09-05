@@ -160,6 +160,20 @@ Das Daten-Volume wurde beim Update gelöscht oder umbenannt.
 Die mitgelieferten Update-Skripte (`update.command`/`update.bat`) machen das automatisch richtig.
 Details: [UPDATE.md](../../UPDATE.md).
 
+### Der Pull scheitert mit `denied: denied` – obwohl das Image öffentlich ist
+
+Docker hat ein altes, abgelaufenes Login für `ghcr.io` gespeichert und schickt es mit; GHCR lehnt dann
+ab, statt anonym auszuliefern. Die Meldung klingt nach fehlenden Rechten, ist aber keine.
+
+```bash
+sudo docker logout ghcr.io
+sudo docker pull ghcr.io/falwin/churchtools-musik-app:2
+```
+
+Und die Reihenfolge, die den Ausfall vermeidet: **Erst pullen, dann den laufenden Container löschen.**
+Am 03.09.2026 stand die ECG-Instanz eine Weile ohne Container da, weil der Pull erst nach dem Löschen
+scheiterte (#387).
+
 ### Wie sehe ich, welche Version läuft?
 
 In der App: Tab **„Mehr"** ganz unten – dort steht die Versionsnummer.

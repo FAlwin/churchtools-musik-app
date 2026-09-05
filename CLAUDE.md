@@ -445,13 +445,13 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
   Portweiterleitung 443/80 im Router (DSM-Admin-Ports bleiben zu). **Kein Cloudflare.**
 - **Anleitung (hostende Gemeinden):** `INSTALL.md` (image-basiert, empfohlen) + `UPDATE.md`.
   Build-aus-Quellcode-Variante: `docs/betrieb/DEPLOYMENT.md`.
-- **Images:** `.github/workflows/staging.yml` baut bei jedem Push (main/feature/**) ein `:staging`-Image
+- **Images:** `.github/workflows/staging.yml` baut bei jedem Push (main, `feature/**`, `fix/**` – #386) ein `:staging`-Image
   (amd64) nach GHCR; `release.yml` baut bei Tag `vX.Y.Z` Multi-Arch mit den Tags `vX.Y.Z`, `X.Y`,
-  **`X` (Major, z. B. `2`)\*\* und `latest`.
+  \*\*`X` (Major, z. B. `2`)\*\* und `latest`.
 - **Test-Instanz (Auto-Deploy):** `deploy/docker-compose.staging.yml` (Container `musik-app-test`, Port
   3002, `:staging`, Scope `musik-app-test`, 60 s) zieht automatisch – über den **gepflegten
   Watchtower-Fork `nickfedor/watchtower`** (Original `containrrr` ist unmaintained / Docker-29-inkompatibel).
-- **Prod-Instanz (bewusstes Update, seit v2.2.0):** `deploy/docker-compose.prod.yml` (Container `musik-app`,
+- **Prod-Instanz (bewusstes Update, seit v2.2.0):** `deploy/docker-compose.prod.yml` (Container `worship-charts` – wie das Projekt, #385;
   Port 3001) ist auf **`:2` gepinnt** und hat **keinen Auto-Pull**. Aktualisiert wird bewusst per
   `docker compose pull && up -d` (SSH) bzw. im Container Manager (Volume `worship-data` behalten).
 - **Repo-Vorlagen (seit #35):** generische Container-Namen (`musik-app`/`-test`) für andere Gemeinden;
@@ -503,7 +503,10 @@ den Skill `/festhalten`, der genau das automatisiert.
 
 **⚠️ Prod-Deploy & Daten-Volume (Lehre aus dem Vorfall 2026-07-08):** Beim Aktualisieren im
 Container Manager IMMER das **bestehende** Projekt neu aufbauen – **nie ein neues Projekt anlegen**.
-Konkreter Ablauf im Synology Container Manager (es gibt KEINEN Knopf „Zurücksetzen"): das Projekt
+Konkreter Ablauf im Synology Container Manager (es gibt KEINEN Knopf „Zurücksetzen"): **Schritt 0 –
+Trockenlauf per SSH: `sudo docker pull ghcr.io/falwin/churchtools-musik-app:2`** und erst weitermachen,
+wenn er durch ist (`denied: denied` = totes gespeichertes GHCR-Login → `sudo docker logout ghcr.io`;
+Details unter „Deployment-Stand", #387). Dann das Projekt
 öffnen → **Stopp** → **Aktion › Löschen** (dabei **KEINE** Volumes/Daten mitlöschen anhaken) →
 **Projekt › Erstellen**. Nur so wird eine geänderte Compose (z. B. neue Env wie `COOKIE_SECURE`)
 wirklich übernommen; ein reiner **Neustart** übernimmt Env-Änderungen NICHT. Das benannte Volume
@@ -1030,7 +1033,9 @@ Erkundet mit `server/scripts/probe-*.ts` (persönlicher Login-Token, nur lesend)
 
 - [x] **Login-Token in der lokalen Dev-`.env`: bewusste Entscheidung, er BLEIBT (07.08.2026).**
       `CHURCHTOOLS_LOGIN_TOKEN` ist gefüllt (256 Zeichen, im Sicherheits-Review nachgeprüft, ohne den
-      Wert auszugeben) und trägt die vollen persönlichen ChurchTools-Rechte.
+      Wert auszugeben) und trägt die vollen persönlichen ChurchTools-Rechte. **Der Server liest die
+      Variable nicht** (#384, per grep belegt) – sie ist reines Entwickler-Werkzeug; `.env.example` sagt
+      das seit dem 05.09.2026 ausdrücklich, damit hostende Gemeinden keinen zwecklosen Token anlegen.
       **Warum er bleibt:** Die sieben `server/scripts/probe-*.ts` brauchen ihn, und die haben echte
       Erkenntnisse gebracht – dass das Uhrzeit-Ausblenden in `startTimes[eventId]` steckt (drei
       falsche Annahmen widerlegt) und die Rate-Limit-Messung nach #300.

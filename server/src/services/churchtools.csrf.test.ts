@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { __getCsrfTokenForTests as getCsrfToken } from './ctCsrf.js';
 import { __resetSessionMemosForTests } from './ctSessionMemos.js';
+import { CtOverloadedError } from './ctHttp.js';
 import { deleteFile } from './ctWrite.js';
 
 /**
@@ -276,5 +277,48 @@ describe('abgelehnter Schreibvorgang verwirft das Token (#298)', () => {
     expect(fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/csrftoken')).length).toBe(
       1,
     );
+  });
+});
+
+/**
+ * #383: 429 ist eine Drosselung, kein Serverfehler – auch beim CSRF-Token.
+ *
+ * Die Regel galt an vier Stellen (`ctGet`, `fileDownloadError`, `ctWrite`, `login`), hier nicht: Aus
+ * dem 429 wurde ein 502 „CSRF-Token konnte nicht geholt werden", und der Wiederholversuch von #294
+ * schickte 300 ms später die nächste Anfrage in dieselbe Bremse.
+ */
+function gedrosselt(retryAfter: string | null = '30'): Response {
+  return {
+    ok: false,
+    status: 429,
+    text: async () => 'Too Many Requests',
+    json: async () => ({}),
+    headers: { get: (name: string) => (name.toLowerCase() === 'retry-after' ? retryAfter : null) },
+  } as unknown as Response;
+}
+
+describe('getCsrfToken – 429 ist eine Drosselung (#383)', () => {
+  it('wirft CtOverloadedError mit Retry-After statt 502', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(gedrosselt('30')));
+    const fehler = await getCsrfToken(COOKIE).catch((e: unknown) => e);
+    expect(fehler).toBeInstanceOf(CtOverloadedError);
+    expect((fehler as CtOverloadedError).retryAfterMs).toBe(30_000);
+  });
+
+  it('wird NICHT wiederholt – der zweite Versuch wäre die Anfrage zu viel', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockResolvedValue(gedrosselt());
+    vi.stubGlobal('fetch', fetchMock);
+    const p = getCsrfToken(COOKIE).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(await p).toBeInstanceOf(CtOverloadedError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('ohne Retry-After bleibt retryAfterMs offen – der Aufrufer nimmt seinen Standard', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(gedrosselt(null)));
+    const fehler = await getCsrfToken(COOKIE).catch((e: unknown) => e);
+    expect(fehler).toBeInstanceOf(CtOverloadedError);
+    expect((fehler as CtOverloadedError).retryAfterMs).toBeUndefined();
   });
 });

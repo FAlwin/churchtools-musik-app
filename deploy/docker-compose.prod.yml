@@ -31,7 +31,9 @@ name: worship-charts
 services:
   app:
     image: ghcr.io/falwin/churchtools-musik-app:2
-    container_name: musik-app
+    # Wie der Projektname – so heißt der laufende ECG-Container wirklich (#385). Vorher stand hier
+    # `musik-app`, und `docker logs musik-app` lief im Störfall vom 03.09.2026 ins Leere.
+    container_name: worship-charts
     restart: unless-stopped
     environment:
       NODE_ENV: production
