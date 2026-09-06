@@ -4,6 +4,7 @@ import { requireSession } from '../middleware/session.js';
 import {
   getAbsences,
   postAbsence,
+  putAbsence,
   deleteAbsence,
   getAbsenceEvents,
 } from '../controllers/absencesController.js';
@@ -20,6 +21,7 @@ router.use(requireSession);
 router.get('/absences/events', asyncHandler(getAbsenceEvents));
 router.get('/absences', asyncHandler(getAbsences));
 router.post('/absences', asyncHandler(postAbsence));
+router.put('/absences/:id', asyncHandler(putAbsence));
 router.delete('/absences/:id', asyncHandler(deleteAbsence));
 
 export default router;

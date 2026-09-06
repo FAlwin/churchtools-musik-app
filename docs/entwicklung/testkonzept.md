@@ -144,9 +144,15 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
     Sitzung bei Lesen UND Schreiben, Datumsprüfung (Ende vor Anfang, > 1 Jahr); `churchtools.capabilities.test`
     – `computeAvailabilityAllowed` ohne Rollen-Filter, strenger bleibt nur Team-Notizen. Client
     `utils/absenceDatum.test` (Tagesvergleich als Text, eigene vor manueller), `hooks/useAvailability.test`
-    (Schreiben verwirft die Liste, nicht die Termine), `pages/Availability.test` (Kann nicht / Abgemeldet /
-    Schloss, Formular für genau den Tag, Ende-vor-Anfang, offline gesperrt). Von Hand bleibt, dass die
-    Abwesenheit wirklich in ChurchTools steht (TF-VERF-01…03).
+    (Schreiben verwirft die Liste, nicht die Termine), `utils/wochen.test` (Montag auch für Sonntage,
+    Jahreswechsel, Beschriftung über den Monatswechsel), `components/AbsenceSheet.test` (Schnellauswahl
+    rechnet die vier Fälle, ein späteres „Von" schiebt „Bis" mit, Löschen nur beim Ändern),
+    `pages/Availability.test` (Statuskopf sagt verfügbar/abgemeldet, Streifen blättert, Tipp auf einen
+    Tag öffnet das Fenster, Zeile öffnet „Ändern", Vergangenes gesperrt; Kann nicht / Abgemeldet /
+    Schloss, offline gesperrt). Beim Ändern prüft `services/absences.test` die Reihenfolge (ERST
+    anlegen, DANN löschen – der Schutz gegen stillen Verlust), 403 bei fremden Einträgen und 409 nur
+    bei einem ANDEREN eigenen Eintrag. Von Hand bleibt, dass die Abwesenheit wirklich in ChurchTools
+    steht und nach dem Ändern genau EIN Eintrag übrig ist (TF-VERF-01…04).
   - **Der Editor nach dem Anlegen und im Stammdaten-Blatt (04.09.2026):** `hooks/useNotenblatt` – der
     gemeinsame Kern: Gerüst ohne Abfrage (`hatBlatt: false`), geholtes Blatt (`true`), nachsehen (`null`),
     Speichern verwirft `['song-chart', songId]`, Fehler nennt den Grund, ohne Ziel passiert nichts.

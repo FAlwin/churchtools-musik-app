@@ -17,6 +17,11 @@ export function createAbsence(neu: NeueAbsence): Promise<Absence> {
   return apiFetch<Absence>('/api/absences', { method: 'POST', body: JSON.stringify(neu) });
 }
 
+/** Ändern = neu anlegen + alten entfernen (ChurchTools kann Abwesenheiten nicht ändern). */
+export function updateAbsence(id: number, neu: NeueAbsence): Promise<Absence> {
+  return apiFetch<Absence>(`/api/absences/${id}`, { method: 'PUT', body: JSON.stringify(neu) });
+}
+
 export function deleteAbsence(id: number): Promise<void> {
   return apiFetch<void>(`/api/absences/${id}`, { method: 'DELETE' });
 }

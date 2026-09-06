@@ -37,6 +37,14 @@ export function useCreateAbsence() {
   });
 }
 
+export function useUpdateAbsence() {
+  const refresh = useAbsencesRefresh();
+  return useMutation({
+    mutationFn: ({ id, neu }: { id: number; neu: NeueAbsence }) => api.updateAbsence(id, neu),
+    onSuccess: () => void refresh(),
+  });
+}
+
 export function useDeleteAbsence() {
   const refresh = useAbsencesRefresh();
   return useMutation({

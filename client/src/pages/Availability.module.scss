@@ -174,47 +174,116 @@
   margin-bottom: 10px;
 }
 
-// Die Auswahlleiste (Variante C): erscheint, sobald im Wochenstreifen ein Tag angetippt ist, und
-// bleibt unten stehen, während man den Endtag sucht. Über dem Inhalt, unter der Tab-Bar.
-.auswahlLeiste {
-  // Sitzt als Geschwister des Scroll-Bereichs direkt über der Tab-Bar – nicht `sticky` IM Scroll:
-  // Dort klebte sie nur, wenn der Inhalt länger als der Bildschirm war (im Browser gesehen).
-  flex-shrink: 0;
-  padding: 10px 16px 12px;
-  background: var(--nav-bg);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-top: 1px solid var(--hair);
+/**
+ * Der Statuskopf: der eine Satz, der sagt, worum es geht (05.09.2026). Kein „Karte wie alle
+ * anderen" – er trägt eine eigene Fläche und den Kreis links, damit er sich vom Rest abhebt.
+ */
+.status {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface2);
+
+  // Hier darf der Untertitel umbrechen: „Gottesdienst – du bist verfügbar" wurde sonst nach zwei
+  // Wörtern abgeschnitten (im Browser gesehen). In den Listenzeilen bleibt es beim Kürzen.
+  .sub {
+    white-space: normal;
+    overflow: visible;
+  }
 }
 
-.leisteBlau,
-.leisteHell {
+.statusKreis {
+  width: 42px;
+  height: 42px;
   flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+  background: var(--blue-soft);
+}
+
+.statusWeg .statusKreis {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+}
+
+// Die nächsten Termine als Streifen: blau = da, rot = abgemeldet, grau = in ChurchTools abwesend.
+.balken {
+  display: flex;
+  gap: 4px;
+  margin-top: 7px;
+  i {
+    height: 6px;
+    width: 22px;
+    border-radius: 3px;
+    background: var(--blue-soft2, var(--blue-soft));
+  }
+}
+
+.balkenRot {
+  background: var(--red) !important;
+}
+
+.balkenGrau {
+  background: var(--hair) !important;
+}
+
+// Eine antippbare Zeile (eigene Abwesenheit) – sieht aus wie die anderen, ist aber ein Knopf.
+.zeileTip {
+  width: 100%;
   border: none;
-  border-radius: 12px;
-  padding: 9px 14px;
+  background: transparent;
+  text-align: left;
+  color: var(--text3);
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+// Schnellwahl im Fenster: die vier Fälle, die es wirklich gibt.
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.chip {
   font-family: var(--ui);
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
   cursor: pointer;
 }
 
-.leisteBlau {
+.chipAn {
   background: var(--blue);
+  border-color: var(--blue);
   color: #fff;
 }
 
-// „Abbrechen" ist ein Kreuz, kein Wort: Auf dem Handy passte die Zeile sonst nicht neben das Datum
-// und „Eintragen" (im Browser gesehen, 05.09.2026). Der Name bleibt für Vorlesehilfen erhalten.
-.leisteHell {
-  background: var(--surface3);
-  color: var(--text2);
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  display: grid;
-  place-items: center;
+// Löschen sitzt im Änderungs-Fenster, wo auch der Zeitraum steht – nicht als Symbol in der Liste.
+.loeschenWide {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--red);
+  font-family: var(--ui);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.5;
+  }
 }

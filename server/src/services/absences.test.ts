@@ -156,3 +156,78 @@ describe('kommendeTermine', () => {
 // Typ-Wächter: die App-Sicht bleibt frei von Excel – dieses Feld darf es nie geben.
 const _keinExcel = (x: Absence): void => void x;
 void _keinExcel;
+
+/**
+ * **Ändern** (Wunsch Alwin, 05.09.2026). ChurchTools kann Abwesenheiten nicht ändern – der Server
+ * legt neu an und löscht dann den alten Eintrag. Geprüft wird genau diese Reihenfolge (andersherum
+ * wäre nach einem Fehlschlag alles weg), der Schutz fremder Einträge und die Doppel-Regel, die den
+ * eigenen Eintrag ausnehmen muss.
+ */
+describe('abwesenheitAendern – neu anlegen, dann alten entfernen (#177)', () => {
+  const NEU = { startDate: '2026-10-05', endDate: '2026-10-06', comment: 'Kurzreise' };
+
+  it('legt zuerst an und löscht erst danach – die Reihenfolge ist der Schutz', async () => {
+    const folge: string[] = [];
+    vi.mocked(getAbsences).mockResolvedValue([EIGENE]);
+    vi.mocked(createAbsence).mockImplementation(async () => {
+      folge.push('anlegen');
+      return 99;
+    });
+    vi.mocked(deleteAbsence).mockImplementation(async () => {
+      folge.push('loeschen');
+    });
+
+    const ergebnis = await a.abwesenheitAendern(COOKIE, 42, 1, NEU);
+
+    expect(folge).toEqual(['anlegen', 'loeschen']);
+    expect(vi.mocked(createAbsence).mock.calls[0][1]).toBe(42);
+    expect(vi.mocked(createAbsence).mock.calls[0][2]).toMatchObject({
+      startDate: '2026-10-05',
+      endDate: '2026-10-06',
+      comment: '[Musikteam] Kurzreise',
+    });
+    expect(vi.mocked(deleteAbsence)).toHaveBeenCalledWith(COOKIE, 42, 1);
+    expect(ergebnis).toMatchObject({ id: 99, comment: 'Kurzreise', eigene: true });
+  });
+
+  it('ein manueller ChurchTools-Eintrag lässt sich nicht ändern (403), und nichts wird geschrieben', async () => {
+    vi.mocked(getAbsences).mockResolvedValue([MANUELL]);
+    await expect(a.abwesenheitAendern(COOKIE, 42, 2, NEU)).rejects.toMatchObject({ status: 403 });
+    expect(vi.mocked(createAbsence)).not.toHaveBeenCalled();
+    expect(vi.mocked(deleteAbsence)).not.toHaveBeenCalled();
+  });
+
+  it('der eigene Eintrag zählt NICHT als Doppel – nur den Kommentar ändern geht', async () => {
+    vi.mocked(getAbsences).mockResolvedValue([EIGENE]);
+    vi.mocked(createAbsence).mockResolvedValue(98);
+    await expect(
+      a.abwesenheitAendern(COOKIE, 42, 1, {
+        startDate: EIGENE.startDate,
+        endDate: EIGENE.endDate,
+        comment: 'anderer Text',
+      }),
+    ).resolves.toMatchObject({ id: 98 });
+  });
+
+  it('ein FREMDER eigener Eintrag auf demselben Zeitraum bleibt ein Doppel (409)', async () => {
+    const zweiter = {
+      id: 7,
+      startDate: '2026-10-05',
+      endDate: '2026-10-06',
+      comment: '[Musikteam] X',
+    };
+    vi.mocked(getAbsences).mockResolvedValue([EIGENE, zweiter]);
+    await expect(a.abwesenheitAendern(COOKIE, 42, 1, NEU)).rejects.toMatchObject({ status: 409 });
+    expect(vi.mocked(createAbsence)).not.toHaveBeenCalled();
+  });
+
+  it('scheitert das Löschen, wird das ehrlich gemeldet – der neue Eintrag steht schon', async () => {
+    vi.mocked(getAbsences).mockResolvedValue([EIGENE]);
+    vi.mocked(createAbsence).mockResolvedValue(97);
+    vi.mocked(deleteAbsence).mockRejectedValue(new Error('ChurchTools sagt nein'));
+    await expect(a.abwesenheitAendern(COOKIE, 42, 1, NEU)).rejects.toMatchObject({
+      status: 502,
+      message: expect.stringContaining('alte Eintrag'),
+    });
+  });
+});

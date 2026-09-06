@@ -999,7 +999,12 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   Mitgliedschafts-Abfrage liefert beide Ableitungen (`computeTeamNotesAllowed` /
   `computeAvailabilityAllowed`). Der Bereich arbeitet nur auf dem eigenen Konto: Die Personen-ID kommt
   aus der Sitzung, Löschen nur bei Marker-Einträgen (`@shared/absences`), ChurchTools entscheidet den
-  Rest. Kern: `services/absences.ts`, Client `pages/Availability.tsx` + `hooks/useAvailability.ts`.
+  Rest. Kern: `services/absences.ts` – dort auch die Regel, dass **Ändern = neu anlegen, dann alten
+  löschen** ist (ChurchTools kennt kein Ändern von Abwesenheiten; die Reihenfolge ist der Schutz gegen
+  stillen Verlust). Client: `pages/Availability.tsx` (Statuskopf + Wochenstreifen), dazu
+  `components/WochenStreifen.tsx` mit `utils/wochen.ts` (Wochen als `YYYY-MM-DD`-Montage in UTC),
+  `components/AbsenceSheet.tsx` (ein Fenster für Eintragen und Ändern, mit Schnellauswahl) und
+  `hooks/useAvailability.ts`.
   **Kein Excel im App-Code** – der ECG-Sync ist ein eigener Dienst (`excel-sync/`, PR 2).
 
 ## Schreibzugriff (Editor) – ChurchTools-Eigenheiten

@@ -11,17 +11,31 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 - **Bereich „Verfügbar" – eigene Abwesenheiten in der App (#177, Phase 1 / PR 1).** Wer aktives
   Mitglied einer unter „Anmerkungen → Gruppen-Zuweisung" gewählten Gruppe ist, bekommt einen
-  vierten Tab. Dort stehen die **kommenden Termine** mit einem Tipp „Kann nicht" (und „Abgemeldet"
-  zum Zurücknehmen) sowie die **eigene Liste**, in die sich per „Zeitraum" auch Urlaub von–bis
-  eintragen lässt. Jeder Eintrag ist eine echte **ChurchTools-Abwesenheit** mit dem Kommentar-Marker
-  `[Musikteam] …`; nur solche Einträge lassen sich hier löschen. Manuell in ChurchTools eingetragene
+  vierten Tab. Aufbau nach zwei Runden anfassbarer Entwürfe mit Alwin (05.09.2026):
+
+  - **Ein Satz oben, der etwas sagt:** „Sonntag, 6. September · 10:00 – du bist verfügbar", mit
+    „Kann nicht" direkt daneben und fünf Balken für die nächsten Termine (blau da, rot abgemeldet,
+    grau in ChurchTools abwesend).
+  - **Ein Wochenstreifen, der am Finger klebt:** sieben Kacheln, Punkt = Termin, rot = selbst
+    abgemeldet, grau = direkt in ChurchTools; beim Wischen kommt die Nachbarwoche sichtbar herein und
+    gleitet beim Loslassen ein, ein halber Zug fällt zurück. Zwölf Wochen weit, auch per Pfeil.
+  - **Ein Fenster für alles:** „Eintragen" – oder ein Tipp auf einen Tag – öffnet ein Fenster mit
+    **Schnellauswahl** (nur dieser Tag, Wochenende, 1 Woche, 2 Wochen) und Von–Bis zum Feinjustieren.
+  - **Eigene Einträge bleiben änderbar:** Ein Tipp auf die Zeile öffnet „Abwesenheit ändern" mit
+    Zeitraum, Kommentar und **Löschen**. Weil ChurchTools kein Ändern kennt, legt der Server erst den
+    neuen Eintrag an und entfernt dann den alten.
+  - Darunter **„Diese Woche"** (Termine und Abwesenheiten der gezeigten Woche) und **„Meine
+    Abwesenheiten"**.
+
+  Jeder Eintrag ist eine echte **ChurchTools-Abwesenheit** mit dem Kommentar-Marker `[Musikteam] …`;
+  nur solche Einträge lassen sich hier ändern oder löschen. Manuell in ChurchTools eingetragene
   Abwesenheiten werden mit Schloss gezeigt und nie angefasst. Löst die Weboberfläche des alten
   Musik-Planners ab. **Kein Excel in der App** – der Abgleich mit der ECG-Excel wird ein eigener
   Dienst (PR 2); Release erst mit beiden.
-  - Server: `GET/POST /api/absences`, `DELETE /api/absences/:id`, `GET /api/absences/events`
+  - Server: `GET/POST /api/absences`, `PUT/DELETE /api/absences/:id`, `GET /api/absences/events`
     (Personen-ID immer aus der Sitzung), neues Recht `canUseAvailability`, Env
     `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1 = „Abwesend").
-  - Geführte Einführung für den neuen Bereich (`verfuegbarkeit-v1`).
+  - Geführte Einführung für den neuen Bereich (`verfuegbarkeit-v3`).
 
 ## [2.24.1] – 2026-09-05
 

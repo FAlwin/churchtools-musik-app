@@ -47,6 +47,14 @@ export async function postAbsence(req: Request, res: Response): Promise<void> {
   res.status(ergebnis.neu ? 201 : 200).json(ergebnis.absence);
 }
 
+/** PUT /api/absences/:id – eigenen Eintrag ändern (neu anlegen, alten entfernen). */
+export async function putAbsence(req: Request, res: Response): Promise<void> {
+  const userId = await myUserId(req);
+  const id = z.coerce.number().int().positive().parse(req.params.id);
+  const neu = neueAbsenceSchema.parse(req.body);
+  res.json(await absences.abwesenheitAendern(ctCookie(req), userId, id, neu));
+}
+
 /** DELETE /api/absences/:id – nur eigene Marker-Einträge (sonst 403). */
 export async function deleteAbsence(req: Request, res: Response): Promise<void> {
   const userId = await myUserId(req);

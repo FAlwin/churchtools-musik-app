@@ -60,8 +60,9 @@ export const TOUR_SETLIST = 'setlist-v1';
 // genau die, die bei chart-v4 schon einmal falsch war – siehe oben.)
 export const TOUR_SETLIST_EDIT = 'setlist-edit-v3';
 /** Gruppe 5 – Verfügbarkeit (#177), beim ersten Öffnen des Bereichs. */
-// v2 (05.09.2026): Wochenstreifen statt Terminliste – neuer erster Schritt.
-export const TOUR_VERFUEGBARKEIT = 'verfuegbarkeit-v2';
+// v3 (05.09.2026, abends): Statuskopf, Streifen zieht mit, Eintragen über EIN Fenster,
+// eigene Einträge per Tipp auf die Zeile änderbar – jeder Schritt zeigt jetzt etwas anderes.
+export const TOUR_VERFUEGBARKEIT = 'verfuegbarkeit-v3';
 
 export function isTourDone(key: string): boolean {
   try {
@@ -198,7 +199,7 @@ export const VERFUEGBARKEIT_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="verf-woche"]',
     title: 'Deine Woche im Blick',
-    body: 'Ein Punkt ist ein Termin, rot heißt: du bist abgemeldet, grau steht direkt in ChurchTools. Wische oder tippe die Pfeile, um in anderen Wochen zu blättern. Tippe einen Tag und dann einen zweiten – schon ist ein Zeitraum gewählt.',
+    body: 'Ein Punkt ist ein Termin, rot heißt: du bist abgemeldet, grau steht direkt in ChurchTools. Wische den Streifen zur Seite – er zieht mit – oder tippe die Pfeile.',
   },
   {
     selector: '[data-tour="verf-termine"]',
@@ -207,7 +208,7 @@ export const VERFUEGBARKEIT_STEPS: CoachStep[] = [
   },
   {
     selector: '[data-tour="verf-zeitraum"]',
-    title: 'Längere Zeit weg?',
-    body: 'Über „Zeitraum" trägst du Urlaub oder eine Reise von–bis ein. Einträge mit Schloss wurden direkt in ChurchTools gemacht – ändern kannst du sie nur dort.',
+    title: 'Urlaub eintragen und ändern',
+    body: 'Über „Eintragen" öffnest du ein Fenster mit Schnellauswahl – nur dieser Tag, Wochenende, eine oder zwei Wochen – und kannst das Datum danach feinjustieren. Einen eigenen Eintrag tippst du in der Liste an, um ihn zu ändern oder zu löschen. Einträge mit Schloss stammen direkt aus ChurchTools.',
   },
 ];

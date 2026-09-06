@@ -75,6 +75,22 @@ export function gleicherZeitraum(vorhanden: Absence[], neu: NeueAbsence): Absenc
   );
 }
 
+/**
+ * Dieselbe Prüfung beim **Ändern**: Ein Eintrag darf auf einen Zeitraum wandern, den es schon gibt –
+ * aber nicht auf einen, den ein ANDERER eigener Eintrag belegt. Ohne das `ausser` wäre jede Änderung,
+ * die den Zeitraum unverändert lässt (nur der Kommentar), ein „Doppel" und würde abgelehnt.
+ */
+export function gleicherZeitraumAusser(
+  vorhanden: Absence[],
+  neu: NeueAbsence,
+  ausser: number,
+): Absence | undefined {
+  return gleicherZeitraum(
+    vorhanden.filter((a) => a.id !== ausser),
+    neu,
+  );
+}
+
 /** Termine → Schnellauswahl: Tag herausziehen, nach Beginn sortieren. Reine Funktion. */
 export function zuEvents(events: CtEvent[]): AbsenceEvent[] {
   return events
@@ -141,7 +157,22 @@ export async function abwesenheitLoeschen(
   absenceId: number,
   heute = new Date(),
 ): Promise<void> {
-  // Weites Fenster: Auch ein Eintrag, der vor Monaten begann, soll löschbar sein.
+  const ziel = await eigenerEintrag(cookie, userId, absenceId, heute);
+  await deleteAbsence(cookie, userId, ziel.id);
+}
+
+/**
+ * Den eigenen Eintrag heraussuchen – **die eine Stelle**, die „gehört mir?" beantwortet. Löschen und
+ * Ändern brauchen dieselbe Antwort; stünde die Prüfung zweimal da, wäre genau das die Dopplung, die
+ * dieses Projekt am häufigsten getroffen hat.
+ */
+async function eigenerEintrag(
+  cookie: string,
+  userId: number,
+  absenceId: number,
+  heute: Date,
+): Promise<Absence> {
+  // Weites Fenster: Auch ein Eintrag, der vor Monaten begann, soll erreichbar sein.
   const von = isoTag(new Date(heute.getTime() - 400 * 86_400_000));
   const bis = isoTag(new Date(heute.getTime() + 800 * 86_400_000));
   const alle = await meineAbwesenheiten(cookie, userId, von, bis);
@@ -153,7 +184,7 @@ export async function abwesenheitLoeschen(
       'Dieser Eintrag wurde direkt in ChurchTools angelegt und lässt sich nur dort ändern.',
     );
   }
-  await deleteAbsence(cookie, userId, absenceId);
+  return ziel;
 }
 
 /** Kommende Termine der nächsten `wochen` Wochen – alle Kalender, die das Konto sehen darf. */
@@ -165,4 +196,45 @@ export async function kommendeTermine(
   const from = isoTag(heute);
   const to = isoTag(new Date(heute.getTime() + wochen * 7 * 86_400_000));
   return zuEvents(await getEvents(cookie, from, to));
+}
+
+/**
+ * **Eine eigene Abwesenheit ändern** (Wunsch Alwin, 05.09.2026: „meine Abwesenheiten sollen
+ * bearbeitbar bleiben").
+ *
+ * ChurchTools kennt kein Ändern von Abwesenheiten – es gibt nur `POST` und `DELETE` (gemessen
+ * 16.07.2026, und der alte Planner machte es seit Jahren genauso). Also: **erst den neuen Eintrag
+ * anlegen, dann den alten löschen.** Die Reihenfolge ist keine Stilfrage – andersherum stünde nach
+ * einem Fehlschlag beim Anlegen gar nichts mehr da, und die Abwesenheit wäre still verschwunden
+ * (dieselbe Lehre wie beim Notenblatt-Ersetzen). Scheitert stattdessen das Löschen, existiert der
+ * Zeitraum doppelt – unschön, aber sichtbar und von Hand zu bereinigen; deshalb wird es gemeldet.
+ */
+export async function abwesenheitAendern(
+  cookie: string,
+  userId: number,
+  absenceId: number,
+  neu: NeueAbsence,
+  heute = new Date(),
+): Promise<Absence> {
+  const body = absenceBody(neu);
+  const alt = await eigenerEintrag(cookie, userId, absenceId, heute);
+  const vorhanden = await meineAbwesenheiten(cookie, userId, body.startDate, body.endDate);
+  if (gleicherZeitraumAusser(vorhanden, body, absenceId)) {
+    throw new HttpError(409, 'Für diesen Zeitraum gibt es schon einen Eintrag.');
+  }
+  const id = await createAbsence(cookie, userId, body);
+  try {
+    await deleteAbsence(cookie, userId, alt.id);
+  } catch {
+    throw new HttpError(
+      502,
+      'Die Änderung wurde eingetragen, der alte Eintrag ließ sich aber nicht entfernen. Bitte in ChurchTools nachsehen.',
+    );
+  }
+  return zuAbsence({
+    id,
+    startDate: body.startDate,
+    endDate: body.endDate,
+    comment: body.comment,
+  });
 }

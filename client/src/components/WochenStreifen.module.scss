@@ -5,8 +5,11 @@
   border-radius: 14px;
   overflow: hidden;
   padding: 4px 6px 8px;
-  // Wischen soll die Woche blättern, nicht die Seite verschieben.
+  // Waagerechtes Wischen gehört dem Streifen, senkrechtes der Seite.
   touch-action: pan-y;
+  // Sonst „greift" der Browser beim Ziehen die Kacheln als Text/Bild.
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .kopf {
@@ -40,15 +43,35 @@
   }
 }
 
-.streifen {
+// Der sichtbare Ausschnitt: eine Woche breit, die Spur daneben liegt außerhalb.
+.viewport {
+  overflow: hidden;
+  padding: 4px 4px 10px;
+}
+
+// Drei Wochen nebeneinander (vorige, aktuelle, nächste); verschoben wird die ganze Spur.
+.spur {
+  display: flex;
+  width: 300%;
+  will-change: transform;
+}
+
+// Nur beim Einrasten animieren – während des Ziehens folgt die Spur ohne Verzögerung dem Finger.
+.gleitet {
+  transition: transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.seite {
+  flex: 0 0 33.3333%;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 6px;
-  padding: 4px 4px 10px;
 }
 
 .tag {
   border: none;
+  // Der Tipp gehört dem Tag, das Ziehen dem Streifen darüber.
+  touch-action: pan-y;
   border-radius: 12px;
   background: var(--surface3);
   padding: 8px 0 7px;
