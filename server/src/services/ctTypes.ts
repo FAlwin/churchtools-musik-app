@@ -25,6 +25,20 @@ export interface CtEvent {
   calendar?: { title?: string; domainIdentifier?: string };
 }
 
+/**
+ * Abwesenheit aus `GET /api/persons/{id}/absences` (#177; Felder am 16.07.2026 verifiziert).
+ * `startTime`/`endTime` null = ganztägig. `comment` trägt bei unseren Einträgen den Marker.
+ */
+export interface CtAbsence {
+  id: number;
+  startDate: string;
+  endDate: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  comment?: string | null;
+  absenceReason?: { id?: number | string; name?: string | null } | null;
+}
+
 export interface CtAgendaSong {
   songId: number;
   arrangementId: number;

@@ -86,6 +86,9 @@ const AllSongsLazy = lazy(
 const SettingsLazy = lazy(
   withChunkReload(() => import('./pages/Settings').then((m) => ({ default: m.Settings }))),
 );
+const AvailabilityLazy = lazy(
+  withChunkReload(() => import('./pages/Availability').then((m) => ({ default: m.Availability }))),
+);
 
 const Setlist = (props: ComponentProps<typeof SetlistLazy>) => (
   <Suspense fallback={<PageFallback />}>
@@ -105,6 +108,11 @@ const AllSongs = (props: ComponentProps<typeof AllSongsLazy>) => (
 const Settings = (props: ComponentProps<typeof SettingsLazy>) => (
   <Suspense fallback={<PageFallback />}>
     <SettingsLazy {...props} />
+  </Suspense>
+);
+const Availability = (props: ComponentProps<typeof AvailabilityLazy>) => (
+  <Suspense fallback={<PageFallback />}>
+    <AvailabilityLazy {...props} />
   </Suspense>
 );
 
@@ -127,6 +135,7 @@ export default function App() {
   const canEditAgendas = caps?.canEditAgendas ?? false;
   const canEditSongs = caps?.canEditSongs ?? false;
   const isAdmin = caps?.isAdmin ?? false;
+  const canUseAvailability = caps?.canUseAvailability ?? false;
 
   // servicesQuery hängt nicht vom Navigations-Zustand ab → vor useAppNav, das die Terminliste
   // braucht, um den gespeicherten Gottesdienst nach einem Kaltstart wiederzufinden.
@@ -225,6 +234,11 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caps]);
+  // Verfügbarkeit (#177): Der Tab ist gespeichert, aber das Recht ist weg (Gruppe verlassen, Admin
+  // hat die Gruppenauswahl geändert) → zurück zu den Terminen statt auf einen leeren Bereich.
+  useEffect(() => {
+    if (caps && tab === 'verfuegbarkeit' && !caps.canUseAvailability) setTab('termine');
+  }, [caps, tab, setTab]);
 
   // Abgelaufene Sitzung → automatisch abmelden, damit der Login-Screen erscheint.
   useEffect(() => {
@@ -481,6 +495,7 @@ export default function App() {
   const tabs: TabId[] = [];
   if (canViewAgendas) tabs.push('termine');
   if (canViewSongs) tabs.push('lieder');
+  if (canUseAvailability) tabs.push('verfuegbarkeit');
   tabs.push('mehr');
 
   return (
@@ -535,6 +550,10 @@ export default function App() {
             onOpenSong={openLibrarySong}
             onToast={showToast}
           />
+        )}
+
+        {tab === 'verfuegbarkeit' && canUseAvailability && (
+          <Availability online={online} onToast={showToast} />
         )}
 
         {tab === 'mehr' && (
