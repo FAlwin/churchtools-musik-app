@@ -11,11 +11,14 @@
  *
  * Kein Excel hier – der Sync ist ein eigener Dienst (`excel-sync/`), siehe Plan §12.
  */
-import type { Absence, AbsenceEvent, NeueAbsence } from '@shared/types/index';
-import { istMarkerEintrag, markerFreitext, mitMarker } from '@shared/absences/index';
+import type { Absence, AbsenceEvent, AbsenceReason, NeueAbsence } from '@shared/types/index';
+import { grundLesbar, istMarkerEintrag, markerFreitext, mitMarker } from '@shared/absences/index';
+import { ctId } from '../utils/ctId.js';
 import { config } from '../config.js';
 import { HttpError } from '../middleware/errorHandler.js';
+import { ctAjax } from './ctAjax.js';
 import { getAbsences, getEvents } from './ctRead.js';
+import { gruendeMemo } from './ctSessionMemos.js';
 import type { CtAbsence, CtEvent } from './ctTypes.js';
 import { createAbsence, deleteAbsence } from './ctWrite.js';
 
@@ -30,8 +33,9 @@ export function zuAbsence(a: CtAbsence): Absence {
     startDate: a.startDate,
     endDate: a.endDate,
     comment: markerFreitext(a.comment),
-    reason: a.absenceReason?.name ?? null,
-    eigene: istMarkerEintrag(a.comment),
+    reason: grundLesbar(a.absenceReason?.name),
+    reasonId: ctId(a.absenceReason?.id),
+    vonApp: istMarkerEintrag(a.comment),
   };
 }
 
@@ -45,7 +49,10 @@ export function tageInklusive(start: string, ende: string): number {
  * Prüft den Wunsch und baut den ChurchTools-Rumpf. Wirft 400 mit einem Satz, den man dem Nutzer
  * zeigen kann – die Zod-Prüfung im Controller kennt nur die Form, nicht den Sinn.
  */
-export function absenceBody(neu: NeueAbsence): {
+export function absenceBody(
+  neu: NeueAbsence,
+  herkunft: { reasonId?: number | null; mitMarker?: boolean } = {},
+): {
   startDate: string;
   endDate: string;
   absenceReasonId: number;
@@ -63,15 +70,19 @@ export function absenceBody(neu: NeueAbsence): {
   return {
     startDate: neu.startDate,
     endDate: neu.endDate,
-    absenceReasonId: config.absenceReasonId,
-    comment: mitMarker(neu.comment),
+    // Reihenfolge: was die App schickt, sonst der Grund des Eintrags, sonst der konfigurierte
+    // Standard. Beim Ändern eines „Urlaub" bleibt es damit Urlaub, wenn der Nutzer nichts umstellt.
+    absenceReasonId: neu.reasonId ?? herkunft.reasonId ?? config.absenceReasonId,
+    // Der Marker kennzeichnet, dass App oder Sync den Eintrag angelegt haben. Beim Ändern eines
+    // fremden Eintrags darf er NICHT dazukommen – sonst würde der Excel-Sync ihn anfassen.
+    comment: herkunft.mitMarker === false ? (neu.comment ?? '').trim() : mitMarker(neu.comment),
   };
 }
 
 /** Gibt es schon einen eigenen Eintrag mit genau diesem Zeitraum? */
 export function gleicherZeitraum(vorhanden: Absence[], neu: NeueAbsence): Absence | undefined {
   return vorhanden.find(
-    (a) => a.eigene && a.startDate === neu.startDate && a.endDate === neu.endDate,
+    (a) => a.vonApp && a.startDate === neu.startDate && a.endDate === neu.endDate,
   );
 }
 
@@ -162,9 +173,17 @@ export async function abwesenheitLoeschen(
 }
 
 /**
- * Den eigenen Eintrag heraussuchen – **die eine Stelle**, die „gehört mir?" beantwortet. Löschen und
- * Ändern brauchen dieselbe Antwort; stünde die Prüfung zweimal da, wäre genau das die Dopplung, die
- * dieses Projekt am häufigsten getroffen hat.
+ * Den Eintrag heraussuchen – **die eine Stelle**, die „gibt es den?" beantwortet. Löschen und Ändern
+ * brauchen dieselbe Antwort; stünde die Suche zweimal da, wäre genau das die Dopplung, die dieses
+ * Projekt am häufigsten getroffen hat.
+ *
+ * **Was hier NICHT mehr steht: eine Marker-Sperre** (Entscheidung Alwin, 05.09.2026). Der Bereich
+ * arbeitet ausschließlich auf dem Konto der angemeldeten Person – und in ChurchTools darf sie ihre
+ * Abwesenheiten selbst pflegen, also auch hier. Die Messung an der ECG-Instanz gab den Anstoß: Von
+ * 31 Beständen trug **keiner** den Marker (der alte Planner schreibt keinen Kommentar, und Alwin
+ * pflegt in ChurchTools mit eigenem Text) – die Sperre hätte praktisch alles unantastbar gemacht.
+ * Der Marker bleibt Herkunftskennzeichen: Er steuert den **Excel-Sync** (nur eigene Einträge
+ * anfassen) und die **Rückfrage vor dem Löschen** in der Oberfläche.
  */
 async function eigenerEintrag(
   cookie: string,
@@ -178,12 +197,6 @@ async function eigenerEintrag(
   const alle = await meineAbwesenheiten(cookie, userId, von, bis);
   const ziel = alle.find((a) => a.id === absenceId);
   if (!ziel) throw new HttpError(404, 'Diese Abwesenheit gibt es nicht (mehr).');
-  if (!ziel.eigene) {
-    throw new HttpError(
-      403,
-      'Dieser Eintrag wurde direkt in ChurchTools angelegt und lässt sich nur dort ändern.',
-    );
-  }
   return ziel;
 }
 
@@ -216,8 +229,19 @@ export async function abwesenheitAendern(
   neu: NeueAbsence,
   heute = new Date(),
 ): Promise<Absence> {
-  const body = absenceBody(neu);
   const alt = await eigenerEintrag(cookie, userId, absenceId, heute);
+  /**
+   * **Grund und Herkunft bleiben, wie sie waren.**
+   *
+   * Ein „Urlaub", den jemand hier verlängert, muss Urlaub bleiben – der Standardgrund der App würde
+   * ihn zu „Abwesend" machen. Und er darf **keinen** `[Musikteam]`-Marker bekommen: Der Excel-Sync
+   * fasst nur Marker-Einträge an, ein markierter Urlaub wäre also plötzlich Sync-Material und
+   * verschwände beim nächsten Lauf, weil er in der Excel nicht steht.
+   */
+  const body = absenceBody(neu, {
+    reasonId: alt.reasonId,
+    mitMarker: alt.vonApp,
+  });
   const vorhanden = await meineAbwesenheiten(cookie, userId, body.startDate, body.endDate);
   if (gleicherZeitraumAusser(vorhanden, body, absenceId)) {
     throw new HttpError(409, 'Für diesen Zeitraum gibt es schon einen Eintrag.');
@@ -237,4 +261,69 @@ export async function abwesenheitAendern(
     endDate: body.endDate,
     comment: body.comment,
   });
+}
+
+/* ------------------------------------------------------------------ Abwesenheitsgründe */
+
+/**
+ * **Die Abwesenheitsgründe der Gemeinde** (Wunsch Alwin, 05.09.2026: „bitte immer wieder bei
+ * ChurchTools aktualisieren, man kann da Gründe einstellen" – also keine fest verdrahtete Liste).
+ *
+ * Gemessen am 05.09.2026: Die `/api/`-Welt hat keinen Endpunkt dafür (`/masterdata/absencereasons`,
+ * `/absencereasons`, `/absencereason` antworten alle 404). Die Gründe stehen in **derselben**
+ * `getMasterData`-Antwort der alten Schnittstelle, aus der schon die Lied-Kategorien kommen – unter
+ * `absent_reason`, als Objekt `{ "1": { id, bezeichnung, sortkey } }` mit Zeichenketten-IDs und dem
+ * Namensfeld `bezeichnung`. Deshalb wird hier kein neuer Weg gebaut, sondern der vorhandene benutzt.
+ *
+ * Die Namen der Standardgründe sind Übersetzungsschlüssel (`absent.reason.vacation`) – lesbar macht
+ * sie `grundLesbar` in `@shared/absences`, eigene Gründe der Gemeinde gehen unverändert durch.
+ */
+const GRUND_MELDUNGEN = {
+  verweigert: 'Keine Berechtigung, die Abwesenheitsgründe in ChurchTools zu lesen.',
+  abgelehnt: 'ChurchTools hat die Anfrage nach den Abwesenheitsgründen abgelehnt',
+  unlesbar: 'ChurchTools lieferte keine lesbare Antwort für die Abwesenheitsgründe.',
+  fehlgeschlagen: 'Die Abwesenheitsgründe konnten nicht geladen werden.',
+  innenUnlesbar: 'Die Liste der Abwesenheitsgründe war nicht lesbar.',
+};
+
+interface RohGrund {
+  id?: string | number;
+  bezeichnung?: string;
+  sortkey?: string | number;
+}
+
+/** Reine Funktion: die `absent_reason`-Struktur der alten Schnittstelle → sortierte Liste. */
+export function zuGruenden(roh: unknown): AbsenceReason[] {
+  // Objekt („{1: {...}}") ODER Array – beides ist bei dieser Schnittstelle schon vorgekommen.
+  const werte: RohGrund[] = Array.isArray(roh)
+    ? (roh as RohGrund[])
+    : roh && typeof roh === 'object'
+      ? Object.values(roh as Record<string, RohGrund>)
+      : [];
+  return werte
+    .map((g) => ({
+      id: ctId(g.id),
+      name: grundLesbar(g.bezeichnung),
+      sort: Number(g.sortkey ?? 0),
+    }))
+    .filter(
+      (g): g is { id: number; name: string; sort: number } => g.id !== null && g.name !== null,
+    )
+    .sort((a, b) => a.sort - b.sort || a.id - b.id)
+    .map(({ id, name }) => ({ id, name, standard: id === config.absenceReasonId }));
+}
+
+/**
+ * Gründe holen – je Sitzung eine Minute gemerkt. Sie ändern sich fast nie, und die Liste hängt an
+ * jedem Öffnen des Fensters; ohne Memo wäre das ein ChurchTools-Aufruf pro Fenster.
+ */
+export async function abwesenheitsGruende(cookie: string): Promise<AbsenceReason[]> {
+  const gemerkt = gruendeMemo.get(cookie);
+  if (gemerkt !== undefined) return gemerkt;
+  const daten = (await ctAjax(cookie, 'getMasterData', {}, GRUND_MELDUNGEN)) as {
+    absent_reason?: unknown;
+  };
+  const liste = zuGruenden(daten.absent_reason);
+  if (liste.length > 0) gruendeMemo.set(cookie, liste);
+  return liste;
 }

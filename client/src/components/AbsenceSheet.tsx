@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Absence, NeueAbsence } from '@shared/types/index';
+import type { Absence, AbsenceReason, NeueAbsence } from '@shared/types/index';
 import { Sheet } from './Sheet';
 import { anzahlTage, plusTage, wochenStart } from '../utils/wochen';
 import styles from '../pages/Availability.module.scss';
@@ -39,6 +39,10 @@ interface AbsenceSheetProps {
   heute: string;
   laeuft: boolean;
   loeschtGerade: boolean;
+  /** Gründe der Gemeinde aus ChurchTools; leer, solange sie laden oder nicht abrufbar sind. */
+  gruende: AbsenceReason[];
+  /** Vorbelegter Grund beim Anlegen: der vom Server als `standard` gekennzeichnete. */
+  standardGrund?: number | null;
   onClose: () => void;
   onSubmit: (neu: NeueAbsence) => void;
   onDelete: (a: Absence) => void;
@@ -57,6 +61,8 @@ export function AbsenceSheet({
   heute,
   laeuft,
   loeschtGerade,
+  gruende,
+  standardGrund = null,
   onClose,
   onSubmit,
   onDelete,
@@ -68,6 +74,15 @@ export function AbsenceSheet({
     entwurf.art === 'aendern' ? entwurf.absence.comment : '',
   );
   const [wahl, setWahl] = useState<SchnellwahlId | null>(entwurf.art === 'neu' ? 'tag' : null);
+  /**
+   * Der Grund kommt aus ChurchTools (Wunsch Alwin, 05.09.2026: „man kann da Gründe einstellen") –
+   * beim Ändern der des Eintrags, beim Anlegen der Standard. `null` heißt „nicht angefasst": Dann
+   * entscheidet der Server, und ein Urlaub bleibt Urlaub, selbst wenn die Liste gerade fehlt.
+   */
+  const [grund, setGrund] = useState<number | null>(
+    entwurf.art === 'aendern' ? entwurf.absence.reasonId : standardGrund,
+  );
+  const [loeschFrage, setLoeschFrage] = useState(false);
   const ungueltig = !von || !bis || bis < von;
 
   const schnellwahl = (id: SchnellwahlId): void => {
@@ -138,6 +153,23 @@ export function AbsenceSheet({
         />
       </div>
 
+      {gruende.length > 0 && (
+        <div className={styles.feld}>
+          <label htmlFor="verf-grund">Grund</label>
+          <select
+            id="verf-grund"
+            value={grund ?? ''}
+            onChange={(e) => setGrund(e.target.value ? Number(e.target.value) : null)}
+          >
+            {gruende.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {ungueltig && von && bis && (
         <div className={styles.fehler}>Das Ende liegt vor dem Anfang.</div>
       )}
@@ -146,7 +178,12 @@ export function AbsenceSheet({
         className={styles.primaryWide}
         disabled={ungueltig || laeuft}
         onClick={() =>
-          onSubmit({ startDate: von, endDate: bis, comment: kommentar.trim() || undefined })
+          onSubmit({
+            startDate: von,
+            endDate: bis,
+            comment: kommentar.trim() || undefined,
+            reasonId: grund ?? undefined,
+          })
         }
       >
         {laeuft
@@ -156,15 +193,42 @@ export function AbsenceSheet({
             : 'Speichern'}
       </button>
 
-      {entwurf.art === 'aendern' && (
-        <button
-          className={styles.loeschenWide}
-          disabled={loeschtGerade}
-          onClick={() => onDelete(entwurf.absence)}
-        >
-          {loeschtGerade ? 'Wird gelöscht …' : 'Löschen'}
-        </button>
-      )}
+      {entwurf.art === 'aendern' &&
+        /**
+         * **Löschen fragt nach, wenn der Eintrag nicht aus der App stammt.** Er wurde dann direkt in
+         * ChurchTools gemacht (Urlaub, krank) – dass er hier verschwindet, soll niemanden überraschen.
+         * Bei eigenen App-Einträgen bleibt es beim einen Tipp.
+         */
+        (loeschFrage ? (
+          <div className={styles.loeschFrage}>
+            <p>
+              Dieser Eintrag stammt aus ChurchTools
+              {entwurf.absence.reason ? ` („${entwurf.absence.reason}")` : ''}. Wirklich löschen?
+            </p>
+            <div className={styles.zwei}>
+              <button className={styles.behalten} onClick={() => setLoeschFrage(false)}>
+                Behalten
+              </button>
+              <button
+                className={styles.loeschenWide}
+                disabled={loeschtGerade}
+                onClick={() => onDelete(entwurf.absence)}
+              >
+                {loeschtGerade ? 'Wird gelöscht …' : 'Ja, löschen'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className={styles.loeschenWide}
+            disabled={loeschtGerade}
+            onClick={() =>
+              entwurf.absence.vonApp ? onDelete(entwurf.absence) : setLoeschFrage(true)
+            }
+          >
+            {loeschtGerade ? 'Wird gelöscht …' : 'Löschen'}
+          </button>
+        ))}
     </Sheet>
   );
 }

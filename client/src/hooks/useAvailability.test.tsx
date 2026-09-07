@@ -39,7 +39,8 @@ describe('useAvailability – Schreibvorgänge verwerfen die eigene Liste', () =
       endDate: '2026-10-04',
       comment: '',
       reason: null,
-      eigene: true,
+      reasonId: null,
+      vonApp: true,
     });
     const spy = vi.spyOn(qc, 'invalidateQueries');
     const { result } = renderHook(() => useCreateAbsence(), { wrapper });

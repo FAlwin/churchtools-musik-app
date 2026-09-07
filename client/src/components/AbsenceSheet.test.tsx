@@ -11,13 +11,21 @@ import { AbsenceSheet, schnellwahlZeitraum } from './AbsenceSheet';
  */
 const HEUTE = '2026-10-05'; // ein Montag
 
+/** Die Gründe, wie sie ChurchTools liefert – gemessen an der ECG-Instanz (Reihenfolge nach sortkey). */
+const GRUENDE = [
+  { id: 3, name: 'Krank', standard: false },
+  { id: 2, name: 'Urlaub', standard: false },
+  { id: 1, name: 'Abwesend', standard: true },
+];
+
 const EIGENE: Absence = {
   id: 7,
   startDate: '2026-11-02',
   endDate: '2026-11-04',
   comment: 'Reise',
   reason: null,
-  eigene: true,
+  reasonId: null,
+  vonApp: true,
 };
 
 function zeige(props: Partial<Parameters<typeof AbsenceSheet>[0]> = {}) {
@@ -29,6 +37,7 @@ function zeige(props: Partial<Parameters<typeof AbsenceSheet>[0]> = {}) {
       heute={HEUTE}
       laeuft={false}
       loeschtGerade={false}
+      gruende={GRUENDE}
       onClose={vi.fn()}
       onSubmit={onSubmit}
       onDelete={onDelete}
@@ -127,5 +136,59 @@ describe('AbsenceSheet – ändern', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
     expect(onDelete).toHaveBeenCalledWith(EIGENE);
+  });
+});
+
+/**
+ * Der Grund kommt aus ChurchTools (Wunsch Alwin, 05.09.2026: „bitte immer wieder bei ChurchTools
+ * aktualisieren, man kann da Gründe einstellen"). Die Liste ist deshalb eine Eingabe, keine Konstante.
+ */
+describe('AbsenceSheet – Grund aus ChurchTools', () => {
+  it('beim Anlegen ist der Standard vorgewählt – nicht der erste der Liste', () => {
+    const { onSubmit } = zeige({ standardGrund: 1 });
+    expect(screen.getByLabelText<HTMLSelectElement>('Grund').value).toBe('1');
+    fireEvent.click(screen.getByRole('button', { name: 'Eintragen' }));
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ reasonId: 1 }));
+  });
+
+  it('beim Ändern steht der Grund des Eintrags – und ein anderer lässt sich wählen', () => {
+    const { onSubmit } = zeige({
+      entwurf: { art: 'aendern', absence: { ...EIGENE, reason: 'Urlaub', reasonId: 2 } },
+    });
+    expect(screen.getByLabelText<HTMLSelectElement>('Grund').value).toBe('2');
+    fireEvent.change(screen.getByLabelText('Grund'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ reasonId: 3 }));
+  });
+
+  it('ohne Liste (noch nicht geladen) gibt es keine Auswahl und keinen Grund im Auftrag', () => {
+    const { onSubmit } = zeige({ gruende: [] });
+    expect(screen.queryByLabelText('Grund')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Eintragen' }));
+    // Kein `reasonId` → der Server behält beim Ändern den alten und nimmt beim Anlegen den Standard.
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ reasonId: undefined }));
+  });
+});
+
+describe('AbsenceSheet – Löschen fragt bei fremden Einträgen nach', () => {
+  it('ein App-Eintrag wird mit einem Tipp gelöscht', () => {
+    const { onDelete } = zeige({ entwurf: { art: 'aendern', absence: EIGENE } });
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+    expect(onDelete).toHaveBeenCalledWith(EIGENE);
+  });
+
+  it('ein ChurchTools-Eintrag erst nach Rückfrage – und „Behalten" bricht ab', () => {
+    const fremd = { ...EIGENE, vonApp: false, reason: 'Urlaub', reasonId: 2 };
+    const { onDelete } = zeige({ entwurf: { art: 'aendern', absence: fremd } });
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByText(/stammt aus ChurchTools/)).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Behalten' }));
+    expect(screen.queryByText(/stammt aus ChurchTools/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ja, löschen' }));
+    expect(onDelete).toHaveBeenCalledWith(fremd);
   });
 });

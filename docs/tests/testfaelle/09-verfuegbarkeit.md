@@ -46,25 +46,34 @@ eine Abwesenheit für genau diesen Tag an, mit Kommentar `[Musikteam] <dein Text
 
 </details>
 
-### TF-VERF-02 · Manuelle ChurchTools-Abwesenheit bleibt unangetastet
+### TF-VERF-02 · Ein ChurchTools-Eintrag: änderbar, aber mit Rückfrage
 
-**Das brauchst du:** Wie TF-VERF-01, plus eine Abwesenheit, die du **direkt in ChurchTools** anlegst
-(z. B. Grund „Urlaub", ohne Kommentar), die einen kommenden Termin überdeckt.
+**Das brauchst du:** Wie TF-VERF-01, plus eine Abwesenheit, die du **direkt in ChurchTools** anlegst –
+Grund **„Urlaub"**, mit einem Kommentar, über einen kommenden Termin.
 
-**Das muss passieren:** Der Termin zeigt ein **Schloss** mit „Abwesend" statt eines Knopfs. In
-„Meine Abwesenheiten" steht der Zeitraum mit Schloss, **ohne Papierkorb**. Nichts in der App kann
-diesen Eintrag löschen.
+**Das muss passieren:** Der Eintrag erscheint mit seinem Grund und ist **änderbar** (Entscheidung
+Alwin, 05.09.2026 – vorher trug er ein Schloss). Beim Speichern bleibt er **Urlaub** und bekommt
+**keinen** `[Musikteam]`-Kommentar. Vor dem **Löschen** fragt die App nach.
 
-1. In ChurchTools eine Abwesenheit über einen kommenden Termin anlegen (ohne `[Musikteam]`).
+1. In ChurchTools eine Abwesenheit über einen kommenden Termin anlegen (Grund „Urlaub", Kommentar
+   z. B. „Test-Urlaub", **ohne** `[Musikteam]`).
 2. In der App **Verfügbar** öffnen (bei Bedarf nach unten ziehen zum Aktualisieren).
-3. Der Termin zeigt das Schloss; der Zeitraum steht unten mit Schloss und Grund „Urlaub".
-4. Den Eintrag in ChurchTools wieder löschen.
+3. Unter „Meine Abwesenheiten" steht der Zeitraum mit „Test-Urlaub · Urlaub"; beim Termin steht
+   „Urlaub" als Knopf.
+4. Die Zeile antippen: Im Fenster sind Von/Bis, Kommentar und **Grund „Urlaub"** vorgewählt. Die
+   Auswahl enthält die Gründe **deiner** ChurchTools-Instanz.
+5. **Bis** um einen Tag verlängern, **Speichern** → „Geändert." In ChurchTools steht genau **ein**
+   Eintrag mit den neuen Daten, Grund weiterhin **Urlaub** (nicht „Abwesend"!) und ohne Marker.
+6. Zeile erneut antippen → **Löschen** → Rückfrage „Dieser Eintrag stammt aus ChurchTools („Urlaub")".
+   **Behalten** bricht ab; **Ja, löschen** entfernt ihn. In ChurchTools ist er weg.
+7. **Gegenprobe Grund:** Einen eigenen App-Eintrag anlegen (TF-VERF-01) – in ChurchTools trägt er den
+   Standardgrund („Abwesend") und den Marker. Beim Löschen kommt **keine** Rückfrage.
 
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `shared/absences/index.ts`, `server/src/services/absences.ts`, `client/src/utils/absenceDatum.ts`, `client/src/pages/Availability.tsx`
-- **Automatisiert:** ja – `server/src/services/absences.test.ts` (403 ohne Marker), `client/src/pages/Availability.test.tsx` (Schloss, kein Knopf); von Hand nur der echte ChurchTools-Eintrag
+- **Betrifft:** `shared/absences/index.ts`, `server/src/services/absences.ts`, `client/src/components/AbsenceSheet.tsx`, `client/src/pages/Availability.tsx`
+- **Automatisiert:** teilweise – `server/src/services/absences.test.ts` (Grund und fehlender Marker bleiben beim Ändern; Gründe aus `getMasterData`), `server/src/services/absenceGrund.test.ts` (Übersetzung der Schlüssel), `client/src/components/AbsenceSheet.test.tsx` (Grund-Auswahl, Rückfrage vor dem Löschen); von Hand bleibt der echte ChurchTools-Eintrag und dass dort genau ein Eintrag übrig ist
 - **Historie:** #177
 
 </details>

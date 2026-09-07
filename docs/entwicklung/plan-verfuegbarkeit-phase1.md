@@ -51,7 +51,17 @@ beidseitiger Abgleich Excel↔CT – und bleibt vorerst Heimat der Dienst-Eintei
 
 Von App **und** Sync erzeugte CT-Abwesenheiten tragen den Kommentar-Präfix `[Musikteam] …`.
 
-- **Schreiben/Löschen in CT** nur bei Einträgen mit diesem Marker.
+- **Der Sync** schreibt und löscht in CT nur bei Einträgen mit diesem Marker.
+- **Die App dagegen darf alles, was dem angemeldeten Konto gehört** (Korrektur vom 05.09.2026, nach
+  Alwins Einwand „können wir nicht in unserer App die Daten aus ChurchTools bearbeiten?"). Anlass war
+  eine Messung: **Keiner** der 31 ECG-Bestände trug den Marker – der alte Planner schreibt keinen
+  Kommentar. Die Sperre in der Oberfläche hätte praktisch jeden Eintrag unantastbar gemacht, obwohl
+  dieselbe Person ihn in ChurchTools selbst bearbeiten darf. Beim Ändern bleiben **Grund und
+  Herkunft** erhalten (ein Urlaub wird nicht zu „Abwesend" und bekommt keinen Marker – sonst hielte
+  der Sync ihn für seinen); vor dem **Löschen** eines fremden Eintrags fragt die App nach.
+  ⚠️ **Folge für Phase 2:** Die Excel-Einträge in CT tragen keinen Marker. Der Sync muss „gehört uns"
+  deshalb wie der Alt-Planner am **Grund** erkennen (`absenceReasonId` = Standard) und seine Baseline
+  aus dem Ist-Stand initialisieren – sonst legt der erste Lauf Duplikate an.
 - **Manuelle** CT-Abwesenheiten (Urlaub/Krank, ohne Marker) werden **gelesen** (fürs Anzeigen/
   Excel-Spiegeln), aber **nie verändert/gelöscht**.
 

@@ -27,9 +27,18 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   - Darunter **„Diese Woche"** (Termine und Abwesenheiten der gezeigten Woche) und **„Meine
     Abwesenheiten"**.
 
-  Jeder Eintrag ist eine echte **ChurchTools-Abwesenheit** mit dem Kommentar-Marker `[Musikteam] …`;
-  nur solche Einträge lassen sich hier ändern oder löschen. Manuell in ChurchTools eingetragene
-  Abwesenheiten werden mit Schloss gezeigt und nie angefasst. Löst die Weboberfläche des alten
+  **Alle eigenen Abwesenheiten sind bearbeitbar – auch die aus ChurchTools.** Zuerst durften nur
+  Einträge mit dem Kommentar-Marker `[Musikteam]` angefasst werden; eine Messung an der ECG-Instanz
+  zeigte, dass **keiner** der 31 Bestände diesen Marker trägt (der alte Planner schreibt keinen
+  Kommentar, und wer direkt in ChurchTools einträgt, schon gar nicht) – die Regel hätte praktisch
+  alles gesperrt. In der App ist man mit seinem eigenen Konto angemeldet: Was in ChurchTools erlaubt
+  ist, ist hier erlaubt. Vor dem Löschen eines Eintrags, der nicht aus der App stammt, fragt die App
+  nach. Der Marker bleibt Herkunftskennzeichen für den späteren Excel-Sync.
+
+  **Der Grund gehört dazu.** Das Fenster zeigt eine Auswahl mit den Gründen **der Gemeinde** –
+  Abwesend, Urlaub, Krank oder was dort eingestellt ist; ChurchTools liefert sie über dieselbe
+  Schnittstelle wie die Lied-Kategorien. Beim Ändern bleibt der Grund erhalten (ein Urlaub wird
+  nicht zu „Abwesend"), neue Einträge bekommen den konfigurierten Standard. Löst die Weboberfläche des alten
   Musik-Planners ab. **Kein Excel in der App** – der Abgleich mit der ECG-Excel wird ein eigener
   Dienst (PR 2); Release erst mit beiden.
   - Server: `GET/POST /api/absences`, `PUT/DELETE /api/absences/:id`, `GET /api/absences/events`

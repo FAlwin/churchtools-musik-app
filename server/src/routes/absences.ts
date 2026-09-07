@@ -7,6 +7,7 @@ import {
   putAbsence,
   deleteAbsence,
   getAbsenceEvents,
+  getAbsenceReasons,
 } from '../controllers/absencesController.js';
 
 /**
@@ -19,6 +20,7 @@ const router = Router();
 router.use(requireSession);
 // `/events` VOR `/:id` – sonst würde „events" als ID gelesen.
 router.get('/absences/events', asyncHandler(getAbsenceEvents));
+router.get('/absences/reasons', asyncHandler(getAbsenceReasons));
 router.get('/absences', asyncHandler(getAbsences));
 router.post('/absences', asyncHandler(postAbsence));
 router.put('/absences/:id', asyncHandler(putAbsence));

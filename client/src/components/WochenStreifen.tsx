@@ -178,14 +178,14 @@ export function WochenStreifen({
                     styles.tag,
                     vorbei ? styles.vorbei : '',
                     tag === heute ? styles.heute : '',
-                    a?.eigene ? styles.eigen : a ? styles.manuell : '',
+                    a?.vonApp ? styles.eigen : a ? styles.manuell : '',
                   ]
                     .filter(Boolean)
                     .join(' ');
                   const beschreibung = [
                     `${wochentagKurz(tag)} ${tagImMonat(tag)}.`,
                     eventTage.has(tag) ? 'Termin' : '',
-                    a?.eigene ? 'abgemeldet' : a ? 'in ChurchTools eingetragen' : '',
+                    a?.vonApp ? 'abgemeldet' : a ? 'in ChurchTools eingetragen' : '',
                   ]
                     .filter(Boolean)
                     .join(', ');

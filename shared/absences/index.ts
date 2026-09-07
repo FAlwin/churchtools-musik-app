@@ -25,3 +25,33 @@ export function markerFreitext(comment: string | null | undefined): string {
   const c = (comment ?? '').trim();
   return c.startsWith(ABSENCE_MARKER) ? c.slice(ABSENCE_MARKER.length).trim() : c;
 }
+
+/**
+ * **Der Grund einer Abwesenheit, lesbar.**
+ *
+ * ChurchTools liefert bei den Standardgründen keinen Text, sondern einen Übersetzungsschlüssel –
+ * gemessen am 05.09.2026 an der ECG-Instanz: `absent.reason.absence`, `absent.reason.vacation`,
+ * `absent.reason.sick`. Einen Endpunkt, der die Gründe mit deutschen Namen ausgibt, hat die API
+ * nicht (beide naheliegenden Pfade antworten 404).
+ *
+ * Selbst angelegte Gründe tragen dagegen einen echten Namen – der wird unverändert durchgereicht.
+ * Ein unbekannter Schlüssel wird lesbar gemacht, statt ihn rohe Technik zu zeigen.
+ */
+const GRUND_TEXTE: Record<string, string> = {
+  'absent.reason.absence': 'Abwesend',
+  'absent.reason.vacation': 'Urlaub',
+  'absent.reason.sick': 'Krank',
+};
+
+export function grundLesbar(name: string | null | undefined): string | null {
+  const n = (name ?? '').trim();
+  if (!n) return null;
+  const bekannt = GRUND_TEXTE[n];
+  if (bekannt) return bekannt;
+  if (!n.startsWith('absent.reason.')) return n; // eigener Grund der Gemeinde
+  const rest = n
+    .slice('absent.reason.'.length)
+    .replace(/[._-]+/g, ' ')
+    .trim();
+  return rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : null;
+}

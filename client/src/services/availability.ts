@@ -2,7 +2,7 @@
  * Verfügbarkeit (#177): eigene Abwesenheiten über den eigenen Server – der spricht mit ChurchTools
  * im Namen des angemeldeten Kontos. Kein Excel hier; der Sync ist ein eigener Dienst.
  */
-import type { Absence, AbsenceEvent, NeueAbsence } from '@shared/types/index';
+import type { Absence, AbsenceEvent, AbsenceReason, NeueAbsence } from '@shared/types/index';
 import { apiFetch } from './api';
 
 export function getMyAbsences(): Promise<Absence[]> {
@@ -11,6 +11,10 @@ export function getMyAbsences(): Promise<Absence[]> {
 
 export function getAbsenceEvents(weeks = 10): Promise<AbsenceEvent[]> {
   return apiFetch<AbsenceEvent[]>(`/api/absences/events?weeks=${weeks}`);
+}
+
+export function getAbsenceReasons(): Promise<AbsenceReason[]> {
+  return apiFetch<AbsenceReason[]>('/api/absences/reasons');
 }
 
 export function createAbsence(neu: NeueAbsence): Promise<Absence> {

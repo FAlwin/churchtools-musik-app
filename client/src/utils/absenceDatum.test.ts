@@ -8,7 +8,8 @@ const ab = (p: Partial<Absence>): Absence => ({
   endDate: '2026-10-04',
   comment: '',
   reason: null,
-  eigene: true,
+  reasonId: null,
+  vonApp: true,
   ...p,
 });
 
@@ -21,7 +22,7 @@ describe('absenceDatum', () => {
   });
 
   it('abwesenheitFuer nimmt die eigene vor der manuellen', () => {
-    const manuell = ab({ id: 2, eigene: false });
+    const manuell = ab({ id: 2, vonApp: false });
     const eigene = ab({ id: 3 });
     expect(abwesenheitFuer([manuell, eigene], '2026-10-04')?.id).toBe(3);
     expect(abwesenheitFuer([manuell], '2026-10-04')?.id).toBe(2);

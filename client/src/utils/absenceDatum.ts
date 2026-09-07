@@ -13,7 +13,7 @@ export function deckt(a: Absence, tag: string): boolean {
 
 /** Die Abwesenheit, die den Tag abdeckt – eigene zuerst, damit „Abmelden zurücknehmen" sie trifft. */
 export function abwesenheitFuer(alle: Absence[], tag: string): Absence | undefined {
-  return alle.find((a) => a.eigene && deckt(a, tag)) ?? alle.find((a) => deckt(a, tag));
+  return alle.find((a) => a.vonApp && deckt(a, tag)) ?? alle.find((a) => deckt(a, tag));
 }
 
 const WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];

@@ -29,6 +29,16 @@ function useAbsencesRefresh() {
   return () => qc.invalidateQueries({ queryKey: [...ABSENCES_KEY, 'mine'] });
 }
 
+/** Die Gründe der Gemeinde – ändern sich fast nie, deshalb lange frisch. */
+export function useAbsenceReasons(enabled: boolean) {
+  return useQuery({
+    queryKey: [...ABSENCES_KEY, 'reasons'],
+    queryFn: () => api.getAbsenceReasons(),
+    enabled,
+    staleTime: 30 * 60_000,
+  });
+}
+
 export function useCreateAbsence() {
   const refresh = useAbsencesRefresh();
   return useMutation({

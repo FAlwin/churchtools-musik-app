@@ -20,6 +20,21 @@ const PERSON = { id: 4711, firstName: 'Test', lastName: 'Musiker' };
 
 /** Abwesenheiten (#177): eine manuelle (ohne Marker) liegt vor, damit das Schloss zu sehen ist. */
 let absenceId = 9000;
+/**
+ * Grund-ID → so, wie ChurchTools ihn zurückgibt: Name als **Übersetzungsschlüssel** (gemessen
+ * 05.09.2026). Vorher stand hier fest „Abwesend", egal welche ID – der Stub log also über den Grund
+ * und hätte einen echten Fehler beim Beibehalten des Grundes verdeckt.
+ */
+const GRUND_NAMEN = {
+  1: 'absent.reason.absence',
+  2: 'absent.reason.vacation',
+  3: 'absent.reason.sick',
+};
+const grundZu = (id) => ({
+  id: Number(id) || 1,
+  name: GRUND_NAMEN[Number(id) || 1] ?? 'absent.reason.absence',
+});
+
 const ABSENCES = [
   {
     id: ++absenceId,
@@ -27,7 +42,7 @@ const ABSENCES = [
     startDate: '2099-12-24',
     endDate: '2099-12-26',
     comment: 'Weihnachten',
-    absenceReason: { id: 3, name: 'Urlaub' },
+    absenceReason: { id: 2, name: 'absent.reason.vacation' },
   },
 ];
 
@@ -183,6 +198,18 @@ function ajaxAntwort(func) {
     return {
       status: 'success',
       data: {
+        /**
+         * Die Abwesenheitsgründe (#177) kommen aus DERSELBEN Antwort wie die Lied-Kategorien – so
+         * hat es die Messung an der ECG-Instanz am 05.09.2026 gezeigt. Genau diese Form nachbauen:
+         * ein OBJEKT (kein Array), IDs als Zeichenkette, Name als Übersetzungsschlüssel, Reihenfolge
+         * über `sortkey` (bei der ECG steht „Krank" vorn – deshalb darf die App nicht einfach den
+         * ersten Eintrag als Standard nehmen).
+         */
+        absent_reason: {
+          1: { id: '1', bezeichnung: 'absent.reason.absence', sortkey: '2' },
+          2: { id: '2', bezeichnung: 'absent.reason.vacation', sortkey: '1' },
+          3: { id: '3', bezeichnung: 'absent.reason.sick', sortkey: '0' },
+        },
         songcategory: [
           { id: '0', bezeichnung: 'Aktive Songs', sortkey: '0' },
           { id: '1', bezeichnung: 'Inaktive Songs', sortkey: '1' },
@@ -325,7 +352,7 @@ const server = createServer((req, res) => {
           startDate: neu.startDate,
           endDate: neu.endDate,
           comment: neu.comment ?? null,
-          absenceReason: { id: neu.absenceReasonId, name: 'Abwesend' },
+          absenceReason: grundZu(neu.absenceReasonId),
         };
         ABSENCES.push(eintrag);
         res.statusCode = 201;

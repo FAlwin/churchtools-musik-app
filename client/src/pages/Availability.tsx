@@ -9,6 +9,7 @@ import { WochenStreifen } from '../components/WochenStreifen';
 import { AbsenceSheet, type Entwurf } from '../components/AbsenceSheet';
 import {
   useAbsenceEvents,
+  useAbsenceReasons,
   useCreateAbsence,
   useDeleteAbsence,
   useMyAbsences,
@@ -55,6 +56,7 @@ interface AvailabilityProps {
 export function Availability({ online, onToast, heute = heuteIso() }: AvailabilityProps) {
   const absences = useMyAbsences(true);
   const events = useAbsenceEvents(true, WOCHEN);
+  const gruende = useAbsenceReasons(true);
   const anlegen = useCreateAbsence();
   const aendern = useUpdateAbsence();
   const loeschen = useDeleteAbsence();
@@ -139,19 +141,29 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
             {uhrzeit(ev.startDate) ? ` · ${uhrzeit(ev.startDate)}` : ''}
           </span>
         </div>
-        {a && !a.eigene ? (
-          <span className={styles.gesperrt} title="In ChurchTools eingetragen">
-            <Icon name="lock" size={14} /> Abwesend
-          </span>
-        ) : a ? (
-          <button
-            className={`${styles.aktion} ${styles.gesetzt}`}
-            disabled={loeschen.isPending}
-            onClick={() => zuruecknehmen(a)}
-            aria-label={`Abmeldung für ${ev.name} am ${tagKurz(ev.date)} zurücknehmen`}
-          >
-            Abgemeldet
-          </button>
+        {a ? (
+          /* Ein Eintrag aus ChurchTools ist auch hier anfassbar – aber nicht mit einem Tipp weg: Er
+             öffnet das Fenster mit Zeitraum und Grund, wo das Löschen nachfragt. Nur was die App
+             selbst angelegt hat, lässt sich mit einem Tipp zurücknehmen. */
+          a.vonApp ? (
+            <button
+              className={`${styles.aktion} ${styles.gesetzt}`}
+              disabled={loeschen.isPending}
+              onClick={() => zuruecknehmen(a)}
+              aria-label={`Abmeldung für ${ev.name} am ${tagKurz(ev.date)} zurücknehmen`}
+            >
+              Abgemeldet
+            </button>
+          ) : (
+            <button
+              className={`${styles.aktion} ${styles.gesetzt}`}
+              disabled={!online}
+              onClick={() => setEntwurf({ art: 'aendern', absence: a })}
+              aria-label={`Abwesenheit ${zeitraumKurz(a)} ändern`}
+            >
+              {a.reason ?? 'Abwesend'}
+            </button>
+          )
         ) : (
           <button
             className={styles.aktion}
@@ -166,36 +178,33 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   };
 
   /**
-   * Eine Abwesenheitszeile. Eigene sind **ganz** antippbar und öffnen „Abwesenheit ändern" – ein
-   * großes Ziel statt zweier kleiner Symbole (Alwins Wahl aus drei Entwürfen). Löschen sitzt in
-   * diesem Fenster, wo auch der Zeitraum steht.
+   * Eine Abwesenheitszeile – **jede** ist antippbar und öffnet „Abwesenheit ändern" (ein großes Ziel
+   * statt zweier kleiner Symbole; Löschen sitzt in diesem Fenster, wo auch der Zeitraum steht).
+   *
+   * Bis zum 05.09.2026 trugen Einträge ohne `[Musikteam]`-Marker ein Schloss und ließen sich hier
+   * nicht anfassen. Die Messung an der ECG-Instanz zeigte, warum das falsch war: **Keiner** der 31
+   * Bestände trug den Marker – der alte Planner schreibt keinen Kommentar, und wer in ChurchTools
+   * selbst einträgt, schon gar nicht. In der App ist man mit seinem eigenen Konto angemeldet; was
+   * dort erlaubt ist, ist hier erlaubt. Woher der Eintrag stammt, zeigt der Untertitel (Grund), und
+   * das Löschen fragt bei fremden Einträgen nach.
    */
-  const abwesenheitZeile = (a: Absence) =>
-    a.eigene ? (
-      <button
-        key={`ab-${a.id}`}
-        className={`${styles.zeile} ${styles.zeileTip}`}
-        disabled={!online}
-        onClick={() => setEntwurf({ art: 'aendern', absence: a })}
-        aria-label={`Abwesenheit ${zeitraumKurz(a)} ändern`}
-      >
-        <div className={styles.text}>
-          <span className={styles.titel}>{zeitraumKurz(a)}</span>
-          <span className={styles.sub}>{a.comment || 'Musikteam'}</span>
-        </div>
-        <Icon name="chev-right" size={18} />
-      </button>
-    ) : (
-      <div key={`ab-${a.id}`} className={styles.zeile}>
-        <div className={styles.text}>
-          <span className={styles.titel}>{zeitraumKurz(a)}</span>
-          <span className={styles.sub}>{a.comment || a.reason || 'ChurchTools'}</span>
-        </div>
-        <span className={styles.gesperrt} title="Nur in ChurchTools änderbar">
-          <Icon name="lock" size={14} /> ChurchTools
+  const abwesenheitZeile = (a: Absence) => (
+    <button
+      key={`ab-${a.id}`}
+      className={`${styles.zeile} ${styles.zeileTip}`}
+      disabled={!online}
+      onClick={() => setEntwurf({ art: 'aendern', absence: a })}
+      aria-label={`Abwesenheit ${zeitraumKurz(a)} ändern`}
+    >
+      <div className={styles.text}>
+        <span className={styles.titel}>{zeitraumKurz(a)}</span>
+        <span className={styles.sub}>
+          {[a.comment, a.reason].filter(Boolean).join(' · ') || 'Abwesend'}
         </span>
       </div>
-    );
+      <Icon name="chev-right" size={18} />
+    </button>
+  );
 
   // „Diese Woche": Termine und Abwesenheiten der Woche in Datumsreihenfolge. Eine Abwesenheit, die
   // genau einen Termintag abdeckt, steht schon in dessen Zeile – nicht doppelt zeigen.
@@ -236,6 +245,7 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
               online={online}
               onAbmelden={eintragenOeffnen}
               onZurueck={zuruecknehmen}
+              onOeffnen={(a) => setEntwurf({ art: 'aendern', absence: a })}
             />
 
             <WochenStreifen
@@ -281,8 +291,9 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
             </section>
 
             <p className={styles.hinweis} data-tour="verf-hinweis">
-              Deine Einträge stehen als Abwesenheit in ChurchTools – für die Einteilung sichtbar.
-              Einträge mit Schloss wurden direkt dort gemacht und lassen sich nur dort ändern.
+              Alles hier steht als Abwesenheit in ChurchTools – für die Einteilung sichtbar. Auch
+              Einträge, die du direkt dort gemacht hast, kannst du hier ändern; vor dem Löschen
+              fragt die App dann nach.
             </p>
           </div>
         )}
@@ -294,6 +305,8 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
           heute={heute}
           laeuft={anlegen.isPending || aendern.isPending}
           loeschtGerade={loeschen.isPending}
+          gruende={gruende.data ?? []}
+          standardGrund={gruende.data?.find((g) => g.standard)?.id ?? null}
           onClose={() => setEntwurf(null)}
           onSubmit={speichern}
           onDelete={entfernen}
@@ -321,6 +334,8 @@ interface StatusKopfProps {
   online: boolean;
   onAbmelden: (tag: string) => void;
   onZurueck: (a: Absence) => void;
+  /** Einen fremden Eintrag zum Ändern öffnen. */
+  onOeffnen: (a: Absence) => void;
 }
 
 /**
@@ -336,6 +351,7 @@ export function StatusKopf({
   online,
   onAbmelden,
   onZurueck,
+  onOeffnen,
 }: StatusKopfProps) {
   if (!termin) {
     return (
@@ -348,8 +364,9 @@ export function StatusKopf({
       </div>
     );
   }
-  const abgemeldet = absence?.eigene === true;
-  const gesperrt = absence !== undefined && !absence.eigene;
+  const abgemeldet = absence?.vonApp === true;
+  // Die Prüfung als Funktion, damit TypeScript im Zweig weiß, dass `absence` existiert.
+  const gesperrt = absence !== undefined && !absence.vonApp ? absence : null;
   return (
     <div className={`${styles.status}${absence ? ' ' + styles.statusWeg : ''}`}>
       <span className={styles.statusKreis}>{absence ? '🚫' : '🎸'}</span>
@@ -369,15 +386,21 @@ export function StatusKopf({
           {kommende.map((e) => {
             const a = abwesenheitFuer(absences, e.date);
             return (
-              <i key={e.id} className={a?.eigene ? styles.balkenRot : a ? styles.balkenGrau : ''} />
+              <i key={e.id} className={a?.vonApp ? styles.balkenRot : a ? styles.balkenGrau : ''} />
             );
           })}
         </span>
       </div>
-      {gesperrt ? (
-        <span className={styles.gesperrt} title="In ChurchTools eingetragen">
-          <Icon name="lock" size={14} />
-        </span>
+      {gesperrt !== null ? (
+        // Aus ChurchTools: der Grund als Knopf – er öffnet das Fenster zum Ändern.
+        <button
+          className={`${styles.aktion} ${styles.gesetzt}`}
+          disabled={!online}
+          onClick={() => onOeffnen(gesperrt)}
+          aria-label={`Abwesenheit ${zeitraumKurz(gesperrt)} ändern`}
+        >
+          {gesperrt.reason ?? 'Abwesend'}
+        </button>
       ) : abgemeldet ? (
         <button
           className={`${styles.aktion} ${styles.gesetzt}`}

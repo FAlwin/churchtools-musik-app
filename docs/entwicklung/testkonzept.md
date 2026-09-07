@@ -149,10 +149,15 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
     rechnet die vier Fälle, ein späteres „Von" schiebt „Bis" mit, Löschen nur beim Ändern),
     `pages/Availability.test` (Statuskopf sagt verfügbar/abgemeldet, Streifen blättert, Tipp auf einen
     Tag öffnet das Fenster, Zeile öffnet „Ändern", Vergangenes gesperrt; Kann nicht / Abgemeldet /
-    Schloss, offline gesperrt). Beim Ändern prüft `services/absences.test` die Reihenfolge (ERST
-    anlegen, DANN löschen – der Schutz gegen stillen Verlust), 403 bei fremden Einträgen und 409 nur
-    bei einem ANDEREN eigenen Eintrag. Von Hand bleibt, dass die Abwesenheit wirklich in ChurchTools
-    steht und nach dem Ändern genau EIN Eintrag übrig ist (TF-VERF-01…04).
+    Grund als Knopf, offline gesperrt). Beim Ändern prüft `services/absences.test` die Reihenfolge
+    (ERST anlegen, DANN löschen – der Schutz gegen stillen Verlust), dass **Grund und fehlender
+    Marker** bei einem ChurchTools-Eintrag erhalten bleiben, 409 nur bei einem ANDEREN eigenen
+    Eintrag und `zuGruenden` gegen die gemessene `absent_reason`-Struktur;
+    `services/absenceGrund.test` die Übersetzung der Gründe-Schlüssel und den Marker als reines
+    Herkunftskennzeichen; `components/AbsenceSheet.test` die Grund-Auswahl (Standard ist NICHT der
+    erste der Liste) und die Rückfrage vor dem Löschen fremder Einträge. Von Hand bleibt, dass die
+    Abwesenheit wirklich in ChurchTools steht, nach dem Ändern genau EIN Eintrag übrig ist und der
+    Grund dabei nicht kippt (TF-VERF-01…04).
   - **Der Editor nach dem Anlegen und im Stammdaten-Blatt (04.09.2026):** `hooks/useNotenblatt` – der
     gemeinsame Kern: Gerüst ohne Abfrage (`hatBlatt: false`), geholtes Blatt (`true`), nachsehen (`null`),
     Speichern verwirft `['song-chart', songId]`, Fehler nennt den Grund, ohne Ziel passiert nichts.

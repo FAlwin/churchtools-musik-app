@@ -40,11 +40,12 @@ describe('zuAbsence – Marker entscheidet, was „eigene" ist', () => {
       endDate: '2026-10-04',
       comment: 'Urlaub',
       reason: null,
-      eigene: true,
+      reasonId: null,
+      vonApp: true,
     });
   });
   it('manueller Eintrag: nicht eigene, Kommentar und Grund bleiben', () => {
-    expect(a.zuAbsence(MANUELL)).toMatchObject({ comment: 'Kur', reason: 'Urlaub', eigene: false });
+    expect(a.zuAbsence(MANUELL)).toMatchObject({ comment: 'Kur', reason: 'Urlaub', vonApp: false });
   });
   it('Marker ohne Freitext ergibt leeren Kommentar', () => {
     expect(a.zuAbsence({ ...EIGENE, comment: '[Musikteam]' }).comment).toBe('');
@@ -100,7 +101,7 @@ describe('abwesenheitAnlegen – kein Doppel, eigene Konto-ID', () => {
       comment: 'Urlaub',
     });
     expect(r.neu).toBe(true);
-    expect(r.absence).toMatchObject({ id: 77, comment: 'Urlaub', eigene: true });
+    expect(r.absence).toMatchObject({ id: 77, comment: 'Urlaub', vonApp: true });
     // Die Personen-ID ist die der Sitzung – bei Lesen UND Schreiben.
     expect(vi.mocked(getAbsences).mock.calls[0][1]).toBe(1009);
     expect(vi.mocked(createAbsence).mock.calls[0][1]).toBe(1009);
@@ -128,16 +129,21 @@ describe('abwesenheitAnlegen – kein Doppel, eigene Konto-ID', () => {
   });
 });
 
-describe('abwesenheitLoeschen – nur Marker-Einträge', () => {
+describe('abwesenheitLoeschen – jeder eigene Eintrag (05.09.2026)', () => {
   it('löscht einen eigenen Eintrag über die Konto-ID', async () => {
     vi.mocked(getAbsences).mockResolvedValue([EIGENE, MANUELL]);
     await a.abwesenheitLoeschen(COOKIE, 1009, 1);
     expect(deleteAbsence).toHaveBeenCalledWith(COOKIE, 1009, 1);
   });
-  it('einen manuellen Eintrag NICHT – 403 mit Erklärung', async () => {
+  /**
+   * **Auch einen ohne Marker** – die frühere 403-Sperre ist weg (Entscheidung Alwin, 05.09.2026:
+   * „können wir nicht in unserer App die Daten aus ChurchTools bearbeiten?"). Es sind die Daten des
+   * angemeldeten Kontos; die Rückfrage vor dem Löschen leistet die Oberfläche (`AbsenceSheet`).
+   */
+  it('auch einen manuellen ChurchTools-Eintrag – es sind die eigenen Daten', async () => {
     vi.mocked(getAbsences).mockResolvedValue([EIGENE, MANUELL]);
-    await expect(a.abwesenheitLoeschen(COOKIE, 1009, 2)).rejects.toMatchObject({ status: 403 });
-    expect(deleteAbsence).not.toHaveBeenCalled();
+    await a.abwesenheitLoeschen(COOKIE, 1009, 2);
+    expect(deleteAbsence).toHaveBeenCalledWith(COOKIE, 1009, 2);
   });
   it('unbekannte ID → 404', async () => {
     vi.mocked(getAbsences).mockResolvedValue([EIGENE]);
@@ -187,14 +193,37 @@ describe('abwesenheitAendern – neu anlegen, dann alten entfernen (#177)', () =
       comment: '[Musikteam] Kurzreise',
     });
     expect(vi.mocked(deleteAbsence)).toHaveBeenCalledWith(COOKIE, 42, 1);
-    expect(ergebnis).toMatchObject({ id: 99, comment: 'Kurzreise', eigene: true });
+    expect(ergebnis).toMatchObject({ id: 99, comment: 'Kurzreise', vonApp: true });
   });
 
-  it('ein manueller ChurchTools-Eintrag lässt sich nicht ändern (403), und nichts wird geschrieben', async () => {
+  /**
+   * **Ein fremder Eintrag behält Grund UND Herkunft.** Beides ist wichtig: Ein „Urlaub" (Grund 3)
+   * darf nicht zu „Abwesend" werden, und er darf keinen `[Musikteam]`-Marker bekommen – sonst würde
+   * der Excel-Sync ihn für seinen halten und beim nächsten Lauf löschen, weil er in der Excel fehlt.
+   */
+  it('ein ChurchTools-Eintrag ist änderbar – Grund und fehlender Marker bleiben', async () => {
     vi.mocked(getAbsences).mockResolvedValue([MANUELL]);
-    await expect(a.abwesenheitAendern(COOKIE, 42, 2, NEU)).rejects.toMatchObject({ status: 403 });
-    expect(vi.mocked(createAbsence)).not.toHaveBeenCalled();
-    expect(vi.mocked(deleteAbsence)).not.toHaveBeenCalled();
+    vi.mocked(createAbsence).mockResolvedValue(55);
+    const ergebnis = await a.abwesenheitAendern(COOKIE, 42, 2, {
+      startDate: '2026-10-12',
+      endDate: '2026-10-19',
+      comment: 'Kur verlängert',
+    });
+    expect(vi.mocked(createAbsence).mock.calls[0][2]).toEqual({
+      startDate: '2026-10-12',
+      endDate: '2026-10-19',
+      absenceReasonId: 3, // der Grund des Eintrags, NICHT der App-Standard
+      comment: 'Kur verlängert', // ohne Marker
+    });
+    expect(ergebnis.vonApp).toBe(false);
+    expect(vi.mocked(deleteAbsence)).toHaveBeenCalledWith(COOKIE, 42, 2);
+  });
+
+  it('ein gewünschter Grund aus der App gewinnt gegen den alten', async () => {
+    vi.mocked(getAbsences).mockResolvedValue([MANUELL]);
+    vi.mocked(createAbsence).mockResolvedValue(56);
+    await a.abwesenheitAendern(COOKIE, 42, 2, { ...NEU, reasonId: 2 });
+    expect(vi.mocked(createAbsence).mock.calls[0][2]).toMatchObject({ absenceReasonId: 2 });
   });
 
   it('der eigene Eintrag zählt NICHT als Doppel – nur den Kommentar ändern geht', async () => {
@@ -229,5 +258,38 @@ describe('abwesenheitAendern – neu anlegen, dann alten entfernen (#177)', () =
       status: 502,
       message: expect.stringContaining('alte Eintrag'),
     });
+  });
+});
+
+/**
+ * Die Abwesenheitsgründe kommen aus derselben `getMasterData`-Antwort wie die Lied-Kategorien
+ * (gemessen 05.09.2026 – die `/api/`-Welt hat keinen Endpunkt dafür). Genau diese Struktur kam
+ * zurück: ein OBJEKT, IDs als Zeichenkette, Name in `bezeichnung`, Reihenfolge über `sortkey`.
+ */
+describe('zuGruende – die gemessene Struktur der alten Schnittstelle (#177)', () => {
+  const ROH = {
+    '1': { id: '1', bezeichnung: 'absent.reason.absence', sortkey: '2' },
+    '2': { id: '2', bezeichnung: 'absent.reason.vacation', sortkey: '1' },
+    '3': { id: '3', bezeichnung: 'absent.reason.sick', sortkey: '0' },
+  };
+
+  it('macht Zahlen aus den IDs, übersetzt die Schlüssel und sortiert wie ChurchTools', () => {
+    expect(a.zuGruenden(ROH)).toEqual([
+      { id: 3, name: 'Krank', standard: false },
+      { id: 2, name: 'Urlaub', standard: false },
+      { id: 1, name: 'Abwesend', standard: true },
+    ]);
+  });
+
+  it('ein eigener Grund der Gemeinde behält seinen Namen', () => {
+    expect(a.zuGruenden({ '7': { id: '7', bezeichnung: 'Fortbildung', sortkey: '5' } })).toEqual([
+      { id: 7, name: 'Fortbildung', standard: false },
+    ]);
+  });
+
+  it('unbrauchbares wird weggelassen, statt Halbes anzuzeigen', () => {
+    expect(a.zuGruenden({ x: { bezeichnung: 'ohne id' }, y: { id: '9' } })).toEqual([]);
+    expect(a.zuGruenden(undefined)).toEqual([]);
+    expect(a.zuGruenden('kaputt')).toEqual([]);
   });
 });

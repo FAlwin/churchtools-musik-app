@@ -16,6 +16,8 @@ const neueAbsenceSchema = z.object({
   startDate: isoTag,
   endDate: isoTag,
   comment: z.string().trim().max(200).optional(),
+  /** Grund aus `GET /api/absences/reasons`; ChurchTools lehnt eine unbekannte ID selbst ab. */
+  reasonId: z.coerce.number().int().positive().optional(),
 });
 // Compile-Wächter wie bei den Anmerkungen: Zod-Form und geteilter Typ bleiben deckungsgleich.
 const _zodSubsetOfType = (a: z.infer<typeof neueAbsenceSchema>): NeueAbsence => a;
@@ -67,4 +69,9 @@ export async function deleteAbsence(req: Request, res: Response): Promise<void> 
 export async function getAbsenceEvents(req: Request, res: Response): Promise<void> {
   const wochen = wochenSchema.parse(req.query.weeks);
   res.json(await absences.kommendeTermine(ctCookie(req), wochen));
+}
+
+/** GET /api/absences/reasons – die Abwesenheitsgründe der Gemeinde (für die Auswahl im Fenster). */
+export async function getAbsenceReasons(req: Request, res: Response): Promise<void> {
+  res.json(await absences.abwesenheitsGruende(ctCookie(req)));
 }

@@ -485,20 +485,44 @@ export interface Absence {
   endDate: string;
   /** Freitext ohne Marker – für die Anzeige. */
   comment: string;
-  /** Name des ChurchTools-Abwesenheitsgrunds (z. B. „Abwesend", „Urlaub"); null wenn unbekannt. */
+  /** Grund in lesbarer Form („Abwesend", „Urlaub", …) – siehe `grundLesbar` in `@shared/absences`. */
   reason: string | null;
+  /** Grund-ID aus ChurchTools. Beim Ändern muss sie erhalten bleiben, sonst wird aus Urlaub „Abwesend". */
+  reasonId: number | null;
   /**
-   * Von der App oder dem Sync angelegt (Kommentar trägt den Marker) → darf hier gelöscht werden.
-   * Manuelle ChurchTools-Einträge werden angezeigt, aber nie angefasst.
+   * Von der App oder dem Sync angelegt (Kommentar trägt den Marker `[Musikteam]`)?
+   *
+   * **Kein Bearbeitungsrecht** – in der App darf jeder eigene Eintrag geändert werden (Entscheidung
+   * Alwin, 05.09.2026: „können wir nicht in unserer App die Daten aus ChurchTools bearbeiten?"; die
+   * Messung zeigte, dass praktisch alle Bestandseinträge keinen Marker tragen). Das Kennzeichen
+   * steuert zwei andere Dinge: Der **Excel-Sync** fasst nur Marker-Einträge an, und beim **Löschen**
+   * eines fremden Eintrags fragt die App vorher nach.
    */
-  eigene: boolean;
+  vonApp: boolean;
 }
 
-/** Was die App zum Anlegen schickt. Der Marker kommt serverseitig dazu. */
+/** Ein Abwesenheitsgrund der Gemeinde, wie ChurchTools ihn führt (Name schon lesbar). */
+export interface AbsenceReason {
+  id: number;
+  name: string;
+  /**
+   * Der Grund, den die App bei neuen Einträgen vorwählt (`CHURCHTOOLS_ABSENCE_REASON_ID`, bei der
+   * ECG „Abwesend"). Muss der Server sagen: ChurchTools sortiert nach eigenem `sortkey` – bei der
+   * ECG steht „Krank" vorn –, und „der erste Eintrag" wäre die falsche Vorauswahl.
+   */
+  standard: boolean;
+}
+
+/** Was die App zum Anlegen oder Ändern schickt. Der Marker kommt serverseitig dazu. */
 export interface NeueAbsence {
   startDate: string;
   endDate: string;
   comment?: string;
+  /**
+   * Gewünschter Grund (aus `GET /api/absences/reasons`). Fehlt er, nimmt der Server beim Anlegen den
+   * konfigurierten Standard und beim Ändern den Grund, den der Eintrag schon hatte.
+   */
+  reasonId?: number;
 }
 
 /** Ein kommender Termin als Schnellauswahl – Name und Tag reichen, um sich abzumelden. */

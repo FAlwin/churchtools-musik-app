@@ -18,6 +18,7 @@ const loeschen = vi.fn();
 vi.mock('../hooks/useAvailability', () => ({
   useMyAbsences: () => absences(),
   useAbsenceEvents: () => events(),
+  useAbsenceReasons: () => ({ data: GRUENDE }),
   useCreateAbsence: () => ({ mutate: anlegen, isPending: false }),
   useUpdateAbsence: () => ({ mutate: aendern, isPending: false }),
   useDeleteAbsence: () => ({ mutate: loeschen, isPending: false }),
@@ -30,6 +31,13 @@ vi.mock('../utils/onboarding', async () => {
 
 const { Availability } = await import('./Availability');
 
+/** Die Gründe, wie ChurchTools sie liefert – gemessen an der ECG-Instanz (05.09.2026). */
+const GRUENDE = [
+  { id: 3, name: 'Krank', standard: false },
+  { id: 2, name: 'Urlaub', standard: false },
+  { id: 1, name: 'Abwesend', standard: true },
+];
+
 const EVENTS: AbsenceEvent[] = [
   { id: 1, name: 'Gottesdienst', date: '2026-10-04', startDate: '2026-10-04T10:00:00Z' },
   { id: 2, name: 'Gottesdienst', date: '2026-10-11', startDate: '2026-10-11T10:00:00Z' },
@@ -40,8 +48,9 @@ const EIGENE: Absence = {
   startDate: '2026-10-11',
   endDate: '2026-10-11',
   comment: 'Reise',
-  reason: null,
-  eigene: true,
+  reason: 'Abwesend',
+  reasonId: 1,
+  vonApp: true,
 };
 const MANUELL: Absence = {
   id: 11,
@@ -49,7 +58,8 @@ const MANUELL: Absence = {
   endDate: '2026-10-20',
   comment: '',
   reason: 'Urlaub',
-  eigene: false,
+  reasonId: 2,
+  vonApp: false,
 };
 
 beforeEach(() => {
@@ -90,12 +100,18 @@ describe('Availability – Statuskopf (05.09.2026)', () => {
 });
 
 describe('Availability – Terminzeilen', () => {
-  it('frei → „Kann nicht"; eigene → „Abgemeldet"; manuell → Schloss ohne Knopf', () => {
+  it('ein ChurchTools-Eintrag zeigt seinen Grund als Knopf und öffnet das Fenster (05.09.2026)', () => {
+    // Der Jugendabend am 16.10. liegt im manuellen Urlaub. Früher stand hier ein Schloss ohne
+    // Funktion; seit Alwins Einwand („können wir das nicht in unserer App bearbeiten?") ist es ein
+    // Knopf, der zum Ändern führt.
     zeige();
-    // Der 11.10. ist selbst abgemeldet (Kopf + Zeile), der Jugendabend am 16.10. liegt im manuellen
-    // Urlaub. Frei ist in dieser Woche nichts – deshalb eine Woche weiter blättern.
     fireEvent.click(screen.getByRole('button', { name: 'Nächste Woche' }));
-    expect(screen.getByTitle('In ChurchTools eingetragen')).not.toBeNull();
+    fireEvent.click(
+      screen.getAllByRole('button', { name: /Abwesenheit Mi, 14.10. – Di, 20.10. ändern/ })[0],
+    );
+    expect(screen.getByLabelText<HTMLInputElement>('Von').value).toBe('2026-10-14');
+    // Der Grund des Eintrags ist vorgewählt, nicht der Standard.
+    expect(screen.getByLabelText<HTMLSelectElement>('Grund').value).toBe('2');
   });
 
   it('„Kann nicht" öffnet das Fenster für genau diesen Tag und trägt ihn ein', () => {
@@ -107,7 +123,8 @@ describe('Availability – Terminzeilen', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Eintragen' }));
     expect(anlegen).toHaveBeenCalledWith(
-      { startDate: '2026-10-04', endDate: '2026-10-04', comment: 'Dienstreise' },
+      // Vorgewählt ist der als `standard` gekennzeichnete Grund („Abwesend"), nicht der erste der Liste.
+      { startDate: '2026-10-04', endDate: '2026-10-04', comment: 'Dienstreise', reasonId: 1 },
       expect.anything(),
     );
   });
@@ -122,7 +139,10 @@ describe('Availability – eigene Einträge ändern (05.09.2026)', () => {
     fireEvent.change(screen.getByLabelText('Bis'), { target: { value: '2026-10-13' } });
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
     expect(aendern).toHaveBeenCalledWith(
-      { id: 10, neu: { startDate: '2026-10-11', endDate: '2026-10-13', comment: 'Reise' } },
+      {
+        id: 10,
+        neu: { startDate: '2026-10-11', endDate: '2026-10-13', comment: 'Reise', reasonId: 1 },
+      },
       expect.anything(),
     );
   });
@@ -134,10 +154,17 @@ describe('Availability – eigene Einträge ändern (05.09.2026)', () => {
     expect(loeschen).toHaveBeenCalledWith(10, expect.anything());
   });
 
-  it('manuelle ChurchTools-Einträge sind KEIN Knopf – sie tragen ein Schloss', () => {
+  it('auch ein ChurchTools-Eintrag ist änderbar – aber Löschen fragt vorher nach', () => {
     zeige();
-    expect(screen.queryByRole('button', { name: /Abwesenheit Mi, 14.10./ })).toBeNull();
-    expect(screen.getByTitle('Nur in ChurchTools änderbar')).not.toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: /Abwesenheit Mi, 14.10. – Di, 20.10. ändern/ }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+    // Keine Löschung ohne Rückfrage.
+    expect(loeschen).not.toHaveBeenCalled();
+    expect(screen.getByText(/stammt aus ChurchTools/)).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Ja, löschen' }));
+    expect(loeschen).toHaveBeenCalledWith(11, expect.anything());
   });
 
   it('offline sind Eintragen und Ändern gesperrt', () => {
