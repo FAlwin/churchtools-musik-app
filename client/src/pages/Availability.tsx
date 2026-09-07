@@ -28,8 +28,6 @@ import styles from './Availability.module.scss';
 
 /** So viele Wochen zeigt der Streifen – und so weit holt der Server die Termine. */
 export const WOCHEN = 12;
-/** So viele kommende Termine stehen im Statuskopf als Balken. */
-const BALKEN = 5;
 
 interface AvailabilityProps {
   /** Schreiben braucht Netz (ChurchTools). Lesen kommt aus dem Cache. */
@@ -42,11 +40,13 @@ interface AvailabilityProps {
 /**
  * Verfügbarkeit (#177). Aufbau nach Alwins Durchklick der anfassbaren Entwürfe (05.09.2026):
  *
- *  1. **Statuskopf** – „Nächster Gottesdienst … du bist verfügbar" mit „Kann nicht" direkt daneben.
- *     Der Bildschirm sagt damit etwas, statt nur Daten zu zeigen (Alwins „irgendwie fehlt noch was").
- *  2. **Wochenstreifen**, der am Finger klebt (siehe `WochenStreifen`).
- *  3. **„Diese Woche"** – Termine und Abwesenheiten der gezeigten Woche, nach Datum gemischt.
- *  4. **„Meine Abwesenheiten"** – jede eigene Zeile ist antippbar und öffnet „Abwesenheit ändern"
+ *  1. **Wochenstreifen**, der am Finger klebt (siehe `WochenStreifen`).
+ *  2. **„Diese Woche"** – ALLE Termine der gezeigten Woche aus ChurchTools, dazu die eigenen
+ *     Abwesenheiten, nach Datum gemischt. Der Halbsatz darunter sagt das ausdrücklich: Alwin fragte
+ *     beim Durchklicken, ob es die Termine seien, bei denen er eingeteilt ist (05.09.2026).
+ *     Ein **Statuskopf** („nächster Termin … du bist verfügbar") stand hier einen Abend lang und ist
+ *     auf Alwins Wunsch wieder weg – die Miniatur-Balken der nächsten Termine erklärten sich nicht.
+ *  3. **„Meine Abwesenheiten"** – jede Zeile ist antippbar und öffnet „Abwesenheit ändern"
  *     (Von, Bis, Kommentar, Löschen). Manuelle ChurchTools-Einträge tragen ein Schloss.
  *
  * Ein Zeitraum entsteht über **ein** Fenster mit Schnellwahl („Nur dieser Tag / Wochenende / 1 Woche
@@ -75,7 +75,6 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   const sonntag = plusTage(montag, 6);
   const wocheEvents = alleEvents.filter((e) => montag <= e.date && e.date <= sonntag);
   const wocheAbwesenheiten = liste.filter((a) => a.startDate <= sonntag && montag <= a.endDate);
-  const naechster = alleEvents.find((e) => e.date >= heute);
 
   const meldeFehler = (e: unknown, sonst: string): void => {
     onToast(e instanceof ApiError ? e.message : sonst);
@@ -237,17 +236,6 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
           />
         ) : (
           <div className={styles.wrap}>
-            <StatusKopf
-              termin={naechster}
-              absence={naechster ? abwesenheitFuer(liste, naechster.date) : undefined}
-              kommende={alleEvents.filter((e) => e.date >= heute).slice(0, BALKEN)}
-              absences={liste}
-              online={online}
-              onAbmelden={eintragenOeffnen}
-              onZurueck={zuruecknehmen}
-              onOeffnen={(a) => setEntwurf({ art: 'aendern', absence: a })}
-            />
-
             <WochenStreifen
               wochen={wochen}
               index={wocheIdx}
@@ -262,6 +250,17 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
               <div className={styles.kopf}>
                 {wocheIdx === 0 ? 'Diese Woche' : 'In dieser Woche'}
               </div>
+              {/**
+               * Der Halbsatz beantwortet die Frage, die Alwin am 05.09.2026 beim Durchklicken hatte:
+               * „Sind das die Termine, bei denen ich eingetragen bin?" Nein – es sind ALLE, die das
+               * Konto in ChurchTools sehen darf, dazu die eigenen Abwesenheiten. Wer welchen Dienst
+               * hat, weiß die App nicht (Dienst-Einteilung ist Phase 2). Bewusst ohne Erwähnung der
+               * ECG-Excel: Dieser Bereich ist der generische Kern für alle Gemeinden.
+               */}
+              <p className={styles.kopfHinweis}>
+                Alle Termine aus ChurchTools und deine Abwesenheiten – wer eingeteilt ist, spielt
+                hier keine Rolle.
+              </p>
               <div className={styles.liste}>
                 {wocheZeilen.length === 0 && (
                   <div className={styles.leer}>Keine Termine, nichts eingetragen.</div>
@@ -323,102 +322,5 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
         />
       )}
     </Screen>
-  );
-}
-
-interface StatusKopfProps {
-  termin?: AbsenceEvent;
-  absence?: Absence;
-  kommende: AbsenceEvent[];
-  absences: Absence[];
-  online: boolean;
-  onAbmelden: (tag: string) => void;
-  onZurueck: (a: Absence) => void;
-  /** Einen fremden Eintrag zum Ändern öffnen. */
-  onOeffnen: (a: Absence) => void;
-}
-
-/**
- * Der Kopf sagt in einem Satz, worum es geht: **nächster Termin und ob du da bist** – mit der Aktion
- * direkt daneben (Alwins Wahl aus drei Entwürfen, 05.09.2026). Die Balken darunter sind die nächsten
- * fünf Termine: blau = da, rot = abgemeldet, grau = in ChurchTools abwesend.
- */
-export function StatusKopf({
-  termin,
-  absence,
-  kommende,
-  absences,
-  online,
-  onAbmelden,
-  onZurueck,
-  onOeffnen,
-}: StatusKopfProps) {
-  if (!termin) {
-    return (
-      <div className={styles.status}>
-        <span className={styles.statusKreis}>🎸</span>
-        <div className={styles.text}>
-          <span className={styles.titel}>Keine Termine in den nächsten Wochen</span>
-          <span className={styles.sub}>Sobald welche anstehen, siehst du sie hier.</span>
-        </div>
-      </div>
-    );
-  }
-  const abgemeldet = absence?.vonApp === true;
-  // Die Prüfung als Funktion, damit TypeScript im Zweig weiß, dass `absence` existiert.
-  const gesperrt = absence !== undefined && !absence.vonApp ? absence : null;
-  return (
-    <div className={`${styles.status}${absence ? ' ' + styles.statusWeg : ''}`}>
-      <span className={styles.statusKreis}>{absence ? '🚫' : '🎸'}</span>
-      <div className={styles.text}>
-        <span className={styles.titel}>
-          {tagKurz(termin.date)}
-          {uhrzeit(termin.startDate) ? ` · ${uhrzeit(termin.startDate)}` : ''}
-        </span>
-        <span className={styles.sub}>
-          {gesperrt
-            ? `${termin.name} – in ChurchTools als abwesend eingetragen`
-            : abgemeldet
-              ? `${termin.name} – du bist abgemeldet`
-              : `${termin.name} – du bist verfügbar`}
-        </span>
-        <span className={styles.balken} aria-hidden>
-          {kommende.map((e) => {
-            const a = abwesenheitFuer(absences, e.date);
-            return (
-              <i key={e.id} className={a?.vonApp ? styles.balkenRot : a ? styles.balkenGrau : ''} />
-            );
-          })}
-        </span>
-      </div>
-      {gesperrt !== null ? (
-        // Aus ChurchTools: der Grund als Knopf – er öffnet das Fenster zum Ändern.
-        <button
-          className={`${styles.aktion} ${styles.gesetzt}`}
-          disabled={!online}
-          onClick={() => onOeffnen(gesperrt)}
-          aria-label={`Abwesenheit ${zeitraumKurz(gesperrt)} ändern`}
-        >
-          {gesperrt.reason ?? 'Abwesend'}
-        </button>
-      ) : abgemeldet ? (
-        <button
-          className={`${styles.aktion} ${styles.gesetzt}`}
-          disabled={!online}
-          onClick={() => absence && onZurueck(absence)}
-          aria-label={`Abmeldung für ${termin.name} am ${tagKurz(termin.date)} zurücknehmen`}
-        >
-          Abgemeldet
-        </button>
-      ) : (
-        <button
-          className={styles.aktion}
-          disabled={!online}
-          onClick={() => onAbmelden(termin.date)}
-        >
-          Kann nicht
-        </button>
-      )}
-    </div>
   );
 }

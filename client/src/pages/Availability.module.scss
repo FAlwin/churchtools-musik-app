@@ -25,6 +25,15 @@
   gap: 12px;
 }
 
+// Der Halbsatz unter der Abschnitts-Überschrift: sagt, WELCHE Termine in der Liste stehen.
+.kopfHinweis {
+  margin: -2px 2px 8px;
+  font-family: var(--ui);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text3);
+}
+
 .liste {
   @include m.card-list;
 }
@@ -173,62 +182,6 @@
   font-size: 13px;
   color: var(--red);
   margin-bottom: 10px;
-}
-
-/**
- * Der Statuskopf: der eine Satz, der sagt, worum es geht (05.09.2026). Kein „Karte wie alle
- * anderen" – er trägt eine eigene Fläche und den Kreis links, damit er sich vom Rest abhebt.
- */
-.status {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--surface2);
-
-  // Hier darf der Untertitel umbrechen: „Gottesdienst – du bist verfügbar" wurde sonst nach zwei
-  // Wörtern abgeschnitten (im Browser gesehen). In den Listenzeilen bleibt es beim Kürzen.
-  .sub {
-    white-space: normal;
-    overflow: visible;
-  }
-}
-
-.statusKreis {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 19px;
-  background: var(--blue-soft);
-}
-
-.statusWeg .statusKreis {
-  background: color-mix(in srgb, var(--red) 14%, transparent);
-}
-
-// Die nächsten Termine als Streifen: blau = da, rot = abgemeldet, grau = in ChurchTools abwesend.
-.balken {
-  display: flex;
-  gap: 4px;
-  margin-top: 7px;
-  i {
-    height: 6px;
-    width: 22px;
-    border-radius: 3px;
-    background: var(--blue-soft2, var(--blue-soft));
-  }
-}
-
-.balkenRot {
-  background: var(--red) !important;
-}
-
-.balkenGrau {
-  background: var(--hair) !important;
 }
 
 // Eine antippbare Zeile (eigene Abwesenheit) – sieht aus wie die anderen, ist aber ein Knopf.

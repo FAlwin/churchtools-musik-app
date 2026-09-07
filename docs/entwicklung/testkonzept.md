@@ -147,7 +147,8 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
     (Schreiben verwirft die Liste, nicht die Termine), `utils/wochen.test` (Montag auch für Sonntage,
     Jahreswechsel, Beschriftung über den Monatswechsel), `components/AbsenceSheet.test` (Schnellauswahl
     rechnet die vier Fälle, ein späteres „Von" schiebt „Bis" mit, Löschen nur beim Ändern),
-    `pages/Availability.test` (Statuskopf sagt verfügbar/abgemeldet, Streifen blättert, Tipp auf einen
+    `pages/Availability.test` (der Halbsatz erklärt die Liste und es gibt KEINEN Statuskopf mehr,
+    Streifen blättert, Tipp auf einen
     Tag öffnet das Fenster, Zeile öffnet „Ändern", Vergangenes gesperrt; Kann nicht / Abgemeldet /
     Grund als Knopf, offline gesperrt). Beim Ändern prüft `services/absences.test` die Reihenfolge
     (ERST anlegen, DANN löschen – der Schutz gegen stillen Verlust), dass **Grund und fehlender

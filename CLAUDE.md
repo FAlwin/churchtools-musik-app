@@ -999,7 +999,9 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   Mitgliedschafts-Abfrage liefert beide Ableitungen (`computeTeamNotesAllowed` /
   `computeAvailabilityAllowed`). Der Bereich arbeitet nur auf dem eigenen Konto: Die Personen-ID kommt
   aus der Sitzung, Löschen nur bei Marker-Einträgen (`@shared/absences`), ChurchTools entscheidet den
-  Rest. Kern: `services/absences.ts` – dort auch die Regel, dass **Ändern = neu anlegen, dann alten
+  Rest. Der Bereich zeigt **alle** Termine, die das Konto sehen darf (kein Kalender- oder Namensfilter)
+  – die Überschrift sagt das, weil beim Durchklicken die Frage kam, ob es die eigenen Dienste seien.
+  Kern: `services/absences.ts` – dort auch die Regel, dass **Ändern = neu anlegen, dann alten
   löschen** ist (ChurchTools kennt kein Ändern von Abwesenheiten; die Reihenfolge ist der Schutz gegen
   stillen Verlust) und dass dabei **Grund und Herkunft erhalten bleiben**.
   **Der Marker ist kein Bearbeitungsrecht** (05.09.2026): In der App darf jeder eigene Eintrag

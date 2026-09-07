@@ -14,8 +14,9 @@ eine Abwesenheit für genau diesen Tag an, mit Kommentar `[Musikteam] <dein Text
 „Abgemeldet". Ein Tipp darauf löscht die Abwesenheit wieder.
 
 1. Anmelden, unten auf **Verfügbar**. Beim ersten Öffnen erscheint die Einführung (drei Blasen) – schließen.
-   Oben steht der **nächste Termin** mit „du bist verfügbar", darunter der **Wochenstreifen** mit der
-   laufenden Woche (heute mit blauem Rand, Termintage mit Punkt).
+   Oben steht der **Wochenstreifen** mit der laufenden Woche (heute mit blauem Rand, Termintage mit
+   Punkt). Unter „Diese Woche" steht der Halbsatz, dass dort **alle** Termine stehen – nicht nur die
+   eigenen Dienste.
 2. Beim Termin unter „Diese Woche" – oder gleich oben im Kopf – auf **„Kann nicht"** tippen. Im
    Fenster als Kommentar „Test" eintragen, **Eintragen**.
 3. Meldung „Eingetragen – steht jetzt als Abwesenheit in ChurchTools." Der Termin zeigt jetzt rot

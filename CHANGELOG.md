@@ -13,9 +13,6 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Mitglied einer unter „Anmerkungen → Gruppen-Zuweisung" gewählten Gruppe ist, bekommt einen
   vierten Tab. Aufbau nach zwei Runden anfassbarer Entwürfe mit Alwin (05.09.2026):
 
-  - **Ein Satz oben, der etwas sagt:** „Sonntag, 6. September · 10:00 – du bist verfügbar", mit
-    „Kann nicht" direkt daneben und fünf Balken für die nächsten Termine (blau da, rot abgemeldet,
-    grau in ChurchTools abwesend).
   - **Ein Wochenstreifen, der am Finger klebt:** sieben Kacheln, Punkt = Termin, rot = selbst
     abgemeldet, grau = direkt in ChurchTools; beim Wischen kommt die Nachbarwoche sichtbar herein und
     gleitet beim Loslassen ein, ein halber Zug fällt zurück. Zwölf Wochen weit, auch per Pfeil.
@@ -24,8 +21,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   - **Eigene Einträge bleiben änderbar:** Ein Tipp auf die Zeile öffnet „Abwesenheit ändern" mit
     Zeitraum, Kommentar und **Löschen**. Weil ChurchTools kein Ändern kennt, legt der Server erst den
     neuen Eintrag an und entfernt dann den alten.
-  - Darunter **„Diese Woche"** (Termine und Abwesenheiten der gezeigten Woche) und **„Meine
-    Abwesenheiten"**.
+  - **„Diese Woche"** listet **alle** Termine der Woche aus ChurchTools und die eigenen
+    Abwesenheiten, nach Datum gemischt – mit einem Halbsatz, der das ausdrücklich sagt: „wer
+    eingeteilt ist, spielt hier keine Rolle". (Die Dienst-Einteilung kennt die App nicht; sie ist
+    Phase 2.) Darunter **„Meine Abwesenheiten"**.
 
   **Alle eigenen Abwesenheiten sind bearbeitbar – auch die aus ChurchTools.** Zuerst durften nur
   Einträge mit dem Kommentar-Marker `[Musikteam]` angefasst werden; eine Messung an der ECG-Instanz

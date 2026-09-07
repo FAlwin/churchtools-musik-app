@@ -81,24 +81,6 @@ function zeige(online = true, heute = HEUTE) {
   return { onToast };
 }
 
-describe('Availability – Statuskopf (05.09.2026)', () => {
-  it('nennt den nächsten Termin und dass man verfügbar ist – mit „Kann nicht" daneben', () => {
-    // Ein „heute" VOR dem 04.10.: Dieser Termin ist frei, also sagt der Kopf „verfügbar".
-    zeige(true, '2026-10-01');
-    expect(screen.getByText(/Gottesdienst – du bist verfügbar/)).not.toBeNull();
-    expect(screen.getAllByRole('button', { name: 'Kann nicht' }).length).toBeGreaterThan(0);
-  });
-
-  it('ist man abgemeldet, sagt der Kopf das und bietet das Zurücknehmen an', () => {
-    zeige();
-    expect(screen.getByText(/du bist abgemeldet/)).not.toBeNull();
-    fireEvent.click(
-      screen.getAllByRole('button', { name: /Abmeldung für Gottesdienst am So, 11.10./ })[0],
-    );
-    expect(loeschen).toHaveBeenCalledWith(10, expect.anything());
-  });
-});
-
 describe('Availability – Terminzeilen', () => {
   it('ein ChurchTools-Eintrag zeigt seinen Grund als Knopf und öffnet das Fenster (05.09.2026)', () => {
     // Der Jugendabend am 16.10. liegt im manuellen Urlaub. Früher stand hier ein Schloss ohne
@@ -116,7 +98,7 @@ describe('Availability – Terminzeilen', () => {
 
   it('„Kann nicht" öffnet das Fenster für genau diesen Tag und trägt ihn ein', () => {
     zeige(true, '2026-10-01');
-    fireEvent.click(screen.getAllByRole('button', { name: 'Kann nicht' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Kann nicht' }));
     expect(screen.getByLabelText<HTMLInputElement>('Von').value).toBe('2026-10-04');
     fireEvent.change(screen.getByLabelText('Kommentar (optional)'), {
       target: { value: 'Dienstreise' },
@@ -208,5 +190,19 @@ describe('Availability – Wochenstreifen', () => {
     zeige(true, '2026-10-07');
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Mo 5.' }).disabled).toBe(true);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Mi 7.' }).disabled).toBe(false);
+  });
+});
+
+describe('Availability – die Liste erklärt sich (05.09.2026)', () => {
+  it('sagt ausdrücklich, dass ALLE Termine stehen – nicht nur die eigenen Dienste', () => {
+    // Alwins Frage beim Durchklicken: „Sind das die Termine, bei denen ich eingetragen bin?"
+    zeige();
+    expect(screen.getByText(/wer eingeteilt ist, spielt hier keine Rolle/)).not.toBeNull();
+  });
+
+  it('hat keinen Statuskopf mehr – der stand einen Abend lang oben und ist auf Wunsch weg', () => {
+    zeige();
+    expect(screen.queryByText(/du bist verfügbar/)).toBeNull();
+    expect(screen.queryByText(/du bist abgemeldet/)).toBeNull();
   });
 });
