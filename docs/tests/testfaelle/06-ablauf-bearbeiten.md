@@ -147,3 +147,39 @@ verschobenen Symbole.
 - **Historie:** #207
 
 </details>
+
+### TF-EDIT-07 · Beim Verknüpfen ein neues Lied anlegen
+
+⚠️ **Legt ein echtes Lied in ChurchTools an** – hinterher dort wieder wegräumen (die App kann Lieder nur
+über das Stammdaten-Blatt löschen, TF-LIB-04).
+
+**Das brauchst du:** Einen **Test-Termin** mit einem Punkt ohne Lied und ein Konto mit dem Recht, Lieder
+zu bearbeiten.
+
+**Das muss passieren:** Das neue Lied entsteht **ohne** neuen Ablaufpunkt und hängt nach „Speichern" an
+dem Punkt, den du bearbeitet hast – in ChurchTools ein Lied-Punkt mit Arrangement, der Ablauf hat
+**keinen** Punkt mehr als vorher.
+
+1. Test-Termin öffnen → **Bearbeiten** → den Punkt ohne Lied antippen → **Lied verknüpfen**.
+2. Einen Titel eintippen, den es bei euch nicht gibt. Oben rechts steht **„Neues Lied"**, mit
+   SongSelect-Lizenz erscheint darunter auch die SongSelect-Gruppe.
+3. **„Neues Lied"** antippen: Das Formular ist mit dem Suchbegriff als Titel vorbelegt. Kategorie wählen,
+   **Lied anlegen**.
+4. Die Erfolgsansicht sagt „… ist angelegt **und wird beim Speichern mit dem Eintrag verknüpft**". Es
+   gibt **„Zurück zum Eintrag"** und „Notenblatt schreiben", aber **kein** „Noch ein Lied anlegen".
+5. **Zurück zum Eintrag** (oder „Fertig"): Du bist wieder in **Eintrag bearbeiten**, im Feld „Lied" steht
+   der neue Name mit dem Hinweis **„Wird beim Speichern verknüpft."**
+6. **Speichern**. In ChurchTools nachsehen: Punkt ist ein Lied-Punkt, Anzahl der Punkte unverändert.
+7. Gegenprobe Abbruch: Schritte 1–3 mit „Abbrechen" im Formular verlassen → zurück in der Suche, im Dialog
+   ist **nichts** vorgemerkt.
+8. Mit einem Konto **ohne** das Recht, Lieder zu bearbeiten: im Verknüpfen-Fenster weder „Neues Lied"
+   noch SongSelect.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `client/src/components/ItemActionSheet.tsx`, `client/src/components/NewSongSheet.tsx`, `client/src/components/SongPicker.tsx`
+- **Automatisiert:** teilweise – `client/src/components/ItemActionSheet.test.tsx` (Weg nur mit Recht, ohne `eventId`, Vormerken statt Schreiben, Abbruch merkt nichts vor), `client/src/components/NewSongSheet.test.tsx` (Erfolgsansicht mit `onVerknuepfen`: Satz, „Zurück zum Eintrag" und „Fertig" tragen die Verknüpfung, kein „Noch ein Lied anlegen"); von Hand bleibt der Schreibvorgang gegen ChurchTools
+- **Historie:** #391 (18.09.2026)
+
+</details>

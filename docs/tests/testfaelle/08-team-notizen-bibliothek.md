@@ -129,8 +129,8 @@ ChurchTools-Instanz. Räum sie hinterher in ChurchTools wieder weg; die App kann
 und einem **Standard-Arrangement** in der gewählten Tonart. Beim CCLI-Weg hängt am Arrangement auch
 gleich das **Notenblatt** – die App zeigt danach Akkorde, ohne dass man etwas hochladen muss.
 
-1. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**. SongSelect gibt es **nur hier**
-   (und nur mit SongSelect-Lizenz) – nicht im Liederheft, nicht beim Verknüpfen.
+1. Test-Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**. SongSelect gibt es **hier und beim
+   Verknüpfen** (und nur mit SongSelect-Lizenz) – nicht im Liederheft.
 2. Einen Titel eintippen, den es bei euch **nicht** gibt (mindestens drei Zeichen): Die Bibliothek zeigt
    „Keine Treffer", und kurz nachdem du aufhörst zu tippen, erscheint **von selbst** die Gruppe
    **„SongSelect · N Treffer zu …"** – ohne Knopfdruck. Achte darauf, dass sie nicht bei jedem Buchstaben
@@ -197,9 +197,10 @@ und **„Bei SongSelect nach … suchen"**. Findet die Bibliothek **nichts**, su
    man aufhört zu tippen).
 5. Auf **„Auch in den Liedtexten nach … suchen"** tippen: Die Treffer erscheinen mit dem Ausschnitt um die
    Fundstelle. Die Liedtextsuche läuft **nie** von selbst – auch nicht bei „Keine Treffer".
-6. Jetzt der wichtige Unterschied: Im Ablauf einen **vorhandenen** Eintrag antippen → **Lied
-   verknüpfen**. Dort gibt es **kein SongSelect** – weder als Angebot noch von selbst (ein neu angelegtes
-   Lied könnte in einem vorhandenen Punkt nicht landen). Die Liedtexte gibt es.
+6. Im Ablauf einen **vorhandenen** Eintrag antippen → **Lied verknüpfen**: dasselbe Suchfeld, **mit**
+   SongSelect und **„Neues Lied"** oben rechts (seit #391). Beides führt ins Anlege-Formular; danach steht
+   das Lied im Dialog **vorgemerkt** („Wird beim Speichern verknüpft.") – geschrieben wird erst mit
+   **Speichern** (TF-EDIT-07). Die Liedtexte gibt es hier auch.
 7. Unten auf **Lieder** (Liederheft): dasselbe Suchfeld, dieselbe Sortierleiste, **kein SongSelect**.
    Unter einer leeren oder gefüllten Liste steht „Auch in den Liedtexten nach … suchen". Bei **einem**
    Lied muss im Listenkopf **„1 Lied"** stehen, nicht „1 Lieder". Erst **„Neues Lied"** im Listenkopf
@@ -211,7 +212,7 @@ und **„Bei SongSelect nach … suchen"**. Findet die Bibliothek **nichts**, su
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/hooks/useLiedSuche.ts`, `client/src/components/LiedSucheKopf.tsx`, `client/src/components/SucheAngebot.tsx`, `client/src/components/SongPicker.tsx`, `client/src/pages/AllSongs.tsx`, `client/src/components/AddItemSheet.tsx`, `client/src/components/ItemActionSheet.tsx`
-- **Automatisiert:** teilweise – `client/src/hooks/useLiedSuche.test.ts` (SongSelect fragt von selbst NUR bei leerer Bibliothek, nie unter drei Zeichen, nie ohne Lizenz/Anlege-Weg; Angebot schickt sofort; Treffer gelten nur, solange der Begriff steht; Liedtexte nie von selbst), `client/src/components/SongPicker.test.tsx` (Angebot statt Anfrage bei Treffern, automatische Suche bei leerer Bibliothek, kein SongSelect ohne Anlege-Weg, kein Umschalter), `client/src/components/LiedSucheKopf.test.tsx`, `client/src/components/SucheAngebot.test.tsx`, `client/src/utils/songFilter.test.ts` (die Einzahl); von Hand bleibt das Zusammenspiel gegen echtes SongSelect und dass im Liederheft und beim Verknüpfen wirklich kein SongSelect erscheint
+- **Automatisiert:** teilweise – `client/src/hooks/useLiedSuche.test.ts` (SongSelect fragt von selbst NUR bei leerer Bibliothek, nie unter drei Zeichen, nie ohne Lizenz/Anlege-Weg; Angebot schickt sofort; Treffer gelten nur, solange der Begriff steht; Liedtexte nie von selbst), `client/src/components/SongPicker.test.tsx` (Angebot statt Anfrage bei Treffern, automatische Suche bei leerer Bibliothek, kein SongSelect ohne Anlege-Weg, kein Umschalter), `client/src/components/LiedSucheKopf.test.tsx`, `client/src/components/SucheAngebot.test.tsx`, `client/src/utils/songFilter.test.ts` (die Einzahl); von Hand bleibt das Zusammenspiel gegen echtes SongSelect und dass im Liederheft wirklich kein SongSelect erscheint (beim Verknüpfen gibt es ihn seit #391 – TF-EDIT-07)
 - **Historie:** #378 (erster Anlauf Umschalter 14.08.2026, umgebaut nach Rückmeldung Alwin 03.09.2026)
 
 </details>
