@@ -1010,7 +1010,7 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   **Abwesenheitsgründe** kommen aus `getMasterData` → `absent_reason` (dieselbe alte Schnittstelle wie
   die Lied-Kategorien; `/api/masterdata/absencereasons` gibt es nicht). Die Namen sind
   Übersetzungsschlüssel (`absent.reason.vacation`) – lesbar macht sie `grundLesbar` in
-  `@shared/absences`, eigene Gründe der Gemeinde gehen unverändert durch. Client: `pages/Availability.tsx` (Statuskopf + Wochenstreifen), dazu
+  `@shared/absences`, eigene Gründe der Gemeinde gehen unverändert durch. Client: `pages/Availability.tsx` (Wochenstreifen + Liste mit erklärendem Halbsatz), dazu
   `components/WochenStreifen.tsx` mit `utils/wochen.ts` (Wochen als `YYYY-MM-DD`-Montage in UTC),
   `components/AbsenceSheet.tsx` (ein Fenster für Eintragen und Ändern, mit Schnellauswahl) und
   `hooks/useAvailability.ts`.

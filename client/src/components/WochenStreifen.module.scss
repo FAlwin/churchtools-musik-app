@@ -137,27 +137,6 @@
   color: var(--text2);
 }
 
-// Gerade gewählter Zeitraum: Rand-Tage voll, Tage dazwischen hell.
-.wahl {
-  background: var(--blue-soft);
-  color: var(--blue);
-  small {
-    color: var(--blue);
-  }
-}
-
-.rand {
-  background: var(--blue);
-  color: #fff;
-  small {
-    color: #fff;
-    opacity: 0.85;
-  }
-  .punkt {
-    background: #fff;
-  }
-}
-
 .punkte {
   display: flex;
   justify-content: center;

@@ -96,30 +96,6 @@
   color: #fff;
 }
 
-// Manuell in ChurchTools eingetragen – sichtbar, aber gesperrt.
-.gesperrt {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--ui);
-  font-size: 13px;
-  color: var(--text3);
-  flex-shrink: 0;
-}
-
-.loeschen {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--red);
-  cursor: pointer;
-}
-
 .leer {
   font-family: var(--ui);
   font-size: 14px;

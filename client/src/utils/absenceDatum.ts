@@ -1,4 +1,5 @@
 import type { Absence } from '@shared/types/index';
+import { wochentagKurz } from './wochen';
 
 /**
  * Datums-Helfer für die Verfügbarkeit (#177). Alles rein und ohne Zeitzone: Die Tage kommen als
@@ -16,14 +17,17 @@ export function abwesenheitFuer(alle: Absence[], tag: string): Absence | undefin
   return alle.find((a) => a.vonApp && deckt(a, tag)) ?? alle.find((a) => deckt(a, tag));
 }
 
-const WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-
-/** `2026-10-04` → „So, 04.10." – ohne Jahr, wenn es das laufende ist. */
+/**
+ * `2026-10-04` → „So, 04.10." – ohne Jahr, wenn es das laufende ist.
+ *
+ * Den Wochentag rechnet `wochentagKurz` aus `./wochen` – dort steht das eine UTC-Parsen von
+ * `YYYY-MM-DD`. Hier stand bis zum 18.09.2026 eine zweite Fassung samt eigener Wochentagsliste
+ * (gefunden bei der Dopplungs-Suche im `/festhalten`). Tag, Monat und Jahr kommen als Text direkt
+ * aus dem ISO-String – zweistellig sind sie dort schon.
+ */
 export function tagKurz(iso: string, heute = new Date()): string {
-  const [j, m, t] = iso.split('-').map(Number);
-  const d = new Date(Date.UTC(j, m - 1, t));
-  const jahr = j === heute.getFullYear() ? '' : `${j}`;
-  return `${WOCHENTAGE[d.getUTCDay()]}, ${String(t).padStart(2, '0')}.${String(m).padStart(2, '0')}.${jahr}`;
+  const jahr = Number(iso.slice(0, 4)) === heute.getFullYear() ? '' : iso.slice(0, 4);
+  return `${wochentagKurz(iso)}, ${iso.slice(8, 10)}.${iso.slice(5, 7)}.${jahr}`;
 }
 
 /** Zeitraum lesbar: ein Tag → „So, 04.10."; mehrere → „Sa, 03.10. – So, 11.10.". */

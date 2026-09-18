@@ -128,7 +128,7 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   const laedt = absences.isLoading || events.isLoading;
   const fehler = absences.isError || events.isError;
 
-  /** Eine Terminzeile mit dem Zustand des Tages: frei, selbst abgemeldet, in ChurchTools gesperrt. */
+  /** Eine Terminzeile mit dem Zustand des Tages: frei, selbst abgemeldet, aus ChurchTools (öffnet das Fenster). */
   const terminZeile = (ev: AbsenceEvent) => {
     const a = abwesenheitFuer(liste, ev.date);
     return (

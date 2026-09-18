@@ -99,14 +99,3 @@ export function tagImMonat(tag: string): number {
 export function anzahlTage(von: string, bis: string): number {
   return Math.round((utc(bis) - utc(von)) / TAG_MS) + 1;
 }
-
-/**
- * Kurzform für die schmale Auswahlleiste: „15.09." bzw. „15.09. – 17.09.".
- *
- * Ohne Wochentag – der steht im Streifen direkt über der Leiste, und mit ihm passte die Zeile auf
- * dem Handy nicht mehr neben die beiden Knöpfe (im Browser gesehen, 05.09.2026).
- */
-export function zeitraumKompakt(von: string, bis?: string): string {
-  const tag = (iso: string): string => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
-  return !bis || bis === von ? tag(von) : `${tag(von)} – ${tag(bis)}`;
-}

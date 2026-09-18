@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   anzahlTage,
-  zeitraumKompakt,
   plusTage,
   wocheLabel,
   wocheTage,
@@ -36,13 +35,5 @@ describe('wochen – der Wochenstreifen rechnet in Tagen, nicht in Zeitzonen', (
     expect(wochentagKurz('2026-09-06')).toBe('So');
     expect(plusTage('2026-02-28', 1)).toBe('2026-03-01');
     expect(anzahlTage('2026-09-15', '2026-09-18')).toBe(4);
-  });
-});
-
-describe('zeitraumKompakt – die Leiste ist schmal', () => {
-  it('ein Tag steht allein, zwei Tage mit Gedankenstrich, immer ohne Wochentag', () => {
-    expect(zeitraumKompakt('2026-09-15')).toBe('15.09.');
-    expect(zeitraumKompakt('2026-09-15', '2026-09-15')).toBe('15.09.');
-    expect(zeitraumKompakt('2026-09-15', '2026-09-17')).toBe('15.09. – 17.09.');
   });
 });

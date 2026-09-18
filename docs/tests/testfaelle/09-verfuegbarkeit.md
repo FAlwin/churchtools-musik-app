@@ -113,8 +113,9 @@ in ChurchTools **genau ein** Eintrag mit den neuen Werten – der alte ist weg, 
 3. In ChurchTools nachsehen: **ein** Eintrag mit den neuen Daten und Kommentar `[Musikteam] …` –
    kein zweiter, kein alter.
 4. Die Zeile erneut antippen → **Löschen** → Meldung „Gelöscht.", in ChurchTools ist der Eintrag weg.
-5. **Gegenprobe Schloss:** Der Eintrag, den du direkt in ChurchTools gemacht hast (TF-VERF-02), ist
-   **kein** Knopf – er zeigt „🔒 ChurchTools" und lässt sich hier nicht öffnen.
+5. **Gegenprobe Rückfrage:** Der Eintrag, den du direkt in ChurchTools gemacht hast (TF-VERF-02), ist
+   ebenso antippbar – beim **Löschen** kommt dort aber die Rückfrage („stammt aus ChurchTools"), beim
+   App-Eintrag aus Schritt 4 nicht.
 
 <details><summary>Technisches</summary>
 

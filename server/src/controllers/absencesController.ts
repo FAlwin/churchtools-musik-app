@@ -10,7 +10,9 @@ async function myUserId(req: Request): Promise<number> {
   return req.ctUserId ?? (await getUserId(ctCookie(req)));
 }
 
-const isoTag = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Datum als JJJJ-MM-TT.');
+// Dieselbe Regex wie `absenceBody` im Service (Dopplungs-Suche 18.09.2026): Hier weist sie früh mit
+// 400 ab, dort hält sie den Service auch ohne Controller prüfbar – eine Regel, zwei Prüfstellen.
+const isoTag = z.string().regex(absences.ISO_TAG, 'Datum als JJJJ-MM-TT.');
 
 const neueAbsenceSchema = z.object({
   startDate: isoTag,

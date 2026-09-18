@@ -22,7 +22,8 @@ import { gruendeMemo } from './ctSessionMemos.js';
 import type { CtAbsence, CtEvent } from './ctTypes.js';
 import { createAbsence, deleteAbsence } from './ctWrite.js';
 
-const ISO_TAG = /^\d{4}-\d{2}-\d{2}$/;
+/** `YYYY-MM-DD` – die eine Regex fürs Datumsformat; der Controller nutzt dieselbe (Dopplungs-Suche 18.09.2026). */
+export const ISO_TAG = /^\d{4}-\d{2}-\d{2}$/;
 /** Längster Zeitraum, den die App eintragen lässt – ein Jahr; alles darüber ist ein Tippfehler. */
 export const MAX_TAGE = 366;
 
