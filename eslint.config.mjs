@@ -58,7 +58,6 @@ export default tseslint.config(
             '*.mjs',
             '*.js',
             'client/*.ts',
-            'excel-sync/*.ts',
             'server/*.ts',
             'e2e/*.mjs',
             'scripts/*.mjs',
