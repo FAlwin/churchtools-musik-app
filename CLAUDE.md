@@ -994,6 +994,27 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   eigentlichen Team-Notizen sind **seit v2.9.0 fertig** (#124 geschlossen, PCO-Modell: Anmerkungen
   bleiben pro Konto, wer mag teilt sie, Berechtigte sehen/importieren sie – `teamNotesController.ts`).
   Die früher geplante gemeinsame „Team-Ebene" (`_shared.json`) wurde bewusst verworfen.
+- **Verfügbarkeit (#177, 05.09.2026):** `canUseAvailability` = aktives Mitglied **einer** der
+  `musicianGroupIds` – **ohne** Rollen-Filter (die `noteRoles` regeln nur Team-Notizen). Dieselbe
+  Mitgliedschafts-Abfrage liefert beide Ableitungen (`computeTeamNotesAllowed` /
+  `computeAvailabilityAllowed`). Der Bereich arbeitet nur auf dem eigenen Konto: Die Personen-ID kommt
+  aus der Sitzung, Löschen nur bei Marker-Einträgen (`@shared/absences`), ChurchTools entscheidet den
+  Rest. Der Bereich zeigt **alle** Termine, die das Konto sehen darf (kein Kalender- oder Namensfilter)
+  – die Überschrift sagt das, weil beim Durchklicken die Frage kam, ob es die eigenen Dienste seien.
+  Kern: `services/absences.ts` – dort auch die Regel, dass **Ändern = neu anlegen, dann alten
+  löschen** ist (ChurchTools kennt kein Ändern von Abwesenheiten; die Reihenfolge ist der Schutz gegen
+  stillen Verlust) und dass dabei **Grund und Herkunft erhalten bleiben**.
+  **Der Marker ist kein Bearbeitungsrecht** (05.09.2026): In der App darf jeder eigene Eintrag
+  geändert werden – gemessen trug keiner der 31 ECG-Bestände einen Marker. Er steuert nur den
+  Excel-Sync und die Rückfrage vor dem Löschen.
+  **Abwesenheitsgründe** kommen aus `getMasterData` → `absent_reason` (dieselbe alte Schnittstelle wie
+  die Lied-Kategorien; `/api/masterdata/absencereasons` gibt es nicht). Die Namen sind
+  Übersetzungsschlüssel (`absent.reason.vacation`) – lesbar macht sie `grundLesbar` in
+  `@shared/absences`, eigene Gründe der Gemeinde gehen unverändert durch. Client: `pages/Availability.tsx` (Wochenstreifen + Liste mit erklärendem Halbsatz), dazu
+  `components/WochenStreifen.tsx` mit `utils/wochen.ts` (Wochen als `YYYY-MM-DD`-Montage in UTC),
+  `components/AbsenceSheet.tsx` (ein Fenster für Eintragen und Ändern, mit Schnellauswahl) und
+  `hooks/useAvailability.ts`.
+  **Kein Excel im App-Code** – der ECG-Sync ist ein eigener Dienst (`excel-sync/`, PR 2).
 
 ## Schreibzugriff (Editor) – ChurchTools-Eigenheiten
 

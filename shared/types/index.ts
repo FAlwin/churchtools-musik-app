@@ -464,6 +464,75 @@ export interface UserCapabilities {
    * immer scheitert, ist schlimmer als keiner.
    */
   canUseCcli: boolean;
+  /**
+   * Darf den Bereich „Verfügbarkeit" nutzen (#177) – aktives Mitglied einer der unter „Anmerkungen →
+   * Gruppen-Zuweisung" gewählten Gruppen (`musicianGroupIds`), **ohne** Rollen-Filter: Die Rollen aus
+   * `noteRoles` regeln nur, wer fremde Notizen sieht. Eigene Abwesenheiten darf jedes Teammitglied
+   * pflegen. Leere Gruppenauswahl = Bereich aus.
+   */
+  canUseAvailability: boolean;
+}
+
+// ── Verfügbarkeit / Abwesenheiten (#177) ──────────────────────────────────
+// Der generische Kern: nur ChurchTools-Abwesenheiten, kein Excel-Bezug (siehe
+// docs/entwicklung/plan-verfuegbarkeit-phase1.md §12). Marker-Konvention in @shared/absences.
+
+/** Eine Abwesenheit des angemeldeten Kontos, wie die App sie zeigt. */
+export interface Absence {
+  id: number;
+  /** `YYYY-MM-DD`, einschließlich. */
+  startDate: string;
+  endDate: string;
+  /** Freitext ohne Marker – für die Anzeige. */
+  comment: string;
+  /** Grund in lesbarer Form („Abwesend", „Urlaub", …) – siehe `grundLesbar` in `@shared/absences`. */
+  reason: string | null;
+  /** Grund-ID aus ChurchTools. Beim Ändern muss sie erhalten bleiben, sonst wird aus Urlaub „Abwesend". */
+  reasonId: number | null;
+  /**
+   * Von der App oder dem Sync angelegt (Kommentar trägt den Marker `[Musikteam]`)?
+   *
+   * **Kein Bearbeitungsrecht** – in der App darf jeder eigene Eintrag geändert werden (Entscheidung
+   * Alwin, 05.09.2026: „können wir nicht in unserer App die Daten aus ChurchTools bearbeiten?"; die
+   * Messung zeigte, dass praktisch alle Bestandseinträge keinen Marker tragen). Das Kennzeichen
+   * steuert zwei andere Dinge: Der **Excel-Sync** fasst nur Marker-Einträge an, und beim **Löschen**
+   * eines fremden Eintrags fragt die App vorher nach.
+   */
+  vonApp: boolean;
+}
+
+/** Ein Abwesenheitsgrund der Gemeinde, wie ChurchTools ihn führt (Name schon lesbar). */
+export interface AbsenceReason {
+  id: number;
+  name: string;
+  /**
+   * Der Grund, den die App bei neuen Einträgen vorwählt (`CHURCHTOOLS_ABSENCE_REASON_ID`, bei der
+   * ECG „Abwesend"). Muss der Server sagen: ChurchTools sortiert nach eigenem `sortkey` – bei der
+   * ECG steht „Krank" vorn –, und „der erste Eintrag" wäre die falsche Vorauswahl.
+   */
+  standard: boolean;
+}
+
+/** Was die App zum Anlegen oder Ändern schickt. Der Marker kommt serverseitig dazu. */
+export interface NeueAbsence {
+  startDate: string;
+  endDate: string;
+  comment?: string;
+  /**
+   * Gewünschter Grund (aus `GET /api/absences/reasons`). Fehlt er, nimmt der Server beim Anlegen den
+   * konfigurierten Standard und beim Ändern den Grund, den der Eintrag schon hatte.
+   */
+  reasonId?: number;
+}
+
+/** Ein kommender Termin als Schnellauswahl – Name und Tag reichen, um sich abzumelden. */
+export interface AbsenceEvent {
+  id: number;
+  name: string;
+  /** `YYYY-MM-DD` des Termintags. */
+  date: string;
+  /** ISO-Startzeitpunkt (für Uhrzeit und Sortierung). */
+  startDate: string;
 }
 
 /** Antwort des Login-Endpunkts. */

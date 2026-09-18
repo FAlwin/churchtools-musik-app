@@ -29,6 +29,11 @@ export const config = {
   // läuft (Reverse Proxy/Cloudflare). Im reinen LAN-HTTP-Betrieb MUSS es aus bleiben, sonst
   // speichert der Browser das Cookie nicht → „nicht angemeldet". Standard: aus (unverändertes Verhalten).
   cookieSecure: (process.env.COOKIE_SECURE ?? 'false').toLowerCase() === 'true',
+  /**
+   * ChurchTools-Abwesenheitsgrund, den die App beim Eintragen setzt (#177). Bei der ECG ist `1` =
+   * „Abwesend" (gemessen). Andere Instanzen können die Gründe anders nummeriert haben – deshalb Env.
+   */
+  absenceReasonId: Number(process.env.CHURCHTOOLS_ABSENCE_REASON_ID ?? 1),
   /** Ablageort der Laufzeit-Branding-Datei (persistentes Docker-Volume). */
   siteConfigPath: process.env.SITE_CONFIG_PATH ?? './data/site.json',
   /** Ablageordner der kontobezogenen Anmerkungen (eine JSON-Datei je ChurchTools-Konto). */

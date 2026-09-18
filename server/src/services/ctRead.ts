@@ -9,6 +9,7 @@
 import { HttpError } from '../middleware/errorHandler.js';
 import { ctGet } from './ctHttp.js';
 import type {
+  CtAbsence,
   CtAgendaItem,
   CtArrangement,
   CtEvent,
@@ -127,4 +128,19 @@ export async function getAllSongs(cookie: string): Promise<CtSongListEntry[]> {
     if (data.length < 100) break;
   }
   return all;
+}
+
+/**
+ * Abwesenheiten einer Person im Zeitfenster (#177). Parameter `from`/`to`/`limit` wie der alte
+ * Planner sie gemessen hat (`churchtools_client.get_absences`). Die App fragt nur das **eigene**
+ * Konto ab – die Personen-ID kommt aus der Sitzung, nie aus dem Request.
+ */
+export function getAbsences(
+  cookie: string,
+  personId: number,
+  from: string,
+  to: string,
+): Promise<CtAbsence[]> {
+  const q = new URLSearchParams({ from, to, limit: '500' });
+  return ctGet<CtAbsence[]>(cookie, `/api/persons/${personId}/absences?${q.toString()}`);
 }

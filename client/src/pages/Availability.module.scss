@@ -1,0 +1,245 @@
+@use '../styles/mixins' as m;
+
+.wrap {
+  padding: 14px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.hinweis {
+  font-family: var(--ui);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text2);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--blue-soft);
+}
+
+.kopf {
+  @include m.group-header;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+// Der Halbsatz unter der Abschnitts-Überschrift: sagt, WELCHE Termine in der Liste stehen.
+.kopfHinweis {
+  margin: -2px 2px 8px;
+  font-family: var(--ui);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text3);
+}
+
+.liste {
+  @include m.card-list;
+}
+
+.zeile {
+  @include m.list-row;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.titel {
+  font-family: var(--ui);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub {
+  font-family: var(--ui);
+  font-size: 13px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Rechter Knopf einer Terminzeile: „Kann nicht" (frei) bzw. „Abgemeldet" (gesetzt).
+.aktion {
+  flex-shrink: 0;
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--blue);
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+}
+
+.gesetzt {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+.leer {
+  font-family: var(--ui);
+  font-size: 14px;
+  color: var(--text3);
+  padding: 10px 2px;
+}
+
+.neu {
+  @include m.neues-lied-aktion;
+}
+
+// Formular im Sheet
+.feld {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  label {
+    font-family: var(--ui);
+    font-size: 13px;
+    color: var(--text2);
+  }
+  input,
+  select,
+  textarea {
+    font-family: var(--ui);
+    font-size: 16px;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+}
+
+.zwei {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.primaryWide {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--ui);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.fehler {
+  font-family: var(--ui);
+  font-size: 13px;
+  color: var(--red);
+  margin-bottom: 10px;
+}
+
+// Eine antippbare Zeile (eigene Abwesenheit) – sieht aus wie die anderen, ist aber ein Knopf.
+.zeileTip {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: var(--text3);
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+// Schnellwahl im Fenster: die vier Fälle, die es wirklich gibt.
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.chip {
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.chipAn {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+// Löschen sitzt im Änderungs-Fenster, wo auch der Zeitraum steht – nicht als Symbol in der Liste.
+.loeschenWide {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--red);
+  font-family: var(--ui);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+// Rückfrage vor dem Löschen eines Eintrags, der nicht aus der App stammt.
+.loeschFrage {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+  p {
+    margin: 0 0 10px;
+    font-family: var(--ui);
+    font-size: 13.5px;
+    color: var(--text);
+  }
+}
+
+.behalten {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}

@@ -28,6 +28,7 @@ const CAPS: UserCapabilities = {
   isAdmin: false,
   canUseGlobalNotes: true,
   canUseCcli: false,
+  canUseAvailability: false,
 };
 
 /**

@@ -43,6 +43,8 @@ services:
       # am Session-Cookie an. Default true; über die Prod-.env übersteuerbar, falls je nötig.
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
+      # Abwesenheitsgrund für „Verfügbar" (#177); Standard 1 = „Abwesend", andere Instanzen können abweichen.
+      CHURCHTOOLS_ABSENCE_REASON_ID: ${CHURCHTOOLS_ABSENCE_REASON_ID:-1}
     ports:
       # Nur auf localhost binden: der Zugriff läuft ausschließlich über den Reverse Proxy (HTTPS).
       # Direkter LAN-Zugriff (HTTP, Cookie ohne Secure-Wirkung) bleibt damit zu. Falls eine
