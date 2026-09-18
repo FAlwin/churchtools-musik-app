@@ -5,6 +5,20 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Neu
+
+- **„Neues Lied" und SongSelect auch in „Lied verknüpfen" (#391).** Wer im Ablauf einem vorhandenen
+  Punkt ein Lied zuordnet, kann es jetzt an derselben Stelle anlegen – oben rechts „Neues Lied" (der
+  Suchbegriff wird zum Titel) oder über einen SongSelect-Treffer, wie beim Hinzufügen. Das Lied
+  entsteht ohne neuen Ablaufpunkt; danach steht es im Dialog **vorgemerkt** („Wird beim Speichern
+  verknüpft.") und wird erst mit „Speichern" geschrieben – ein Fenster, ein Speicherweg. Die
+  Erfolgsansicht bietet weiter „Notenblatt schreiben" an; „Zurück zum Eintrag" wie „Fertig" nehmen die
+  Verknüpfung mit. Bisher gab es diesen Weg nur beim Hinzufügen und im Liederheft – bewusst, weil der
+  Anlege-Weg nur einen neuen Punkt schreiben konnte (`docs/entwicklung/entscheidungen.md`). Geführte
+  Einführung `setlist-edit-v4`.
+
 ## [2.24.1] – 2026-09-05
 
 ### Behoben
