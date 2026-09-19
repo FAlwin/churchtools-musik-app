@@ -51,9 +51,18 @@ const SONG = {
   id: 501,
   name: 'Testlied aus ChurchTools',
   author: 'Stub-Autor',
-  // Eine Nummer, damit sich die Rückfrage „Dieses Lied gibt es schon" (#395) lokal durchklicken
-  // lässt: Wer sie im Formular einträgt, muss den Dialog sehen statt ein zweites Lied.
-  ccli: '5841527',
+  /**
+   * **Die CCLI-Nummer des Testliedes – hier und nur hier.**
+   *
+   * Bewusst eine ANDERE als die SongSelect-Treffer des Stubs: Sonst wäre beim Durchklicken nicht zu
+   * sehen, welche Quelle einen Treffer geliefert hat. Sie macht außerdem die Rückfrage „Dieses Lied
+   * gibt es schon" (#395) lokal durchklickbar – wer sie ins Formular tippt, muss den Dialog sehen.
+   *
+   * Stand bis zum 20.09.2026 dreimal im Stub: hier als `null` und zweimal als `'1234567'`, an den
+   * Antworten vorbeigeschrieben. Wer die Nummer oben änderte, änderte nichts – genau die
+   * Dopplung, die dieser Stub schon einmal hatte (zwei Handler für `/api/songs/<id>`).
+   */
+  ccli: '1234567',
   arrangements: [
     {
       id: 9001,
@@ -324,7 +333,7 @@ const server = createServer((req, res) => {
     // Mit CCLI-Nummer, damit die Bibliothekssuche nach der Nummer prüfbar ist (#378). Bewusst eine
     // ANDERE als die SongSelect-Treffer des Stubs – sonst wäre nicht zu sehen, welche Quelle gefunden hat.
     return json(res, {
-      data: [{ ...SONG, ccli: '1234567', category: { id: 0, name: 'Aktive Songs' } }],
+      data: [{ ...SONG, category: { id: 0, name: 'Aktive Songs' } }],
     });
   }
   // Mitgliedschaft im „Musikteam" (Gruppe 9, Rolle 1). Wirkt nur, wenn die site.json des Servers die
@@ -383,7 +392,7 @@ const server = createServer((req, res) => {
   // Kategorie – ohne sie zeigt das Stammdaten-Blatt nur den Hinweis statt des Formulars. Stand hier
   // zweimal (einmal ohne Kategorie, der Treffer davor schattete diesen ab) – die klassische Dopplung.
   if (/^\/api\/songs\/\d+$/.test(path)) {
-    return json(res, { data: { ...SONG, ccli: '1234567', category: { id: 0, name: 'Aktive Songs' } } });
+    return json(res, { data: { ...SONG, category: { id: 0, name: 'Aktive Songs' } } });
   }
 
   // Alles Übrige laut protokollieren, statt still 404 zu liefern – so fällt beim Erweitern des
