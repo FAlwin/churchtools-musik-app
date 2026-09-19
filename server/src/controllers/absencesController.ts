@@ -28,7 +28,8 @@ void _zodSubsetOfType;
 void _typeSubsetOfZod;
 
 const fensterSchema = z.object({ from: isoTag.optional(), to: isoTag.optional() });
-const wochenSchema = z.coerce.number().int().min(1).max(26).default(10);
+/** Termine: nur ein `to` – wie weit voraus, entscheidet die Monatsansicht der App; der Service deckelt auf ein Jahr. */
+const terminFensterSchema = z.object({ to: isoTag.optional() });
 
 /** GET /api/absences?from=&to= – eigene Abwesenheiten (Standard: heute bis in einem Jahr). */
 export async function getAbsences(req: Request, res: Response): Promise<void> {
@@ -67,10 +68,10 @@ export async function deleteAbsence(req: Request, res: Response): Promise<void> 
   res.status(204).end();
 }
 
-/** GET /api/absences/events?weeks= – kommende Termine als Schnellauswahl. */
+/** GET /api/absences/events?to= – kommende Termine von heute bis `to` (Standard: ein halbes Jahr, höchstens ein Jahr). */
 export async function getAbsenceEvents(req: Request, res: Response): Promise<void> {
-  const wochen = wochenSchema.parse(req.query.weeks);
-  res.json(await absences.kommendeTermine(ctCookie(req), wochen));
+  const q = terminFensterSchema.parse(req.query);
+  res.json(await absences.kommendeTermine(ctCookie(req), q.to));
 }
 
 /** GET /api/absences/reasons – die Abwesenheitsgründe der Gemeinde (für die Auswahl im Fenster). */

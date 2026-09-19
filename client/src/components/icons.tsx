@@ -50,7 +50,8 @@ export type IconName =
   | 'align-center'
   | 'align-right'
   | 'cloud-check'
-  | 'cloud-download';
+  | 'cloud-download'
+  | 'user-slash';
 
 interface IconProps {
   name: IconName;
@@ -220,6 +221,16 @@ export function Icon({ name, size = 22, stroke = 2, style, className }: IconProp
         <svg {...p}>
           <circle cx="12" cy="12" r="8.5" />
           <path d="M12 7.5V12l3 2" />
+        </svg>
+      );
+    // Person mit Schrägstrich – das Symbol, das ChurchTools selbst für „Abwesenheit eintragen" zeigt
+    // (Alwin, 19.09.2026). Kopf, Schultern, Strich von links oben nach rechts unten.
+    case 'user-slash':
+      return (
+        <svg {...p}>
+          <circle cx="12" cy="8" r="3.4" />
+          <path d="M5 20a7 7 0 0 1 14 0" />
+          <path d="M4.5 4.5l15 15" />
         </svg>
       );
     case 'eye':

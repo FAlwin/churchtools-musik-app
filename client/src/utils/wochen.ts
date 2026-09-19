@@ -1,7 +1,10 @@
 /**
- * Wochen-Helfer für den Wochenstreifen der Verfügbarkeit (#177, Variante C – Entscheidung Alwin,
- * 05.09.2026). Alles auf `YYYY-MM-DD`-Zeichenketten und UTC gerechnet, damit kein Gerät um
- * Mitternacht eine andere Woche sieht als ein anderes (siehe `absenceDatum.ts`).
+ * Tages-Helfer der Abwesenheiten (#177). Alles auf `YYYY-MM-DD`-Zeichenketten und UTC gerechnet,
+ * damit kein Gerät um Mitternacht einen anderen Tag sieht als ein anderes (siehe `absenceDatum.ts`).
+ *
+ * Bis zum 19.09.2026 lebte hier auch der Wochenstreifen (`wochenAb`, `wocheTage`, `wocheLabel`); mit
+ * dem Umbau auf Monate (`monate.ts`) ist er samt Helfern weg. `wochenStart` bleibt für die
+ * Schnellwahl „Wochenende" im Fenster.
  */
 
 const TAG_MS = 86_400_000;
@@ -32,55 +35,6 @@ export function wochenStart(tag: string): string {
   const d = new Date(utc(tag));
   const wt = (d.getUTCDay() + 6) % 7; // Mo = 0 … So = 6
   return plusTage(tag, -wt);
-}
-
-/** Die sieben Tage ab Montag. */
-export function wocheTage(montag: string): string[] {
-  return Array.from({ length: 7 }, (_, i) => plusTage(montag, i));
-}
-
-/** Die Montage der nächsten `anzahl` Wochen ab der Woche von `heute`. */
-export function wochenAb(heute: string, anzahl: number): string[] {
-  const start = wochenStart(heute);
-  return Array.from({ length: anzahl }, (_, i) => plusTage(start, i * 7));
-}
-
-const MONATE = [
-  'Januar',
-  'Februar',
-  'März',
-  'April',
-  'Mai',
-  'Juni',
-  'Juli',
-  'August',
-  'September',
-  'Oktober',
-  'November',
-  'Dezember',
-];
-const MONATE_KURZ = [
-  'Jan.',
-  'Feb.',
-  'März',
-  'Apr.',
-  'Mai',
-  'Juni',
-  'Juli',
-  'Aug.',
-  'Sept.',
-  'Okt.',
-  'Nov.',
-  'Dez.',
-];
-
-/** „14. – 20. September" bzw. über den Monatswechsel „28. Sept. – 4. Okt.". */
-export function wocheLabel(montag: string): string {
-  const [, m1, t1] = montag.split('-').map(Number);
-  const sonntag = plusTage(montag, 6);
-  const [, m2, t2] = sonntag.split('-').map(Number);
-  if (m1 === m2) return `${t1}. – ${t2}. ${MONATE[m1 - 1]}`;
-  return `${t1}. ${MONATE_KURZ[m1 - 1]} – ${t2}. ${MONATE_KURZ[m2 - 1]}`;
 }
 
 const WT_KURZ = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];

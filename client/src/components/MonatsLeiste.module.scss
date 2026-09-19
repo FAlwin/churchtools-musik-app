@@ -1,0 +1,155 @@
+@use '../styles/mixins' as m;
+
+// Monatsleiste der Abwesenheiten (#177, Entwurfsrunden 4–8): Heute-Knopf, Pills der kommenden Monate,
+// Aufklapp-Knopf; darunter optional das Raster mit zwölf Monaten.
+.leiste {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0 10px;
+}
+
+.heute {
+  flex-shrink: 0;
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--blue);
+  background: var(--surface2);
+  color: var(--blue);
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.4;
+    border-color: var(--border);
+    color: var(--text2);
+    cursor: default;
+  }
+}
+
+// Der Scroll-Hinweis (Alwin, 19.09.2026: „die Leiste sollte deutlicher anzeigen, dass es dort
+// scrollbar ist"): Die rechte Kante läuft weich aus, die letzte Pill ist angeschnitten.
+.wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 34px;
+    background: linear-gradient(to right, transparent, var(--bg) 80%);
+    pointer-events: none;
+  }
+}
+
+.pills {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-right: 28px;
+  scroll-behavior: smooth;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.pill {
+  flex: 0 0 auto;
+  font-family: var(--ui);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+}
+.pillAn {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+// Runder Aufklapp-Knopf auf hellblauem Grund; offen wird er blau und der Pfeil dreht sich.
+.auf {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--blue-soft);
+  color: var(--blue);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  svg {
+    transition: transform 0.18s;
+  }
+}
+.aufAn {
+  background: var(--blue);
+  color: #fff;
+  svg {
+    transform: rotate(180deg);
+  }
+}
+
+.raster {
+  @include m.card-list;
+  padding: 10px 12px 12px;
+  margin-bottom: 12px;
+}
+.jahr {
+  text-align: center;
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  padding-bottom: 8px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.zelle {
+  font-family: var(--ui);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 0;
+  border-radius: var(--r-ctrl);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+}
+.zelleAn {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+// Roter Punkt = in diesem Monat ist etwas eingetragen.
+.punkt {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--red);
+  margin: 3px auto 0;
+}
+.zelleAn .punkt {
+  background: #fff;
+}
+.hinweis {
+  font-family: var(--ui);
+  font-size: 11.5px;
+  color: var(--text3);
+  padding-top: 9px;
+}

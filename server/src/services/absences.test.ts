@@ -151,11 +151,28 @@ describe('abwesenheitLoeschen – jeder eigene Eintrag (05.09.2026)', () => {
   });
 });
 
-describe('kommendeTermine', () => {
-  it('fragt ab heute für die gewünschten Wochen', async () => {
+describe('kommendeTermine – von heute bis zu einem Tag (Monatsansicht, 19.09.2026)', () => {
+  const HEUTE = new Date('2026-10-01T12:00:00Z');
+  it('fragt ab heute bis zum genannten Tag', async () => {
     vi.mocked(getEvents).mockResolvedValue([]);
-    await a.kommendeTermine(COOKIE, 2, new Date('2026-10-01T12:00:00Z'));
-    expect(getEvents).toHaveBeenCalledWith(COOKIE, '2026-10-01', '2026-10-15');
+    await a.kommendeTermine(COOKIE, '2027-02-28', HEUTE);
+    expect(getEvents).toHaveBeenCalledWith(COOKIE, '2026-10-01', '2027-02-28');
+  });
+  it('ohne Angabe ein halbes Jahr – so weit reicht die Monatsleiste', async () => {
+    vi.mocked(getEvents).mockResolvedValue([]);
+    await a.kommendeTermine(COOKIE, undefined, HEUTE);
+    expect(getEvents).toHaveBeenCalledWith(COOKIE, '2026-10-01', '2027-04-02');
+  });
+  it('mehr als ein Jahr voraus ist ein Tippfehler → 400, kein Aufruf', async () => {
+    await expect(a.kommendeTermine(COOKIE, '2027-10-03', HEUTE)).rejects.toMatchObject({
+      status: 400,
+    });
+    expect(getEvents).not.toHaveBeenCalled();
+  });
+  it('ein Ende vor heute → 400', async () => {
+    await expect(a.kommendeTermine(COOKIE, '2026-09-30', HEUTE)).rejects.toMatchObject({
+      status: 400,
+    });
   });
 });
 

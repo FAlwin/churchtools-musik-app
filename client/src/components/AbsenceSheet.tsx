@@ -43,6 +43,11 @@ interface AbsenceSheetProps {
   gruende: AbsenceReason[];
   /** Vorbelegter Grund beim Anlegen: der vom Server als `standard` gekennzeichnete. */
   standardGrund?: number | null;
+  /**
+   * Vergangene Einträge (Seite „Einträge → Früher", 19.09.2026) sind **nur zum Ansehen**: Was war,
+   * wird nicht rückwirkend geändert – die Felder sind gesperrt, Speichern und Löschen fehlen.
+   */
+  nurLesen?: boolean;
   onClose: () => void;
   onSubmit: (neu: NeueAbsence) => void;
   onDelete: (a: Absence) => void;
@@ -63,6 +68,7 @@ export function AbsenceSheet({
   loeschtGerade,
   gruende,
   standardGrund = null,
+  nurLesen = false,
   onClose,
   onSubmit,
   onDelete,
@@ -96,20 +102,30 @@ export function AbsenceSheet({
 
   return (
     <Sheet
-      title={entwurf.art === 'neu' ? 'Abwesenheit eintragen' : 'Abwesenheit ändern'}
+      title={
+        entwurf.art === 'neu'
+          ? 'Zeitraum eintragen'
+          : nurLesen
+            ? 'Vergangene Abwesenheit'
+            : 'Abwesenheit ändern'
+      }
       onClose={onClose}
+      cancelLabel={nurLesen ? 'Schließen' : 'Abbrechen'}
     >
-      <div className={styles.chips} role="group" aria-label="Schnellauswahl">
-        {SCHNELLWAHL.map((s) => (
-          <button
-            key={s.id}
-            className={`${styles.chip}${wahl === s.id ? ' ' + styles.chipAn : ''}`}
-            onClick={() => schnellwahl(s.id)}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
+      {/* Schnellauswahl nur beim Eintragen: Ein bestehender Eintrag hat schon seinen Zeitraum. */}
+      {entwurf.art === 'neu' && (
+        <div className={styles.chips} role="group" aria-label="Schnellauswahl">
+          {SCHNELLWAHL.map((s) => (
+            <button
+              key={s.id}
+              className={`${styles.chip}${wahl === s.id ? ' ' + styles.chipAn : ''}`}
+              onClick={() => schnellwahl(s.id)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.zwei}>
         <div className={styles.feld}>
@@ -118,7 +134,8 @@ export function AbsenceSheet({
             id="verf-von"
             type="date"
             value={von}
-            min={heute}
+            min={nurLesen ? undefined : heute}
+            disabled={nurLesen}
             onChange={(e) => {
               setVon(e.target.value);
               setWahl(null);
@@ -133,6 +150,7 @@ export function AbsenceSheet({
             type="date"
             value={bis}
             min={von}
+            disabled={nurLesen}
             onChange={(e) => {
               setBis(e.target.value);
               setWahl(null);
@@ -149,6 +167,7 @@ export function AbsenceSheet({
           maxLength={200}
           placeholder="z. B. Urlaub, Dienstreise"
           value={kommentar}
+          disabled={nurLesen}
           onChange={(e) => setKommentar(e.target.value)}
         />
       </div>
@@ -159,6 +178,7 @@ export function AbsenceSheet({
           <select
             id="verf-grund"
             value={grund ?? ''}
+            disabled={nurLesen}
             onChange={(e) => setGrund(e.target.value ? Number(e.target.value) : null)}
           >
             {gruende.map((g) => (
@@ -174,26 +194,33 @@ export function AbsenceSheet({
         <div className={styles.fehler}>Das Ende liegt vor dem Anfang.</div>
       )}
 
-      <button
-        className={styles.primaryWide}
-        disabled={ungueltig || laeuft}
-        onClick={() =>
-          onSubmit({
-            startDate: von,
-            endDate: bis,
-            comment: kommentar.trim() || undefined,
-            reasonId: grund ?? undefined,
-          })
-        }
-      >
-        {laeuft
-          ? 'Wird gespeichert …'
-          : entwurf.art === 'neu'
-            ? `Eintragen${tage > 1 ? ` (${tage} Tage)` : ''}`
-            : 'Speichern'}
-      </button>
+      {nurLesen && (
+        <p className={styles.frageText}>Liegt in der Vergangenheit – nur zum Ansehen.</p>
+      )}
+
+      {!nurLesen && (
+        <button
+          className={styles.primaryWide}
+          disabled={ungueltig || laeuft}
+          onClick={() =>
+            onSubmit({
+              startDate: von,
+              endDate: bis,
+              comment: kommentar.trim() || undefined,
+              reasonId: grund ?? undefined,
+            })
+          }
+        >
+          {laeuft
+            ? 'Wird gespeichert …'
+            : entwurf.art === 'neu'
+              ? `Eintragen${tage > 1 ? ` (${tage} Tage)` : ''}`
+              : 'Speichern'}
+        </button>
+      )}
 
       {entwurf.art === 'aendern' &&
+        !nurLesen &&
         /**
          * **Löschen fragt nach, wenn der Eintrag nicht aus der App stammt.** Er wurde dann direkt in
          * ChurchTools gemacht (Urlaub, krank) – dass er hier verschwindet, soll niemanden überraschen.

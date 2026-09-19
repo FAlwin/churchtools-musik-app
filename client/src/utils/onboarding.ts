@@ -62,7 +62,10 @@ export const TOUR_SETLIST_EDIT = 'setlist-edit-v3';
 /** Gruppe 5 – Verfügbarkeit (#177), beim ersten Öffnen des Bereichs. */
 // v3 (05.09.2026, abends): Statuskopf, Streifen zieht mit, Eintragen über EIN Fenster,
 // eigene Einträge per Tipp auf die Zeile änderbar – jeder Schritt zeigt jetzt etwas anderes.
-export const TOUR_VERFUEGBARKEIT = 'verfuegbarkeit-v3';
+// v4 (19.09.2026): Neubau nach acht Entwurfsrunden – Monatsleiste statt Wochenstreifen, Abhakfeld je
+// Termin mit „Speichern"-Leiste, Plus für Zeiträume, Seite „Einträge" mit „Früher". Alle drei
+// Schritte zeigen andere Elemente als v3.
+export const TOUR_VERFUEGBARKEIT = 'verfuegbarkeit-v4';
 
 export function isTourDone(key: string): boolean {
   try {
@@ -197,18 +200,18 @@ export const SETLIST_EDIT_STEPS: CoachStep[] = [
 /** Gruppe 5 – Verfügbarkeit: eigene Abwesenheiten (#177). */
 export const VERFUEGBARKEIT_STEPS: CoachStep[] = [
   {
-    selector: '[data-tour="verf-woche"]',
-    title: 'Deine Woche im Blick',
-    body: 'Ein Punkt ist ein Termin, rot heißt: du bist abgemeldet, grau steht direkt in ChurchTools. Wische den Streifen zur Seite – er zieht mit – oder tippe die Pfeile.',
+    selector: '[data-tour="verf-monate"]',
+    title: 'Monat wählen',
+    body: 'Oben stehen die kommenden Monate. Der Pfeil rechts klappt ein Jahr auf, „Heute" bringt dich zum laufenden Monat zurück.',
   },
   {
     selector: '[data-tour="verf-termine"]',
-    title: 'Schnell abmelden',
-    body: 'Bei den Terminen reicht ein Tipp auf „Kann nicht". Ein zweiter Tipp auf „Abgemeldet" nimmt es wieder zurück.',
+    title: 'Abhaken, dann speichern',
+    body: 'Setze bei einem Termin den Haken „Abwesend". Unten erscheint „Speichern" – erst damit landet es in ChurchTools, alle Haken auf einmal. Ein zweiter Tipp nimmt einen Haken zurück.',
   },
   {
-    selector: '[data-tour="verf-zeitraum"]',
-    title: 'Urlaub eintragen und ändern',
-    body: 'Über „Eintragen" öffnest du ein Fenster mit Schnellauswahl – nur dieser Tag, Wochenende, eine oder zwei Wochen – und kannst das Datum danach feinjustieren. Einen eigenen Eintrag tippst du in der Liste an, um ihn zu ändern oder zu löschen. Einträge mit Schloss stammen direkt aus ChurchTools.',
+    selector: '[data-tour="verf-plus"]',
+    title: 'Zeiträume und Einträge',
+    body: 'Das Plus trägt einen ganzen Zeitraum ein, etwa Urlaub. Unter „Einträge" siehst du alles – auch Vergangenes – und kannst Eigenes ändern oder löschen.',
   },
 ];

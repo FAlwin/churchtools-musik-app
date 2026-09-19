@@ -1012,10 +1012,19 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   **Abwesenheitsgründe** kommen aus `getMasterData` → `absent_reason` (dieselbe alte Schnittstelle wie
   die Lied-Kategorien; `/api/masterdata/absencereasons` gibt es nicht). Die Namen sind
   Übersetzungsschlüssel (`absent.reason.vacation`) – lesbar macht sie `grundLesbar` in
-  `@shared/absences`, eigene Gründe der Gemeinde gehen unverändert durch. Client: `pages/Availability.tsx` (Wochenstreifen + Liste mit erklärendem Halbsatz), dazu
-  `components/WochenStreifen.tsx` mit `utils/wochen.ts` (Wochen als `YYYY-MM-DD`-Montage in UTC),
-  `components/AbsenceSheet.tsx` (ein Fenster für Eintragen und Ändern, mit Schnellauswahl) und
-  `hooks/useAvailability.ts`.
+  `@shared/absences`, eigene Gründe der Gemeinde gehen unverändert durch.
+  **Client seit 19.09.2026 (acht Entwurfsrunden, Vorbild die kleine Abwesenheits-App des Teams):** Tab
+  heißt **„Abwesenheiten"** (Icon `user-slash`, Tab-ID bleibt `verfuegbarkeit`), Kopfleiste nur mit
+  Titel. `pages/Availability.tsx`: Schalter **Termine | Einträge**; `components/MonatsLeiste.tsx`
+  (laufender Monat + sechs voraus, „Heute", Raster mit zwölf Monaten, nur nach vorn) mit
+  `utils/monate.ts`; je Termin ein **Abhakfeld** – Häkchen sind nur **vorgemerkt** (blauer Ring), die
+  Speichern-Leiste schreibt alle auf einmal über `useSaveAbsenceChanges` (erst anlegen, dann löschen,
+  nacheinander; **kein Bearbeiten-Modus**, Entscheidung Alwin + Frau: wie im alten Planner). Ein Termin in
+  einem mehrtägigen Zeitraum fragt über `components/ZeitraumFrage.tsx` (löschen vormerken / anpassen). Das
+  runde Plus öffnet `components/AbsenceSheet.tsx` („Zeitraum eintragen", Schnellwahl); „Einträge" zeigt
+  Anstehend/Früher, Vergangenes mit `nurLesen`. Der Wochenstreifen (`WochenStreifen.tsx`, `wochenAb`) ist
+  weg; `utils/wochen.ts` behält nur Tages-Helfer. Server: `GET /api/absences/events?to=` (Tag statt
+  Wochen). Tour `verfuegbarkeit-v4`, Testfälle TF-VERF-01…05.
   **Kein Excel im App-Code** – der ECG-Sync ist ein eigener Dienst (`excel-sync/`, PR 2).
 
 ## Schreibzugriff (Editor) – ChurchTools-Eigenheiten

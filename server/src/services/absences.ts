@@ -201,14 +201,29 @@ async function eigenerEintrag(
   return ziel;
 }
 
-/** Kommende Termine der nächsten `wochen` Wochen – alle Kalender, die das Konto sehen darf. */
+/** Wie weit die Termine höchstens vorausgeholt werden – ein Jahr, wie bei den Abwesenheiten. */
+export const MAX_VORAUS_TAGE = 366;
+/** Standard, wenn der Aufrufer kein `bis` nennt: ein halbes Jahr (die Leiste zeigt sechs Monate voraus). */
+const STANDARD_VORAUS_TAGE = 183;
+
+/**
+ * Kommende Termine von heute **bis zu einem Tag** (`YYYY-MM-DD`, einschließlich).
+ *
+ * Bis zum 19.09.2026 zählte der Aufrufer Wochen (`weeks=`, 1–26) – passend zum Wochenstreifen. Seit
+ * dem Umbau auf Monate (#177, Entwurfsrunde 4–8) sagt die App, bis wann sie Termine braucht: Die
+ * Monatsleiste zeigt sechs Monate voraus, das aufgeklappte Raster zwölf. Ein Tag statt einer Zahl,
+ * damit „bis Ende Februar" ohne Rechnerei über die Leitung geht.
+ */
 export async function kommendeTermine(
   cookie: string,
-  wochen: number,
+  bis?: string,
   heute = new Date(),
 ): Promise<AbsenceEvent[]> {
   const from = isoTag(heute);
-  const to = isoTag(new Date(heute.getTime() + wochen * 7 * 86_400_000));
+  const spaetestens = isoTag(new Date(heute.getTime() + MAX_VORAUS_TAGE * 86_400_000));
+  const to = bis ?? isoTag(new Date(heute.getTime() + STANDARD_VORAUS_TAGE * 86_400_000));
+  if (to < from) throw new HttpError(400, 'Das Ende liegt vor heute.');
+  if (to > spaetestens) throw new HttpError(400, 'Höchstens ein Jahr voraus.');
   return zuEvents(await getEvents(cookie, from, to));
 }
 

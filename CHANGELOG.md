@@ -9,41 +9,45 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
-- **Bereich „Verfügbar" – eigene Abwesenheiten in der App (#177, Phase 1 / PR 1).** Wer aktives
-  Mitglied einer unter „Anmerkungen → Gruppen-Zuweisung" gewählten Gruppe ist, bekommt einen
-  vierten Tab. Aufbau nach zwei Runden anfassbarer Entwürfe mit Alwin (05.09.2026):
+- **Tab „Abwesenheiten" – eigene Abwesenheiten in der App (#177, Phase 1 / PR 1).** Wer aktives
+  Mitglied einer unter „Anmerkungen → Gruppen-Zuweisung" gewählten Gruppe ist, bekommt einen vierten
+  Tab (Person mit Schrägstrich, das Symbol von ChurchTools). Aufbau nach **acht Runden** anfassbarer
+  Entwürfe mit Alwin (05.09.–19.09.2026) – Vorbild ist die kleine Abwesenheits-App, die das Musikteam
+  gern benutzt: „an diesem Sonntag kann ich nicht" ist ein Häkchen, kein Fenster.
 
-  - **Ein Wochenstreifen, der am Finger klebt:** sieben Kacheln, Punkt = Termin, rot = selbst
-    abgemeldet, grau = direkt in ChurchTools; beim Wischen kommt die Nachbarwoche sichtbar herein und
-    gleitet beim Loslassen ein, ein halber Zug fällt zurück. Zwölf Wochen weit, auch per Pfeil.
-  - **Ein Fenster für alles:** „Eintragen" – oder ein Tipp auf einen Tag – öffnet ein Fenster mit
-    **Schnellauswahl** (nur dieser Tag, Wochenende, 1 Woche, 2 Wochen) und Von–Bis zum Feinjustieren.
-  - **Eigene Einträge bleiben änderbar:** Ein Tipp auf die Zeile öffnet „Abwesenheit ändern" mit
-    Zeitraum, Kommentar und **Löschen**. Weil ChurchTools kein Ändern kennt, legt der Server erst den
+  - **Termine des Monats mit Abhakfeld:** Monatsleiste oben (laufender Monat, sechs voraus, „Heute"
+    zurück, der Pfeil klappt zwölf Monate auf – nur nach vorn). Je Termin ein Kästchen „Abwesend".
+  - **Vorgemerkt bis „Speichern":** Kein Bearbeiten-Modus – die Kästchen sind immer aktiv, aber ein
+    Haken bekommt nur einen blauen Ring. Sobald etwas vorgemerkt ist, erscheint unten die Leiste
+    „Verwerfen · n Änderungen vorgemerkt · Speichern"; erst Speichern schreibt **alle** Häkchen auf
+    einmal nach ChurchTools (erst anlegen, dann löschen, nacheinander). Entscheidung Alwin und seine
+    Frau, 19.09.2026: so nah wie möglich am alten Planner, ohne dass ein Fehltipp sofort etwas löscht.
+  - **Zeitraum mit Rückfrage:** Ein Termin in einem mehrtägigen Zeitraum (Urlaub) lässt sich nicht
+    stumm herausnehmen – ein Fenster fragt: Zeitraum löschen (vorgemerkt) oder anpassen.
+  - **Ein rundes Plus** trägt ganze Zeiträume ein: ein Fenster mit **Schnellauswahl** (nur dieser Tag,
+    Wochenende, 1 Woche, 2 Wochen) und Von–Bis, verschwindet, solange etwas vorgemerkt ist.
+  - **„Einträge":** die eigenen Abwesenheiten, **Anstehend** (mit den Terminen, die ein Eintrag trifft)
+    und **Früher** (ein Jahr zurück, nur zum Ansehen). Ein Tipp öffnet „Abwesenheit ändern" mit
+    Zeitraum, Kommentar, Grund und Löschen. Weil ChurchTools kein Ändern kennt, legt der Server erst den
     neuen Eintrag an und entfernt dann den alten.
-  - **„Diese Woche"** listet **alle** Termine der Woche aus ChurchTools und die eigenen
-    Abwesenheiten, nach Datum gemischt – mit einem Halbsatz, der das ausdrücklich sagt: „wer
-    eingeteilt ist, spielt hier keine Rolle". (Die Dienst-Einteilung kennt die App nicht; sie ist
-    Phase 2.) Darunter **„Meine Abwesenheiten"**.
+  - Die Liste zeigt **alle** Termine aus ChurchTools – wer eingeteilt ist, spielt keine Rolle (die
+    Dienst-Einteilung kennt die App nicht; sie ist Phase 2).
 
   **Alle eigenen Abwesenheiten sind bearbeitbar – auch die aus ChurchTools.** Zuerst durften nur
   Einträge mit dem Kommentar-Marker `[Musikteam]` angefasst werden; eine Messung an der ECG-Instanz
-  zeigte, dass **keiner** der 31 Bestände diesen Marker trägt (der alte Planner schreibt keinen
-  Kommentar, und wer direkt in ChurchTools einträgt, schon gar nicht) – die Regel hätte praktisch
-  alles gesperrt. In der App ist man mit seinem eigenen Konto angemeldet: Was in ChurchTools erlaubt
-  ist, ist hier erlaubt. Vor dem Löschen eines Eintrags, der nicht aus der App stammt, fragt die App
-  nach. Der Marker bleibt Herkunftskennzeichen für den späteren Excel-Sync.
+  zeigte, dass **keiner** der 31 Bestände diesen Marker trägt – die Regel hätte praktisch alles
+  gesperrt. In der App ist man mit seinem eigenen Konto angemeldet: Was in ChurchTools erlaubt ist, ist
+  hier erlaubt. Vor dem Löschen eines Eintrags, der nicht aus der App stammt, fragt die App nach. Der
+  Marker bleibt Herkunftskennzeichen für den späteren Excel-Sync.
 
-  **Der Grund gehört dazu.** Das Fenster zeigt eine Auswahl mit den Gründen **der Gemeinde** –
-  Abwesend, Urlaub, Krank oder was dort eingestellt ist; ChurchTools liefert sie über dieselbe
-  Schnittstelle wie die Lied-Kategorien. Beim Ändern bleibt der Grund erhalten (ein Urlaub wird
-  nicht zu „Abwesend"), neue Einträge bekommen den konfigurierten Standard. Löst die Weboberfläche des alten
-  Musik-Planners ab. **Kein Excel in der App** – der Abgleich mit der ECG-Excel wird ein eigener
-  Dienst (PR 2); Release erst mit beiden.
-  - Server: `GET/POST /api/absences`, `PUT/DELETE /api/absences/:id`, `GET /api/absences/events`
-    (Personen-ID immer aus der Sitzung), neues Recht `canUseAvailability`, Env
-    `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1 = „Abwesend").
-  - Geführte Einführung für den neuen Bereich (`verfuegbarkeit-v3`).
+  **Der Grund gehört dazu.** Das Fenster zeigt die Gründe **der Gemeinde** (Abwesend, Urlaub, Krank
+  oder was dort eingestellt ist); beim Ändern bleibt der Grund erhalten, neue Einträge bekommen den
+  konfigurierten Standard. Löst die Weboberfläche des alten Musik-Planners ab. **Kein Excel in der
+  App** – der Abgleich mit der ECG-Excel wird ein eigener Dienst (PR 2); Release erst mit beiden.
+  - Server: `GET/POST /api/absences`, `PUT/DELETE /api/absences/:id`, `GET /api/absences/events?to=`
+    (von heute bis zu einem Tag, höchstens ein Jahr; Personen-ID immer aus der Sitzung), neues Recht
+    `canUseAvailability`, Env `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1 = „Abwesend").
+  - Geführte Einführung für den neuen Bereich (`verfuegbarkeit-v4`).
 
 ### Geändert
 

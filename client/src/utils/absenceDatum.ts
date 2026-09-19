@@ -30,6 +30,14 @@ export function tagKurz(iso: string, heute = new Date()): string {
   return `${wochentagKurz(iso)}, ${iso.slice(8, 10)}.${iso.slice(5, 7)}.${jahr}`;
 }
 
+/** `2026-10-04` → „Sonntag" – für die Unterzeile einer Terminzeile (UTC-Parsen wie überall hier). */
+export function wochentagLang(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('de-DE', {
+    weekday: 'long',
+    timeZone: 'UTC',
+  });
+}
+
 /** Zeitraum lesbar: ein Tag → „So, 04.10."; mehrere → „Sa, 03.10. – So, 11.10.". */
 export function zeitraumKurz(
   a: Pick<Absence, 'startDate' | 'endDate'>,

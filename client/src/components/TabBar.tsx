@@ -6,8 +6,10 @@ export type TabId = 'termine' | 'lieder' | 'verfuegbarkeit' | 'mehr';
 const TAB_META: Record<TabId, { label: string; icon: IconName }> = {
   termine: { label: 'Termine', icon: 'calendar' },
   lieder: { label: 'Lieder', icon: 'music' },
-  // Verfügbarkeit (#177): nur für aktive Mitglieder der gewählten Musikteam-Gruppen sichtbar.
-  verfuegbarkeit: { label: 'Verfügbar', icon: 'clock' },
+  // Abwesenheiten (#177): nur für aktive Mitglieder der gewählten Musikteam-Gruppen sichtbar. Die
+  // Tab-ID bleibt `verfuegbarkeit` (gespeicherter Tab, Rechte-Name); die Beschriftung heißt seit dem
+  // 19.09.2026 „Abwesenheiten" mit dem Symbol, das ChurchTools selbst dafür nutzt.
+  verfuegbarkeit: { label: 'Abwesenheiten', icon: 'user-slash' },
   mehr: { label: 'Mehr', icon: 'cog-fill' },
 };
 

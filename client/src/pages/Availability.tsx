@@ -5,18 +5,28 @@ import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
 import { Icon } from '../components/icons';
 import { Coachmarks } from '../components/Coachmarks';
-import { WochenStreifen } from '../components/WochenStreifen';
+import { MonatsLeiste } from '../components/MonatsLeiste';
 import { AbsenceSheet, type Entwurf } from '../components/AbsenceSheet';
+import { ZeitraumFrage } from '../components/ZeitraumFrage';
 import {
   useAbsenceEvents,
   useAbsenceReasons,
   useCreateAbsence,
   useDeleteAbsence,
   useMyAbsences,
+  useSaveAbsenceChanges,
   useUpdateAbsence,
 } from '../hooks/useAvailability';
-import { abwesenheitFuer, deckt, tagKurz, uhrzeit, zeitraumKurz } from '../utils/absenceDatum';
-import { heuteIso, plusTage, wochenAb } from '../utils/wochen';
+import {
+  abwesenheitFuer,
+  deckt,
+  tagKurz,
+  uhrzeit,
+  wochentagLang,
+  zeitraumKurz,
+} from '../utils/absenceDatum';
+import { heuteIso, plusTage, tagImMonat } from '../utils/wochen';
+import { letzterTag, monatLabel, monatNurKurz, monatPlus, monatVon } from '../utils/monate';
 import { ApiError } from '../services/api';
 import {
   TOUR_VERFUEGBARKEIT,
@@ -26,69 +36,161 @@ import {
 } from '../utils/onboarding';
 import styles from './Availability.module.scss';
 
-/** So viele Wochen zeigt der Streifen – und so weit holt der Server die Termine. */
-export const WOCHEN = 12;
+// Nicht exportiert (Fast Refresh mag nur Komponenten als Export) – wer die Zahlen braucht, liest sie hier.
+/** Die Monatsleiste zeigt so viele Monate voraus; das Raster doppelt so viele. Termine werden bis dahin geholt. */
+const VORAUS_MONATE = 6;
+const RASTER_MONATE = 12;
+/** So weit reicht „Einträge → Früher" zurück. */
+const RUECKBLICK_TAGE = 365;
 
 interface AvailabilityProps {
   /** Schreiben braucht Netz (ChurchTools). Lesen kommt aus dem Cache. */
   online: boolean;
   onToast: (text: string) => void;
-  /** Nur für Tests: das „Heute" des Streifens. */
+  /** Nur für Tests: das „Heute" der Ansicht. */
   heute?: string;
 }
 
+type Seite = 'termine' | 'eintraege';
+/** Was ein Kästchen zeigt: der Eintrag dahinter, ob er zum Löschen vorgemerkt ist, ob der Haken sitzt. */
+interface Kasten {
+  absence: Absence | undefined;
+  soll: boolean;
+  vorgemerkt: boolean;
+}
+
 /**
- * Verfügbarkeit (#177). Aufbau nach Alwins Durchklick der anfassbaren Entwürfe (05.09.2026):
+ * Abwesenheiten (#177). Aufbau nach acht Entwurfsrunden mit Alwin (18./19.09.2026), Vorbild ist die
+ * kleine Abwesenheits-App, die das Musikteam gern benutzt – „an diesem Sonntag kann ich nicht" soll
+ * ein Häkchen sein, kein Fenster:
  *
- *  1. **Wochenstreifen**, der am Finger klebt (siehe `WochenStreifen`).
- *  2. **„Diese Woche"** – ALLE Termine der gezeigten Woche aus ChurchTools, dazu die eigenen
- *     Abwesenheiten, nach Datum gemischt. Der Halbsatz darunter sagt das ausdrücklich: Alwin fragte
- *     beim Durchklicken, ob es die Termine seien, bei denen er eingeteilt ist (05.09.2026).
- *     Ein **Statuskopf** („nächster Termin … du bist verfügbar") stand hier einen Abend lang und ist
- *     auf Alwins Wunsch wieder weg – die Miniatur-Balken der nächsten Termine erklärten sich nicht.
- *  3. **„Meine Abwesenheiten"** – jede Zeile ist antippbar und öffnet „Abwesenheit ändern"
- *     (Von, Bis, Kommentar, Löschen). Manuelle ChurchTools-Einträge tragen ein Schloss.
+ *  1. **Monatsleiste** (`MonatsLeiste`): laufender Monat und sechs voraus, „Heute" zurück, der Pfeil
+ *     klappt ein Jahr auf. Nur nach vorn – Vergangenes steht unter „Einträge → Früher".
+ *  2. **Terminliste des Monats** mit einem **Abhakfeld** je Termin. Die Kästchen sind immer aktiv,
+ *     aber ein Haken ist nur **vorgemerkt** (blauer Ring), bis man unten **Speichern** drückt – dann
+ *     gehen alle Häkchen auf einmal nach ChurchTools (`useSaveAbsenceChanges`). Kein Bearbeiten-Modus:
+ *     Alwins Frau wollte es wie im alten Planner – anfassen, dann speichern (19.09.2026).
+ *  3. Ein Termin in einem **mehrtägigen** Zeitraum (Urlaub) lässt sich nicht stumm herausnehmen:
+ *     `ZeitraumFrage` bietet „Zeitraum löschen" (vorgemerkt) oder „Zeitraum anpassen" (Fenster).
+ *  4. Das **Plus** unten rechts trägt einen ganzen Zeitraum ein (`AbsenceSheet` mit Schnellwahl); es
+ *     verschwindet, solange etwas vorgemerkt ist – dann ist die Speichern-Leiste der einzige Weg.
+ *  5. **„Einträge"**: die eigenen Abwesenheiten, „Anstehend" und „Früher"; ein Tipp öffnet das Fenster
+ *     zum Ändern und Löschen, Vergangenes nur zum Ansehen.
  *
- * Ein Zeitraum entsteht über **ein** Fenster mit Schnellwahl („Nur dieser Tag / Wochenende / 1 Woche
- * / 2 Wochen") – aufgerufen über den Knopf „Eintragen" oder einen Tipp auf einen Tag im Streifen.
- * Die frühere Auswahlleiste am unteren Rand ist weg; sie war fummelig und ein Schritt zu viel.
+ * Kopfleiste nur mit Titel, wie bei Termine und Lieder (Alwin, 19.09.2026).
  */
 export function Availability({ online, onToast, heute = heuteIso() }: AvailabilityProps) {
-  const absences = useMyAbsences(true);
-  const events = useAbsenceEvents(true, WOCHEN);
+  const laufend = monatVon(heute);
+  const bisMonat = monatPlus(laufend, RASTER_MONATE - 1);
+  const absences = useMyAbsences(true, plusTage(heute, -RUECKBLICK_TAGE), letzterTag(bisMonat));
+  const events = useAbsenceEvents(true, letzterTag(bisMonat));
   const gruende = useAbsenceReasons(true);
   const anlegen = useCreateAbsence();
   const aendern = useUpdateAbsence();
-  const loeschen = useDeleteAbsence();
+  const loeschenEinzeln = useDeleteAbsence();
+  const sichern = useSaveAbsenceChanges();
+
+  const [seite, setSeite] = useState<Seite>('termine');
+  const [monat, setMonat] = useState(laufend);
+  const [frueher, setFrueher] = useState(false);
+  /** Vorgemerkte Häkchen: Tag → gewünschter Zustand (true = abwesend). */
+  const [pending, setPending] = useState<Record<string, boolean>>({});
+  /** Vorgemerkt zu löschende Zeiträume (IDs). */
+  const [loeschen, setLoeschen] = useState<number[]>([]);
   const [entwurf, setEntwurf] = useState<Entwurf | null>(null);
+  const [frage, setFrage] = useState<{ tag: string; absence: Absence } | null>(null);
   const [tour, setTour] = useState(false);
-  const wochen = useMemo(() => wochenAb(heute, WOCHEN), [heute]);
-  const [wocheIdx, setWocheIdx] = useState(0);
 
   useEffect(() => {
     if (!absences.isLoading && !events.isLoading && !isTourDone(TOUR_VERFUEGBARKEIT)) setTour(true);
   }, [absences.isLoading, events.isLoading]);
 
-  const liste = absences.data ?? [];
-  const alleEvents = events.data ?? [];
-  const montag = wochen[wocheIdx];
-  const sonntag = plusTage(montag, 6);
-  const wocheEvents = alleEvents.filter((e) => montag <= e.date && e.date <= sonntag);
-  const wocheAbwesenheiten = liste.filter((a) => a.startDate <= sonntag && montag <= a.endDate);
+  const liste = useMemo(() => absences.data ?? [], [absences.data]);
+  const alleEvents = useMemo(() => events.data ?? [], [events.data]);
+  const anstehend = liste
+    .filter((a) => a.endDate >= heute)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const frueherListe = liste
+    .filter((a) => a.endDate < heute)
+    .sort((a, b) => b.startDate.localeCompare(a.startDate));
+  const monatEvents = alleEvents.filter((e) => monatVon(e.date) === monat && e.date >= heute);
+
+  // Monate mit Einträgen – der rote Punkt im Raster. Ein Zeitraum kann mehrere Monate berühren.
+  const markiert = useMemo(() => {
+    const s = new Set<string>();
+    for (const a of anstehend) {
+      for (let m = monatVon(a.startDate); m <= monatVon(a.endDate); m = monatPlus(m, 1)) s.add(m);
+    }
+    return s;
+  }, [anstehend]);
+
+  const anzahl = Object.keys(pending).length + loeschen.length;
 
   const meldeFehler = (e: unknown, sonst: string): void => {
     onToast(e instanceof ApiError ? e.message : sonst);
   };
 
-  const zuruecknehmen = (a: Absence): void => {
+  /* ---------------------------------------------------------------- Häkchen (vorgemerkt) */
+
+  const kasten = (tag: string): Kasten => {
+    const absence = abwesenheitFuer(liste, tag);
+    const weg = absence !== undefined && loeschen.includes(absence.id);
+    const soll = weg ? false : tag in pending ? pending[tag] : absence !== undefined;
+    return { absence, soll, vorgemerkt: tag in pending || weg };
+  };
+
+  const haken = (tag: string): void => {
     if (!online) return onToast('Zum Ändern brauchst du Netz.');
-    loeschen.mutate(a.id, {
-      onSuccess: () => onToast('Abmeldung zurückgenommen.'),
-      onError: (e) => meldeFehler(e, 'Konnte nicht zurückgenommen werden.'),
+    const a = abwesenheitFuer(liste, tag);
+    if (a && a.startDate !== a.endDate) {
+      // Teil eines Zeitraums: entweder die vorgemerkte Löschung zurücknehmen – oder nachfragen.
+      if (loeschen.includes(a.id)) setLoeschen((l) => l.filter((id) => id !== a.id));
+      else setFrage({ tag, absence: a });
+      return;
+    }
+    const ist = a !== undefined;
+    const soll = tag in pending ? !pending[tag] : !ist;
+    setPending((p) => {
+      const n = { ...p };
+      if (soll === ist) delete n[tag];
+      else n[tag] = soll;
+      return n;
     });
   };
 
-  const speichern = (neu: NeueAbsence): void => {
+  const verwerfen = (): void => {
+    setPending({});
+    setLoeschen([]);
+  };
+
+  const speichernAlles = (): void => {
+    const eintragen = Object.entries(pending)
+      .filter(([, soll]) => soll)
+      .map(([tag]) => tag);
+    const weg = [
+      ...loeschen,
+      ...Object.entries(pending)
+        .filter(([, soll]) => !soll)
+        .map(([tag]) => abwesenheitFuer(liste, tag)?.id)
+        .filter((id): id is number => id !== undefined),
+    ];
+    sichern.mutate(
+      { eintragen, loeschen: weg },
+      {
+        onSuccess: (n) => {
+          verwerfen();
+          onToast(
+            `${n} ${n === 1 ? 'Änderung' : 'Änderungen'} gespeichert – steht jetzt in ChurchTools.`,
+          );
+        },
+        onError: (e) => meldeFehler(e, 'Konnte nicht gespeichert werden – bitte noch einmal.'),
+      },
+    );
+  };
+
+  /* ---------------------------------------------------------------- Fenster (Zeitraum, Ändern) */
+
+  const speichernFenster = (neu: NeueAbsence): void => {
     const id = entwurf?.art === 'aendern' ? entwurf.absence.id : null;
     const fertig = (text: string) => () => {
       setEntwurf(null);
@@ -111,7 +213,7 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   };
 
   const entfernen = (a: Absence): void => {
-    loeschen.mutate(a.id, {
+    loeschenEinzeln.mutate(a.id, {
       onSuccess: () => {
         setEntwurf(null);
         onToast('Gelöscht.');
@@ -120,195 +222,281 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
     });
   };
 
-  const eintragenOeffnen = (tag: string): void => {
+  const zeitraumOeffnen = (): void => {
     if (!online) return onToast('Zum Eintragen brauchst du Netz.');
-    setEntwurf({ art: 'neu', tag });
+    const naechster = alleEvents.find((e) => e.date >= heute)?.date ?? heute;
+    setEntwurf({ art: 'neu', tag: naechster });
   };
 
   const laedt = absences.isLoading || events.isLoading;
   const fehler = absences.isError || events.isError;
+  const neuLaden = (): void => {
+    void absences.refetch();
+    void events.refetch();
+  };
 
-  /** Eine Terminzeile mit dem Zustand des Tages: frei, selbst abgemeldet, aus ChurchTools (öffnet das Fenster). */
+  /* ---------------------------------------------------------------- Zeilen */
+
+  const datumKachel = (tag: string, dritteZeile: string, ton: 'blau' | 'rot' | 'grau') => (
+    <div
+      className={`${styles.datum}${ton === 'rot' ? ' ' + styles.datumRot : ton === 'grau' ? ' ' + styles.datumGrau : ''}`}
+      aria-hidden="true"
+    >
+      <b>{tagImMonat(tag)}</b>
+      <small>{monatNurKurz(monatVon(tag))}.</small>
+      <em>{dritteZeile}</em>
+    </div>
+  );
+
   const terminZeile = (ev: AbsenceEvent) => {
-    const a = abwesenheitFuer(liste, ev.date);
+    const k = kasten(ev.date);
+    const a = k.absence;
+    const ct = a !== undefined && !a.vonApp;
+    const teil = a !== undefined && a.startDate !== a.endDate;
     return (
       <div key={`ev-${ev.id}`} className={styles.zeile}>
+        {datumKachel(ev.date, uhrzeit(ev.startDate), k.soll ? (ct ? 'grau' : 'rot') : 'blau')}
         <div className={styles.text}>
           <span className={styles.titel}>{ev.name}</span>
           <span className={styles.sub}>
-            {tagKurz(ev.date)}
-            {uhrzeit(ev.startDate) ? ` · ${uhrzeit(ev.startDate)}` : ''}
+            {wochentagLang(ev.date)}
+            {a && k.soll
+              ? ` · ${a.reason ?? 'Abwesend'}${teil ? ` · ${zeitraumKurz(a)}` : ''}`
+              : ''}
           </span>
         </div>
-        {a ? (
-          /* Ein Eintrag aus ChurchTools ist auch hier anfassbar – aber nicht mit einem Tipp weg: Er
-             öffnet das Fenster mit Zeitraum und Grund, wo das Löschen nachfragt. Nur was die App
-             selbst angelegt hat, lässt sich mit einem Tipp zurücknehmen. */
-          a.vonApp ? (
-            <button
-              className={`${styles.aktion} ${styles.gesetzt}`}
-              disabled={loeschen.isPending}
-              onClick={() => zuruecknehmen(a)}
-              aria-label={`Abmeldung für ${ev.name} am ${tagKurz(ev.date)} zurücknehmen`}
-            >
-              Abgemeldet
-            </button>
-          ) : (
-            <button
-              className={`${styles.aktion} ${styles.gesetzt}`}
-              disabled={!online}
-              onClick={() => setEntwurf({ art: 'aendern', absence: a })}
-              aria-label={`Abwesenheit ${zeitraumKurz(a)} ändern`}
-            >
-              {a.reason ?? 'Abwesend'}
-            </button>
-          )
-        ) : (
-          <button
-            className={styles.aktion}
-            disabled={!online}
-            onClick={() => eintragenOeffnen(ev.date)}
-          >
-            Kann nicht
-          </button>
-        )}
+        <button
+          className={`${styles.kasten}${k.soll ? ' ' + styles.kastenAn : ''}${ct && k.soll ? ' ' + styles.kastenCt : ''}${k.vorgemerkt ? ' ' + styles.vorgemerkt : ''}`}
+          aria-pressed={k.soll}
+          aria-label={`Abwesend – ${ev.name}, ${tagKurz(ev.date)}`}
+          disabled={!online || sichern.isPending}
+          onClick={() => haken(ev.date)}
+        >
+          <span className={styles.box}>{k.soll ? '✓' : ''}</span>
+          Abwesend
+        </button>
       </div>
     );
   };
 
-  /**
-   * Eine Abwesenheitszeile – **jede** ist antippbar und öffnet „Abwesenheit ändern" (ein großes Ziel
-   * statt zweier kleiner Symbole; Löschen sitzt in diesem Fenster, wo auch der Zeitraum steht).
-   *
-   * Bis zum 05.09.2026 trugen Einträge ohne `[Musikteam]`-Marker ein Schloss und ließen sich hier
-   * nicht anfassen. Die Messung an der ECG-Instanz zeigte, warum das falsch war: **Keiner** der 31
-   * Bestände trug den Marker – der alte Planner schreibt keinen Kommentar, und wer in ChurchTools
-   * selbst einträgt, schon gar nicht. In der App ist man mit seinem eigenen Konto angemeldet; was
-   * dort erlaubt ist, ist hier erlaubt. Woher der Eintrag stammt, zeigt der Untertitel (Grund), und
-   * das Löschen fragt bei fremden Einträgen nach.
-   */
-  const abwesenheitZeile = (a: Absence) => (
-    <button
-      key={`ab-${a.id}`}
-      className={`${styles.zeile} ${styles.zeileTip}`}
-      disabled={!online}
-      onClick={() => setEntwurf({ art: 'aendern', absence: a })}
-      aria-label={`Abwesenheit ${zeitraumKurz(a)} ändern`}
-    >
-      <div className={styles.text}>
-        <span className={styles.titel}>{zeitraumKurz(a)}</span>
-        <span className={styles.sub}>
-          {[a.comment, a.reason].filter(Boolean).join(' · ') || 'Abwesend'}
+  const abwesenheitZeile = (a: Absence, vergangen: boolean) => {
+    const trifft = vergangen ? [] : alleEvents.filter((e) => deckt(a, e.date));
+    return (
+      <button
+        key={`ab-${a.id}`}
+        className={`${styles.zeile} ${styles.zeileTip}${vergangen ? ' ' + styles.vergangen : ''}`}
+        disabled={!online && !vergangen}
+        onClick={() => setEntwurf({ art: 'aendern', absence: a })}
+        aria-label={`Abwesenheit ${zeitraumKurz(a)} ${vergangen ? 'ansehen' : 'ändern'}`}
+      >
+        {datumKachel(a.startDate, tagKurz(a.startDate).slice(0, 2), a.vonApp ? 'rot' : 'grau')}
+        <div className={styles.text}>
+          <span className={styles.titel}>
+            {a.reason ?? 'Abwesend'}
+            {a.startDate !== a.endDate ? ` · ${zeitraumKurz(a)}` : ''}
+          </span>
+          <span className={styles.sub}>
+            {[
+              trifft.length
+                ? `trifft ${trifft.map((e) => tagKurz(e.date)).join(', ')}`
+                : vergangen
+                  ? ''
+                  : 'trifft keinen Termin',
+              a.comment,
+              a.vonApp ? '' : 'in ChurchTools eingetragen',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        </div>
+        <span className={styles.chev}>
+          <Icon name="chev-right" size={18} />
         </span>
-      </div>
-      <Icon name="chev-right" size={18} />
-    </button>
+      </button>
+    );
+  };
+
+  /** Einträge nach Monat gruppiert – die Reihenfolge der Liste bleibt (anstehend aufwärts, früher abwärts). */
+  const gruppiert = (eintraege: Absence[]) => {
+    const monate = [...new Set(eintraege.map((a) => monatVon(a.startDate)))];
+    return monate.map((m) => ({
+      monat: m,
+      eintraege: eintraege.filter((a) => monatVon(a.startDate) === m),
+    }));
+  };
+
+  const termineSeite = (
+    <>
+      <MonatsLeiste
+        heute={heute}
+        monat={monat}
+        onMonat={setMonat}
+        markiert={markiert}
+        voraus={VORAUS_MONATE}
+        rasterMonate={RASTER_MONATE}
+      />
+      <section data-tour="verf-termine">
+        <div className={styles.sec}>
+          {monatLabel(monat)}
+          <span>
+            {monatEvents.length} {monatEvents.length === 1 ? 'Termin' : 'Termine'}
+          </span>
+        </div>
+        <div className={styles.liste}>
+          {monatEvents.length === 0 && (
+            <div className={styles.leer}>Kein Termin mehr in diesem Monat.</div>
+          )}
+          {monatEvents.map(terminZeile)}
+        </div>
+      </section>
+      {/**
+       * Der Halbsatz beantwortet die Frage, die Alwin am 05.09.2026 beim Durchklicken hatte: „Sind
+       * das die Termine, bei denen ich eingetragen bin?" Nein – es sind ALLE, die das Konto in
+       * ChurchTools sehen darf. Wer welchen Dienst hat, weiß die App nicht (Dienst-Einteilung ist Phase 2).
+       */}
+      <p className={styles.hinweis}>
+        Alle Termine aus ChurchTools – wer eingeteilt ist, spielt hier keine Rolle. Ein Haken wird
+        erst mit „Speichern" eingetragen.
+      </p>
+    </>
   );
 
-  // „Diese Woche": Termine und Abwesenheiten der Woche in Datumsreihenfolge. Eine Abwesenheit, die
-  // genau einen Termintag abdeckt, steht schon in dessen Zeile – nicht doppelt zeigen.
-  const wocheZeilen = [
-    ...wocheEvents.map((e) => ({ datum: e.date, el: terminZeile(e) })),
-    ...wocheAbwesenheiten
-      .filter((a) => !(a.startDate === a.endDate && wocheEvents.some((e) => deckt(a, e.date))))
-      .map((a) => ({ datum: a.startDate, el: abwesenheitZeile(a) })),
-  ].sort((x, y) => x.datum.localeCompare(y.datum));
+  const eintraegeListe = frueher ? frueherListe : anstehend;
+  const eintraegeSeite = (
+    <>
+      <div className={styles.seg} role="group" aria-label="Zeitraum">
+        <button
+          className={`${styles.segBtn}${!frueher ? ' ' + styles.segAn : ''}`}
+          aria-pressed={!frueher}
+          onClick={() => setFrueher(false)}
+        >
+          Anstehend ({anstehend.length})
+        </button>
+        <button
+          className={`${styles.segBtn}${frueher ? ' ' + styles.segAn : ''}`}
+          aria-pressed={frueher}
+          onClick={() => setFrueher(true)}
+        >
+          Früher ({frueherListe.length})
+        </button>
+      </div>
+      {eintraegeListe.length === 0 ? (
+        <div className={styles.leerBox}>
+          <b>{frueher ? 'Nichts in der Vergangenheit.' : 'Noch nichts eingetragen.'}</b>
+          {frueher
+            ? 'Was du einträgst, bleibt hier ein Jahr lang stehen.'
+            : 'Unter „Termine" ein Kästchen abhaken – oder über das Plus einen Zeitraum eintragen.'}
+        </div>
+      ) : (
+        gruppiert(eintraegeListe).map((g) => (
+          <section key={g.monat}>
+            <div className={styles.sec}>{monatLabel(g.monat)}</div>
+            <div className={styles.liste}>
+              {g.eintraege.map((a) => abwesenheitZeile(a, frueher))}
+            </div>
+          </section>
+        ))
+      )}
+      {!frueher && eintraegeListe.length > 0 && (
+        <p className={styles.hinweis}>
+          Tipp auf eine Zeile: Zeitraum, Grund oder Kommentar ändern, löschen. Auch Einträge, die du
+          direkt in ChurchTools gemacht hast – vor dem Löschen fragt die App dann nach.
+        </p>
+      )}
+    </>
+  );
 
   return (
     <Screen>
-      <NavBar title="Verfügbarkeit" />
-      <Scroll
-        onRefresh={() => {
-          void absences.refetch();
-          void events.refetch();
-        }}
-      >
+      <NavBar title="Abwesenheiten" />
+      <Scroll onRefresh={neuLaden}>
         {laedt ? (
           <CenterMessage loading text="Wird geladen…" />
         ) : fehler ? (
-          <CenterMessage
-            icon="⚠️"
-            text="Konnte nicht geladen werden."
-            onRetry={() => {
-              void absences.refetch();
-              void events.refetch();
-            }}
-          />
+          <CenterMessage icon="⚠️" text="Konnte nicht geladen werden." onRetry={neuLaden} />
         ) : (
           <div className={styles.wrap}>
-            <WochenStreifen
-              wochen={wochen}
-              index={wocheIdx}
-              onIndex={setWocheIdx}
-              heute={heute}
-              events={alleEvents}
-              absences={liste}
-              onTag={eintragenOeffnen}
-            />
-
-            <section data-tour="verf-termine">
-              <div className={styles.kopf}>
-                {wocheIdx === 0 ? 'Diese Woche' : 'In dieser Woche'}
-              </div>
-              {/**
-               * Der Halbsatz beantwortet die Frage, die Alwin am 05.09.2026 beim Durchklicken hatte:
-               * „Sind das die Termine, bei denen ich eingetragen bin?" Nein – es sind ALLE, die das
-               * Konto in ChurchTools sehen darf, dazu die eigenen Abwesenheiten. Wer welchen Dienst
-               * hat, weiß die App nicht (Dienst-Einteilung ist Phase 2). Bewusst ohne Erwähnung der
-               * ECG-Excel: Dieser Bereich ist der generische Kern für alle Gemeinden.
-               */}
-              <p className={styles.kopfHinweis}>
-                Alle Termine aus ChurchTools und deine Abwesenheiten – wer eingeteilt ist, spielt
-                hier keine Rolle.
-              </p>
-              <div className={styles.liste}>
-                {wocheZeilen.length === 0 && (
-                  <div className={styles.leer}>Keine Termine, nichts eingetragen.</div>
-                )}
-                {wocheZeilen.map((z) => z.el)}
-              </div>
-            </section>
-
-            <section data-tour="verf-liste">
-              <div className={styles.kopf}>
-                <span>Meine Abwesenheiten</span>
-                <button
-                  className={styles.neu}
-                  disabled={!online}
-                  onClick={() => eintragenOeffnen(heute)}
-                  data-tour="verf-zeitraum"
-                  /* Eindeutiger Name: Im geöffneten Fenster heißt der Knopf ebenfalls „Eintragen". */
-                  aria-label="Abwesenheit eintragen"
-                >
-                  <Icon name="plus" size={16} /> Eintragen
-                </button>
-              </div>
-              <div className={styles.liste}>
-                {liste.length === 0 && <div className={styles.leer}>Noch nichts eingetragen.</div>}
-                {liste.map(abwesenheitZeile)}
-              </div>
-            </section>
-
-            <p className={styles.hinweis} data-tour="verf-hinweis">
-              Alles hier steht als Abwesenheit in ChurchTools – für die Einteilung sichtbar. Auch
-              Einträge, die du direkt dort gemacht hast, kannst du hier ändern; vor dem Löschen
-              fragt die App dann nach.
-            </p>
+            <div className={styles.seg} role="group" aria-label="Ansicht">
+              <button
+                className={`${styles.segBtn}${seite === 'termine' ? ' ' + styles.segAn : ''}`}
+                aria-pressed={seite === 'termine'}
+                onClick={() => setSeite('termine')}
+              >
+                Termine
+              </button>
+              <button
+                className={`${styles.segBtn}${seite === 'eintraege' ? ' ' + styles.segAn : ''}`}
+                aria-pressed={seite === 'eintraege'}
+                onClick={() => setSeite('eintraege')}
+              >
+                Einträge
+                {anstehend.length > 0 && <span className={styles.zaehler}>{anstehend.length}</span>}
+              </button>
+            </div>
+            {seite === 'termine' ? termineSeite : eintraegeSeite}
           </div>
         )}
       </Scroll>
+
+      {anzahl > 0 ? (
+        <div className={styles.leiste} role="status">
+          <button className={styles.verwerfen} onClick={verwerfen} disabled={sichern.isPending}>
+            Verwerfen
+          </button>
+          <span className={styles.leisteInfo}>
+            {anzahl} {anzahl === 1 ? 'Änderung' : 'Änderungen'} vorgemerkt
+          </span>
+          <button
+            className={styles.speichern}
+            onClick={speichernAlles}
+            disabled={sichern.isPending}
+          >
+            {sichern.isPending ? 'Speichert …' : 'Speichern'}
+          </button>
+        </div>
+      ) : (
+        !laedt &&
+        !fehler && (
+          <button
+            className={styles.plus}
+            data-tour="verf-plus"
+            aria-label="Zeitraum eintragen"
+            disabled={!online}
+            onClick={zeitraumOeffnen}
+          >
+            <Icon name="plus" size={26} stroke={2.2} />
+          </button>
+        )
+      )}
 
       {entwurf && (
         <AbsenceSheet
           entwurf={entwurf}
           heute={heute}
           laeuft={anlegen.isPending || aendern.isPending}
-          loeschtGerade={loeschen.isPending}
+          loeschtGerade={loeschenEinzeln.isPending}
           gruende={gruende.data ?? []}
           standardGrund={gruende.data?.find((g) => g.standard)?.id ?? null}
+          nurLesen={entwurf.art === 'aendern' && entwurf.absence.endDate < heute}
           onClose={() => setEntwurf(null)}
-          onSubmit={speichern}
+          onSubmit={speichernFenster}
           onDelete={entfernen}
+        />
+      )}
+
+      {frage && (
+        <ZeitraumFrage
+          tag={frage.tag}
+          absence={frage.absence}
+          onLoeschen={() => {
+            setLoeschen((l) => (l.includes(frage.absence.id) ? l : [...l, frage.absence.id]));
+            setFrage(null);
+          }}
+          onAnpassen={() => {
+            setEntwurf({ art: 'aendern', absence: frage.absence });
+            setFrage(null);
+          }}
+          onClose={() => setFrage(null)}
         />
       )}
 
