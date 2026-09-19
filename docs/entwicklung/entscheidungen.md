@@ -204,6 +204,14 @@ Sackgasse. `SongPicker` bietet ihn deshalb nur an, wenn der Aufrufer einen `onSo
 mitgibt – die Verfügbarkeit hängt am tatsächlich vorhandenen Ziel, nicht an einem Schalter, den man
 vergessen kann.
 
+**Aufgehoben am 18.09.2026 (#391):** Alwin vermisste beim Verknüpfen genau diesen Weg. Der andere
+Schreibweg ist klein: `NewSongSheet` bekommt `onVerknuepfen` und gibt das neue Lied (ohne `eventId`, also
+ohne neuen Punkt) an `ItemActionSheet` zurück, das es wie eine Auswahl aus der Suche **vormerkt** – ein
+Fenster, ein Speicherweg („Speichern"). Aus der Erfolgsansicht führt dann jeder Ausgang über die
+Verknüpfung, damit ein angelegtes Lied nie unverknüpft liegen bleibt; „Noch ein Lied anlegen" entfällt
+dort. Die Regel „`SongPicker` bietet SongSelect nur mit einem `onSongSelectTreffer`-Weg an" bleibt – jetzt
+geben beide Dialoge einen mit.
+
 **Die Kosten je Quelle bestimmen die Mechanik:** Die Bibliothek filtert im Browser (gratis, bei jedem
 Tastendruck). Die Liedtexte brauchen serverseitig einen Index – **ein Datei-Download je Lied** –, deshalb
 erst ab `LIEDTEXT_SUCHE_MIN_ZEICHEN` und entprellt; ein Tipp auf den Reiter allein löst nichts aus.

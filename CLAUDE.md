@@ -54,7 +54,7 @@
     verlangte die Quellenwahl VOR dem Tippen) und blaue Angebots-Knöpfe unter der Liste (03.09., wirkten
     wie Aktionen zwischen Treffern). Lehre: Bei Bedienelementen entscheidet der Durchklick, nicht die
     Beschreibung – zweimal in einem Feature. **SongSelect nur mit Lizenz UND `kannAnlegen`** („Lied
-    hinzufügen"); beim Verknüpfen und im Liederheft fehlt es. Dazu `liedAnzahl()` für „1 Lied"/„N Lieder". **Seit 04.09.2026 öffnet „Neues Lied" im Liederheft dieselbe Suche**
+    hinzufügen" – und seit 18.09.2026 auch „Lied verknüpfen", #391); im Liederheft fehlt es. Dazu `liedAnzahl()` für „1 Lied"/„N Lieder". **Seit 04.09.2026 öffnet „Neues Lied" im Liederheft dieselbe Suche**
     (`SongPicker` mit `oeffnen`: Bibliothekstreffer öffnen das Blatt, kein Plus, keine Vorschau; SongSelect
     wie im Ablauf; `neuesLied={{ label: 'Selbst eintippen' }}` gibt den Suchbegriff als `startName` ins
     leere Formular). Der „Neues Lied"-Kopf rendert im `SongPicker`, nicht mehr im `AddItemSheet` – nur

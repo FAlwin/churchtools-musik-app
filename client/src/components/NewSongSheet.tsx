@@ -70,6 +70,16 @@ interface NewSongSheetProps {
    * ins Liederheft springt, hätte den Nutzer woanders abgesetzt, als er hergekommen ist.
    */
   onOpenSong?: (songId: number, arrangementId: number) => void;
+  /**
+   * **Verknüpfen statt Eintragen** – der Weg aus „Lied verknüpfen" (#391, 18.09.2026).
+   *
+   * Dort wird einem **vorhandenen** Ablaufpunkt ein Lied zugeordnet; das neue Lied darf also nicht als
+   * neuer Punkt in den Ablauf (kein `eventId`), sondern geht als Verknüpfung an den Aufrufer zurück.
+   * Ist dieser Weg gesetzt, führt aus der Erfolgsansicht **jeder** Ausgang über ihn – der Knopf wie
+   * das „Fertig" –, damit ein angelegtes Lied nie unverknüpft liegen bleibt. „Noch ein Lied anlegen"
+   * entfällt: Ein Punkt trägt genau ein Lied.
+   */
+  onVerknuepfen?: (arrangementId: number, name: string) => void;
   onClose: () => void;
 }
 
@@ -79,6 +89,7 @@ export function NewSongSheet({
   startTreffer,
   startName,
   onOpenSong,
+  onVerknuepfen,
   onClose,
 }: NewSongSheetProps) {
   const caps = useCapabilities(true);
@@ -153,8 +164,11 @@ export function NewSongSheet({
   /* ---------------------------------------------------------------- Erfolgsansicht */
 
   if (ergebnis) {
+    const verknuepfen = onVerknuepfen
+      ? () => onVerknuepfen(ergebnis.arrangementId, ergebnis.name)
+      : undefined;
     return (
-      <Sheet title="Lied angelegt" onClose={onClose} cancelLabel="Fertig">
+      <Sheet title="Lied angelegt" onClose={verknuepfen ?? onClose} cancelLabel="Fertig">
         <div className={styles.success}>
           <span className={styles.successIcon}>
             <Icon name="check" size={26} stroke={2.6} />
@@ -169,7 +183,7 @@ export function NewSongSheet({
             {eventId !== undefined && ergebnis.hinweise.length === 0 && eventName
               ? ` und steht im Ablauf von ${eventName}`
               : ''}
-            .
+            {verknuepfen ? ' und wird beim Speichern mit dem Eintrag verknüpft' : ''}.
           </div>
         </div>
 
@@ -186,6 +200,11 @@ export function NewSongSheet({
         )}
 
         <div className={styles.actions}>
+          {verknuepfen && (
+            <button className={styles.primaryWide} onClick={verknuepfen}>
+              Zurück zum Eintrag
+            </button>
+          )}
           {onOpenSong && (
             <button
               className={styles.primaryWide}
@@ -196,7 +215,7 @@ export function NewSongSheet({
           )}
           {/* Für JEDES Lied: ohne Blatt das Gerüst, mit Blatt (aus SongSelect) den Text zum Anpassen. */}
           <button
-            className={onOpenSong ? styles.secondaryWide : styles.primaryWide}
+            className={onOpenSong || verknuepfen ? styles.secondaryWide : styles.primaryWide}
             disabled={editorLaedt}
             onClick={() => void editorOeffnen()}
           >
@@ -206,17 +225,19 @@ export function NewSongSheet({
                 ? 'Notenblatt bearbeiten'
                 : 'Notenblatt schreiben'}
           </button>
-          <button
-            className={onOpenSong ? styles.secondaryWide : styles.primaryWide}
-            onClick={() => {
-              neuesLied.zuruecksetzen();
-              setFormular(LEERES_FORMULAR);
-              // Muss mit zurück: Sonst legte die Abfrage zum alten Treffer das leere Formular wieder voll.
-              setVorbelegung(null);
-            }}
-          >
-            Noch ein Lied anlegen
-          </button>
+          {!verknuepfen && (
+            <button
+              className={onOpenSong ? styles.secondaryWide : styles.primaryWide}
+              onClick={() => {
+                neuesLied.zuruecksetzen();
+                setFormular(LEERES_FORMULAR);
+                // Muss mit zurück: Sonst legte die Abfrage zum alten Treffer das leere Formular wieder voll.
+                setVorbelegung(null);
+              }}
+            >
+              Noch ein Lied anlegen
+            </button>
+          )}
         </div>
 
         {/* Als Überlagerung über dem Blatt – dieselbe Komponente wie im Lied, ohne Versionsname:

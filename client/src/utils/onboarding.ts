@@ -58,7 +58,9 @@ export const TOUR_SETLIST = 'setlist-v1';
 // `setlist-edit-v2` mit dem Wegwahl-Text, und v2.22.0 läuft produktiv. Wer die Tour dort weggeklickt
 // hat, sähe den geänderten Einfüge-Dialog sonst nie erklärt. (Die Begründung „nie ausgeliefert" ist
 // genau die, die bei chart-v4 schon einmal falsch war – siehe oben.)
-export const TOUR_SETLIST_EDIT = 'setlist-edit-v3';
+// setlist-edit-v4 (18.09.2026, #391): „Lied verknüpfen" kann jetzt auch ein Lied ANLEGEN („Neues Lied"
+// und SongSelect wie beim Hinzufügen) – der Schritt „Punkt bearbeiten" sagt das.
+export const TOUR_SETLIST_EDIT = 'setlist-edit-v4';
 /** Gruppe 5 – Verfügbarkeit (#177), beim ersten Öffnen des Bereichs. */
 // v3 (05.09.2026, abends): Statuskopf, Streifen zieht mit, Eintragen über EIN Fenster,
 // eigene Einträge per Tipp auf die Zeile änderbar – jeder Schritt zeigt jetzt etwas anderes.
@@ -188,7 +190,7 @@ export const SETLIST_EDIT_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="edit-item"]',
     title: 'Punkt bearbeiten',
-    body: 'Tippe einen Eintrag an, um Titel, Dauer, Zuständige zu ändern oder ein Lied zu verknüpfen.',
+    body: 'Tippe einen Eintrag an, um Titel, Dauer, Zuständige zu ändern oder ein Lied zu verknüpfen – auch eines, das ihr dort gerade erst anlegt.',
   },
   {
     selector: '[data-tour="edit-add"]',

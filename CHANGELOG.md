@@ -61,6 +61,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Fehlerseite. **Drei Grün-Kopien zusammengeführt:** `--green` gab es nicht, drei Dateien hatten je einen
   eigenen Fallback-Wert (`#168a16`, `#168a16`, `#1bb0a2`). Das Logo (`logo.svg`/`favicon.svg`) behält seine
   Balkenfarben – es ist Markenzeichen, kein UI-Token.
+- **„Neues Lied" und SongSelect auch in „Lied verknüpfen" (#391).** Wer im Ablauf einem vorhandenen
+  Punkt ein Lied zuordnet, kann es jetzt an derselben Stelle anlegen – oben rechts „Neues Lied" (der
+  Suchbegriff wird zum Titel) oder über einen SongSelect-Treffer, wie beim Hinzufügen. Das Lied
+  entsteht ohne neuen Ablaufpunkt; danach steht es im Dialog **vorgemerkt** („Wird beim Speichern
+  verknüpft.") und wird erst mit „Speichern" geschrieben – ein Fenster, ein Speicherweg. Die
+  Erfolgsansicht bietet weiter „Notenblatt schreiben" an; „Zurück zum Eintrag" wie „Fertig" nehmen die
+  Verknüpfung mit. Bisher gab es diesen Weg nur beim Hinzufügen und im Liederheft – bewusst, weil der
+  Anlege-Weg nur einen neuen Punkt schreiben konnte (`docs/entwicklung/entscheidungen.md`). Geführte
+  Einführung `setlist-edit-v4`.
 
 ## [2.24.1] – 2026-09-05
 
