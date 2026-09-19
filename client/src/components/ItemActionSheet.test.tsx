@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import type { AgendaItem, SongSelectTreffer } from '@shared/types/index';
+import type { AgendaItem, SongLibraryEntry, SongSelectTreffer } from '@shared/types/index';
 
 /**
  * „Eintrag bearbeiten" – geprüft wird der **Anlege-Weg aus „Lied verknüpfen"** (#391, 18.09.2026):
@@ -55,12 +55,22 @@ vi.mock('./SongPicker', () => ({
   ),
 }));
 
+const SCHON_DA: SongLibraryEntry = {
+  songId: 88,
+  name: 'Schon da',
+  author: null,
+  ccli: '5841527',
+  key: 'D',
+  arrangementId: 880,
+};
+
 vi.mock('./NewSongSheet', () => ({
   NewSongSheet: (p: {
     eventId?: number;
     startName?: string;
     startTreffer?: SongSelectTreffer;
     onVerknuepfen?: (arrangementId: number, name: string) => void;
+    onVorhandenes?: (song: SongLibraryEntry) => void;
     onClose: () => void;
   }) => (
     <div data-testid="newsong">
@@ -68,6 +78,7 @@ vi.mock('./NewSongSheet', () => ({
       <div data-testid="newsong-startName">{p.startName ?? ''}</div>
       <div data-testid="newsong-treffer">{p.startTreffer?.title ?? ''}</div>
       <button onClick={() => p.onVerknuepfen?.(770, 'Neu angelegt')}>Blatt: verknüpfen</button>
+      <button onClick={() => p.onVorhandenes?.(SCHON_DA)}>Blatt: vorhandenes</button>
       <button onClick={p.onClose}>Blatt: abbrechen</button>
     </div>
   ),
@@ -185,5 +196,27 @@ describe('ItemActionSheet – „Neues Lied" beim Verknüpfen (#391)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Treffer wählen' }));
     expect(screen.getByText('Treu')).toBeTruthy();
     expect(screen.getByText('Wird beim Speichern verknüpft.')).toBeTruthy();
+  });
+});
+
+/**
+ * Gibt es das Lied schon (gleiche CCLI-Nummer), fragt `NewSongSheet` (#395) – hier zählt nur, dass der
+ * Dialog „verwenden" **genauso** landet wie eine Auswahl aus der Suche: vorgemerkt, nicht geschrieben.
+ */
+describe('ItemActionSheet – ein vorhandenes Lied statt eines zweiten (#395)', () => {
+  it('merkt das vorhandene Lied vor – geschrieben wird erst mit „Speichern"', async () => {
+    const { onUpdate } = zeige();
+    verknuepfenOeffnen();
+    fireEvent.click(screen.getByRole('button', { name: 'Neues Lied' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Blatt: vorhandenes' }));
+
+    expect(screen.queryByTestId('newsong')).toBeNull();
+    expect(screen.getByText('Schon da')).toBeTruthy();
+    expect(screen.getByText('Wird beim Speichern verknüpft.')).toBeTruthy();
+    expect(onUpdate).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(1));
+    expect(onUpdate.mock.calls[0][0]).toMatchObject({ arrangementId: 880 });
   });
 });

@@ -51,7 +51,9 @@ const SONG = {
   id: 501,
   name: 'Testlied aus ChurchTools',
   author: 'Stub-Autor',
-  ccli: null,
+  // Eine Nummer, damit sich die Rückfrage „Dieses Lied gibt es schon" (#395) lokal durchklicken
+  // lässt: Wer sie im Formular einträgt, muss den Dialog sehen statt ein zweites Lied.
+  ccli: '5841527',
   arrangements: [
     {
       id: 9001,

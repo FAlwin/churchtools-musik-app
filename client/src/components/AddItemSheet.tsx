@@ -101,6 +101,12 @@ export function AddItemSheet({ eventId, eventName, onClose, onAdd, services }: A
         eventName={eventName}
         startTreffer={neuesLied.treffer}
         startName={neuesLied.name}
+        /* Gibt es das Lied schon (gleiche CCLI-Nummer), wird es einfach eingefügt – dasselbe wie ein
+           Treffer aus der Suche, nur eine Frage später (#395). */
+        onVorhandenes={(song) => {
+          setNeuesLied(null);
+          void add({ type: 'song', title: song.name, arrangementId: song.arrangementId });
+        }}
         onClose={onClose}
       />
     );

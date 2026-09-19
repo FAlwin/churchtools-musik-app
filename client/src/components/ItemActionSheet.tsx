@@ -132,6 +132,14 @@ export function ItemActionSheet({
           setNeuesLied(null);
           setSongMode(false);
         }}
+        /* Gibt es das Lied schon (gleiche CCLI-Nummer), wird es vorgemerkt wie eine Auswahl aus der
+           Suche – geschrieben wird auch hier erst mit „Speichern" (#395). */
+        onVorhandenes={(song) => {
+          setLinkState({ kind: 'link', arrangementId: song.arrangementId, name: song.name });
+          setErr(null);
+          setNeuesLied(null);
+          setSongMode(false);
+        }}
       />
     );
   }

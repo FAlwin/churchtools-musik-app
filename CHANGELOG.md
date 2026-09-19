@@ -7,6 +7,29 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **„Neues Lied" warnte während des Anlegens vor dem eigenen Werk (#395).** Wer ein Lied aus SongSelect
+  anlegte, sah für ein paar Sekunden „„<Titel>" gibt es schon. Anlegen geht trotzdem …" – für ein Lied,
+  das es vorher nicht gab. `useLiedAnlegen` verwirft die Bibliothek, sobald das Lied in ChurchTools
+  steht; danach läuft aber noch der Notenblatt-Download, und solange bleibt das Formular sichtbar. Die
+  Warnung fand also den eben angelegten Eintrag. Sie ruht jetzt, solange das Anlegen läuft – wer
+  gedrückt hat, kann den Namen ohnehin nicht mehr ändern. Beim **Ändern** eines Liedes gab es den
+  Fehler nicht: Dort schließt das Blatt sofort, und das eigene Lied ist von der Suche ausgenommen.
+
+### Neu
+
+- **„Dieses Lied gibt es schon" – fragen statt abweisen (#395).** Trägt ein Lied der Bibliothek schon
+  dieselbe **CCLI-Nummer**, öffnet vor dem Anlegen ein Dialog mit Name, Autor, Nummer und Tonart des
+  vorhandenen Liedes. Drei Wege, und alle führen irgendwohin: **verwenden** (einfügen, verknüpfen oder
+  öffnen – je nachdem, woher man kam), **trotzdem neu anlegen** (dann ohne CCLI-Nummer; ChurchTools
+  vergibt sie nur einmal) oder **zurück zum Formular**. Bisher lief dieser Fall in eine Sackgasse: Der
+  Server lehnte mit einer Fehlermeldung ab, und der einzige Ausweg war Abbrechen. Die Blockade bleibt
+  beim Server (`songVerwaltung.ts`) – die App nimmt ihm nichts ab, sie kommt ihm nur zuvor. Das
+  **Notenblatt kommt auch beim zweiten Lied**: Ohne Nummer im Formular nimmt `notenblattPlan` die des
+  SongSelect-Treffers. Die Regel, wie CCLI-Nummern verglichen werden (getrimmter Text, nie eine Zahl),
+  liegt jetzt als `ccliSchluessel` in `@shared/lieder` – eine Quelle für App und Server.
+
 ### Neu
 
 - **Tab „Abwesenheiten" – eigene Abwesenheiten in der App (#177, Phase 1 / PR 1).** Wer aktives
