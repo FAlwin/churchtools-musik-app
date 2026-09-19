@@ -1,5 +1,5 @@
 .tile {
-  border-radius: 7px;
+  border-radius: var(--r-tile);
   background: var(--surface3);
   display: flex;
   align-items: center;

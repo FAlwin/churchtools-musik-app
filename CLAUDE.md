@@ -296,7 +296,9 @@ churchtools-musik-app/
 
 Das frühere White-Label (Farb-/Logo-Anpassung pro Gemeinde) wurde **zurückgebaut**: Die App ist eine
 **feste ChurchTools-Version** mit eigenem Schallwellen-Logo. Aussehen = ChurchTools-Designsprache
-(helle gruppierte Listen auf Grau, **blaue** Primärfarbe `#0061A1`, System-Font, untere Tab-Bar,
+(helle gruppierte Listen auf Grau, **blaue** Primärfarbe `#2563EB` – seit #393 der Look der ChurchTools-**App**,
+nicht mehr des Web-Clients: hellblaue Datumskacheln, 12-px-Karten mit feinem Rand, Gruppen-Überschriften in
+normaler Schreibung; System-Font, untere Tab-Bar,
 Light/Dark). Alle Design-Tokens in `styles/_variables.scss` (Single Source); `applyBranding.ts` setzt
 **keine** Laufzeit-Farben mehr. Logo-Assets in `client/public/` (`logo-rund-hell/-dunkel.png`,
 `icon-192/512.png`, `favicon.svg`); PWA-Manifest ist **statisch** (`public/manifest.webmanifest`).
@@ -376,7 +378,7 @@ Geräteklasse `phone` vs `large` via `utils/deviceClass.ts`. Versions-Helfer: `u
 - **Transponieren:** Original-Tonart aus der .chordpro-Datei, Ziel-Tonart aus dem
   ChurchTools-Arrangement-Feld; manuelles Transponieren nur lokal, kein Zurückschreiben
 - **CCLI:** Lizenznummer 2395145, SongSelect Premium; CCLI-Infos pro Song anzeigen
-- **Farben:** Primär Blau `#0061A1`, Destruktiv Rot `#B22247`; Akkorde im Chart schwarz/fett
+- **Farben:** Primär Blau `#2563EB`, Destruktiv Rot `#D64545` (seit #393); Akkorde im Chart schwarz/fett
   (SongSelect-Stil). Details: `docs/entwicklung/design-system.md`
 
 ## Onboarding / Geführte Einführung (VERBINDLICH)

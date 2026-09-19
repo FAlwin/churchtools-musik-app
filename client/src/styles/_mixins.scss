@@ -1,10 +1,11 @@
 // Wiederverwendbare Layout-Bausteine (ChurchTools-Listen).
 // In Komponenten: `@use '../styles/mixins' as m;` und z. B. `@include m.card-list;`.
 
-// Weiße, abgerundete Listen-Karte mit Schatten.
+// Weiße Listen-Karte: 12 px Rundung, feiner Rand, kaum Schatten (ChurchTools-App, #393).
 @mixin card-list {
   background: var(--surface2);
-  border-radius: 9px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--border);
   overflow: hidden;
   box-shadow: var(--shadow);
 }
@@ -36,12 +37,13 @@
   }
 }
 
+// Gruppen-Überschrift: seit #393 in normaler Schreibung, dunkel, 15 px – wie „Anstehende Dienste"
+// in der ChurchTools-App (vorher Großbuchstaben in Grau, das Muster des Web-Clients).
 @mixin group-header {
-  font-size: 12.5px;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--text);
+  letter-spacing: -0.1px;
   padding: 0 4px 8px;
 }
 
@@ -72,7 +74,7 @@
   display: inline-flex;
   align-items: center;
   background: var(--surface3);
-  border-radius: 5px;
+  border-radius: var(--r-ctrl);
   padding: 3px 9px;
   font-size: 13px;
   font-weight: 700;

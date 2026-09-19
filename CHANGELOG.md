@@ -5,6 +5,21 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Geändert
+
+- **Look der ChurchTools-App statt des Web-Clients (#393).** Entscheidung Alwin (19.09.2026) anhand von
+  Screenshots der App: kräftigeres Blau (`#2563EB` statt `#0061A1`), Seitenhintergrund und Text wie in der App,
+  weiße Karten mit 12 px Rundung und feinem Rand statt Schatten, hellblaue Datumskacheln mit dunkler Schrift
+  („21 / Sep" statt „21 / SEP" in Blau), Gruppen-Überschriften in normaler Schreibung. Alles über die Tokens in
+  `styles/_variables.scss` – neu: `--blue-tile`, `--section`, `--green` und die Rundungen `--r-card`/`--r-tile`/
+  `--r-ctrl`/`--r-dialog`; die Mixins `card-list`, `group-header` und `key-pill` tragen sie in alle Listen.
+  Mitgezogen: PWA-Manifest (`theme_color`, `background_color`), `theme-color`-Meta, Lade-Bildschirm,
+  Fehlerseite. **Drei Grün-Kopien zusammengeführt:** `--green` gab es nicht, drei Dateien hatten je einen
+  eigenen Fallback-Wert (`#168a16`, `#168a16`, `#1bb0a2`). Das Logo (`logo.svg`/`favicon.svg`) behält seine
+  Balkenfarben – es ist Markenzeichen, kein UI-Token.
+
 ## [2.24.1] – 2026-09-05
 
 ### Behoben
