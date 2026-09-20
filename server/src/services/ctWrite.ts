@@ -10,7 +10,7 @@
 import type { LiedStammdaten } from '@shared/types/index';
 import { HttpError } from '../middleware/errorHandler.js';
 import { agendaItemWritePayload } from './agendaPayload.js';
-import { arrangementWritePayload } from './arrangementPayload.js';
+import { arrangementWritePayload, type ArrangementOverrides } from './arrangementPayload.js';
 import { csrfWriteDenied, getCsrfToken } from './ctCsrf.js';
 import {
   BASE,
@@ -21,7 +21,7 @@ import {
 } from './ctHttp.js';
 import { getAgenda, getArrangement, getSong } from './ctRead.js';
 import { songWritePayload, type SongOverrides } from './songPayload.js';
-import type { CtAgendaItem, CtSong } from './ctTypes.js';
+import type { CtAgendaItem, CtArrangement, CtSong } from './ctTypes.js';
 
 /** Fehlermeldung, wenn ChurchTools das Ändern des Ablaufs verweigert – siebenmal derselbe Satz. */
 const ABLAUF_VERWEIGERT = 'Keine Berechtigung, den Ablauf in ChurchTools zu ändern.';
@@ -46,7 +46,7 @@ async function schreibe(
   cookie: string,
   pfad: string,
   opts: {
-    method: 'POST' | 'PUT' | 'DELETE';
+    method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     /** JSON-Rumpf; schließt `form` aus. */
     json?: unknown;
     /** Datei-Upload; schließt `json` aus und bekommt die längere Zeitgrenze. */
@@ -430,25 +430,42 @@ export async function deleteSong(cookie: string, songId: number): Promise<void> 
 }
 
 /**
- * Legt ein Arrangement an einem Lied an und liefert seine ID (#322, Schritt 10).
+ * Legt ein Arrangement an einem Lied an und liefert seine ID (#322, Schritt 10; Felder #396).
  *
  * **`isDefault` MUSS mitgeschickt werden.** Ohne das Flag antwortet ChurchTools mit
  * `isDefault: false` – das Lied hätte dann gar kein Standard-Arrangement (gemessen; beim ersten
  * Versuch genau so passiert). `getSongLibrary` fängt das über `?? arrangements[0]` ab, aber jede
  * Stelle, die sich auf `isDefault` verlässt, stünde vor `undefined`.
  *
- * Die Tonart geht direkt mit (`key`), damit das erste Arrangement nicht ohne dasteht.
+ * **Beim Anlegen ist `isDefault` wirksam, beim Ändern nicht** (gemessen 20.09.2026): Ein `PUT` mit
+ * `isDefault: true` antwortet 200 und ändert nichts. Der Standard wird später über
+ * `setDefaultArrangement` gewechselt – den Weg, den die ChurchTools-Oberfläche selbst nimmt.
+ *
+ * Die weiteren Felder (#396) gehen über denselben Payload-Bau wie das Ändern: Ein zweites Mal
+ * hingeschriebene Feldnamen wären eine zweite Stelle, an der die Quelle-Nummer-Regel fehlt.
  */
 export async function createArrangement(
   cookie: string,
   songId: number,
-  daten: { name: string; key?: string | null; isDefault?: boolean },
+  daten: { name: string; isDefault?: boolean } & ArrangementOverrides,
 ): Promise<number> {
-  const body: Record<string, unknown> = {
-    name: daten.name,
-    isDefault: daten.isDefault ?? true,
+  const { name, isDefault, ...felder } = daten;
+  /**
+   * Der Payload wird aus einem **leeren** Arrangement gebaut – es gibt noch keinen Ist-Zustand,
+   * den man erhalten müsste. So durchläuft aber auch das Anlegen die Quelle-Nummer-Regel und die
+   * Trimm-Regeln aus `arrangementWritePayload`, statt sie hier ein zweites Mal zu haben.
+   */
+  const leer: CtArrangement = {
+    id: 0,
+    name,
+    key: null,
+    keyOfArrangement: null,
+    bpm: null,
+    beat: null,
+    files: [],
   };
-  if (daten.key?.trim()) body.key = daten.key.trim();
+  const body = arrangementWritePayload(leer, felder);
+  body.isDefault = isDefault ?? true;
 
   const res = await schreibe(cookie, `/api/songs/${songId}/arrangements`, {
     method: 'POST',
@@ -457,6 +474,77 @@ export async function createArrangement(
     fehler: 'Arrangement anlegen fehlgeschlagen',
   });
   return neueId(res, 'Das Arrangement');
+}
+
+/**
+ * Ändert ein Arrangement (#396) – **lesen–ändern–schreiben, wie beim Tempo.**
+ *
+ * `PUT` ersetzt in ChurchTools den ganzen Datensatz; was nicht mitkommt, ist danach `null`. Deshalb
+ * wird das Arrangement frisch gelesen und der Payload daraus gebaut. Der gelesene Stand geht
+ * zusätzlich zurück an den Aufrufer – er braucht ihn ohnehin, und ein zweites Lesen wäre eine
+ * ChurchTools-Anfrage für nichts (#300).
+ */
+export async function updateArrangement(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+  overrides: ArrangementOverrides,
+): Promise<void> {
+  // Frische Live-Daten – NIE aus einem Cache: geschrieben wird auf diesem Stand.
+  const { arrangement: arr } = await getArrangement(cookie, songId, arrangementId);
+
+  await schreibe(cookie, `/api/songs/${songId}/arrangements/${arrangementId}`, {
+    method: 'PUT',
+    json: arrangementWritePayload(arr, overrides),
+    verweigert: 'Keine Berechtigung, Arrangements in ChurchTools zu ändern.',
+    fehler: 'Arrangement speichern fehlgeschlagen',
+  });
+}
+
+/**
+ * Macht ein Arrangement zum **Standard** (#396).
+ *
+ * **Der Weg ist gemessen, nicht geraten** (20.09.2026): `PUT { isDefault: true }` antwortet 200 und
+ * ändert **nichts** – die Falle „ein Erfolgssignal ist kein Beleg". Auch `POST …/default` und ein
+ * `PATCH` auf das Arrangement selbst werden abgelehnt (405), und `PUT /api/songs/:id`
+ * `{ defaultArrangementId }` antwortet 400.
+ *
+ * Richtig ist `PATCH …/arrangements/:arrId/default` ohne Rumpf – so macht es die
+ * ChurchTools-Oberfläche selbst (`cs_song.js`, `makeAsStandardArrangement`). ChurchTools nimmt dem
+ * bisherigen Standard das Flag dabei von sich aus ab.
+ */
+export async function setDefaultArrangement(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+): Promise<void> {
+  await schreibe(cookie, `/api/songs/${songId}/arrangements/${arrangementId}/default`, {
+    method: 'PATCH',
+    verweigert: 'Keine Berechtigung, den Standard in ChurchTools zu ändern.',
+    fehler: 'Standard-Arrangement setzen fehlgeschlagen',
+  });
+}
+
+/**
+ * Löscht ein Arrangement (#396).
+ *
+ * **Das nimmt mit, was am Arrangement hängt** – Notenblätter, Dateien und die verwalteten
+ * Versionen. Deshalb liegt die Rückfrage in der Oberfläche, und deshalb nennt sie die Folgen.
+ *
+ * `okBei404: true`: Ein Arrangement, das schon weg ist, ist kein Fehler – dieselbe Regel wie beim
+ * Lied und bei der Datei.
+ */
+export async function deleteArrangement(
+  cookie: string,
+  songId: number,
+  arrangementId: number,
+): Promise<void> {
+  await schreibe(cookie, `/api/songs/${songId}/arrangements/${arrangementId}`, {
+    method: 'DELETE',
+    verweigert: 'Keine Berechtigung, Arrangements in ChurchTools zu löschen.',
+    fehler: 'Arrangement löschen fehlgeschlagen',
+    okBei404: true,
+  });
 }
 
 /** Löscht eine Datei in ChurchTools (per Datei-ID). */

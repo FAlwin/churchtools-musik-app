@@ -1,0 +1,73 @@
+// Die Arrangement-Liste im Stammdaten-Blatt (#396).
+@use '../styles/mixins' as *;
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kopf {
+  @include group-header;
+  padding-bottom: 2px;
+}
+
+.liste {
+  @include card-list;
+}
+
+.zeile {
+  @include list-row;
+  gap: 10px;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+// „Standard" als ruhige Marke, nicht als Warnung: Es ist eine Tatsache, kein Hinweis.
+.standard {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  color: var(--blue-ink);
+  background: var(--blue-soft);
+  border-radius: var(--r-ctrl);
+  padding: 2px 7px;
+}
+
+// Tonart, Tempo, Länge, Quelle – eine Zeile, durch Punkte getrennt.
+.unter {
+  font-size: 13px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pfeil {
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+// Die beiden Aktionen im geöffneten Eintrag: Standard und Löschen.
+.aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 4px;
+}

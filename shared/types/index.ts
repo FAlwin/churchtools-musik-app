@@ -167,6 +167,90 @@ export const LIED_GRENZEN = {
   arrangementName: 50,
 } as const;
 
+/**
+ * Die Feldgrenzen eines Arrangements (#396) – **eine Quelle für Formular und Zod-Schema**, wie
+ * `LIED_GRENZEN` es für das Lied ist.
+ *
+ * Die Zahlen stammen aus dem ChurchTools-Dialog selbst (abgelesen in `cs_songview.js`,
+ * `editArrangement`): Name `maxlength:50`, Liednummer `maxlength:30`. Tempo und Länge begrenzt
+ * ChurchTools nicht sichtbar; die Werte hier halten offensichtlichen Unsinn fern, ohne zu gängeln –
+ * 999 Schläge je Minute spielt niemand, und ein Lied über zwei Stunden ist kein Arrangement.
+ */
+export const ARRANGEMENT_GRENZEN = {
+  name: { min: 1, max: 50 },
+  key: 10,
+  beat: 20,
+  /** Schläge je Minute. */
+  tempo: { min: 1, max: 999 },
+  /** Länge in SEKUNDEN (so führt ChurchTools sie); 2 Stunden als obere Schranke. */
+  duration: { min: 1, max: 7200 },
+  description: 2000,
+  /** Liednummer in der Quelle – Text, nicht Zahl (Liederbücher haben „A12"). */
+  sourceReference: 30,
+} as const;
+
+/**
+ * Eine **Liedquelle** (Liederbuch), wie ChurchTools sie führt (#396).
+ *
+ * Kommt aus der alten Schnittstelle (`getMasterData` → `songsource`) – wie die Lied-Kategorien und
+ * die Abwesenheitsgründe hat die `/api/`-Welt dafür keinen Endpunkt (gemessen 20.09.2026).
+ * `shorty` ist das Kürzel, das ChurchTools in Listen zeigt („ULB").
+ */
+export interface SongSource {
+  id: number;
+  name: string;
+  shorty: string;
+}
+
+/**
+ * Ein Arrangement, wie die App es anzeigt und zurückbekommt (#396).
+ *
+ * **Eine Form für Lesen und Schreiben** – dieselbe Absprache wie bei `LiedStammdatenAnsicht`.
+ * Leere Felder sind `null`, nicht `''` oder `0`: Das ist der Zustand, den ChurchTools liefert.
+ *
+ * `duration` steht in **Sekunden** (gemessen: 245 kam als 245 zurück, also 4:05). Die Umrechnung in
+ * Minuten:Sekunden macht die Oberfläche an einer Stelle – zwei Rechnungen nebeneinander wären zwei
+ * Stellen, an denen ein Kapo-Abzug fehlen kann.
+ */
+export interface ArrangementAnsicht {
+  id: number;
+  name: string;
+  isDefault: boolean;
+  key: string | null;
+  tempo: number | null;
+  beat: string | null;
+  duration: number | null;
+  description: string | null;
+  /** Die Quelle (Liederbuch) – `null`, wenn keine gesetzt ist. */
+  source: SongSource | null;
+  /** Die Liednummer in dieser Quelle. Ohne Quelle immer `null` (ChurchTools speichert sie nicht). */
+  sourceReference: string | null;
+  /** Wie viele Dateien am Arrangement hängen – ChurchTools löscht kein Arrangement mit Dateien. */
+  dateien: number;
+}
+
+/**
+ * Was sich an einem Arrangement ändern oder beim Anlegen mitgeben lässt (#396).
+ *
+ * **Jedes Feld ist optional, aber nicht beliebig leer:** Ein fehlendes Feld heißt „nicht geändert",
+ * `null` heißt „löschen". Beim **Namen** gilt das nicht – er ist in ChurchTools Pflicht.
+ *
+ * `sourceId` und `sourceReference` gehören zusammen: ChurchTools speichert eine Liednummer **nur**
+ * mit einer Quelle (gemessen: ohne `sourceId` antwortet es 200 und legt `null` ab). Der
+ * ChurchTools-Dialog lehnt „Nummer ohne Quelle" deshalb schon im Formular ab; unser Server prüft es
+ * ebenfalls – eine Prüfung, die nur in der Oberfläche steht, ist keine Prüfung.
+ */
+export interface ArrangementAuftrag {
+  name?: string;
+  key?: string | null;
+  tempo?: number | null;
+  beat?: string | null;
+  duration?: number | null;
+  description?: string | null;
+  sourceId?: number | null;
+  sourceReference?: string | null;
+}
+
 /** Der Auftrag aus dem Formular „Neues Lied" (#322): Stammdaten + erstes Arrangement (+ Ablauf). */
 export interface LiedAnlegenAuftrag extends LiedStammdaten {
   /** Tonart des ersten Arrangements (aus SongSelect vorbelegt, änderbar). */

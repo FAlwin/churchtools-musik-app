@@ -167,7 +167,9 @@ async function anmelden(): Promise<void> {
   });
   const d = ((await csrfRes.json()) as { data?: unknown }).data;
   csrf = typeof d === 'string' ? d : '';
-  console.log(`Anmeldung: Cookie ✓, CSRF-Token ${csrf ? '✓' : '– (Objekt statt Zeichenkette, weiter ohne)'}`);
+  console.log(
+    `Anmeldung: Cookie ✓, CSRF-Token ${csrf ? '✓' : '– (Objekt statt Zeichenkette, weiter ohne)'}`,
+  );
 }
 
 /* ------------------------------------------------------------------ lesend */
@@ -200,7 +202,9 @@ async function alleLieder(): Promise<void> {
   }
   const lieder = Object.values(d as Record<string, unknown>) as Array<Record<string, unknown>>;
   console.log(`  ${lieder.length} Lieder`);
-  const mitArr = lieder.find((l) => l.arrangement && Object.keys(l.arrangement as object).length > 0);
+  const mitArr = lieder.find(
+    (l) => l.arrangement && Object.keys(l.arrangement as object).length > 0,
+  );
   if (!mitArr) {
     console.log(`  Kein Lied mit Arrangement gefunden. Erstes Lied roh: ${kurz(lieder[0], 900)}`);
     return;
@@ -286,7 +290,16 @@ async function schreibDurchgang(master: Record<string, unknown>): Promise<void> 
     const quellen = master.songsource as Record<string, Record<string, unknown>> | undefined;
     const erste = quellen ? Object.values(quellen)[0] : undefined;
     const sourceId = Number(erste?.id ?? 0);
-    console.log(`    songsource: ${quellen ? kurz(Object.values(quellen).map((q) => ({ id: q.id, name: q.name, shorty: q.shorty })), 300) : '– keine'}`);
+    console.log(
+      `    songsource: ${
+        quellen
+          ? kurz(
+              Object.values(quellen).map((q) => ({ id: q.id, name: q.name, shorty: q.shorty })),
+              300,
+            )
+          : '– keine'
+      }`,
+    );
     if (sourceId) {
       const vorherArr = nachPatch.find((x) => Number(x.id) === zweitId) ?? {};
       const put = await rest('PUT', `/api/songs/${songId}/arrangements/${zweitId}`, {
@@ -302,7 +315,10 @@ async function schreibDurchgang(master: Record<string, unknown>): Promise<void> 
       console.log(
         `    HTTP ${put.status} → source=${kurz(src ?? null, 120)} sourceReference=${String(z?.sourceReference ?? 'null')} ${gewirkt ? '✓ GEWIRKT' : '✗ unverändert'}`,
       );
-      if (z) console.log(`    Arrangement danach (alle Felder): ${kurz(Object.fromEntries(Object.entries(z).filter(([k]) => !['files', 'links', 'meta', '@deprecated'].includes(k))), 700)}`);
+      if (z)
+        console.log(
+          `    Arrangement danach (alle Felder): ${kurz(Object.fromEntries(Object.entries(z).filter(([k]) => !['files', 'links', 'meta', '@deprecated'].includes(k))), 700)}`,
+        );
 
       // 2b) Quelle wieder entfernen – geht `sourceId: null`?
       const put2 = await rest('PUT', `/api/songs/${songId}/arrangements/${zweitId}`, {
@@ -335,12 +351,23 @@ async function schreibDurchgang(master: Record<string, unknown>): Promise<void> 
     const meins = d?.[String(songId)];
     if (meins) {
       const arrs = Object.values((meins.arrangement ?? {}) as Record<string, unknown>);
-      console.log(`\n  Testlied in getAllSongs: ${kurz(arrs.map((x) => { const o = { ...(x as Record<string, unknown>) }; delete o.files; return o; }), 900)}`);
+      console.log(
+        `\n  Testlied in getAllSongs: ${kurz(
+          arrs.map((x) => {
+            const o = { ...(x as Record<string, unknown>) };
+            delete o.files;
+            return o;
+          }),
+          900,
+        )}`,
+      );
     }
   } finally {
     const weg = await rest('DELETE', `/api/songs/${songId}`);
     const rest2 = await rest('GET', `/api/songs/${songId}`);
-    console.log(`\n  Aufräumen: DELETE HTTP ${weg.status}, danach GET HTTP ${rest2.status} ${rest2.status === 404 ? '✓ weg' : '✗ NOCH DA'}`);
+    console.log(
+      `\n  Aufräumen: DELETE HTTP ${weg.status}, danach GET HTTP ${rest2.status} ${rest2.status === 404 ? '✓ weg' : '✗ NOCH DA'}`,
+    );
   }
 }
 

@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import type { LiedStammdatenAnsicht, SongCategory, SongLibraryEntry } from '@shared/types/index';
+import type {
+  ArrangementAnsicht,
+  LiedStammdatenAnsicht,
+  SongCategory,
+  SongLibraryEntry,
+} from '@shared/types/index';
 
 /**
  * „Stammdaten ändern" (#322, Schritt 11) – geprüft werden die **Entscheidungen**:
@@ -20,12 +25,26 @@ const kategorien = vi.fn();
 const bibliothek = vi.fn();
 const aendernFn = vi.fn();
 const loeschenFn = vi.fn();
+const arrangementeFn = vi.fn();
+const quellenFn = vi.fn();
+const arrAnlegenFn = vi.fn();
+const arrAendernFn = vi.fn();
+const arrStandardFn = vi.fn();
+const arrLoeschenFn = vi.fn();
 vi.mock('../hooks/useServices', () => ({
   useSongStammdaten: () => stammdaten(),
   useSongCategories: () => kategorien(),
   useSongLibrary: () => bibliothek(),
   useLiedAendern: () => ({ mutateAsync: aendernFn, isPending: false }),
   useLiedLoeschen: () => ({ mutateAsync: loeschenFn, isPending: false }),
+  // Die Arrangement-Verwaltung (#396) – das ECHTE Fenster darunter, nur die Hooks als Attrappe:
+  // Geprüft wird hier die Verdrahtung, also welche Knöpfe wann erscheinen und was sie auslösen.
+  useArrangements: () => arrangementeFn(),
+  useSongSources: () => quellenFn(),
+  useArrangementAnlegen: () => ({ mutateAsync: arrAnlegenFn, isPending: false }),
+  useArrangementAendern: () => ({ mutateAsync: arrAendernFn, isPending: false }),
+  useArrangementStandard: () => ({ mutateAsync: arrStandardFn, isPending: false }),
+  useArrangementLoeschen: () => ({ mutateAsync: arrLoeschenFn, isPending: false }),
 }));
 
 const notenblattText = vi.fn();
@@ -75,9 +94,41 @@ const BESTAND: SongLibraryEntry[] = [
   { songId: 7, name: 'Treu', author: null, ccli: null, key: null, arrangementId: 70 },
 ];
 
+/**
+ * Zwei Arrangements – der Normalfall, in dem beide Geländer sichtbar werden: Das Standard-Arrangement
+ * darf nicht gelöscht werden, das zweite schon.
+ */
+function arrangement(over: Partial<ArrangementAnsicht> = {}): ArrangementAnsicht {
+  return {
+    id: 71,
+    name: 'Akustik',
+    isDefault: false,
+    key: 'G',
+    tempo: 120,
+    beat: '4/4',
+    duration: 245,
+    description: null,
+    source: null,
+    sourceReference: null,
+    dateien: 0,
+    ...over,
+  };
+}
+
+const ARRANGEMENTS: ArrangementAnsicht[] = [
+  arrangement({ id: 70, name: 'Standard', isDefault: true, key: 'D' }),
+  arrangement(),
+];
+
 beforeEach(() => {
   vi.clearAllMocks();
   stammdaten.mockReturnValue({ data: IST, isError: false });
+  arrangementeFn.mockReturnValue({ data: ARRANGEMENTS });
+  quellenFn.mockReturnValue({ data: [{ id: 2, name: 'Unser Liederbuch', shorty: 'ULB' }] });
+  arrAnlegenFn.mockResolvedValue(arrangement({ id: 88, name: 'Neu' }));
+  arrAendernFn.mockResolvedValue(arrangement());
+  arrStandardFn.mockResolvedValue(ARRANGEMENTS);
+  arrLoeschenFn.mockResolvedValue({ name: 'Akustik' });
   kategorien.mockReturnValue({ data: KATEGORIEN, isLoading: false, isError: false });
   bibliothek.mockReturnValue({ data: BESTAND });
   aendernFn.mockResolvedValue(IST);
@@ -214,5 +265,107 @@ describe('EditSongSheet – „Notenblatt bearbeiten" (04.09.2026)', () => {
     zeige();
     expect(screen.queryByTestId('editor-text')).toBeNull();
     expect(notenblattText).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Die Arrangement-Verwaltung im Stammdaten-Blatt (#396).
+ *
+ * **Hier stehen die fachlichen Regeln der Oberfläche** – welche Knöpfe erscheinen. Die Regeln selbst
+ * setzt der Server durch (`arrangementVerwaltung.ts`); hier wird geprüft, dass niemand auf etwas
+ * tippt, das sicher in eine Fehlermeldung läuft.
+ */
+describe('EditSongSheet – Arrangements (#396)', () => {
+  const zeile = (name: string) => screen.getByRole('button', { name: new RegExp(name) });
+
+  it('listet die Arrangements und kennzeichnet den Standard', () => {
+    zeige();
+    expect(screen.getByText('Arrangements')).toBeTruthy();
+    expect(zeile('Standard')).toBeTruthy();
+    // Die Unterzeile nennt Tonart, Tempo, Takt und Länge.
+    expect(screen.getByText('G · 120 bpm · 4/4 · 4:05')).toBeTruthy();
+  });
+
+  it('öffnet beim Tippen das Fenster mit den Feldern dieses Arrangements', () => {
+    zeige();
+    fireEvent.click(zeile('Akustik'));
+    expect(screen.getByDisplayValue('Akustik')).toBeTruthy();
+    expect(screen.getByDisplayValue('4/4')).toBeTruthy();
+  });
+
+  it('schickt beim Speichern nur das geänderte Feld', async () => {
+    zeige();
+    fireEvent.click(zeile('Akustik'));
+    fireEvent.change(screen.getByDisplayValue('G'), { target: { value: 'A' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Speichern' })[1]);
+    await waitFor(() =>
+      expect(arrAendernFn).toHaveBeenCalledWith({
+        arrangementId: 71,
+        auftrag: { name: 'Akustik', key: 'A' },
+      }),
+    );
+  });
+
+  it('am Standard gibt es weder „Zum Standard machen" noch „Löschen"', () => {
+    zeige();
+    fireEvent.click(zeile('Standard'));
+    expect(screen.queryByRole('button', { name: 'Zum Standard machen' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Arrangement löschen/ })).toBeNull();
+  });
+
+  it('am zweiten Arrangement gibt es beides', () => {
+    zeige();
+    fireEvent.click(zeile('Akustik'));
+    expect(screen.getByRole('button', { name: 'Zum Standard machen' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Arrangement löschen/ })).toBeTruthy();
+  });
+
+  it('beim EINZIGEN Arrangement gibt es kein Löschen – ein Lied ohne wäre unbrauchbar', () => {
+    arrangementeFn.mockReturnValue({ data: [arrangement({ id: 71, isDefault: false })] });
+    zeige();
+    fireEvent.click(zeile('Akustik'));
+    expect(screen.queryByRole('button', { name: /Arrangement löschen/ })).toBeNull();
+  });
+
+  it('löscht erst nach der Rückfrage – und die nennt die Dateien', async () => {
+    arrangementeFn.mockReturnValue({
+      data: [ARRANGEMENTS[0], arrangement({ dateien: 2 })],
+    });
+    zeige();
+    fireEvent.click(zeile('Akustik'));
+    fireEvent.click(screen.getByRole('button', { name: /Arrangement löschen/ }));
+    expect(screen.getByText(/den 2 Dateien/)).toBeTruthy();
+    expect(arrLoeschenFn).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+    await waitFor(() => expect(arrLoeschenFn).toHaveBeenCalledWith(71));
+  });
+
+  it('macht ein Arrangement zum Standard und meldet es', async () => {
+    const onSaved = vi.fn();
+    zeige({ onSaved });
+    fireEvent.click(zeile('Akustik'));
+    fireEvent.click(screen.getByRole('button', { name: 'Zum Standard machen' }));
+    await waitFor(() => expect(arrStandardFn).toHaveBeenCalledWith(71));
+    expect(onSaved).toHaveBeenCalledWith('„Akustik" ist jetzt das Standard-Arrangement.');
+  });
+
+  it('legt ein weiteres Arrangement an', async () => {
+    zeige();
+    fireEvent.click(screen.getByRole('button', { name: /Weiteres Arrangement/ }));
+    fireEvent.change(screen.getByPlaceholderText('z. B. Akustik'), { target: { value: 'Chor' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Speichern' })[1]);
+    await waitFor(() => expect(arrAnlegenFn).toHaveBeenCalledWith({ name: 'Chor' }));
+  });
+
+  it('zeigt die Meldung des Servers und lässt das Fenster offen', async () => {
+    arrAendernFn.mockRejectedValue(new Error('Diese Quelle kennt ChurchTools nicht.'));
+    zeige();
+    fireEvent.click(zeile('Akustik'));
+    fireEvent.change(screen.getByDisplayValue('G'), { target: { value: 'A' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Speichern' })[1]);
+    await waitFor(() => expect(screen.getByText(/kennt ChurchTools nicht/)).toBeTruthy());
+    // Die Eingabe steht noch da – sie darf nicht verloren gehen (#270).
+    expect(screen.getByDisplayValue('A')).toBeTruthy();
   });
 });

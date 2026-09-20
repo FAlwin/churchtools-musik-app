@@ -19,7 +19,13 @@ import {
   postAgendaItem,
   getSongArrangementsCtrl,
   getSongLibraryCtrl,
+  getArrangementsVerwaltung,
   getSongCategoriesCtrl,
+  getSongSourcesCtrl,
+  patchArrangementDefault,
+  postArrangement,
+  putArrangement,
+  deleteArrangementCtrl,
   getSongTextSearch,
   postSong,
   putSong,
@@ -74,6 +80,27 @@ router.put('/services/:eventId/agenda/items/:itemId', asyncHandler(putAgendaItem
 router.put('/services/:eventId/agenda/items/:itemId/hidden', asyncHandler(putAgendaItemHidden));
 router.delete('/services/:eventId/agenda/items/:itemId', asyncHandler(deleteAgendaItemCtrl));
 router.put('/songs/:songId/arrangements/:arrangementId/tempo', asyncHandler(putArrangementTempo));
+
+/**
+ * Arrangements verwalten (#396) – anlegen, ändern, Standard, löschen.
+ *
+ * **Die Liste liegt unter `…/arrangements/verwaltung`, nicht unter `…/arrangements`.** Dort steht
+ * schon die schmale Auswahl für „Zu Ablauf hinzufügen" (nur ID, Name, Tonart), und die wird von
+ * mehreren Bildschirmen benutzt. Sie um acht Felder zu erweitern hieße, sie überall mitzuladen –
+ * derselbe Grund, aus dem die Stammdaten eines Liedes einen eigenen Weg haben.
+ *
+ * Der PATCH-Pfad ist derselbe wie bei ChurchTools: Der Dienst reicht ihn eins zu eins weiter, und
+ * `PUT { isDefault }` wirkt dort nicht (gemessen 20.09.2026).
+ */
+router.get('/song-sources', asyncHandler(getSongSourcesCtrl));
+router.get('/songs/:songId/arrangements/verwaltung', asyncHandler(getArrangementsVerwaltung));
+router.post('/songs/:songId/arrangements', asyncHandler(postArrangement));
+router.put('/songs/:songId/arrangements/:arrangementId', asyncHandler(putArrangement));
+router.patch(
+  '/songs/:songId/arrangements/:arrangementId/default',
+  asyncHandler(patchArrangementDefault),
+);
+router.delete('/songs/:songId/arrangements/:arrangementId', asyncHandler(deleteArrangementCtrl));
 router.post('/songs/:songId/versions', asyncHandler(postVersion));
 router.put('/songs/:songId/versions/:versionKey', asyncHandler(putVersion));
 router.delete('/songs/:songId/versions/:versionKey', asyncHandler(deleteVersionCtrl));

@@ -1,0 +1,20 @@
+// Das Arrangement-Formular (#396) – nur, was die geteilten Feld-Stile aus `SongFields.module.scss`
+// nicht hergeben. Alles andere kommt von dort: ein zweites Aussehen für dieselbe Sorte Eingabe wäre
+// eine zweite Sprache in derselben App.
+
+// Minuten und Sekunden nebeneinander, wie im ChurchTools-Dialog.
+.laenge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  input {
+    // Zwei schmale Felder statt zweier breiter: höchstens drei Ziffern je Feld.
+    flex: 0 1 90px;
+  }
+}
+
+.doppelpunkt {
+  color: var(--text2);
+  font-weight: 700;
+}
