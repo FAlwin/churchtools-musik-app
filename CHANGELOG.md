@@ -11,8 +11,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 - **Abwesenheiten: Termine nach Art filtern (#400).** Unter der Monatsleiste stehen jetzt Knöpfe
   für die **Termin-Arten** der Gemeinde – „Alle · Gottesdienst · Gebetsabend · …". Ein Tipp zeigt
-  nur diese Termine, **mehrere gehen gleichzeitig**; sind alle gewählt, springt es von selbst auf
-  „Alle". Die Zahl „n Termine" zählt mit, die App **merkt sich die Wahl auf dem Gerät**. Die Arten
+  nur diese Termine – **genau eine Art oder alles** (Alwin, nach einem Nachmittag mit
+  Mehrfachauswahl: „entweder eins oder alles"); ein zweiter Tipp auf denselben Knopf oder auf
+  „Alle" zeigt wieder alles. Die Zahl „n Termine" zählt mit, die App **merkt sich die Wahl auf dem Gerät**. Die Arten
   pflegt der Admin unter **Mehr → Verwaltung → „Abwesenheiten: Termin-Arten"**: je ein Name (der
   Knopf) und ein Suchwort; ein Termin gehört zur ersten Art, deren Suchwort in seinem Namen
   vorkommt, alles Übrige fällt unter „Sonstige". Ohne gepflegte Arten gibt es keinen Filter.

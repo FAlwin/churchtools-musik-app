@@ -158,8 +158,8 @@ Datum vor heute eintragen – das lässt die App nicht zu).
 Termine mit verschiedenen Namen liegen (z. B. „Gottesdienst", „Gebetsabend", „Probe").
 
 **Das muss passieren:** Der Admin legt die Arten fest, die Knöpfe heißen wie die Arten, Liste und
-Zahl folgen der Auswahl, „alle gewählt" springt auf „Alle", und beim nächsten Öffnen steht der
-Filter noch so.
+Zahl folgen der Auswahl (genau eine Art oder alles), und beim nächsten Öffnen steht der Filter
+noch so.
 
 1. **Als Admin:** Mehr → Verwaltung → **„Abwesenheiten: Termin-Arten"**. Zwei Arten anlegen:
    Name „Gottesdienst", Suchwort „Gottesdienst"; Name „Gebetsabend", Suchwort „Gebet". Speichern.
@@ -168,8 +168,8 @@ Filter noch so.
    „Gebetsabend" und – falls es Termine mit anderem Namen gibt – **„Sonstige"**. „Alle" ist blau.
 3. **„Gottesdienst"** antippen: Nur Gottesdienste (auch „Gottesdienst mit Abendmahl") bleiben, die
    Zahl passt, „Alle" ist nicht mehr blau.
-4. **„Gebetsabend"** zusätzlich antippen: beide Arten in der Liste. Dann auch **„Sonstige"**
-   (bzw. den letzten fehlenden Knopf) antippen: Die Anzeige springt von selbst auf **„Alle"**.
+4. **„Gebetsabend"** antippen: Jetzt nur Gebetsabende – der Knopf **ersetzt** „Gottesdienst".
+   „Gebetsabend" erneut antippen: Die Anzeige springt auf **„Alle"**.
 5. Einen Monat ohne Gebetsabend wählen, „Gebetsabend" antippen: „Kein Termin mehr in diesem
    Monat" – der Filter ist sichtbar aktiv.
 6. **Häkchen bleibt:** Einen Gottesdienst abhaken (Leiste „Speichern" erscheint), dann auf
@@ -183,7 +183,7 @@ Filter noch so.
 
 - **Priorität:** normal
 - **Betrifft:** `client/src/pages/Availability.tsx`, `client/src/utils/terminFilter.ts`, `client/src/components/TerminArtenManager.tsx`, `client/src/pages/Settings.tsx`, `client/src/utils/devicePrefs.ts`, `server/src/services/siteConfig.ts`
-- **Automatisiert:** überwiegend – `client/src/utils/terminFilter.test.ts` (Suchwort, Reihenfolge, Sonstige, alle gewählt = alle, verwaiste Wahl), `client/src/pages/Availability.test.tsx` (Knöpfe, Zahl, Mehrfachauswahl, Auto-„Alle", Sonstige, Merken, Häkchen übersteht den Wechsel, keine Knöpfe ohne Arten), `client/src/components/TerminArtenManager.test.tsx` (trimmen, halbe Zeile, löschen), `server/src/services/siteConfig.test.ts` (Schema, Rundlauf, doppelte IDs); von Hand bleibt der Weg über den echten Admin-Bereich
+- **Automatisiert:** überwiegend – `client/src/utils/terminFilter.test.ts` (Suchwort, Reihenfolge, Sonstige, eins-oder-alles, verwaiste Wahl), `client/src/pages/Availability.test.tsx` (Knöpfe, Zahl, eins-oder-alles, Sonstige, Merken, Häkchen übersteht den Wechsel, keine Knöpfe ohne Arten), `client/src/components/TerminArtenManager.test.tsx` (trimmen, halbe Zeile, löschen), `server/src/services/siteConfig.test.ts` (Schema, Rundlauf, doppelte IDs); von Hand bleibt der Weg über den echten Admin-Bereich
 - **Historie:** #400 (20.09.2026), Wunsch Alwin; erster Bau nach Kalender verworfen (bei der ECG ein Kalender für alles)
 
 </details>

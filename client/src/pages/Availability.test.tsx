@@ -333,8 +333,8 @@ describe('Abwesenheiten – Plus und offline', () => {
 
 /**
  * Der Termin-Filter (#400) – Alwin: „nur Gottesdienst oder nur Gebetsabend". Entschieden: nach
- * Termin-Arten mit Suchwörtern (vom Admin gepflegt), mehrere gleichzeitig, auf dem Gerät gemerkt,
- * alle gewählt = „Alle".
+ * Termin-Arten mit Suchwörtern (vom Admin gepflegt), **genau eine oder alle**, auf dem Gerät
+ * gemerkt.
  *
  * Die Knöpfe gibt es nur, wenn es etwas zu wählen gibt; die Zahl „n Termine" folgt dem Filter; und
  * vorgemerkte Häkchen überstehen ihn – sie hängen am Tag, nicht an der Liste.
@@ -385,12 +385,20 @@ describe('Abwesenheiten – Termin-Filter (#400)', () => {
     expect(knopf('Alle').getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('sind ALLE Arten gewählt, springt es auf „Alle" (Wunsch Alwin)', () => {
+  it('ein zweiter Knopf ERSETZT den ersten – entweder eins oder alles', () => {
     zeige();
     fireEvent.click(knopf('Jugend'));
     fireEvent.click(knopf('Gottesdienst'));
-    expect(knopf('Alle').getAttribute('aria-pressed')).toBe('true');
+    expect(knopf('Gottesdienst').getAttribute('aria-pressed')).toBe('true');
     expect(knopf('Jugend').getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByText('2 Termine')).not.toBeNull();
+  });
+
+  it('ein Tipp auf den gewählten Knopf hebt die Wahl auf', () => {
+    zeige();
+    fireEvent.click(knopf('Jugend'));
+    fireEvent.click(knopf('Jugend'));
+    expect(knopf('Alle').getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByText('3 Termine')).not.toBeNull();
   });
 

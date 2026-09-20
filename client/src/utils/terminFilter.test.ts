@@ -13,7 +13,8 @@ import {
  * Der Termin-Filter (#400) als reine Regeln – Termin-Arten mit Suchwörtern, „Sonstige" für den Rest.
  *
  * Die wichtigsten stehen unten: Eine Auswahl, auf die kein Knopf passt, gilt als „alle" (sonst eine
- * leere Liste ohne Grund), und **alle Knöpfe gewählt** ist ebenfalls „alle" (Wunsch Alwin).
+ * leere Liste ohne Grund), und es gibt **genau eine Art oder alles** – ein zweiter Knopf ersetzt den
+ * ersten, ein Tipp auf den gewählten hebt ihn auf (Alwin, 20.09.2026 spät).
  */
 const ev = (id: number, name: string): AbsenceEvent => ({
   id,
@@ -73,8 +74,9 @@ describe('wirksameAuswahl', () => {
     expect(wirksameAuswahl(['gd', '99'], knoepfe)).toEqual(['gd']);
   });
 
-  it('ALLE gewählt heißt „alle" – die Auswahl wird leer', () => {
-    expect(wirksameAuswahl(['gd', 'ga'], knoepfe)).toEqual([]);
+  it('kürzt eine gemerkte Mehrfachauswahl (Zwischenfassung) auf den ersten gültigen Eintrag', () => {
+    expect(wirksameAuswahl(['gd', 'ga'], knoepfe)).toEqual(['gd']);
+    expect(wirksameAuswahl(['99', 'ga', 'gd'], knoepfe)).toEqual(['ga']);
   });
 });
 
@@ -90,7 +92,7 @@ describe('filtereTermine', () => {
     expect(filtereTermine(alle, [SONSTIGE_ID], ARTEN).map((e) => e.id)).toEqual([3]);
   });
 
-  it('mehrere gleichzeitig', () => {
+  it('die Filterung selbst könnte mehrere – die Auswahl gibt nur eine her (siehe umschalten)', () => {
     expect(filtereTermine(alle, ['gd', SONSTIGE_ID], ARTEN).map((e) => e.id)).toEqual([1, 3]);
   });
 });
@@ -102,12 +104,12 @@ describe('umschalten', () => {
     { id: SONSTIGE_ID, name: 'Sonstige' },
   ];
 
-  it('nimmt auf und wieder heraus', () => {
+  it('wählt genau einen – ein zweiter Knopf ERSETZT den ersten', () => {
     expect(umschalten([], 'gd', knoepfe)).toEqual(['gd']);
-    expect(umschalten(['gd', 'ga'], 'gd', knoepfe)).toEqual(['ga']);
+    expect(umschalten(['gd'], 'ga', knoepfe)).toEqual(['ga']);
   });
 
-  it('springt auf „alle", sobald der letzte fehlende Knopf gewählt wird', () => {
-    expect(umschalten(['gd', 'ga'], SONSTIGE_ID, knoepfe)).toEqual([]);
+  it('ein Tipp auf den gewählten Knopf hebt die Wahl auf – dann gilt „alle"', () => {
+    expect(umschalten(['gd'], 'gd', knoepfe)).toEqual([]);
   });
 });

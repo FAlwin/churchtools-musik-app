@@ -7,16 +7,18 @@ import type { AbsenceEvent, TerminArt } from '@shared/types/index';
  * bei der ECG liegen beide im selben Kalender, und eine eigene Kategorie kennt ChurchTools an
  * Terminen nicht (gemessen 20.09.2026). Entschieden: **Termin-Arten mit Suchwörtern**, vom Admin
  * gepflegt (`SiteConfig.terminArten`). Ein Termin gehört zur **ersten** Art, deren Suchwort in
- * seinem Namen vorkommt; alle übrigen fallen unter **„Sonstige"**. Mehrere Arten gleichzeitig,
- * auf dem Gerät gemerkt.
+ * seinem Namen vorkommt; alle übrigen fallen unter **„Sonstige"**. **Genau EINE Art oder alles**
+ * (Alwin, 20.09.2026 spät: „entweder eins oder alles" – die Mehrfachauswahl vom Nachmittag ist
+ * wieder raus), auf dem Gerät gemerkt.
  *
- * Zwei Regeln, die man leicht falsch macht:
- *  - **Eine Auswahl, die auf keinen Knopf passt, gilt als „alle".** Sonst zeigte der Tab eine
- *    leere Liste ohne einen aktiven Knopf, der erklärt, warum – etwa nachdem der Admin eine Art
- *    gelöscht hat. Gemessen gegen die Knöpfe, die es gerade gibt, nicht gegen den Monat: Ein Monat
- *    ohne Gebetsabend soll bei gewähltem „Gebetsabend" sehr wohl leer sein.
- *  - **Sind alle Knöpfe gewählt, ist das „alle"** (Wunsch Alwin) – die Auswahl wird geleert, statt
- *    dass jeder Knopf einzeln blau bleibt und „Alle" grau.
+ * Die Regel, die man leicht falsch macht: **Eine Auswahl, die auf keinen Knopf passt, gilt als
+ * „alle".** Sonst zeigte der Tab eine leere Liste ohne einen aktiven Knopf, der erklärt, warum –
+ * etwa nachdem der Admin eine Art gelöscht hat. Gemessen gegen die Knöpfe, die es gerade gibt,
+ * nicht gegen den Monat: Ein Monat ohne Gebetsabend soll bei gewähltem „Gebetsabend" sehr wohl
+ * leer sein.
+ *
+ * Die Auswahl bleibt eine Liste (mit höchstens einem Eintrag): So liest die App eine auf dem Gerät
+ * gemerkte Mehrfachauswahl aus der Zwischenfassung noch und nimmt ihren ersten Eintrag.
  */
 export const SONSTIGE_ID = 'sonstige';
 
@@ -49,12 +51,14 @@ export function knoepfeAus(arten: TerminArt[], events: AbsenceEvent[]): Knopf[] 
   return knoepfe;
 }
 
-/** Die wirksame Auswahl: nur IDs, zu denen es gerade einen Knopf gibt. Leer heißt „alle". */
+/**
+ * Die wirksame Auswahl: höchstens EINE ID, zu der es gerade einen Knopf gibt. Leer heißt „alle".
+ * Eine gemerkte Liste mit mehreren Einträgen (Zwischenfassung) wird auf ihren ersten gültigen
+ * gekürzt statt verworfen.
+ */
 export function wirksameAuswahl(auswahl: string[], knoepfe: Knopf[]): string[] {
   const vorhanden = new Set(knoepfe.map((k) => k.id));
-  const gueltig = auswahl.filter((id) => vorhanden.has(id));
-  // Alles gewählt = nichts gefiltert.
-  return gueltig.length >= knoepfe.length ? [] : gueltig;
+  return auswahl.filter((id) => vorhanden.has(id)).slice(0, 1);
 }
 
 /** Termine, die zur Auswahl passen. Ohne wirksame Auswahl alle. */
@@ -69,11 +73,10 @@ export function filtereTermine(
 }
 
 /**
- * Einen Knopf an- oder abwählen. Sind danach **alle** Knöpfe gewählt, springt die Auswahl auf
- * „alle" (leer) – Alwins Wunsch: „wenn ich alle anklicke, kann es auch automatisch auf alle
- * springen".
+ * Einen Knopf wählen: Er ersetzt die bisherige Wahl. Ein Tipp auf den schon gewählten Knopf hebt
+ * die Wahl auf – dann gilt „alle". Entweder eins oder alles (Alwin).
  */
 export function umschalten(auswahl: string[], id: string, knoepfe: Knopf[]): string[] {
-  const neu = auswahl.includes(id) ? auswahl.filter((x) => x !== id) : [...auswahl, id];
+  const neu = auswahl.includes(id) ? [] : [id];
   return wirksameAuswahl(neu, knoepfe);
 }
