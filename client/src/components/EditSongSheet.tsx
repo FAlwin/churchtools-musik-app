@@ -26,6 +26,13 @@ import { Sheet } from './Sheet';
 import { Icon } from './icons';
 import { CenterMessage } from './CenterMessage';
 import { ConfirmDialog } from './ConfirmDialog';
+import { Coachmarks } from './Coachmarks';
+import {
+  LIED_STAMMDATEN_STEPS,
+  TOUR_LIED_STAMMDATEN,
+  isTourDone,
+  markTourDone,
+} from '../utils/onboarding';
 import { SongFields } from './SongFields';
 import { ArrangementListe } from './ArrangementListe';
 import { ArrangementSheet } from './ArrangementSheet';
@@ -133,6 +140,17 @@ export function EditSongSheet({
   const [editorLaedt, setEditorLaedt] = useState(false);
 
   const ist = stammdaten.data ?? null;
+
+  /**
+   * Die Einführung startet erst, wenn **die Arrangements geladen sind** (#396): Ihr erster Schritt
+   * zeigt auf die Liste, und ein Schritt ohne sein Element wird still übersprungen. Würde sie sofort
+   * beim Öffnen laufen, bekäme der Nutzer ausgerechnet den Teil nicht zu sehen, für den sie da ist –
+   * und **merken** würde man es nicht: Die Tour liefe scheinbar normal, nur eben einen Schritt kürzer.
+   */
+  const [tour, setTour] = useState(false);
+  useEffect(() => {
+    if (ist && arrangements.data && !isTourDone(TOUR_LIED_STAMMDATEN)) setTour(true);
+  }, [ist, arrangements.data]);
 
   const editorOeffnen = async (): Promise<void> => {
     setEditorLaedt(true);
@@ -310,6 +328,7 @@ export function EditSongSheet({
                 ORIGINAL des Arrangements; die eigenen Fassungen bleiben. */}
             <button
               className={styles.secondaryWide}
+              data-tour="notenblatt-bearbeiten"
               disabled={editorLaedt}
               onClick={() => void editorOeffnen()}
             >
@@ -395,6 +414,16 @@ export function EditSongSheet({
           confirmLabel="Löschen"
           onConfirm={() => void arrangementLoeschenBestaetigen(arrLoeschFrage)}
           onCancel={() => setArrLoeschFrage(null)}
+        />
+      )}
+
+      {tour && (
+        <Coachmarks
+          steps={LIED_STAMMDATEN_STEPS}
+          onClose={() => {
+            markTourDone(TOUR_LIED_STAMMDATEN);
+            setTour(false);
+          }}
         />
       )}
 

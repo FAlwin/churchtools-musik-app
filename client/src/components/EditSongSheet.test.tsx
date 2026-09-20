@@ -75,6 +75,7 @@ vi.mock('./ChordEditor', () => ({
 }));
 
 const { EditSongSheet } = await import('./EditSongSheet');
+const { TOUR_LIED_STAMMDATEN, markTourDone, resetTours } = await import('../utils/onboarding');
 
 const KATEGORIEN: SongCategory[] = [
   { id: 0, name: 'Aktive Songs' },
@@ -122,6 +123,12 @@ const ARRANGEMENTS: ArrangementAnsicht[] = [
 
 beforeEach(() => {
   vi.clearAllMocks();
+  /**
+   * **Die Einführung wird für die meisten Tests abgeschaltet** (#396): Sie legt sich beim ersten
+   * Öffnen über das Blatt und macht jeden Knopf-Test zur Zufallssache. Dass sie überhaupt erscheint,
+   * prüft der eigene Test ganz unten – dort wird der Merker eigens wieder entfernt.
+   */
+  markTourDone(TOUR_LIED_STAMMDATEN);
   stammdaten.mockReturnValue({ data: IST, isError: false });
   arrangementeFn.mockReturnValue({ data: ARRANGEMENTS });
   quellenFn.mockReturnValue({ data: [{ id: 2, name: 'Unser Liederbuch', shorty: 'ULB' }] });
@@ -367,5 +374,44 @@ describe('EditSongSheet – Arrangements (#396)', () => {
     await waitFor(() => expect(screen.getByText(/kennt ChurchTools nicht/)).toBeTruthy());
     // Die Eingabe steht noch da – sie darf nicht verloren gehen (#270).
     expect(screen.getByDisplayValue('A')).toBeTruthy();
+  });
+});
+
+/**
+ * **Die Einführung zum Stammdaten-Blatt** (#396) – sie ist der einzige Hinweis darauf, dass hier
+ * jetzt mehr steht als Name und Autor.
+ *
+ * Sie startet erst, wenn die Arrangements geladen sind: Ihr erster Schritt zeigt auf die Liste, und
+ * ein Schritt ohne sein Element wird übersprungen. Liefe sie sofort, verpasste der Nutzer genau den
+ * Teil, für den sie gedacht ist.
+ */
+describe('EditSongSheet – die Einführung (#396)', () => {
+  beforeEach(() => resetTours());
+
+  /**
+   * **Geprüft wird die TOUR, nicht der Text eines Schrittes** – eine Gegenprobe hat gezeigt, warum:
+   * Fehlt die Arrangement-Liste, überspringt die Einführung ihren ersten Schritt still und zeigt den
+   * zweiten. Ein Test, der nur nach dem Text des ersten Schrittes sucht, ist dann grün, obwohl die
+   * Tour läuft – er misst etwas anderes als das, was er behauptet. „Überspringen" gibt es nur,
+   * solange die Tour offen ist.
+   */
+  const tourLaeuft = () => screen.queryByRole('button', { name: 'Überspringen' }) !== null;
+
+  it('erscheint beim ersten Öffnen – und beginnt bei den Arrangements', () => {
+    zeige();
+    expect(tourLaeuft()).toBe(true);
+    expect(screen.getByText(/Tippe eines an, um Tonart/)).toBeTruthy();
+  });
+
+  it('wartet, bis die Arrangements da sind – sonst fiele ihr erster Schritt still aus', () => {
+    arrangementeFn.mockReturnValue({ data: undefined });
+    zeige();
+    expect(tourLaeuft()).toBe(false);
+  });
+
+  it('kommt kein zweites Mal', () => {
+    markTourDone(TOUR_LIED_STAMMDATEN);
+    zeige();
+    expect(tourLaeuft()).toBe(false);
   });
 });

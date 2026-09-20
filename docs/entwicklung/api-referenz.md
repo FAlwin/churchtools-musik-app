@@ -116,7 +116,40 @@
   `note` geht bewusst nicht mit – ChurchTools ignoriert das Feld beim Anlegen (gemessen).
 
 - `GET  /api/song-usage` → Nutzungsstatistik je Song als **`{ dates: string[] }`** (vergangene Spieltermine, bis zu 4 Jahre zurück, absteigend; 1h-Cache). Häufigkeit + „zuletzt gespielt" für den gewählten Zeitraum rechnet der **Client** daraus – ohne erneuten Server-Roundtrip. Bei Drosselung **503** (+ `Retry-After`), wenn kein früherer Stand im Speicher liegt; der Client zeigt dann „–" statt einer Null und lässt die Liederliste vollständig (#300).
-- `GET  /api/songs/:songId/arrangements` → Arrangements eines Lieds (für „Zu Ablauf hinzufügen")
+- `GET  /api/songs/:songId/arrangements` → Arrangements eines Lieds (für „Zu Ablauf hinzufügen") –
+  **schmal**: nur ID, Name und Tonart. Die vollständige Sicht liegt bewusst woanders (siehe unten)
+
+**Arrangements verwalten (#396).** Alle Wege prüfen das Recht an der Kategorie **des Liedes** (über
+`pruefeKategorie` aus der Liedverwaltung, nicht über eine zweite Fassung davon).
+
+- `GET  /api/song-sources` → die **Liedquellen** (Liederbücher) der Gemeinde als `{id, name, shorty}`.
+  Quelle ist die **alte** Schnittstelle (`getMasterData` → `songsource`), wie bei Lied-Kategorien und
+  Abwesenheitsgründen; ein `/api/`-Endpunkt existiert nicht (gemessen 20.09.2026: 404). Sie kommt als
+  **Objekt**, nach ID geschlüsselt – anders als `songcategory` am selben Endpunkt, das ein Array ist.
+  Je Sitzung eine Minute gemerkt
+- `GET  /api/songs/:songId/arrangements/verwaltung` → alle Arrangements mit **allen** Feldern
+  (`ArrangementAnsicht`: Tonart, Tempo, Takt, Länge in Sekunden, Beschreibung, Quelle,
+  Liednummer, `isDefault`, Anzahl Dateien). Eigener Pfad, damit die schmale Liste oben schmal bleibt
+- `POST /api/songs/:songId/arrangements` {name, …} → weiteres Arrangement → `ArrangementAnsicht`.
+  **Nie als Standard** – das ist ein eigener, sichtbarer Schritt
+- `PUT  /api/songs/:songId/arrangements/:arrangementId` {…} → ändern → `ArrangementAnsicht`.
+  **Nur die geänderten Felder schicken**; `null` heißt „leeren", ein fehlendes Feld „unverändert".
+  Der Server macht daraus lesen–ändern–schreiben, weil ein Teil-`PUT` den Rest löscht
+- `PATCH /api/songs/:songId/arrangements/:arrangementId/default` → zum Standard machen → die **ganze**
+  Liste (der Wechsel betrifft immer zwei Einträge). **Dieser Weg und kein anderer:**
+  `PUT {isDefault: true}` antwortet 200 und ändert nichts, `POST …/default` und `PATCH` auf das
+  Arrangement selbst antworten 405, `PUT /api/songs/:id {defaultArrangementId}` antwortet 400 (alles
+  gemessen). Der Server sieht danach nach, ob es wirklich gewirkt hat
+- `DELETE /api/songs/:songId/arrangements/:arrangementId` → `{name}`. **409** beim letzten Arrangement
+  (ein Lied ohne wäre unbrauchbar) und beim Standard, solange es andere gibt
+
+  **Quelle und Liednummer gehören zusammen:** ChurchTools speichert `sourceReference` nur mit
+  gültiger `sourceId` und wirft sie sonst stillschweigend weg (200, danach `null`). Unbekannte
+  Quellen-IDs verwirft es ebenso. Beides wird deshalb **400** mit einer Erklärung, und wer die
+  Quelle entfernt, verliert die Nummer mit – die Regel steht einmal in `arrangementPayload.ts`.
+  `note` ist ChurchTools' alter Name für `description`, **dasselbe Feld**; geschrieben wird nur
+  `description`
+
 - `GET  /api/songs/:songId/chart` → Chart eines einzelnen Lieds (aus „Alle Lieder")
 - `POST /api/songs/:songId/versions` {arrangementId, name, text} → neue benannte Version → `SongVersion`
 - `PUT  /api/songs/:songId/versions/:versionKey` {arrangementId, text?, name?} → Version aktualisieren/umbenennen

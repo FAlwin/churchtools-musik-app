@@ -20,6 +20,19 @@ const PERSON = { id: 4711, firstName: 'Test', lastName: 'Musiker' };
 
 /** Abwesenheiten (#177): eine manuelle (ohne Marker) liegt vor, damit das Schloss zu sehen ist. */
 let absenceId = 9000;
+
+/** IDs für neu angelegte Arrangements (#396) – über den vorhandenen 9001/9002 des Testliedes. */
+let arrangementId = 9100;
+
+/**
+ * Die Liedquellen (#396) – EINE Liste für `getMasterData` und für die Schreibpfade.
+ * Zweimal hingeschrieben wären es zwei Stellen, und der Stub könnte eine Quelle bestätigen, die er
+ * selbst nicht anbietet.
+ */
+const QUELLEN = [
+  { id: 2, name: 'Unser Liederbuch', shorty: 'ULB' },
+  { id: 5, name: 'Feiert Jesus', shorty: 'FJ' },
+];
 /**
  * Grund-ID → so, wie ChurchTools ihn zurückgibt: Name als **Übersetzungsschlüssel** (gemessen
  * 05.09.2026). Vorher stand hier fest „Abwesend", egal welche ID – der Stub log also über den Grund
@@ -225,6 +238,18 @@ function ajaxAntwort(func) {
           { id: '0', bezeichnung: 'Aktive Songs', sortkey: '0' },
           { id: '1', bezeichnung: 'Inaktive Songs', sortkey: '1' },
         ],
+        /**
+         * Die Liedquellen (#396) – aus DERSELBEN Antwort wie Kategorien und Abwesenheitsgründe.
+         * Bewusst als **Objekt** nachgebaut, nicht als Array: So liefert ChurchTools sie wirklich
+         * (gemessen 20.09.2026), während `songcategory` am selben Endpunkt ein Array ist. Ein Stub,
+         * der das glättet, würde genau den Fehler verdecken, den die App dort machen könnte.
+         */
+        songsource: Object.fromEntries(
+          QUELLEN.map((q, i) => [
+            q.id,
+            { id: String(q.id), name: q.name, shorty: q.shorty, sortkey: String(i) },
+          ]),
+        ),
       },
     };
   }
@@ -378,6 +403,77 @@ const server = createServer((req, res) => {
       return res.end();
     }
   }
+  /**
+   * **Arrangements verwalten (#396) – mit echtem Speicher, nicht nur mit „ok".**
+   *
+   * Ein Stub, der jeden Schreibvorgang bestätigt und nichts ändert, verdeckt genau die Fehler, um
+   * die es hier geht: ob der Standard wirklich wechselt und ob ein `PUT` Felder verliert. Deshalb
+   * wird am `SONG.arrangements` wirklich gearbeitet – Anlegen, Ändern, Standard, Löschen.
+   *
+   * Die Regel „PUT ersetzt den ganzen Datensatz" wird dabei NACHGEBILDET: Was der Rumpf nicht nennt,
+   * ist danach weg. Nur so zeigt der Durchklick, ob die App vollständig schreibt.
+   */
+  const arrMatch = path.match(/^\/api\/songs\/(\d+)\/arrangements(?:\/(\d+))?(\/default)?$/);
+  if (arrMatch && req.method !== 'GET') {
+    const arrId = arrMatch[2] ? Number(arrMatch[2]) : null;
+    const idx = arrId === null ? -1 : SONG.arrangements.findIndex((a) => a.id === arrId);
+
+    if (req.method === 'PATCH' && arrMatch[3]) {
+      // Zum Standard machen: ChurchTools nimmt dem bisherigen das Flag selbst ab.
+      if (idx < 0) return json(res, { message: 'unbekannt' }, 404);
+      SONG.arrangements.forEach((a, i) => (a.isDefault = i === idx));
+      res.statusCode = 204;
+      return res.end();
+    }
+    if (req.method === 'DELETE') {
+      if (idx >= 0) SONG.arrangements.splice(idx, 1);
+      res.statusCode = 204;
+      return res.end();
+    }
+    if (req.method === 'POST' || req.method === 'PUT') {
+      let body = '';
+      req.on('data', (chunk) => (body += chunk));
+      req.on('end', () => {
+        const rumpf = JSON.parse(body || '{}');
+        // Die Quelle kommt beim LESEN als Objekt zurück, beim Schreiben als `sourceId` – wie bei CT.
+        const quelle = rumpf.sourceId
+          ? QUELLEN.find((q) => q.id === Number(rumpf.sourceId)) ?? null
+          : null;
+        const felder = {
+          name: rumpf.name ?? null,
+          key: rumpf.key ?? null,
+          keyOfArrangement: rumpf.key ?? null,
+          bpm: rumpf.tempo ?? null,
+          tempo: rumpf.tempo ?? null,
+          beat: rumpf.beat ?? null,
+          duration: rumpf.duration ?? null,
+          description: rumpf.description ?? null,
+          // Ohne Quelle keine Liednummer – ChurchTools wirft sie sonst still weg (gemessen).
+          source: quelle,
+          sourceId: quelle ? quelle.id : null,
+          sourceReference: quelle ? (rumpf.sourceReference ?? null) : null,
+          files: [],
+        };
+        if (req.method === 'POST') {
+          const neu = { id: ++arrangementId, isDefault: rumpf.isDefault === true, ...felder };
+          if (neu.isDefault) SONG.arrangements.forEach((a) => (a.isDefault = false));
+          SONG.arrangements.push(neu);
+          res.statusCode = 201;
+          return json(res, { data: { id: neu.id } });
+        }
+        if (idx < 0) return json(res, { message: 'unbekannt' }, 404);
+        // `isDefault` bleibt, wie es war: Ein PUT ändert es bei ChurchTools nachweislich nicht.
+        SONG.arrangements[idx] = {
+          ...SONG.arrangements[idx],
+          ...felder,
+          files: SONG.arrangements[idx].files,
+        };
+        return json(res, { data: SONG.arrangements[idx] });
+      });
+      return;
+    }
+  }
+
   if (path === '/api/groups') return json(res, { data: [] });
   if (path === '/api/services') return json(res, { data: [] });
 
