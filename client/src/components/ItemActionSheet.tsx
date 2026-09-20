@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import type { AgendaItem, AgendaServiceOption } from '@shared/types/index';
+import type { AgendaItem, AgendaServiceOption, SongSelectTreffer } from '@shared/types/index';
 import type { AgendaItemUpdate } from '../services/churchtoolsApi';
 import { pendingAgendaFields, isDurationValid, type LinkState } from '../utils/agendaItemChanges';
 import { SongPicker } from './SongPicker';
+import { NewSongSheet } from './NewSongSheet';
+import { useCapabilities } from '../hooks/useServices';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
 import { useOverlayKeyboardInset } from '../hooks/useOverlayKeyboardInset';
@@ -53,6 +55,12 @@ export function ItemActionSheet({
   // Verknüpfung wird vorgemerkt und erst beim Speichern nach ChurchTools geschrieben
   // ('keep' = unverändert, 'unlink' = Lied entfernen, 'link' = neues Arrangement verknüpfen).
   const [linkState, setLinkState] = useState<LinkState>({ kind: 'keep' });
+  // Der Anlege-Weg aus „Lied verknüpfen" (#391): „Neues Lied" (der Suchbegriff wird zum Titel) oder
+  // ein SongSelect-Treffer. Nur mit dem Recht, Lieder zu bearbeiten – dieselbe Regel wie im `AddItemSheet`.
+  const canEditSongs = useCapabilities(true).data?.canEditSongs ?? false;
+  const [neuesLied, setNeuesLied] = useState<{ treffer?: SongSelectTreffer; name?: string } | null>(
+    null,
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   // Dialog über der iOS-Tastatur freihalten; verhindert auch die verrutschte Kopfleiste (#207).
@@ -108,6 +116,26 @@ export function ItemActionSheet({
     if (!dirty) onClose();
   }
 
+  // Unterdialog: ein neues Lied anlegen und mit DIESEM Punkt verknüpfen. Bewusst ohne `eventId`: Das
+  // Lied darf nicht als neuer Punkt in den Ablauf, es gehört in den vorhandenen. Die Verknüpfung wird
+  // wie eine Auswahl aus der Suche nur vorgemerkt – geschrieben wird erst mit „Speichern"
+  // (Entscheidung Alwin, 18.09.2026: ein Fenster, ein Speicherweg).
+  if (neuesLied) {
+    return (
+      <NewSongSheet
+        startTreffer={neuesLied.treffer}
+        startName={neuesLied.name}
+        onClose={() => setNeuesLied(null)}
+        onVerknuepfen={(arrangementId, name) => {
+          setLinkState({ kind: 'link', arrangementId, name });
+          setErr(null);
+          setNeuesLied(null);
+          setSongMode(false);
+        }}
+      />
+    );
+  }
+
   // Unterdialog: Lied suchen + verknüpfen.
   if (songMode) {
     return (
@@ -123,6 +151,14 @@ export function ItemActionSheet({
               setErr(null);
               setSongMode(false);
             }}
+            neuesLied={
+              canEditSongs
+                ? { label: 'Neues Lied', onClick: (name) => setNeuesLied({ name }) }
+                : undefined
+            }
+            /* Ohne das Recht, Lieder zu bearbeiten, erscheint SongSelect gar nicht –
+               ein Treffer, aus dem nichts werden kann, wäre eine Sackgasse (#378). */
+            onSongSelectTreffer={canEditSongs ? (treffer) => setNeuesLied({ treffer }) : undefined}
           />
           {/* „Abbrechen", nicht „Zurück" (Entscheidung Alwin, 04.09.2026): Dieser Knopf verlässt die
               Suche ganz. Zur Trefferliste zurück führt der Pfeil oben in der Vorschau – zwei Knöpfe
