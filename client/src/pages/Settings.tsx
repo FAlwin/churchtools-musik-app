@@ -9,6 +9,7 @@ import { Spinner } from '../components/Spinner';
 import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
 import { LinksManager } from '../components/LinksManager';
+import { TerminArtenManager } from '../components/TerminArtenManager';
 import { SupportBox } from '../components/SupportBox';
 import { useUpdateSiteConfig, useGroups, useGroupRoles } from '../hooks/useSiteConfig';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
@@ -58,6 +59,8 @@ export function Settings({
 }: SettingsProps) {
   const [showOrg, setShowOrg] = useState(false);
   const [showLinks, setShowLinks] = useState(false);
+  // Verwaltung → „Abwesenheiten: Termin-Arten" – die Knöpfe des Filters (#400).
+  const [showTerminArten, setShowTerminArten] = useState(false);
   // Verwaltung → „Anmerkungen": Übersicht (showNotes) mit zwei Unter-Sheets
   // (Gruppen-Zuweisung + Rollen-Zuweisung).
   const [showNotes, setShowNotes] = useState(false);
@@ -336,6 +339,17 @@ export function Settings({
               </button>
               <button
                 className={`${styles.setRow} ${styles.tappable}`}
+                onClick={() => setShowTerminArten(true)}
+              >
+                <span className={styles.setLabel}>Abwesenheiten: Termin-Arten</span>
+                <span className={styles.setValue}>
+                  {(site.terminArten ?? []).length === 0
+                    ? 'kein Filter'
+                    : `${(site.terminArten ?? []).length} ${(site.terminArten ?? []).length === 1 ? 'Art' : 'Arten'}`}
+                </span>
+              </button>
+              <button
+                className={`${styles.setRow} ${styles.tappable}`}
                 onClick={() => setShowNotes(true)}
               >
                 <span className={styles.setLabel}>Anmerkungen</span>
@@ -421,6 +435,19 @@ export function Settings({
       {showLinks && (
         <Sheet title="Links verwalten" onClose={() => setShowLinks(false)}>
           <LinksManager site={site} onClose={() => setShowLinks(false)} />
+        </Sheet>
+      )}
+
+      {showTerminArten && (
+        <Sheet title="Termin-Arten" onClose={() => setShowTerminArten(false)}>
+          <p className={styles.sheetHint}>
+            Im Tab „Abwesenheiten" lassen sich Termine nach Art filtern – etwa nur Gottesdienste.
+            Eine Art hat einen <strong>Namen</strong> (der Knopf) und ein <strong>Suchwort</strong>:
+            Kommt es im Terminnamen vor, gehört der Termin dazu. Geprüft wird von oben nach unten,
+            die erste passende Art gewinnt; alles Übrige landet unter „Sonstige". Ohne Arten gibt es
+            keinen Filter.
+          </p>
+          <TerminArtenManager site={site} onClose={() => setShowTerminArten(false)} />
         </Sheet>
       )}
 

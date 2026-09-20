@@ -9,16 +9,17 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
-- **Abwesenheiten: Termine nach Kalender filtern (#400).** Unter der Monatsleiste stehen jetzt
-  Knöpfe für die ChurchTools-Kalender der geladenen Termine – „Alle · Gottesdienst · Gebetsabend …".
-  Ein Tipp zeigt nur dessen Termine, **mehrere gehen gleichzeitig**, „Alle" hebt den Filter auf;
-  die Zahl „n Termine" zählt mit. Die App **merkt sich die Wahl auf dem Gerät**. Gibt es nur einen
-  Kalender, gibt es auch keine Knöpfe. Vorgemerkte Häkchen hängen am Tag und überstehen jeden
-  Filterwechsel; die Seite „Einträge" bleibt unberührt. Eine gemerkte Wahl, die es unter den
-  geladenen Terminen nicht mehr gibt, gilt als „Alle" – keine leere Liste ohne einen Knopf, der
-  sagt, warum. Alwins Wunsch vom 20.09.2026; gemessen: `GET /api/events` liefert je Termin
-  `calendar.title` und `calendar.domainIdentifier`, gefiltert wird auf die ID (ein umbenannter
-  Kalender bleibt gewählt).
+- **Abwesenheiten: Termine nach Art filtern (#400).** Unter der Monatsleiste stehen jetzt Knöpfe
+  für die **Termin-Arten** der Gemeinde – „Alle · Gottesdienst · Gebetsabend · …". Ein Tipp zeigt
+  nur diese Termine, **mehrere gehen gleichzeitig**; sind alle gewählt, springt es von selbst auf
+  „Alle". Die Zahl „n Termine" zählt mit, die App **merkt sich die Wahl auf dem Gerät**. Die Arten
+  pflegt der Admin unter **Mehr → Verwaltung → „Abwesenheiten: Termin-Arten"**: je ein Name (der
+  Knopf) und ein Suchwort; ein Termin gehört zur ersten Art, deren Suchwort in seinem Namen
+  vorkommt, alles Übrige fällt unter „Sonstige". Ohne gepflegte Arten gibt es keinen Filter.
+  Vorgemerkte Häkchen hängen am Tag und überstehen jeden Filterwechsel; „Einträge" bleibt
+  unberührt. Alwins Wunsch vom 20.09.2026. Ein erster Bau filterte nach ChurchTools-Kalender –
+  bei der ECG liegen Gottesdienst und Gebetsabend im selben Kalender, und eine eigene Kategorie
+  kennt ChurchTools an Terminen nicht (gemessen); deshalb Suchwörter.
 
 - **Arrangements in der App verwalten (#396).** Im **Stammdaten-Blatt** eines Liedes (Liederheft →
   Stift) steht jetzt der Abschnitt **„Arrangements"**: alle Arrangements mit Tonart, Tempo, Takt,

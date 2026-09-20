@@ -35,6 +35,16 @@ const noteRoleSchema = z
     roles: r.roles.length > 0 ? r.roles : [...new Set([...r.view, ...r.manage])],
   }));
 
+/**
+ * Termin-Arten für den Filter im Tab „Abwesenheiten" (#400). Grenzen sind Missbrauchs-Bremsen, keine
+ * Fachregeln: 40 Zeichen Knopf, 60 Zeichen Suchwort, 50 Arten.
+ */
+const terminArtSchema = z.object({
+  id: z.string().trim().min(1).max(64),
+  name: z.string().trim().min(1, 'Jede Termin-Art braucht einen Namen.').max(40),
+  suchwort: z.string().trim().min(1, 'Jede Termin-Art braucht ein Suchwort.').max(60),
+});
+
 // Tolerant gegenüber Altfeldern (bestehende site.json aus der White-Label-Phase),
 // die nur ignoriert werden. Anpassbar: orgName + links + Anmerkungs-Gruppen/-Rollen.
 export const siteConfigSchema = z
@@ -48,12 +58,17 @@ export const siteConfigSchema = z
     musicianGroupId: z.number().int().positive().nullable().optional(),
     // Rollen-Freigabe je Gruppe (Sehen/Verwalten).
     noteRoles: z.array(noteRoleSchema).max(50).optional().default([]),
+    // Termin-Arten für den Abwesenheiten-Filter (#400); leer = kein Filter.
+    terminArten: z.array(terminArtSchema).max(50).optional().default([]),
   })
   .passthrough();
 
 let cache: SiteConfig | null = null;
 
-type Editable = Pick<SiteConfig, 'orgName' | 'links' | 'musicianGroupIds' | 'noteRoles'>;
+type Editable = Pick<
+  SiteConfig,
+  'orgName' | 'links' | 'musicianGroupIds' | 'noteRoles' | 'terminArten'
+>;
 
 /** Setzt eine eingelesene/eingehende Konfiguration auf die festen Felder + anpassbare Werte zusammen. */
 function normalize({
@@ -61,6 +76,7 @@ function normalize({
   links = [],
   musicianGroupIds = [],
   noteRoles = [],
+  terminArten = [],
 }: Partial<Editable> & { orgName: string }): SiteConfig {
   // Duplikate entfernen (falls mehrfach übergeben).
   const groupIds = [...new Set(musicianGroupIds)];
@@ -76,6 +92,8 @@ function normalize({
     links,
     musicianGroupIds: groupIds,
     noteRoles: roles,
+    // Eine ID nur einmal – die gemerkte Auswahl auf dem Gerät hängt daran (#400).
+    terminArten: terminArten.filter((t, i, alle) => alle.findIndex((x) => x.id === t.id) === i),
   };
 }
 
@@ -109,6 +127,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         links: parsed.data.links,
         musicianGroupIds: ids,
         noteRoles: parsed.data.noteRoles,
+        terminArten: parsed.data.terminArten,
       });
     } else {
       // Inhaltlich unpassend (z. B. handgeschriebene Datei) → Defaults, wie bisher.

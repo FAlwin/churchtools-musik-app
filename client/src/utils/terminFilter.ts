@@ -1,50 +1,79 @@
-import type { AbsenceEvent } from '@shared/types/index';
+import type { AbsenceEvent, TerminArt } from '@shared/types/index';
 
 /**
- * Der Kalender-Filter im Tab „Abwesenheiten" (#400) – als reine Funktionen.
+ * Der Termin-Filter im Tab „Abwesenheiten" (#400) – als reine Funktionen.
  *
- * Alwin: „nur Gottesdienst oder nur Gebetsabend". Entschieden: nach **ChurchTools-Kalender**,
- * **mehrere gleichzeitig**, auf dem Gerät gemerkt. Die Regeln stehen hier und nicht in der
- * Seite, damit sie in Sekunden prüfbar sind – besonders die eine, die man leicht falsch macht:
+ * Alwin: „nur Gottesdienst oder nur Gebetsabend". Der erste Bau filterte nach ChurchTools-Kalender –
+ * bei der ECG liegen beide im selben Kalender, und eine eigene Kategorie kennt ChurchTools an
+ * Terminen nicht (gemessen 20.09.2026). Entschieden: **Termin-Arten mit Suchwörtern**, vom Admin
+ * gepflegt (`SiteConfig.terminArten`). Ein Termin gehört zur **ersten** Art, deren Suchwort in
+ * seinem Namen vorkommt; alle übrigen fallen unter **„Sonstige"**. Mehrere Arten gleichzeitig,
+ * auf dem Gerät gemerkt.
  *
- * **Eine Auswahl, die auf keinen geladenen Termin passt, gilt als „alle".** Sonst zeigte der Tab
- * eine leere Liste ohne einen einzigen aktiven Knopf, der erklärt, warum – etwa nachdem ein
- * Kalender in ChurchTools gelöscht wurde. Gemessen wird das gegen ALLE geladenen Termine, nicht
- * nur gegen den Monat: Ein Monat ohne Gebetsabend soll bei gewähltem „Gebetsabend" sehr wohl leer
- * sein – das ist die Auskunft, die man wollte.
+ * Zwei Regeln, die man leicht falsch macht:
+ *  - **Eine Auswahl, die auf keinen Knopf passt, gilt als „alle".** Sonst zeigte der Tab eine
+ *    leere Liste ohne einen aktiven Knopf, der erklärt, warum – etwa nachdem der Admin eine Art
+ *    gelöscht hat. Gemessen gegen die Knöpfe, die es gerade gibt, nicht gegen den Monat: Ein Monat
+ *    ohne Gebetsabend soll bei gewähltem „Gebetsabend" sehr wohl leer sein.
+ *  - **Sind alle Knöpfe gewählt, ist das „alle"** (Wunsch Alwin) – die Auswahl wird geleert, statt
+ *    dass jeder Knopf einzeln blau bleibt und „Alle" grau.
  */
-export interface Kalender {
+export const SONSTIGE_ID = 'sonstige';
+
+export interface Knopf {
   id: string;
   name: string;
 }
 
-/** Die Kalender aller geladenen Termine – jeder einmal, nach Namen sortiert. */
-export function kalenderAus(events: AbsenceEvent[]): Kalender[] {
-  const map = new Map<string, string>();
-  for (const e of events)
-    if (e.kalender && !map.has(e.kalender.id)) map.set(e.kalender.id, e.kalender.name);
-  return [...map]
-    .map(([id, name]) => ({ id, name }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+/** Zu welcher Art ein Termin gehört – die ID der ersten passenden Art, sonst „Sonstige". */
+export function artVon(event: AbsenceEvent, arten: TerminArt[]): string {
+  const name = event.name.toLocaleLowerCase('de');
+  const treffer = arten.find((a) => {
+    const w = a.suchwort.trim().toLocaleLowerCase('de');
+    return w !== '' && name.includes(w);
+  });
+  return treffer?.id ?? SONSTIGE_ID;
 }
 
 /**
- * Die wirksame Auswahl: nur IDs, die es unter den geladenen Terminen gibt. Leer heißt „alle" –
- * auch dann, wenn etwas gewählt war, das es nicht mehr gibt (siehe Kopf).
+ * Die Knöpfe: die Arten in der Reihenfolge des Admins, aber nur die, zu denen es Termine gibt –
+ * plus „Sonstige", wenn ein Termin nirgends hineinpasst. Ein Knopf ohne Termine wäre eine Frage
+ * ohne Antwort.
  */
-export function wirksameAuswahl(auswahl: string[], events: AbsenceEvent[]): string[] {
-  const vorhanden = new Set(kalenderAus(events).map((k) => k.id));
-  return auswahl.filter((id) => vorhanden.has(id));
+export function knoepfeAus(arten: TerminArt[], events: AbsenceEvent[]): Knopf[] {
+  const belegt = new Set(events.map((e) => artVon(e, arten)));
+  const knoepfe: Knopf[] = arten
+    .filter((a) => belegt.has(a.id))
+    .map((a) => ({ id: a.id, name: a.name }));
+  if (belegt.has(SONSTIGE_ID)) knoepfe.push({ id: SONSTIGE_ID, name: 'Sonstige' });
+  return knoepfe;
 }
 
-/** Termine, die zur Auswahl passen. Ohne wirksame Auswahl alle; ohne Kalender immer dabei. */
-export function filtereTermine(events: AbsenceEvent[], auswahl: string[]): AbsenceEvent[] {
+/** Die wirksame Auswahl: nur IDs, zu denen es gerade einen Knopf gibt. Leer heißt „alle". */
+export function wirksameAuswahl(auswahl: string[], knoepfe: Knopf[]): string[] {
+  const vorhanden = new Set(knoepfe.map((k) => k.id));
+  const gueltig = auswahl.filter((id) => vorhanden.has(id));
+  // Alles gewählt = nichts gefiltert.
+  return gueltig.length >= knoepfe.length ? [] : gueltig;
+}
+
+/** Termine, die zur Auswahl passen. Ohne wirksame Auswahl alle. */
+export function filtereTermine(
+  events: AbsenceEvent[],
+  auswahl: string[],
+  arten: TerminArt[],
+): AbsenceEvent[] {
   const aktiv = new Set(auswahl);
   if (aktiv.size === 0) return events;
-  return events.filter((e) => e.kalender === null || aktiv.has(e.kalender.id));
+  return events.filter((e) => aktiv.has(artVon(e, arten)));
 }
 
-/** Einen Kalender an- oder abwählen. */
-export function umschalten(auswahl: string[], id: string): string[] {
-  return auswahl.includes(id) ? auswahl.filter((x) => x !== id) : [...auswahl, id];
+/**
+ * Einen Knopf an- oder abwählen. Sind danach **alle** Knöpfe gewählt, springt die Auswahl auf
+ * „alle" (leer) – Alwins Wunsch: „wenn ich alle anklicke, kann es auch automatisch auf alle
+ * springen".
+ */
+export function umschalten(auswahl: string[], id: string, knoepfe: Knopf[]): string[] {
+  const neu = auswahl.includes(id) ? auswahl.filter((x) => x !== id) : [...auswahl, id];
+  return wirksameAuswahl(neu, knoepfe);
 }

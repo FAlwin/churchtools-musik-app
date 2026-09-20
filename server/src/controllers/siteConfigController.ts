@@ -46,6 +46,7 @@ export async function putSiteConfigCtrl(req: Request, res: Response): Promise<vo
       links: parsed.data.links,
       musicianGroupIds: parsed.data.musicianGroupIds,
       noteRoles: parsed.data.noteRoles,
+      terminArten: parsed.data.terminArten,
     }),
   );
 }

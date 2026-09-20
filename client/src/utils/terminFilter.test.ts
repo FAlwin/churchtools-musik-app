@@ -1,69 +1,113 @@
 import { describe, expect, it } from 'vitest';
-import type { AbsenceEvent } from '@shared/types/index';
-import { filtereTermine, kalenderAus, umschalten, wirksameAuswahl } from './terminFilter';
+import type { AbsenceEvent, TerminArt } from '@shared/types/index';
+import {
+  SONSTIGE_ID,
+  artVon,
+  filtereTermine,
+  knoepfeAus,
+  umschalten,
+  wirksameAuswahl,
+} from './terminFilter';
 
 /**
- * Der Kalender-Filter (#400) als reine Regeln. Die wichtigste steht unten: Eine Auswahl, auf die
- * kein geladener Termin passt, gilt als „alle" – sonst stünde eine leere Liste da, ohne dass ein
- * Knopf sagt, warum.
+ * Der Termin-Filter (#400) als reine Regeln – Termin-Arten mit Suchwörtern, „Sonstige" für den Rest.
+ *
+ * Die wichtigsten stehen unten: Eine Auswahl, auf die kein Knopf passt, gilt als „alle" (sonst eine
+ * leere Liste ohne Grund), und **alle Knöpfe gewählt** ist ebenfalls „alle" (Wunsch Alwin).
  */
-const ev = (id: number, kalender: AbsenceEvent['kalender']): AbsenceEvent => ({
+const ev = (id: number, name: string): AbsenceEvent => ({
   id,
-  name: `Termin ${id}`,
+  name,
   date: '2026-10-04',
   startDate: '2026-10-04T10:00:00Z',
-  kalender,
 });
-const GD = { id: '1', name: 'Gottesdienst' };
-const GA = { id: '2', name: 'Gebetsabend' };
+const GD: TerminArt = { id: 'gd', name: 'Gottesdienst', suchwort: 'Gottesdienst' };
+const GA: TerminArt = { id: 'ga', name: 'Gebetsabend', suchwort: 'gebetsabend' };
+const ARTEN = [GD, GA];
 
-describe('kalenderAus', () => {
-  it('nennt jeden Kalender einmal, nach Namen sortiert', () => {
-    expect(kalenderAus([ev(1, GD), ev(2, GA), ev(3, GD)])).toEqual([GA, GD]);
+describe('artVon', () => {
+  it('findet das Suchwort im Namen – Groß-/Kleinschreibung egal', () => {
+    expect(artVon(ev(1, 'Gottesdienst mit Abendmahl'), ARTEN)).toBe('gd');
+    expect(artVon(ev(2, 'GEBETSABEND'), ARTEN)).toBe('ga');
   });
 
-  it('übergeht Termine ohne Kalender', () => {
-    expect(kalenderAus([ev(1, null), ev(2, GD)])).toEqual([GD]);
+  it('die ERSTE passende Art gewinnt – die Reihenfolge des Admins zählt', () => {
+    const jugend: TerminArt = { id: 'j', name: 'Jugend', suchwort: 'Jugend' };
+    expect(artVon(ev(1, 'Jugendgottesdienst'), [GD, jugend])).toBe('gd');
+    expect(artVon(ev(1, 'Jugendgottesdienst'), [jugend, GD])).toBe('j');
   });
 
-  it('filtert auf die ID, nicht den Namen – ein umbenannter Kalender bleibt derselbe', () => {
-    const r = kalenderAus([
-      ev(1, { id: '1', name: 'Gottesdienst' }),
-      ev(2, { id: '1', name: 'GD' }),
-    ]);
-    expect(r).toHaveLength(1);
+  it('ohne Treffer: Sonstige', () => {
+    expect(artVon(ev(1, 'Probe'), ARTEN)).toBe(SONSTIGE_ID);
+  });
+
+  it('ein leeres Suchwort trifft nichts – sonst gehörte JEDER Termin dazu', () => {
+    expect(artVon(ev(1, 'Probe'), [{ id: 'x', name: 'X', suchwort: '  ' }])).toBe(SONSTIGE_ID);
   });
 });
 
-describe('filtereTermine', () => {
-  const alle = [ev(1, GD), ev(2, GA), ev(3, null)];
-
-  it('ohne Auswahl bleibt alles', () => {
-    expect(filtereTermine(alle, [])).toHaveLength(3);
+describe('knoepfeAus', () => {
+  it('zeigt nur Arten, zu denen es Termine gibt – in der Reihenfolge des Admins', () => {
+    const k = knoepfeAus(ARTEN, [ev(1, 'Gebetsabend'), ev(2, 'Gottesdienst')]);
+    expect(k.map((x) => x.name)).toEqual(['Gottesdienst', 'Gebetsabend']);
   });
 
-  it('mit Auswahl nur die passenden – Termine OHNE Kalender bleiben immer', () => {
-    expect(filtereTermine(alle, ['2']).map((e) => e.id)).toEqual([2, 3]);
+  it('hängt „Sonstige" an, wenn ein Termin nirgends hineinpasst', () => {
+    const k = knoepfeAus(ARTEN, [ev(1, 'Gottesdienst'), ev(2, 'Probe')]);
+    expect(k.map((x) => x.id)).toEqual(['gd', SONSTIGE_ID]);
   });
 
-  it('mehrere gleichzeitig', () => {
-    expect(filtereTermine(alle, ['1', '2']).map((e) => e.id)).toEqual([1, 2, 3]);
+  it('ohne Arten gibt es höchstens „Sonstige" – also nichts zu filtern', () => {
+    expect(knoepfeAus([], [ev(1, 'Gottesdienst')]).map((x) => x.id)).toEqual([SONSTIGE_ID]);
   });
 });
 
 describe('wirksameAuswahl', () => {
-  it('lässt eine Wahl fallen, die es unter den geladenen Terminen nicht gibt', () => {
-    expect(wirksameAuswahl(['99'], [ev(1, GD)])).toEqual([]);
+  const knoepfe = [
+    { id: 'gd', name: 'Gottesdienst' },
+    { id: 'ga', name: 'Gebetsabend' },
+  ];
+
+  it('lässt eine Wahl fallen, zu der es keinen Knopf gibt', () => {
+    expect(wirksameAuswahl(['99'], knoepfe)).toEqual([]);
+    expect(wirksameAuswahl(['gd', '99'], knoepfe)).toEqual(['gd']);
   });
 
-  it('behält, was es gibt', () => {
-    expect(wirksameAuswahl(['1', '99'], [ev(1, GD)])).toEqual(['1']);
+  it('ALLE gewählt heißt „alle" – die Auswahl wird leer', () => {
+    expect(wirksameAuswahl(['gd', 'ga'], knoepfe)).toEqual([]);
+  });
+});
+
+describe('filtereTermine', () => {
+  const alle = [ev(1, 'Gottesdienst'), ev(2, 'Gebetsabend'), ev(3, 'Probe')];
+
+  it('ohne Auswahl bleibt alles', () => {
+    expect(filtereTermine(alle, [], ARTEN)).toHaveLength(3);
+  });
+
+  it('mit Auswahl nur die passenden – „Sonstige" ist eine eigene Wahl', () => {
+    expect(filtereTermine(alle, ['ga'], ARTEN).map((e) => e.id)).toEqual([2]);
+    expect(filtereTermine(alle, [SONSTIGE_ID], ARTEN).map((e) => e.id)).toEqual([3]);
+  });
+
+  it('mehrere gleichzeitig', () => {
+    expect(filtereTermine(alle, ['gd', SONSTIGE_ID], ARTEN).map((e) => e.id)).toEqual([1, 3]);
   });
 });
 
 describe('umschalten', () => {
+  const knoepfe = [
+    { id: 'gd', name: 'Gottesdienst' },
+    { id: 'ga', name: 'Gebetsabend' },
+    { id: SONSTIGE_ID, name: 'Sonstige' },
+  ];
+
   it('nimmt auf und wieder heraus', () => {
-    expect(umschalten([], '1')).toEqual(['1']);
-    expect(umschalten(['1', '2'], '1')).toEqual(['2']);
+    expect(umschalten([], 'gd', knoepfe)).toEqual(['gd']);
+    expect(umschalten(['gd', 'ga'], 'gd', knoepfe)).toEqual(['ga']);
+  });
+
+  it('springt auf „alle", sobald der letzte fehlende Knopf gewählt wird', () => {
+    expect(umschalten(['gd', 'ga'], SONSTIGE_ID, knoepfe)).toEqual([]);
   });
 });

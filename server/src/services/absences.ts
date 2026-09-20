@@ -103,19 +103,6 @@ export function gleicherZeitraumAusser(
   );
 }
 
-/**
- * Der Kalender eines Termins für den Filter (#400) – oder `null`, wenn ChurchTools keinen nennt.
- *
- * Die ID ist der `domainIdentifier` (eine Zeichenkette, so liefert ChurchTools sie); auf sie
- * filtert die App, der Titel ist nur die Beschriftung. Ein umbenannter Kalender bleibt damit
- * gewählt. Fehlt der Titel, gibt es keinen Kalender: Ein Knopf ohne Namen wäre nichts wert.
- */
-function kalenderVon(e: CtEvent): AbsenceEvent['kalender'] {
-  const name = e.calendar?.title?.trim();
-  if (!name) return null;
-  return { id: e.calendar?.domainIdentifier ?? name, name };
-}
-
 /** Termine → Schnellauswahl: Tag herausziehen, nach Beginn sortieren. Reine Funktion. */
 export function zuEvents(events: CtEvent[]): AbsenceEvent[] {
   return events
@@ -125,7 +112,6 @@ export function zuEvents(events: CtEvent[]): AbsenceEvent[] {
       name: e.name,
       date: e.startDate.slice(0, 10),
       startDate: e.startDate,
-      kalender: kalenderVon(e),
     }))
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
 }

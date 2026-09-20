@@ -234,7 +234,7 @@ export const VERFUEGBARKEIT_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="verf-filter"]',
     title: 'Nur bestimmte Termine',
-    body: 'Tippe einen Kalender an, um nur dessen Termine zu sehen – etwa nur Gottesdienste. Mehrere gehen gleichzeitig, „Alle" zeigt wieder alles. Die App merkt sich deine Wahl.',
+    body: 'Tippe eine Termin-Art an, um nur deren Termine zu sehen – etwa nur Gottesdienste. Mehrere gehen gleichzeitig; sind alle gewählt, springt es von selbst auf „Alle". Die App merkt sich deine Wahl.',
   },
   {
     selector: '[data-tour="verf-termine"]',
