@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="de" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verfügbar – Runde 5</title>
+<style>
+  /* ── Design-Tokens, aus den ChurchTools-App-Screenshots abgelesen (18./19.09.2026) ──
+     Diese Werte würden styles/_variables.scss ersetzen und gelten dann in der GANZEN App. */
+  :root {
+    --bg: #eef1f6;            /* Seitenhintergrund, leicht blaustichiges Grau */
+    --section: #e7ecf3;       /* Streifen hinter Gruppen-Überschriften („Dienste“) */
+    --surface: #ffffff;       /* Karten und Listen */
+    --surface3: #eef1f6;      /* Sekundärflächen, Chips */
+    --border: #e2e6ee;        /* feiner Rand um Karten und Knöpfe */
+    --hair: #edf0f5;          /* Trennlinie in Listen */
+    --text: #111827;          /* Primärtext, fast schwarz */
+    --text2: #6b7280;         /* Sekundärtext */
+    --text3: #9ca3af;         /* inaktive Tabs, Platzhalter */
+    --blue: #2563eb;          /* Primär: Plus-Knopf, „Alle“, aktiver Tab, Links */
+    --blue-tile: #dbe7fb;     /* Datumskachel */
+    --blue-tile-text: #111827;
+    --blue-soft: rgba(37,99,235,0.10);
+    --red: #d64545; --red-tile: #fbe0e0; --red-tile-text: #8a1f1f;
+    --gray-tile: #e6e9ef; --gray-tile-text: #4b5563;
+    --green: #1f8a5b;
+    --r-card: 12px; --r-tile: 10px; --r-btn: 8px;
+    --shadow: 0 1px 2px rgba(17,24,39,0.04);
+    --page: #dfe3ea; --ptext: #111827; --ptext2: #6b7280; --frame: #111827; --pcard: #fff;
+    --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000; --section: #1c1c1e; --surface: #1c1c1e; --surface3: #2c2c2e; --border: #3a3a3c; --hair: #2c2c2e;
+      --text: #f2f2f7; --text2: #a1a1aa; --text3: #6b7280;
+      --blue: #4f8cff; --blue-tile: #1e2f4d; --blue-tile-text: #dbe6ff; --blue-soft: rgba(79,140,255,0.16);
+      --red: #ff6b6b; --red-tile: #4a1f22; --red-tile-text: #ffd5d5; --gray-tile: #2c2c2e; --gray-tile-text: #c7c7cc;
+      --page: #0b0b0d; --ptext: #f2f2f7; --ptext2: #a1a1aa; --frame: #3a3a3c; --pcard: #1c1c1e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ptext); font-family: var(--ui); font-size: 14px; line-height: 1.45; }
+  button { font-family: inherit; cursor: pointer; }
+  .kopf { max-width: 1300px; margin: 0 auto; padding: 30px 16px 6px; }
+  .kopf h1 { font-size: 23px; margin: 0 0 6px; font-weight: 700; letter-spacing: -0.2px; }
+  .kopf p { margin: 0 0 6px; color: var(--ptext2); max-width: 78ch; }
+  .block { max-width: 1300px; margin: 0 auto; padding: 24px 16px 8px; }
+  .block > h2 { font-size: 17px; margin: 0 0 3px; font-weight: 700; }
+  .block > .frage { margin: 0 0 16px; color: var(--ptext2); max-width: 78ch; }
+  .karten { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; align-items: start; }
+  .kachel h3 { font-size: 14.5px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+  .kachel h3 .tag { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #fff; background: var(--blue); border-radius: 999px; padding: 2px 8px; }
+  .aend { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .aend div { background: var(--pcard); border-radius: var(--r-card); padding: 12px 14px; font-size: 13px; color: var(--ptext2); border: 1px solid var(--border); }
+  .aend div b { color: var(--ptext); display: block; margin-bottom: 3px; }
+  .aend div i { color: var(--text3); font-style: normal; }
+  .fazit { max-width: 1300px; margin: 0 auto; padding: 8px 16px 40px; color: var(--ptext2); }
+  .fazit b { color: var(--ptext); }
+
+  /* ── Handy ── */
+  .phone { width: 100%; max-width: 372px; margin: 0 auto; background: var(--bg); border-radius: 36px; border: 7px solid var(--frame); overflow: hidden; display: flex; flex-direction: column; height: 660px; box-shadow: 0 14px 40px rgba(0,0,0,0.16); position: relative; }
+  .body { flex: 1; overflow: hidden auto; padding: 0 0 80px; color: var(--text); position: relative; }
+  .tabbar { flex-shrink: 0; background: var(--surface); border-top: 1px solid var(--hair); display: flex; padding: 8px 4px 10px; }
+  .tabbar span { flex: 1; text-align: center; font-size: 10.5px; color: var(--text3); font-weight: 500; }
+  .tabbar span i { display: block; font-style: normal; font-size: 17px; line-height: 21px; margin-bottom: 1px; }
+  .tabbar span.on { color: var(--blue); font-weight: 600; }
+
+  /* Kopf: großer Titel + Monatswähler mit Chevron – wie im ChurchTools-Kalender */
+  .kopfz { background: var(--surface); padding: 12px 16px 10px; border-bottom: 1px solid var(--hair); flex-shrink: 0; }
+  .kopfz .titel { font-size: 25px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); margin-bottom: 8px; }
+  .seg { display: flex; background: var(--surface3); border-radius: var(--r-btn); padding: 3px; }
+  .seg button { flex: 1; border: none; background: transparent; color: var(--text2); border-radius: 6px; padding: 7px 6px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.10); }
+  .seg .n { font-size: 11px; font-weight: 700; background: var(--red); color: #fff; border-radius: 999px; padding: 0 6px; line-height: 17px; }
+
+  /* Monatsleiste: Pills + Knopf, der das Monatsraster aufklappt (oben, kein Scrollen) */
+  .mleiste { display: flex; align-items: center; gap: 8px; background: var(--surface); border-bottom: 1px solid var(--hair); padding: 8px 12px 9px; position: sticky; top: 0; z-index: 2; }
+  .mpills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1; }
+  .mpills::-webkit-scrollbar { display: none; }
+  .mpills button { flex: 0 0 auto; border: 1px solid var(--border); background: var(--surface); color: var(--text2); border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 600; }
+  .mpills button.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .mpills button.alt { color: var(--text3); }
+  .heute { flex: 0 0 auto; border: 1px solid var(--blue); background: var(--surface); color: var(--blue); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
+  .heute:disabled { opacity: .35; border-color: var(--border); color: var(--text2); }
+  /* Scroll-Hinweis: rechte Kante läuft aus, die letzte Pill ist angeschnitten */
+  .mwrap { position: relative; flex: 1; min-width: 0; }
+  .mwrap::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 34px; background: linear-gradient(to right, transparent, var(--surface) 80%); pointer-events: none; }
+  .mpills { scroll-behavior: smooth; padding-right: 28px; }
+  /* Variante 1: Status-Pill (grün = dabei, rot = abwesend) */
+  .pill.ok { color: var(--green); border-color: rgba(31,138,91,.35); background: rgba(31,138,91,.06); }
+  .pill.on.ct { background: var(--gray-tile); border-color: transparent; color: var(--gray-tile-text); }
+  /* Variante 2: Abhakfeld wie in der alten App */
+  .chk { display: flex; align-items: center; gap: 7px; border: none; background: transparent; color: var(--text2); font-size: 12px; font-weight: 600; padding: 4px 0 4px 6px; }
+  .chk .box { width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 7px; display: grid; place-items: center; color: #fff; font-size: 14px; background: var(--surface); }
+  .chk.on { color: var(--red); }
+  .chk.on .box { background: var(--red); border-color: var(--red); }
+  .chk.on.ct .box { background: var(--gray-tile-text); border-color: var(--gray-tile-text); }
+  .chk:disabled { opacity: .5; }
+  /* Variante 3: Schalter */
+  .sw { display: flex; align-items: center; gap: 8px; border: none; background: transparent; color: var(--text2); font-size: 12px; font-weight: 600; padding: 4px 0; }
+  .sw .track { width: 44px; height: 26px; border-radius: 999px; background: #d1d5db; position: relative; transition: background .15s; }
+  .sw .track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: left .15s; }
+  .sw.on { color: var(--red); }
+  .sw.on .track { background: var(--red); }
+  .sw.on .track::after { left: 21px; }
+  .sw.on.ct .track { background: var(--gray-tile-text); }
+  .sw:disabled { opacity: .5; }
+  .mauf { flex: 0 0 auto; border: 1px solid var(--border); background: var(--surface); color: var(--blue); border-radius: 999px; width: 34px; height: 30px; font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+  .mauf.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* Monatsraster (aufgeklappt) */
+  .mraster { background: var(--surface); border-bottom: 1px solid var(--hair); padding: 4px 12px 12px; }
+  .jahr { display: flex; align-items: center; justify-content: space-between; padding: 6px 2px 8px; }
+  .jahr b { font-size: 15px; font-weight: 700; }
+  .jahr button { border: none; background: transparent; color: var(--blue); font-size: 19px; font-weight: 700; width: 34px; height: 30px; border-radius: var(--r-btn); }
+  .jahr button:disabled { opacity: .3; }
+  .mgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .mgrid button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: var(--r-btn); padding: 9px 0; font-size: 12.5px; font-weight: 600; }
+  .mgrid button.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .mgrid button.leer { color: var(--text3); background: var(--surface3); border-color: transparent; font-weight: 500; }
+  .mgrid button .pkt { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--red); margin: 3px auto 0; }
+  .mgrid button.on .pkt { background: #fff; }
+  .mhint { font-size: 11.5px; color: var(--text3); padding: 9px 2px 0; }
+
+  /* Gruppen-Überschrift auf grauem Streifen – wie „Dienste“ in der App */
+  .sec { background: var(--section); padding: 9px 16px 8px; font-size: 13px; font-weight: 600; color: var(--text2); display: flex; justify-content: space-between; align-items: center; }
+  .sec b { color: var(--text); font-weight: 600; font-size: 15px; }
+
+  /* Listen: volle Breite, weiß, Haarlinien – wie die Dienste-Liste */
+  .liste { background: var(--surface); }
+  .row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--hair); background: var(--surface); width: 100%; text-align: left; border-left: 0; border-right: 0; border-bottom: 0; color: var(--text); font: inherit; }
+  .liste .row:first-child { border-top: 0; }
+  .row .t { flex: 1; min-width: 0; }
+  .ti { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .su { color: var(--text2); font-size: 13px; }
+  .etikett { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--green); background: rgba(31,138,91,.12); border-radius: 999px; padding: 1px 7px; }
+  .zusatz { font-size: 12px; color: var(--text3); font-weight: 500; }
+  .chev { color: var(--text3); font-size: 18px; }
+  .leer { color: var(--text3); font-size: 13.5px; padding: 14px 16px; background: var(--surface); text-align: center; }
+  .leerbox { text-align: center; color: var(--text2); padding: 28px 20px; font-size: 13.5px; background: var(--surface); }
+  .leerbox b { display: block; color: var(--text); margin-bottom: 4px; }
+
+  /* Datumskachel – Tag groß, Monat, Uhrzeit */
+  .datum { width: 56px; flex-shrink: 0; text-align: center; background: var(--blue-tile); color: var(--blue-tile-text); border-radius: var(--r-tile); padding: 7px 0 6px; line-height: 1.15; }
+  .datum b { display: block; font-size: 17px; font-weight: 700; }
+  .datum small { display: block; font-size: 11.5px; font-weight: 500; }
+  .datum em { display: block; font-style: normal; font-size: 10.5px; color: var(--text2); margin-top: 1px; }
+  .datum.rot { background: var(--red-tile); color: var(--red-tile-text); }
+  .datum.rot em { color: var(--red-tile-text); opacity: .75; }
+  .datum.grau { background: var(--gray-tile); color: var(--gray-tile-text); }
+  .datum.grau em { color: var(--gray-tile-text); opacity: .75; }
+  .vergangen { opacity: .55; }
+
+  /* Knopf in der Zeile – wie der „…“-Knopf der App */
+  .pill { border: 1px solid var(--border); border-radius: var(--r-btn); padding: 8px 11px; font-size: 12.5px; font-weight: 600; background: var(--surface); color: var(--blue); white-space: nowrap; }
+  .pill.on { background: var(--red); border-color: var(--red); color: #fff; }
+  .pill.teil { background: var(--red-tile); border-color: transparent; color: var(--red-tile-text); }
+  .pill:disabled { color: var(--text3); background: var(--surface3); border-color: transparent; }
+
+  /* Runder Plus-Knopf */
+  .fab { position: absolute; right: 16px; bottom: 74px; width: 54px; height: 54px; border: none; border-radius: 50%; background: var(--blue); color: #fff; font-size: 31px; font-weight: 300; line-height: 1; display: grid; place-items: center; box-shadow: 0 6px 16px rgba(37,99,235,.38); z-index: 3; padding: 0 0 3px; }
+
+  /* Fenster */
+  .sheet { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: flex-end; z-index: 5; }
+  .sheet.on { display: flex; }
+  .sheetcard { background: var(--surface); width: 100%; border-radius: 18px 18px 0 0; padding: 16px 16px 18px; color: var(--text); }
+  .sheetcard h4 { margin: 0 0 12px; font-size: 17px; font-weight: 700; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chips button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; }
+  .chips button.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .felder { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .feld label { display: block; font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 4px; }
+  .feld input, .feld select { width: 100%; border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: var(--r-btn); padding: 9px; font: inherit; font-size: 13px; }
+  .sbtns { display: flex; gap: 8px; margin-top: 12px; }
+  .sbtns button { flex: 1; border: none; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 600; }
+  .sbtns .prim { background: var(--blue); color: #fff; }
+  .sbtns .sek { background: var(--surface3); color: var(--text); }
+  .sbtns .del { background: var(--red-tile); color: var(--red-tile-text); }
+  .hinweis { font-size: 12px; color: var(--text3); margin: 8px 0 0; }
+  .toast { position: absolute; left: 12px; right: 12px; bottom: 74px; background: var(--text); color: var(--bg); border-radius: 10px; padding: 9px 12px; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(6px); transition: all .2s; pointer-events: none; z-index: 6; }
+  .toast.on { opacity: 1; transform: none; }
+</style>
+</head>
+<body>
+
+<div class="kopf">
+  <h1>Tab „Verfügbar“ – Runde 5</h1>
+  <p>Deine Punkte vom 19.09. eingearbeitet: <b>Heute</b>-Knopf, Monatsleiste erkennbar scrollbar, überall nur noch <b>„Abwesend“</b>,
+     der Tab heißt <b>„Abwesenheiten“</b>. Für das Bedienelement in der Zeile stehen unten <b>drei Varianten</b> nebeneinander –
+     alle drei Handys teilen dieselben Daten, ein Tipp links ist sofort rechts zu sehen.</p>
+</div>
+
+<div class="block">
+  <h2>Was sich geändert hat</h2>
+  <div class="aend">
+    <div><b>Heute-Knopf</b>Links in der Monatsleiste. Springt zum laufenden Monat und schiebt die Leiste dorthin. Ist man schon dort, ist er ausgegraut.</div>
+    <div><b>Leiste erkennbar scrollbar</b>Die rechte Kante läuft weich aus und die letzte Pill ist angeschnitten – man sieht, dass es weitergeht. Die Leiste zeigt jetzt fünf Monate voraus.</div>
+    <div><b>Nur noch „Abwesend“</b>Kein „Zeitraum“ mehr. Liegt der Termin in einem längeren Zeitraum, steht das in der Unterzeile („Urlaub · Fr 09.10. – Mi 14.10.“); ein Tipp öffnet dann den ganzen Zeitraum.</div>
+    <div><b>Tab „Abwesenheiten“</b>Das „Meine“ ist weg – es sind ohnehin nur die eigenen.</div>
+    <div><b>Drei Bedienelemente zur Wahl</b>Unten: <i>1</i> Status-Pill (grünes Häkchen „Dabei“ ↔ rot „Abwesend“), <i>2</i> Abhakfeld wie in der alten App (Haken = abwesend), <i>3</i> Schalter. Alle drei tun dasselbe.</div>
+    <div><b>Meine Einschätzung</b>Das <b>Abhakfeld</b> kennt das Team schon aus der alten App, und ein leeres Kästchen sagt klar „hier ist nichts eingetragen“. Die Status-Pill wirkt am freundlichsten (grün = alles gut), verlangt aber, dass man zwei Zustände liest. Der Schalter passt gut zu iOS, ist hier aber der größte Fremdkörper neben Datumskachel und Text.</div>
+  </div>
+</div>
+
+<div class="block">
+  <h2>Anfassen – drei Varianten für die Zeile</h2>
+  <p class="frage">Ein Tipp auf das Element rechts trägt sofort ein, ein zweiter nimmt zurück. Heute-Knopf und ⌄ oben, Plus für Zeiträume,
+     Schalter „Termine | Abwesenheiten“ in jedem Handy. Heute ist Samstag, der 19.09.2026.</p>
+  <div class="karten">
+    <div class="kachel"><h3><span class="tag">1</span> Status-Pill: ✓ Dabei ↔ Abwesend</h3><div class="phone" id="p1"></div></div>
+    <div class="kachel"><h3><span class="tag">2</span> Abhakfeld: Haken = abwesend</h3><div class="phone" id="p2"></div></div>
+    <div class="kachel"><h3><span class="tag">3</span> Schalter</h3><div class="phone" id="p3"></div></div>
+  </div>
+</div>
+
+<div class="fazit">
+  <p><b>Offen:</b> Welche der drei Varianten? Dazu die Fragen aus Runde 4: Raster beim Öffnen zu oder auf, Reichweite der Historie,
+     vergangene Einträge löschbar oder nur lesbar.</p>
+</div>
+
+<script>
+const HEUTE = '2026-09-19';
+const MON = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+const MONL = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const WTL = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+const iso = d => d.toISOString().slice(0,10);
+const dat = s => new Date(s + 'T00:00:00Z');
+const plus = (s,n) => { const d = dat(s); d.setUTCDate(d.getUTCDate()+n); return iso(d); };
+const wt = s => WTL[dat(s).getUTCDay()].slice(0,2);
+const tagNr = s => String(dat(s).getUTCDate());
+const kurz = s => `${wt(s)}, ${String(dat(s).getUTCDate()).padStart(2,'0')}.${String(dat(s).getUTCMonth()+1).padStart(2,'0')}.`;
+const monKey = s => s.slice(0,7);
+const monLabel = k => `${MONL[+k.slice(5)-1]} ${k.slice(0,4)}`;
+const monPlus = (k,n) => { const d = dat(k+'-01'); d.setUTCMonth(d.getUTCMonth()+n); return iso(d).slice(0,7); };
+const montag = s => { const d = dat(s); const w = (d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-w); return iso(d); };
+
+/* Termine der Gruppe: Sonntage ein Jahr zurück und zwei Jahre voraus, erster Sonntag = Abendmahl, dazu Sondertermine. */
+const TERMINE = [];
+(function(){ let s = '2025-10-05'; for (let i=0;i<120;i++){ TERMINE.push({d:s, t:'Gottesdienst', zeit:'10:00', et: dat(s).getUTCDate()<=7 ? 'Abendmahl' : ''}); s = plus(s,7);} })();
+TERMINE.push({d:'2026-10-10', t:'Lobpreisabend', zeit:'19:00', et:''}, {d:'2026-12-24', t:'Christvesper', zeit:'17:00', et:''},
+             {d:'2026-05-16', t:'Lobpreisabend', zeit:'19:00', et:''}, {d:'2027-02-13', t:'Lobpreisabend', zeit:'19:00', et:''});
+TERMINE.sort((a,b)=>a.d.localeCompare(b.d));
+const terminAm = d => TERMINE.filter(t=>t.d===d);
+const naechsterTermin = () => (TERMINE.find(t=>t.d>=HEUTE)||TERMINE[0]).d;
+
+let ABW = [
+  { id:1, von:'2026-10-09', bis:'2026-10-14', grund:'Urlaub', quelle:'ct', kommentar:'Herbstferien' },
+  { id:2, von:'2026-11-08', bis:'2026-11-08', grund:'Abwesend', quelle:'app', kommentar:'' },
+  { id:3, von:'2026-07-20', bis:'2026-08-03', grund:'Urlaub', quelle:'app', kommentar:'Sommerurlaub' },
+  { id:4, von:'2026-05-17', bis:'2026-05-17', grund:'Krank', quelle:'ct', kommentar:'' },
+  { id:5, von:'2026-02-08', bis:'2026-02-08', grund:'Abwesend', quelle:'app', kommentar:'' },
+];
+let nextId = 6;
+const deckt = (a,d) => a.von<=d && d<=a.bis;
+const abwAm = d => ABW.find(a=>deckt(a,d));
+const zeitraum = a => a.von===a.bis ? kurz(a.von) : `${kurz(a.von)} – ${kurz(a.bis)}`;
+const trifft = a => TERMINE.filter(t=>deckt(a,t.d));
+const abwImMonat = k => ABW.some(a => monKey(a.von)<=k && k<=monKey(a.bis));
+
+const P = {};
+function toast(id, text){ const t=document.querySelector('#'+id+' .toast'); t.textContent=text; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),1800); }
+
+function schalte(id, d){
+  if (d < HEUTE) { toast(id, 'Vergangene Termine lassen sich nicht ändern.'); return; }
+  const a = abwAm(d);
+  if (!a) { ABW.push({id:nextId++, von:d, bis:d, grund:'Abwesend', quelle:'app', kommentar:''}); toast(id, `${kurz(d)}: als abwesend eingetragen`); }
+  else if (a.von===a.bis) { ABW = ABW.filter(x=>x!==a); toast(id, `${kurz(d)}: zurückgenommen`); }
+  else { sheetAendern(id, a); return; }
+  renderAll();
+}
+
+function phone(id, seite, variante){
+  P[id] = { seite, variante, monat: monKey(HEUTE), jahr: +HEUTE.slice(0,4), raster: false, frueher: false };
+  document.getElementById(id).innerHTML = `<div class="kopfz"></div><div class="body"></div>
+    <button class="fab" aria-label="Eintragen" onclick="sheetNeu('${id}', naechsterTermin())">+</button>
+    <div class="tabbar"><span><i>▤</i>Termine</span><span><i>♫</i>Lieder</span><span class="on"><i>◔</i>Verfügbar</span></div>
+    <div class="sheet"></div><div class="toast"></div>`;
+}
+
+/* Kopf: Titel + Seiten-Schalter (immer sichtbar). */
+function renderKopf(id){
+  const st = P[id]; const anstehend = ABW.filter(a=>a.bis>=HEUTE).length;
+  document.querySelector('#'+id+' .kopfz').innerHTML = `<div class="titel">Verfügbar</div>
+    <div class="seg"><button class="${st.seite==='t'?'on':''}" onclick="P['${id}'].seite='t';render('${id}')">Termine</button>
+    <button class="${st.seite==='a'?'on':''}" onclick="P['${id}'].seite='a';render('${id}')">Abwesenheiten ${anstehend?`<span class="n">${anstehend}</span>`:''}</button></div>`;
+}
+
+/* Monatsleiste: fünf Pills (zwei zurück) + Aufklapp-Knopf; darunter optional das Raster. */
+function monatsLeiste(id){
+  const st = P[id];
+  const pills = [];
+  for (let n=-2; n<=5; n++) pills.push(monPlus(monKey(HEUTE), n));
+  if (!pills.includes(st.monat)) pills.push(st.monat);
+  pills.sort();
+  const heute = monKey(HEUTE);
+  let h = `<div class="mleiste"><button class="heute" ${st.monat===heute?'disabled':''} onclick="P['${id}'].monat='${heute}';P['${id}'].jahr=${+heute.slice(0,4)};P['${id}'].raster=false;render('${id}')">Heute</button>
+    <div class="mwrap"><div class="mpills">${pills.map(k=>`<button data-k="${k}" class="${k===st.monat?'on':''} ${k<heute?'alt':''}" onclick="P['${id}'].monat='${k}';P['${id}'].jahr=${+k.slice(0,4)};render('${id}')">${MON[+k.slice(5)-1]} ${k.slice(2,4)}</button>`).join('')}</div></div>
+    <button class="mauf ${st.raster?'on':''}" aria-label="Monate zeigen" onclick="P['${id}'].raster=!P['${id}'].raster;render('${id}')">${st.raster?'⌃':'⌄'}</button></div>`;
+  if (st.raster) {
+    const j = st.jahr;
+    h += `<div class="mraster"><div class="jahr"><button onclick="P['${id}'].jahr--;render('${id}')">‹</button><b>${j}</b><button onclick="P['${id}'].jahr++;render('${id}')">›</button></div>
+      <div class="mgrid">${MON.map((m,i)=>{ const k = `${j}-${String(i+1).padStart(2,'0')}`;
+        const hatTermin = TERMINE.some(t=>monKey(t.d)===k);
+        return `<button class="${k===st.monat?'on':''} ${hatTermin?'':'leer'}" onclick="P['${id}'].monat='${k}';P['${id}'].raster=false;render('${id}')">${m}${abwImMonat(k)?'<span class="pkt"></span>':''}</button>`; }).join('')}</div>
+      <div class="mhint">Roter Punkt = in diesem Monat ist etwas eingetragen. Graue Monate haben keine Termine.</div></div>`;
+  }
+  return h;
+}
+
+function render(id){
+  const st = P[id]; renderKopf(id);
+  const body = document.querySelector('#'+id+' .body');
+  let h = '';
+  if (st.seite==='t') {
+    h += monatsLeiste(id);
+    const im = TERMINE.filter(t=>monKey(t.d)===st.monat);
+    const vergangen = st.monat < monKey(HEUTE);
+    h += `<div class="sec"><b>${monLabel(st.monat)}</b><span>${im.length} ${im.length===1?'Termin':'Termine'}${vergangen?' · vergangen':''}</span></div>`;
+    h += `<div class="liste">`;
+    h += im.length ? im.map(t => { const a = abwAm(t.d); const teil = a && a.von!==a.bis; const alt = t.d < HEUTE;
+      return `<div class="row ${alt?'vergangen':''}"><div class="datum ${a?(a.quelle==='ct'?'grau':'rot'):''}"><b>${tagNr(t.d)}</b><small>${MON[dat(t.d).getUTCMonth()]}.</small><em>${t.zeit}</em></div>
+        <div class="t"><div class="ti">${t.t}${t.et?`<span class="etikett">${t.et}</span>`:''}</div><div class="su">${WTL[dat(t.d).getUTCDay()]}${a?` · ${a.grund}${teil?` · ${zeitraum(a)}`:''}`:''}</div></div>
+        ${steuer(id, t, a, alt)}</div>`; }).join('')
+      : `<div class="leer">Kein Termin in diesem Monat.</div>`;
+    h += `</div>`;
+  } else {
+    const anstehend = ABW.filter(a=>a.bis>=HEUTE).sort((x,y)=>x.von.localeCompare(y.von));
+    const frueher  = ABW.filter(a=>a.bis< HEUTE).sort((x,y)=>y.von.localeCompare(x.von));
+    h += `<div class="mleiste"><div class="mpills">
+      <button class="${!st.frueher?'on':''}" onclick="P['${id}'].frueher=false;render('${id}')">Anstehend (${anstehend.length})</button>
+      <button class="${st.frueher?'on':''}" onclick="P['${id}'].frueher=true;render('${id}')">Früher (${frueher.length})</button></div></div>`;
+    const liste = st.frueher ? frueher : anstehend;
+    if (!liste.length) h += `<div class="leerbox"><b>${st.frueher?'Nichts in der Vergangenheit.':'Noch nichts eingetragen.'}</b>${st.frueher?'Was du einträgst, bleibt hier stehen.':'Bei einem Termin auf „Abwesend“ – oder über das Plus für einen ganzen Zeitraum.'}</div>`;
+    else {
+      const monate = [...new Set(liste.map(a=>monKey(a.von)))];
+      for (const k of monate) {
+        h += `<div class="sec"><b>${monLabel(k)}</b></div><div class="liste">`;
+        h += liste.filter(a=>monKey(a.von)===k).map(a => { const tr = trifft(a);
+          return `<button class="row ${st.frueher?'vergangen':''}" onclick="sheetAendern('${id}', ABW.find(x=>x.id===${a.id}))"><div class="datum ${a.quelle==='ct'?'grau':'rot'}"><b>${tagNr(a.von)}</b><small>${MON[dat(a.von).getUTCMonth()]}.</small><em>${wt(a.von)}</em></div>
+            <div class="t"><div class="ti">${a.grund}${a.von!==a.bis?`<span class="zusatz">${zeitraum(a)}</span>`:''}</div>
+            <div class="su">${tr.length ? (st.frueher?'traf ':'trifft ') + tr.map(t=>kurz(t.d)).join(', ') : (st.frueher?'traf keinen Termin':'trifft keinen Termin')}${a.kommentar?` · ${a.kommentar}`:''}${a.quelle==='ct'?' · in ChurchTools eingetragen':''}</div></div><span class="chev">›</span></button>`; }).join('');
+        h += `</div>`;
+      }
+    }
+  }
+  body.innerHTML = h;
+  const on = body.querySelector('.mpills button.on');
+  if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
+}
+
+/* Das Bedienelement rechts in der Terminzeile – je Variante, gleiches Verhalten. */
+function steuer(id, t, a, alt){
+  const v = P[id].variante; const ct = a && a.quelle==='ct' ? 'ct' : '';
+  const on = a ? 'on' : ''; const dis = alt ? 'disabled' : '';
+  const klick = `onclick="schalte('${id}','${t.d}')"`;
+  if (v==='pill') return `<button class="pill ${a?'on':'ok'} ${ct}" ${dis} ${klick}>${a?'Abwesend':(alt?'—':'✓ Dabei')}</button>`;
+  if (v==='check') return `<button class="chk ${on} ${ct}" ${dis} ${klick}><span class="box">${a?'✓':''}</span>Abwesend</button>`;
+  return `<button class="sw ${on} ${ct}" ${dis} ${klick}>Abwesend<span class="track"></span></button>`;
+}
+
+/* ---------- Fenster ---------- */
+const SCHNELL = [['tag','Nur dieser Tag'],['we','Wochenende'],['w1','1 Woche'],['w2','2 Wochen']];
+function schnell(idw, tag){ if(idw==='tag') return [tag,tag]; if(idw==='w1') return [tag,plus(tag,6)]; if(idw==='w2') return [tag,plus(tag,13)];
+  const sa = plus(montag(tag),5); const s = sa>=tag?sa:plus(sa,7); return [s, plus(s,1)]; }
+function sheetHtml(id, art, a){
+  const alt = art==='aendern' && a.bis < HEUTE;
+  return `<div class="sheetcard"><h4>${art==='neu'?'Abwesenheit eintragen':(alt?'Vergangene Abwesenheit':'Abwesenheit ändern')}</h4>
+    ${art==='neu'?`<div class="chips">${SCHNELL.map(([k,l])=>`<button class="${k==='tag'?'on':''}" onclick="sheetSchnell('${id}','${k}')">${l}</button>`).join('')}</div>`:''}
+    <div class="felder"><div class="feld"><label>Von</label><input type="date" id="${id}-von" value="${a.von}"></div><div class="feld"><label>Bis</label><input type="date" id="${id}-bis" value="${a.bis}"></div>
+    <div class="feld"><label>Grund</label><select id="${id}-grund">${['Abwesend','Urlaub','Krank'].map(g=>`<option ${g===a.grund?'selected':''}>${g}</option>`).join('')}</select></div>
+    <div class="feld"><label>Kommentar (optional)</label><input id="${id}-kom" value="${a.kommentar||''}" placeholder="z. B. Familienfeier"></div></div>
+    ${a.quelle==='ct'?`<div class="hinweis">Dieser Eintrag wurde direkt in ChurchTools gemacht.</div>`:''}
+    ${alt?`<div class="hinweis">Liegt in der Vergangenheit – Ändern und Löschen sind hier abgeschaltet.</div>`:''}
+    <div class="sbtns"><button class="sek" onclick="sheetZu('${id}')">${alt?'Schließen':'Abbrechen'}</button>${(art==='aendern'&&!alt)?`<button class="del" onclick="sheetLoeschen('${id}',${a.id})">Löschen</button>`:''}${alt?'':`<button class="prim" onclick="sheetSpeichern('${id}',${a.id||0})">Speichern</button>`}</div></div>`;
+}
+let sheetTag = {};
+const sheetEl = id => document.querySelector('#'+id+' .sheet');
+function sheetNeu(id, tag){ sheetTag[id]=tag; const el=sheetEl(id); el.innerHTML = sheetHtml(id,'neu',{von:tag,bis:tag,grund:'Abwesend',kommentar:''}); el.classList.add('on'); }
+function sheetAendern(id, a){ const el=sheetEl(id); el.innerHTML = sheetHtml(id,'aendern',a); el.classList.add('on'); }
+function sheetSchnell(id, k){ const [v,b]=schnell(k, sheetTag[id]); document.getElementById(id+'-von').value=v; document.getElementById(id+'-bis').value=b;
+  document.querySelectorAll('#'+id+' .chips button').forEach(x=>x.classList.toggle('on', x.textContent===Object.fromEntries(SCHNELL)[k])); }
+function sheetZu(id){ sheetEl(id).classList.remove('on'); }
+function sheetSpeichern(id, aid){ const von=document.getElementById(id+'-von').value, bis=document.getElementById(id+'-bis').value, grund=document.getElementById(id+'-grund').value, kom=document.getElementById(id+'-kom').value;
+  if(!von||!bis||bis<von){ toast(id,'Bis liegt vor Von.'); return; }
+  if(aid){ const a=ABW.find(x=>x.id===aid); Object.assign(a,{von,bis,grund,kommentar:kom}); toast(id,'Geändert'); } else { ABW.push({id:nextId++,von,bis,grund,quelle:'app',kommentar:kom}); toast(id,'Eingetragen'); }
+  sheetZu(id); renderAll(); }
+function sheetLoeschen(id, aid){ ABW = ABW.filter(x=>x.id!==aid); sheetZu(id); toast(id,'Gelöscht'); renderAll(); }
+
+function renderAll(){ render('p1'); render('p2'); render('p3'); }
+phone('p1','t','pill'); phone('p2','t','check'); phone('p3','t','switch'); renderAll();
+</script>
+</body>
+</html>

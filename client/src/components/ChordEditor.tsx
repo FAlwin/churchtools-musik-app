@@ -5,6 +5,7 @@ import { Icon } from './icons';
 import { Spinner } from './Spinner';
 import { useOverlayKeyboardInset } from '../hooks/useOverlayKeyboardInset';
 import styles from './ChordEditor.module.scss';
+import { shiftKey } from '../utils/transpose';
 
 interface ChordEditorProps {
   songTitle: string;
@@ -22,6 +23,13 @@ interface ChordEditorProps {
    * Ein Original hat keinen Versionsnamen, das Feld wäre eine Frage ohne Antwort.
    */
   mitVersionsname?: boolean;
+  /**
+   * Die Tonart, in der der Text im Editor steht (#398) – wird über dem Text angesagt. Mit `kapo`
+   * zusätzlich die gegriffene Tonart, damit niemand rätselt, warum das Blatt andere Akkorde zeigt.
+   * Fehlt `tonart`, gibt es keine Zeile (Original-Notenblatt aus dem Stammdaten-Blatt).
+   */
+  tonart?: string;
+  kapo?: number;
 }
 
 // Grundtöne wie im ChurchTools-SongSelect-Editor (mit #/b).
@@ -74,6 +82,8 @@ export function ChordEditor({
   onDelete,
   onClose,
   mitVersionsname = true,
+  tonart,
+  kapo = 0,
 }: ChordEditorProps) {
   const [text, setText] = useState(initialText);
   const [name, setName] = useState(initialName);
@@ -183,6 +193,20 @@ export function ChordEditor({
           {saving ? <Spinner /> : 'Speichern'}
         </button>
       </div>
+
+      {/* Die Tonart, in der der Text steht – dieselbe wie im Kopf des Blatts (#398). Was hier
+          gespeichert wird, steht in genau dieser Tonart; die Vorschau rechts beginnt bei ±0. */}
+      {tonart && (
+        <div className={styles.tonartZeile}>
+          Tonart <strong>{tonart}</strong>
+          {kapo > 0 && (
+            <>
+              {' '}
+              · mit Kapo {kapo} gegriffen als <strong>{shiftKey(tonart, -kapo)}</strong>
+            </>
+          )}
+        </div>
+      )}
 
       {error && <div className={styles.error}>{error}</div>}
 
