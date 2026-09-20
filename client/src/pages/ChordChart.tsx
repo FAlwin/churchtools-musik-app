@@ -381,6 +381,7 @@ export function ChordChart({
     isOriginal,
     hasVersions,
     displayedChordpro,
+    notierteTonart,
     sections,
     editorTemplate,
     activeDoc,
@@ -546,8 +547,11 @@ export function ChordChart({
     currentVersionName: currentVersion.name,
     displayedChordpro,
     editorTemplate,
+    notierteTonart,
+    curKey,
     onReload,
     selectVersion,
+    uebernimmTonart: (id, key) => updateSetting(id, { key }),
   });
   // Tastatur-Navigation aussetzen, solange Editor oder Zeichenmodus offen sind.
   navBlockedRef.current = showEditor || drawMode;
@@ -759,6 +763,8 @@ export function ChordChart({
             onSave={handleEditorSave}
             onDelete={editor.mode === 'edit' ? () => setConfirmDelEdited(true) : undefined}
             onClose={() => setShowEditor(false)}
+            tonart={curKey}
+            kapo={set.capo}
           />
         )}
 

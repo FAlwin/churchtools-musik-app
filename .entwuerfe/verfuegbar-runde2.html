@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verfügbar – Runde 2</title>
+<style>
+  :root {
+    --bg: #f2f3f5; --surface: #ffffff; --surface3: #ebedf0; --hair: #e3e6ea; --border: #dfe3e8;
+    --text: #16212a; --text2: #5c6b7a; --text3: #9aa7b2;
+    --blue: #0061a1; --blue-soft: rgba(0,97,161,0.10); --blue-soft2: rgba(0,97,161,0.20);
+    --red: #b22247; --red-soft: rgba(178,34,71,0.13); --green: #1c7c54;
+    --nav-bg: rgba(255,255,255,0.94);
+    --page: #e7eaee; --ptext: #16212a; --ptext2: #5c6b7a; --frame: #16212a; --pcard: #fff;
+    --alt-bg: #FFFCF2; --alt-teal: #1e6b6b; --alt-card: #fff; --alt-text: #2C2C2E; --alt-muted: #6b6b6f; --alt-btn: #C9C0A6; --alt-lock: #EDE7D6;
+    --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1822; --surface: #1e2a35; --surface3: #2b3a49; --hair: rgba(255,255,255,0.09); --border: rgba(255,255,255,0.14);
+      --text: #f4f7f9; --text2: #9db0bf; --text3: #67788a;
+      --blue: #54a6e8; --blue-soft: rgba(84,166,232,0.16); --blue-soft2: rgba(84,166,232,0.30);
+      --red: #e05a7c; --red-soft: rgba(224,90,124,0.20); --green: #4cb98b;
+      --nav-bg: rgba(32,45,58,0.94);
+      --page: #0a1017; --ptext: #f4f7f9; --ptext2: #9db0bf; --frame: #38495a; --pcard: #16212b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1822; --surface: #1e2a35; --surface3: #2b3a49; --hair: rgba(255,255,255,0.09); --border: rgba(255,255,255,0.14);
+    --text: #f4f7f9; --text2: #9db0bf; --text3: #67788a;
+    --blue: #54a6e8; --blue-soft: rgba(84,166,232,0.16); --blue-soft2: rgba(84,166,232,0.30);
+    --red: #e05a7c; --red-soft: rgba(224,90,124,0.20); --green: #4cb98b;
+    --nav-bg: rgba(32,45,58,0.94);
+    --page: #0a1017; --ptext: #f4f7f9; --ptext2: #9db0bf; --frame: #38495a; --pcard: #16212b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ptext); font-family: var(--ui); font-size: 14px; line-height: 1.45; }
+  button { font-family: inherit; cursor: pointer; }
+
+  .kopf { max-width: 1300px; margin: 0 auto; padding: 30px 16px 6px; }
+  .kopf h1 { font-size: 23px; margin: 0 0 6px; font-weight: 700; letter-spacing: -0.2px; }
+  .kopf p { margin: 0 0 6px; color: var(--ptext2); max-width: 78ch; }
+  .kopf .tipp { margin-top: 10px; font-size: 13px; color: var(--ptext2); background: var(--pcard); border-radius: 10px; padding: 9px 12px; display: inline-block; }
+
+  .block { max-width: 1300px; margin: 0 auto; padding: 26px 16px 8px; }
+  .block > h2 { font-size: 17px; margin: 0 0 3px; font-weight: 700; }
+  .block > .frage { margin: 0 0 16px; color: var(--ptext2); max-width: 78ch; }
+  .karten { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; align-items: start; }
+  .kachel h3 { font-size: 14.5px; margin: 0 0 3px; display: flex; align-items: center; gap: 8px; }
+  .kachel h3 .tag { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #fff; background: var(--blue); border-radius: 999px; padding: 2px 8px; }
+  .kachel h3 .tag.grau { background: var(--text3); }
+  .kachel .txt { margin: 0 0 12px; color: var(--ptext2); font-size: 13px; min-height: 4.8em; }
+  .kachel .txt b { color: var(--ptext); }
+
+  .phone { width: 100%; max-width: 372px; margin: 0 auto; background: var(--bg); border-radius: 32px; border: 7px solid var(--frame); overflow: hidden; display: flex; flex-direction: column; height: 600px; box-shadow: 0 14px 40px rgba(0,0,0,0.16); position: relative; }
+  .nav { background: var(--nav-bg); border-bottom: 1px solid var(--hair); padding: 12px 14px 9px; display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 15px; color: var(--text); flex-shrink: 0; }
+  .nav .act { color: var(--blue); font-weight: 600; font-size: 14px; background: none; border: none; padding: 0; }
+  .body { flex: 1; overflow: hidden auto; padding: 10px 12px 12px; color: var(--text); position: relative; scroll-behavior: smooth; }
+  .tabbar { flex-shrink: 0; background: var(--nav-bg); border-top: 1px solid var(--hair); display: flex; padding: 6px 4px 8px; }
+  .tabbar span { flex: 1; text-align: center; font-size: 10.5px; color: var(--text3); font-weight: 600; }
+  .tabbar span i { display: block; width: 22px; height: 22px; margin: 0 auto 2px; border-radius: 6px; background: var(--surface3); }
+  .tabbar span.on { color: var(--blue); }
+  .tabbar span.on i { background: var(--blue-soft2); }
+
+  /* Monatsreiter (A) */
+  .monate { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 8px; scrollbar-width: none; }
+  .monate::-webkit-scrollbar { display: none; }
+  .monate button { flex: 0 0 auto; border: 1px solid var(--border); background: var(--surface); color: var(--text2); border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 600; }
+  .monate button.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* Listen */
+  .hdr { font-size: 11.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--text2); margin: 14px 2px 7px; display: flex; justify-content: space-between; align-items: center; }
+  .hdr:first-child { margin-top: 2px; }
+  .hdr .act { color: var(--blue); text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; background: none; border: none; padding: 0; }
+  .card { background: var(--surface); border-radius: 13px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--hair); background: var(--surface); width: 100%; text-align: left; border-left: 0; border-right: 0; border-bottom: 0; color: var(--text); font: inherit; }
+  .row:first-child { border-top: 0; }
+  .row .t { flex: 1; min-width: 0; }
+  .ti { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .su { color: var(--text2); font-size: 12.5px; }
+  .etikett { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--green); background: rgba(28,124,84,.12); border-radius: 999px; padding: 1px 7px; }
+  .pill { border: 1px solid var(--border); border-radius: 999px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; background: var(--surface); color: var(--blue); white-space: nowrap; }
+  .pill.on { background: var(--red); border-color: var(--red); color: #fff; }
+  .pill.teil { background: var(--red-soft); border-color: transparent; color: var(--red); }
+  .chev { color: var(--text3); font-size: 16px; }
+  .leer { color: var(--text3); font-size: 13.5px; padding: 9px 4px; }
+  .datum { width: 42px; flex-shrink: 0; text-align: center; background: var(--blue-soft); border-radius: 9px; padding: 4px 0; color: var(--blue); }
+  .datum b { display: block; font-size: 16px; line-height: 1.1; }
+  .datum small { font-size: 10px; font-weight: 700; text-transform: uppercase; }
+  .datum.rot { background: var(--red-soft); color: var(--red); }
+  .datum.grau { background: var(--surface3); color: var(--text2); }
+  .hinweis { font-size: 12px; color: var(--text3); margin: -2px 2px 8px; }
+
+  /* Wochenstreifen (B) */
+  .wk { background: var(--surface); border-radius: 14px; padding: 4px 4px 6px; overflow: hidden; }
+  .wkkopf { display: flex; align-items: center; justify-content: space-between; padding: 5px 2px; }
+  .wklabel { font-size: 14.5px; font-weight: 700; }
+  .pf { width: 38px; height: 32px; border: none; background: transparent; color: var(--blue); font-size: 20px; font-weight: 700; border-radius: 9px; }
+  .pf:disabled { opacity: .3; }
+  .viewport { overflow: hidden; touch-action: pan-y; }
+  .track { display: flex; width: 300%; transform: translateX(-33.3333%); }
+  .track.anim { transition: transform .22s ease-out; }
+  .page7 { flex: 0 0 33.3333%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; padding: 2px 2px 6px; }
+  .d { border: none; border-radius: 11px; background: var(--surface3); padding: 7px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--text); user-select: none; }
+  .d small { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text3); }
+  .d b { font-size: 15.5px; font-variant-numeric: tabular-nums; }
+  .d .pt { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); }
+  .d .pt.no { background: transparent; }
+  .d.past { opacity: .4; }
+  .d.today { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .d.mine { background: var(--red-soft); color: var(--red); }
+  .d.mine small { color: var(--red); }
+  .d.mine .pt { background: var(--red); }
+  .d.ct { background: var(--hair); color: var(--text2); }
+  .dots { display: flex; justify-content: center; gap: 4px; padding-bottom: 2px; }
+  .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--text3); opacity: .4; }
+  .dots i.on { background: var(--blue); opacity: 1; }
+  .legende { display: flex; gap: 12px; font-size: 11.5px; color: var(--text2); padding: 6px 4px 0; }
+  .legende i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+  /* Alte App */
+  .alt { background: var(--alt-bg); color: var(--alt-text); }
+  .alt .anav { background: var(--alt-teal); color: #fff; padding: 12px 14px; display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+  .alt .anav .ic { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.18); display: grid; place-items: center; font-size: 15px; }
+  .alt .anav b { display: block; font-size: 15px; }
+  .alt .anav small { font-size: 11px; opacity: .85; }
+  .alt .abody { flex: 1; overflow: hidden auto; padding: 12px 12px 0; }
+  .alt label { font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--alt-muted); display: block; margin: 0 0 5px 2px; }
+  .alt select { width: 100%; border: 1px solid #ddd6c4; background: var(--alt-card); color: var(--alt-text); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 14px; margin-bottom: 12px; }
+  .alt .acard { background: var(--alt-card); border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.05); overflow: hidden; }
+  .alt .mtabs { display: flex; gap: 0; border-bottom: 1px solid #eee7d8; overflow-x: auto; scrollbar-width: none; }
+  .alt .mtabs::-webkit-scrollbar { display: none; }
+  .alt .mtabs button { flex: 0 0 auto; border: none; background: none; padding: 11px 12px; font-size: 12.5px; color: var(--alt-muted); border-bottom: 2px solid transparent; font-weight: 500; }
+  .alt .mtabs button.on { color: var(--alt-teal); border-bottom-color: var(--alt-teal); font-weight: 700; }
+  .alt .mtabs button.locked { opacity: .6; }
+  .alt .arow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid #f0ebe0; width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-top: 0; color: var(--alt-text); font: inherit; }
+  .alt .arow .box { width: 22px; height: 22px; border: 2px solid #cfc7b3; border-radius: 6px; flex-shrink: 0; display: grid; place-items: center; color: #fff; font-size: 13px; }
+  .alt .arow.checked .box { background: #c0392b; border-color: #c0392b; }
+  .alt .arow .at b { display: block; font-size: 14px; }
+  .alt .arow .at small { color: var(--alt-muted); font-size: 12px; }
+  .alt .arow .aet { font-size: 10px; background: #dcecf0; color: var(--alt-teal); border-radius: 999px; padding: 2px 8px; font-weight: 600; margin-left: 6px; }
+  .alt .abar { padding: 10px 12px 12px; flex-shrink: 0; }
+  .alt .asave { width: 100%; border: none; border-radius: 14px; padding: 13px; font-weight: 600; font-size: 14px; color: #fff; background: var(--alt-btn); }
+  .alt .asave:not(:disabled) { background: var(--alt-teal); }
+  .alt .lockmsg { padding: 14px; color: var(--alt-muted); font-size: 13px; }
+
+  /* Fenster (Sheet) */
+  .sheet { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: flex-end; z-index: 5; }
+  .sheet.on { display: flex; }
+  .sheetcard { background: var(--surface); width: 100%; border-radius: 18px 18px 0 0; padding: 14px 14px 16px; color: var(--text); }
+  .sheetcard h4 { margin: 0 0 10px; font-size: 16px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chips button { border: 1px solid var(--border); background: var(--surface3); color: var(--text); border-radius: 999px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; }
+  .chips button.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .felder { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .feld label { display: block; font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+  .feld input, .feld select { width: 100%; border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 9px; padding: 8px; font: inherit; font-size: 13px; }
+  .feld.voll { grid-column: 1 / -1; }
+  .sbtns { display: flex; gap: 8px; margin-top: 10px; }
+  .sbtns button { flex: 1; border: none; border-radius: 11px; padding: 11px; font-size: 13.5px; font-weight: 700; }
+  .sbtns .prim { background: var(--blue); color: #fff; }
+  .sbtns .sek { background: var(--surface3); color: var(--text); }
+  .sbtns .del { background: var(--red-soft); color: var(--red); }
+
+  .toast { position: absolute; left: 12px; right: 12px; bottom: 64px; background: var(--text); color: var(--bg); border-radius: 12px; padding: 9px 12px; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(6px); transition: all .2s; pointer-events: none; z-index: 6; }
+  .toast.on { opacity: 1; transform: none; }
+
+  /* Vergleich */
+  table { border-collapse: collapse; width: 100%; background: var(--pcard); border-radius: 14px; overflow: hidden; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--ptext2); }
+  td:first-child { font-weight: 600; width: 22%; }
+  tr:last-child td { border-bottom: 0; }
+  .fazit { max-width: 1300px; margin: 0 auto; padding: 8px 16px 40px; color: var(--ptext2); }
+  .fazit b { color: var(--ptext); }
+</style>
+
+<style>
+  /* Platz für den schwebenden Knopf: die letzte Zeile darf nicht darunter liegen. */
+  .body { padding-bottom: 72px !important; }
+  .seg { display: flex; background: var(--surface3); border-radius: 11px; padding: 3px; margin: 2px 0 10px; }
+  .seg button { flex: 1; border: none; background: transparent; color: var(--text2); border-radius: 9px; padding: 8px 6px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.10); }
+  .seg .n { font-size: 11px; font-weight: 700; background: var(--red); color: #fff; border-radius: 999px; padding: 0 6px; line-height: 17px; }
+  .seg button.on .n { background: var(--red); }
+  .mehr { width: 100%; border: 1px dashed var(--border); background: transparent; color: var(--blue); border-radius: 12px; padding: 11px; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  .fab { position: absolute; right: 14px; bottom: 66px; border: none; border-radius: 999px; background: var(--blue); color: #fff; font-weight: 700; font-size: 13.5px; padding: 12px 16px; box-shadow: 0 6px 18px rgba(0,0,0,.22); display: flex; align-items: center; gap: 6px; z-index: 3; }
+  .fab b { font-size: 18px; line-height: 1; }
+  .leerbox { text-align: center; color: var(--text2); padding: 26px 16px; font-size: 13.5px; }
+  .leerbox b { display: block; color: var(--text); margin-bottom: 4px; }
+  .zusatz { font-size: 11.5px; color: var(--text3); }
+  .aend { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .aend div { background: var(--pcard); border-radius: 12px; padding: 12px 14px; font-size: 13px; color: var(--ptext2); }
+  .aend div b { color: var(--ptext); display: block; margin-bottom: 3px; }
+  .aend div i { color: var(--text3); font-style: normal; }
+</style>
+
+</head>
+<body>
+
+<div class="kopf">
+  <h1>Tab „Verfügbar“ – Variante A, zweite Runde</h1>
+  <p>Deine Rückmeldung vom 18.09. eingearbeitet. Beide Handys zeigen dieselbe App mit denselben Daten – links startet sie auf „Termine“,
+     rechts auf „Meine Abwesenheiten“, damit du beide Seiten des Schalters nebeneinander siehst. Alles ist anfassbar.</p>
+</div>
+
+<div class="block">
+  <h2>Was sich gegenüber dem ersten Entwurf ändert</h2>
+  <div class="aend">
+    <div><b>Ein Schalter oben: Termine · Meine Abwesenheiten</b>Kein Scrollen mehr bis ganz unten. Die rote Zahl am Schalter sagt, wie viele Abwesenheiten anstehen. <i>Dein Vorschlag.</i></div>
+    <div><b>Ein einziges „Eintragen“</b>Der schwebende Knopf unten rechts ist auf beiden Seiten derselbe. „+ Zeitraum“ ist weg. <i>Zur doppelten Stelle.</i></div>
+    <div><b>Monate statt Wochen, Zeitraum offen</b>Die Liste zeigt zunächst drei Monate; „Weitere Monate zeigen“ holt den nächsten dazu, so weit man will. Die Monatsreiter wachsen mit. <i>Der Server bekommt dann ein „bis“-Datum statt einer festen Wochenzahl.</i></div>
+    <div><b>Rot und Blau bleiben</b>Blau = Termin, an dem du kannst. Rot = abgemeldet. Grau = Eintrag, der direkt in ChurchTools gemacht wurde.</div>
+    <div><b>Abwesenheiten sagen, was sie treffen</b>Unter jedem Zeitraum steht, welche Termine er betrifft („trifft So 11.10.“) – oder dass er keinen trifft. So sieht man, ob ein Urlaub überhaupt einen Gottesdienst kostet.</div>
+    <div><b>Teil eines Zeitraums</b>Ein Termin, der in einem längeren Zeitraum liegt, zeigt „Zeitraum“ statt „Abgemeldet“; ein Tipp öffnet den ganzen Zeitraum zum Ändern statt nur den Tag zu löschen.</div>
+  </div>
+</div>
+
+<div class="block">
+  <h2>Anfassen</h2>
+  <p class="frage">Tipp auf „Kann nicht“ trägt sofort ein, zweiter Tipp nimmt zurück. Schalter oben wechselt die Seite. „Eintragen“ öffnet das Fenster mit Schnellwahl. Zeile unter „Meine Abwesenheiten“ antippen = ändern oder löschen.</p>
+  <div class="karten">
+    <div class="kachel"><h3><span class="tag">A2</span> Startseite „Termine“</h3><div class="phone" id="p1"></div></div>
+    <div class="kachel"><h3><span class="tag">A2</span> Seite „Meine Abwesenheiten“</h3><div class="phone" id="p2"></div></div>
+  </div>
+</div>
+
+<div class="fazit">
+  <p><b>Offen für dich:</b> (1) Soll der Einstieg immer auf „Termine“ stehen, oder merkt sich die App die zuletzt gewählte Seite? (2) „Eintragen“ als schwebender Knopf unten rechts (wie hier) oder oben rechts in der Kopfzeile wie im ersten Entwurf? (3) Drei Monate als Start – oder lieber bis zum Jahresende?</p>
+</div>
+
+<script>
+const HEUTE = '2026-09-18';
+const MON = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+const MONL = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const WT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const iso = d => d.toISOString().slice(0,10);
+const dat = s => new Date(s + 'T00:00:00Z');
+const plus = (s,n) => { const d = dat(s); d.setUTCDate(d.getUTCDate()+n); return iso(d); };
+const wt = s => WT[dat(s).getUTCDay()];
+const tagNr = s => String(dat(s).getUTCDate());
+const kurz = s => `${wt(s)}, ${String(dat(s).getUTCDate()).padStart(2,'0')}.${String(dat(s).getUTCMonth()+1).padStart(2,'0')}.`;
+const monKey = s => s.slice(0,7);
+const monLabel = k => `${MONL[+k.slice(5)-1]} ${k.slice(0,4)}`;
+const monPlus = (k,n) => { const d = dat(k+'-01'); d.setUTCMonth(d.getUTCMonth()+n); return iso(d).slice(0,7); };
+const montag = s => { const d = dat(s); const w = (d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-w); return iso(d); };
+
+// Termine der Gruppe: Sonntage bis weit ins nächste Jahr, erster Sonntag im Monat = Abendmahl, dazu Lobpreisabende.
+const TERMINE = [];
+(function(){ let s = '2026-09-20'; for (let i=0;i<40;i++){ TERMINE.push({d:s, t:'Gottesdienst', zeit:'10:00', et: dat(s).getUTCDate()<=7 ? 'Abendmahl' : ''}); s = plus(s,7);} })();
+TERMINE.push({d:'2026-10-10', t:'Lobpreisabend', zeit:'19:00', et:''}, {d:'2026-12-24', t:'Christvesper', zeit:'17:00', et:''}, {d:'2027-02-13', t:'Lobpreisabend', zeit:'19:00', et:''});
+TERMINE.sort((a,b)=>a.d.localeCompare(b.d));
+const terminAm = d => TERMINE.filter(t=>t.d===d);
+const naechsterTermin = () => (TERMINE.find(t=>t.d>=HEUTE)||TERMINE[0]).d;
+
+let ABW = [
+  { id:1, von:'2026-10-09', bis:'2026-10-14', grund:'Urlaub', quelle:'ct', kommentar:'Herbstferien' },
+  { id:2, von:'2026-11-08', bis:'2026-11-08', grund:'Abwesend', quelle:'app', kommentar:'' },
+];
+let nextId = 3;
+const deckt = (a,d) => a.von<=d && d<=a.bis;
+const abwAm = d => ABW.find(a=>deckt(a,d));
+const zeitraum = a => a.von===a.bis ? kurz(a.von) : `${kurz(a.von)} – ${kurz(a.bis)}`;
+const trifft = a => TERMINE.filter(t=>deckt(a,t.d));
+
+// Sichtbarer Zeitraum: zunächst drei Monate, „Weitere Monate“ hängt an – bis der Nutzer aufhört.
+let bisMonat = monPlus(monKey(HEUTE), 2);
+
+const P = {};  // Zustand je Handy: Seite + gewählter Monat
+function toast(id, text){ const t=document.querySelector('#'+id+' .toast'); t.textContent=text; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),1800); }
+
+function schalte(id, d){
+  const a = abwAm(d);
+  if (!a) { ABW.push({id:nextId++, von:d, bis:d, grund:'Abwesend', quelle:'app', kommentar:''}); toast(id, `${kurz(d)}: als abwesend eingetragen`); }
+  else if (a.von===a.bis) { ABW = ABW.filter(x=>x!==a); toast(id, `${kurz(d)}: zurückgenommen`); }
+  else { sheetAendern(id, a); return; }
+  renderAll();
+}
+
+function phone(id, seite){
+  P[id] = { seite, monat: null };
+  document.getElementById(id).innerHTML = `<div class="nav"><span>Verfügbar</span></div><div class="body"></div>
+    <button class="fab" onclick="sheetNeu('${id}', naechsterTermin())"><b>+</b> Eintragen</button>
+    <div class="tabbar"><span><i></i>Termine</span><span><i></i>Lieder</span><span class="on"><i></i>Verfügbar</span></div>
+    <div class="sheet"></div><div class="toast"></div>`;
+}
+
+function render(id){
+  const st = P[id]; const body = document.querySelector('#'+id+' .body');
+  const anstehend = ABW.filter(a=>a.bis>=HEUTE).length;
+  let h = `<div class="seg"><button class="${st.seite==='t'?'on':''}" onclick="P['${id}'].seite='t';render('${id}')">Termine</button>
+    <button class="${st.seite==='a'?'on':''}" onclick="P['${id}'].seite='a';render('${id}')">Meine Abwesenheiten ${anstehend?`<span class="n">${anstehend}</span>`:''}</button></div>`;
+  if (st.seite==='t') {
+    const kommend = TERMINE.filter(t=>t.d>=HEUTE && monKey(t.d)<=bisMonat);
+    const monate = []; for (let k=monKey(HEUTE); k<=bisMonat; k=monPlus(k,1)) monate.push(k);
+    if (!st.monat || !monate.includes(st.monat)) st.monat = monate[0];
+    h += `<div class="monate">${monate.map(k=>`<button class="${k===st.monat?'on':''}" onclick="P['${id}'].monat='${k}';render('${id}');document.querySelector('#${id} #m-${k}').scrollIntoView({block:'start'})">${MON[+k.slice(5)-1]} ${k.slice(2,4)}</button>`).join('')}</div>`;
+    for (const k of monate){
+      const im = kommend.filter(t=>monKey(t.d)===k);
+      h += `<div class="hdr" id="m-${k}"><span>${monLabel(k)}</span><span class="zusatz">${im.length} ${im.length===1?'Termin':'Termine'}</span></div><div class="card">`;
+      h += im.length ? im.map(t => { const a = abwAm(t.d); const teil = a && a.von!==a.bis;
+        return `<div class="row"><div class="datum ${a?(a.quelle==='ct'?'grau':'rot'):''}"><b>${tagNr(t.d)}</b><small>${wt(t.d)}</small></div>
+          <div class="t"><div class="ti">${t.t}${t.et?`<span class="etikett">${t.et}</span>`:''}</div><div class="su">${t.zeit} Uhr${a?` · ${a.grund}${teil?` (${zeitraum(a)})`:''}`:''}</div></div>
+          <button class="pill ${a?(teil?'teil':'on'):''}" onclick="schalte('${id}','${t.d}')">${a?(teil?'Zeitraum':'Abgemeldet'):'Kann nicht'}</button></div>`; }).join('')
+        : `<div class="leer">Kein Termin in diesem Monat.</div>`;
+      h += `</div>`;
+    }
+    h += `<button class="mehr" onclick="bisMonat=monPlus(bisMonat,1);renderAll()">Weitere Monate zeigen (${monLabel(monPlus(bisMonat,1))})</button>`;
+  } else {
+    const meine = [...ABW].filter(a=>a.bis>=HEUTE).sort((x,y)=>x.von.localeCompare(y.von));
+    if (!meine.length) h += `<div class="card"><div class="leerbox"><b>Noch nichts eingetragen.</b>Über „Kann nicht“ bei einem Termin – oder über „Eintragen“ für einen ganzen Zeitraum.</div></div>`;
+    else {
+      const monate = [...new Set(meine.map(a=>monKey(a.von)))];
+      for (const k of monate) {
+        h += `<div class="hdr"><span>${monLabel(k)}</span></div><div class="card">`;
+        h += meine.filter(a=>monKey(a.von)===k).map(a => { const tr = trifft(a);
+          return `<button class="row" onclick="sheetAendern('${id}', ABW.find(x=>x.id===${a.id}))"><div class="datum ${a.quelle==='ct'?'grau':'rot'}"><b>${tagNr(a.von)}</b><small>${wt(a.von)}</small></div>
+            <div class="t"><div class="ti">${a.grund}${a.von!==a.bis?`<span class="zusatz">${zeitraum(a)}</span>`:''}</div>
+            <div class="su">${tr.length ? 'trifft ' + tr.map(t=>kurz(t.d)).join(', ') : 'trifft keinen Termin'}${a.kommentar?` · ${a.kommentar}`:''}${a.quelle==='ct'?' · in ChurchTools eingetragen':''}</div></div><span class="chev">›</span></button>`; }).join('');
+        h += `</div>`;
+      }
+      h += `<div class="hinweis" style="margin-top:10px">Tipp auf eine Zeile: Zeitraum, Grund oder Kommentar ändern, löschen.</div>`;
+    }
+  }
+  body.innerHTML = h;
+}
+
+/* ---------- Fenster ---------- */
+const SCHNELL = [['tag','Nur dieser Tag'],['we','Wochenende'],['w1','1 Woche'],['w2','2 Wochen']];
+function schnell(idw, tag){ if(idw==='tag') return [tag,tag]; if(idw==='w1') return [tag,plus(tag,6)]; if(idw==='w2') return [tag,plus(tag,13)];
+  const sa = plus(montag(tag),5); const s = sa>=tag?sa:plus(sa,7); return [s, plus(s,1)]; }
+function sheetHtml(id, art, a){
+  return `<div class="sheetcard"><h4>${art==='neu'?'Abwesenheit eintragen':'Abwesenheit ändern'}</h4>
+    ${art==='neu'?`<div class="chips">${SCHNELL.map(([k,l])=>`<button class="${k==='tag'?'on':''}" onclick="sheetSchnell('${id}','${k}')">${l}</button>`).join('')}</div>`:''}
+    <div class="felder"><div class="feld"><label>Von</label><input type="date" id="${id}-von" value="${a.von}"></div><div class="feld"><label>Bis</label><input type="date" id="${id}-bis" value="${a.bis}"></div>
+    <div class="feld"><label>Grund</label><select id="${id}-grund">${['Abwesend','Urlaub','Krank'].map(g=>`<option ${g===a.grund?'selected':''}>${g}</option>`).join('')}</select></div>
+    <div class="feld"><label>Kommentar (optional)</label><input id="${id}-kom" value="${a.kommentar||''}" placeholder="z. B. Familienfeier"></div></div>
+    ${a.quelle==='ct'?`<div class="hinweis">Dieser Eintrag wurde direkt in ChurchTools gemacht.</div>`:''}
+    <div class="sbtns"><button class="sek" onclick="sheetZu('${id}')">Abbrechen</button>${art==='aendern'?`<button class="del" onclick="sheetLoeschen('${id}',${a.id})">Löschen</button>`:''}<button class="prim" onclick="sheetSpeichern('${id}',${a.id||0})">Speichern</button></div></div>`;
+}
+let sheetTag = {};
+const sheetEl = id => document.querySelector('#'+id+' .sheet');
+function sheetNeu(id, tag){ sheetTag[id]=tag; const el=sheetEl(id); el.innerHTML = sheetHtml(id,'neu',{von:tag,bis:tag,grund:'Abwesend',kommentar:''}); el.classList.add('on'); }
+function sheetAendern(id, a){ const el=sheetEl(id); el.innerHTML = sheetHtml(id,'aendern',a); el.classList.add('on'); }
+function sheetSchnell(id, k){ const [v,b]=schnell(k, sheetTag[id]); document.getElementById(id+'-von').value=v; document.getElementById(id+'-bis').value=b;
+  document.querySelectorAll('#'+id+' .chips button').forEach(x=>x.classList.toggle('on', x.textContent===Object.fromEntries(SCHNELL)[k])); }
+function sheetZu(id){ sheetEl(id).classList.remove('on'); }
+function sheetSpeichern(id, aid){ const von=document.getElementById(id+'-von').value, bis=document.getElementById(id+'-bis').value, grund=document.getElementById(id+'-grund').value, kom=document.getElementById(id+'-kom').value;
+  if(!von||!bis||bis<von){ toast(id,'Bis liegt vor Von.'); return; }
+  if(aid){ const a=ABW.find(x=>x.id===aid); Object.assign(a,{von,bis,grund,kommentar:kom}); toast(id,'Geändert'); } else { ABW.push({id:nextId++,von,bis,grund,quelle:'app',kommentar:kom}); toast(id,'Eingetragen'); }
+  sheetZu(id); renderAll(); }
+function sheetLoeschen(id, aid){ ABW = ABW.filter(x=>x.id!==aid); sheetZu(id); toast(id,'Gelöscht'); renderAll(); }
+
+function renderAll(){ render('p1'); render('p2'); }
+phone('p1','t'); phone('p2','a'); renderAll();
+</script>
+</body>
+</html>

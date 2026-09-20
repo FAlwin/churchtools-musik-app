@@ -139,3 +139,33 @@ describe('loadSongPdfOpts – derselbe Weg über den Speicher (#239)', () => {
     expect(o.sectionSemitones).toEqual({ 1: 2 });
   });
 });
+
+/**
+ * #398: Der Versatz wird von der Tonart aus gerechnet, in der DIESE Version notiert ist.
+ *
+ * Vorher galt `originalKey` für alle Versionen: Eine in D geschriebene Fassung eines G-Liedes,
+ * angezeigt in D, wurde um G→D = 7 Halbtöne verschoben – und stand dann in A.
+ */
+describe('pdfOptionsForSong – Tonart je Version (#398)', () => {
+  const mitVersion = () =>
+    song({
+      originalKey: 'G',
+      targetKey: 'G',
+      versions: [{ key: 'akustik', name: 'Akustik', text: '{key: D}\n[D]x', writtenKey: 'D' }],
+    });
+
+  it('rechnet für eine Version in D von D aus – Anzeige in D heißt 0 Halbtöne', () => {
+    const o = pdfOptionsForSong(mitVersion(), settings({ versionKey: 'akustik', key: 'D' }));
+    expect(o.semitones).toBe(0);
+  });
+
+  it('für dieselbe Version in G sind es −5 (D→G nach unten, hier als 7 aufwärts)', () => {
+    const o = pdfOptionsForSong(mitVersion(), settings({ versionKey: 'akustik', key: 'G' }));
+    expect(o.semitones).toBe(5); // D → G = 5 Halbtöne
+  });
+
+  it('das Original rechnet weiter von originalKey', () => {
+    const o = pdfOptionsForSong(mitVersion(), settings({ versionKey: 'original', key: 'D' }));
+    expect(o.semitones).toBe(7); // G → D
+  });
+});
