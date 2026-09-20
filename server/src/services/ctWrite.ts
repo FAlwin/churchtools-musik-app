@@ -489,6 +489,12 @@ export async function updateArrangement(
   songId: number,
   arrangementId: number,
   overrides: ArrangementOverrides,
+  /**
+   * Eigene Meldungen für einen engeren Zweck – der Tempo-Weg sagt „das Tempo", nicht „Arrangements".
+   * Der **Ablauf** bleibt derselbe: Wer hier einen zweiten Lese-Schreib-Zyklus danebenstellte,
+   * hätte die gefährlichste Regel des Projekts in zweiter Fassung (`PUT` ersetzt alles).
+   */
+  meldungen?: { verweigert: string; fehler: string },
 ): Promise<void> {
   // Frische Live-Daten – NIE aus einem Cache: geschrieben wird auf diesem Stand.
   const { arrangement: arr } = await getArrangement(cookie, songId, arrangementId);
@@ -496,8 +502,9 @@ export async function updateArrangement(
   await schreibe(cookie, `/api/songs/${songId}/arrangements/${arrangementId}`, {
     method: 'PUT',
     json: arrangementWritePayload(arr, overrides),
-    verweigert: 'Keine Berechtigung, Arrangements in ChurchTools zu ändern.',
-    fehler: 'Arrangement speichern fehlgeschlagen',
+    verweigert:
+      meldungen?.verweigert ?? 'Keine Berechtigung, Arrangements in ChurchTools zu ändern.',
+    fehler: meldungen?.fehler ?? 'Arrangement speichern fehlgeschlagen',
   });
 }
 
@@ -558,17 +565,15 @@ export async function deleteFile(cookie: string, fileId: number): Promise<void> 
 }
 
 /**
- * Setzt das Tempo eines Arrangements in ChurchTools.
+ * Setzt das Tempo eines Arrangements in ChurchTools – **der schmale Weg vom Blatt aus.**
  *
- * **Lesen–ändern–schreiben, und das ist keine Stilfrage:** `PUT` auf ein Arrangement ersetzt den
- * ganzen Datensatz – alles Nicht-Gesendete wird `null`. An der Test-Instanz gemessen löschte ein
- * `PUT { name, bpm }` in einem Zug Tonart, zweite Tonart und Dauer. Deshalb wird das Arrangement
- * zuerst frisch gelesen und der Payload daraus gebaut (`arrangementWritePayload`).
+ * Er geht seit #396 durch `updateArrangement` und baut den Ablauf nicht mehr nach. Vorher standen
+ * hier dieselben Zeilen ein zweites Mal: lesen, `arrangementWritePayload`, `PUT`. Zwei Fassungen
+ * derselben Regel – und zwar der gefährlichsten des Projekts (`PUT` ersetzt den ganzen Datensatz,
+ * ein unvollständiger Rumpf löscht Tonart und Dauer). Gefunden bei der Dopplungs-Suche zu #396.
  *
- * Geschrieben wird `tempo` (Zahl); das gelesene `bpm` ist abgeleitet und nicht beschreibbar.
- *
- * **Rechte:** wie bei den ChordPro-Versionen – das Cookie des Nutzers geht durch, ChurchTools
- * entscheidet. Ein 401/403 wird über `csrfWriteDenied` gemeldet (und verwirft das Token, #298).
+ * Der Endpunkt bleibt trotzdem eigen: Er wird vom Blatt angetippt, von jemandem, der nur das Tempo
+ * meint – und seine Meldungen sagen genau das.
  */
 export async function updateArrangementTempo(
   cookie: string,
@@ -576,15 +581,16 @@ export async function updateArrangementTempo(
   arrangementId: number,
   tempo: number,
 ): Promise<void> {
-  // Frische Live-Daten – NIE aus einem Cache: geschrieben wird auf diesem Stand.
-  const { arrangement: arr } = await getArrangement(cookie, songId, arrangementId);
-
-  await schreibe(cookie, `/api/songs/${songId}/arrangements/${arrangementId}`, {
-    method: 'PUT',
-    json: arrangementWritePayload(arr, { tempo }),
-    verweigert: 'Keine Berechtigung, das Tempo in ChurchTools zu ändern.',
-    fehler: 'Tempo speichern fehlgeschlagen',
-  });
+  await updateArrangement(
+    cookie,
+    songId,
+    arrangementId,
+    { tempo },
+    {
+      verweigert: 'Keine Berechtigung, das Tempo in ChurchTools zu ändern.',
+      fehler: 'Tempo speichern fehlgeschlagen',
+    },
+  );
 }
 
 /**

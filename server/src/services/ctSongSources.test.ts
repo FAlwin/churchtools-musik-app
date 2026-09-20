@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getSongSources } from './ctSongSources.js';
-import { __resetSessionMemosForTests } from './ctSessionMemos.js';
+import { __resetSessionMemosForTests, forgetSession } from './ctSessionMemos.js';
 
 /**
  * Die Liedquellen (#396) – dritte Tabelle aus `getMasterData`, nach Kategorien und
@@ -107,5 +107,47 @@ describe('getSongSources', () => {
   it('wirft, wenn die alte Schnittstelle nicht antwortet – statt „keine Quellen" zu behaupten', async () => {
     mockAjax(null, 503);
     await expect(getSongSources(COOKIE)).rejects.toThrow();
+  });
+});
+
+/**
+ * **Das Memo ist die Lehre der Schwesterstelle** (`absences.ts`, #177): Beide Listen kommen aus
+ * derselben `getMasterData`-Antwort und hängen an einem Fenster, das ein Mensch öffnet. Ohne Memo
+ * wäre jedes geöffnete Lied ein ChurchTools-Aufruf mehr – und genau solche Läufe haben die App
+ * schon einmal in die Drosselung getrieben (#300).
+ */
+describe('getSongSources – das Kurzzeit-Memo', () => {
+  /** Zählt die Aufrufe der alten Schnittstelle (das CSRF-Token zählt nicht mit). */
+  function zaehlend(daten: unknown): () => number {
+    let aufrufe = 0;
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
+      const u = String(url);
+      if (u.includes('/api/csrftoken')) return Promise.resolve(json({ data: 'token' }));
+      aufrufe += 1;
+      return Promise.resolve(json({ status: 'success', data: daten }));
+    });
+    return () => aufrufe;
+  }
+
+  it('fragt ChurchTools beim zweiten Mal NICHT erneut', async () => {
+    const aufrufe = zaehlend(ECHT);
+    await getSongSources(COOKIE);
+    await getSongSources(COOKIE);
+    expect(aufrufe()).toBe(1);
+  });
+
+  it('merkt sich eine LEERE Liste nicht – sie kann auch „noch nicht gesehen" heißen', async () => {
+    const aufrufe = zaehlend({ songsource: {} });
+    await getSongSources(COOKIE);
+    await getSongSources(COOKIE);
+    expect(aufrufe()).toBe(2);
+  });
+
+  it('vergisst beim Abmelden – sonst überlebt die Liste die Sitzung', async () => {
+    const aufrufe = zaehlend(ECHT);
+    await getSongSources(COOKIE);
+    forgetSession(COOKIE);
+    await getSongSources(COOKIE);
+    expect(aufrufe()).toBe(2);
   });
 });

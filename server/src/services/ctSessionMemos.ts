@@ -1,7 +1,8 @@
 /**
  * Alle Zwischenspeicher, die an EINEM Session-Cookie hängen – an einer Stelle (#280).
  *
- * Es sind vier: Konto-ID (12 h), Rechte (5 min), CSRF-Token (1 min) und die laufenden Token-Abrufe.
+ * Es sind sechs: Konto-ID (12 h), Rechte (5 min), CSRF-Token (1 min), die laufenden Token-Abrufe
+ * sowie Abwesenheitsgründe und Liedquellen (je 1 min).
  * Sie lagen früher über
  * `churchtools.ts` verstreut, jede mit ihrer eigenen handgeschriebenen Ablaufprüfung – und `logout`
  * räumte nur eine davon. Ein abgemeldetes Cookie lieferte dadurch bis zu fünf Minuten lang gecachte
@@ -14,7 +15,7 @@
  * ⚠️ Prozesslokal – siehe „Ein Prozess, ein Zustand" in `docs/entwicklung/entscheidungen.md`.
  */
 import { createTtlMemo } from './ttlMemo.js';
-import type { AbsenceReason, UserCapabilities } from '@shared/types/index';
+import type { AbsenceReason, SongSource, UserCapabilities } from '@shared/types/index';
 
 // Cookie → ChurchTools-Person-ID, gecacht mit 12-h-Auffrischung – spart whoami-Abrufe je Anmerkung
 // und prüft periodisch, ob das Cookie noch gilt (unabhängig von der App-Cookie-Lebensdauer).
@@ -52,6 +53,13 @@ export const csrfInflight = new Map<string, Promise<string>>();
 export const gruendeMemo = createTtlMemo<AbsenceReason[]>(60_000);
 
 /**
+ * Liedquellen je Sitzung (#396) – dieselbe Überlegung wie bei den Gründen: Die Liste ändert sich
+ * fast nie, hängt aber an jedem Öffnen des Stammdaten-Blattes. Beide kommen aus derselben
+ * `getMasterData`-Antwort; ohne Memo wären es zwei ChurchTools-Aufrufe je geöffnetem Lied.
+ */
+export const quellenMemo = createTtlMemo<SongSource[]>(60_000);
+
+/**
  * Alles vergessen, was an EINEM Session-Cookie hängt – die eine Stelle, die alle Sitzungs-Speicher
  * kennt. Wer einen neuen hinzufügt, trägt ihn hier ein; sonst überlebt er das Abmelden.
  *
@@ -66,12 +74,18 @@ export function forgetSession(cookie: string): void {
   capsMemo.delete(cookie);
   csrfCache.delete(cookie);
   csrfInflight.delete(cookie);
+  // Gefunden bei der Dopplungs-Suche zu #396: `gruendeMemo` kam mit #177 dazu und stand hier NICHT –
+  // genau der Fehler, gegen den dieses Modul gebaut wurde („logout räumte einen von drei").
+  gruendeMemo.delete(cookie);
+  quellenMemo.delete(cookie);
 }
 
-/** Nur für Tests: alle sitzungsgebundenen Speicher leeren (Konto-ID, Rechte, CSRF-Token). */
+/** Nur für Tests: ALLE sitzungsgebundenen Speicher leeren – die Liste muss vollständig bleiben. */
 export function __resetSessionMemosForTests(): void {
   userIdMemo.clear();
   capsMemo.clear();
   csrfCache.clear();
   csrfInflight.clear();
+  gruendeMemo.clear();
+  quellenMemo.clear();
 }

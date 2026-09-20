@@ -17,6 +17,7 @@
  * nach ChurchTools.
  */
 import { ctAjax } from './ctAjax.js';
+import { quellenMemo } from './ctSessionMemos.js';
 import { ctId } from '../utils/ctId.js';
 import type { SongSource } from '@shared/types/index';
 
@@ -51,6 +52,17 @@ interface RohQuelle {
  * ist also nicht willkürlich, sondern die, die die Gemeinde vorn haben wollte.
  */
 export async function getSongSources(cookie: string): Promise<SongSource[]> {
+  /**
+   * **Eine Minute gemerkt – dieselbe Lösung wie bei den Abwesenheitsgründen** (`absences.ts`).
+   * Beide holen dieselbe `getMasterData`-Antwort, und beide hängen an einem Fenster, das ein Mensch
+   * öffnet. Ohne Memo wäre jedes geöffnete Lied ein ChurchTools-Aufruf mehr (#300).
+   *
+   * Eine leere Liste wird NICHT gemerkt: Sie kann auch heißen „die Gemeinde hat gerade ihr erstes
+   * Liederbuch angelegt, wir haben es nur noch nicht gesehen".
+   */
+  const gemerkt = quellenMemo.get(cookie);
+  if (gemerkt !== undefined) return gemerkt;
+
   const daten = (await ctAjax(cookie, 'getMasterData', {}, QUELL_MELDUNGEN)) as {
     songsource?: Record<string, RohQuelle> | RohQuelle[];
   };
@@ -59,7 +71,7 @@ export async function getSongSources(cookie: string): Promise<SongSource[]> {
   // umgekehrt. `Object.values` deckt beides ab, ohne dass jemand die Form raten muss.
   const liste: RohQuelle[] = roh ? Object.values(roh) : [];
 
-  return liste
+  const quellen = liste
     .map((q) => ({
       id: ctId(q.id),
       name: (q.name ?? '').trim(),
@@ -71,4 +83,7 @@ export async function getSongSources(cookie: string): Promise<SongSource[]> {
     })
     .sort((a, b) => a.sortkey - b.sortkey || a.name.localeCompare(b.name, 'de'))
     .map(({ id, name, shorty }) => ({ id, name, shorty }));
+
+  if (quellen.length > 0) quellenMemo.set(cookie, quellen);
+  return quellen;
 }
