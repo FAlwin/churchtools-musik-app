@@ -118,7 +118,10 @@
 - `GET  /api/song-usage` → Nutzungsstatistik je Song als **`{ dates: string[] }`** (vergangene Spieltermine, bis zu 4 Jahre zurück, absteigend; 1h-Cache). Häufigkeit + „zuletzt gespielt" für den gewählten Zeitraum rechnet der **Client** daraus – ohne erneuten Server-Roundtrip. Bei Drosselung **503** (+ `Retry-After`), wenn kein früherer Stand im Speicher liegt; der Client zeigt dann „–" statt einer Null und lässt die Liederliste vollständig (#300).
 - `GET  /api/songs/:songId/arrangements` → Arrangements eines Lieds (für „Zu Ablauf hinzufügen")
 - `GET  /api/songs/:songId/chart` → Chart eines einzelnen Lieds (aus „Alle Lieder")
-- `POST /api/songs/:songId/versions` {arrangementId, name, text} → neue benannte Version → `SongVersion`
+- `POST /api/songs/:songId/versions` {arrangementId, name, text} → neue benannte Version → `SongVersion`.
+  Seit #398 trägt jede `SongVersion` ein `writtenKey`: die Tonart aus ihrer eigenen `{key: …}`-Zeile,
+  `null` ohne eine – dann gilt `originalKey`. Der Client rechnet den Anzeige-Versatz von dieser
+  Tonart aus (`notierteTonart` in `songVersions.ts`, die eine Stelle dafür)
 - `PUT  /api/songs/:songId/versions/:versionKey` {arrangementId, text?, name?} → Version aktualisieren/umbenennen
 - `DELETE /api/songs/:songId/versions/:versionKey` {arrangementId} → Version löschen (Original bleibt)
 - `GET  /api/songs/:songId/files/:fileId` → PDF/Bild aus ChurchTools durchreichen (Content-Type-Whitelist; Viewer)

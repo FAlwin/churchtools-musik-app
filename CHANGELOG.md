@@ -5,6 +5,24 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Neu
+
+- **Der Editor arbeitet in der Tonart, die auf dem Blatt steht – und jede Version kennt ihre
+  eigene Tonart (#398).** Wer ein Lied auf D transponiert hat und dann „Bearbeiten" oder „Neue
+  Version" wählt, sieht im Editor D-Akkorde, nicht mehr die Original-Tonart. Über dem Text steht,
+  in welcher Tonart er steht (mit Kapo auch, wie gegriffen wird). **Gespeichert wird, was man
+  sieht:** Der Text bleibt in dieser Tonart und bekommt eine `{key: …}`-Zeile; die App liest bei
+  jeder Version ihre eigene Tonart und transponiert von dort aus. Bis jetzt galt die Tonart der
+  Original-Datei für **alle** Versionen – eine in D geschriebene Fassung eines G-Liedes wurde von G
+  aus verschoben und stimmte nur, solange niemand die Tonart anfasste. Alwins Wunsch vom
+  20.09.2026, nach einem Abend Zurückrechnen. Entschieden: kein heimliches Zurückrechnen beim
+  Speichern (das hätte Schreibweisen wie Eb/D# verändert), das Original bleibt immer in seiner
+  Tonart (vom Blatt aus wird es ohnehin nie überschrieben), der Kapo bleibt eine Anzeige-Sache.
+  Eine neue Version aus einer transponierten Ansicht übernimmt die gewählte Tonart – sonst sähe man
+  nach dem Speichern die ChurchTools-Zieltonart statt dessen, was man eben getippt hat.
+
 ## [2.24.1] – 2026-09-05
 
 ### Behoben

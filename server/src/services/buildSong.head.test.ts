@@ -178,3 +178,51 @@ describe('getSongChart – nicht ladbare Akkord-Datei (#274)', () => {
     expect(chart.title).toBe('Akustik-Fassung');
   });
 });
+
+/**
+ * #398: Jede Version kennt ihre eigene Tonart.
+ *
+ * Bis dahin galt `originalKey` (aus der Original-Datei) für ALLE Versionen. Eine in D geschriebene
+ * Fassung eines G-Liedes wurde damit von G aus transponiert – und stimmte nur, solange niemand die
+ * Tonart anfasste. Alwin hat deshalb einen Abend lang zurückgerechnet.
+ *
+ * Geprüft über `getSongChart`, aus demselben Grund wie oben: Es geht um die Verdrahtung.
+ */
+describe('getSongChart – jede Version kennt ihre Tonart (#398)', () => {
+  function ctSongMitVersion(): CtSong {
+    const s = ctSong();
+    s.arrangements[0].files.push({
+      name: 'Mottosong AC26 — Akustik (App).chordpro',
+      fileUrl: 'https://x/?id=2',
+    });
+    return s;
+  }
+
+  it('liest die {key}-Zeile der Version – nicht die des Originals', async () => {
+    mockedGetSong.mockResolvedValue(ctSongMitVersion());
+    mockedDownload.mockImplementation((_c, url) =>
+      Promise.resolve(
+        String(url).endsWith('id=1') ? '{key: G}\n[G]Original' : '{key: D}\n[D]Akustik',
+      ),
+    );
+    const chart = await getSongChart('cookie', 42);
+    expect(chart.originalKey).toBe('G');
+    expect(chart.versions[0].writtenKey).toBe('D');
+  });
+
+  it('ohne eigene {key}-Zeile bleibt es null – dann gilt die Tonart des Originals', async () => {
+    mockedGetSong.mockResolvedValue(ctSongMitVersion());
+    mockedDownload.mockImplementation((_c, url) =>
+      Promise.resolve(String(url).endsWith('id=1') ? '{key: G}\n[G]Original' : '[D]Akustik'),
+    );
+    expect((await getSongChart('cookie', 42)).versions[0].writtenKey).toBeNull();
+  });
+
+  it('eine leere {key: }-Zeile zählt nicht (halb getippte Kopfzeile)', async () => {
+    mockedGetSong.mockResolvedValue(ctSongMitVersion());
+    mockedDownload.mockImplementation((_c, url) =>
+      Promise.resolve(String(url).endsWith('id=1') ? '[G]Original' : '{key: }\n[D]Akustik'),
+    );
+    expect((await getSongChart('cookie', 42)).versions[0].writtenKey).toBeNull();
+  });
+});

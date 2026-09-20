@@ -1,0 +1,618 @@
+<title>Verfügbar – Feinschliff</title>
+<style>
+  :root {
+    --bg: #f2f3f5; --surface: #ffffff; --surface3: #ebedf0; --hair: #e3e6ea; --border: #dfe3e8;
+    --text: #16212a; --text2: #5c6b7a; --text3: #9aa7b2;
+    --blue: #0061a1; --blue-soft: rgba(0,97,161,0.10); --blue-soft2: rgba(0,97,161,0.20);
+    --red: #b22247; --red-soft: rgba(178,34,71,0.13); --green: #1c7c54;
+    --nav-bg: rgba(255,255,255,0.94);
+    --page: #e7eaee; --ptext: #16212a; --ptext2: #5c6b7a; --frame: #16212a; --pcard: #fff;
+    --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1822; --surface: #1e2a35; --surface3: #2b3a49; --hair: rgba(255,255,255,0.09); --border: rgba(255,255,255,0.14);
+      --text: #f4f7f9; --text2: #9db0bf; --text3: #67788a;
+      --blue: #54a6e8; --blue-soft: rgba(84,166,232,0.16); --blue-soft2: rgba(84,166,232,0.30);
+      --red: #e05a7c; --red-soft: rgba(224,90,124,0.20); --green: #4cb98b;
+      --nav-bg: rgba(32,45,58,0.94);
+      --page: #0a1017; --ptext: #f4f7f9; --ptext2: #9db0bf; --frame: #38495a; --pcard: #16212b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1822; --surface: #1e2a35; --surface3: #2b3a49; --hair: rgba(255,255,255,0.09); --border: rgba(255,255,255,0.14);
+    --text: #f4f7f9; --text2: #9db0bf; --text3: #67788a;
+    --blue: #54a6e8; --blue-soft: rgba(84,166,232,0.16); --blue-soft2: rgba(84,166,232,0.30);
+    --red: #e05a7c; --red-soft: rgba(224,90,124,0.20); --green: #4cb98b;
+    --nav-bg: rgba(32,45,58,0.94);
+    --page: #0a1017; --ptext: #f4f7f9; --ptext2: #9db0bf; --frame: #38495a; --pcard: #16212b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ptext); font-family: var(--ui); font-size: 14px; line-height: 1.45; }
+  button { font-family: inherit; cursor: pointer; }
+
+  .kopf { max-width: 1300px; margin: 0 auto; padding: 30px 24px 6px; }
+  .kopf h1 { font-size: 23px; margin: 0 0 6px; font-weight: 700; letter-spacing: -0.2px; }
+  .kopf p { margin: 0; color: var(--ptext2); max-width: 74ch; }
+  .kopf .tipp { margin-top: 10px; font-size: 13px; color: var(--ptext2); background: var(--pcard); border-radius: 10px; padding: 9px 12px; display: inline-block; }
+
+  .block { max-width: 1300px; margin: 0 auto; padding: 26px 24px 8px; }
+  .block > h2 { font-size: 17px; margin: 0 0 3px; font-weight: 700; }
+  .block > h2 .nr { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.8px; color: var(--blue); text-transform: uppercase; margin-right: 8px; }
+  .block > .frage { margin: 0 0 16px; color: var(--ptext2); max-width: 78ch; }
+  .karten { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; align-items: start; }
+  .kachel h3 { font-size: 14.5px; margin: 0 0 3px; display: flex; align-items: center; gap: 8px; }
+  .kachel h3 .tag { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #fff; background: var(--blue); border-radius: 999px; padding: 2px 8px; }
+  .kachel h3 .tag.grau { background: var(--text3); }
+  .kachel .txt { margin: 0 0 12px; color: var(--ptext2); font-size: 13px; min-height: 3.6em; }
+
+  /* Handy */
+  .phone { width: 100%; max-width: 372px; margin: 0 auto; background: var(--bg); border-radius: 32px; border: 7px solid var(--frame); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 14px 40px rgba(0,0,0,0.16); }
+  .phone.h1 { height: 300px; }
+  .phone.h2 { height: 470px; }
+  .phone.h3 { height: 420px; }
+  .nav { background: var(--nav-bg); border-bottom: 1px solid var(--hair); padding: 12px 14px 9px; text-align: center; font-weight: 700; font-size: 15px; color: var(--text); flex-shrink: 0; }
+  .body { flex: 1; overflow: hidden auto; padding: 10px 12px 12px; color: var(--text); position: relative; }
+
+  /* Wochenstreifen */
+  .wk { background: var(--surface); border-radius: 14px; padding: 4px 4px 6px; overflow: hidden; }
+  .wkkopf { display: flex; align-items: center; justify-content: space-between; padding: 5px 2px; }
+  .wklabel { font-size: 14.5px; font-weight: 700; }
+  .pf { width: 38px; height: 32px; border: none; background: transparent; color: var(--blue); font-size: 20px; font-weight: 700; border-radius: 9px; }
+  .pf:disabled { opacity: .3; }
+  .viewport { overflow: hidden; }
+  .track { display: flex; }
+  .page7 { flex: 0 0 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; padding: 2px 2px 6px; }
+  .d { border: none; border-radius: 11px; background: var(--surface3); padding: 7px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--text); user-select: none; }
+  .d small { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text3); }
+  .d b { font-size: 15.5px; font-variant-numeric: tabular-nums; }
+  .d .pt { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); }
+  .d .pt.no { background: transparent; }
+  .d.past { opacity: .4; }
+  .d.today { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .d.mine { background: var(--red-soft); color: var(--red); }
+  .d.mine small { color: var(--red); }
+  .d.mine .pt { background: var(--red); }
+  .d.ct { background: var(--hair); color: var(--text2); }
+  .d.sel { background: var(--blue-soft2); color: var(--blue); }
+  .d.sel.edge { background: var(--blue); color: #fff; }
+  .d.sel.edge small, .d.sel.edge .pt { color: #fff; background: #fff; }
+  .dots { display: flex; justify-content: center; gap: 4px; padding-bottom: 2px; }
+  .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--text3); opacity: .4; }
+  .dots i.on { background: var(--blue); opacity: 1; }
+
+  /* Listen */
+  .hdr { font-size: 11.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--text2); margin: 14px 2px 7px; display: flex; justify-content: space-between; align-items: center; }
+  .hdr .act { color: var(--blue); text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; background: none; border: none; padding: 0; }
+  .card { background: var(--surface); border-radius: 13px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--hair); background: var(--surface); }
+  .row:first-child { border-top: 0; }
+  .row .t { flex: 1; min-width: 0; }
+  .ti { font-weight: 600; font-size: 14px; }
+  .su { color: var(--text2); font-size: 12.5px; }
+  .pill { border: 1px solid var(--border); border-radius: 999px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; background: var(--surface); color: var(--blue); white-space: nowrap; }
+  .pill.on { background: var(--red); border-color: var(--red); color: #fff; }
+  .lock { color: var(--text3); font-size: 12px; white-space: nowrap; }
+  .ico { width: 34px; height: 34px; border: none; background: transparent; border-radius: 9px; display: grid; place-items: center; color: var(--red); font-size: 15px; }
+  .ico.b { color: var(--blue); }
+  .chev { color: var(--text3); font-size: 16px; }
+  .leer { color: var(--text3); font-size: 13.5px; padding: 9px 4px; }
+  .datum { width: 42px; flex-shrink: 0; text-align: center; background: var(--blue-soft); border-radius: 9px; padding: 4px 0; color: var(--blue); }
+  .datum b { display: block; font-size: 16px; line-height: 1.1; }
+  .datum small { font-size: 10px; font-weight: 700; text-transform: uppercase; }
+  .datum.rot { background: var(--red-soft); color: var(--red); }
+
+  /* Leiste unten */
+  .bar { flex-shrink: 0; background: var(--nav-bg); border-top: 1px solid var(--hair); padding: 9px 12px; display: flex; align-items: center; gap: 8px; }
+  .bar .t { flex: 1; min-width: 0; }
+  .bbtn { border: none; border-radius: 11px; padding: 9px 13px; font-size: 13px; font-weight: 700; background: var(--blue); color: #fff; }
+  .bbtn.hell { background: var(--surface3); color: var(--text2); }
+  .tabbar { flex-shrink: 0; background: var(--nav-bg); border-top: 1px solid var(--hair); display: flex; padding: 6px 4px 8px; }
+  .tb { flex: 1; text-align: center; font-size: 10px; font-weight: 600; color: var(--text3); }
+  .tb.on { color: var(--blue); }
+
+  /* Sheet */
+  .sheetwrap { position: absolute; inset: 0; background: rgba(0,0,0,.42); display: grid; place-items: end center; padding: 10px; }
+  .sheet { background: var(--surface); border-radius: 16px; width: 100%; padding: 14px; }
+  .sheet h4 { margin: 0 0 12px; font-size: 15.5px; }
+  .fld { display: flex; flex-direction: column; gap: 5px; margin-bottom: 11px; }
+  .fld label { font-size: 12.5px; color: var(--text2); }
+  .fld input { font-family: inherit; font-size: 15px; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+  .chip { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; }
+  .chip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .wide { width: 100%; border: none; border-radius: 11px; padding: 11px; font-size: 15px; font-weight: 700; background: var(--blue); color: #fff; margin-top: 2px; }
+  .wide.grau { background: var(--surface3); color: var(--text2); margin-top: 8px; }
+  .wide.rot { background: transparent; color: var(--red); border: 1px solid var(--border); margin-top: 8px; }
+
+  /* Statuskopf */
+  .status { background: var(--surface); border-radius: 13px; padding: 12px 13px; display: flex; gap: 11px; align-items: center; }
+  .status .kreis { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; flex-shrink: 0; background: var(--blue-soft); }
+  .status.warn .kreis { background: var(--red-soft); }
+  .status .ti { font-size: 14.5px; }
+  .balken { display: flex; gap: 4px; margin-top: 7px; }
+  .balken i { height: 6px; flex: 1; border-radius: 3px; background: var(--blue-soft2); }
+  .balken i.rot { background: var(--red); }
+  .balken i.grau { background: var(--hair); }
+
+  /* Swipe-Zeile */
+  .swipe { position: relative; overflow: hidden; background: var(--surface); }
+  .swipe .hinten { position: absolute; inset: 0; display: flex; justify-content: flex-end; }
+  .swipe .hinten button { border: none; width: 66px; font-size: 12px; font-weight: 700; color: #fff; }
+  .swipe .hinten .bearb { background: var(--blue); }
+  .swipe .hinten .del { background: var(--red); }
+  .swipe .vorn { position: relative; background: var(--surface); }
+
+  .fuss { max-width: 1300px; margin: 0 auto; padding: 26px 24px 56px; }
+  .fuss h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--ptext2); margin: 0 0 8px; }
+  .fuss ul { margin: 0; padding-left: 18px; max-width: 78ch; color: var(--ptext2); font-size: 13.5px; }
+  .fuss li { margin: 4px 0; }
+  @media (prefers-reduced-motion: reduce) { .track, .vorn { transition: none !important; } }
+</style>
+
+<div class="kopf">
+  <h1>Verfügbar – vier Stellen zum Nachschärfen</h1>
+  <p>Alles hier ist <b>anfassbar</b>: wischen, tippen, ziehen. Gleiche Daten überall – heute ist Samstag, der 5. September 2026; Gottesdienste sonntags; du bist am 20.09. abgemeldet; 21.–25.09. steht ein Urlaub direkt in ChurchTools (Schloss).</p>
+  <div class="tipp">Am Rechner: mit gedrückter Maustaste ziehen wirkt wie ein Wisch.</div>
+</div>
+
+<!-- 1 WISCHEN -->
+<div class="block">
+  <h2><span class="nr">1</span> Wischen und Blättern</h2>
+  <p class="frage">Heute schaltet der Streifen hart um – kein Mitziehen, keine Bewegung. Drei Varianten, wie sich das Blättern anfühlen kann.</p>
+  <div class="karten">
+    <div class="kachel">
+      <h3>1A Gleiten <span class="tag grau">wie heute + Animation</span></h3>
+      <p class="txt">Pfeil oder Wisch lösen dasselbe aus: Die Woche gleitet in 220&nbsp;ms herüber. Der Finger zieht nichts mit – man wischt und es passiert.</p>
+      <div class="phone h1"><div class="nav">Verfügbarkeit</div><div class="body"><div id="w1a"></div></div></div>
+    </div>
+    <div class="kachel">
+      <h3>1B Mitziehen <span class="tag">Empfehlung</span></h3>
+      <p class="txt">Der Streifen klebt am Finger: Man sieht die Nachbarwoche schon beim Ziehen hereinkommen und sie rastet beim Loslassen ein. Ein kurzer Wisch reicht, langsames Ziehen kann man abbrechen.</p>
+      <div class="phone h1"><div class="nav">Verfügbarkeit</div><div class="body"><div id="w1b"></div></div></div>
+    </div>
+    <div class="kachel">
+      <h3>1C Endlos-Streifen</h3>
+      <p class="txt">Kein Blättern, sondern eine durchgehende Zeitleiste: frei scrollen, die Woche rastet ein. Man kann auch weit nach vorn springen, verliert dafür das klare „eine Woche".</p>
+      <div class="phone h1"><div class="nav">Verfügbarkeit</div><div class="body"><div id="w1c"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 2 ZEITRAUM -->
+<div class="block">
+  <h2><span class="nr">2</span> Zeitraum eintragen</h2>
+  <p class="frage">Heute: erst Tag antippen, dann zweiter Tag, dann Leiste unten, dann noch ein Fenster mit Von/Bis – vier Schritte für einen Urlaub. Drei kürzere Wege.</p>
+  <div class="karten">
+    <div class="kachel">
+      <h3>2A Ziehen über die Tage</h3>
+      <p class="txt">Auf einen Tag drücken und über die Nachbarn ziehen – der Bereich färbt sich mit. Loslassen öffnet direkt das Fenster mit Kommentar. Ein einzelner Tipp = ein Tag.</p>
+      <div class="phone h2"><div class="nav">Verfügbarkeit</div><div class="body" id="z2a"></div></div>
+    </div>
+    <div class="kachel">
+      <h3>2B Fenster mit Schnellwahl <span class="tag">Empfehlung</span></h3>
+      <p class="txt">Ein Knopf „Eintragen" öffnet ein Fenster, das mitdenkt: Chips für „Nur dieser Tag / Wochenende / 1 Woche / 2 Wochen", darunter Von–Bis zum Feinjustieren. Kein Vorab-Antippen nötig.</p>
+      <div class="phone h2"><div class="nav">Verfügbarkeit</div><div class="body" id="z2b"></div></div>
+    </div>
+    <div class="kachel">
+      <h3>2C Zwei Tipps ohne Leiste</h3>
+      <p class="txt">Wie heute zwei Tipps, aber ohne Leiste unten: Der zweite Tipp öffnet sofort das Fenster. Der erste Tipp zeigt einen dezenten Hinweis im Streifen statt einer eigenen Zeile.</p>
+      <div class="phone h2"><div class="nav">Verfügbarkeit</div><div class="body" id="z2c"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 3 LISTE + BEARBEITEN -->
+<div class="block">
+  <h2><span class="nr">3</span> Die Liste – und Einträge ändern</h2>
+  <p class="frage">Heute drei Blöcke untereinander und ein Papierkorb, der nur löschen kann. Deine Abwesenheiten sollen bearbeitbar bleiben – hier drei Wege dorthin.</p>
+  <div class="karten">
+    <div class="kachel">
+      <h3>3A Zeile öffnen <span class="tag">Empfehlung</span></h3>
+      <p class="txt">Die ganze Zeile ist antippbar und öffnet ein Fenster „Abwesenheit ändern" mit Von, Bis, Kommentar – und unten „Löschen". Ein Weg statt zwei kleiner Symbole; auf dem Handy gut zu treffen.</p>
+      <div class="phone h3"><div class="nav">Verfügbarkeit</div><div class="body" id="l3a"></div></div>
+    </div>
+    <div class="kachel">
+      <h3>3B Stift und Papierkorb</h3>
+      <p class="txt">Zwei Symbole rechts in der Zeile: Stift öffnet zum Ändern, Papierkorb löscht (mit Rückfrage). Sichtbar auf den ersten Blick, aber zwei kleine Ziele nebeneinander.</p>
+      <div class="phone h3"><div class="nav">Verfügbarkeit</div><div class="body" id="l3b"></div></div>
+    </div>
+    <div class="kachel">
+      <h3>3C Wischen legt frei</h3>
+      <p class="txt">Zeile nach links wischen (probier's!) – dahinter erscheinen „Ändern" und „Löschen". Aufgeräumt, aber man muss wissen, dass es geht.</p>
+      <div class="phone h3"><div class="nav">Verfügbarkeit</div><div class="body" id="l3c"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 4 KOPF -->
+<div class="block">
+  <h2><span class="nr">4</span> Das Fehlende: eine Aussage oben</h2>
+  <p class="frage">Der Bildschirm zeigt heute nur Daten, sagt aber nichts. Drei Ideen für den Kopf – das ist vermutlich das „irgendwie fehlt noch was".</p>
+  <div class="karten">
+    <div class="kachel">
+      <h3>4A Nächster Dienst <span class="tag">Empfehlung</span></h3>
+      <p class="txt">Eine Zeile mit dem, was zählt: Wann ist der nächste Gottesdienst, und bist du da? Mit einem Tipp direkt abmelden. Die kleinen Balken zeigen die nächsten fünf Sonntage.</p>
+      <div class="phone h3"><div class="nav">Verfügbarkeit</div><div class="body" id="k4a"></div></div>
+    </div>
+    <div class="kachel">
+      <h3>4B Zusammenfassung</h3>
+      <p class="txt">Der Blick auf den Monat: „Im September fehlst du an 1 von 4 Gottesdiensten." Gut fürs Gewissen und für die Einteilung, aber weniger handlungsnah.</p>
+      <div class="phone h3"><div class="nav">Verfügbarkeit</div><div class="body" id="k4b"></div></div>
+    </div>
+    <div class="kachel">
+      <h3>4C Nichts <span class="tag grau">wie heute</span></h3>
+      <p class="txt">Kein Kopf, direkt der Streifen. Am ruhigsten – wer nur schnell etwas eintragen will, hat weniger zu lesen.</p>
+      <div class="phone h3"><div class="nav">Verfügbarkeit</div><div class="body" id="k4c"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="fuss">
+  <h3>Bleibt in jedem Fall</h3>
+  <ul>
+    <li>Ein Eintrag ist eine echte ChurchTools-Abwesenheit mit dem Marker „[Musikteam]"; nur solche lassen sich hier ändern oder löschen.</li>
+    <li>Einträge, die direkt in ChurchTools gemacht wurden (Urlaub, krank), zeigen ein Schloss und werden nie angefasst – auch nicht beim Bearbeiten.</li>
+    <li>„Kann nicht" bei einem Termin bleibt der schnellste Weg: ein Tipp, kein Fenster.</li>
+    <li>Ändern heißt technisch: alten Eintrag löschen, neuen anlegen (ChurchTools kann Abwesenheiten nicht ändern) – das passiert unsichtbar, der Marker bleibt.</li>
+  </ul>
+</div>
+
+<script>
+(function () {
+  const HEUTE = '2026-09-05';
+  const WT = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const MON = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const MONK = ['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'];
+  const TAG = 86400000;
+  const ms = iso => Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10));
+  const iso = n => new Date(n).toISOString().slice(0,10);
+  const plus = (d,n) => iso(ms(d)+n*TAG);
+  const montag = d => plus(d, -((new Date(ms(d)).getUTCDay()+6)%7));
+  const wt = d => WT[(new Date(ms(d)).getUTCDay()+6)%7];
+  const tz = d => +d.slice(8,10);
+  const kurz = d => d.slice(8,10)+'.'+d.slice(5,7)+'.';
+  const tage = (a,b) => Math.round((ms(b)-ms(a))/TAG)+1;
+  function label(mo) {
+    const so = plus(mo,6);
+    return mo.slice(5,7) === so.slice(5,7)
+      ? tz(mo)+'. – '+tz(so)+'. '+MON[+mo.slice(5,7)-1]
+      : tz(mo)+'. '+MONK[+mo.slice(5,7)-1]+' – '+tz(so)+'. '+MONK[+so.slice(5,7)-1];
+  }
+
+  // Daten
+  const TERMINE = ['2026-09-06','2026-09-13','2026-09-20','2026-09-27','2026-10-04','2026-10-11'];
+  const mkAbs = () => ([
+    { id:1, von:'2026-09-20', bis:'2026-09-20', text:'Kinderfreizeit', mein:true },
+    { id:2, von:'2026-09-21', bis:'2026-09-25', text:'Urlaub', mein:false },
+  ]);
+  const findAbs = (list, d) => list.find(a => a.mein && a.von <= d && d <= a.bis) || list.find(a => a.von <= d && d <= a.bis);
+
+  function dayEl(d, opt) {
+    const b = document.createElement('button');
+    b.className = 'd';
+    const a = findAbs(opt.abs, d);
+    if (d < HEUTE) b.classList.add('past');
+    if (d === HEUTE) b.classList.add('today');
+    if (a) b.classList.add(a.mein ? 'mine' : 'ct');
+    if (opt.sel) {
+      const bis = opt.sel.bis || opt.sel.von;
+      const lo = opt.sel.von < bis ? opt.sel.von : bis, hi = opt.sel.von < bis ? bis : opt.sel.von;
+      if (lo <= d && d <= hi) { b.classList.add('sel'); if (d === lo || d === hi) b.classList.add('edge'); }
+    }
+    b.innerHTML = '<small>'+wt(d)+'</small><b>'+tz(d)+'</b><span class="pt'+(TERMINE.includes(d)?'':' no')+'"></span>';
+    b.dataset.d = d;
+    return b;
+  }
+
+  /** Ein Wochenstreifen. modus: 'glide' | 'drag' | 'scroll'. */
+  function streifen(host, opt) {
+    opt = Object.assign({ modus:'drag', abs: mkAbs(), sel:null, onTag:null, onDrag:null, wochen:10 }, opt);
+    let idx = 0;
+    const mo0 = montag(HEUTE);
+    const wochen = Array.from({length: opt.wochen}, (_,i) => plus(mo0, i*7));
+    const el = document.createElement('div');
+    el.className = 'wk';
+    el.innerHTML = '<div class="wkkopf"><button class="pf" aria-label="Vorige Woche">‹</button>'
+      + '<span class="wklabel"></span><button class="pf" aria-label="Nächste Woche">›</button></div>'
+      + '<div class="viewport"><div class="track"></div></div><div class="dots"></div>';
+    host.appendChild(el);
+    const lab = el.querySelector('.wklabel'), track = el.querySelector('.track'),
+          vp = el.querySelector('.viewport'), dots = el.querySelector('.dots'),
+          [pl, pr] = el.querySelectorAll('.pf');
+
+    function bauen() {
+      track.innerHTML = '';
+      const von = opt.modus === 'scroll' ? 0 : Math.max(0, idx-1);
+      const bis = opt.modus === 'scroll' ? wochen.length-1 : Math.min(wochen.length-1, idx+1);
+      for (let i = von; i <= bis; i++) {
+        const p = document.createElement('div');
+        p.className = 'page7';
+        for (const d of Array.from({length:7}, (_,k) => plus(wochen[i], k))) p.appendChild(dayEl(d, opt));
+        track.appendChild(p);
+      }
+      track.dataset.von = von;
+      lab.textContent = label(wochen[idx]);
+      pl.disabled = idx === 0; pr.disabled = idx === wochen.length-1;
+      dots.innerHTML = wochen.map((_,i) => '<i class="'+(i===idx?'on':'')+'"></i>').join('');
+      setzen(false);
+    }
+    function setzen(anim) {
+      const off = (idx - (+track.dataset.von)) * 100;
+      track.style.transition = anim ? 'transform .22s cubic-bezier(.22,.61,.36,1)' : 'none';
+      track.style.transform = 'translateX(-'+off+'%)';
+    }
+    function gehe(n, anim) {
+      const z = Math.min(wochen.length-1, Math.max(0, n));
+      if (z === idx) { setzen(anim); return; }
+      idx = z;
+      if (opt.modus === 'scroll') { lab.textContent = label(wochen[idx]); dots.innerHTML = wochen.map((_,i)=>'<i class="'+(i===idx?'on':'')+'"></i>').join(''); setzen(anim); }
+      else if (anim) { setzen(true); setTimeout(bauen, 230); }
+      else bauen();
+    }
+    pl.onclick = () => gehe(idx-1, true);
+    pr.onclick = () => gehe(idx+1, true);
+
+    // Wischen
+    let x0 = null, w = 0, zieht = false;
+    vp.addEventListener('pointerdown', e => {
+      if (e.target.closest('.d') && opt.onDrag) return;      // Ziehen über Tage hat Vorrang
+      x0 = e.clientX; w = vp.clientWidth; zieht = false;
+      vp.setPointerCapture(e.pointerId);
+    });
+    vp.addEventListener('pointermove', e => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0;
+      if (!zieht && Math.abs(dx) < 6) return;
+      zieht = true;
+      if (opt.modus === 'drag' || opt.modus === 'scroll') {
+        const basis = (idx - (+track.dataset.von)) * w;
+        track.style.transition = 'none';
+        track.style.transform = 'translateX('+(-basis + dx)+'px)';
+      }
+    });
+    vp.addEventListener('pointerup', e => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0; x0 = null;
+      if (!zieht) return;
+      const schwelle = opt.modus === 'glide' ? 35 : w * 0.28;
+      if (dx < -schwelle) gehe(idx+1, true);
+      else if (dx > schwelle) gehe(idx-1, true);
+      else setzen(true);
+    });
+    vp.addEventListener('pointercancel', () => { x0 = null; setzen(true); });
+
+    // Tippen / Ziehen über Tage
+    if (opt.onTag) {
+      track.addEventListener('click', e => {
+        const b = e.target.closest('.d');
+        if (b && !zieht && b.dataset.d >= HEUTE) opt.onTag(b.dataset.d);
+      });
+    }
+    if (opt.onDrag) {
+      let start = null;
+      track.addEventListener('pointerdown', e => {
+        const b = e.target.closest('.d');
+        if (!b || b.dataset.d < HEUTE) return;
+        start = b.dataset.d; opt.onDrag(start, start, false);
+        track.setPointerCapture(e.pointerId);
+      });
+      track.addEventListener('pointermove', e => {
+        if (!start) return;
+        const b = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.d');
+        if (b && b.dataset.d >= HEUTE) opt.onDrag(start, b.dataset.d, false);
+      });
+      track.addEventListener('pointerup', e => {
+        if (!start) return;
+        const b = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.d');
+        opt.onDrag(start, (b && b.dataset.d >= HEUTE) ? b.dataset.d : start, true);
+        start = null;
+      });
+    }
+    bauen();
+    return { neu: bauen, setSel: s => { opt.sel = s; bauen(); }, setAbs: a => { opt.abs = a; bauen(); }, idx: () => idx };
+  }
+
+  // ── 1 Wischen ──
+  streifen(document.getElementById('w1a'), { modus:'glide' });
+  streifen(document.getElementById('w1b'), { modus:'drag' });
+  streifen(document.getElementById('w1c'), { modus:'scroll' });
+
+  // ── 2 Zeitraum ──
+  function zeitraumDemo(host, art) {
+    const abs = mkAbs();
+    let sel = null, sheet = null;
+    const wrap = document.createElement('div');
+    host.appendChild(wrap);
+    const liste = document.createElement('div');
+    host.appendChild(liste);
+
+    function zeichnen() {
+      liste.innerHTML = '';
+      const h = document.createElement('div');
+      h.className = 'hdr';
+      h.innerHTML = '<span>Meine Abwesenheiten</span>' + (art === 'chips' ? '<button class="act">+ Eintragen</button>' : '');
+      liste.appendChild(h);
+      const c = document.createElement('div'); c.className = 'card';
+      for (const a of abs) {
+        const r = document.createElement('div'); r.className = 'row';
+        r.innerHTML = '<div class="t"><div class="ti">'+(a.von===a.bis?kurz(a.von):kurz(a.von)+' – '+kurz(a.bis))+'</div><div class="su">'+a.text+'</div></div>'
+          + (a.mein ? '<button class="ico">🗑</button>' : '<span class="lock">🔒</span>');
+        c.appendChild(r);
+      }
+      liste.appendChild(c);
+      if (art === 'chips') h.querySelector('.act').onclick = () => oeffne({ von: HEUTE, bis: HEUTE });
+      if (art === 'zwei' && sel && !sel.bis) {
+        const p = document.createElement('div');
+        p.className = 'leer';
+        p.textContent = 'Startpunkt ' + kurz(sel.von) + ' – jetzt den letzten Tag antippen.';
+        liste.prepend(p);
+      }
+    }
+    function oeffne(s) {
+      sel = s;
+      if (sheet) sheet.remove();
+      sheet = document.createElement('div');
+      sheet.className = 'sheetwrap';
+      const chips = art === 'chips'
+        ? '<div class="chips">'
+          + '<button class="chip on" data-n="1">Nur dieser Tag</button>'
+          + '<button class="chip" data-n="we">Wochenende</button>'
+          + '<button class="chip" data-n="7">1 Woche</button>'
+          + '<button class="chip" data-n="14">2 Wochen</button></div>'
+        : '';
+      sheet.innerHTML = '<div class="sheet"><h4>Abwesenheit eintragen</h4>'+chips
+        + '<div class="two"><div class="fld"><label>Von</label><input type="date" value="'+s.von+'"></div>'
+        + '<div class="fld"><label>Bis</label><input type="date" value="'+(s.bis||s.von)+'"></div></div>'
+        + '<div class="fld"><label>Kommentar (optional)</label><input placeholder="z. B. Urlaub"></div>'
+        + '<button class="wide">Eintragen'+(s.bis && s.bis!==s.von ? ' ('+tage(s.von,s.bis)+' Tage)' : '')+'</button>'
+        + '<button class="wide grau">Abbrechen</button></div>';
+      host.appendChild(sheet);
+      const [vonI, bisI] = sheet.querySelectorAll('input[type=date]');
+      sheet.querySelectorAll('.chip').forEach(ch => ch.onclick = () => {
+        sheet.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
+        ch.classList.add('on');
+        const n = ch.dataset.n;
+        if (n === 'we') { const sa = plus(montag(HEUTE), 5); vonI.value = sa >= HEUTE ? sa : plus(sa,7); bisI.value = plus(vonI.value,1); }
+        else { vonI.value = HEUTE; bisI.value = plus(HEUTE, (+n)-1); }
+        sheet.querySelector('.wide').textContent = 'Eintragen' + (bisI.value !== vonI.value ? ' ('+tage(vonI.value,bisI.value)+' Tage)' : '');
+      });
+      sheet.querySelector('.wide.grau').onclick = () => { sheet.remove(); sheet = null; sel = null; str.setSel(null); zeichnen(); };
+      sheet.querySelector('.wide').onclick = () => {
+        abs.push({ id: Date.now(), von: vonI.value, bis: bisI.value, text: sheet.querySelector('input:not([type=date])').value || 'Musikteam', mein: true });
+        sheet.remove(); sheet = null; sel = null; str.setAbs(abs); str.setSel(null); zeichnen();
+      };
+    }
+    const str = streifen(wrap, {
+      modus: 'drag', abs,
+      onTag: art === 'zwei' ? d => {
+        if (!sel || sel.bis) { sel = { von: d }; str.setSel(sel); zeichnen(); }
+        else { const b = d < sel.von ? { von:d, bis:sel.von } : { von:sel.von, bis:d }; sel = b; str.setSel(b); zeichnen(); oeffne(b); }
+      } : (art === 'chips' ? d => oeffne({ von:d, bis:d }) : null),
+      onDrag: art === 'drag' ? (a, b, fertig) => {
+        const s = a < b ? { von:a, bis:b } : { von:b, bis:a };
+        str.setSel(s);
+        if (fertig) oeffne(s);
+      } : null,
+    });
+    zeichnen();
+  }
+  zeitraumDemo(document.getElementById('z2a'), 'drag');
+  zeitraumDemo(document.getElementById('z2b'), 'chips');
+  zeitraumDemo(document.getElementById('z2c'), 'zwei');
+
+  // ── 3 Liste + Bearbeiten ──
+  function listeDemo(host, art) {
+    const abs = mkAbs();
+    let sheet = null;
+    const wrap = document.createElement('div');
+    host.appendChild(wrap);
+    const str = streifen(wrap, { modus:'drag', abs, wochen: 6 });
+    const box = document.createElement('div');
+    host.appendChild(box);
+
+    function bearbeiten(a) {
+      if (sheet) sheet.remove();
+      sheet = document.createElement('div');
+      sheet.className = 'sheetwrap';
+      sheet.innerHTML = '<div class="sheet"><h4>Abwesenheit ändern</h4>'
+        + '<div class="two"><div class="fld"><label>Von</label><input type="date" value="'+a.von+'"></div>'
+        + '<div class="fld"><label>Bis</label><input type="date" value="'+a.bis+'"></div></div>'
+        + '<div class="fld"><label>Kommentar</label><input value="'+a.text+'"></div>'
+        + '<button class="wide">Speichern</button>'
+        + '<button class="wide rot">Löschen</button>'
+        + '<button class="wide grau">Abbrechen</button></div>';
+      host.appendChild(sheet);
+      const [v,b] = sheet.querySelectorAll('input[type=date]');
+      const k = sheet.querySelector('input:not([type=date])');
+      sheet.querySelector('.wide.grau').onclick = () => { sheet.remove(); sheet = null; };
+      sheet.querySelector('.wide.rot').onclick = () => { abs.splice(abs.indexOf(a),1); sheet.remove(); sheet=null; str.setAbs(abs); zeichnen(); };
+      sheet.querySelector('.wide').onclick = () => { a.von=v.value; a.bis=b.value; a.text=k.value; sheet.remove(); sheet=null; str.setAbs(abs); zeichnen(); };
+    }
+
+    function zeichnen() {
+      box.innerHTML = '<div class="hdr"><span>Meine Abwesenheiten</span><button class="act">+ Eintragen</button></div>';
+      const c = document.createElement('div'); c.className = 'card';
+      for (const a of abs) {
+        const inhalt = '<div class="t"><div class="ti">'+(a.von===a.bis?kurz(a.von):kurz(a.von)+' – '+kurz(a.bis))+'</div><div class="su">'+a.text+'</div></div>';
+        if (!a.mein) {
+          const r = document.createElement('div'); r.className = 'row';
+          r.innerHTML = inhalt + '<span class="lock">🔒 ChurchTools</span>';
+          c.appendChild(r); continue;
+        }
+        if (art === 'tap') {
+          const r = document.createElement('div'); r.className = 'row';
+          r.style.cursor = 'pointer';
+          r.innerHTML = inhalt + '<span class="chev">›</span>';
+          r.onclick = () => bearbeiten(a);
+          c.appendChild(r);
+        } else if (art === 'icons') {
+          const r = document.createElement('div'); r.className = 'row';
+          r.innerHTML = inhalt + '<button class="ico b">✎</button><button class="ico">🗑</button>';
+          r.querySelector('.ico.b').onclick = () => bearbeiten(a);
+          r.querySelector('.ico:not(.b)').onclick = () => { abs.splice(abs.indexOf(a),1); str.setAbs(abs); zeichnen(); };
+          c.appendChild(r);
+        } else {
+          const s = document.createElement('div'); s.className = 'swipe';
+          s.innerHTML = '<div class="hinten"><button class="bearb">Ändern</button><button class="del">Löschen</button></div>'
+            + '<div class="vorn row">'+inhalt+'<span class="su">‹ wischen</span></div>';
+          const vorn = s.querySelector('.vorn');
+          let x0 = null, off = 0;
+          vorn.addEventListener('pointerdown', e => { x0 = e.clientX; vorn.style.transition='none'; vorn.setPointerCapture(e.pointerId); });
+          vorn.addEventListener('pointermove', e => { if (x0===null) return; off = Math.min(0, Math.max(-132, e.clientX - x0 + (vorn.dataset.open==='1'?-132:0))); vorn.style.transform = 'translateX('+off+'px)'; });
+          vorn.addEventListener('pointerup', () => {
+            if (x0===null) return; x0 = null;
+            const auf = off < -50;
+            vorn.dataset.open = auf ? '1' : '0';
+            vorn.style.transition = 'transform .18s ease-out';
+            vorn.style.transform = 'translateX('+(auf?-132:0)+'px)';
+            off = auf ? -132 : 0;
+          });
+          s.querySelector('.bearb').onclick = () => bearbeiten(a);
+          s.querySelector('.del').onclick = () => { abs.splice(abs.indexOf(a),1); str.setAbs(abs); zeichnen(); };
+          c.appendChild(s);
+        }
+      }
+      box.appendChild(c);
+      box.querySelector('.act').onclick = () => bearbeiten({ von: HEUTE, bis: HEUTE, text: '', mein: true, neu: true });
+    }
+    zeichnen();
+  }
+  listeDemo(document.getElementById('l3a'), 'tap');
+  listeDemo(document.getElementById('l3b'), 'icons');
+  listeDemo(document.getElementById('l3c'), 'swipe');
+
+  // ── 4 Kopf ──
+  function kopfDemo(host, art) {
+    const abs = mkAbs();
+    if (art === 'naechster') {
+      const s = document.createElement('div');
+      s.className = 'status';
+      s.innerHTML = '<div class="kreis">🎸</div><div class="t"><div class="ti">Sonntag, 6. September · 10:00</div>'
+        + '<div class="su">Nächster Gottesdienst – du bist verfügbar</div>'
+        + '<div class="balken"><i></i><i></i><i class="rot"></i><i></i><i class="grau"></i></div></div>'
+        + '<button class="pill">Kann nicht</button>';
+      host.appendChild(s);
+    } else if (art === 'summe') {
+      const s = document.createElement('div');
+      s.className = 'status warn';
+      s.innerHTML = '<div class="kreis">📅</div><div class="t"><div class="ti">September: 1 von 4 Gottesdiensten fehlst du</div>'
+        + '<div class="su">20.09. abgemeldet · 21.–25.09. Urlaub (ChurchTools)</div></div>';
+      host.appendChild(s);
+    }
+    const wrap = document.createElement('div');
+    wrap.style.marginTop = art === 'nichts' ? '0' : '12px';
+    host.appendChild(wrap);
+    streifen(wrap, { modus:'drag', abs, wochen: 6 });
+    const box = document.createElement('div');
+    box.innerHTML = '<div class="hdr">Diese Woche</div><div class="card">'
+      + '<div class="row"><div class="datum"><b>6</b><small>So</small></div><div class="t"><div class="ti">Gottesdienst</div><div class="su">10:00</div></div><button class="pill">Kann nicht</button></div>'
+      + '</div>';
+    host.appendChild(box);
+  }
+  kopfDemo(document.getElementById('k4a'), 'naechster');
+  kopfDemo(document.getElementById('k4b'), 'summe');
+  kopfDemo(document.getElementById('k4c'), 'nichts');
+})();
+</script>

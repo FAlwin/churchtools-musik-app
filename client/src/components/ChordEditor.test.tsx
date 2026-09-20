@@ -65,3 +65,26 @@ describe('ChordEditor – Speichern ohne Versionsname-Feld (04.09.2026)', () => 
     expect(speichern().disabled).toBe(true);
   });
 });
+
+/**
+ * #398: Der Editor sagt an, in welcher Tonart der Text steht – und mit Kapo auch, wie gegriffen
+ * wird. Ohne die Zeile rätselt man, warum das Blatt andere Akkorde zeigt als der Editor.
+ */
+describe('ChordEditor – Tonart-Zeile (#398)', () => {
+  it('nennt die Tonart des Texts', () => {
+    zeige({ tonart: 'D' });
+    expect(screen.getByText('D', { selector: 'strong' })).toBeTruthy();
+    expect(screen.queryByText(/gegriffen als/)).toBeNull();
+  });
+
+  it('nennt mit Kapo auch die gegriffene Tonart', () => {
+    zeige({ tonart: 'D', kapo: 2 });
+    expect(screen.getByText(/mit Kapo 2 gegriffen als/)).toBeTruthy();
+    expect(screen.getByText('C', { selector: 'strong' })).toBeTruthy();
+  });
+
+  it('zeigt ohne Tonart keine Zeile – beim Original-Notenblatt gibt es sie nicht', () => {
+    zeige();
+    expect(screen.queryByText(/^Tonart/)).toBeNull();
+  });
+});

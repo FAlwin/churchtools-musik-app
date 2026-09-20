@@ -66,6 +66,20 @@ export function versionText(song: SetlistSong, key: string): string {
 }
 
 /**
+ * Die Tonart, in der der Text dieser Version **notiert** ist (#398) – die eine Stelle dafür.
+ *
+ * Eine benannte Version mit eigener `{key: …}`-Zeile steht in DIESER Tonart; ohne eigene Zeile
+ * (und das Original immer) in `originalKey`. Von hier aus rechnet die Anzeige den Versatz zur
+ * gewählten Tonart. Vorher stand überall `song.originalKey` – für jede Version, ob sie passte oder
+ * nicht. Wer den Versatz an einer zweiten Stelle rechnet, muss DIESE Funktion nehmen; sonst ist es
+ * wieder die halbe Regel.
+ */
+export function notierteTonart(song: SetlistSong, versionKey: string): string {
+  const version = song.versions.find((v) => v.key === versionKey);
+  return version?.writtenKey || song.originalKey;
+}
+
+/**
  * Woher ein Roh-Einstellungswert kommt: aus dem Gerät (`localStorage`) oder aus einer gelieferten
  * Schlüssel-Tabelle (die Roh-Einstellungen einer anderen Person beim Ansehen ihrer Notizen).
  */
