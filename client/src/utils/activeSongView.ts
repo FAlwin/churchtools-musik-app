@@ -1,7 +1,7 @@
 import type { ChordProSection, SetlistSong, SongDocument } from '@shared/types/index';
 import type { SongSettings } from './chartSettings';
 import { parseChordPro } from './chordpro';
-import { availableVersions, type ResolvedVersion } from './songVersions';
+import { availableVersions, notierteTonart, type ResolvedVersion } from './songVersions';
 import { shiftKey } from './transpose';
 
 /**
@@ -43,6 +43,11 @@ export interface ActiveSongView {
   hasVersions: boolean;
   /** ChordPro-Text der gewählten Version – das, was auf dem Blatt steht. */
   displayedChordpro: string;
+  /**
+   * Die Tonart, in der `displayedChordpro` **notiert** ist (#398) – die Version selbst oder das
+   * Original. Der Editor rechnet von hier zur klingenden Tonart (`curKey`), die Anzeige ebenso.
+   */
+  notierteTonart: string;
   sections: ChordProSection[];
   /** Startgerüst für ein Lied ohne Text. */
   editorTemplate: string;
@@ -101,6 +106,7 @@ export function deriveActiveSongView(song: SetlistSong, set: SongSettings): Acti
     isOriginal,
     hasVersions,
     displayedChordpro,
+    notierteTonart: notierteTonart(song, currentVersion.key),
     sections: parseChordPro(displayedChordpro),
     editorTemplate: buildEditorTemplate(song),
     activeDoc,

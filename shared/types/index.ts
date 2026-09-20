@@ -88,6 +88,14 @@ export interface SongVersion {
   name: string;
   /** Roher ChordPro-Inhalt dieser Version. */
   text: string;
+  /**
+   * Die Tonart, in der **dieser Text notiert ist** – aus seiner eigenen `{key: …}`-Zeile (#398).
+   *
+   * `null`, wenn die Version keine trägt; dann gilt die Tonart des Originals (`originalKey`). Bis
+   * #398 galt sie immer, für jede Version – eine in D geschriebene Fassung eines G-Liedes wurde
+   * deshalb von G aus transponiert und stimmte nur, solange niemand die Tonart anfasste.
+   */
+  writtenKey: string | null;
 }
 
 /** Ein Arrangement zur Auswahl bei der Songsuche. */

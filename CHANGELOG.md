@@ -66,6 +66,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   **Tempo** in ChurchTools ankommt. Der Endpunkt war über seine Fehlerpfade geprüft, nicht über
   seine Wirkung.
 
+### Behoben
+
 - **„Neues Lied" warnte während des Anlegens vor dem eigenen Werk (#395).** Wer ein Lied aus SongSelect
   anlegte, sah für ein paar Sekunden „„<Titel>" gibt es schon. Anlegen geht trotzdem …" – für ein Lied,
   das es vorher nicht gab. `useLiedAnlegen` verwirft die Bibliothek, sobald das Lied in ChurchTools
@@ -128,6 +130,20 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
     (von heute bis zu einem Tag, höchstens ein Jahr; Personen-ID immer aus der Sitzung), neues Recht
     `canUseAvailability`, Env `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1 = „Abwesend").
   - Geführte Einführung für den neuen Bereich (`verfuegbarkeit-v4`).
+
+- **Der Editor arbeitet in der Tonart, die auf dem Blatt steht – und jede Version kennt ihre
+  eigene Tonart (#398).** Wer ein Lied auf D transponiert hat und dann „Bearbeiten" oder „Neue
+  Version" wählt, sieht im Editor D-Akkorde, nicht mehr die Original-Tonart. Über dem Text steht,
+  in welcher Tonart er steht (mit Kapo auch, wie gegriffen wird). **Gespeichert wird, was man
+  sieht:** Der Text bleibt in dieser Tonart und bekommt eine `{key: …}`-Zeile; die App liest bei
+  jeder Version ihre eigene Tonart und transponiert von dort aus. Bis jetzt galt die Tonart der
+  Original-Datei für **alle** Versionen – eine in D geschriebene Fassung eines G-Liedes wurde von G
+  aus verschoben und stimmte nur, solange niemand die Tonart anfasste. Alwins Wunsch vom
+  20.09.2026, nach einem Abend Zurückrechnen. Entschieden: kein heimliches Zurückrechnen beim
+  Speichern (das hätte Schreibweisen wie Eb/D# verändert), das Original bleibt immer in seiner
+  Tonart (vom Blatt aus wird es ohnehin nie überschrieben), der Kapo bleibt eine Anzeige-Sache.
+  Eine neue Version aus einer transponierten Ansicht übernimmt die gewählte Tonart – sonst sähe man
+  nach dem Speichern die ChurchTools-Zieltonart statt dessen, was man eben getippt hat.
 
 ### Geändert
 
