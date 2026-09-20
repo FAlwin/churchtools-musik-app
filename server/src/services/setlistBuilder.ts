@@ -183,7 +183,10 @@ async function buildSong(
   const chordproFailed = original.failed || versionResults.some((r) => r.failed);
   const versions: SongVersion[] = versionFiles.map((f, i) => {
     const name = versionNameOf(f) ?? 'Version';
-    return { key: versionSlug(name), name, text: versionResults[i]?.text ?? '' };
+    const text = versionResults[i]?.text ?? '';
+    // Die Tonart der VERSION – dieselbe Regel wie für das Original weiter unten: Die Datei hat das
+    // letzte Wort (#236). Ohne eigene Zeile bleibt `null`, und die App nimmt die des Originals (#398).
+    return { key: versionSlug(name), name, text, writtenKey: metaValue(text, 'key') };
   });
 
   // Kopfangaben aus dem Original ableiten (sonst erste Version, falls kein Original existiert)
@@ -272,7 +275,7 @@ export async function createVersion(
     throw new HttpError(409, `Es gibt bereits eine Version „${trimmed}".`);
   }
   await uploadChordpro(cookie, arrangementId, versionFileName(songName, trimmed), text);
-  return { key, name: trimmed, text };
+  return { key, name: trimmed, text, writtenKey: metaValue(text, 'key') };
 }
 
 /** Aktualisiert Text und/oder Namen einer vorhandenen Version. */
@@ -301,7 +304,7 @@ export async function updateVersion(
   const id = fileIdFromUrl(current.file.fileUrl);
   if (id) await deleteFile(cookie, id);
   await uploadChordpro(cookie, arrangementId, versionFileName(songName, newName), text);
-  return { key: newKey, name: newName, text };
+  return { key: newKey, name: newName, text, writtenKey: metaValue(text, 'key') };
 }
 
 /** Löscht eine benannte Version (das Original bleibt erhalten). */

@@ -277,3 +277,41 @@ Fall hat schon einmal ein vorhandenes Notenblatt gekostet (#322).
 - **Historie:** #322
 
 </details>
+
+### TF-EINST-11 · Im Editor in der angezeigten Tonart arbeiten
+
+**Das brauchst du:** Ein Lied, dessen Original in einer Tonart steht (z. B. G), und das Recht,
+Versionen anzulegen. Ein Testlied ist besser als ein echtes – Versionen landen in ChurchTools.
+
+**Das muss passieren:** Der Editor zeigt dieselben Akkorde wie das Blatt, und nach dem Speichern
+stimmt das Blatt weiter – ohne dass du irgendwo rechnen musst.
+
+1. Das Lied öffnen, auf den Titel tippen und die Tonart auf **D** stellen. Das Blatt zeigt
+   D-Akkorde.
+2. Titel → **Neue Version**. Der Editor zeigt **D-Akkorde** (nicht G), über dem Text steht
+   „Tonart **D**". Im Text steht eine Zeile `{key: D}`.
+3. Einen Akkord ändern, Versionsname eingeben, **Speichern**. Das Blatt zeigt die neue Version
+   **in D** – nicht plötzlich in G.
+4. Diese Version erneut bearbeiten: Der Editor zeigt wieder D. Die Vorschau rechts steht auf ±0
+   und sieht aus wie das Blatt.
+5. Bei der Version die Tonart auf **A** stellen, dann bearbeiten: Der Editor zeigt A-Akkorde und
+   „Tonart **A**". Speichern → das Blatt zeigt A, und in ChurchTools steht in der Datei `{key: A}`.
+6. **Kapo:** Bei der Version Kapo 2 setzen. Das Blatt zeigt gegriffene Akkorde (eine Tonart
+   tiefer). Bearbeiten: Der Editor zeigt trotzdem die **klingende** Tonart und sagt „mit Kapo 2
+   gegriffen als …".
+7. **Gleiche Tonart, nichts umgeschrieben:** Ein Lied mit b-Akkorden (z. B. Bb, Eb) in seiner
+   eigenen Tonart bearbeiten, ohne zu transponieren. Der Editor zeigt die Akkorde **genauso
+   geschrieben** wie in der Datei – kein Bb wird zu A#.
+8. **Bestehende Version in anderer Tonart:** Eine Version, deren Text in D steht, während das
+   Original in G ist, und die noch keine `{key}`-Zeile hat, zeigt weiterhin die alte Anzeige. Sie
+   einmal öffnen und speichern – dann bekommt sie ihre `{key}`-Zeile und wird ab da richtig
+   angezeigt.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `client/src/hooks/useChartEditor.ts`, `client/src/utils/transpose.ts`, `client/src/utils/songVersions.ts`, `client/src/utils/chartPdfOptions.ts`, `client/src/utils/activeSongView.ts`, `client/src/components/ChordEditor.tsx`, `server/src/services/setlistBuilder.ts`
+- **Automatisiert:** teilweise – `client/src/utils/transpose.test.ts` (ganzer Text, `{key}`-Zeile, 0 Halbtöne buchstäblich), `client/src/utils/songVersions.test.ts` (Tonart je Version), `client/src/utils/chartPdfOptions.test.ts` (Versatz je Version), `client/src/hooks/useChartEditor.test.ts` (öffnet in Blatt-Tonart, Wahl geht in neue Version mit), `client/src/components/ChordEditor.test.tsx` (Tonart-Zeile), `server/src/services/buildSong.head.test.ts` (`writtenKey` aus der Versions-Datei); von Hand bleibt, dass ChurchTools die Datei mit der `{key}`-Zeile wirklich so ablegt
+- **Historie:** #398 (20.09.2026), Wunsch Alwin nach einem Abend Zurückrechnen
+
+</details>

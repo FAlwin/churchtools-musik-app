@@ -47,48 +47,6 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
   Neu ist auch eine kurze **Einführung** beim ersten Öffnen des Stammdaten-Blattes.
 
-### Behoben
-
-- **Ein Test, der in der CI mal grün, mal rot war – und der Grund war nicht, was er zuerst schien.**
-  Im Lauf zu PR #397 fielen zwei Anmerkungs-Tests: einer an der Zeitgrenze, der nächste mit
-  `ENOTEMPTY` beim Aufräumen. Derselbe Stand lief zur selben Zeit im Push-Workflow grün. Der erste
-  Verdacht – ein Verzeichnisname aus der Prozess-ID, der zwei Läufe kollidieren lässt – war eine
-  Hypothese und blieb es: Die Messung zeigte eine einfachere Kette. Der Test schreibt absichtlich
-  rund 275 MB, um eine 50-MB-Grenze zu erreichen (lokal 1,2 s, auf dem Runner über 5 s); läuft er in
-  die Zeitgrenze, schreibt seine Schleife **weiter**, während der nächste Test schon aufräumt – und
-  `fs.rm` mit `force` schützt nur gegen „gibt es nicht", **nicht** gegen „ist nicht leer"
-  (nachgestellt in 60 von 60 Durchgängen). Drei Änderungen, alle nur an der Testumgebung: Die beiden
-  langsamen Tests bekommen eine begründete Zeitgrenze von 30 s; ein gemeinsamer Helfer
-  (`testHilfen/tempAblage.ts`) würfelt für **alle sieben** Testdateien mit diesem Muster ein
-  eindeutiges Verzeichnis je Lauf, räumt mit Wiederholungen und am Ende von selbst auf. Am
-  Produktivcode der Anmerkungen ist nichts geändert.
-
-- **Drei Stellen, an denen dieselbe Regel ein zweites Mal stand (#396).** Gefunden bei der
-  Dopplungs-Suche zum Arrangement-Umbau, alle drei ohne sichtbare Auswirkung – aber alle drei von
-  der Sorte, die später teuer wird:
-  - Das **Tempo-Speichern** baute den Lese-Schreib-Zyklus nach, statt die gemeinsame Funktion zu
-    benutzen – und zwar die gefährlichste Regel des Projekts (ein unvollständiger Schreibvorgang
-    löscht Tonart und Dauer für das ganze Team).
-  - Die **Liedquellen** wurden bei jedem geöffneten Lied neu geholt, während dieselbe Antwort für
-    die Abwesenheitsgründe längst eine Minute gemerkt wird.
-  - Dabei fiel auf: Das **Abmelden** räumte die Abwesenheitsgründe nicht weg. Sie kamen mit #177
-    dazu und wurden in die Aufräum-Liste nicht eingetragen – in genau dem Modul, das gegen diesen
-    Fehler gebaut wurde. Jetzt prüft es ein Test.
-
-  Dazu eine Testlücke, die nur eine Gegenprobe zeigen konnte: Niemand belegte, dass das eingestellte
-  **Tempo** in ChurchTools ankommt. Der Endpunkt war über seine Fehlerpfade geprüft, nicht über
-  seine Wirkung.
-
-- **„Neues Lied" warnte während des Anlegens vor dem eigenen Werk (#395).** Wer ein Lied aus SongSelect
-  anlegte, sah für ein paar Sekunden „„<Titel>" gibt es schon. Anlegen geht trotzdem …" – für ein Lied,
-  das es vorher nicht gab. `useLiedAnlegen` verwirft die Bibliothek, sobald das Lied in ChurchTools
-  steht; danach läuft aber noch der Notenblatt-Download, und solange bleibt das Formular sichtbar. Die
-  Warnung fand also den eben angelegten Eintrag. Sie ruht jetzt, solange das Anlegen läuft – wer
-  gedrückt hat, kann den Namen ohnehin nicht mehr ändern. Beim **Ändern** eines Liedes gab es den
-  Fehler nicht: Dort schließt das Blatt sofort, und das eigene Lied ist von der Suche ausgenommen.
-
-### Neu
-
 - **„Dieses Lied gibt es schon" – fragen statt abweisen (#395).** Trägt ein Lied der Bibliothek schon
   dieselbe **CCLI-Nummer**, öffnet vor dem Anlegen ein Dialog mit Name, Autor, Nummer und Tonart des
   vorhandenen Liedes. Drei Wege, und alle führen irgendwohin: **verwenden** (einfügen, verknüpfen oder
@@ -99,8 +57,6 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   **Notenblatt kommt auch beim zweiten Lied**: Ohne Nummer im Formular nimmt `notenblattPlan` die des
   SongSelect-Treffers. Die Regel, wie CCLI-Nummern verglichen werden (getrimmter Text, nie eine Zahl),
   liegt jetzt als `ccliSchluessel` in `@shared/lieder` – eine Quelle für App und Server.
-
-### Neu
 
 - **Tab „Abwesenheiten" – eigene Abwesenheiten in der App (#177, Phase 1 / PR 1).** Wer aktives
   Mitglied einer unter „Anmerkungen → Gruppen-Zuweisung" gewählten Gruppe ist, bekommt einen vierten
@@ -142,6 +98,20 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
     `canUseAvailability`, Env `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1 = „Abwesend").
   - Geführte Einführung für den neuen Bereich (`verfuegbarkeit-v4`).
 
+- **Der Editor arbeitet in der Tonart, die auf dem Blatt steht – und jede Version kennt ihre
+  eigene Tonart (#398).** Wer ein Lied auf D transponiert hat und dann „Bearbeiten" oder „Neue
+  Version" wählt, sieht im Editor D-Akkorde, nicht mehr die Original-Tonart. Über dem Text steht,
+  in welcher Tonart er steht (mit Kapo auch, wie gegriffen wird). **Gespeichert wird, was man
+  sieht:** Der Text bleibt in dieser Tonart und bekommt eine `{key: …}`-Zeile; die App liest bei
+  jeder Version ihre eigene Tonart und transponiert von dort aus. Bis jetzt galt die Tonart der
+  Original-Datei für **alle** Versionen – eine in D geschriebene Fassung eines G-Liedes wurde von G
+  aus verschoben und stimmte nur, solange niemand die Tonart anfasste. Alwins Wunsch vom
+  20.09.2026, nach einem Abend Zurückrechnen. Entschieden: kein heimliches Zurückrechnen beim
+  Speichern (das hätte Schreibweisen wie Eb/D# verändert), das Original bleibt immer in seiner
+  Tonart (vom Blatt aus wird es ohnehin nie überschrieben), der Kapo bleibt eine Anzeige-Sache.
+  Eine neue Version aus einer transponierten Ansicht übernimmt die gewählte Tonart – sonst sähe man
+  nach dem Speichern die ChurchTools-Zieltonart statt dessen, was man eben getippt hat.
+
 ### Geändert
 
 - **Look der ChurchTools-App statt des Web-Clients (#393).** Entscheidung Alwin (19.09.2026) anhand von
@@ -154,6 +124,7 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Fehlerseite. **Drei Grün-Kopien zusammengeführt:** `--green` gab es nicht, drei Dateien hatten je einen
   eigenen Fallback-Wert (`#168a16`, `#168a16`, `#1bb0a2`). Das Logo (`logo.svg`/`favicon.svg`) behält seine
   Balkenfarben – es ist Markenzeichen, kein UI-Token.
+
 - **„Neues Lied" und SongSelect auch in „Lied verknüpfen" (#391).** Wer im Ablauf einem vorhandenen
   Punkt ein Lied zuordnet, kann es jetzt an derselben Stelle anlegen – oben rechts „Neues Lied" (der
   Suchbegriff wird zum Titel) oder über einen SongSelect-Treffer, wie beim Hinzufügen. Das Lied
@@ -163,6 +134,46 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Verknüpfung mit. Bisher gab es diesen Weg nur beim Hinzufügen und im Liederheft – bewusst, weil der
   Anlege-Weg nur einen neuen Punkt schreiben konnte (`docs/entwicklung/entscheidungen.md`). Geführte
   Einführung `setlist-edit-v4`.
+
+### Behoben
+
+- **Ein Test, der in der CI mal grün, mal rot war – und der Grund war nicht, was er zuerst schien.**
+  Im Lauf zu PR #397 fielen zwei Anmerkungs-Tests: einer an der Zeitgrenze, der nächste mit
+  `ENOTEMPTY` beim Aufräumen. Derselbe Stand lief zur selben Zeit im Push-Workflow grün. Der erste
+  Verdacht – ein Verzeichnisname aus der Prozess-ID, der zwei Läufe kollidieren lässt – war eine
+  Hypothese und blieb es: Die Messung zeigte eine einfachere Kette. Der Test schreibt absichtlich
+  rund 275 MB, um eine 50-MB-Grenze zu erreichen (lokal 1,2 s, auf dem Runner über 5 s); läuft er in
+  die Zeitgrenze, schreibt seine Schleife **weiter**, während der nächste Test schon aufräumt – und
+  `fs.rm` mit `force` schützt nur gegen „gibt es nicht", **nicht** gegen „ist nicht leer"
+  (nachgestellt in 60 von 60 Durchgängen). Drei Änderungen, alle nur an der Testumgebung: Die beiden
+  langsamen Tests bekommen eine begründete Zeitgrenze von 30 s; ein gemeinsamer Helfer
+  (`testHilfen/tempAblage.ts`) würfelt für **alle sieben** Testdateien mit diesem Muster ein
+  eindeutiges Verzeichnis je Lauf, räumt mit Wiederholungen und am Ende von selbst auf. Am
+  Produktivcode der Anmerkungen ist nichts geändert.
+
+- **Drei Stellen, an denen dieselbe Regel ein zweites Mal stand (#396).** Gefunden bei der
+  Dopplungs-Suche zum Arrangement-Umbau, alle drei ohne sichtbare Auswirkung – aber alle drei von
+  der Sorte, die später teuer wird:
+  - Das **Tempo-Speichern** baute den Lese-Schreib-Zyklus nach, statt die gemeinsame Funktion zu
+    benutzen – und zwar die gefährlichste Regel des Projekts (ein unvollständiger Schreibvorgang
+    löscht Tonart und Dauer für das ganze Team).
+  - Die **Liedquellen** wurden bei jedem geöffneten Lied neu geholt, während dieselbe Antwort für
+    die Abwesenheitsgründe längst eine Minute gemerkt wird.
+  - Dabei fiel auf: Das **Abmelden** räumte die Abwesenheitsgründe nicht weg. Sie kamen mit #177
+    dazu und wurden in die Aufräum-Liste nicht eingetragen – in genau dem Modul, das gegen diesen
+    Fehler gebaut wurde. Jetzt prüft es ein Test.
+
+  Dazu eine Testlücke, die nur eine Gegenprobe zeigen konnte: Niemand belegte, dass das eingestellte
+  **Tempo** in ChurchTools ankommt. Der Endpunkt war über seine Fehlerpfade geprüft, nicht über
+  seine Wirkung.
+
+- **„Neues Lied" warnte während des Anlegens vor dem eigenen Werk (#395).** Wer ein Lied aus SongSelect
+  anlegte, sah für ein paar Sekunden „„<Titel>" gibt es schon. Anlegen geht trotzdem …" – für ein Lied,
+  das es vorher nicht gab. `useLiedAnlegen` verwirft die Bibliothek, sobald das Lied in ChurchTools
+  steht; danach läuft aber noch der Notenblatt-Download, und solange bleibt das Formular sichtbar. Die
+  Warnung fand also den eben angelegten Eintrag. Sie ruht jetzt, solange das Anlegen läuft – wer
+  gedrückt hat, kann den Namen ohnehin nicht mehr ändern. Beim **Ändern** eines Liedes gab es den
+  Fehler nicht: Dort schließt das Blatt sofort, und das eigene Lied ist von der Suche ausgenommen.
 
 ## [2.24.1] – 2026-09-05
 

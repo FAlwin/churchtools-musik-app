@@ -1,6 +1,7 @@
 import type { SetlistSong } from '@shared/types/index';
 import type { ChordPdfOptions } from './chordPdf';
 import type { SongSettings } from './chartSettings';
+import { notierteTonart } from './songVersions';
 import { getSemitoneOffset } from './transpose';
 
 /**
@@ -20,8 +21,11 @@ export function pdfOptionsForSong(
   // vorher ein leerer Wert und der Versatz war nicht mehr berechenbar. Die frühere zweite Fassung
   // in `songPdfOpts.ts` fiel korrekt auf `originalKey` zurück – diese Regel gilt jetzt hier (#239).
   const targetKey = st.key || song.targetKey || song.originalKey || '';
+  // Von der Tonart aus, in der DIESE Version notiert ist – nicht immer von der des Originals (#398).
+  // Eine in D geschriebene Fassung eines G-Liedes wurde vorher von G aus verschoben.
+  const notiert = notierteTonart(song, st.versionKey);
   return {
-    semitones: getSemitoneOffset(song.originalKey, targetKey) - st.capo,
+    semitones: getSemitoneOffset(notiert, targetKey) - st.capo,
     cols: st.cols,
     // Die Anzeige rechnet in Bildschirm-Pixeln, die PDF in Punkt – 0,6 ist der eingespielte Faktor.
     // Nie unter 8 pt, sonst wird das Chart auf dem Notenständer unlesbar.

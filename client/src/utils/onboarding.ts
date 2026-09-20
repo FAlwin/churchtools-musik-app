@@ -38,7 +38,9 @@ export const TOUR_TERMINE = 'termine-v3';
 // chart-v3: Der Tipp in die Mitte blendet jetzt die Leisten aus (#319) – die Geste findet man
 // sonst nicht von selbst. Version erhöht, damit Bestandsnutzer den geänderten Schritt sehen.
 // (chart-v2 hatte den Schritt „Team-Anmerkungen" (#124) ergänzt.)
-export const TOUR_CHART = 'chart-v5';
+// chart-v6 (20.09.2026, #398): Der Schritt „Lied-Optionen" sagt jetzt, dass der Editor in der
+// eingestellten Tonart arbeitet – vorher musste man das erraten (und Alwin hat zurückgerechnet).
+export const TOUR_CHART = 'chart-v6';
 
 /**
  * Einmaliger Hinweis, wenn die Leisten zum ersten Mal ausgeblendet werden (#319).
@@ -147,7 +149,7 @@ export const CHART_STEPS: CoachStep[] = [
   {
     selector: '[data-tour="chart-lied"]',
     title: 'Lied-Optionen',
-    body: 'Tippe auf den Titel, um die Tonart zu ändern, eine Version zu wählen oder zu transponieren. Unter „Dateien …" verwaltest du die Notenblätter des Arrangements, unter „Stammdaten …" Name, Kategorie, Autor und Copyright des Liedes.',
+    body: 'Tippe auf den Titel, um die Tonart zu ändern, eine Version zu wählen oder zu transponieren. Bearbeitest du eine Version, arbeitet der Editor in der Tonart, die hier eingestellt ist – gespeichert wird, was du siehst. Unter „Dateien …" verwaltest du die Notenblätter des Arrangements, unter „Stammdaten …" Name, Kategorie, Autor und Copyright des Liedes.',
   },
   {
     selector: '[data-tour="chart-aussehen"]',

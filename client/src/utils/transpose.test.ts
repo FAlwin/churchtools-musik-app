@@ -5,6 +5,8 @@ import {
   shiftKey,
   ALL_KEYS_MAJOR,
   ALL_KEYS_MINOR,
+  transposeChordpro,
+  mitTonart,
 } from './transpose';
 
 describe('transposeChord', () => {
@@ -90,5 +92,66 @@ describe('Tonart-Listen', () => {
     expect(ALL_KEYS_MAJOR).toHaveLength(12);
     expect(ALL_KEYS_MINOR).toHaveLength(12);
     expect(ALL_KEYS_MINOR.every((k) => k.endsWith('m'))).toBe(true);
+  });
+});
+
+/**
+ * #398: Der Editor zeigt den Text in der Tonart des Blatts – dafür muss ein GANZER Text
+ * transponiert werden, nicht nur ein Akkord bei der Anzeige. Die Regel für den einzelnen Akkord
+ * bleibt `transposeChord`; hier geht es darum, WAS angefasst wird und was nicht.
+ */
+describe('transposeChordpro', () => {
+  it('verschiebt alle Akkorde in eckigen Klammern', () => {
+    expect(transposeChordpro('[G]Herr, [D]du bist [Em]gut', 2)).toBe(
+      '[A]Herr, [E]du bist [F#m]gut',
+    );
+  });
+
+  it('zieht die {key}-Zeile mit – Kopf und Akkorde dürfen nie auseinanderlaufen', () => {
+    expect(transposeChordpro('{key: G}\n[G]Text', 7)).toBe('{key: D}\n[D]Text');
+  });
+
+  it('lässt andere Direktiven in Ruhe – in einem Kommentar steht kein Akkord', () => {
+    const t = '{title: Am Anfang}\n{comment: Bridge}\n[A]Text';
+    expect(transposeChordpro(t, 2)).toBe('{title: Am Anfang}\n{comment: Bridge}\n[B]Text');
+  });
+
+  it('gibt bei 0 Halbtönen den Text BUCHSTÄBLICH zurück – keine Schreibweise wird angefasst', () => {
+    const t = '{key: Bb}\n[Bb]Text [Eb/G]mehr';
+    expect(transposeChordpro(t, 0)).toBe(t);
+  });
+
+  it('nimmt Bass-Töne und Klammer-Akkorde mit – dieselbe Regel wie die Anzeige', () => {
+    expect(transposeChordpro('[D/F#]Text [(A)]leise', 2)).toBe('[E/G#]Text [(B)]leise');
+  });
+
+  it('verträgt eine leere {key: }-Zeile, ohne sie zu erfinden', () => {
+    expect(transposeChordpro('{key: }\n[C]Text', 2)).toBe('{key: }\n[D]Text');
+  });
+});
+
+/**
+ * Eine gespeicherte Version muss ihre Tonart SELBST nennen (#398): Ohne `{key}`-Zeile nähme die App
+ * die Tonart des Originals an – genau der Fehler, der Alwin einen Abend gekostet hat.
+ */
+describe('mitTonart', () => {
+  it('ersetzt eine vorhandene {key}-Zeile', () => {
+    expect(mitTonart('{title: X}\n{key: G}\n[G]Text', 'D')).toBe('{title: X}\n{key: D}\n[G]Text');
+  });
+
+  it('ergänzt die Zeile hinter dem Kopfblock, wenn keine da ist', () => {
+    expect(mitTonart('{title: X}\n{artist: Y}\n[G]Text', 'D')).toBe(
+      '{title: X}\n{artist: Y}\n{key: D}\n[G]Text',
+    );
+  });
+
+  it('setzt sie ganz oben, wenn es keinen Kopfblock gibt', () => {
+    expect(mitTonart('[G]Text', 'D')).toBe('{key: D}\n[G]Text');
+  });
+
+  it('erfindet keine zweite Zeile, wenn schon eine da ist – auch weiter unten', () => {
+    const r = mitTonart('[G]Text\n{key: G}', 'D');
+    expect(r.match(/\{key/g)).toHaveLength(1);
+    expect(r).toContain('{key: D}');
   });
 });

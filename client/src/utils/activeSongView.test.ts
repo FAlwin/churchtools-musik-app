@@ -52,7 +52,9 @@ describe('deriveActiveSongView – Versionen', () => {
   });
 
   it('wählt die gespeicherte Version und liefert deren Text', () => {
-    const s = song({ versions: [{ key: 'akustik', name: 'Akustik', text: '[G]Anders' }] });
+    const s = song({
+      versions: [{ key: 'akustik', name: 'Akustik', text: '[G]Anders', writtenKey: null }],
+    });
     const v = deriveActiveSongView(s, set({ versionKey: 'akustik' }));
     expect(v.currentVersion.name).toBe('Akustik');
     expect(v.isOriginal).toBe(false);
@@ -104,7 +106,10 @@ describe('deriveActiveSongView – Info-Zeile im Kopf', () => {
   });
 
   it('nennt Version und Tempo in dieser Reihenfolge, wenn beides da ist', () => {
-    const s = song({ bpm: 72, versions: [{ key: 'akustik', name: 'Akustik', text: 'x' }] });
+    const s = song({
+      bpm: 72,
+      versions: [{ key: 'akustik', name: 'Akustik', text: 'x', writtenKey: null }],
+    });
     const info = deriveActiveSongView(s, set({ versionKey: 'akustik' })).headInfo;
     expect(info.map((p) => p.art)).toEqual(['key', 'plain', 'bpm']);
     // Der Tempo-Teil trägt bewusst KEINE fertige Beschriftung: Symbol und Zahl setzt die Kopfzeile,
@@ -161,11 +166,24 @@ describe('Arrangement in der Info-Zeile (#320)', () => {
     const s = song({
       arrangementName: 'Akustik',
       arrangementCount: 2,
-      versions: [{ key: 'leise', name: 'Leise', text: 'x' }],
+      versions: [{ key: 'leise', name: 'Leise', text: 'x', writtenKey: null }],
     });
     const texte = deriveActiveSongView(s, set({ versionKey: 'leise' }))
       .headInfo.filter((p) => p.art === 'plain')
       .map((p) => (p as { text: string }).text);
     expect(texte).toEqual(['Akustik', 'Leise']);
+  });
+});
+
+describe('deriveActiveSongView – notierte Tonart (#398)', () => {
+  it('nennt für das Original die Original-Tonart', () => {
+    expect(deriveActiveSongView(song(), set()).notierteTonart).toBe('C');
+  });
+
+  it('nennt für eine Version mit eigener Tonart-Zeile deren Tonart', () => {
+    const s = song({
+      versions: [{ key: 'akustik', name: 'Akustik', text: '{key: D}\n[D]x', writtenKey: 'D' }],
+    });
+    expect(deriveActiveSongView(s, set({ versionKey: 'akustik' })).notierteTonart).toBe('D');
   });
 });
