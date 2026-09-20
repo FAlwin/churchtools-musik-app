@@ -64,7 +64,7 @@ export class ErrorBoundary extends Component<
             fontSize: 15,
             border: 'none',
             borderRadius: 8,
-            background: '#0061a1',
+            background: '#2563eb',
             color: '#fff',
           }}
         >
