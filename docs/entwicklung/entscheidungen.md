@@ -370,3 +370,33 @@ ausgeben.
 gemessen), aber es ist **offen, ob CCLI einen Textabruf als Nutzung vermerkt** – beim Notenblatt ist das so.
 Solange das nicht gemessen ist, wird nicht abgerufen: Ein Abruf bei jedem Durchsehen könnte der Gemeinde
 Nutzungen verbuchen, die niemand wollte.
+
+## Doppelte Lieder: der Server blockiert, die App fragt (#395, 20.09.2026)
+
+Ein zweites Lied mit derselben **CCLI-Nummer** lehnt der Server ab (`songVerwaltung.ts`, 409) – das
+bleibt so. Eine Prüfung, die nur in der Oberfläche steht, umginge jeder, der den Endpunkt direkt
+aufruft.
+
+**Neu ist, was die App davor tut.** Bis zum 19.09.2026 füllte man das Formular, drückte „Lied anlegen"
+und bekam eine Fehlermeldung – eine Sackgasse, aus der nur Abbrechen führte. Jetzt sucht die App vorher
+in der Bibliothek (`vorhandenesLied`) und stellt die Frage, die hinter der Fehlermeldung steckt:
+**verwenden, trotzdem anlegen oder zurück?** Alwin am 19.09.2026: „dann muss man entscheiden was man
+macht."
+
+Drei Punkte, die dabei bewusst so entschieden sind:
+
+- **Erkannt wird an der CCLI-Nummer, nicht am Namen.** Gleiche Titel sind bei Liedern normal
+  (Übersetzungen, Fassungen); dafür gibt es die Namenswarnung, und die blockiert nicht. Die Nummer ist
+  die einzige Angabe, die ein Lied eindeutig macht.
+- **Die Suche der App ist schwächer als die des Servers – und das ist richtig so.** Sie läuft über die
+  Bibliothek, und die enthält nur Lieder **mit** Arrangement; der Server sieht über `getAllSongs` auch
+  die ohne. Anbieten lässt sich ohnehin nur ein Lied mit Arrangement, und findet die App nichts, lehnt
+  der Server wie bisher ab.
+- **„Trotzdem neu anlegen" gibt die Nummer ab.** ChurchTools vergibt sie nur einmal; ein zweites Lied
+  mit derselben Nummer wäre nicht mehr zuzuordnen. Das **Notenblatt** kommt trotzdem: Ohne Nummer im
+  Formular nimmt `notenblattPlan` die des SongSelect-Treffers – den hat der Nutzer ja selbst gewählt.
+
+Die Vergleichsregel (getrimmter Text, nie eine Zahl – sonst verliert „0123" seine Identität und
+`Number('')` träfe jedes Lied ohne Nummer) liegt seit diesem Schritt in `@shared/lieder` als
+`ccliSchluessel`. Vorher stand sie nur im Server; als zweite Kopie im Client wäre genau dort die nächste
+Abweichung gelandet.

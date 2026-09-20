@@ -20,6 +20,7 @@ import {
   notenblattPlan,
   sucheArt,
   trefferUnterzeile,
+  vorhandenesLied,
 } from './liedFormular';
 
 /**
@@ -400,5 +401,63 @@ describe('automatischSuchen – wann von selbst gesucht wird', () => {
   it('zählt Leerzeichen nicht mit', () => {
     expect(automatischSuchen('  Tre  ', MIN)).toBe(true);
     expect(automatischSuchen('   ', MIN)).toBe(false);
+  });
+});
+
+/**
+ * **Gibt es dieses Lied schon?** (#395) Die Frage hängt allein an der CCLI-Nummer – der einzigen
+ * Angabe, die ein Lied eindeutig macht. Verglichen wird getrimmter Text (`ccliSchluessel` in
+ * `@shared/lieder`), damit eine Nummer mit führender Null ihre Identität behält und ein Lied ohne
+ * Nummer nicht zum Treffer für jedes andere wird.
+ */
+describe('vorhandenesLied – die Rückfrage vor dem Anlegen', () => {
+  const BIB: SongLibraryEntry[] = [
+    { songId: 1, name: 'Ohne Nummer', author: null, ccli: null, key: null, arrangementId: 10 },
+    { songId: 2, name: 'Treu', author: 'Autor A', ccli: '5841527', key: 'G', arrangementId: 20 },
+    { songId: 3, name: 'Führende Null', author: null, ccli: '0123', key: null, arrangementId: 30 },
+  ];
+
+  it('findet das Lied zur Nummer', () => {
+    expect(vorhandenesLied('5841527', BIB)?.songId).toBe(2);
+  });
+
+  it('Leerzeichen am Rand sind kein Unterschied', () => {
+    expect(vorhandenesLied('  5841527 ', BIB)?.songId).toBe(2);
+  });
+
+  it('eine führende Null gehört zur Nummer – als Zahl gelesen wäre „0123" gleich „123"', () => {
+    expect(vorhandenesLied('0123', BIB)?.songId).toBe(3);
+    expect(vorhandenesLied('123', BIB)).toBeNull();
+  });
+
+  it('ohne Nummer gibt es nichts zu fragen – und kein Lied ohne Nummer wird zum Treffer', () => {
+    expect(vorhandenesLied('', BIB)).toBeNull();
+    expect(vorhandenesLied('   ', BIB)).toBeNull();
+  });
+
+  it('unbekannte Nummer: kein Treffer', () => {
+    expect(vorhandenesLied('9999999', BIB)).toBeNull();
+  });
+
+  it('das eigene Lied zählt nicht – sonst wäre beim Ändern jedes Lied sein eigenes Doppel', () => {
+    expect(vorhandenesLied('5841527', BIB, 2)).toBeNull();
+    expect(vorhandenesLied('5841527', BIB, 3)?.songId).toBe(2);
+  });
+});
+
+describe('notenblattPlan – ohne Nummer im Formular zählt die des Treffers (#395)', () => {
+  it('„Trotzdem neu anlegen" leert die Nummer – die Akkorde kommen trotzdem', () => {
+    expect(notenblattPlan({ ...LEERES_FORMULAR, name: 'Treu' }, TREFFER, true)).toEqual({
+      songNumber: TREFFER.songNumber,
+    });
+  });
+
+  it('ohne Treffer bleibt es dabei: keine Nummer, kein Notenblatt', () => {
+    expect(notenblattPlan({ ...LEERES_FORMULAR, name: 'Treu' }, null, true)).toBeNull();
+  });
+
+  it('eine eingetippte Nummer schlägt die des Treffers – sie ist die Ansage des Nutzers', () => {
+    const f = { ...LEERES_FORMULAR, name: 'Treu', ccli: '4327499' };
+    expect(notenblattPlan(f, TREFFER, true)).toEqual({ songNumber: 4327499 });
   });
 });

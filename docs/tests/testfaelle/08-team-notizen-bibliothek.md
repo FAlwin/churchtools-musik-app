@@ -413,3 +413,45 @@ Durchsehen der Liste passiert von allein nichts.
 - **Historie:** #379 (als Zwischenschritt umgebaut, Rückmeldung Alwin 14.08.2026; zwei Knöpfe je Zeile, Rückmeldung Alwin 04.09.2026)
 
 </details>
+
+### TF-LIB-08 · Das Lied gibt es schon – die Rückfrage
+
+⚠️ **Legt ein echtes Lied in ChurchTools an** (Schritt 5) – hinterher dort wieder wegräumen.
+
+**Das brauchst du:** SongSelect-Lizenz, das Recht, Lieder zu bearbeiten, und ein Lied in eurer
+Bibliothek, dessen **CCLI-Nummer** du kennst (in der Liederliste unter dem Titel, oder in ChurchTools
+am Lied).
+
+**Das muss passieren:** Die App fragt **vor** dem Anlegen, statt hinterher eine Fehlermeldung zu
+zeigen. Und während ein Lied angelegt wird, warnt sie **nicht** vor dem Lied, das sie gerade selbst
+anlegt (#395).
+
+1. Termin öffnen → **Bearbeiten** → **Hinzufügen** → **Lied**. Die CCLI-Nummer eines vorhandenen
+   Liedes eintippen: Es steht in der Bibliothek ganz oben. **Nicht** antippen, sondern über
+   **„Neues Lied"** ins Formular gehen und die Nummer im Feld **CCLI-Nummer** eintragen. Kategorie
+   wählen, **Lied anlegen**.
+2. Es öffnet sich **„Dieses Lied gibt es schon"** mit Name, Autor, Nummer und Tonart des vorhandenen
+   Liedes. **In ChurchTools ist nichts angelegt worden.**
+3. **„<Name>" verwenden** antippen: Das vorhandene Lied steht im Ablauf – kein zweites Lied. Gegenprobe
+   in ChurchTools: Es gibt den Titel weiterhin nur einmal.
+4. Dasselbe im Fenster **Lied verknüpfen** (Punkt antippen → Lied verknüpfen → Neues Lied): Dort wird
+   das vorhandene Lied **vorgemerkt** („Wird beim Speichern verknüpft."), geschrieben erst mit
+   **Speichern**. Und im **Liederheft** („Neues Lied" im Listenkopf): Dort **öffnet** sich das
+   vorhandene Lied.
+5. **Trotzdem neu anlegen:** Schritte 1–2 wiederholen, diesmal **„Trotzdem neu anlegen"**. Das Lied
+   entsteht – in ChurchTools **ohne** CCLI-Nummer (die bleibt beim vorhandenen). Kam der Weg über
+   einen SongSelect-Treffer, hängt das **Notenblatt trotzdem** am Arrangement.
+6. **Zurück zum Formular:** Schritte 1–2, dann **„Zurück zum Formular"** – alle Eingaben stehen noch,
+   nichts wurde angelegt.
+7. **Die falsche Warnung von früher:** Ein Lied über einen **SongSelect-Treffer** anlegen (Titel, den
+   es bei euch nicht gibt). Während der Knopf **„Wird angelegt …"** zeigt, darf **keine** Warnung
+   „… gibt es schon" erscheinen. Vorher tat sie das – für das Lied, das die App selbst gerade anlegte.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `client/src/components/LiedSchonVorhanden.tsx`, `client/src/components/NewSongSheet.tsx`, `client/src/utils/liedFormular.ts`, `shared/lieder/index.ts`, `client/src/components/AddItemSheet.tsx`, `client/src/components/ItemActionSheet.tsx`, `client/src/pages/AllSongs.tsx`
+- **Automatisiert:** teilweise – `client/src/components/NewSongSheet.test.tsx` (Rückfrage statt Anlegen, verwenden, trotzdem ohne Nummer, zurück, keine Warnung während des Anlegens), `client/src/utils/liedFormular.test.ts` (`vorhandenesLied`: führende Null, Leerzeichen, eigenes Lied; `notenblattPlan` fällt auf den Treffer zurück), `client/src/components/ItemActionSheet.test.tsx` (vorgemerkt statt geschrieben); von Hand bleibt, dass ChurchTools wirklich kein zweites Lied anlegt und das Notenblatt am zweiten Lied hängt
+- **Historie:** #395 (20.09.2026), gemeldet von Alwin beim Durchklicken von #391
+
+</details>

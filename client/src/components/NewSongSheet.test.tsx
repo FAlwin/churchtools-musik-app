@@ -43,10 +43,12 @@ const notenblattText = vi.fn();
 const notenblattSpeichern = vi.fn();
 /** Das Ergebnis des Anlegens – `null` = Formular, sonst Erfolgsansicht. Je Test setzbar. */
 const hookErgebnis = vi.fn();
+/** Läuft das Anlegen gerade? Steuerbar, weil die Namenswarnung davon abhängt (#395). */
+const hookLaeuft = vi.fn();
 vi.mock('../hooks/useNeuesLied', () => ({
   useNeuesLied: () => ({
     anlegen,
-    laeuft: false,
+    laeuft: hookLaeuft(),
     fehler: null,
     ungewiss: false,
     ergebnis: hookErgebnis(),
@@ -121,6 +123,7 @@ const nameFeld = () => screen.getByPlaceholderText<HTMLInputElement>('Titel des 
 beforeEach(() => {
   vi.clearAllMocks();
   hookErgebnis.mockReturnValue(null);
+  hookLaeuft.mockReturnValue(false);
   notenblattText.mockResolvedValue('{title: Wo ich auch stehe}\n{key: C}');
   notenblattSpeichern.mockResolvedValue(true);
   caps.mockReturnValue(rechte(false));
@@ -380,5 +383,110 @@ describe('NewSongSheet – Verknüpfen statt Eintragen (#391)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
     expect(onClose).toHaveBeenCalled();
     expect(onVerknuepfen).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * **Die Rückfrage „Dieses Lied gibt es schon"** (#395, Wunsch Alwin 19.09.2026) und der Fehler, der sie
+ * ausgelöst hat: Während des Anlegens meldete die Namenswarnung das eigene, eben angelegte Lied.
+ */
+describe('NewSongSheet – gibt es das Lied schon? (#395)', () => {
+  /** Ein Lied der Bibliothek mit genau der Nummer des Treffers. */
+  const SCHON_DA: SongLibraryEntry = {
+    songId: 77,
+    name: 'Treu (alte Fassung)',
+    author: 'Autor A',
+    ccli: '5841527',
+    key: 'G',
+    arrangementId: 770,
+  };
+
+  function mitTreffer(props: Partial<Parameters<typeof NewSongSheet>[0]> = {}) {
+    const r = zeige({ startTreffer: TREFFER, ...props });
+    fireEvent.click(screen.getByRole('button', { name: 'Aktive Songs' }));
+    return r;
+  }
+
+  it('ohne Treffer in der Bibliothek wird direkt angelegt – die Frage kommt nur, wenn es etwas zu fragen gibt', () => {
+    mitTreffer();
+    fireEvent.click(screen.getByRole('button', { name: 'Lied anlegen' }));
+    expect(anlegen).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Dieses Lied gibt es schon')).toBeNull();
+  });
+
+  it('bei gleicher CCLI-Nummer fragt die App, statt anzulegen – und nennt Lied, Autor und Nummer', () => {
+    bibliothek.mockReturnValue({ data: [...BESTAND, SCHON_DA] });
+    mitTreffer();
+    fireEvent.click(screen.getByRole('button', { name: 'Lied anlegen' }));
+
+    expect(anlegen).not.toHaveBeenCalled();
+    expect(screen.getByText('Dieses Lied gibt es schon')).toBeTruthy();
+    const text = screen.getByText(/trägt schon die CCLI-Nummer/).textContent ?? '';
+    expect(text).toContain('Treu (alte Fassung)');
+    expect(text).toContain('Autor A');
+    expect(text).toContain('5841527');
+  });
+
+  it('„verwenden" gibt das vorhandene Lied zurück – angelegt wird nichts', () => {
+    bibliothek.mockReturnValue({ data: [...BESTAND, SCHON_DA] });
+    const onVorhandenes = vi.fn();
+    mitTreffer({ onVorhandenes });
+    fireEvent.click(screen.getByRole('button', { name: 'Lied anlegen' }));
+    fireEvent.click(screen.getByRole('button', { name: '„Treu (alte Fassung)" verwenden' }));
+
+    expect(onVorhandenes).toHaveBeenCalledWith(SCHON_DA);
+    expect(anlegen).not.toHaveBeenCalled();
+  });
+
+  it('ohne diesen Weg fehlt nur der erste Knopf – die Frage bleibt', () => {
+    bibliothek.mockReturnValue({ data: [...BESTAND, SCHON_DA] });
+    mitTreffer();
+    fireEvent.click(screen.getByRole('button', { name: 'Lied anlegen' }));
+    expect(screen.queryByRole('button', { name: /verwenden/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Trotzdem neu anlegen' })).toBeTruthy();
+  });
+
+  it('„Trotzdem neu anlegen" legt OHNE die CCLI-Nummer an – die gehört dem vorhandenen Lied', () => {
+    bibliothek.mockReturnValue({ data: [...BESTAND, SCHON_DA] });
+    mitTreffer();
+    fireEvent.click(screen.getByRole('button', { name: 'Lied anlegen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Trotzdem neu anlegen' }));
+
+    expect(anlegen).toHaveBeenCalledTimes(1);
+    expect(anlegen.mock.calls[0][0]).toMatchObject({ ccli: '' });
+    // Der Treffer bleibt dabei – nur über ihn kommt das Notenblatt noch aus SongSelect.
+    expect(anlegen.mock.calls[0][2]).toMatchObject({ songNumber: 5841527 });
+    expect(screen.queryByText('Dieses Lied gibt es schon')).toBeNull();
+  });
+
+  it('„Abbrechen" führt zurück ins Formular – nichts angelegt, nichts verworfen', () => {
+    bibliothek.mockReturnValue({ data: [...BESTAND, SCHON_DA] });
+    mitTreffer();
+    fireEvent.click(screen.getByRole('button', { name: 'Lied anlegen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zurück zum Formular' }));
+
+    expect(screen.queryByText('Dieses Lied gibt es schon')).toBeNull();
+    expect(anlegen).not.toHaveBeenCalled();
+    expect(nameFeld().value).toBe('Treu');
+  });
+
+  it('WÄHREND des Anlegens warnt der Name nicht – sonst meldet die App ihr eigenes Werk als Doppel', () => {
+    // Genau der Fehler vom 19.09.2026: Das Lied ist angelegt, die Bibliothek schon neu geholt, der
+    // Notenblatt-Download läuft noch – und das Formular steht weiter da.
+    hookLaeuft.mockReturnValue(true);
+    bibliothek.mockReturnValue({
+      data: [{ songId: 99, name: 'Treu', author: null, ccli: null, key: null, arrangementId: 990 }],
+    });
+    zeige({ startTreffer: TREFFER });
+    expect(screen.getByRole('button', { name: 'Wird angelegt …' })).toBeTruthy();
+    expect(screen.queryByText(/gibt es schon\. Anlegen geht trotzdem/)).toBeNull();
+  });
+
+  it('vor dem Anlegen warnt er weiterhin – gleiche Namen sind erlaubt, aber sollen auffallen', () => {
+    bibliothek.mockReturnValue({
+      data: [{ songId: 99, name: 'Treu', author: null, ccli: null, key: null, arrangementId: 990 }],
+    });
+    zeige({ startTreffer: TREFFER });
+    expect(screen.getByText(/gibt es schon\. Anlegen geht trotzdem/)).toBeTruthy();
   });
 });

@@ -12,9 +12,14 @@
  * vergessen.
  *
  * **Was hier NICHT steht:** die Blockade gegen eine doppelte CCLI-Nummer und die Rechteprüfung. Beides
- * macht der Server (`songVerwaltung.ts`) – eine Prüfung, die nur in der Oberfläche steht, umgeht jeder,
- * der den Endpunkt direkt aufruft. Die Oberfläche zeigt die Meldung des Servers, statt sie
- * vorwegzunehmen.
+ * **entscheidet der Server** (`songVerwaltung.ts`) – eine Prüfung, die nur in der Oberfläche steht,
+ * umgeht jeder, der den Endpunkt direkt aufruft.
+ *
+ * Seit dem 20.09.2026 (#395) sucht `vorhandenesLied` hier trotzdem nach der Nummer – **nicht um zu
+ * blockieren, sondern um zu fragen**: Der Server lehnt ein Doppel mit einer Fehlermeldung ab, und eine
+ * Fehlermeldung ist eine Sackgasse. Die App stellt stattdessen die Frage, die dahintersteht: das
+ * vorhandene Lied nehmen oder doch ein zweites anlegen? Die Regel selbst (`ccliSchluessel`) liegt in
+ * `@shared/lieder` – eine Quelle für beide Seiten.
  */
 import type {
   LiedAnlegenAuftrag,
@@ -25,6 +30,7 @@ import type {
   SongSelectTreffer,
 } from '@shared/types/index';
 import { LIED_GRENZEN } from '@shared/types/index';
+import { ccliSchluessel } from '@shared/lieder/index';
 
 /** Der Stand des Formulars – alle Felder als Text, so wie sie in den Eingabefeldern stehen. */
 export interface NeuesLiedFormular {
@@ -114,6 +120,30 @@ export function namensWarnung(
 }
 
 /**
+ * **Gibt es dieses Lied schon?** Gesucht wird über die **CCLI-Nummer** – sie ist die einzige Angabe,
+ * die ein Lied eindeutig macht (#395, Wunsch Alwin am 19.09.2026: „dann muss man entscheiden, was man
+ * macht"). Gleiche Namen sagen nichts: Übersetzungen und Fassungen heißen normal gleich, dafür gibt es
+ * `namensWarnung`.
+ *
+ * `null`, wenn keine Nummer im Formular steht oder keine passt.
+ *
+ * **Diese Suche ist bewusst schwächer als die des Servers** und darf es sein: Sie läuft über die
+ * Bibliothek, und die enthält nur Lieder **mit** Arrangement (der Server sieht über `getAllSongs` auch
+ * die ohne). Beides ist richtig so – anbieten lässt sich ohnehin nur ein Lied mit Arrangement, und
+ * findet die App nichts, lehnt der Server wie bisher mit seiner Meldung ab. Die App nimmt dem Server
+ * nichts ab, sie kommt ihm nur zuvor.
+ */
+export function vorhandenesLied(
+  ccli: string,
+  songs: SongLibraryEntry[],
+  eigenesLied?: number,
+): SongLibraryEntry | null {
+  const nummer = ccliSchluessel(ccli);
+  if (!nummer) return null;
+  return songs.find((s) => ccliSchluessel(s.ccli) === nummer && s.songId !== eigenesLied) ?? null;
+}
+
+/**
  * Baut den Auftrag für den Server – **leere Felder werden weggelassen, nicht als `""` gesendet.**
  *
  * Der Grund steht in `createSong`: ChurchTools soll seine Vorgaben behalten, statt sie mit einer
@@ -151,13 +181,19 @@ export function auftragAus(
  *  - `null` – nichts zu holen und nichts zu sagen (keine Nummer oder keine SongSelect-Lizenz),
  *  - `{ grund }` – **nicht holen, aber sagen warum.** Wenn CCLI für dieses Lied gar keine Akkorde hat,
  *    wäre der Aufruf ein sicherer Fehlschlag; dann ist ein ruhiger Satz besser als eine Fehlermeldung.
+ *
+ * **Ohne Nummer im Formular zählt die des Treffers** (#395, 20.09.2026). Das ist der Fall „Trotzdem neu
+ * anlegen": Wer ein zweites Lied neben einem vorhandenen will, muss die CCLI-Nummer abgeben – die
+ * Akkorde will er trotzdem. Er hat den SongSelect-Treffer schließlich selbst ausgesucht.
  */
 export function notenblattPlan(
   f: NeuesLiedFormular,
   treffer: SongSelectTreffer | null,
   canUseCcli: boolean,
 ): { songNumber: number } | { grund: string } | null {
-  const nummer = Number(f.ccli.trim());
+  const eingetippt = Number(f.ccli.trim());
+  const nummer =
+    Number.isInteger(eingetippt) && eingetippt > 0 ? eingetippt : (treffer?.songNumber ?? 0);
   if (!canUseCcli || !Number.isInteger(nummer) || nummer <= 0) return null;
 
   // Nur wenn der Treffer zur eingetippten Nummer gehört, wissen wir etwas über die Formate. Wer die

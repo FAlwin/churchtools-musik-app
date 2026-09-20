@@ -1,6 +1,6 @@
 # Umsetzungsplan – Modul „Verfügbarkeit" (Musik-Abwesenheiten) + beidseitiger Excel-Sync
 
-> Status: **Entwurf / noch nicht umgesetzt. Machbarkeit (App-Eingabe) am 16.07.2026 live verifiziert ✅**
+> Status: **In Umsetzung seit 05.09.2026 (PR 1: App-Eingabe). Machbarkeit (App-Eingabe) am 16.07.2026 live verifiziert ✅**
 > Löst die **Weboberfläche** des alten Flask-Planners (`ecgd-musik.ecg-donrath.de`) ab.
 > **Die Excel bleibt aktiv** (Eingabeweg + Dienst-Einteilung) und wird **beidseitig** mit CT synchronisiert.
 
@@ -33,21 +33,35 @@ beidseitiger Abgleich Excel↔CT – und bleibt vorerst Heimat der Dienst-Eintei
 
 ## 2. Getroffene Entscheidungen (16.07.2026, mit Alwin)
 
-| Thema                | Entscheidung                                                                                             |
-| -------------------- | -------------------------------------------------------------------------------------------------------- |
-| Datenhoheit / Master | **ChurchTools ist Master.** Bei Konflikt (Excel ≠ CT am selben Tag) **gewinnt CT** (überschreibt Excel). |
-| App-Eingabe          | Persönliches CT-Session-Cookie → jeder pflegt nur **seine eigenen** (kein Service-Token)                 |
-| Excel                | **bleibt aktiv** – aktiver Eingabeweg + Dienst-Einteilung; beidseitig mit CT gekoppelt                   |
-| CT-Kennzeichnung     | Grund „Abwesend" (`absenceReasonId=1`) **+ Kommentar** mit Marker `[Musikteam] <Freitext>`               |
-| Termine              | Gottesdienste aus CT (Schnellauswahl) **+** freie Datumsauswahl                                          |
-| Reihenfolge          | **Beidseitig gleich mitbauen** (App-Eingabe + voller Sync zusammen)                                      |
-| Rechte               | Eigene: immer. Fremde (Leiteransicht): nur mit Leiter-Rolle                                              |
+| Thema                   | Entscheidung                                                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Datenhoheit / Master    | **ChurchTools ist Master.** Bei Konflikt (Excel ≠ CT am selben Tag) **gewinnt CT** (überschreibt Excel).                                                           |
+| App-Eingabe             | Persönliches CT-Session-Cookie → jeder pflegt nur **seine eigenen** (kein Service-Token)                                                                           |
+| Excel                   | **bleibt aktiv** – aktiver Eingabeweg + Dienst-Einteilung; beidseitig mit CT gekoppelt                                                                             |
+| CT-Kennzeichnung        | Grund „Abwesend" (`absenceReasonId=1`) **+ Kommentar** mit Marker `[Musikteam] <Freitext>`                                                                         |
+| Termine                 | Gottesdienste aus CT (Schnellauswahl) **+** freie Datumsauswahl                                                                                                    |
+| Reihenfolge             | **Beidseitig gleich mitbauen** (App-Eingabe + voller Sync zusammen)                                                                                                |
+| Rechte                  | Eigene: immer. Fremde (Leiteransicht): nur mit Leiter-Rolle                                                                                                        |
+| **Schnitt (05.09.)**    | **Zwei PRs:** PR 1 = generische App-Eingabe, PR 2 = Excel-Sync. **Release erst mit beiden.**                                                                       |
+| **Sync-Ort (05.09.)**   | **Eigener Mini-Dienst** als TS-Workspace `excel-sync/` im Musik-App-Repo (eigenes Dockerfile/Compose), zweiter Container nur bei der ECG – **nicht** im App-Server |
+| **Einteilung (05.09.)** | Bis Phase 2 läuft der **Alt-Job** (`assign_musicians_for_month`) weiter; nichts wird portiert                                                                      |
+| **Tab-Recht (05.09.)**  | `canUseAvailability` = aktives Mitglied einer Gruppe aus `musicianGroupIds` (ohne Rollen-Filter; die Rollen aus `noteRoles` steuern nur Team-Notizen)              |
 
 ### Marker-Konvention (zentral für „nur eigene anfassen")
 
 Von App **und** Sync erzeugte CT-Abwesenheiten tragen den Kommentar-Präfix `[Musikteam] …`.
 
-- **Schreiben/Löschen in CT** nur bei Einträgen mit diesem Marker.
+- **Der Sync** schreibt und löscht in CT nur bei Einträgen mit diesem Marker.
+- **Die App dagegen darf alles, was dem angemeldeten Konto gehört** (Korrektur vom 05.09.2026, nach
+  Alwins Einwand „können wir nicht in unserer App die Daten aus ChurchTools bearbeiten?"). Anlass war
+  eine Messung: **Keiner** der 31 ECG-Bestände trug den Marker – der alte Planner schreibt keinen
+  Kommentar. Die Sperre in der Oberfläche hätte praktisch jeden Eintrag unantastbar gemacht, obwohl
+  dieselbe Person ihn in ChurchTools selbst bearbeiten darf. Beim Ändern bleiben **Grund und
+  Herkunft** erhalten (ein Urlaub wird nicht zu „Abwesend" und bekommt keinen Marker – sonst hielte
+  der Sync ihn für seinen); vor dem **Löschen** eines fremden Eintrags fragt die App nach.
+  ⚠️ **Folge für Phase 2:** Die Excel-Einträge in CT tragen keinen Marker. Der Sync muss „gehört uns"
+  deshalb wie der Alt-Planner am **Grund** erkennen (`absenceReasonId` = Standard) und seine Baseline
+  aus dem Ist-Stand initialisieren – sonst legt der erste Lauf Duplikate an.
 - **Manuelle** CT-Abwesenheiten (Urlaub/Krank, ohne Marker) werden **gelesen** (fürs Anzeigen/
   Excel-Spiegeln), aber **nie verändert/gelöscht**.
 
@@ -58,7 +72,8 @@ Vergleichsgröße nicht unterscheidbar. Lösung: **Baseline-Snapshot** (Stand de
 
 **Datenbasis:** je Zelle `(personId, datum) → abwesend? ja/nein`.
 
-- **C** = aktueller CT-Stand (nur Marker-Einträge zählen als „von uns")
+- **C** = aktueller CT-Stand – „von uns" sind Marker-Einträge **und** (⚠️ §2, Messung 05.09.2026) Einträge
+  mit dem Standardgrund: Die Bestände tragen keinen Marker, sonst legte der erste Lauf Duplikate an
 - **E** = aktueller Excel-Stand (X in der Musiker-Zeile)
 - **B** = Baseline (persistierter JSON-Snapshot auf dem Volume, z. B. `sync-baseline.json`)
 
@@ -126,13 +141,23 @@ pflegen, kein Service-Token für die App-Eingabe nötig.**
 - **Aktivierung rein über Server-Env** (nicht über SiteConfig – die ist teils öffentlich!):
   Modul wird nur registriert, wenn `EXCEL_FILE_ID` + `AZURE_*` + CT-Service-Token gesetzt sind
   (Muster wie Alt-Planner `if _ct_base_url and _ct_token`). Sonst läuft KEIN Excel-Code.
-  > Entscheidung offen: Sync als Teil des Musik-App-Servers **oder** eigenständiger Mini-Dienst
-  > (könnte der entkernte Alt-Planner ohne Web sein). Empfehlung: im Musik-App-Server integrieren
-  > (eine Infrastruktur), aber Service-Token strikt getrennt vom Nutzerpfad halten.
+  > **Entschieden (05.09.2026, Alwin): eigenständiger Mini-Dienst** – ein TS-Workspace `excel-sync/`
+  > im Musik-App-Repo mit eigenem Dockerfile und Compose, als zweiter Container auf dem NAS. Er teilt
+  > sich `shared/` (Typen, Marker-Konvention, Merge-Logik als reine Funktion) mit der App, hat aber
+  > **keinen** Code im App-Server: Der App-Server kennt weiterhin kein „Excel", und das Service-Token
+  > liegt in einem anderen Prozess als die Nutzer-Cookies. Die Aktivierung über Env bleibt – ohne
+  > `EXCEL_FILE_ID` + `AZURE_*` + Service-Token startet der Dienst nicht.
 
 ## 6. Client
 
-`pages/Availability.tsx` (+ `.module.scss`), `services/availability.ts`,
+`pages/Availability.tsx` (+ `.module.scss`) – **Variante C „Wochenstreifen“** (Entscheidung Alwin
+05.09.2026 nach drei Entwürfen: A Monatskalender, B Monatsblöcke, C Wochenstreifen; ein Zeitraum
+entsteht in **einem** Fenster mit Schnellauswahl, geöffnet über den Knopf oder einen Tipp auf einen
+Tag im Streifen) mit
+`components/WochenStreifen.tsx` (zieht beim Wischen mit und gleitet aus) und `utils/wochen.ts`,
+`components/AbsenceSheet.tsx` (**ein** Fenster für Eintragen und Ändern, mit Schnellauswahl – die
+frühere Auswahlleiste am unteren Rand ist nach Alwins zweitem Durchklick entfallen),
+`services/availability.ts`,
 Hooks `useMyAbsences/useUpcomingServices/useToggleAbsence`, NavBar-Tab „Verfügbarkeit"
 (nur Musikteam). UI: Gottesdienst-Schnellauswahl + freie Datumsauswahl + Kommentar;
 eigene Liste mit Löschen; manuelle CT-Einträge angezeigt, aber gesperrt. Onboarding-Tour
@@ -163,8 +188,10 @@ Namens-Matching + „nicht auflösbar"-Pfad. Client-Hook-Optimismus. Lint 0, Tes
 
 ## 10. Offene Punkte / Risiken
 
-- Sync-Dienst: im Musik-App-Server oder eigenständig? (§5)
-- Dienst-Einteilung-Übertragung beim Planner-Abschalten (§8.3).
+- ~~Sync-Dienst: im Musik-App-Server oder eigenständig?~~ → eigenständig (§5, 05.09.2026)
+- ~~Dienst-Einteilung-Übertragung beim Planner-Abschalten (§8.3).~~ → Alt-Job bleibt bis Phase 2 (05.09.2026).
+  Offen: läuft der Alt-Container überhaupt noch? `ecgd-musik.ecg-donrath.de` löst seit spätestens
+  05.09.2026 nicht mehr auf (NXDOMAIN) – Alwin prüft auf dem NAS.
 - Marker-Präfix final (`[Musikteam]`).
 - Ganztägig vs. Uhrzeit (Phase 1: ganztägig).
 - Sync-Intervall + Umgang mit Excel-Sperrzeiten (usedRange, gesperrte Monate).
@@ -196,9 +223,10 @@ aber so gekapselt, dass die Abstraktion später leichtfällt.
 ## 11. Etappen (da „beidseitig gleich mitbauen")
 
 1. ~~CT-Selbstpflege verifizieren~~ ✅ (16.07.2026).
-2. Server App-Eingabe: `absences.ts` + Controller + Route + Tests.
-3. Client: Service + Hooks + `Availability.tsx` + Tab.
-4. Sync-Dienst: Graph+CT-Service-Client, Baseline-Store, Merge-Logik (§3) + Tests, Scheduler.
+2. **PR 1** – Server App-Eingabe: `absences.ts` + Controller + Route + Tests.
+3. **PR 1** – Client: Service + Hooks + `Availability.tsx` + Tab + Tour + Testfälle.
+4. **PR 2** – Mini-Dienst `excel-sync/`: Graph+CT-Service-Client, Baseline-Store, Merge-Logik (§3, reine
+   Funktion in `shared/`) + Tests, Scheduler, Dockerfile + Compose.
 5. Erst-Baseline-Init + Trockenlauf (Sync nur simulieren/loggen, nichts schreiben) zur Kontrolle.
 6. Leiteransicht (optional).
 7. Staging-Abnahme → Release → Planner-Web abschalten (Einteilung §8.3 sichern) → Token rotieren.

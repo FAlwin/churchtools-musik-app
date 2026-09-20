@@ -63,6 +63,13 @@ export const TOUR_SETLIST = 'setlist-v1';
 // setlist-edit-v4 (18.09.2026, #391): „Lied verknüpfen" kann jetzt auch ein Lied ANLEGEN („Neues Lied"
 // und SongSelect wie beim Hinzufügen) – der Schritt „Punkt bearbeiten" sagt das.
 export const TOUR_SETLIST_EDIT = 'setlist-edit-v4';
+/** Gruppe 5 – Verfügbarkeit (#177), beim ersten Öffnen des Bereichs. */
+// v3 (05.09.2026, abends): Statuskopf, Streifen zieht mit, Eintragen über EIN Fenster,
+// eigene Einträge per Tipp auf die Zeile änderbar – jeder Schritt zeigt jetzt etwas anderes.
+// v4 (19.09.2026): Neubau nach acht Entwurfsrunden – Monatsleiste statt Wochenstreifen, Abhakfeld je
+// Termin mit „Speichern"-Leiste, Plus für Zeiträume, Seite „Einträge" mit „Früher". Alle drei
+// Schritte zeigen andere Elemente als v3.
+export const TOUR_VERFUEGBARKEIT = 'verfuegbarkeit-v4';
 
 export function isTourDone(key: string): boolean {
   try {
@@ -191,5 +198,24 @@ export const SETLIST_EDIT_STEPS: CoachStep[] = [
     selector: '[data-tour="edit-add"]',
     title: 'Hinzufügen',
     body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Tippe Titel, Autor oder CCLI-Nummer – eure Lieder stehen oben, SongSelect darunter. Das Auge zeigt den Liedtext, das Plus fügt ein; bei SongSelect legst du das Lied damit gleich an. Ist ein Lied bei euch nicht da, sucht SongSelect von selbst mit.',
+  },
+];
+
+/** Gruppe 5 – Verfügbarkeit: eigene Abwesenheiten (#177). */
+export const VERFUEGBARKEIT_STEPS: CoachStep[] = [
+  {
+    selector: '[data-tour="verf-monate"]',
+    title: 'Monat wählen',
+    body: 'Oben stehen die kommenden Monate. Der Pfeil rechts klappt ein Jahr auf, „Heute" bringt dich zum laufenden Monat zurück.',
+  },
+  {
+    selector: '[data-tour="verf-termine"]',
+    title: 'Abhaken, dann speichern',
+    body: 'Setze bei einem Termin den Haken „Abwesend". Unten erscheint „Speichern" – erst damit landet es in ChurchTools, alle Haken auf einmal. Ein zweiter Tipp nimmt einen Haken zurück.',
+  },
+  {
+    selector: '[data-tour="verf-plus"]',
+    title: 'Zeiträume und Einträge',
+    body: 'Das Plus trägt einen ganzen Zeitraum ein, etwa Urlaub. Unter „Einträge" siehst du alles – auch Vergangenes – und kannst Eigenes ändern oder löschen.',
   },
 ];

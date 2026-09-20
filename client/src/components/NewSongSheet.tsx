@@ -14,14 +14,19 @@
  * hergibt (der Server schneidet die Liste zu), und entscheidet nichts vor. Genau deshalb führt ein
  * SongSelect-Treffer hierher und nicht direkt in ChurchTools.
  *
- * Was hier **nicht** geprüft wird: das Recht und die doppelte CCLI-Nummer. Das macht der Server
+ * Was hier **nicht** entschieden wird: das Recht und die doppelte CCLI-Nummer. Das macht der Server
  * (`songVerwaltung.ts`) – eine Prüfung, die nur in der Oberfläche steht, umgeht jeder, der den Endpunkt
  * direkt aufruft. Angezeigt wird seine Meldung.
+ *
+ * Seit dem 20.09.2026 (#395) **fragt** das Blatt aber vorher: Trägt ein Lied der Bibliothek dieselbe
+ * CCLI-Nummer, öffnet `LiedSchonVorhanden` – verwenden, trotzdem anlegen oder abbrechen. Das nimmt dem
+ * Server nichts ab, es ersetzt nur seine Fehlermeldung durch eine Entscheidung.
  */
 import { useEffect, useState } from 'react';
-import type { SongSelectTreffer } from '@shared/types/index';
+import type { SongLibraryEntry, SongSelectTreffer } from '@shared/types/index';
 import { LIED_GRENZEN } from '@shared/types/index';
 import { Sheet } from './Sheet';
+import { LiedSchonVorhanden } from './LiedSchonVorhanden';
 import { Icon } from './icons';
 import { CenterMessage } from './CenterMessage';
 import { SongFields } from './SongFields';
@@ -40,6 +45,7 @@ import {
   formularAusTreffer,
   formularBereit,
   namensWarnung,
+  vorhandenesLied,
   type NeuesLiedFormular,
 } from '../utils/liedFormular';
 import styles from './NewSongSheet.module.scss';
@@ -80,6 +86,15 @@ interface NewSongSheetProps {
    * entfällt: Ein Punkt trägt genau ein Lied.
    */
   onVerknuepfen?: (arrangementId: number, name: string) => void;
+  /**
+   * **Ein vorhandenes Lied nehmen statt ein neues anzulegen** (#395).
+   *
+   * Trägt ein Lied der Bibliothek schon dieselbe CCLI-Nummer, fragt die App vor dem Anlegen
+   * (`LiedSchonVorhanden`). Was „verwenden" dann bedeutet, weiß nur der Aufrufer: in den Ablauf
+   * eintragen, mit dem Punkt verknüpfen oder öffnen – dieselbe Handlung wie bei einem Treffer aus der
+   * Suche. Fehlt dieser Weg, bleibt die Frage trotzdem stehen, nur ohne den ersten Knopf.
+   */
+  onVorhandenes?: (song: SongLibraryEntry) => void;
   onClose: () => void;
 }
 
@@ -90,6 +105,7 @@ export function NewSongSheet({
   startName,
   onOpenSong,
   onVerknuepfen,
+  onVorhandenes,
   onClose,
 }: NewSongSheetProps) {
   const caps = useCapabilities(true);
@@ -139,6 +155,12 @@ export function NewSongSheet({
   const ergebnis = neuesLied.ergebnis;
 
   /**
+   * Das vorhandene Lied mit derselben CCLI-Nummer – gesetzt, solange die Rückfrage offen steht (#395).
+   * `null` = keine Frage offen; das Formular ist sichtbar.
+   */
+  const [doppel, setDoppel] = useState<SongLibraryEntry | null>(null);
+
+  /**
    * Der Editor nach dem Anlegen – **ein Angebot, kein Schritt** (Entscheidung Alwin, 04.09.2026):
    * Er öffnet sich nur auf den Knopf „Notenblatt bearbeiten", für jedes Lied. `text` ist der
    * Startinhalt (das geholte Blatt oder das Gerüst aus dem Formular); `null` = Editor zu.
@@ -158,7 +180,17 @@ export function NewSongSheet({
     setFormular((f) => ({ ...f, [feld]: wert }));
 
   const kategorieListe = kategorien.data ?? [];
-  const warnung = namensWarnung(formular.name, bibliothek.data ?? []);
+  /**
+   * **Während des Anlegens keine Namenswarnung** (Fehler vom 19.09.2026, gemeldet von Alwin).
+   *
+   * `useLiedAnlegen` verwirft die Bibliothek, sobald das Lied in ChurchTools steht – danach läuft aber
+   * noch der Notenblatt-Download aus SongSelect, und das kann dauern. In dieser Zeit ist das Formular
+   * weiterhin zu sehen, die Bibliothek enthält das eben angelegte Lied bereits, und die Warnung meldete
+   * **das eigene Werk als fremdes Doppel**: „„Heilig ist der Herr" gibt es schon" – für ein Lied, das es
+   * eine Sekunde vorher nicht gab. Wer gerade auf „Lied anlegen" gedrückt hat, kann den Namen ohnehin
+   * nicht mehr ändern; die Warnung hat dort nichts zu suchen.
+   */
+  const warnung = neuesLied.laeuft ? null : namensWarnung(formular.name, bibliothek.data ?? []);
   const bereit = formularBereit(formular) && kategorieListe.length > 0;
 
   /* ---------------------------------------------------------------- Erfolgsansicht */
@@ -333,6 +365,13 @@ export function NewSongSheet({
               // `formularBereit` stellt sicher, dass eine Kategorie gewählt ist – deshalb hier kein
               // `?? 0`: Das wäre stillschweigend „Aktive Songs" gewesen.
               if (formular.categoryId === null) return;
+              // Trägt ein Lied die Nummer schon, wird gefragt statt angelegt (#395). Der Server lehnte
+              // sonst mit 409 ab – eine Sackgasse, aus der nur Abbrechen führte.
+              const schon = vorhandenesLied(formular.ccli, bibliothek.data ?? []);
+              if (schon) {
+                setDoppel(schon);
+                return;
+              }
               void neuesLied.anlegen(formular, formular.categoryId, treffer);
             }}
           >
@@ -343,6 +382,24 @@ export function NewSongSheet({
                 : 'Lied anlegen'}
           </button>
         </div>
+      )}
+
+      {doppel && (
+        <LiedSchonVorhanden
+          vorhanden={doppel}
+          onVerwenden={onVorhandenes && ((song) => onVorhandenes(song))}
+          onTrotzdem={() => {
+            // Ohne die Nummer des anderen Liedes – ChurchTools vergibt sie nur einmal. Das Notenblatt
+            // kommt trotzdem, `notenblattPlan` nimmt dann die Nummer des Treffers.
+            const ohneNummer = { ...formular, ccli: '' };
+            setFormular(ohneNummer);
+            setDoppel(null);
+            if (ohneNummer.categoryId !== null) {
+              void neuesLied.anlegen(ohneNummer, ohneNummer.categoryId, treffer);
+            }
+          }}
+          onClose={() => setDoppel(null)}
+        />
       )}
     </Sheet>
   );

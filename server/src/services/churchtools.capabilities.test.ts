@@ -35,6 +35,7 @@ const CAPS: UserCapabilities = {
   isAdmin: false,
   canUseGlobalNotes: true,
   canUseCcli: false,
+  canUseAvailability: false,
 };
 
 /**
@@ -104,5 +105,22 @@ describe('getCapabilities – Überbrückung realer ChurchTools-Aussetzer (#149)
     expect(caps.canViewSongs).toBe(false);
     expect(caps.canViewAgendas).toBe(false);
     expect(caps.canUseGlobalNotes).toBe(false);
+  });
+});
+
+describe('computeAvailabilityAllowed – Verfügbarkeit ohne Rollen-Filter (#177)', () => {
+  it('aktives Mitglied einer gewählten Gruppe darf – egal welche Rolle', () => {
+    expect(ct.computeAvailabilityAllowed([{ groupId: 9, roleId: 99 }], [9])).toBe(true);
+  });
+  it('Mitglied nur in anderen Gruppen darf nicht', () => {
+    expect(ct.computeAvailabilityAllowed([{ groupId: 4, roleId: 1 }], [9])).toBe(false);
+  });
+  it('leere Gruppenauswahl = niemand', () => {
+    expect(ct.computeAvailabilityAllowed([{ groupId: 9, roleId: 1 }], [])).toBe(false);
+  });
+  it('Team-Notizen bleiben strenger: ohne freigegebene Rolle kein Recht, Verfügbarkeit trotzdem', () => {
+    const m = [{ groupId: 9, roleId: 5 }];
+    expect(ct.computeTeamNotesAllowed(m, [9], [{ groupId: 9, roles: [1] }])).toBe(false);
+    expect(ct.computeAvailabilityAllowed(m, [9])).toBe(true);
   });
 });

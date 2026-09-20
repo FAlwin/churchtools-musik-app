@@ -103,19 +103,23 @@ export async function getCapabilities(
     if (whoamiUnauthorized) {
       throw new HttpError(401, 'Session abgelaufen. Bitte neu anmelden.');
     }
-    return { ...base, canUseGlobalNotes: false };
+    return { ...base, canUseGlobalNotes: false, canUseAvailability: false };
   }
 
   // Team-Notizen: kein Admin-Bypass. Das Nutzungsrecht (teilen + ansehen) ergibt sich aus der
   // aktiven Gruppen-Mitgliedschaft + der je Gruppe freigegebenen Rolle. Leer = niemand.
+  // Verfügbarkeit (#177): dieselben Gruppen, aber ohne Rollen-Filter – eigene Abwesenheiten darf
+  // jedes aktive Teammitglied pflegen. EINE Mitgliedschafts-Abfrage für beide Ableitungen.
   const { musicianGroupIds, noteRoles = [] } = await getSiteConfig();
   let canUseGlobalNotes = false;
+  let canUseAvailability = false;
   if (musicianGroupIds.length > 0 && userId != null) {
     const memberships = await getActiveMemberships(cookie, userId);
     canUseGlobalNotes = computeTeamNotesAllowed(memberships, musicianGroupIds, noteRoles);
+    canUseAvailability = computeAvailabilityAllowed(memberships, musicianGroupIds);
   }
 
-  const full: UserCapabilities = { ...base, canUseGlobalNotes };
+  const full: UserCapabilities = { ...base, canUseGlobalNotes, canUseAvailability };
   // Gültige Rechte merken → überbrückt künftige Aussetzer. Best effort, blockiert die Antwort nicht.
   if (userId != null) void rememberCapabilities(userId, full);
   return full;
@@ -178,6 +182,18 @@ export function computeTeamNotesAllowed(
   return memberships.some(
     (m) => selected.has(m.groupId) && (rolesByGroup.get(m.groupId) ?? []).includes(m.roleId),
   );
+}
+
+/**
+ * Verfügbarkeit (#177): aktives Mitglied irgendeiner gewählten Gruppe – ohne Rollen-Filter.
+ * Reine Funktion, wie `computeTeamNotesAllowed`; leer gewählt = niemand.
+ */
+export function computeAvailabilityAllowed(
+  memberships: Array<{ groupId: number; roleId: number }>,
+  musicianGroupIds: number[],
+): boolean {
+  const selected = new Set(musicianGroupIds);
+  return memberships.some((m) => selected.has(m.groupId));
 }
 
 /** Capabilities mit 5-Minuten-Memo je Session – für häufige Rechte-Checks (Team-Notizen). */
@@ -287,5 +303,6 @@ export function parseCapabilities(
     isAdmin,
     // Default; die tatsächliche Gruppen-/Rollen-Prüfung ergänzt getCapabilities (braucht Cookie + Config).
     canUseGlobalNotes: false,
+    canUseAvailability: false,
   };
 }

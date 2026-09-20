@@ -14,6 +14,7 @@ import authRoutes from './routes/auth.js';
 import setlistRoutes from './routes/setlist.js';
 import siteConfigRoutes from './routes/siteConfig.js';
 import annotationsRoutes from './routes/annotations.js';
+import absencesRoutes from './routes/absences.js';
 import updateRoutes from './routes/update.js';
 
 const app = express();
@@ -127,6 +128,7 @@ app.use('/api', siteConfigRoutes);
 app.use('/api', updateRoutes); // öffentlich – vor den session-geschützten Routern mounten
 app.use('/api', setlistRoutes);
 app.use('/api', annotationsRoutes);
+app.use('/api', absencesRoutes);
 
 // ── Im Produktionsbetrieb: die gebaute Web-App ausliefern ───
 if (config.isProduction) {

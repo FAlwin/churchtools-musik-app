@@ -22,6 +22,7 @@
  * sehen, und ein Aufräumen, das selbst scheitert, hinterlässt einen noch unklareren Zustand.
  */
 import type { LiedAngelegt, LiedAnlegenAuftrag } from '@shared/types/index';
+import { ccliSchluessel } from '@shared/lieder/index';
 import { HttpError } from '../middleware/errorHandler.js';
 import { getAllSongs, getSong } from './ctRead.js';
 import { getEditableSongCategories } from './ctSongCategories.js';
@@ -62,9 +63,9 @@ async function pruefeKategorie(cookie: string, categoryId: number, was = 'anlege
 /**
  * Blockiert ein zweites Lied mit **derselben CCLI-Nummer** (Entscheidung Alwin, 13.08.2026).
  *
- * **Verglichen wird getrimmter Text, nie eine Zahl.** ChurchTools liefert `ccli` als Zeichenkette
- * (`"5841527"`); als Zahl gelesen verlöre eine Nummer mit führender Null ihre Identität, und
- * `Number('')` wäre `0` – also ein Treffer bei jedem Lied ohne Nummer.
+ * **Verglichen wird getrimmter Text, nie eine Zahl** – das macht `ccliSchluessel` in
+ * `@shared/lieder`, dieselbe Funktion, die auch die App für ihre Rückfrage nutzt (#395). Warum kein
+ * Zahlenvergleich, steht dort.
  *
  * **Über `getAllSongs`, NICHT über `getSongLibrary`.** Die Bibliothek wirft Lieder **ohne
  * Arrangement** weg – und genau so eines entsteht, wenn Schritt 2 oben scheitert. Der zweite Versuch
@@ -83,11 +84,11 @@ async function pruefeDoppel(
   ccli: string | undefined,
   eigenesLied?: number,
 ): Promise<void> {
-  const nummer = ccli?.trim();
+  const nummer = ccliSchluessel(ccli);
   if (!nummer) return; // Ohne Nummer gibt es nichts sicher zu vergleichen – der Client warnt beim Namen.
 
   const songs = await getAllSongs(cookie);
-  const treffer = songs.find((s) => String(s.ccli ?? '').trim() === nummer && s.id !== eigenesLied);
+  const treffer = songs.find((s) => ccliSchluessel(s.ccli) === nummer && s.id !== eigenesLied);
   if (treffer) {
     throw new HttpError(
       409,

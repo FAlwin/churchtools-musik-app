@@ -7,6 +7,71 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **„Neues Lied" warnte während des Anlegens vor dem eigenen Werk (#395).** Wer ein Lied aus SongSelect
+  anlegte, sah für ein paar Sekunden „„<Titel>" gibt es schon. Anlegen geht trotzdem …" – für ein Lied,
+  das es vorher nicht gab. `useLiedAnlegen` verwirft die Bibliothek, sobald das Lied in ChurchTools
+  steht; danach läuft aber noch der Notenblatt-Download, und solange bleibt das Formular sichtbar. Die
+  Warnung fand also den eben angelegten Eintrag. Sie ruht jetzt, solange das Anlegen läuft – wer
+  gedrückt hat, kann den Namen ohnehin nicht mehr ändern. Beim **Ändern** eines Liedes gab es den
+  Fehler nicht: Dort schließt das Blatt sofort, und das eigene Lied ist von der Suche ausgenommen.
+
+### Neu
+
+- **„Dieses Lied gibt es schon" – fragen statt abweisen (#395).** Trägt ein Lied der Bibliothek schon
+  dieselbe **CCLI-Nummer**, öffnet vor dem Anlegen ein Dialog mit Name, Autor, Nummer und Tonart des
+  vorhandenen Liedes. Drei Wege, und alle führen irgendwohin: **verwenden** (einfügen, verknüpfen oder
+  öffnen – je nachdem, woher man kam), **trotzdem neu anlegen** (dann ohne CCLI-Nummer; ChurchTools
+  vergibt sie nur einmal) oder **zurück zum Formular**. Bisher lief dieser Fall in eine Sackgasse: Der
+  Server lehnte mit einer Fehlermeldung ab, und der einzige Ausweg war Abbrechen. Die Blockade bleibt
+  beim Server (`songVerwaltung.ts`) – die App nimmt ihm nichts ab, sie kommt ihm nur zuvor. Das
+  **Notenblatt kommt auch beim zweiten Lied**: Ohne Nummer im Formular nimmt `notenblattPlan` die des
+  SongSelect-Treffers. Die Regel, wie CCLI-Nummern verglichen werden (getrimmter Text, nie eine Zahl),
+  liegt jetzt als `ccliSchluessel` in `@shared/lieder` – eine Quelle für App und Server.
+
+### Neu
+
+- **Tab „Abwesenheiten" – eigene Abwesenheiten in der App (#177, Phase 1 / PR 1).** Wer aktives
+  Mitglied einer unter „Anmerkungen → Gruppen-Zuweisung" gewählten Gruppe ist, bekommt einen vierten
+  Tab (Person mit Schrägstrich, das Symbol von ChurchTools). Aufbau nach **acht Runden** anfassbarer
+  Entwürfe mit Alwin (05.09.–19.09.2026) – Vorbild ist die kleine Abwesenheits-App, die das Musikteam
+  gern benutzt: „an diesem Sonntag kann ich nicht" ist ein Häkchen, kein Fenster.
+
+  - **Termine des Monats mit Abhakfeld:** Monatsleiste oben (laufender Monat, sechs voraus, „Heute"
+    zurück, der Pfeil klappt zwölf Monate auf – nur nach vorn). Je Termin ein Kästchen „Abwesend".
+  - **Vorgemerkt bis „Speichern":** Kein Bearbeiten-Modus – die Kästchen sind immer aktiv, aber ein
+    Haken bekommt nur einen blauen Ring. Sobald etwas vorgemerkt ist, erscheint unten die Leiste
+    „Verwerfen · n Änderungen vorgemerkt · Speichern"; erst Speichern schreibt **alle** Häkchen auf
+    einmal nach ChurchTools (erst anlegen, dann löschen, nacheinander). Entscheidung Alwin und seine
+    Frau, 19.09.2026: so nah wie möglich am alten Planner, ohne dass ein Fehltipp sofort etwas löscht.
+  - **Zeitraum mit Rückfrage:** Ein Termin in einem mehrtägigen Zeitraum (Urlaub) lässt sich nicht
+    stumm herausnehmen – ein Fenster fragt: Zeitraum löschen (vorgemerkt) oder anpassen.
+  - **Ein rundes Plus** trägt ganze Zeiträume ein: ein Fenster mit **Schnellauswahl** (nur dieser Tag,
+    Wochenende, 1 Woche, 2 Wochen) und Von–Bis, verschwindet, solange etwas vorgemerkt ist.
+  - **„Einträge":** die eigenen Abwesenheiten, **Anstehend** (mit den Terminen, die ein Eintrag trifft)
+    und **Früher** (ein Jahr zurück, nur zum Ansehen). Ein Tipp öffnet „Abwesenheit ändern" mit
+    Zeitraum, Kommentar, Grund und Löschen. Weil ChurchTools kein Ändern kennt, legt der Server erst den
+    neuen Eintrag an und entfernt dann den alten.
+  - Die Liste zeigt **alle** Termine aus ChurchTools – wer eingeteilt ist, spielt keine Rolle (die
+    Dienst-Einteilung kennt die App nicht; sie ist Phase 2).
+
+  **Alle eigenen Abwesenheiten sind bearbeitbar – auch die aus ChurchTools.** Zuerst durften nur
+  Einträge mit dem Kommentar-Marker `[Musikteam]` angefasst werden; eine Messung an der ECG-Instanz
+  zeigte, dass **keiner** der 31 Bestände diesen Marker trägt – die Regel hätte praktisch alles
+  gesperrt. In der App ist man mit seinem eigenen Konto angemeldet: Was in ChurchTools erlaubt ist, ist
+  hier erlaubt. Vor dem Löschen eines Eintrags, der nicht aus der App stammt, fragt die App nach. Der
+  Marker bleibt Herkunftskennzeichen für den späteren Excel-Sync.
+
+  **Der Grund gehört dazu.** Das Fenster zeigt die Gründe **der Gemeinde** (Abwesend, Urlaub, Krank
+  oder was dort eingestellt ist); beim Ändern bleibt der Grund erhalten, neue Einträge bekommen den
+  konfigurierten Standard. Löst die Weboberfläche des alten Musik-Planners ab. **Kein Excel in der
+  App** – der Abgleich mit der ECG-Excel wird ein eigener Dienst (PR 2); Release erst mit beiden.
+  - Server: `GET/POST /api/absences`, `PUT/DELETE /api/absences/:id`, `GET /api/absences/events?to=`
+    (von heute bis zu einem Tag, höchstens ein Jahr; Personen-ID immer aus der Sitzung), neues Recht
+    `canUseAvailability`, Env `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1 = „Abwesend").
+  - Geführte Einführung für den neuen Bereich (`verfuegbarkeit-v4`).
+
 - **Der Editor arbeitet in der Tonart, die auf dem Blatt steht – und jede Version kennt ihre
   eigene Tonart (#398).** Wer ein Lied auf D transponiert hat und dann „Bearbeiten" oder „Neue
   Version" wählt, sieht im Editor D-Akkorde, nicht mehr die Original-Tonart. Über dem Text steht,

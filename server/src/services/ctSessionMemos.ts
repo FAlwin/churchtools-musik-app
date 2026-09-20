@@ -14,7 +14,7 @@
  * ⚠️ Prozesslokal – siehe „Ein Prozess, ein Zustand" in `docs/entwicklung/entscheidungen.md`.
  */
 import { createTtlMemo } from './ttlMemo.js';
-import type { UserCapabilities } from '@shared/types/index';
+import type { AbsenceReason, UserCapabilities } from '@shared/types/index';
 
 // Cookie → ChurchTools-Person-ID, gecacht mit 12-h-Auffrischung – spart whoami-Abrufe je Anmerkung
 // und prüft periodisch, ob das Cookie noch gilt (unabhängig von der App-Cookie-Lebensdauer).
@@ -44,6 +44,12 @@ export const csrfCache = createTtlMemo<string>(CSRF_TTL_MS);
 
 /** Laufende Abrufe je Cookie – damit parallele Schreibvorgänge EINEN GET teilen, nicht je einen. */
 export const csrfInflight = new Map<string, Promise<string>>();
+
+/**
+ * Abwesenheitsgründe je Sitzung (#177). Eine Minute reicht: Die Liste ändert sich fast nie, hängt
+ * aber an jedem Öffnen des Eintrage-Fensters – ohne Memo wäre das ein ChurchTools-Aufruf pro Fenster.
+ */
+export const gruendeMemo = createTtlMemo<AbsenceReason[]>(60_000);
 
 /**
  * Alles vergessen, was an EINEM Session-Cookie hängt – die eine Stelle, die alle Sitzungs-Speicher

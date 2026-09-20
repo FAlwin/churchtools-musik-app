@@ -18,12 +18,51 @@ const PORT = Number(process.env.PORT ?? 4599);
 const SESSION = 'ChurchTools_stubsid=abc123';
 const PERSON = { id: 4711, firstName: 'Test', lastName: 'Musiker' };
 
+/** Abwesenheiten (#177): eine manuelle (ohne Marker) liegt vor, damit das Schloss zu sehen ist. */
+let absenceId = 9000;
+/**
+ * Grund-ID → so, wie ChurchTools ihn zurückgibt: Name als **Übersetzungsschlüssel** (gemessen
+ * 05.09.2026). Vorher stand hier fest „Abwesend", egal welche ID – der Stub log also über den Grund
+ * und hätte einen echten Fehler beim Beibehalten des Grundes verdeckt.
+ */
+const GRUND_NAMEN = {
+  1: 'absent.reason.absence',
+  2: 'absent.reason.vacation',
+  3: 'absent.reason.sick',
+};
+const grundZu = (id) => ({
+  id: Number(id) || 1,
+  name: GRUND_NAMEN[Number(id) || 1] ?? 'absent.reason.absence',
+});
+
+const ABSENCES = [
+  {
+    id: ++absenceId,
+    personId: PERSON.id,
+    startDate: '2099-12-24',
+    endDate: '2099-12-26',
+    comment: 'Weihnachten',
+    absenceReason: { id: 2, name: 'absent.reason.vacation' },
+  },
+];
+
 /** Ein Lied mit Arrangement + ChordPro-Datei. Die Datei-ID taucht in der fileUrl auf. */
 const SONG = {
   id: 501,
   name: 'Testlied aus ChurchTools',
   author: 'Stub-Autor',
-  ccli: null,
+  /**
+   * **Die CCLI-Nummer des Testliedes – hier und nur hier.**
+   *
+   * Bewusst eine ANDERE als die SongSelect-Treffer des Stubs: Sonst wäre beim Durchklicken nicht zu
+   * sehen, welche Quelle einen Treffer geliefert hat. Sie macht außerdem die Rückfrage „Dieses Lied
+   * gibt es schon" (#395) lokal durchklickbar – wer sie ins Formular tippt, muss den Dialog sehen.
+   *
+   * Stand bis zum 20.09.2026 dreimal im Stub: hier als `null` und zweimal als `'1234567'`, an den
+   * Antworten vorbeigeschrieben. Wer die Nummer oben änderte, änderte nichts – genau die
+   * Dopplung, die dieser Stub schon einmal hatte (zwei Handler für `/api/songs/<id>`).
+   */
+  ccli: '1234567',
   arrangements: [
     {
       id: 9001,
@@ -170,6 +209,18 @@ function ajaxAntwort(func) {
     return {
       status: 'success',
       data: {
+        /**
+         * Die Abwesenheitsgründe (#177) kommen aus DERSELBEN Antwort wie die Lied-Kategorien – so
+         * hat es die Messung an der ECG-Instanz am 05.09.2026 gezeigt. Genau diese Form nachbauen:
+         * ein OBJEKT (kein Array), IDs als Zeichenkette, Name als Übersetzungsschlüssel, Reihenfolge
+         * über `sortkey` (bei der ECG steht „Krank" vorn – deshalb darf die App nicht einfach den
+         * ersten Eintrag als Standard nehmen).
+         */
+        absent_reason: {
+          1: { id: '1', bezeichnung: 'absent.reason.absence', sortkey: '2' },
+          2: { id: '2', bezeichnung: 'absent.reason.vacation', sortkey: '1' },
+          3: { id: '3', bezeichnung: 'absent.reason.sick', sortkey: '0' },
+        },
         songcategory: [
           { id: '0', bezeichnung: 'Aktive Songs', sortkey: '0' },
           { id: '1', bezeichnung: 'Inaktive Songs', sortkey: '1' },
@@ -282,10 +333,51 @@ const server = createServer((req, res) => {
     // Mit CCLI-Nummer, damit die Bibliothekssuche nach der Nummer prüfbar ist (#378). Bewusst eine
     // ANDERE als die SongSelect-Treffer des Stubs – sonst wäre nicht zu sehen, welche Quelle gefunden hat.
     return json(res, {
-      data: [{ ...SONG, ccli: '1234567', category: { id: 0, name: 'Aktive Songs' } }],
+      data: [{ ...SONG, category: { id: 0, name: 'Aktive Songs' } }],
     });
   }
-  if (path.startsWith('/api/persons/') && path.endsWith('/groups')) return json(res, { data: [] });
+  // Mitgliedschaft im „Musikteam" (Gruppe 9, Rolle 1). Wirkt nur, wenn die site.json des Servers die
+  // Gruppe 9 unter musicianGroupIds führt – die E2E-Läufe tun das nicht (Standard leer), der lokale
+  // Durchklick der Verfügbarkeit (#177) schon.
+  if (path.startsWith('/api/persons/') && path.endsWith('/groups')) {
+    return json(res, {
+      data: [{ group: { domainIdentifier: '9' }, groupTypeRoleId: 1, groupMemberStatus: 'active', memberEndDate: null }],
+    });
+  }
+  // Abwesenheiten (#177) – ein kleiner Speicher im Prozess, damit Anlegen/Löschen sichtbar wird.
+  const absMatch = path.match(/^\/api\/persons\/(\d+)\/absences(?:\/(\d+))?$/);
+  if (absMatch) {
+    const personId = Number(absMatch[1]);
+    if (req.method === 'GET') {
+      return json(res, { data: ABSENCES.filter((a) => a.personId === personId) });
+    }
+    if (req.method === 'POST') {
+      // Der Handler ist synchron – den Rumpf deshalb über die Ereignisse lesen.
+      let body = '';
+      req.on('data', (chunk) => (body += chunk));
+      req.on('end', () => {
+        const neu = JSON.parse(body || '{}');
+        const eintrag = {
+          id: ++absenceId,
+          personId,
+          startDate: neu.startDate,
+          endDate: neu.endDate,
+          comment: neu.comment ?? null,
+          absenceReason: grundZu(neu.absenceReasonId),
+        };
+        ABSENCES.push(eintrag);
+        res.statusCode = 201;
+        json(res, { data: { id: eintrag.id } });
+      });
+      return;
+    }
+    if (req.method === 'DELETE' && absMatch[2]) {
+      const idx = ABSENCES.findIndex((a) => a.id === Number(absMatch[2]));
+      if (idx >= 0) ABSENCES.splice(idx, 1);
+      res.statusCode = 204;
+      return res.end();
+    }
+  }
   if (path === '/api/groups') return json(res, { data: [] });
   if (path === '/api/services') return json(res, { data: [] });
 
@@ -300,7 +392,7 @@ const server = createServer((req, res) => {
   // Kategorie – ohne sie zeigt das Stammdaten-Blatt nur den Hinweis statt des Formulars. Stand hier
   // zweimal (einmal ohne Kategorie, der Treffer davor schattete diesen ab) – die klassische Dopplung.
   if (/^\/api\/songs\/\d+$/.test(path)) {
-    return json(res, { data: { ...SONG, ccli: '1234567', category: { id: 0, name: 'Aktive Songs' } } });
+    return json(res, { data: { ...SONG, category: { id: 0, name: 'Aktive Songs' } } });
   }
 
   // Alles Übrige laut protokollieren, statt still 404 zu liefern – so fällt beim Erweitern des

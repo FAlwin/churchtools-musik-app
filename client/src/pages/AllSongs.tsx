@@ -296,6 +296,12 @@ export function AllSongs({
             setFormular(null);
             onOpenSong(songId, arrangementId);
           }}
+          /* Gibt es das Lied schon (gleiche CCLI-Nummer), wird es geöffnet statt ein zweites angelegt
+             – dasselbe, was ein Tipp auf die Zeile täte (#395). */
+          onVorhandenes={(song) => {
+            setFormular(null);
+            onOpenSong(song.songId, song.arrangementId);
+          }}
           onClose={() => setFormular(null)}
         />
       )}
