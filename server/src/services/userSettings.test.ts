@@ -1,11 +1,11 @@
 import { SETTINGS_BASES, SETTINGS_KEY_RE, SETTINGS_SONGID_RE } from '@shared/keys/index';
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import os from 'node:os';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
+import { leeren, tempVerzeichnis } from '../testHilfen/tempAblage.js';
 
 // Temporären Ablageort setzen, BEVOR das Modul (und damit config.ts) importiert wird.
-const dir = path.join(os.tmpdir(), `settings-test-${process.pid}`);
+const dir = tempVerzeichnis('settings-test');
 process.env.ANNOTATIONS_PATH = dir;
 
 type Mod = typeof import('./userSettings.js');
@@ -16,7 +16,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await fs.rm(dir, { recursive: true, force: true });
+  await leeren(dir);
 });
 
 let nextUser = 5000;

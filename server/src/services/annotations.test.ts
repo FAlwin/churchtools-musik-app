@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import os from 'node:os';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
+import { leeren, tempVerzeichnis } from '../testHilfen/tempAblage.js';
 
 // Temporären Ablageort setzen, BEVOR das Modul (und damit config.ts) importiert wird.
-const dir = path.join(os.tmpdir(), `annotations-test-${process.pid}`);
+const dir = tempVerzeichnis('annotations-test');
 process.env.ANNOTATIONS_PATH = dir;
 
 type Mod = typeof import('./annotations.js');
@@ -15,7 +15,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await fs.rm(dir, { recursive: true, force: true });
+  await leeren(dir);
 });
 
 const USER = 4711;
@@ -28,6 +28,26 @@ describe('withinAccountLimits (#139 – reine Grenzlogik)', () => {
     expect(mod.withinAccountLimits(0, mod.MAX_BYTES_PER_ACCOUNT + 1)).toBe(false);
   });
 });
+
+/**
+ * **Diese beiden Tests brauchen mehr Zeit als die Standard-Grenze von 5 Sekunden** – und zwar nicht,
+ * weil etwas hängt, sondern weil sie eine **50-MB-Grenze** wirklich erreichen müssen. Jeder
+ * Schreibvorgang legt die ganze Kontodatei neu an, die dabei mitwächst: in Summe rund 275 MB.
+ *
+ * Gemessen am 20.09.2026: lokal 0,7 s und 1,2 s – im CI-Lauf 35531036193 (PR #397) reißen sie die
+ * 5 Sekunden. Derselbe Commit lief im Push-Workflow desselben Zeitpunkts grün durch; es lag also
+ * nicht am geprüften Code, sondern an der langsameren Maschine.
+ *
+ * **Die Zeitgrenze hochzusetzen ist hier die ehrliche Lösung, nicht das Zudecken eines Problems:**
+ * Ein Test, der absichtlich 275 MB schreibt, ist langsam. 30 Sekunden lassen das Fünfundzwanzigfache
+ * der lokalen Zeit zu und würden einen echten Hänger trotzdem beenden.
+ *
+ * **Warum das auch den NÄCHSTEN Test rettete:** Lief einer von beiden in die Zeitgrenze, schrieb
+ * seine Schleife weiter, während der folgende Test das Verzeichnis schon leerte – und dessen
+ * Aufräumen scheiterte dann mit `ENOTEMPTY`. Genau so stand es im CI-Protokoll. Dagegen hilft
+ * zusätzlich das `leeren` aus `testHilfen/tempAblage.ts`, das Wiederholungen mitbringt.
+ */
+const GRENZWERT_TIMEOUT_MS = 30_000;
 
 describe('putAnnotation – Konto-Obergrenze (#139)', () => {
   const key = (n: number) => `song${n}_vorig_1`;
@@ -42,39 +62,47 @@ describe('putAnnotation – Konto-Obergrenze (#139)', () => {
     expect(stored[key(1)]?.strokes).toBe('data:image/png;base64,AAAA');
   });
 
-  it('wirft 413, wenn ein neuer Eintrag die Gesamtgröße über die Grenze treibt', async () => {
-    // Ein fast grenzgroßer strokes-Wert (unter dem 6-MB-Einzellimit des Controllers, aber in Summe
-    // über MAX_BYTES_PER_ACCOUNT, wenn genug Seiten belegt sind).
-    const big = 'x'.repeat(5_000_000);
-    let thrown: unknown = null;
-    // So viele Einträge anlegen, bis die Grenze greift (jeweils eigener Key).
-    for (let i = 0; i < 20 && !thrown; i++) {
-      try {
-        await mod.putAnnotation(USER, key(i), { strokes: big });
-      } catch (e) {
-        thrown = e;
+  it(
+    'wirft 413, wenn ein neuer Eintrag die Gesamtgröße über die Grenze treibt',
+    async () => {
+      // Ein fast grenzgroßer strokes-Wert (unter dem 6-MB-Einzellimit des Controllers, aber in Summe
+      // über MAX_BYTES_PER_ACCOUNT, wenn genug Seiten belegt sind).
+      const big = 'x'.repeat(5_000_000);
+      let thrown: unknown = null;
+      // So viele Einträge anlegen, bis die Grenze greift (jeweils eigener Key).
+      for (let i = 0; i < 20 && !thrown; i++) {
+        try {
+          await mod.putAnnotation(USER, key(i), { strokes: big });
+        } catch (e) {
+          thrown = e;
+        }
       }
-    }
-    expect(thrown).toBeTruthy();
-    expect((thrown as { status?: number }).status).toBe(413);
-  });
+      expect(thrown).toBeTruthy();
+      expect((thrown as { status?: number }).status).toBe(413);
+    },
+    GRENZWERT_TIMEOUT_MS,
+  );
 
-  it('Löschen (leerer Eintrag) bleibt möglich, auch wenn das Konto voll ist', async () => {
-    const big = 'x'.repeat(5_000_000);
-    for (let i = 0; i < 20; i++) {
-      try {
-        await mod.putAnnotation(USER, key(i), { strokes: big });
-      } catch {
-        break; // Grenze erreicht
+  it(
+    'Löschen (leerer Eintrag) bleibt möglich, auch wenn das Konto voll ist',
+    async () => {
+      const big = 'x'.repeat(5_000_000);
+      for (let i = 0; i < 20; i++) {
+        try {
+          await mod.putAnnotation(USER, key(i), { strokes: big });
+        } catch {
+          break; // Grenze erreicht
+        }
       }
-    }
-    // Einen vorhandenen Eintrag leeren → muss ohne Wurf durchgehen (Freiräumen ist immer erlaubt).
-    await expect(
-      mod.putAnnotation(USER, key(0), { strokes: null, texts: [], zoom: null }),
-    ).resolves.toBeUndefined();
-    const stored = await mod.getAnnotations(USER, [0]);
-    expect(stored[key(0)]).toBeUndefined();
-  });
+      // Einen vorhandenen Eintrag leeren → muss ohne Wurf durchgehen (Freiräumen ist immer erlaubt).
+      await expect(
+        mod.putAnnotation(USER, key(0), { strokes: null, texts: [], zoom: null }),
+      ).resolves.toBeUndefined();
+      const stored = await mod.getAnnotations(USER, [0]);
+      expect(stored[key(0)]).toBeUndefined();
+    },
+    GRENZWERT_TIMEOUT_MS,
+  );
 });
 
 /**

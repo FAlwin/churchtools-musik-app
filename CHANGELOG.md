@@ -36,6 +36,20 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Behoben
 
+- **Ein Test, der in der CI mal grün, mal rot war – und der Grund war nicht, was er zuerst schien.**
+  Im Lauf zu PR #397 fielen zwei Anmerkungs-Tests: einer an der Zeitgrenze, der nächste mit
+  `ENOTEMPTY` beim Aufräumen. Derselbe Stand lief zur selben Zeit im Push-Workflow grün. Der erste
+  Verdacht – ein Verzeichnisname aus der Prozess-ID, der zwei Läufe kollidieren lässt – war eine
+  Hypothese und blieb es: Die Messung zeigte eine einfachere Kette. Der Test schreibt absichtlich
+  rund 275 MB, um eine 50-MB-Grenze zu erreichen (lokal 1,2 s, auf dem Runner über 5 s); läuft er in
+  die Zeitgrenze, schreibt seine Schleife **weiter**, während der nächste Test schon aufräumt – und
+  `fs.rm` mit `force` schützt nur gegen „gibt es nicht", **nicht** gegen „ist nicht leer"
+  (nachgestellt in 60 von 60 Durchgängen). Drei Änderungen, alle nur an der Testumgebung: Die beiden
+  langsamen Tests bekommen eine begründete Zeitgrenze von 30 s; ein gemeinsamer Helfer
+  (`testHilfen/tempAblage.ts`) würfelt für **alle sieben** Testdateien mit diesem Muster ein
+  eindeutiges Verzeichnis je Lauf, räumt mit Wiederholungen und am Ende von selbst auf. Am
+  Produktivcode der Anmerkungen ist nichts geändert.
+
 - **Drei Stellen, an denen dieselbe Regel ein zweites Mal stand (#396).** Gefunden bei der
   Dopplungs-Suche zum Arrangement-Umbau, alle drei ohne sichtbare Auswirkung – aber alle drei von
   der Sorte, die später teuer wird:

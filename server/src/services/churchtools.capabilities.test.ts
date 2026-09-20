@@ -1,11 +1,9 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
-import os from 'node:os';
-import path from 'node:path';
-import { promises as fs } from 'node:fs';
+import { leeren, tempDatei } from '../testHilfen/tempAblage.js';
 import type { UserCapabilities } from '@shared/types/index';
 
 // Ablageort des Rechte-Caches VOR dem Modul-Import setzen (config.ts liest beim Import).
-const cacheFile = path.join(os.tmpdir(), `capbridge-test-${process.pid}.json`);
+const cacheFile = tempDatei('capbridge-test', 'caps.json');
 process.env.CAPABILITIES_CACHE_PATH = cacheFile;
 
 type Ct = typeof import('./ctCapabilities.js');
@@ -19,7 +17,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await fs.rm(cacheFile, { force: true });
+  await leeren(cacheFile);
   cache.__resetForTests();
 });
 

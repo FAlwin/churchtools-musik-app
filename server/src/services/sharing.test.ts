@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import os from 'node:os';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
+import { leeren, tempVerzeichnis } from '../testHilfen/tempAblage.js';
 
 /**
  * #276: „Teilen abschalten" darf keinen Erfolg melden, wenn nichts gespeichert wurde.
@@ -17,7 +17,7 @@ import { promises as fs } from 'node:fs';
  * Fehler ohne `chmod`: ein **Verzeichnis** an der Stelle der Datei bzw. der `.tmp`-Datei liefert
  * verlässlich `EISDIR` – `chmod 000` greift als root nicht und der Test wäre still wirkungslos.
  */
-const dir = path.join(os.tmpdir(), `sharing-test-${process.pid}`);
+const dir = tempVerzeichnis('sharing-test');
 process.env.ANNOTATIONS_PATH = dir;
 
 type Mod = typeof import('./sharing.js');
@@ -28,7 +28,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await fs.rm(dir, { recursive: true, force: true });
+  await leeren(dir);
   mod.__resetForTests();
 });
 

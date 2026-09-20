@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import os from 'node:os';
-import path from 'node:path';
-import { promises as fs } from 'node:fs';
+import { leeren, tempDatei } from '../testHilfen/tempAblage.js';
 
 // Ablageort VOR dem Modul-Import setzen (config.ts liest beim Import).
-const file = path.join(os.tmpdir(), `seen-setlists-test-${process.pid}.json`);
+const file = tempDatei('seen-setlists-test', 'seen.json');
 process.env.SEEN_SETLISTS_PATH = file;
 
 type Mod = typeof import('./seenSetlists.js');
@@ -15,7 +13,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await fs.rm(file, { force: true });
+  await leeren(file);
   mod.__resetForTests();
 });
 
