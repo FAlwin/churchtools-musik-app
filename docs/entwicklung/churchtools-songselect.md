@@ -1,7 +1,8 @@
 # ChurchTools als Fernbedienung: CCLI SongSelect
 
 > Stand: **11.08.2026**, gemessen an ChurchTools **3.135.2** (ecg-donrath.church.tools).
-> Status: **erkundet, noch nicht umgesetzt.** Gehört zu #321/#322.
+> Status: **umgesetzt** (#321/#322): `server/src/services/ctSongSelect.ts`, Routen `/api/songselect/*`
+> (siehe `api-referenz.md`). Die Messwerte unten sind die Grundlage dafür.
 
 ## Warum diese Seite existiert
 

@@ -105,7 +105,7 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   const [entwurf, setEntwurf] = useState<Entwurf | null>(null);
   const [frage, setFrage] = useState<{ tag: string; absence: Absence } | null>(null);
   const [tour, setTour] = useState(false);
-  /** Gewählte Kalender (#400) – vom Gerät gelesen, dorthin geschrieben; leer = alle. */
+  /** Gewählte Termin-Art (#400) – vom Gerät gelesen, dorthin geschrieben; leer = alle. */
   const [filter, setFilter] = useState<string[]>(getAbwesenheitenFilter);
 
   useEffect(() => {

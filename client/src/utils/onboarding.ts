@@ -69,8 +69,8 @@ export const TOUR_SETLIST_EDIT = 'setlist-edit-v4';
 // v4 (19.09.2026): Neubau nach acht Entwurfsrunden – Monatsleiste statt Wochenstreifen, Abhakfeld je
 // Termin mit „Speichern"-Leiste, Plus für Zeiträume, Seite „Einträge" mit „Früher". Alle drei
 // Schritte zeigen andere Elemente als v3.
-// v5 (20.09.2026, #400): neuer Schritt „Nur bestimmte Termine" für den Kalender-Filter – er wird
-// übersprungen, wenn es nur einen Kalender gibt (dann gibt es die Knöpfe nicht).
+// v5 (20.09.2026, #400): neuer Schritt „Nur bestimmte Termine" für den Termin-Filter – er wird
+// übersprungen, wenn es höchstens eine Termin-Art gibt (dann gibt es die Knöpfe nicht).
 export const TOUR_VERFUEGBARKEIT = 'verfuegbarkeit-v5';
 
 /**

@@ -94,7 +94,7 @@ Ausschnitt. Sie darf nicht wieder klein sein.
 **Die vier Felder** im zugeklappten Block liest das Skript – Schreibweise bitte genau so:
 
 - **Priorität** – `kritisch` läuft bei jedem Testlauf mit. Sparsam vergeben: nur, was einen
-  Gottesdienst tatsächlich stören würde. Aktuell sind es zwölf. Sonst `hoch` oder `normal`.
+  Gottesdienst tatsächlich stören würde. Aktuell sind es dreizehn. Sonst `hoch` oder `normal`.
 - **Betrifft** – Pfade oder Muster mit `*`, kommagetrennt. Lieber ein Verzeichnis zu viel als eines
   zu wenig: Ein Fall, der zu oft vorgeschlagen wird, kostet Minuten – einer, der übersehen wird,
   kostet einen Gottesdienst.

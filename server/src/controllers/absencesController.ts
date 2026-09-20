@@ -60,7 +60,7 @@ export async function putAbsence(req: Request, res: Response): Promise<void> {
   res.json(await absences.abwesenheitAendern(ctCookie(req), userId, id, neu));
 }
 
-/** DELETE /api/absences/:id – nur eigene Marker-Einträge (sonst 403). */
+/** DELETE /api/absences/:id – jeden eigenen Eintrag (404, wenn er nicht zum Konto gehört). */
 export async function deleteAbsence(req: Request, res: Response): Promise<void> {
   const userId = await myUserId(req);
   const id = z.coerce.number().int().positive().parse(req.params.id);

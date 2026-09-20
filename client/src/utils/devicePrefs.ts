@@ -16,7 +16,7 @@ const KEYS = {
   drawbarCollapsed: 'worship:drawbar-collapsed',
   /** Senkrechte Verschiebung der Werkzeugleiste in Pixeln. */
   drawbarOffsetY: 'worship:drawbar-y',
-  /** Gewählte Kalender im Tab „Abwesenheiten" (#400) – JSON-Liste von Kalender-IDs, leer = alle. */
+  /** Gewählte Termin-Art im Tab „Abwesenheiten" (#400) – JSON-Liste mit höchstens einer ID, leer = alle. */
   abwesenheitenFilter: 'worship:abwesenheiten-filter',
 } as const;
 
@@ -57,7 +57,8 @@ export function setDrawbarOffsetY(y: number): void {
 }
 
 /**
- * Die im Tab „Abwesenheiten" gewählten Kalender (#400). Leer heißt „alle".
+ * Die im Tab „Abwesenheiten" gewählte Termin-Art (#400) – als Liste, weil eine Zwischenfassung
+ * mehrere zuließ; gelesen wird höchstens die erste. Leer heißt „alle".
  *
  * Auf dem Gerät gemerkt, nicht im Konto (Entscheidung Alwin, 20.09.2026): Wer nur Gottesdienste
  * einträgt, stellt es einmal ein. Ein kaputter Wert ergibt „alle" – lieber zu viel zeigen als still

@@ -161,7 +161,7 @@ churchtools-musik-app/
 │   ├── public/              # statische Assets (logo.png, PWA-Icons)
 │   └── src/
 │       ├── components/      # wiederverwendbare UI-Komponenten (+ *.module.scss)
-│       ├── pages/           # Screens: Login, Agenda, Setlist, ChordChart
+│       ├── pages/           # Screens: Login, Agenda, Setlist, ChordChart, AllSongs, Availability, Settings
 │       ├── hooks/           # Geschäftslogik (Custom Hooks)
 │       ├── services/        # API-Kommunikation (alle fetch-Aufrufe + TanStack Query)
 │       ├── utils/           # reine Hilfsfunktionen: chordpro.ts, transpose.ts
@@ -306,9 +306,10 @@ Light/Dark). Alle Design-Tokens in `styles/_variables.scss` (Single Source); `ap
 **Einziger anpassbarer Wert:** der **Gemeinde-Name** (`orgName`) – ein ChurchTools-**Admin** ändert ihn
 im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site.json` (Volume,
 `SITE_CONFIG_PATH`). Admin-Recht über `ADMIN_PERMISSION` (Default `churchcore:administer persons`).
-`SiteConfig` (`shared/types`) hat sechs Felder: `appName`(fest), `description`(fest), `orgName`, `links`, `musicianGroupIds` und `noteRoles?`. Nur die ersten drei sind reine Anzeige-Werte.
+`SiteConfig` (`shared/types`) hat sieben Felder: `appName`(fest), `description`(fest), `orgName`, `links`, `musicianGroupIds`, `noteRoles?` und `terminArten?` (#400). Nur die ersten drei sind reine Anzeige-Werte.
 
-**Navigation:** untere Tab-Bar `Termine`/`Lieder`/`Mehr` (`components/TabBar.tsx`), Detailseiten
+**Navigation:** untere Tab-Bar `Termine`/`Lieder`/`Abwesenheiten`/`Mehr` (`components/TabBar.tsx`; der
+Abwesenheiten-Tab trägt die ID `verfuegbarkeit` und erscheint nur für Mitglieder der `musicianGroupIds`), Detailseiten
 (Setlist, Chart) als Vollbild-Push. Routing in `App.tsx` über `tab` + `view` (rechteabhängig).
 
 **Design-Regeln (verbindlich):** `docs/entwicklung/design-system.md` – Farben nur über Tokens (es gibt **kein**
@@ -538,31 +539,29 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
-- **In `main` seit 13.08.2026 (ungetaggt): die Liedverwaltung, Schritte 6/7/10a** (#322, PRs
-  #373–#375). **Nächster Schritt ist 10b: die Oberfläche** – Plan in
-  `docs/entwicklung/plan-liedverwaltung.md`.
-  - **Kategorien** (`GET /api/song-categories`): schon am Recht zugeschnitten. Die **Namen** gibt es
-    NICHT unter `/api` (fünf Pfade geprüft, alle 404), sondern über `getMasterData` der alten
-    Schnittstelle – deshalb liegt sie seither in `ctAjax.ts`, der **einzigen** Stelle, die
-    `index.php?q=churchservice/ajax` kennt (vorher privat in `ctSongSelect.ts`). Rückfall: die
-    Kategorien der vorhandenen Lieder – der zeigt aber nur **benutzte**; bei der ECG liegen alle 49
-    Lieder in Kategorie 0, „Inaktive Songs" (ID 1) käme dort nie vor.
-  - **`edit songcategory` wird an EINER Stelle ausgewertet** (`parseSongEditRight`); `canEditSongs`
-    fragt sie, statt das Recht ein zweites Mal selbst zu lesen.
-  - **Lieder anlegen** (`POST /api/songs`): legt Lied **und** Arrangement an (`isDefault: true` MUSS
-    mit, sonst hat das Lied kein Standard-Arrangement – gemessen), optional mit Ablauf-Eintrag.
-    Autor/CCLI/Copyright nimmt der POST direkt an, **`note` nicht**. Kategorie-Recht (403) und
-    doppelte CCLI-Nummer (409) erzwingt der **Server**, nicht das Formular; die Doppel-Erkennung
-    läuft über `getAllSongs`, **nicht** über `getSongLibrary` – die wirft Lieder ohne Arrangement
-    weg, also genau den Rest eines halb gescheiterten Versuchs.
-  - **Teilfehlschläge werden benannt:** Lied da, Arrangement nicht → Meldung sagt das und warnt vor
-    dem zweiten Versuch (er würde doppeln). Ablauf-Eintrag misslungen → **201** mit
-    `imAblauf: false` + Grund, denn das Lied existiert.
-  - ⚠️ **`utils/ctId.ts`:** `Number(null)` ist `0` und `Number.isInteger(0)` ist `true` – wer IDs mit
-    `map(Number)` liest, erfindet aus einem `null` die Kategorie 0. Für ChurchTools-IDs deshalb immer
-    `ctId` (0 gültig, `null`/`''`/`true` nicht). `songIdsFromQuery` taugt dafür nicht: Der verlangt
-    `n > 0`.
-
+- **v2.25.0 (21.09.2026): sechs Squash-Merges seit v2.24.1** – #391 „Neues Lied" auch in „Lied
+  verknüpfen" (PR #392), #393 Design-Tokens im Look der ChurchTools-App (#394), #398 Editor in der
+  Tonart des Blatts + `SongVersion.writtenKey` (#399), #177 Phase 1 Tab „Abwesenheiten" inkl. #395
+  „Dieses Lied gibt es schon" (#390), #396 Arrangements verwalten (#397), #400 Termin-Filter nach
+  einstellbaren Termin-Arten – genau eine oder alle (#401). Tour-Versionen: `chart-v6`,
+  `setlist-edit-v4`, `verfuegbarkeit-v5`, neu `lied-stammdaten-v1`. Neue optionale Env
+  `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1 im Code – alte Compose läuft weiter). **Nächster
+  Schritt: #177 Phase 2, der Excel↔ChurchTools-Sync** als eigener Mini-Dienst (`feature/177-excel-sync`,
+  Plan in `docs/entwicklung/plan-verfuegbarkeit-phase1.md`).
+  - ⚠️ **Squash-Merges gestapelter Branches:** Beim Hineinmergen von `main` in einen Branch, der die
+    Historie eines schon gesquashten Nachbarn trägt, sind fast alle Konfliktzonen „ours ergänzt,
+    theirs leer" – und git kann dabei Funktionen **doppelt** anlegen (`createAbsence`/`deleteAbsence`
+    zweimal in `ctWrite.ts`, byteweise gleich). `tsc` findet das, die Tests nicht. Und: nie
+    `git add -A` in einem Skript, solange Konfliktmarker im Baum sein können – so ging einmal ein
+    Merge-Commit MIT Markern auf einen Branch (per `reset --hard HEAD~1` + `--force-with-lease`
+    repariert).
+  - **Messen statt raten – zweimal in einer Woche:** Für #396 „gingen" Standardwechsel und Quelle
+    angeblich nicht über die API; die richtigen Wege standen im JavaScript der ChurchTools-Oberfläche
+    (`cs_song.js`: `PATCH …/arrangements/:id/default`, `sourceId` aus `getMasterData → songsource`).
+    Für #400 war der erste Bau (Kalender-Filter) an der Test-Instanz plausibel und bei der ECG falsch –
+    dort liegt alles in EINEM Kalender; ein Termin bringt außer dem Kalender nur seinen Namen mit.
+- **Bis 13.08.2026 in `main`: die Liedverwaltung, Schritte 6/7/10a** (#322, PRs #373–#375); 10b, die
+  Oberfläche, kam mit v2.24 – Plan in `docs/entwicklung/plan-liedverwaltung.md`.
 - **Seit v2.16.0 in `main` (längst ausgeliefert): die vier hohen Code-Check-Funde behoben** – #273, #274,
   #275, #276. Alle vier waren dieselbe Lehre („vorübergehend ≠ ungültig"), und bei jedem wurde zuerst
   nach der zweiten Stelle gesucht:
@@ -1000,9 +999,12 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   `musicianGroupIds` – **ohne** Rollen-Filter (die `noteRoles` regeln nur Team-Notizen). Dieselbe
   Mitgliedschafts-Abfrage liefert beide Ableitungen (`computeTeamNotesAllowed` /
   `computeAvailabilityAllowed`). Der Bereich arbeitet nur auf dem eigenen Konto: Die Personen-ID kommt
-  aus der Sitzung, Löschen nur bei Marker-Einträgen (`@shared/absences`), ChurchTools entscheidet den
-  Rest. Der Bereich zeigt **alle** Termine, die das Konto sehen darf (kein Kalender- oder Namensfilter)
-  – die Überschrift sagt das, weil beim Durchklicken die Frage kam, ob es die eigenen Dienste seien.
+  aus der Sitzung, jeder eigene Eintrag darf geändert und gelöscht werden (keine Marker-Sperre, s. u.),
+  ChurchTools entscheidet den Rest. Der Bereich zeigt **alle** Termine, die das Konto sehen darf –
+  unabhängig von der Dienst-Einteilung; die Überschrift sagt das, weil beim Durchklicken die Frage kam,
+  ob es die eigenen Dienste seien. Seit #400 lässt sich nach **Termin-Art** filtern: Suchwort im
+  Terminnamen (`utils/terminFilter.ts`), Arten pflegt der Admin in `SiteConfig.terminArten`, genau
+  eine Art oder alles, Wahl je Gerät gemerkt.
   Kern: `services/absences.ts` – dort auch die Regel, dass **Ändern = neu anlegen, dann alten
   löschen** ist (ChurchTools kennt kein Ändern von Abwesenheiten; die Reihenfolge ist der Schutz gegen
   stillen Verlust) und dass dabei **Grund und Herkunft erhalten bleiben**.
@@ -1024,7 +1026,7 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   runde Plus öffnet `components/AbsenceSheet.tsx` („Zeitraum eintragen", Schnellwahl); „Einträge" zeigt
   Anstehend/Früher, Vergangenes mit `nurLesen`. Der Wochenstreifen (`WochenStreifen.tsx`, `wochenAb`) ist
   weg; `utils/wochen.ts` behält nur Tages-Helfer. Server: `GET /api/absences/events?to=` (Tag statt
-  Wochen). Tour `verfuegbarkeit-v4`, Testfälle TF-VERF-01…05.
+  Wochen). Tour `verfuegbarkeit-v5` (v5 = Schritt „Nur bestimmte Termine", #400), Testfälle TF-VERF-01…06.
   **Kein Excel im App-Code** – der ECG-Sync ist ein eigener Dienst (`excel-sync/`, PR 2).
 
 ## Schreibzugriff (Editor) – ChurchTools-Eigenheiten

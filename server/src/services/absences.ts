@@ -5,8 +5,9 @@
  * alle an dieser einen Stelle:
  *  - **Nur das eigene Konto.** Die Personen-ID kommt aus der Sitzung (`userId`), nie aus dem Request.
  *    ChurchTools ließe bei der ECG auch fremde Einträge zu (Nebenbefund 16.07.2026) – die App nicht.
- *  - **Nur Marker-Einträge werden gelöscht** (`@shared/absences`). Ein manuell in ChurchTools
- *    eingetragener Urlaub wird angezeigt, aber nie angefasst.
+ *  - **Jeder eigene Eintrag darf geändert und gelöscht werden** – auch ein manuell in ChurchTools
+ *    eingetragener Urlaub (Marker-Sperre aufgehoben 05.09.2026, siehe `eigenerEintrag`). Der Marker
+ *    (`@shared/absences`) bleibt Herkunftskennzeichen für den Excel-Sync und die Rückfrage.
  *  - **Kein Doppel.** Denselben Zeitraum ein zweites Mal einzutragen legt keinen zweiten Eintrag an.
  *
  * Kein Excel hier – der Sync ist ein eigener Dienst (`excel-sync/`), siehe Plan §12.
@@ -159,9 +160,9 @@ export async function abwesenheitAnlegen(
 }
 
 /**
- * Eigene Abwesenheit löschen – nur Marker-Einträge. Der Eintrag wird vorher frisch gelesen: Die
- * ID allein sagt nicht, ob er von uns stammt, und ChurchTools würde auch einen manuellen Urlaub
- * löschen.
+ * Eigene Abwesenheit löschen. Der Eintrag wird vorher frisch gelesen (`eigenerEintrag`): Die ID
+ * allein sagt nicht, ob er zum eigenen Konto gehört – ChurchTools ließe bei der ECG auch fremde
+ * Einträge löschen, die App nicht.
  */
 export async function abwesenheitLoeschen(
   cookie: string,

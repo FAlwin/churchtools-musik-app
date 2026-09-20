@@ -126,11 +126,14 @@ pflegen, kein Service-Token für die App-Eingabe nötig.**
 
 **App-Eingabe (Nutzer-Cookie):**
 
-- `services/absences.ts` – `getAbsences/createAbsence/deleteAbsence/getUpcomingServices`
+- `services/absences.ts` – `meineAbwesenheiten / abwesenheitAnlegen / abwesenheitAendern /
+abwesenheitLoeschen / kommendeTermine / abwesenheitsGruende` (Stand v2.25.0)
 - `controllers/absencesController.ts`, `routes/absences.ts` (session-geschützt)
-- Endpunkte: `GET/POST/DELETE /api/absences`, `GET /api/absences/services`,
-  optional `GET /api/absences/team` (nur Leiter-Rolle)
-- `personId` serverseitig aus Cookie; Löschen nur bei Marker-Einträgen; Duplikate vermeiden.
+- Endpunkte: `GET/POST /api/absences`, `PUT/DELETE /api/absences/:id`, `GET /api/absences/events?to=`,
+  `GET /api/absences/reasons`. `GET /api/absences/team` (Leiteransicht) ist nicht gebaut (§10)
+- `personId` serverseitig aus Cookie; **jeder eigene Eintrag** darf geändert/gelöscht werden (die
+  Marker-Sperre fiel am 05.09.2026, §2); Duplikate vermeiden; Ändern = erst neu anlegen, dann alten
+  löschen.
 
 **Sync-Dienst (Service-Token, NEU – OPTIONALES Modul, s. §12 White-Label):**
 
@@ -150,19 +153,22 @@ pflegen, kein Service-Token für die App-Eingabe nötig.**
 
 ## 6. Client
 
-`pages/Availability.tsx` (+ `.module.scss`) – **Variante C „Wochenstreifen“** (Entscheidung Alwin
-05.09.2026 nach drei Entwürfen: A Monatskalender, B Monatsblöcke, C Wochenstreifen; ein Zeitraum
-entsteht in **einem** Fenster mit Schnellauswahl, geöffnet über den Knopf oder einen Tipp auf einen
-Tag im Streifen) mit
-`components/WochenStreifen.tsx` (zieht beim Wischen mit und gleitet aus) und `utils/wochen.ts`,
-`components/AbsenceSheet.tsx` (**ein** Fenster für Eintragen und Ändern, mit Schnellauswahl – die
-frühere Auswahlleiste am unteren Rand ist nach Alwins zweitem Durchklick entfallen),
-`services/availability.ts`,
-Hooks `useMyAbsences/useUpcomingServices/useToggleAbsence`, NavBar-Tab „Verfügbarkeit"
-(nur Musikteam). UI: Gottesdienst-Schnellauswahl + freie Datumsauswahl + Kommentar;
-eigene Liste mit Löschen; manuelle CT-Einträge angezeigt, aber gesperrt. Onboarding-Tour
+**Stand v2.25.0 (Neubau 19.09.2026, Entwurfsrunde 8, plus #400):** `pages/Availability.tsx`
+(+ `.module.scss`) mit `components/MonatsLeiste.tsx` und `utils/monate.ts` (Monatsansicht; der
+Wochenstreifen `WochenStreifen.tsx` aus dem Entwurf vom 05.09.2026 ist weg, `utils/wochen.ts` behält nur
+Tages-Helfer). Häkchen je Termin sind **vorgemerkt bis „Speichern"**; `components/ZeitraumFrage.tsx`
+fragt bei einem Termin in einem mehrtägigen Zeitraum; `components/AbsenceSheet.tsx` ist **ein** Fenster
+für Eintragen und Ändern (Schnellwahl, Grund-Auswahl); Seite „Einträge" mit Anstehend/Früher;
+Termin-Filter nach Art (`utils/terminFilter.ts`, Knöpfe „Alle · Gottesdienst · …", genau eine Art
+oder alles, #400). `services/availability.ts`, Hooks in `hooks/useAvailability.ts` (`useMyAbsences`,
+`useAbsenceEvents`, `useAbsenceReasons`, `useCreateAbsence`, `useUpdateAbsence`, `useDeleteAbsence`,
+`useSaveAbsenceChanges`), Tab **„Abwesenheiten"** in der unteren Tab-Bar (ID `verfuegbarkeit`, nur
+Musikteam). Manuelle ChurchTools-Einträge sind **nicht** gesperrt (§2). Tour `verfuegbarkeit-v5`.
+Offline: Ansicht ja; Schreiben online.
 
-- Tour-Version erhöhen. Offline: Ansicht ja; Schreiben online (Queue optional später).
+Historie: Am 05.09.2026 fiel die Wahl auf Variante C „Wochenstreifen" (nach drei Entwürfen: A
+Monatskalender, B Monatsblöcke, C Wochenstreifen); nach Alwins Durchklick wurde der Bereich am
+19.09.2026 auf die Monatsansicht mit vorgemerkten Häkchen umgebaut.
 
 ## 7. Rechte / Capabilities
 
@@ -223,8 +229,9 @@ aber so gekapselt, dass die Abstraktion später leichtfällt.
 ## 11. Etappen (da „beidseitig gleich mitbauen")
 
 1. ~~CT-Selbstpflege verifizieren~~ ✅ (16.07.2026).
-2. **PR 1** – Server App-Eingabe: `absences.ts` + Controller + Route + Tests.
-3. **PR 1** – Client: Service + Hooks + `Availability.tsx` + Tab + Tour + Testfälle.
+2. ~~**PR 1** – Server App-Eingabe: `absences.ts` + Controller + Route + Tests.~~ ✅ (PR #390)
+3. ~~**PR 1** – Client: Service + Hooks + `Availability.tsx` + Tab + Tour + Testfälle.~~ ✅ (PR #390,
+   Release v2.25.0 am 21.09.2026; Termin-Filter #400 dazu)
 4. **PR 2** – Mini-Dienst `excel-sync/`: Graph+CT-Service-Client, Baseline-Store, Merge-Logik (§3, reine
    Funktion in `shared/`) + Tests, Scheduler, Dockerfile + Compose.
 5. Erst-Baseline-Init + Trockenlauf (Sync nur simulieren/loggen, nichts schreiben) zur Kontrolle.

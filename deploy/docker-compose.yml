@@ -21,6 +21,8 @@ services:
       CHURCHTOOLS_BASE_URL: ${CHURCHTOOLS_BASE_URL}
       SESSION_SECRET: ${SESSION_SECRET}
       ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
+      # Abwesenheitsgrund für den Tab „Abwesenheiten" (#177); Standard 1 = „Abwesend", andere Instanzen können abweichen.
+      CHURCHTOOLS_ABSENCE_REASON_ID: ${CHURCHTOOLS_ABSENCE_REASON_ID:-1}
     ports:
       # links = Host-Port (bei Bedarf ändern), rechts = im Container fest auf 3001.
       #

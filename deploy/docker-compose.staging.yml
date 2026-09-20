@@ -36,7 +36,7 @@ services:
       CHURCHTOOLS_BASE_URL: ${CHURCHTOOLS_BASE_URL}
       SESSION_SECRET: ${SESSION_SECRET}
       ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
-      # Abwesenheitsgrund für „Verfügbar" (#177); Standard 1 = „Abwesend", andere Instanzen können abweichen.
+      # Abwesenheitsgrund für den Tab „Abwesenheiten" (#177); Standard 1 = „Abwesend", andere Instanzen können abweichen.
       CHURCHTOOLS_ABSENCE_REASON_ID: ${CHURCHTOOLS_ABSENCE_REASON_ID:-1}
       # Sicher als Standard (#196): Das Cookie darf nur über HTTPS übertragen werden. Setzt den
       # Reverse Proxy voraus (siehe Einrichtung unten) – ohne HTTPS speichert der Browser das Cookie

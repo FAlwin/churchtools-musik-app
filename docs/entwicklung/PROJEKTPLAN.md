@@ -53,9 +53,11 @@ Entscheidungen → `docs/entwicklung/entscheidungen.md`.
 
 ### Phase 6 – Offen / optional
 
-- [x] 6.1 ~~Musik-Abwesenheitsplaner nachbauen~~ **aus diesem Projekt herausgenommen** (22.06.2026):
-      nur ECG-intern, läuft eigenständig und entfällt, sobald ChurchTools das selbst abdeckt.
-      Wird NICHT mitverteilt – diese App bleibt das einzige verteilte Produkt.
+- [x] 6.1 Musik-Abwesenheitsplaner: **Phase 1 in der App** (#177, v2.25.0) – Tab „Abwesenheiten"
+      (Eingabe direkt in ChurchTools, Termin-Filter #400), generisch und **mitverteilt**
+      (`CHURCHTOOLS_ABSENCE_REASON_ID`). Am 22.06.2026 war das Thema herausgenommen worden; die
+      Entscheidung vom 16.07.2026 holte die Eingabe zurück (`plan-verfuegbarkeit-phase1.md`). Nur der
+      **Excel-Sync** bleibt ECG-intern als eigener Dienst (Phase 2, offen).
 - [x] 6.2 ~~White-Label~~ **verworfen** → **Redesign zur festen ChurchTools-Version** ✅ live
       (ChurchTools-Look, Tab-Bar, neues Logo, Design-Tokens/Bausteine; nur `orgName` admin-anpassbar).
       Nach `main` gemerged (PR #14) + **produktiv deployt** (musik.ecg-donrath.de, 19.06.2026, verifiziert)

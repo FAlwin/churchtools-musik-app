@@ -5,7 +5,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
-## [Unreleased]
+## [2.25.0] – 2026-09-21
 
 ### Neu
 
@@ -20,7 +20,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Vorgemerkte Häkchen hängen am Tag und überstehen jeden Filterwechsel; „Einträge" bleibt
   unberührt. Alwins Wunsch vom 20.09.2026. Ein erster Bau filterte nach ChurchTools-Kalender –
   bei der ECG liegen Gottesdienst und Gebetsabend im selben Kalender, und eine eigene Kategorie
-  kennt ChurchTools an Terminen nicht (gemessen); deshalb Suchwörter.
+  kennt ChurchTools an Terminen nicht (gemessen); deshalb Suchwörter. Geführte Einführung
+  `verfuegbarkeit-v5` mit dem neuen Schritt „Nur bestimmte Termine".
 
 - **Arrangements in der App verwalten (#396).** Im **Stammdaten-Blatt** eines Liedes (Liederheft →
   Stift) steht jetzt der Abschnitt **„Arrangements"**: alle Arrangements mit Tonart, Tempo, Takt,
@@ -45,7 +46,7 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   verschwinden zu lassen. Der Standardwechsel wird nach dem Schreiben **nachgesehen**: Ein
   Erfolgssignal ist kein Beleg.
 
-  Neu ist auch eine kurze **Einführung** beim ersten Öffnen des Stammdaten-Blattes.
+  Neu ist auch eine kurze **Einführung** beim ersten Öffnen des Stammdaten-Blattes (`lied-stammdaten-v1`).
 
 - **„Dieses Lied gibt es schon" – fragen statt abweisen (#395).** Trägt ein Lied der Bibliothek schon
   dieselbe **CCLI-Nummer**, öffnet vor dem Anlegen ein Dialog mit Name, Autor, Nummer und Tonart des
@@ -96,7 +97,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   - Server: `GET/POST /api/absences`, `PUT/DELETE /api/absences/:id`, `GET /api/absences/events?to=`
     (von heute bis zu einem Tag, höchstens ein Jahr; Personen-ID immer aus der Sitzung), neues Recht
     `canUseAvailability`, Env `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1 = „Abwesend").
-  - Geführte Einführung für den neuen Bereich (`verfuegbarkeit-v4`).
+  - Geführte Einführung für den neuen Bereich (`verfuegbarkeit-v4`; mit #400 in diesem Release auf
+    `verfuegbarkeit-v5`).
 
 - **Der Editor arbeitet in der Tonart, die auf dem Blatt steht – und jede Version kennt ihre
   eigene Tonart (#398).** Wer ein Lied auf D transponiert hat und dann „Bearbeiten" oder „Neue
@@ -110,7 +112,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Speichern (das hätte Schreibweisen wie Eb/D# verändert), das Original bleibt immer in seiner
   Tonart (vom Blatt aus wird es ohnehin nie überschrieben), der Kapo bleibt eine Anzeige-Sache.
   Eine neue Version aus einer transponierten Ansicht übernimmt die gewählte Tonart – sonst sähe man
-  nach dem Speichern die ChurchTools-Zieltonart statt dessen, was man eben getippt hat.
+  nach dem Speichern die ChurchTools-Zieltonart statt dessen, was man eben getippt hat. Geführte
+  Einführung `chart-v6`: Der Schritt „Lied-Optionen" nennt jetzt die Tonart, in der der Editor arbeitet.
 
 ### Geändert
 
@@ -137,6 +140,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Behoben
 
+- **`deploy/docker-compose.yml` reichte `CHURCHTOOLS_ABSENCE_REASON_ID` nicht durch.** Die Prod- und
+  Staging-Compose taten es, die einfache Datei für andere Gemeinden (auf die `INSTALL.md` verweist)
+  nicht – wer die Variable nach `.env.example` setzte, sah keine Wirkung. Gefunden beim Doku-Abgleich
+  für dieses Release.
 - **Ein Test, der in der CI mal grün, mal rot war – und der Grund war nicht, was er zuerst schien.**
   Im Lauf zu PR #397 fielen zwei Anmerkungs-Tests: einer an der Zeitgrenze, der nächste mit
   `ENOTEMPTY` beim Aufräumen. Derselbe Stand lief zur selben Zeit im Push-Workflow grün. Der erste

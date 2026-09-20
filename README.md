@@ -18,20 +18,22 @@ Datenquelle – die App hat keine eigene Datenbank.
   nichts, lässt sich **auch im Liedtext** suchen – für den Fall, dass man nur eine Zeile kennt
 - **Beim Einfügen eines Liedes: ein Suchfeld, eine Liste** – Titel, Autor oder CCLI-Nummer tippen, eigene
   Lieder oben, SongSelect darunter; jede Zeile mit Auge (Vorschau) und Plus (einfügen). Findet die
-  Bibliothek nichts, sucht SongSelect von selbst mit (beim Verknüpfen ohne SongSelect – dort könnte ein
-  neu angelegtes Lied nicht landen)
+  Bibliothek nichts, sucht SongSelect von selbst mit – auch beim **Verknüpfen** eines Ablaufpunkts
+  mit einem Lied
 - **Liedtext-Vorschau vor dem Einfügen** – ein Antippen zeigt erst den Text, dann den Knopf zum
   Hinzufügen; so unterscheidet man gleichnamige Lieder, ohne sie zu öffnen. Bei SongSelect mit
   Abschnitten, Autoren und CCLI-Nummer. Für den Alltag bleibt der **„+"**-Knopf: sofort einfügen
 - **Lieder anlegen** – über die Quelle **SongSelect** gefunden (Titel oder CCLI-Nummer; Autoren,
   Copyright und Tonart kommen mit, das Notenblatt gleich dazu) oder über „Neues Lied" selbst
-  eingetippt. Aus dem Liederheft oder direkt beim Ergänzen eines Ablaufs
+  eingetippt. Aus dem Liederheft, direkt beim Ergänzen eines Ablaufs oder beim Verknüpfen. Trägt ein
+  Lied der Bibliothek schon dieselbe CCLI-Nummer, fragt die App, ob das vorhandene verwendet werden soll
 - **Stammdaten pflegen** – Name, Kategorie, Autor, CCLI-Nummer und Copyright eines vorhandenen Liedes
   ändern; Löschen mit Rückfrage, die die Folgen nennt
 - **Live-Aktualisierung**: Änderungen am Ablauf erscheinen zeitnah bei allen; geänderte Punkte
   werden beim Öffnen hervorgehoben, entfernte lösen sich sichtbar auf
 - **Mehrere benannte Lied-Versionen** (z. B. „Akustik", „Jugend") – team-weit in ChurchTools,
-  Original bleibt erhalten
+  Original bleibt erhalten. Der **Editor arbeitet in der Tonart, die gerade auf dem Blatt steht**;
+  jede Version kennt ihre eigene Tonart
 - **Anmerkungen, Zoom & Einstellungen pro ChurchTools-Konto** – geräteübergreifend synchronisiert
   (Stift/Marker/Text auf den Seiten, Rückgängig/Wiederholen); optional **mit dem Team teilen**
 - **Offline-Reserve**: einmal geladene Abläufe/Charts sind ohne Netz im Saal verfügbar; als App
@@ -40,8 +42,14 @@ Datenquelle – die App hat keine eigene Datenbank.
   neben dem Nachbarlied) und ebenfalls mit Anmerkungen
 - **Dateien eines Arrangements verwalten** – ansehen, aufs Gerät laden, hinzufügen und löschen,
   ohne den Umweg über die ChurchTools-Oberfläche
+- **Arrangements verwalten** – Name, Quelle, Liednummer, Tonart, Tempo, Takt, Länge und Beschreibung
+  im Stammdaten-Blatt ändern, weitere Arrangements anlegen, zum Standard machen, löschen mit Rückfrage
 - **Notenblatt aus CCLI SongSelect holen** – wenn die Gemeinde die SongSelect-Integration in
   ChurchTools aktiviert hat und das Lied eine CCLI-Nummer trägt; in der Tonart des Arrangements
+- **Abwesenheiten** – Musikerinnen und Musiker tragen je Termin per Häkchen oder als Zeitraum ein,
+  wann sie fehlen; gespeichert wird direkt in ChurchTools. Termine lassen sich nach Art filtern
+  (z. B. nur Gottesdienste); die Arten pflegt der Admin. Sichtbar für Mitglieder der gewählten
+  Musikteam-Gruppen
 - **Rechtebewusste Oberfläche** – jede Person sieht nur, wozu ihre ChurchTools-Rechte passen
 - **Geführte Einführung** (Onboarding-Touren) beim ersten Öffnen
 - **Frei konfigurierbare Links** (z. B. zu weiteren Gemeinde-Angeboten) im „Mehr"-Tab und optional

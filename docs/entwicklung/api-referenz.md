@@ -2,7 +2,7 @@
 
 > Referenz der Endpunkte, die das Express-Backend dem Client anbietet (ausgelagert aus `CLAUDE.md`).
 > ChurchTools-spezifische Schreib-/Lese-Eigenheiten stehen weiterhin in `CLAUDE.md`.
-> Stand: 13.08.2026 (nach v2.21.0, inkl. der ungetaggten Liedverwaltung #321/#322).
+> Stand: 21.09.2026 (v2.25.0).
 > Alle `/api/...`-Routen erfordern eine gültige Session – **außer** `health`,
 > `site-config` (GET), `update-check` und dem kompletten `auth/`-Router (`login`, `logout`, `me`;
 > `me` antwortet ohne Session bewusst mit `{authenticated:false}`).
@@ -121,6 +121,9 @@
 - `GET  /api/song-usage` → Nutzungsstatistik je Song als **`{ dates: string[] }`** (vergangene Spieltermine, bis zu 4 Jahre zurück, absteigend; 1h-Cache). Häufigkeit + „zuletzt gespielt" für den gewählten Zeitraum rechnet der **Client** daraus – ohne erneuten Server-Roundtrip. Bei Drosselung **503** (+ `Retry-After`), wenn kein früherer Stand im Speicher liegt; der Client zeigt dann „–" statt einer Null und lässt die Liederliste vollständig (#300).
 - `GET  /api/songs/:songId/arrangements` → Arrangements eines Lieds (für „Zu Ablauf hinzufügen") –
   **schmal**: nur ID, Name und Tonart. Die vollständige Sicht liegt bewusst woanders (siehe unten)
+- `PUT  /api/songs/:songId/arrangements/:arrangementId/tempo` {tempo} → `{tempo}`; das Tempo aus der
+  Kopfzeile des Charts. Läuft seit #396 über `updateArrangement`, also lesen–ändern–schreiben: Ein
+  Teil-`PUT` an ChurchTools würde Tonart und Dauer für das ganze Team löschen
 
 **Arrangements verwalten (#396).** Alle Wege prüfen das Recht an der Kategorie **des Liedes** (über
 `pruefeKategorie` aus der Liedverwaltung, nicht über eine zweite Fassung davon).
@@ -214,7 +217,7 @@ Client, damit eine Version mit eigener Überschrift auch ihre eigene trägt.
 
 - `GET  /api/absences?from=&to=` → eigene Abwesenheiten (Standard: heute bis in einem Jahr); `vonApp: true` = Marker-Eintrag der App/des Syncs
 - `POST /api/absences` `{startDate, endDate, comment?}` → legt eine ChurchTools-Abwesenheit mit Marker `[Musikteam] …` an; **201** neu, **200** wenn derselbe Zeitraum schon stand (kein Doppel); 400 bei Ende vor Anfang / > 1 Jahr
-- `PUT  /api/absences/:id` `{startDate, endDate, comment?, reasonId?}` → ändert einen eigenen Eintrag; ohne `reasonId` bleibt der Grund, den er hatte, und ein Eintrag ohne Marker bekommt auch keinen (sonst würde der Excel-Sync ihn für seinen halten). ChurchTools kann Abwesenheiten nicht ändern: Der Server legt **erst neu an, dann löscht er den alten** (andersherum wäre nach einem Fehlschlag alles weg). **403** bei manuellen Einträgen, **409** wenn ein ANDERER eigener Eintrag denselben Zeitraum belegt, **502** wenn das Aufräumen scheiterte (der neue Eintrag steht dann schon)
+- `PUT  /api/absences/:id` `{startDate, endDate, comment?, reasonId?}` → ändert einen eigenen Eintrag; ohne `reasonId` bleibt der Grund, den er hatte, und ein Eintrag ohne Marker bekommt auch keinen (sonst würde der Excel-Sync ihn für seinen halten). ChurchTools kann Abwesenheiten nicht ändern: Der Server legt **erst neu an, dann löscht er den alten** (andersherum wäre nach einem Fehlschlag alles weg). **404** bei unbekannter oder fremder ID, **409** wenn ein ANDERER eigener Eintrag denselben Zeitraum belegt, **502** wenn das Aufräumen scheiterte (der neue Eintrag steht dann schon)
 - `DELETE /api/absences/:id` → jeden eigenen Eintrag, auch einen direkt in ChurchTools angelegten (seit 05.09.2026 – die Rückfrage stellt die Oberfläche); 404 unbekannt
 - `GET  /api/absences/events?to=` → kommende Termine von heute bis `to` (`YYYY-MM-DD`; Standard ein halbes Jahr, höchstens ein Jahr → sonst 400). Bis 19.09.2026 zählte der Parameter Wochen (`weeks=`), passend zum Wochenstreifen; die Monatsansicht nennt jetzt einen Tag.
 

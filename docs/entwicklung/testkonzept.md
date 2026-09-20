@@ -140,17 +140,21 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
     auf die Zeile darf NICHT einfügen, das Plus NICHT die Vorschau öffnen; ohne `aktion` gibt es kein
     Plus (Liederheft). Genau diese Trennung ist der Grund für zwei Knöpfe.
   - **Verfügbarkeit (#177, 05.09.2026):** Server `services/absences.test` – Marker entscheidet „eigene",
-    kein Doppel bei gleichem Zeitraum, Löschen nur bei Marker-Einträgen (403 sonst), Personen-ID aus der
+    kein Doppel bei gleichem Zeitraum, jeder eigene Eintrag lässt sich löschen (Marker-Sperre seit 05.09.2026
+    weg; 404 bei fremder ID), Personen-ID aus der
     Sitzung bei Lesen UND Schreiben, Datumsprüfung (Ende vor Anfang, > 1 Jahr); `churchtools.capabilities.test`
     – `computeAvailabilityAllowed` ohne Rollen-Filter, strenger bleibt nur Team-Notizen. Client
     `utils/absenceDatum.test` (Tagesvergleich als Text, eigene vor manueller), `hooks/useAvailability.test`
     (Schreiben verwirft die Liste, nicht die Termine), `utils/wochen.test` (Montag auch für Sonntage,
-    Jahreswechsel, Beschriftung über den Monatswechsel), `components/AbsenceSheet.test` (Schnellauswahl
+    Jahreswechsel, Tages-Helfer), `components/AbsenceSheet.test` (Schnellauswahl
     rechnet die vier Fälle, ein späteres „Von" schiebt „Bis" mit, Löschen nur beim Ändern),
-    `pages/Availability.test` (der Halbsatz erklärt die Liste und es gibt KEINEN Statuskopf mehr,
-    Streifen blättert, Tipp auf einen
-    Tag öffnet das Fenster, Zeile öffnet „Ändern", Vergangenes gesperrt; Kann nicht / Abgemeldet /
-    Grund als Knopf, offline gesperrt). Beim Ändern prüft `services/absences.test` die Reihenfolge
+    `pages/Availability.test` (Stand des Neubaus vom 19.09.2026: Kopf mit Schalter Termine | Einträge
+    und laufendem Monat, Monatswechsel und „Heute"; Häkchen sind **vorgemerkt**, erst „Speichern"
+    schreibt alle, „Verwerfen" nimmt zurück, ein Fehler behält die Vormerkung; ein Termin in einem
+    Zeitraum fragt nach (löschen / anpassen); Seite „Einträge" mit Anstehend/Früher und Ändern; Plus
+    öffnet „Zeitraum eintragen", offline sind Kästchen und Plus gesperrt; Termin-Filter #400: Knöpfe
+    nur bei mehr als einer Art, „Sonstige", genau eine Art oder alles, Wahl gemerkt, ungültige
+    gemerkte Wahl = „Alle", ein vorgemerkter Haken übersteht den Filterwechsel). Beim Ändern prüft `services/absences.test` die Reihenfolge
     (ERST anlegen, DANN löschen – der Schutz gegen stillen Verlust), dass **Grund und fehlender
     Marker** bei einem ChurchTools-Eintrag erhalten bleiben, 409 nur bei einem ANDEREN eigenen
     Eintrag und `zuGruenden` gegen die gemessene `absent_reason`-Struktur;
@@ -158,7 +162,24 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
     Herkunftskennzeichen; `components/AbsenceSheet.test` die Grund-Auswahl (Standard ist NICHT der
     erste der Liste) und die Rückfrage vor dem Löschen fremder Einträge. Von Hand bleibt, dass die
     Abwesenheit wirklich in ChurchTools steht, nach dem Ändern genau EIN Eintrag übrig ist und der
-    Grund dabei nicht kippt (TF-VERF-01…04).
+    Grund dabei nicht kippt (TF-VERF-01…06).
+  - **Release v2.25.0 (20./21.09.2026):** `utils/terminFilter.test` (#400: `artVon` = erste passende
+    Art, sonst „Sonstige"; `knoepfeAus`; `wirksameAuswahl` verwirft unbekannte IDs und nimmt höchstens
+    eine; `filtereTermine`; `umschalten` = eins oder alles) und `components/TerminArtenManager.test`
+    (Admin-Pflege). `utils/arrangementFormular.test` (#396: Länge Sekunden ↔ Minuten:Sekunden hin und
+    zurück, Formular aus Arrangement, `arrangementBereit` + Hinweis „Liednummer nur mit Quelle",
+    `auftragAus` schickt beim Ändern NUR das Geänderte, `hatAenderung`), `components/ArrangementSheet.test`
+    (Speichern, Quelle/Liednummer, Standard und Löschen nur beim vorhandenen Arrangement); Server
+    `services/arrangementVerwaltung.test` (Lesen, Anlegen nie als Standard, Ändern über
+    lesen–ändern–schreiben, Standard über `PATCH …/default` mit Nachsehen, die beiden Geländer beim
+    Löschen: letztes und Standard → 409) und `services/ctSongSources.test` (Objekt statt Array,
+    Kurzzeit-Memo). `utils/transpose.test` → `transposeChordpro`/`mitTonart` (#398: Akkorde in `[…]`
+    und die `{key}`-Zeile, 0 Halbtöne lässt den Text unangetastet); Server `services/buildSong.head.test`
+    → „jede Version kennt ihre Tonart" (`writtenKey` aus der eigenen `{key}`-Zeile, `null` ohne).
+    `testHilfen/tempAblage.test` – der gemeinsame Helfer für Temp-Verzeichnisse in Server-Tests
+    (`tempVerzeichnis`, `tempDatei`, `leeren` mit Wiederholungen): eindeutig je Lauf, hält paralleles
+    Schreiben aus. Er ersetzt sieben handgeschriebene Kopien, deren Aufräumen bei langsamen Tests in
+    `ENOTEMPTY` lief (CI-Flackern in `annotations.test`; die langsamen Fälle dort haben jetzt 30 s).
   - **Der Editor nach dem Anlegen und im Stammdaten-Blatt (04.09.2026):** `hooks/useNotenblatt` – der
     gemeinsame Kern: Gerüst ohne Abfrage (`hatBlatt: false`), geholtes Blatt (`true`), nachsehen (`null`),
     Speichern verwirft `['song-chart', songId]`, Fehler nennt den Grund, ohne Ziel passiert nichts.
@@ -247,7 +268,7 @@ gehen vor, leerer Wert zählt nicht, eine Version bestimmt den Kopf ihres eigene
 `Section`/`Segment`. Dazu `queryClient.session401` – der **globale 401-Fänger** (#186): ein 401 aus
 einer Query **oder** Mutation löst den Sitzung-abgelaufen-Pfad aus, ein 502 (offline) bewusst nicht.
 Neu seit v2.14.x: `utils/agendaItemTitle` (Anzeige-Regeln für Lied-Punkte, #200 – inkl. „keine
-Dopplung" und Groß-/Kleinschreibung) und `hooks/useKeyboardInset` (Tastatur-Aussparung #207, jsdom:
+Dopplung" und Groß-/Kleinschreibung) und `hooks/useOverlayKeyboardInset` (Tastatur-Aussparung #207, jsdom:
 Höhe korrekt, nie negativ, Listener an/ab, Scroll-Reset, kein Absturz ohne `visualViewport`).
 
 **Bekannte Test-Lücken:** derzeit keine offene, die als Issue geführt wird.
