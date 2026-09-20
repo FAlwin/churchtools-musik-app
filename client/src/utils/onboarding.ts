@@ -67,7 +67,9 @@ export const TOUR_SETLIST_EDIT = 'setlist-edit-v4';
 // v4 (19.09.2026): Neubau nach acht Entwurfsrunden – Monatsleiste statt Wochenstreifen, Abhakfeld je
 // Termin mit „Speichern"-Leiste, Plus für Zeiträume, Seite „Einträge" mit „Früher". Alle drei
 // Schritte zeigen andere Elemente als v3.
-export const TOUR_VERFUEGBARKEIT = 'verfuegbarkeit-v4';
+// v5 (20.09.2026, #400): neuer Schritt „Nur bestimmte Termine" für den Kalender-Filter – er wird
+// übersprungen, wenn es nur einen Kalender gibt (dann gibt es die Knöpfe nicht).
+export const TOUR_VERFUEGBARKEIT = 'verfuegbarkeit-v5';
 
 /**
  * Gruppe 6 – das **Stammdaten-Blatt eines Liedes** (#396), beim ersten Öffnen.
@@ -228,6 +230,11 @@ export const VERFUEGBARKEIT_STEPS: CoachStep[] = [
     selector: '[data-tour="verf-monate"]',
     title: 'Monat wählen',
     body: 'Oben stehen die kommenden Monate. Der Pfeil rechts klappt ein Jahr auf, „Heute" bringt dich zum laufenden Monat zurück.',
+  },
+  {
+    selector: '[data-tour="verf-filter"]',
+    title: 'Nur bestimmte Termine',
+    body: 'Tippe einen Kalender an, um nur dessen Termine zu sehen – etwa nur Gottesdienste. Mehrere gehen gleichzeitig, „Alle" zeigt wieder alles. Die App merkt sich deine Wahl.',
   },
   {
     selector: '[data-tour="verf-termine"]',

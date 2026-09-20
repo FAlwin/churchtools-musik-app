@@ -151,3 +151,36 @@ Datum vor heute eintragen – das lässt die App nicht zu).
 - **Historie:** #177 (Runde 8, 19.09.2026)
 
 </details>
+
+### TF-VERF-06 · Termine nach Kalender filtern
+
+**Das brauchst du:** Ein Konto mit dem Tab „Abwesenheiten" und einen Monat, in dem Termine aus
+**mindestens zwei** ChurchTools-Kalendern liegen (z. B. Gottesdienst und Gebetsabend).
+
+**Das muss passieren:** Die Knöpfe heißen wie eure Kalender in ChurchTools, die Liste und die Zahl
+folgen der Auswahl, und beim nächsten Öffnen steht der Filter noch so.
+
+1. Tab „Abwesenheiten" → „Termine". Unter der Monatsleiste stehen **„Alle"** und je ein Knopf pro
+   Kalender; „Alle" ist blau.
+2. **„Gottesdienst"** antippen: Nur Gottesdienste bleiben, die Zahl „n Termine" passt dazu, „Alle"
+   ist nicht mehr blau.
+3. **„Gebetsabend"** zusätzlich antippen: Beide Arten stehen in der Liste (Mehrfachauswahl).
+   „Gottesdienst" erneut antippen → nur noch Gebetsabende.
+4. Einen Monat wählen, in dem es keinen Gebetsabend gibt: Die Liste sagt „Kein Termin mehr in
+   diesem Monat" – der Filter ist ja sichtbar aktiv.
+5. **„Alle"** antippen → alles ist wieder da.
+6. **Häkchen bleibt:** Einen Gottesdienst abhaken (Leiste „Speichern" erscheint), dann auf
+   „Gebetsabend" filtern: Die Leiste bleibt. Zurück auf „Alle": Der Haken steht noch.
+7. **Merken:** „Gebetsabend" wählen, App schließen und neu öffnen → der Filter steht noch auf
+   „Gebetsabend".
+8. **Ein Kalender:** Auf einem Konto oder in einem Zeitraum, in dem alle Termine aus **einem**
+   Kalender kommen, gibt es die Knöpfe **nicht**.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/pages/Availability.tsx`, `client/src/utils/terminFilter.ts`, `client/src/utils/devicePrefs.ts`, `server/src/services/absences.ts`
+- **Automatisiert:** überwiegend – `client/src/utils/terminFilter.test.ts` (Regeln: ID statt Name, ohne Kalender immer dabei, verwaiste Wahl = alle), `client/src/pages/Availability.test.tsx` (Knöpfe, Zahl, Mehrfachauswahl, Merken, Häkchen übersteht den Wechsel, keine Knöpfe bei einem Kalender), `server/src/services/absences.test.ts` (Kalender aus der ChurchTools-Antwort); von Hand bleibt, dass die Kalendernamen der Gemeinde wirklich ankommen
+- **Historie:** #400 (20.09.2026), Wunsch Alwin
+
+</details>

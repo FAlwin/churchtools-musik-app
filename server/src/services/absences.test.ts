@@ -89,6 +89,38 @@ describe('zuEvents – Schnellauswahl', () => {
     ]);
     expect(out.map((e) => e.date)).toEqual(['2026-10-04', '2026-10-11']);
   });
+
+  /**
+   * #400: Der Kalender kommt mit – so, wie ChurchTools ihn liefert (gemessen 20.09.2026):
+   * `calendar.title` als Name, `domainIdentifier` als ID (eine Zeichenkette).
+   */
+  it('nimmt den Kalender mit – ID ist der domainIdentifier, Name der Titel', () => {
+    const [e] = a.zuEvents([
+      {
+        id: 1,
+        name: 'Gottesdienst',
+        startDate: '2026-10-04T10:00:00Z',
+        endDate: '',
+        calendar: { title: 'Gottesdienst', domainIdentifier: '2' },
+      },
+    ]);
+    expect(e.kalender).toEqual({ id: '2', name: 'Gottesdienst' });
+  });
+
+  it('ohne Kalender-Titel gibt es keinen Kalender – ein Knopf ohne Namen wäre nichts wert', () => {
+    const [ohne, leer] = a.zuEvents([
+      { id: 1, name: 'X', startDate: '2026-10-04T10:00:00Z', endDate: '' },
+      {
+        id: 2,
+        name: 'Y',
+        startDate: '2026-10-05T10:00:00Z',
+        endDate: '',
+        calendar: { title: '  ' },
+      },
+    ]);
+    expect(ohne.kalender).toBeNull();
+    expect(leer.kalender).toBeNull();
+  });
 });
 
 describe('abwesenheitAnlegen – kein Doppel, eigene Konto-ID', () => {

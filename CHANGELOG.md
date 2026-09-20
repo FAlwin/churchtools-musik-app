@@ -9,6 +9,17 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ### Neu
 
+- **Abwesenheiten: Termine nach Kalender filtern (#400).** Unter der Monatsleiste stehen jetzt
+  Knöpfe für die ChurchTools-Kalender der geladenen Termine – „Alle · Gottesdienst · Gebetsabend …".
+  Ein Tipp zeigt nur dessen Termine, **mehrere gehen gleichzeitig**, „Alle" hebt den Filter auf;
+  die Zahl „n Termine" zählt mit. Die App **merkt sich die Wahl auf dem Gerät**. Gibt es nur einen
+  Kalender, gibt es auch keine Knöpfe. Vorgemerkte Häkchen hängen am Tag und überstehen jeden
+  Filterwechsel; die Seite „Einträge" bleibt unberührt. Eine gemerkte Wahl, die es unter den
+  geladenen Terminen nicht mehr gibt, gilt als „Alle" – keine leere Liste ohne einen Knopf, der
+  sagt, warum. Alwins Wunsch vom 20.09.2026; gemessen: `GET /api/events` liefert je Termin
+  `calendar.title` und `calendar.domainIdentifier`, gefiltert wird auf die ID (ein umbenannter
+  Kalender bleibt gewählt).
+
 - **Arrangements in der App verwalten (#396).** Im **Stammdaten-Blatt** eines Liedes (Liederheft →
   Stift) steht jetzt der Abschnitt **„Arrangements"**: alle Arrangements mit Tonart, Tempo, Takt,
   Länge und Quelle, der Standard gekennzeichnet. Ein Tipp öffnet dasselbe Fenster, das ChurchTools

@@ -137,7 +137,21 @@ const events = [
     id: EVENT_ID,
     startDate: isoInDays(2),
     name: 'Gottesdienst (Stub)',
-    calendar: { domainIdentifier: '1' },
+    // `title` wie bei ChurchTools gemessen (20.09.2026) – der Kalender-Filter im Tab
+    // „Abwesenheiten" (#400) hängt daran.
+    calendar: { domainIdentifier: '1', title: 'Gottesdienst' },
+    appointmentId: null,
+  },
+  /**
+   * Ein zweiter Termin aus einem ANDEREN Kalender (#400) – sonst gäbe es nichts zu filtern. Er hat
+   * bewusst keinen Ablauf: Der Tab „Termine" zeigt nur Termine MIT Ablaufplan, der Tab
+   * „Abwesenheiten" alle. So bleiben die bestehenden Abläufe (E2E) unberührt.
+   */
+  {
+    id: EVENT_ID + 1,
+    startDate: isoInDays(4),
+    name: 'Gebetsabend (Stub)',
+    calendar: { domainIdentifier: '2', title: 'Gebetsabend' },
     appointmentId: null,
   },
 ];

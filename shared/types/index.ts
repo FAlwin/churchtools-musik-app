@@ -617,6 +617,14 @@ export interface AbsenceEvent {
   date: string;
   /** ISO-Startzeitpunkt (für Uhrzeit und Sortierung). */
   startDate: string;
+  /**
+   * Der ChurchTools-Kalender des Termins (#400) – Grundlage des Filters „nur Gottesdienst".
+   *
+   * Gemessen 20.09.2026: `GET /api/events` liefert je Termin `calendar.title` („Gottesdienst") und
+   * `calendar.domainIdentifier` („2"). `null`, wenn ChurchTools keinen mitliefert – so ein Termin
+   * steht unter jedem Filter, statt still zu verschwinden.
+   */
+  kalender: { id: string; name: string } | null;
 }
 
 /** Antwort des Login-Endpunkts. */

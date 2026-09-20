@@ -16,6 +16,8 @@ const KEYS = {
   drawbarCollapsed: 'worship:drawbar-collapsed',
   /** Senkrechte Verschiebung der Werkzeugleiste in Pixeln. */
   drawbarOffsetY: 'worship:drawbar-y',
+  /** Gewählte Kalender im Tab „Abwesenheiten" (#400) – JSON-Liste von Kalender-IDs, leer = alle. */
+  abwesenheitenFilter: 'worship:abwesenheiten-filter',
 } as const;
 
 type PrefKey = keyof typeof KEYS;
@@ -52,4 +54,24 @@ export function getDrawbarOffsetY(): number {
 
 export function setDrawbarOffsetY(y: number): void {
   write('drawbarOffsetY', String(y));
+}
+
+/**
+ * Die im Tab „Abwesenheiten" gewählten Kalender (#400). Leer heißt „alle".
+ *
+ * Auf dem Gerät gemerkt, nicht im Konto (Entscheidung Alwin, 20.09.2026): Wer nur Gottesdienste
+ * einträgt, stellt es einmal ein. Ein kaputter Wert ergibt „alle" – lieber zu viel zeigen als still
+ * zu wenig.
+ */
+export function getAbwesenheitenFilter(): string[] {
+  try {
+    const roh: unknown = JSON.parse(read('abwesenheitenFilter') ?? '[]');
+    return Array.isArray(roh) ? roh.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setAbwesenheitenFilter(ids: string[]): void {
+  write('abwesenheitenFilter', JSON.stringify(ids));
 }
