@@ -89,10 +89,10 @@ export function AddItemSheet({ eventId, eventName, onClose, onAdd, services }: A
    * (`eventId` im Auftrag). Deshalb wird `onAdd` danach **nicht** noch aufgerufen: Der Punkt stünde
    * sonst zweimal im Ablauf.
    *
-   * **Warum es diesen Einstieg nur hier gibt und nicht auch in `ItemActionSheet`:** Dort wird einem
-   * **vorhandenen** Ablaufpunkt ein Lied zugeordnet. Ein neu angelegtes Lied müsste in diesen Punkt
-   * hineingeschrieben werden – der Auftrag legt aber mit `eventId` einen **neuen** Punkt an. Der
-   * Einstieg dort bräuchte also einen anderen Schreibweg; er fehlt nicht aus Versehen.
+   * **Der Einstieg in `ItemActionSheet` („Lied verknüpfen") schreibt anders** (#391, 18.09.2026): Dort
+   * wird einem **vorhandenen** Ablaufpunkt ein Lied zugeordnet, also ohne `eventId` – `NewSongSheet`
+   * gibt das neue Lied per `onVerknuepfen` zurück, und der Dialog merkt es wie eine Auswahl aus der
+   * Suche vor, bis „Speichern" schreibt.
    */
   if (neuesLied) {
     return (

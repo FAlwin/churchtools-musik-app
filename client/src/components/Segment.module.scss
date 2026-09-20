@@ -1,7 +1,7 @@
 .seg {
   display: flex;
   background: var(--surface3);
-  border-radius: 7px;
+  border-radius: var(--r-ctrl);
   padding: 2px;
   gap: 2px;
 }
@@ -15,7 +15,7 @@
   font-weight: 600;
   color: var(--text2);
   padding: 8px 11px;
-  border-radius: 5px;
+  border-radius: calc(var(--r-ctrl) - 2px);
   transition: all 0.14s;
   font-family: var(--ui);
 }

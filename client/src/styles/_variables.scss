@@ -1,33 +1,48 @@
-// ── Globale Design-Variablen – ChurchTools-Look ─────────────
-// Einzige Quelle für Farben, Schriften, Breakpoints.
+// ── Globale Design-Variablen – Look der ChurchTools-APP ─────────────
+// Einzige Quelle für Farben, Rundungen, Schriften, Breakpoints.
 // Komponenten importieren diese Datei, statt Werte zu duplizieren.
 // Theme-Umschaltung über [data-theme] auf <html>.
+//
+// Seit #393 (19.09.2026) folgt die App der ChurchTools-**App** (iOS/Android), nicht mehr dem
+// ChurchTools-Web: kräftigeres Blau, hellblaue Datumskacheln, Karten mit feinem Rand statt Schatten,
+// größere Rundungen. Die Werte wurden von Screenshots der App abgelesen (Entwürfe in `.entwuerfe/`,
+// Runde 3–8 zu #177) – wer sie nachschärft, tut es HIER und nirgends sonst.
 
 // Farben (Light Mode)
 :root {
-  --bg: #f2f3f5; // Seitenhintergrund
+  --bg: #eef1f6; // Seitenhintergrund (leicht blaustichiges Grau der App)
   --surface2: #ffffff; // Karten / Listen / Header
-  --surface3: #ebedf0; // Sekundärflächen (Suchfeld, Kacheln, Segmente, Pills)
-  --border: #e4e7eb; // Rahmen / Input-Border
-  --hair: #ebedf0; // Haarlinien-Trenner (1px)
+  --surface3: #eef1f6; // Sekundärflächen (Suchfeld, Kacheln, Segmente, Pills)
+  --border: #e2e6ee; // feiner Rand um Karten / Knöpfe / Inputs
+  --hair: #edf0f5; // Haarlinien-Trenner (1px)
+  --section: #e7ecf3; // Band hinter Gruppen-Überschriften („Dienste")
 
-  --text: #16212a; // Primärtext (ChurchTools-Dunkel)
-  --text2: #5c6b7a; // Sekundärtext
-  --text3: #9aa7b2; // Tertiär / inaktive Icons / Platzhalter
+  --text: #111827; // Primärtext (fast schwarz, wie in der App)
+  --text2: #6b7280; // Sekundärtext
+  --text3: #9ca3af; // Tertiär / inaktive Icons / Platzhalter
 
-  --blue: #0061a1; // Primärfarbe (Buttons, Links, aktive Tabs, Akzentbalken)
-  --blue-ink: #0061a1;
-  --blue-soft: rgba(0, 97, 161, 0.1); // Blau-Flächen (Datums-Badge, Verse-Label)
-  --red: #b22247; // Destruktiv (Abmelden, Löschen, offene Dienste)
+  --blue: #2563eb; // Primärfarbe (Buttons, Links, aktive Tabs, Plus-Knopf)
+  --blue-ink: #2563eb;
+  --blue-soft: rgba(37, 99, 235, 0.1); // Blau-Flächen (Verse-Label, sanfte Hervorhebung)
+  --blue-tile: #dbe7fb; // Datumskachel (Tag / Monat) wie „Anstehende Termine" in der App
+  --blue-tile-text: #111827; // Text auf der Datumskachel
+  --red: #d64545; // Destruktiv (Abmelden, Löschen, offene Dienste, Abwesend)
+  --green: #1f8a5b; // Bestätigt / offline vorhanden / Etikett
   --cp-dir: #0d7a6f; // ChordPro-Direktiven {…} im Editor (ChurchTools-passendes Teal)
 
   --seg-on: #ffffff; // aktives Segment / Toggle-Hintergrund
-  --track-off: #c9cfd6; // Toggle-Schiene (aus)
+  --track-off: #d1d5db; // Toggle-Schiene (aus)
   --scrim: rgba(15, 22, 28, 0.5); // Overlay hinter Sheets/Dialogen
 
-  --nav-bg: rgba(255, 255, 255, 0.86); // Header / Tab-Bar / Footer (mit Blur)
-  --shadow: 0 1px 3px rgba(22, 33, 42, 0.07), 0 1px 2px rgba(22, 33, 42, 0.04); // Karten-Schatten
+  --nav-bg: rgba(255, 255, 255, 0.9); // Header / Tab-Bar / Footer (mit Blur)
+  --shadow: 0 1px 2px rgba(17, 24, 39, 0.04); // Karten: kaum Schatten, der Rand trägt
   --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  // Rundungen – drei Stufen, wie in der App: Karten, Kacheln, Bedienelemente.
+  --r-card: 12px; // Karten, Listen-Container, Dialoge
+  --r-tile: 10px; // Datumskacheln, Noten-Kacheln
+  --r-ctrl: 8px; // Knöpfe, Segmente, Inputs, Pills
+  --r-dialog: 14px; // zentrierte Dialoge (Sheet, ConfirmDialog)
 }
 
 // Dark Mode
@@ -37,14 +52,19 @@ html[data-theme='dark'] {
   --surface3: #2b3a49; // Sekundärflächen, etwas heller
   --border: rgba(255, 255, 255, 0.11);
   --hair: rgba(255, 255, 255, 0.09);
+  --section: #17222d;
 
   --text: #f4f7f9;
   --text2: #9db0bf;
   --text3: #67788a;
 
-  --blue: #54a6e8;
-  --blue-ink: #54a6e8;
-  --blue-soft: rgba(84, 166, 232, 0.14);
+  --blue: #4f8cff; // helleres Blau derselben Familie wie #2563eb
+  --blue-ink: #4f8cff;
+  --blue-soft: rgba(79, 140, 255, 0.16);
+  --blue-tile: #1e2f4d;
+  --blue-tile-text: #dbe6ff;
+  --red: #ff6b6b;
+  --green: #4cb98b;
   --cp-dir: #5fd0c3; // Direktiven-Teal (heller für Dark Mode)
 
   --seg-on: #3a4d5e;

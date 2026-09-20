@@ -7,8 +7,6 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
-### Neu
-
 - **Der Editor arbeitet in der Tonart, die auf dem Blatt steht – und jede Version kennt ihre
   eigene Tonart (#398).** Wer ein Lied auf D transponiert hat und dann „Bearbeiten" oder „Neue
   Version" wählt, sieht im Editor D-Akkorde, nicht mehr die Original-Tonart. Über dem Text steht,
@@ -22,6 +20,29 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Tonart (vom Blatt aus wird es ohnehin nie überschrieben), der Kapo bleibt eine Anzeige-Sache.
   Eine neue Version aus einer transponierten Ansicht übernimmt die gewählte Tonart – sonst sähe man
   nach dem Speichern die ChurchTools-Zieltonart statt dessen, was man eben getippt hat.
+
+### Geändert
+
+- **Look der ChurchTools-App statt des Web-Clients (#393).** Entscheidung Alwin (19.09.2026) anhand von
+  Screenshots der App: kräftigeres Blau (`#2563EB` statt `#0061A1`), Seitenhintergrund und Text wie in der App,
+  weiße Karten mit 12 px Rundung und feinem Rand statt Schatten, hellblaue Datumskacheln mit dunkler Schrift
+  („21 / Sep" statt „21 / SEP" in Blau), Gruppen-Überschriften in normaler Schreibung. Alles über die Tokens in
+  `styles/_variables.scss` – neu: `--blue-tile`, `--section`, `--green` und die Rundungen `--r-card`/`--r-tile`/
+  `--r-ctrl`/`--r-dialog`; die Mixins `card-list`, `group-header` und `key-pill` tragen sie in alle Listen.
+  Mitgezogen: PWA-Manifest (`theme_color`, `background_color`), `theme-color`-Meta, Lade-Bildschirm,
+  Fehlerseite. **Drei Grün-Kopien zusammengeführt:** `--green` gab es nicht, drei Dateien hatten je einen
+  eigenen Fallback-Wert (`#168a16`, `#168a16`, `#1bb0a2`). Das Logo (`logo.svg`/`favicon.svg`) behält seine
+  Balkenfarben – es ist Markenzeichen, kein UI-Token.
+
+- **„Neues Lied" und SongSelect auch in „Lied verknüpfen" (#391).** Wer im Ablauf einem vorhandenen
+  Punkt ein Lied zuordnet, kann es jetzt an derselben Stelle anlegen – oben rechts „Neues Lied" (der
+  Suchbegriff wird zum Titel) oder über einen SongSelect-Treffer, wie beim Hinzufügen. Das Lied
+  entsteht ohne neuen Ablaufpunkt; danach steht es im Dialog **vorgemerkt** („Wird beim Speichern
+  verknüpft.") und wird erst mit „Speichern" geschrieben – ein Fenster, ein Speicherweg. Die
+  Erfolgsansicht bietet weiter „Notenblatt schreiben" an; „Zurück zum Eintrag" wie „Fertig" nehmen die
+  Verknüpfung mit. Bisher gab es diesen Weg nur beim Hinzufügen und im Liederheft – bewusst, weil der
+  Anlege-Weg nur einen neuen Punkt schreiben konnte (`docs/entwicklung/entscheidungen.md`). Geführte
+  Einführung `setlist-edit-v4`.
 
 ## [2.24.1] – 2026-09-05
 

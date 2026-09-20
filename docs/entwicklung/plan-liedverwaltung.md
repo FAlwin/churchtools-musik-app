@@ -249,9 +249,9 @@ Lied anlegen …"), Erfolgsansicht mit drei Wegen (öffnen / noch eins / fertig)
 > steht als Angebot darunter (und läuft von selbst, wenn die Bibliothek nichts findet). Ein Treffer öffnet
 > `NewSongSheet` über `startTreffer` gefüllt, und „Neues Lied" führt direkt ins leere Formular. Damit
 > existiert die SongSelect-Suche **einmal** statt zweimal. Der erste Anlauf (14.08.2026) war ein Umschalter
-> „Bibliothek · Liedtexte · SongSelect" – nach Alwins Rückmeldung wieder ausgebaut. Auch der Absatz
-> „Bewusst NICHT gebaut" unten gilt weiter: In „Lied verknüpfen" gibt es SongSelect gar nicht, weil
-> `SongPicker` es nur mit einem `onSongSelectTreffer`-Weg anbietet. Die Entscheidungen dazu stehen in #378,
+> „Bibliothek · Liedtexte · SongSelect" – nach Alwins Rückmeldung wieder ausgebaut. Der Absatz
+> „Bewusst NICHT gebaut" unten ist seit 18.09.2026 überholt (#391): Auch „Lied verknüpfen" gibt jetzt einen
+> `onSongSelectTreffer`-Weg mit. Die Entscheidungen dazu stehen in #378,
 > `docs/entwicklung/entscheidungen.md` und im CHANGELOG; die Regeln selbst in
 > `client/src/hooks/useLiedSuche.ts`.
 
@@ -265,9 +265,10 @@ ChurchTools-Rechte, und **jeder Testlauf legt ein echtes Lied in ChurchTools an*
 sprechen dieselbe Instanz). Es muss also jemand mit Konto durchklicken und die Testlieder danach in
 ChurchTools wieder wegräumen – die App kann keine Lieder löschen.
 
-**Bewusst NICHT gebaut:** ein dritter Einstieg in `ItemActionSheet` („Lied verknüpfen"). Dort wird
-einem **vorhandenen** Ablaufpunkt ein Lied zugeordnet; der Auftrag legt mit `eventId` aber einen
-**neuen** Punkt an. Das bräuchte einen anderen Schreibweg und fehlt nicht aus Versehen.
+**Bewusst NICHT gebaut – bis 18.09.2026 (#391):** ein dritter Einstieg in `ItemActionSheet` („Lied
+verknüpfen"). Dort wird einem **vorhandenen** Ablaufpunkt ein Lied zugeordnet; der Auftrag legte mit
+`eventId` aber einen **neuen** Punkt an. Der andere Schreibweg kam mit #391: `NewSongSheet` ohne
+`eventId`, Rückgabe per `onVerknuepfen`, Vormerken im Dialog bis „Speichern".
 
 ## 8. Schritt 11 – Stammdaten ändern und löschen (13.08.2026)
 

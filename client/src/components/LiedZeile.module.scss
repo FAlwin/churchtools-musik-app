@@ -19,8 +19,8 @@
   width: 100%;
   text-align: left;
   padding: 10px 12px;
-  border: none;
-  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
   background: var(--surface2);
   box-shadow: var(--shadow);
   color: var(--text);
