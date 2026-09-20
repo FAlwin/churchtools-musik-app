@@ -43,9 +43,10 @@ interface SongPickerProps {
    * Ein Treffer aus der Quelle „SongSelect" (#378) – der Aufrufer öffnet damit „Neues Lied".
    *
    * **Fehlt dieser Weg, gibt es SongSelect hier gar nicht** – weder das Angebot noch die automatische
-   * Suche. In „Lied verknüpfen" ist das so: Dort wird einem vorhandenen Ablaufpunkt ein Lied zugeordnet,
-   * ein neu angelegtes Lied müsste in diesen Punkt hineingeschrieben werden – das kann der Anlege-Weg
-   * nicht. Ein Angebot dorthin wäre eine Sackgasse.
+   * Suche. So ist es ohne das Recht, Lieder zu bearbeiten: Ein Treffer, aus dem nichts werden kann,
+   * wäre eine Sackgasse. „Lied verknüpfen" hatte den Weg bis 18.09.2026 nicht, weil der Anlege-Weg
+   * nur einen NEUEN Ablaufpunkt schreiben konnte; seit #391 gibt `NewSongSheet` das Lied per
+   * `onVerknuepfen` an den vorhandenen Punkt zurück, und beide Dialoge geben den Weg mit.
    */
   onSongSelectTreffer?: (treffer: SongSelectTreffer) => void;
   /** Beschriftung der Hauptaktion in der Vorschau, z. B. „Zum Ablauf hinzufügen". */

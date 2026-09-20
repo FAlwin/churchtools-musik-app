@@ -314,3 +314,71 @@ describe('NewSongSheet – „Notenblatt schreiben/bearbeiten" nach dem Anlegen 
     expect(notenblattText).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Der Weg aus „Lied verknüpfen" (#391, 18.09.2026): Das Blatt legt das Lied an, **schreibt aber nichts
+ * in den Ablauf** – es gibt das Lied an den Aufrufer zurück, der es vormerkt. Geprüft wird, dass aus der
+ * Erfolgsansicht JEDER Ausgang die Verknüpfung trägt und dass „Noch ein Lied anlegen" fehlt.
+ */
+describe('NewSongSheet – Verknüpfen statt Eintragen (#391)', () => {
+  const ERGEBNIS = {
+    songId: 77,
+    arrangementId: 770,
+    name: 'Wo ich auch stehe',
+    notenblatt: false,
+    notenblattQuelle: null,
+    hinweise: [],
+  };
+
+  it('sagt, dass das Lied beim Speichern verknüpft wird', () => {
+    hookErgebnis.mockReturnValue(ERGEBNIS);
+    zeige({ onVerknuepfen: vi.fn() });
+    expect(screen.getByText(/und wird beim Speichern mit dem Eintrag verknüpft/)).toBeTruthy();
+  });
+
+  it('„Zurück zum Eintrag" gibt Arrangement und Name zurück – onClose bleibt unberührt', () => {
+    hookErgebnis.mockReturnValue(ERGEBNIS);
+    const onVerknuepfen = vi.fn();
+    const onClose = vi.fn();
+    zeige({ onVerknuepfen, onClose });
+    fireEvent.click(screen.getByRole('button', { name: 'Zurück zum Eintrag' }));
+    expect(onVerknuepfen).toHaveBeenCalledWith(770, 'Wo ich auch stehe');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('auch „Fertig" trägt die Verknüpfung – ein angelegtes Lied bleibt nie unverknüpft liegen', () => {
+    hookErgebnis.mockReturnValue(ERGEBNIS);
+    const onVerknuepfen = vi.fn();
+    const onClose = vi.fn();
+    zeige({ onVerknuepfen, onClose });
+    fireEvent.click(screen.getByRole('button', { name: 'Fertig' }));
+    expect(onVerknuepfen).toHaveBeenCalledWith(770, 'Wo ich auch stehe');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('„Noch ein Lied anlegen" entfällt – ein Punkt trägt genau ein Lied; das Notenblatt bleibt ein Angebot', () => {
+    hookErgebnis.mockReturnValue(ERGEBNIS);
+    zeige({ onVerknuepfen: vi.fn() });
+    expect(screen.queryByRole('button', { name: 'Noch ein Lied anlegen' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Notenblatt schreiben' })).toBeTruthy();
+  });
+
+  it('ohne den Weg ist alles wie vorher: „Fertig" schließt, „Noch ein Lied anlegen" steht da', () => {
+    hookErgebnis.mockReturnValue(ERGEBNIS);
+    const onClose = vi.fn();
+    zeige({ onClose });
+    expect(screen.getByRole('button', { name: 'Noch ein Lied anlegen' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Zurück zum Eintrag' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Fertig' }));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('vor dem Anlegen schließt „Abbrechen" ganz normal – es gibt noch nichts zu verknüpfen', () => {
+    const onVerknuepfen = vi.fn();
+    const onClose = vi.fn();
+    zeige({ onVerknuepfen, onClose });
+    fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(onVerknuepfen).not.toHaveBeenCalled();
+  });
+});
