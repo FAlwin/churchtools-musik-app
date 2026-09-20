@@ -60,7 +60,9 @@ export function Coachmarks({ steps, onClose }: CoachmarksProps) {
     // `nearest` statt `center`: schon sichtbare Ziele werden NICHT gescrollt. `center` zentrierte
     // z. B. die Tab-Leiste (unten) und schob dabei den ganzen Viewport nach oben – dieser Versatz
     // blieb und schlug auf die danach geöffnete Ansicht durch („oben abgeschnitten").
-    el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    // `?.` weil es die Funktion nicht überall gibt: In jsdom (Tests) fehlt sie, und eine Einführung
+    // darf an so etwas nicht zerbrechen – sie ist Beiwerk, nicht die Aufgabe des Nutzers.
+    el.scrollIntoView?.({ block: 'nearest', behavior: 'auto' });
     const r = el.getBoundingClientRect();
     setBox({ top: r.top, left: r.left, width: r.width, height: r.height });
     // eslint-disable-next-line react-hooks/exhaustive-deps

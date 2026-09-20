@@ -14,22 +14,43 @@
  * **Die Rückfrage vor dem Löschen nennt die Folgen**, statt „wirklich?" zu fragen: Mit dem Lied gehen
  * seine Arrangements, Notenblätter und Dateien. Das ist Alwins Entscheidung vom 13.08.2026 – löschen
  * ja, aber nicht beiläufig.
+ *
+ * **Seit #396 steht hier auch die Arrangement-Verwaltung** (Alwins Wunsch vom 19.09.2026: „im
+ * Stammdaten-Blatt des Liedes"). Sie ist bewusst kein eigener Bildschirm: Wer ein Lied bearbeitet,
+ * meint oft genau das – die Tonart des zweiten Arrangements, die Liednummer im Liederbuch. Die
+ * Regeln dazu (letztes Arrangement, Standard) stehen im Server, nicht hier.
  */
 import { useEffect, useState } from 'react';
+import type { ArrangementAnsicht, ArrangementAuftrag } from '@shared/types/index';
 import { Sheet } from './Sheet';
 import { Icon } from './icons';
 import { CenterMessage } from './CenterMessage';
 import { ConfirmDialog } from './ConfirmDialog';
+import { Coachmarks } from './Coachmarks';
+import {
+  LIED_STAMMDATEN_STEPS,
+  TOUR_LIED_STAMMDATEN,
+  isTourDone,
+  markTourDone,
+} from '../utils/onboarding';
 import { SongFields } from './SongFields';
+import { ArrangementListe } from './ArrangementListe';
+import { ArrangementSheet } from './ArrangementSheet';
 import { ChordEditor } from './ChordEditor';
 import { useNotenblatt } from '../hooks/useNotenblatt';
 // Die Feld-Stile direkt aus dem Modul: Ein Re-Export über die Komponente bricht Fast Refresh.
 import feld from './SongFields.module.scss';
 import {
+  useArrangementAendern,
+  useArrangementAnlegen,
+  useArrangementLoeschen,
+  useArrangementStandard,
+  useArrangements,
   useLiedAendern,
   useLiedLoeschen,
   useSongCategories,
   useSongLibrary,
+  useSongSources,
   useSongStammdaten,
 } from '../hooks/useServices';
 import {
@@ -85,10 +106,30 @@ export function EditSongSheet({
   const aendern = useLiedAendern(songId);
   const loeschen = useLiedLoeschen();
 
+  /**
+   * Die Arrangement-Verwaltung (#396). **Die Quellen werden nur geholt, wenn das Blatt offen ist** –
+   * sie kommen bei ChurchTools aus der alten Schnittstelle, und die soll nicht bei jedem Blättern
+   * durch die Bibliothek angefragt werden.
+   */
+  const arrangements = useArrangements(songId);
+  const quellen = useSongSources(true);
+  const arrAnlegen = useArrangementAnlegen(songId);
+  const arrAendern = useArrangementAendern(songId);
+  const arrStandard = useArrangementStandard(songId);
+  const arrLoeschen = useArrangementLoeschen(songId);
+
   const [formular, setFormular] = useState<NeuesLiedFormular>(LEERES_FORMULAR);
   const [geladenFuer, setGeladenFuer] = useState<number | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [loeschFrage, setLoeschFrage] = useState(false);
+  /**
+   * Welches Arrangement gerade offen ist: ein vorhandenes zum Ändern, `'neu'` zum Anlegen,
+   * `null` = keines. **Ein Zustand statt zweier Booleans** – zwei könnten gleichzeitig wahr sein,
+   * und dann lägen zwei Fenster übereinander (die Lehre vom 05.08.2026, nur andersherum).
+   */
+  const [arrOffen, setArrOffen] = useState<ArrangementAnsicht | 'neu' | null>(null);
+  const [arrFehler, setArrFehler] = useState<string | null>(null);
+  const [arrLoeschFrage, setArrLoeschFrage] = useState<ArrangementAnsicht | null>(null);
 
   /**
    * **Notenblatt bearbeiten** – derselbe Weg wie nach dem Anlegen (`useNotenblatt`). Ob es schon ein
@@ -99,6 +140,17 @@ export function EditSongSheet({
   const [editorLaedt, setEditorLaedt] = useState(false);
 
   const ist = stammdaten.data ?? null;
+
+  /**
+   * Die Einführung startet erst, wenn **die Arrangements geladen sind** (#396): Ihr erster Schritt
+   * zeigt auf die Liste, und ein Schritt ohne sein Element wird still übersprungen. Würde sie sofort
+   * beim Öffnen laufen, bekäme der Nutzer ausgerechnet den Teil nicht zu sehen, für den sie da ist –
+   * und **merken** würde man es nicht: Die Tour liefe scheinbar normal, nur eben einen Schritt kürzer.
+   */
+  const [tour, setTour] = useState(false);
+  useEffect(() => {
+    if (ist && arrangements.data && !isTourDone(TOUR_LIED_STAMMDATEN)) setTour(true);
+  }, [ist, arrangements.data]);
 
   const editorOeffnen = async (): Promise<void> => {
     setEditorLaedt(true);
@@ -150,6 +202,52 @@ export function EditSongSheet({
       // Der Grund kommt vom Server (Recht, doppelte CCLI-Nummer, Netz) – das Blatt bleibt offen,
       // damit die Eingaben nicht verloren gehen (#270).
       setFehler(e instanceof Error ? e.message : 'Das Speichern ist fehlgeschlagen.');
+    }
+  }
+
+  /**
+   * Speichern aus dem Arrangement-Fenster – **anlegen und ändern gehen denselben Weg**, weil sie
+   * dasselbe Fenster benutzen. Der Unterschied ist die Mutation, nicht der Ablauf.
+   */
+  async function arrangementSpeichern(
+    auftrag: ArrangementAuftrag & { name: string },
+  ): Promise<void> {
+    setArrFehler(null);
+    try {
+      if (arrOffen === 'neu') {
+        const angelegt = await arrAnlegen.mutateAsync(auftrag);
+        onSaved?.(`Das Arrangement „${angelegt.name}" wurde angelegt.`);
+      } else if (arrOffen) {
+        const stand = await arrAendern.mutateAsync({ arrangementId: arrOffen.id, auftrag });
+        onSaved?.(`Das Arrangement „${stand.name}" wurde gespeichert.`);
+      }
+      setArrOffen(null);
+    } catch (e) {
+      // Das Fenster bleibt offen, damit die Eingaben nicht verloren gehen (#270).
+      setArrFehler(e instanceof Error ? e.message : 'Das Speichern ist fehlgeschlagen.');
+    }
+  }
+
+  async function arrangementStandard(arr: ArrangementAnsicht): Promise<void> {
+    setArrFehler(null);
+    try {
+      await arrStandard.mutateAsync(arr.id);
+      onSaved?.(`„${arr.name}" ist jetzt das Standard-Arrangement.`);
+      setArrOffen(null);
+    } catch (e) {
+      setArrFehler(e instanceof Error ? e.message : 'Das Umstellen ist fehlgeschlagen.');
+    }
+  }
+
+  async function arrangementLoeschenBestaetigen(arr: ArrangementAnsicht): Promise<void> {
+    setArrLoeschFrage(null);
+    setArrFehler(null);
+    try {
+      const { name } = await arrLoeschen.mutateAsync(arr.id);
+      onSaved?.(`Das Arrangement „${name}" wurde gelöscht.`);
+      setArrOffen(null);
+    } catch (e) {
+      setArrFehler(e instanceof Error ? e.message : 'Das Löschen ist fehlgeschlagen.');
     }
   }
 
@@ -210,10 +308,27 @@ export function EditSongSheet({
               {aendern.isPending ? 'Wird gespeichert …' : 'Speichern'}
             </button>
 
+            {/* Die Arrangements des Liedes (#396) – zwischen Stammdaten und Notenblatt, weil sie
+                zum Lied gehören, aber nicht zu seinen Stammdaten. */}
+            {arrangements.data && arrangements.data.length > 0 && (
+              <ArrangementListe
+                arrangements={arrangements.data}
+                onOeffnen={(arr) => {
+                  setArrFehler(null);
+                  setArrOffen(arr);
+                }}
+                onNeu={() => {
+                  setArrFehler(null);
+                  setArrOffen('neu');
+                }}
+              />
+            )}
+
             {/* Der Weg zum Text – ohne Umweg über Öffnen → Neue Version (04.09.2026). Schreibt das
                 ORIGINAL des Arrangements; die eigenen Fassungen bleiben. */}
             <button
               className={styles.secondaryWide}
+              data-tour="notenblatt-bearbeiten"
               disabled={editorLaedt}
               onClick={() => void editorOeffnen()}
             >
@@ -252,6 +367,63 @@ export function EditSongSheet({
             });
           }}
           onClose={() => setEditor(null)}
+        />
+      )}
+
+      {arrOffen && (
+        <ArrangementSheet
+          arrangement={arrOffen === 'neu' ? null : arrOffen}
+          quellen={quellen.data ?? []}
+          speichert={
+            arrAnlegen.isPending ||
+            arrAendern.isPending ||
+            arrStandard.isPending ||
+            arrLoeschen.isPending
+          }
+          fehler={arrFehler}
+          onSave={(auftrag) => void arrangementSpeichern(auftrag)}
+          /* Beide Knöpfe nur, wo sie etwas bewirken: Der Standard ist schon Standard, und das
+             letzte Arrangement lässt sich nicht löschen (die Regel selbst steht im Server). */
+          onStandard={
+            arrOffen !== 'neu' && !arrOffen.isDefault
+              ? () => void arrangementStandard(arrOffen)
+              : undefined
+          }
+          onLoeschen={
+            arrOffen !== 'neu' && !arrOffen.isDefault && (arrangements.data?.length ?? 0) > 1
+              ? () => setArrLoeschFrage(arrOffen)
+              : undefined
+          }
+          onClose={() => setArrOffen(null)}
+        />
+      )}
+
+      {arrLoeschFrage && (
+        <ConfirmDialog
+          title="Arrangement löschen?"
+          /* Wie beim Lied: die Folgen benennen. Dateien werden eigens genannt – ChurchTools hängt
+             Notenblätter und Aufnahmen am Arrangement, nicht am Lied. */
+          message={
+            `„${arrLoeschFrage.name}" wird in ChurchTools gelöscht` +
+            (arrLoeschFrage.dateien > 0
+              ? ` – mit ${arrLoeschFrage.dateien === 1 ? 'der Datei' : `den ${arrLoeschFrage.dateien} Dateien`}, die daran hängen.`
+              : '.') +
+            ' Notenblätter und eigene Fassungen dieses Arrangements gehen mit. Steht es in einem' +
+            ' Ablauf, fehlt es dort danach. Das lässt sich über die App nicht zurückholen.'
+          }
+          confirmLabel="Löschen"
+          onConfirm={() => void arrangementLoeschenBestaetigen(arrLoeschFrage)}
+          onCancel={() => setArrLoeschFrage(null)}
+        />
+      )}
+
+      {tour && (
+        <Coachmarks
+          steps={LIED_STAMMDATEN_STEPS}
+          onClose={() => {
+            markTourDone(TOUR_LIED_STAMMDATEN);
+            setTour(false);
+          }}
         />
       )}
 

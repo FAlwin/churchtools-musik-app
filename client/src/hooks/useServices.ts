@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   LIEDTEXT_SUCHE_MIN_ZEICHEN,
+  type ArrangementAuftrag,
   type LiedAnlegenAuftrag,
   type LiedStammdaten,
   type SongSelectSuchergebnis,
@@ -424,6 +425,100 @@ export function useLiedLoeschen() {
       void qc.invalidateQueries({ queryKey: ['song-library'] });
       void qc.invalidateQueries({ queryKey: ['agenda'] });
       void qc.invalidateQueries({ queryKey: ['services'] });
+    },
+  });
+}
+
+/**
+ * Die Liedquellen (Liederbücher) – **wie die Kategorien nur 5 Minuten vorgehalten** (#396).
+ *
+ * Sie ändern sich fast nie, aber sie werden im Formular zur Auswahl gestellt: Eine Quelle
+ * anzubieten, die es in ChurchTools nicht mehr gibt, ist ein Knopf ins Leere – der Server lehnt sie
+ * dann ab (gemessen: ChurchTools selbst verwirft eine unbekannte ID stillschweigend).
+ */
+export function useSongSources(enabled: boolean) {
+  return useQuery({
+    queryKey: ['song-sources'],
+    queryFn: () => api.getSongSources(),
+    enabled,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** Die Arrangements eines Liedes mit allen Feldern (#396) – nur im Stammdaten-Blatt. */
+export function useArrangements(songId: number | null) {
+  return useQuery({
+    queryKey: ['arrangements', songId],
+    queryFn: () => api.getArrangements(songId as number),
+    enabled: songId !== null,
+    staleTime: 0,
+  });
+}
+
+/**
+ * Was nach einer Arrangement-Änderung neu geladen werden muss (#396) – **einmal, für alle vier.**
+ *
+ * Anlegen, Ändern, Standard und Löschen betreffen dieselben Listen: die Arrangements selbst, die
+ * Bibliothek (sie zeigt Tonart und Arrangement-ID des **Standards**) und das Blatt dieses Liedes.
+ * Vier Kopien dieser Aufzählung wären vier Stellen, an denen jemand eine Liste vergisst – und
+ * vergessen heißt hier: Die App zeigt einen Stand, den es in ChurchTools nicht mehr gibt.
+ *
+ * **Die Statistik bewusst nicht** (`song-usage`): Ein geändertes Arrangement wurde nicht öfter
+ * gespielt, und der Lauf kostet ~250 ChurchTools-Anfragen (#300).
+ */
+function arrangementListenErneuern(qc: ReturnType<typeof useQueryClient>, songId: number): void {
+  void qc.invalidateQueries({ queryKey: ['arrangements', songId] });
+  void qc.invalidateQueries({ queryKey: ['song-library'] });
+  void qc.invalidateQueries({ queryKey: ['song-chart', songId] });
+  void qc.invalidateQueries({ queryKey: ['song-arrangements', songId] });
+}
+
+/** Legt ein weiteres Arrangement an (#396). */
+export function useArrangementAnlegen(songId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (auftrag: ArrangementAuftrag & { name: string }) =>
+      api.legeArrangementAn(songId, auftrag),
+    onSuccess: () => arrangementListenErneuern(qc, songId),
+  });
+}
+
+/** Ändert ein Arrangement (#396). */
+export function useArrangementAendern(songId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { arrangementId: number; auftrag: ArrangementAuftrag }) =>
+      api.aendereArrangement(songId, v.arrangementId, v.auftrag),
+    onSuccess: () => arrangementListenErneuern(qc, songId),
+  });
+}
+
+/**
+ * Macht ein Arrangement zum Standard (#396).
+ *
+ * Die Antwort ist die ganze Liste – sie wird direkt in den Cache gelegt, damit nicht kurz zwei
+ * Einträge als Standard dastehen, während die Abfrage noch läuft.
+ */
+export function useArrangementStandard(songId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (arrangementId: number) => api.arrangementZumStandard(songId, arrangementId),
+    onSuccess: (liste) => {
+      qc.setQueryData(['arrangements', songId], liste);
+      arrangementListenErneuern(qc, songId);
+    },
+  });
+}
+
+/** Löscht ein Arrangement (#396) – samt Notenblättern, Dateien und Versionen. */
+export function useArrangementLoeschen(songId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (arrangementId: number) => api.loescheArrangement(songId, arrangementId),
+    onSuccess: () => {
+      arrangementListenErneuern(qc, songId);
+      // Ein gelöschtes Arrangement kann in einem Ablauf gestanden haben.
+      void qc.invalidateQueries({ queryKey: ['agenda'] });
     },
   });
 }

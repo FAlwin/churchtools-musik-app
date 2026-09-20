@@ -71,6 +71,15 @@ export const TOUR_SETLIST_EDIT = 'setlist-edit-v4';
 // Schritte zeigen andere Elemente als v3.
 export const TOUR_VERFUEGBARKEIT = 'verfuegbarkeit-v4';
 
+/**
+ * Gruppe 6 – das **Stammdaten-Blatt eines Liedes** (#396), beim ersten Öffnen.
+ *
+ * Neu, weil dort seit #396 mehr steht als Name und Autor: die Arrangements mit allen Angaben, die
+ * ChurchTools führt. Ohne einen Hinweis findet das niemand, der das Blatt bisher nur zum Umbenennen
+ * geöffnet hat – und „zum Standard machen" steckt noch eine Ebene tiefer.
+ */
+export const TOUR_LIED_STAMMDATEN = 'lied-stammdaten-v1';
+
 export function isTourDone(key: string): boolean {
   try {
     return localStorage.getItem(PREFIX + key) === '1';
@@ -198,6 +207,20 @@ export const SETLIST_EDIT_STEPS: CoachStep[] = [
     selector: '[data-tour="edit-add"]',
     title: 'Hinzufügen',
     body: 'Füge unten einen neuen Punkt oder ein Lied zum Ablauf hinzu. Tippe Titel, Autor oder CCLI-Nummer – eure Lieder stehen oben, SongSelect darunter. Das Auge zeigt den Liedtext, das Plus fügt ein; bei SongSelect legst du das Lied damit gleich an. Ist ein Lied bei euch nicht da, sucht SongSelect von selbst mit.',
+  },
+];
+
+/** Gruppe 6 – Stammdaten-Blatt eines Liedes (#396). */
+export const LIED_STAMMDATEN_STEPS: CoachStep[] = [
+  {
+    selector: '[data-tour="arrangements"]',
+    title: 'Arrangements',
+    body: 'Hier stehen alle Arrangements des Liedes. Tippe eines an, um Tonart, Tempo, Takt, Länge, Quelle und Liednummer zu ändern – oder um es zum Standard zu machen. Unten legst du ein weiteres an.',
+  },
+  {
+    selector: '[data-tour="notenblatt-bearbeiten"]',
+    title: 'Notenblatt',
+    body: 'Der Text mit den Akkorden, den alle sehen. Was du hier speicherst, gilt für das Team – eure eigenen Fassungen bleiben davon unberührt.',
   },
 ];
 

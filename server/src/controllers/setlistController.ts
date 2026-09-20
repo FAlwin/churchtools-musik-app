@@ -25,6 +25,14 @@ import { getCapabilities } from '../services/ctCapabilities.js';
 import { fetchFileBytes } from '../services/ctFiles.js';
 import { getCtServices, getSong } from '../services/ctRead.js';
 import { getEditableSongCategories } from '../services/ctSongCategories.js';
+import { getSongSources } from '../services/ctSongSources.js';
+import {
+  arrangementAendern,
+  arrangementAnlegen,
+  arrangementLoeschen,
+  arrangementZumStandard,
+  arrangementsLesen,
+} from '../services/arrangementVerwaltung.js';
 import { liedAendern, liedAnlegen, liedLoeschen } from '../services/songVerwaltung.js';
 import { liedtextVorschau, sucheImLiedtext } from '../services/songTextIndex.js';
 import {
@@ -42,7 +50,7 @@ import {
 } from '../services/ctWrite.js';
 import { getSeenSetlists, markSeenSetlist } from '../services/seenSetlists.js';
 import { MAX_BPM, MIN_BPM } from '@shared/tempo/index';
-import { LIED_GRENZEN } from '@shared/types/index';
+import { ARRANGEMENT_GRENZEN, LIED_GRENZEN } from '@shared/types/index';
 import type {
   AgendaServiceOption,
   LiedStammdatenAnsicht,
@@ -415,6 +423,117 @@ export async function putSong(req: Request, res: Response): Promise<void> {
 export async function deleteSongCtrl(req: Request, res: Response): Promise<void> {
   const songId = idSchema.parse(req.params.songId);
   const { name } = await liedLoeschen(ctCookie(req), songId);
+  res.json({ name });
+}
+
+/**
+ * Was ein Arrangement tragen darf (#396) – **die Grenzen kommen aus `ARRANGEMENT_GRENZEN`**, nicht
+ * aus der Hand. Das Formular richtet seine `maxLength` nach derselben Liste.
+ *
+ * **`nullable()` ist hier kein Beiwerk:** `undefined` heißt „nicht geändert", `null` heißt „leeren".
+ * Ohne den Unterschied ließe sich kein Feld je wieder freiräumen (siehe `arrangementPayload.ts`).
+ */
+const arrangementFelderSchema = {
+  key: z.string().trim().max(ARRANGEMENT_GRENZEN.key).nullable().optional(),
+  tempo: z
+    .number()
+    .int()
+    .min(ARRANGEMENT_GRENZEN.tempo.min)
+    .max(ARRANGEMENT_GRENZEN.tempo.max)
+    .nullable()
+    .optional(),
+  beat: z.string().trim().max(ARRANGEMENT_GRENZEN.beat).nullable().optional(),
+  /** Länge in SEKUNDEN – die Umrechnung aus Minuten:Sekunden macht die Oberfläche. */
+  duration: z
+    .number()
+    .int()
+    .min(ARRANGEMENT_GRENZEN.duration.min)
+    .max(ARRANGEMENT_GRENZEN.duration.max)
+    .nullable()
+    .optional(),
+  description: z.string().trim().max(ARRANGEMENT_GRENZEN.description).nullable().optional(),
+  sourceId: z.number().int().positive().nullable().optional(),
+  sourceReference: z.string().trim().max(ARRANGEMENT_GRENZEN.sourceReference).nullable().optional(),
+};
+
+const arrangementNameSchema = z
+  .string()
+  .trim()
+  .min(ARRANGEMENT_GRENZEN.name.min, 'Das Arrangement braucht einen Namen.')
+  .max(ARRANGEMENT_GRENZEN.name.max);
+
+const neuesArrangementSchema = z.object({
+  name: arrangementNameSchema,
+  ...arrangementFelderSchema,
+});
+
+const arrangementAendernSchema = z
+  .object({ name: arrangementNameSchema.optional(), ...arrangementFelderSchema })
+  .refine((d) => Object.values(d).some((v) => v !== undefined), {
+    message: 'Es wurde keine Änderung mitgeschickt.',
+  });
+
+/** GET /api/song-sources – die Liedquellen (Liederbücher) der Gemeinde (#396). */
+export async function getSongSourcesCtrl(req: Request, res: Response): Promise<void> {
+  res.json(await getSongSources(ctCookie(req)));
+}
+
+/** GET /api/songs/:songId/arrangements/verwaltung – alle Arrangements mit allen Feldern (#396). */
+export async function getArrangementsVerwaltung(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  res.json(await arrangementsLesen(ctCookie(req), songId));
+}
+
+/**
+ * POST /api/songs/:songId/arrangements – ein weiteres Arrangement anlegen (#396).
+ *
+ * Rechte, die Quellen-Prüfung und „nie als Standard" stecken im Dienst; der Controller prüft nur die
+ * Form der Eingabe.
+ */
+export async function postArrangement(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const auftrag = neuesArrangementSchema.parse(req.body);
+  res.status(201).json(await arrangementAnlegen(ctCookie(req), songId, auftrag));
+}
+
+/**
+ * PUT /api/songs/:songId/arrangements/:arrangementId – ein Arrangement ändern (#396).
+ *
+ * **Das ist der allgemeine Weg, den `putArrangementTempo` bewusst nicht war.** Der schmale
+ * Tempo-Endpunkt bleibt trotzdem: Er wird vom Blatt aus angetippt, von jemandem, der nur das Tempo
+ * meint – und er geht durch dieselbe geprüfte Payload-Funktion wie dieser hier.
+ */
+export async function putArrangement(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const arrangementId = idSchema.parse(req.params.arrangementId);
+  const auftrag = arrangementAendernSchema.parse(req.body);
+  res.json(await arrangementAendern(ctCookie(req), songId, arrangementId, auftrag));
+}
+
+/**
+ * PATCH /api/songs/:songId/arrangements/:arrangementId/default – zum Standard machen (#396).
+ *
+ * Derselbe Pfad wie bei ChurchTools – nicht aus Nachahmung, sondern weil der Dienst ihn eins zu eins
+ * weiterreicht. Zurück kommt die **ganze Liste**: Ein Standardwechsel ändert immer zwei Einträge,
+ * und die Oberfläche soll nicht raten müssen, welcher das Flag verloren hat.
+ */
+export async function patchArrangementDefault(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const arrangementId = idSchema.parse(req.params.arrangementId);
+  res.json(await arrangementZumStandard(ctCookie(req), songId, arrangementId));
+}
+
+/**
+ * DELETE /api/songs/:songId/arrangements/:arrangementId – ein Arrangement löschen (#396).
+ *
+ * **Die Rückfrage steht in der Oberfläche** und nennt die Folgen (Notenblätter, Dateien, Versionen).
+ * Hier werden Recht und die beiden Geländer geprüft – letztes Arrangement und Standard – und der
+ * Name zurückgegeben, den es danach nicht mehr gibt.
+ */
+export async function deleteArrangementCtrl(req: Request, res: Response): Promise<void> {
+  const songId = idSchema.parse(req.params.songId);
+  const arrangementId = idSchema.parse(req.params.arrangementId);
+  const { name } = await arrangementLoeschen(ctCookie(req), songId, arrangementId);
   res.json({ name });
 }
 

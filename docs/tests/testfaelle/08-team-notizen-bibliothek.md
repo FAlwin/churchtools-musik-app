@@ -455,3 +455,47 @@ anlegt (#395).
 - **Historie:** #395 (20.09.2026), gemeldet von Alwin beim Durchklicken von #391
 
 </details>
+
+### TF-LIB-09 · Arrangements verwalten
+
+**Das brauchst du:** Ein **Testlied**, das du anlegen und wieder löschen darfst – wie in TF-LIB-03,
+**nicht ein echtes Gemeindelied.** Dieser Test schreibt in ChurchTools, und zwar für alle. Lege dem
+Testlied vorher in ChurchTools ein **zweites Arrangement** an oder mache das hier in Schritt 6.
+
+Führt eure Gemeinde **keine Liedquellen** (ChurchTools → Einstellungen → Liedquellen), fehlen
+„Quelle" und „Liednummer" im Fenster. Das ist richtig so – dann überspringst du Schritt 3.
+
+**Das muss passieren:** Was du hier änderst, steht danach **genauso in ChurchTools** – und nichts
+anderes hat sich dabei verändert. Genau darauf zielt Schritt 2: Ein unvollständiger Schreibvorgang
+würde Tonart, Tempo und Länge löschen, und das ließe sich über die App nicht zurückholen.
+
+1. **Liederheft** → beim Testlied auf den **Stift** tippen. Unter den Stammdaten steht
+   **„Arrangements"** mit allen Arrangements; beim Standard steht „STANDARD". Unter dem Namen
+   stehen Tonart, Tempo, Takt, Länge und – falls gesetzt – Quelle und Liednummer.
+2. **Ein Arrangement antippen** und **nur die Tonart** ändern, dann **Speichern**. In ChurchTools
+   nachsehen: Die Tonart ist neu, **Tempo, Takt, Länge und Beschreibung stehen unverändert da**.
+3. Dasselbe Arrangement erneut öffnen, eine **Liednummer** eintippen, ohne eine Quelle zu wählen.
+   Unter dem Feld steht der Hinweis, dass ChurchTools das nicht speichert, und **„Speichern" bleibt
+   grau**. Eine **Quelle** wählen → der Hinweis ist weg, Speichern geht. Danach steht in ChurchTools
+   beides.
+4. **Länge** auf `4` : `05` setzen, speichern. ChurchTools zeigt **4:05** – nicht 4 Sekunden und
+   nicht 245 Minuten.
+5. Ein Arrangement öffnen, das **nicht** der Standard ist → **„Zum Standard machen"**. In der Liste
+   wandert die Marke, und in ChurchTools ist es ebenfalls der Standard. Beim Standard-Arrangement
+   selbst gibt es diesen Knopf **nicht**.
+6. **„Weiteres Arrangement"** → Namen eintippen → Speichern. Es erscheint in der Liste und **ist
+   nicht** der Standard.
+7. **Löschen:** Beim Standard-Arrangement gibt es **kein** „Arrangement löschen". Bei einem anderen
+   schon; die Rückfrage nennt die Folgen und, falls welche dranhängen, die **Anzahl der Dateien**.
+   Bestätigen → es ist weg, auch in ChurchTools. Bleibt nur noch **ein** Arrangement übrig, ist der
+   Löschen-Knopf wieder verschwunden.
+8. Zum Schluss das Testlied löschen (**„Lied löschen …"**).
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `client/src/components/ArrangementSheet.tsx`, `client/src/components/ArrangementListe.tsx`, `client/src/utils/arrangementFormular.ts`, `client/src/components/EditSongSheet.tsx`, `server/src/services/arrangementVerwaltung.ts`, `server/src/services/arrangementPayload.ts`, `server/src/services/ctSongSources.ts`, `server/src/services/ctWrite.ts`
+- **Automatisiert:** teilweise – `server/src/services/arrangementVerwaltung.test.ts` (beide Löschsperren, Quelle unbekannt, Liednummer ohne Quelle, Standardwechsel wird nachgesehen), `server/src/services/arrangementPayload.test.ts` (nichts nebenbei löschen, alle acht Felder), `client/src/utils/arrangementFormular.test.ts` (Länge hin und zurück, nur Geändertes schicken), `client/src/components/ArrangementSheet.test.tsx` und `EditSongSheet.test.tsx` (welche Knöpfe wann); von Hand bleibt, dass ChurchTools die Werte wirklich so übernimmt und beim Schreiben nichts verliert
+- **Historie:** #396 (20.09.2026), gemessen mit `server/scripts/probe-arrangements.ts` und `-alt.ts`
+
+</details>

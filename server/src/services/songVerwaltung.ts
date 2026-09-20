@@ -52,8 +52,17 @@ export type { LiedAngelegt, LiedAnlegenAuftrag };
  * **Beim Ändern wird sie zweimal aufgerufen** (#322, Schritt 11): einmal für die Kategorie, in der das
  * Lied liegt, und einmal für die, in die es soll. Wer nur an einer von beiden Rechte hat, könnte ein
  * Lied sonst aus einem Bereich herausholen, den er nicht bearbeiten darf – oder in einen hinein.
+ *
+ * **Exportiert seit #396:** Die Arrangement-Verwaltung braucht dieselbe Prüfung – wer ein Lied nicht
+ * ändern darf, darf auch seine Arrangements nicht anfassen. Eine zweite, dort hingeschriebene
+ * Fassung wäre die Fehlerklasse, die dieses Projekt am häufigsten getroffen hat: Eine Korrektur
+ * landet an einer der beiden Stellen.
  */
-async function pruefeKategorie(cookie: string, categoryId: number, was = 'anlegen'): Promise<void> {
+export async function pruefeKategorie(
+  cookie: string,
+  categoryId: number,
+  was = 'anlegen',
+): Promise<void> {
   const erlaubt = await getEditableSongCategories(cookie);
   if (!erlaubt.some((k) => k.id === categoryId)) {
     throw new HttpError(403, `In dieser Kategorie darfst du keine Lieder ${was}.`);

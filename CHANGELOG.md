@@ -7,6 +7,65 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Neu
+
+- **Arrangements in der App verwalten (#396).** Im **Stammdaten-Blatt** eines Liedes (Liederheft →
+  Stift) steht jetzt der Abschnitt **„Arrangements"**: alle Arrangements mit Tonart, Tempo, Takt,
+  Länge und Quelle, der Standard gekennzeichnet. Ein Tipp öffnet dasselbe Fenster, das ChurchTools
+  dafür hat – **alle acht Felder**: Name, Quelle, Liednummer, Tonart, Tempo, Takt, Länge und
+  Beschreibung. Dazu **„Zum Standard machen"**, **„Weiteres Arrangement"** und **Löschen mit
+  Rückfrage**, die die Folgen nennt (Notenblätter, eigene Fassungen und, falls vorhanden, die Anzahl
+  der Dateien). Alwins Wunsch vom 19.09.2026.
+
+  Zwei Geländer, die ChurchTools selbst nicht hat: Das **letzte** Arrangement lässt sich nicht
+  löschen (ein Lied ohne Arrangement ist unbrauchbar), und das **Standard-Arrangement** erst, wenn
+  ein anderes den Platz eingenommen hat. Die Knöpfe fehlen dort einfach, statt in eine Fehlermeldung
+  zu führen.
+
+  **Was hier gemessen wurde, statt es zu glauben:** Ein erster Messlauf kam zum Schluss, „zum
+  Standard machen" und Quelle/Liednummer gingen über die Schnittstelle gar nicht. Das war richtig
+  gemessen, aber an den falschen Wegen – die ChurchTools-Oberfläche selbst nimmt andere, und die
+  standen in ihrem JavaScript. Der Standard wechselt über einen eigenen Pfad (ein `PUT` meldet
+  Erfolg und ändert nichts), eine Quelle braucht eine gültige ID aus der alten Schnittstelle (eine
+  unbekannte verwirft ChurchTools stillschweigend), und eine **Liednummer speichert ChurchTools nur
+  zusammen mit einer Quelle**. Das sagt die App jetzt **vor** dem Speichern, statt die Eingabe
+  verschwinden zu lassen. Der Standardwechsel wird nach dem Schreiben **nachgesehen**: Ein
+  Erfolgssignal ist kein Beleg.
+
+  Neu ist auch eine kurze **Einführung** beim ersten Öffnen des Stammdaten-Blattes.
+
+### Behoben
+
+- **Ein Test, der in der CI mal grün, mal rot war – und der Grund war nicht, was er zuerst schien.**
+  Im Lauf zu PR #397 fielen zwei Anmerkungs-Tests: einer an der Zeitgrenze, der nächste mit
+  `ENOTEMPTY` beim Aufräumen. Derselbe Stand lief zur selben Zeit im Push-Workflow grün. Der erste
+  Verdacht – ein Verzeichnisname aus der Prozess-ID, der zwei Läufe kollidieren lässt – war eine
+  Hypothese und blieb es: Die Messung zeigte eine einfachere Kette. Der Test schreibt absichtlich
+  rund 275 MB, um eine 50-MB-Grenze zu erreichen (lokal 1,2 s, auf dem Runner über 5 s); läuft er in
+  die Zeitgrenze, schreibt seine Schleife **weiter**, während der nächste Test schon aufräumt – und
+  `fs.rm` mit `force` schützt nur gegen „gibt es nicht", **nicht** gegen „ist nicht leer"
+  (nachgestellt in 60 von 60 Durchgängen). Drei Änderungen, alle nur an der Testumgebung: Die beiden
+  langsamen Tests bekommen eine begründete Zeitgrenze von 30 s; ein gemeinsamer Helfer
+  (`testHilfen/tempAblage.ts`) würfelt für **alle sieben** Testdateien mit diesem Muster ein
+  eindeutiges Verzeichnis je Lauf, räumt mit Wiederholungen und am Ende von selbst auf. Am
+  Produktivcode der Anmerkungen ist nichts geändert.
+
+- **Drei Stellen, an denen dieselbe Regel ein zweites Mal stand (#396).** Gefunden bei der
+  Dopplungs-Suche zum Arrangement-Umbau, alle drei ohne sichtbare Auswirkung – aber alle drei von
+  der Sorte, die später teuer wird:
+  - Das **Tempo-Speichern** baute den Lese-Schreib-Zyklus nach, statt die gemeinsame Funktion zu
+    benutzen – und zwar die gefährlichste Regel des Projekts (ein unvollständiger Schreibvorgang
+    löscht Tonart und Dauer für das ganze Team).
+  - Die **Liedquellen** wurden bei jedem geöffneten Lied neu geholt, während dieselbe Antwort für
+    die Abwesenheitsgründe längst eine Minute gemerkt wird.
+  - Dabei fiel auf: Das **Abmelden** räumte die Abwesenheitsgründe nicht weg. Sie kamen mit #177
+    dazu und wurden in die Aufräum-Liste nicht eingetragen – in genau dem Modul, das gegen diesen
+    Fehler gebaut wurde. Jetzt prüft es ein Test.
+
+  Dazu eine Testlücke, die nur eine Gegenprobe zeigen konnte: Niemand belegte, dass das eingestellte
+  **Tempo** in ChurchTools ankommt. Der Endpunkt war über seine Fehlerpfade geprüft, nicht über
+  seine Wirkung.
+
 ### Behoben
 
 - **„Neues Lied" warnte während des Anlegens vor dem eigenen Werk (#395).** Wer ein Lied aus SongSelect
@@ -98,7 +157,6 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Fehlerseite. **Drei Grün-Kopien zusammengeführt:** `--green` gab es nicht, drei Dateien hatten je einen
   eigenen Fallback-Wert (`#168a16`, `#168a16`, `#1bb0a2`). Das Logo (`logo.svg`/`favicon.svg`) behält seine
   Balkenfarben – es ist Markenzeichen, kein UI-Token.
-
 - **„Neues Lied" und SongSelect auch in „Lied verknüpfen" (#391).** Wer im Ablauf einem vorhandenen
   Punkt ein Lied zuordnet, kann es jetzt an derselben Stelle anlegen – oben rechts „Neues Lied" (der
   Suchbegriff wird zum Titel) oder über einen SongSelect-Treffer, wie beim Hinzufügen. Das Lied

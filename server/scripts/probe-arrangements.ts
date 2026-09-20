@@ -30,7 +30,12 @@
  * (Takt), `duration` (Länge in **Sekunden** – 245 kam als 245 zurück, also 4:05) und `description`
  * (Beschreibung). `DELETE` antwortet 204, auch beim Standard-Arrangement.
  *
- * **Geht NICHT:**
+ * **⚠ Überholt durch `probe-arrangements-alt.ts` (20.09.2026):** Standard wechseln geht per
+ * `PATCH …/arrangements/:arrId/default`, Quelle per `sourceId` aus `getMasterData → songsource`,
+ * Liednummer als `sourceReference` nur zusammen mit einer Quelle. Die Befunde unten waren richtig
+ * gemessen, aber an den falschen Wegen – die richtigen standen im JavaScript der Oberfläche.
+ *
+ * **Ging in DIESEM Lauf nicht (siehe oben):**
  *  - **Standard wechseln.** `PUT { isDefault: true }` antwortet **200 und ändert nichts** – genau die
  *    Falle „ein Erfolgssignal ist kein Beleg". Geprüft wurde deshalb der Stand danach, nicht der
  *    Status. Auch `POST …/default` (405), `PATCH …` (405) und `PUT /api/songs/:id`

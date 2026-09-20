@@ -8,6 +8,7 @@ import {
   deleteAgendaItem,
   setAgendaItemHidden,
   deleteFile,
+  updateArrangementTempo,
 } from './ctWrite.js';
 import { __resetSessionMemosForTests } from './ctSessionMemos.js';
 
@@ -178,5 +179,68 @@ describe('uploadFile – die einzige Stelle, die einen Datei-Upload zusammenbaut
     await expect(uploadChordpro(COOKIE, 7, 'a.chordpro', 'x')).rejects.toThrow(
       /Speichern in ChurchTools fehlgeschlagen \(504\)/,
     );
+  });
+});
+
+/**
+ * **Der Tempo-Weg – gefunden durch eine Gegenprobe, die GRÜN blieb** (#396, 20.09.2026).
+ *
+ * `updateArrangementTempo` geht seit #396 durch `updateArrangement`, statt den Lese-Schreib-Zyklus
+ * nachzubauen. Die Gegenprobe zu diesem Umbau – das übergebene Tempo durch einen festen Wert
+ * ersetzen – ließ **alle** Tests grün: Es gab keinen, der belegt, dass der eingestellte Wert
+ * überhaupt in ChurchTools ankommt. Der Endpunkt war über seine Fehlerpfade geprüft, nicht über
+ * seine Wirkung.
+ *
+ * Geprüft wird deshalb der **gesendete Rumpf**: Das neue Tempo steht drin, und die übrigen Felder
+ * stehen ebenfalls drin – ein `PUT` ersetzt den ganzen Datensatz, ein unvollständiger Rumpf löscht
+ * Tonart und Dauer für das ganze Team (gemessen 08.08.2026).
+ */
+describe('updateArrangementTempo – der Wert kommt wirklich an', () => {
+  /** Das Arrangement #70 am Lied #7, wie ChurchTools es liefert. */
+  const ARR = {
+    id: 70,
+    name: 'Standard',
+    key: 'C',
+    keyOfArrangement: 'C',
+    bpm: '120',
+    beat: '4/4',
+    duration: 300,
+    description: 'Kapo 2',
+    files: [],
+  };
+
+  function mockCt(): Map<string, string> {
+    const ruempfe = new Map<string, string>();
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
+      const u = String(url);
+      const m = String(init?.method ?? 'GET');
+      if (u.includes('/api/csrftoken')) return Promise.resolve(jsonRes('token'));
+      if (m === 'GET') {
+        return Promise.resolve(
+          jsonRes({ id: 7, name: 'Treu', category: { id: 0 }, arrangements: [ARR] }),
+        );
+      }
+      if (init?.body !== undefined) ruempfe.set(m, String(init.body));
+      return Promise.resolve(jsonRes({}, 200));
+    });
+    return ruempfe;
+  }
+
+  it('schreibt das übergebene Tempo – nicht irgendeines', async () => {
+    const ruempfe = mockCt();
+    await updateArrangementTempo(COOKIE, 7, 70, 96);
+    const rumpf = JSON.parse(ruempfe.get('PUT') ?? '{}') as Record<string, unknown>;
+    expect(rumpf.tempo).toBe(96);
+  });
+
+  it('nimmt dabei die übrigen Felder mit – sonst löscht der PUT sie', async () => {
+    const ruempfe = mockCt();
+    await updateArrangementTempo(COOKIE, 7, 70, 96);
+    const rumpf = JSON.parse(ruempfe.get('PUT') ?? '{}') as Record<string, unknown>;
+    expect(rumpf.name).toBe('Standard');
+    expect(rumpf.key).toBe('C');
+    expect(rumpf.beat).toBe('4/4');
+    expect(rumpf.duration).toBe(300);
+    expect(rumpf.description).toBe('Kapo 2');
   });
 });

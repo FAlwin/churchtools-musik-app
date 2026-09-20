@@ -106,7 +106,26 @@ export interface CtArrangement {
   tempo?: number | null;
   duration?: number | null;
   description?: string | null;
+  /**
+   * ChurchTools' **alter Name für `description`** – dasselbe Feld, nicht ein zweites (gemessen
+   * 20.09.2026: Wer beides schickt, bekommt nur `description` zurück). Steht hier nur noch, um einen
+   * Bestand zu lesen, den ChurchTools unter diesem Namen herausgibt; geschrieben wird es nicht mehr
+   * (siehe `arrangementPayload.ts`).
+   */
   note?: string | null;
+
+  // ── Quelle und Liednummer (#396) ────────────────────────────────────────────────────
+  /**
+   * Die Quelle (Liederbuch) beim **Lesen** – ein Objekt. Beim **Schreiben** heißt das Feld
+   * `sourceId` und ist eine Zahl; die Umrechnung macht `arrangementWritePayload`.
+   */
+  source?: { id: number; name?: string; shorty?: string } | null;
+  /** Die Quellen-ID, wie manche Antworten sie zusätzlich flach mitliefern. */
+  sourceId?: number | null;
+  /** Die Liednummer in der Quelle – Text, nicht Zahl (Liederbücher haben „A12"). */
+  sourceReference?: string | null;
+  /** `@deprecated` von ChurchTools: liefert das **Kürzel** der Quelle, nicht den Namen. */
+  sourceName?: string | null;
 }
 
 /**

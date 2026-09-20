@@ -1,12 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getUserId, logout } from './ctAuth.js';
 import { getCapabilitiesCached } from './ctCapabilities.js';
-import { __resetSessionMemosForTests, forgetSession } from './ctSessionMemos.js';
+import {
+  __resetSessionMemosForTests,
+  forgetSession,
+  gruendeMemo,
+  quellenMemo,
+} from './ctSessionMemos.js';
 import { __getCsrfTokenForTests as getCsrfToken } from './ctCsrf.js';
 
 /**
- * Vier Dinge hängen am Session-Cookie: Konto-ID (12 h), Rechte (5 min), CSRF-Token (1 min) und der
- * gerade laufende Token-Abruf.
+ * Sechs Dinge hängen am Session-Cookie: Konto-ID (12 h), Rechte (5 min), CSRF-Token (1 min), der
+ * gerade laufende Token-Abruf sowie Abwesenheitsgründe und Liedquellen (je 1 min).
  *
  * Zwei von ihnen – Konto-ID und Rechte – hatten **gar keine Tests**, obwohl sie mit #306 auf den
  * gemeinsamen `ttlMemo`-Baustein umgestellt wurden. Ungetesteten Code umzubauen ist der übliche Weg
@@ -196,5 +201,29 @@ describe('Abmelden WÄHREND ein Token geholt wird (#280)', () => {
     await getCsrfToken('cookie-b');
     await getCsrfToken('cookie-b');
     expect(geholt).toBe(1);
+  });
+});
+
+/**
+ * **Die Vollständigkeit der Aufräum-Liste selbst** – gefunden bei der Dopplungs-Suche zu #396.
+ *
+ * `gruendeMemo` kam mit #177 dazu und stand in `forgetSession` NICHT. Genau der Fehler, gegen den
+ * dieses Modul gebaut wurde: „`logout` räumte einen von drei cookie-basierten Speichern." Ein
+ * Kommentar, der bittet „wer einen neuen hinzufügt, trägt ihn hier ein", ist eine Bitte – dieser
+ * Test ist die Regel.
+ *
+ * Er prüft die Speicher direkt und nicht über die Dienste darüber: Sonst bewachte er die Dienste,
+ * nicht die Liste.
+ */
+describe('forgetSession räumt WIRKLICH alle Sitzungs-Speicher', () => {
+  it('vergisst auch Abwesenheitsgründe und Liedquellen', () => {
+    const cookie = 'ChurchTools_sid=zzz';
+    gruendeMemo.set(cookie, [{ id: 1, name: 'Krank', standard: false }]);
+    quellenMemo.set(cookie, [{ id: 2, name: 'Unser Liederbuch', shorty: 'ULB' }]);
+
+    forgetSession(cookie);
+
+    expect(gruendeMemo.get(cookie)).toBeUndefined();
+    expect(quellenMemo.get(cookie)).toBeUndefined();
   });
 });

@@ -4,6 +4,8 @@
 import type {
   AgendaItem,
   AgendaServiceOption,
+  ArrangementAnsicht,
+  ArrangementAuftrag,
   ArrangementFileEntry,
   AuthStatus,
   LiedAngelegt,
@@ -17,6 +19,7 @@ import type {
   SongLibraryEntry,
   SongSelectSong,
   SongSelectSuchergebnis,
+  SongSource,
   SongTextTreffer,
   LiedtextVorschau,
   SongSelectLiedtext,
@@ -244,6 +247,81 @@ export function aendereLied(
  */
 export function loescheLied(songId: number): Promise<{ name: string }> {
   return apiFetch<{ name: string }>(`/api/songs/${songId}`, { method: 'DELETE' });
+}
+
+/**
+ * Die **Liedquellen** (Liederbücher) der Gemeinde (#396).
+ *
+ * Kommen bei ChurchTools aus der alten Schnittstelle; die App merkt davon nichts. Eine leere Liste
+ * heißt „diese Gemeinde führt keine Liederbücher" – dann zeigt das Formular die Quelle gar nicht.
+ */
+export function getSongSources(): Promise<SongSource[]> {
+  return apiFetch<SongSource[]>('/api/song-sources');
+}
+
+/**
+ * Alle Arrangements eines Liedes **mit allen Feldern** (#396) – für das Stammdaten-Blatt.
+ *
+ * **Nicht `/api/songs/:id/arrangements`:** Dort steht die schmale Auswahl für „Zu Ablauf
+ * hinzufügen". Acht Felder überall mitzuladen, wo nur ein Name gebraucht wird, wäre derselbe Fehler
+ * wie CCLI-Nummer und Copyright in der Bibliothek.
+ */
+export function getArrangements(songId: number): Promise<ArrangementAnsicht[]> {
+  return apiFetch<ArrangementAnsicht[]>(`/api/songs/${songId}/arrangements/verwaltung`);
+}
+
+/** Ein weiteres Arrangement anlegen (#396) – nie als Standard, das ist ein eigener Schritt. */
+export function legeArrangementAn(
+  songId: number,
+  auftrag: ArrangementAuftrag & { name: string },
+): Promise<ArrangementAnsicht> {
+  return apiFetch<ArrangementAnsicht>(`/api/songs/${songId}/arrangements`, {
+    method: 'POST',
+    body: JSON.stringify(auftrag),
+  });
+}
+
+/**
+ * Ein Arrangement ändern (#396) – **nur die geänderten Felder.**
+ *
+ * `null` heißt „leeren", ein fehlendes Feld „unverändert". Der Server macht daraus ein
+ * vollständiges `PUT`, weil ChurchTools bei einem Teil-`PUT` den Rest löscht.
+ */
+export function aendereArrangement(
+  songId: number,
+  arrangementId: number,
+  auftrag: ArrangementAuftrag,
+): Promise<ArrangementAnsicht> {
+  return apiFetch<ArrangementAnsicht>(`/api/songs/${songId}/arrangements/${arrangementId}`, {
+    method: 'PUT',
+    body: JSON.stringify(auftrag),
+  });
+}
+
+/**
+ * Ein Arrangement zum **Standard** machen (#396).
+ *
+ * Zurück kommt die ganze Liste: Der Wechsel betrifft immer zwei Einträge, und die Oberfläche soll
+ * nicht raten müssen, welcher das Flag verloren hat.
+ */
+export function arrangementZumStandard(
+  songId: number,
+  arrangementId: number,
+): Promise<ArrangementAnsicht[]> {
+  return apiFetch<ArrangementAnsicht[]>(
+    `/api/songs/${songId}/arrangements/${arrangementId}/default`,
+    { method: 'PATCH' },
+  );
+}
+
+/** Ein Arrangement löschen (#396) – samt Notenblättern, Dateien und Versionen. */
+export function loescheArrangement(
+  songId: number,
+  arrangementId: number,
+): Promise<{ name: string }> {
+  return apiFetch<{ name: string }>(`/api/songs/${songId}/arrangements/${arrangementId}`, {
+    method: 'DELETE',
+  });
 }
 
 /**

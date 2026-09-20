@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import os from 'node:os';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
+import { leeren, tempVerzeichnis } from '../testHilfen/tempAblage.js';
 
 /**
  * #273: Der Vertrag des gemeinsamen JSON-Speichers.
@@ -13,7 +13,7 @@ import { promises as fs } from 'node:fs';
  * Die Fehler werden hier ohne `chmod` erzeugt: Ein **Verzeichnis** an der Stelle der Datei liefert
  * verlässlich `EISDIR`. `chmod 000` würde als root nicht greifen und der Test wäre still wirkungslos.
  */
-const dir = path.join(os.tmpdir(), `jsonstore-test-${process.pid}`);
+const dir = tempVerzeichnis('jsonstore-test');
 
 type Mod = typeof import('./jsonStore.js');
 let mod: Mod;
@@ -23,7 +23,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await fs.rm(dir, { recursive: true, force: true });
+  await leeren(dir);
   await fs.mkdir(dir, { recursive: true });
 });
 
