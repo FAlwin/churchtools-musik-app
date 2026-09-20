@@ -81,5 +81,8 @@ export function tempDatei(praefix: string, name: string): string {
  * beginnt an der falschen Stelle.
  */
 export async function leeren(pfad: string): Promise<void> {
-  await fs.rm(pfad, { recursive: true, force: true, maxRetries: 10, retryDelay: 20 });
+  // Node wartet je Versuch `retryDelay` LÄNGER als beim vorigen (linear): 20 Versuche à 20 ms sind
+  // in Summe gut 4 Sekunden Geduld – genug für die Nachwehen eines abgebrochenen Tests, und trotzdem
+  // eine Grenze, damit ein echter Dauerschreiber nicht ewig verdeckt bleibt.
+  await fs.rm(pfad, { recursive: true, force: true, maxRetries: 20, retryDelay: 20 });
 }

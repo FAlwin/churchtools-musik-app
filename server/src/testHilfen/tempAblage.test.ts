@@ -43,23 +43,27 @@ describe('leeren – hält paralleles Schreiben aus', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('räumt ein Verzeichnis, in das noch geschrieben wird – ohne ENOTEMPTY', async () => {
+  /**
+   * Der Schreiber hier hört nach einer festen, kurzen Zeit auf – wie ein Test, dessen Schleife nach
+   * dem Timeout noch ein paar Dateien schreibt und dann endet. Ein ENDLOSER Schreiber wäre keine
+   * faire Probe: Gegen ihn kann eine begrenzte Zahl Wiederholungen nichts ausrichten, und genau so
+   * war die erste Fassung dieses Tests selbst wacklig (20.09.2026, unter Last gefallen).
+   */
+  it('räumt ein Verzeichnis, in das noch kurz geschrieben wird – ohne ENOTEMPTY', async () => {
     const dir = tempVerzeichnis('probe');
     for (let i = 0; i < 200; i++) await fs.writeFile(path.join(dir, `f${i}`), 'x');
 
-    // Der „abgebrochene Test", dessen Schreibschleife weiterläuft.
-    let weiter = true;
+    const ende = Date.now() + 150;
     const schreiber = (async () => {
-      for (let i = 0; weiter && i < 4000; i++) {
+      for (let i = 0; Date.now() < ende; i++) {
         await fs.writeFile(path.join(dir, `spaet${i}`), 'x').catch(() => {
           /* das Verzeichnis ist weg – genau das ist das Ziel */
         });
       }
     })();
 
-    // Ohne die Wiederholungen in `leeren` wirft das hier zuverlässig ENOTEMPTY.
+    // Ohne die Wiederholungen in `leeren` wirft das hier zuverlässig ENOTEMPTY (60/60 nachgestellt).
     await expect(leeren(dir)).resolves.toBeUndefined();
-    weiter = false;
     await schreiber;
     await leeren(dir);
   });
