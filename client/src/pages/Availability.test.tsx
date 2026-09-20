@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import type { Absence, AbsenceEvent } from '@shared/types/index';
+import { DEFAULT_SITE_CONFIG, type Absence, type AbsenceEvent } from '@shared/types/index';
 
 /**
  * #177 Abwesenheiten – die Bedienung nach Entwurfsrunde 8 (19.09.2026), nicht die Daten:
@@ -28,6 +28,9 @@ vi.mock('../hooks/useAvailability', () => ({
   useSaveAbsenceChanges: () => ({ mutate: sichern, isPending: false }),
 }));
 vi.mock('../components/Coachmarks', () => ({ Coachmarks: () => null }));
+// Die Termin-Arten kommen aus der Site-Konfiguration (#400) – hier als Attrappe, je Test änderbar.
+const siteConfig = vi.fn();
+vi.mock('../hooks/useSiteConfig', () => ({ useSiteConfig: () => siteConfig() }));
 vi.mock('../utils/onboarding', async () => {
   const echt = await vi.importActual<typeof import('../utils/onboarding')>('../utils/onboarding');
   return { ...echt, isTourDone: () => true };
@@ -43,10 +46,35 @@ const GRUENDE = [
 ];
 
 const EVENTS: AbsenceEvent[] = [
-  { id: 1, name: 'Gottesdienst', date: '2026-10-04', startDate: '2026-10-04T10:00:00Z' },
-  { id: 2, name: 'Gottesdienst', date: '2026-10-11', startDate: '2026-10-11T10:00:00Z' },
-  { id: 3, name: 'Jugendabend', date: '2026-10-16', startDate: '2026-10-16T18:00:00Z' },
-  { id: 4, name: 'Gottesdienst', date: '2026-11-01', startDate: '2026-11-01T10:00:00Z' },
+  {
+    id: 1,
+    name: 'Gottesdienst',
+    date: '2026-10-04',
+    startDate: '2026-10-04T10:00:00Z',
+  },
+  {
+    id: 2,
+    name: 'Gottesdienst',
+    date: '2026-10-11',
+    startDate: '2026-10-11T10:00:00Z',
+  },
+  {
+    id: 3,
+    name: 'Jugendabend',
+    date: '2026-10-16',
+    startDate: '2026-10-16T18:00:00Z',
+  },
+  {
+    id: 4,
+    name: 'Gottesdienst',
+    date: '2026-11-01',
+    startDate: '2026-11-01T10:00:00Z',
+  },
+];
+/** Die Termin-Arten des Admins (#400) – „Jugend" trifft „Jugendabend" über das Suchwort. */
+const ARTEN = [
+  { id: 'gd', name: 'Gottesdienst', suchwort: 'Gottesdienst' },
+  { id: 'jugend', name: 'Jugend', suchwort: 'Jugend' },
 ];
 const EIGENE: Absence = {
   id: 10,
@@ -78,6 +106,9 @@ const FRUEHER: Absence = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Der Termin-Filter wird auf dem Gerät gemerkt – jeder Test beginnt ohne Auswahl.
+  localStorage.clear();
+  siteConfig.mockReturnValue({ data: { ...DEFAULT_SITE_CONFIG, terminArten: ARTEN } });
   absences.mockReturnValue({
     data: [EIGENE, URLAUB, FRUEHER],
     isLoading: false,
@@ -297,5 +328,111 @@ describe('Abwesenheiten – Plus und offline', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Früher (1)' }));
     const alt = screen.getByRole<HTMLButtonElement>('button', { name: /ansehen/ });
     expect(alt.disabled).toBe(false);
+  });
+});
+
+/**
+ * Der Termin-Filter (#400) – Alwin: „nur Gottesdienst oder nur Gebetsabend". Entschieden: nach
+ * Termin-Arten mit Suchwörtern (vom Admin gepflegt), **genau eine oder alle**, auf dem Gerät
+ * gemerkt.
+ *
+ * Die Knöpfe gibt es nur, wenn es etwas zu wählen gibt; die Zahl „n Termine" folgt dem Filter; und
+ * vorgemerkte Häkchen überstehen ihn – sie hängen am Tag, nicht an der Liste.
+ */
+describe('Abwesenheiten – Termin-Filter (#400)', () => {
+  const knopf = (name: string) => screen.getByRole<HTMLButtonElement>('button', { name });
+
+  it('zeigt je Art einen Knopf und „Alle" – aktiv ist „Alle"', () => {
+    zeige();
+    expect(knopf('Alle').getAttribute('aria-pressed')).toBe('true');
+    expect(knopf('Gottesdienst').getAttribute('aria-pressed')).toBe('false');
+    expect(knopf('Jugend').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('zeigt KEINE Knöpfe, wenn keine Termin-Arten gepflegt sind', () => {
+    siteConfig.mockReturnValue({ data: { ...DEFAULT_SITE_CONFIG, terminArten: [] } });
+    zeige();
+    expect(screen.queryByRole('group', { name: 'Termin-Arten' })).toBeNull();
+  });
+
+  it('zeigt KEINE Knöpfe, wenn alle Termine in dieselbe Art fallen', () => {
+    siteConfig.mockReturnValue({ data: { ...DEFAULT_SITE_CONFIG, terminArten: [ARTEN[0]] } });
+    events.mockReturnValue({
+      data: EVENTS.filter((e) => e.name === 'Gottesdienst'),
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    zeige();
+    expect(screen.queryByRole('group', { name: 'Termin-Arten' })).toBeNull();
+  });
+
+  it('ein Termin, der zu keiner Art passt, steht unter „Sonstige"', () => {
+    siteConfig.mockReturnValue({ data: { ...DEFAULT_SITE_CONFIG, terminArten: [ARTEN[0]] } });
+    zeige();
+    fireEvent.click(knopf('Sonstige'));
+    expect(screen.getByText('1 Termin')).not.toBeNull();
+    expect(kasten(/16\.10\./)).not.toBeNull();
+  });
+
+  it('filtert Liste und Zahl auf die gewählte Art', () => {
+    zeige();
+    fireEvent.click(knopf('Jugend'));
+    expect(screen.getByText('1 Termin')).not.toBeNull();
+    // Über die Abhak-Knöpfe geprüft, wie die übrigen Tests: Ihr Name trägt das Datum.
+    expect(screen.queryByRole('button', { name: /04\.10\./ })).toBeNull();
+    expect(kasten(/16\.10\./)).not.toBeNull();
+    expect(knopf('Alle').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('ein zweiter Knopf ERSETZT den ersten – entweder eins oder alles', () => {
+    zeige();
+    fireEvent.click(knopf('Jugend'));
+    fireEvent.click(knopf('Gottesdienst'));
+    expect(knopf('Gottesdienst').getAttribute('aria-pressed')).toBe('true');
+    expect(knopf('Jugend').getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByText('2 Termine')).not.toBeNull();
+  });
+
+  it('ein Tipp auf den gewählten Knopf hebt die Wahl auf', () => {
+    zeige();
+    fireEvent.click(knopf('Jugend'));
+    fireEvent.click(knopf('Jugend'));
+    expect(knopf('Alle').getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('3 Termine')).not.toBeNull();
+  });
+
+  it('„Alle" hebt eine Auswahl auf', () => {
+    zeige();
+    fireEvent.click(knopf('Jugend'));
+    expect(screen.getByText('1 Termin')).not.toBeNull();
+    fireEvent.click(knopf('Alle'));
+    expect(screen.getByText('3 Termine')).not.toBeNull();
+  });
+
+  it('merkt sich die Wahl auf dem Gerät', () => {
+    zeige();
+    fireEvent.click(knopf('Jugend'));
+    // Zweites Öffnen: dieselbe Auswahl ohne erneutes Tippen.
+    render(<Availability online onToast={vi.fn()} heute={HEUTE} />);
+    const alle = screen.getAllByRole('button', { name: 'Jugend' });
+    expect(alle[alle.length - 1].getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('eine gemerkte Wahl, die es nicht mehr gibt, gilt als „Alle" – keine leere Liste ohne Grund', () => {
+    localStorage.setItem('worship:abwesenheiten-filter', JSON.stringify(['99']));
+    zeige();
+    expect(screen.getByText('3 Termine')).not.toBeNull();
+    expect(knopf('Alle').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('ein vorgemerkter Haken übersteht den Filterwechsel', () => {
+    zeige();
+    fireEvent.click(kasten(/04\.10\./));
+    expect(leiste()).not.toBeNull();
+    fireEvent.click(knopf('Jugend')); // der 04.10. ist jetzt ausgeblendet
+    expect(leiste()).not.toBeNull(); // die Vormerkung bleibt
+    fireEvent.click(knopf('Alle'));
+    expect(kasten(/04\.10\./).getAttribute('aria-pressed')).toBe('true');
   });
 });

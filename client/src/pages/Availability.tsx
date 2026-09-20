@@ -26,6 +26,9 @@ import {
   zeitraumKurz,
 } from '../utils/absenceDatum';
 import { heuteIso, plusTage, tagImMonat } from '../utils/wochen';
+import { getAbwesenheitenFilter, setAbwesenheitenFilter } from '../utils/devicePrefs';
+import { filtereTermine, knoepfeAus, umschalten, wirksameAuswahl } from '../utils/terminFilter';
+import { useSiteConfig } from '../hooks/useSiteConfig';
 import { letzterTag, monatLabel, monatNurKurz, monatPlus, monatVon } from '../utils/monate';
 import { ApiError } from '../services/api';
 import {
@@ -89,6 +92,8 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   const aendern = useUpdateAbsence();
   const loeschenEinzeln = useDeleteAbsence();
   const sichern = useSaveAbsenceChanges();
+  // Die Termin-Arten des Admins (#400) – die Konfiguration ist ohnehin geladen (Branding).
+  const site = useSiteConfig();
 
   const [seite, setSeite] = useState<Seite>('termine');
   const [monat, setMonat] = useState(laufend);
@@ -100,6 +105,8 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   const [entwurf, setEntwurf] = useState<Entwurf | null>(null);
   const [frage, setFrage] = useState<{ tag: string; absence: Absence } | null>(null);
   const [tour, setTour] = useState(false);
+  /** Gewählte Kalender (#400) – vom Gerät gelesen, dorthin geschrieben; leer = alle. */
+  const [filter, setFilter] = useState<string[]>(getAbwesenheitenFilter);
 
   useEffect(() => {
     if (!absences.isLoading && !events.isLoading && !isTourDone(TOUR_VERFUEGBARKEIT)) setTour(true);
@@ -113,7 +120,25 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   const frueherListe = liste
     .filter((a) => a.endDate < heute)
     .sort((a, b) => b.startDate.localeCompare(a.startDate));
-  const monatEvents = alleEvents.filter((e) => monatVon(e.date) === monat && e.date >= heute);
+  /**
+   * Der Termin-Filter (#400): Knöpfe gibt es nur, wenn es etwas zu wählen gibt – bei einer einzigen
+   * Art wäre eine Reihe mit einem Knopf eine Frage ohne Antwort. Die Auswahl wirkt auf die Liste
+   * UND auf die Zahl daneben; die vorgemerkten Häkchen hängen am Tag, nicht an der Liste, und
+   * überstehen jeden Filterwechsel. Die Regeln stehen in `terminFilter.ts`.
+   */
+  const arten = site.data.terminArten ?? [];
+  const knoepfe = useMemo(() => knoepfeAus(arten, alleEvents), [arten, alleEvents]);
+  const auswahl = wirksameAuswahl(filter, knoepfe);
+  const waehleArt = (id: string | null): void => {
+    const neu = id === null ? [] : umschalten(auswahl, id, knoepfe);
+    setFilter(neu);
+    setAbwesenheitenFilter(neu);
+  };
+  const monatEvents = filtereTermine(
+    alleEvents.filter((e) => monatVon(e.date) === monat && e.date >= heute),
+    auswahl,
+    arten,
+  );
 
   // Monate mit Einträgen – der rote Punkt im Raster. Ein Zeitraum kann mehrere Monate berühren.
   const markiert = useMemo(() => {
@@ -335,6 +360,32 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
         voraus={VORAUS_MONATE}
         rasterMonate={RASTER_MONATE}
       />
+      {knoepfe.length > 1 && (
+        <div
+          className={styles.chips}
+          data-tour="verf-filter"
+          role="group"
+          aria-label="Termin-Arten"
+        >
+          <button
+            className={`${styles.chip}${auswahl.length === 0 ? ' ' + styles.chipAn : ''}`}
+            aria-pressed={auswahl.length === 0}
+            onClick={() => waehleArt(null)}
+          >
+            Alle
+          </button>
+          {knoepfe.map((k) => (
+            <button
+              key={k.id}
+              className={`${styles.chip}${auswahl.includes(k.id) ? ' ' + styles.chipAn : ''}`}
+              aria-pressed={auswahl.includes(k.id)}
+              onClick={() => waehleArt(k.id)}
+            >
+              {k.name}
+            </button>
+          ))}
+        </div>
+      )}
       <section data-tour="verf-termine">
         <div className={styles.sec}>
           {monatLabel(monat)}

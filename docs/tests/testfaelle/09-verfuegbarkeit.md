@@ -151,3 +151,39 @@ Datum vor heute eintragen – das lässt die App nicht zu).
 - **Historie:** #177 (Runde 8, 19.09.2026)
 
 </details>
+
+### TF-VERF-06 · Termine nach Art filtern (mit Admin-Pflege)
+
+**Das brauchst du:** Ein Admin-Konto und ein Konto mit dem Tab „Abwesenheiten". Einen Monat, in dem
+Termine mit verschiedenen Namen liegen (z. B. „Gottesdienst", „Gebetsabend", „Probe").
+
+**Das muss passieren:** Der Admin legt die Arten fest, die Knöpfe heißen wie die Arten, Liste und
+Zahl folgen der Auswahl (genau eine Art oder alles), und beim nächsten Öffnen steht der Filter
+noch so.
+
+1. **Als Admin:** Mehr → Verwaltung → **„Abwesenheiten: Termin-Arten"**. Zwei Arten anlegen:
+   Name „Gottesdienst", Suchwort „Gottesdienst"; Name „Gebetsabend", Suchwort „Gebet". Speichern.
+   Die Reihe zeigt „2 Arten".
+2. Tab „Abwesenheiten" → „Termine". Unter der Monatsleiste stehen **„Alle"**, „Gottesdienst",
+   „Gebetsabend" und – falls es Termine mit anderem Namen gibt – **„Sonstige"**. „Alle" ist blau.
+3. **„Gottesdienst"** antippen: Nur Gottesdienste (auch „Gottesdienst mit Abendmahl") bleiben, die
+   Zahl passt, „Alle" ist nicht mehr blau.
+4. **„Gebetsabend"** antippen: Jetzt nur Gebetsabende – der Knopf **ersetzt** „Gottesdienst".
+   „Gebetsabend" erneut antippen: Die Anzeige springt auf **„Alle"**.
+5. Einen Monat ohne Gebetsabend wählen, „Gebetsabend" antippen: „Kein Termin mehr in diesem
+   Monat" – der Filter ist sichtbar aktiv.
+6. **Häkchen bleibt:** Einen Gottesdienst abhaken (Leiste „Speichern" erscheint), dann auf
+   „Gebetsabend" filtern: Die Leiste bleibt. Zurück auf „Alle": Der Haken steht noch.
+7. **Merken:** „Gebetsabend" wählen, App schließen und neu öffnen → der Filter steht noch.
+8. **Ohne Arten:** Der Admin löscht alle Arten und speichert. Im Tab gibt es die Knöpfe **nicht**.
+9. **Halbe Zeile:** Im Admin-Fenster eine Art nur mit Namen anlegen und speichern → Meldung, nichts
+   gespeichert.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/pages/Availability.tsx`, `client/src/utils/terminFilter.ts`, `client/src/components/TerminArtenManager.tsx`, `client/src/pages/Settings.tsx`, `client/src/utils/devicePrefs.ts`, `server/src/services/siteConfig.ts`
+- **Automatisiert:** überwiegend – `client/src/utils/terminFilter.test.ts` (Suchwort, Reihenfolge, Sonstige, eins-oder-alles, verwaiste Wahl), `client/src/pages/Availability.test.tsx` (Knöpfe, Zahl, eins-oder-alles, Sonstige, Merken, Häkchen übersteht den Wechsel, keine Knöpfe ohne Arten), `client/src/components/TerminArtenManager.test.tsx` (trimmen, halbe Zeile, löschen), `server/src/services/siteConfig.test.ts` (Schema, Rundlauf, doppelte IDs); von Hand bleibt der Weg über den echten Admin-Bereich
+- **Historie:** #400 (20.09.2026), Wunsch Alwin; erster Bau nach Kalender verworfen (bei der ECG ein Kalender für alles)
+
+</details>

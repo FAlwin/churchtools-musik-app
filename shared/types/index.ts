@@ -677,6 +677,26 @@ export interface SiteConfig {
    * im Mehr-Tab unter „Anmerkungen → Rollen-Zuweisung" gepflegt.
    */
   noteRoles?: NoteRolePerm[];
+  /**
+   * Termin-Arten für den Filter im Tab „Abwesenheiten" (#400) – vom Admin unter Verwaltung →
+   * „Abwesenheiten: Termin-Arten" gepflegt. Ein Termin gehört zur **ersten** Art, deren `suchwort`
+   * in seinem Namen vorkommt (Groß-/Kleinschreibung egal); alle übrigen fallen unter „Sonstige".
+   * Leer = kein Filter.
+   *
+   * Warum nicht der ChurchTools-Kalender: Bei der ECG liegen Gottesdienst und Gebetsabend im selben
+   * Kalender, und eine eigene Kategorie kennt ChurchTools an Terminen nicht (gemessen 20.09.2026).
+   */
+  terminArten?: TerminArt[];
+}
+
+/** Eine Termin-Art für den Filter (siehe `SiteConfig.terminArten`). */
+export interface TerminArt {
+  /** Stabile ID (für die gemerkte Auswahl auf dem Gerät). */
+  id: string;
+  /** Beschriftung des Knopfs, z. B. „Gottesdienst". */
+  name: string;
+  /** Kommt dieser Text im Terminnamen vor, gehört der Termin zu dieser Art. */
+  suchwort: string;
 }
 
 /** Rollen-Freigabe einer Gruppe für Team-Notizen (siehe `SiteConfig.noteRoles`). */
@@ -738,4 +758,5 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
   orgName: 'Meine Gemeinde',
   links: [],
   musicianGroupIds: [],
+  terminArten: [],
 };

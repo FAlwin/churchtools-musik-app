@@ -36,7 +36,10 @@
 - `GET  /api/health` → `{status, env}` (öffentlich, für Reverse-Proxy/Monitoring)
 - `GET  /api/update-check` → neueste veröffentlichte Version (liest GitHub-Release; für den In-App-Hinweis)
 - `GET  /api/site-config` → öffentlich `{ appName, description, orgName, links }` plus leere `musicianGroupIds`/`noteRoles`; **angemeldet die vollständige Konfiguration** (die internen Gruppen-/Rollen-IDs gelangen so nicht unauthentifiziert nach außen)
-- `PUT  /api/site-config` → Gemeinde-Name/Anmerkungs-Zuweisungen speichern (nur Admin, Zod-validiert)
+- `PUT  /api/site-config` → Gemeinde-Name/Anmerkungs-Zuweisungen speichern (nur Admin, Zod-validiert) Seit #400 auch `terminArten` –
+  `{id, name, suchwort}[]` für den Filter im Tab „Abwesenheiten" (Admin: Mehr → Verwaltung →
+  „Abwesenheiten: Termin-Arten"); Name/Suchwort getrimmt, je 1–40/1–60 Zeichen, IDs eindeutig
+
 - `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt signiertes Session-Cookie
 - `POST /api/auth/logout` → Session + ChurchTools-Session beenden
 - `GET  /api/auth/me` → `{authenticated, user?}`
@@ -213,7 +216,8 @@ Client, damit eine Version mit eigener Überschrift auch ihre eigene trägt.
 - `POST /api/absences` `{startDate, endDate, comment?}` → legt eine ChurchTools-Abwesenheit mit Marker `[Musikteam] …` an; **201** neu, **200** wenn derselbe Zeitraum schon stand (kein Doppel); 400 bei Ende vor Anfang / > 1 Jahr
 - `PUT  /api/absences/:id` `{startDate, endDate, comment?, reasonId?}` → ändert einen eigenen Eintrag; ohne `reasonId` bleibt der Grund, den er hatte, und ein Eintrag ohne Marker bekommt auch keinen (sonst würde der Excel-Sync ihn für seinen halten). ChurchTools kann Abwesenheiten nicht ändern: Der Server legt **erst neu an, dann löscht er den alten** (andersherum wäre nach einem Fehlschlag alles weg). **403** bei manuellen Einträgen, **409** wenn ein ANDERER eigener Eintrag denselben Zeitraum belegt, **502** wenn das Aufräumen scheiterte (der neue Eintrag steht dann schon)
 - `DELETE /api/absences/:id` → jeden eigenen Eintrag, auch einen direkt in ChurchTools angelegten (seit 05.09.2026 – die Rückfrage stellt die Oberfläche); 404 unbekannt
-- `GET  /api/absences/events?to=` → kommende Termine von heute bis `to` (`YYYY-MM-DD`; Standard ein halbes Jahr, höchstens ein Jahr → sonst 400). Bis 19.09.2026 zählte der Parameter Wochen (`weeks=`), passend zum Wochenstreifen; die Monatsansicht nennt jetzt einen Tag
+- `GET  /api/absences/events?to=` → kommende Termine von heute bis `to` (`YYYY-MM-DD`; Standard ein halbes Jahr, höchstens ein Jahr → sonst 400). Bis 19.09.2026 zählte der Parameter Wochen (`weeks=`), passend zum Wochenstreifen; die Monatsansicht nennt jetzt einen Tag.
+
 - `GET  /api/absences/reasons` → Abwesenheitsgründe der Gemeinde (`{id, name, standard}`), Namen schon lesbar. **Quelle ist die alte Schnittstelle** (`getMasterData` → `absent_reason`) – die `/api/`-Welt hat dafür keinen Endpunkt (gemessen 05.09.2026: 404). `standard` markiert `CHURCHTOOLS_ABSENCE_REASON_ID`; die Reihenfolge kommt von ChurchTools (`sortkey`), „der erste" ist also NICHT der Standard
 - Die Personen-ID kommt **immer** aus der Sitzung; Grund = `CHURCHTOOLS_ABSENCE_REASON_ID` (Standard 1). Kein Excel-Bezug – der Sync ist ein eigener Dienst.
 
