@@ -156,7 +156,7 @@ abwesenheitLoeschen / kommendeTermine / abwesenheitsGruende` (Stand v2.25.0)
 **Stand v2.25.0 (Neubau 19.09.2026, Entwurfsrunde 8, plus #400):** `pages/Availability.tsx`
 (+ `.module.scss`) mit `components/MonatsLeiste.tsx` und `utils/monate.ts` (Monatsansicht; der
 Wochenstreifen `WochenStreifen.tsx` aus dem Entwurf vom 05.09.2026 ist weg, `utils/wochen.ts` behält nur
-Tages-Helfer). Häkchen je Termin sind **vorgemerkt bis „Speichern"**; `components/ZeitraumFrage.tsx`
+Tages-Helfer; „heute" liefert seit v2.25.1 `utils/heute.ts` – lokal, nicht in UTC). Häkchen je Termin sind **vorgemerkt bis „Speichern"**; `components/ZeitraumFrage.tsx`
 fragt bei einem Termin in einem mehrtägigen Zeitraum; `components/AbsenceSheet.tsx` ist **ein** Fenster
 für Eintragen und Ändern (Schnellwahl, Grund-Auswahl); Seite „Einträge" mit Anstehend/Früher;
 Termin-Filter nach Art (`utils/terminFilter.ts`, Knöpfe „Alle · Gottesdienst · …", genau eine Art

@@ -182,6 +182,25 @@ sicheren Weg gehen:
 1. Container Manager → **Projekt** → **Aktion → Stoppen**
 2. **Aktion → Löschen** (löscht nur Projekt/Container, **nicht** die Dateien; ein Daten-Volume bleibt erhalten).
 3. **Projekt → Erstellen** (baut alles frisch, ohne Cache)
+4. **Nachsehen, ob die neue Fassung wirklich läuft** – und zwar am **ausgelieferten Stand**, nicht am
+   Gefühl:
+
+```bash
+# a) Startseite FRISCH holen und den Namen des Bundles ablesen
+curl -s -H 'Cache-Control: no-cache' "https://musik.deine-gemeinde.de/?n=$(date +%s)" \
+  | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js'
+
+# b) Dieses Bundle laden und die Version darin suchen
+curl -s "https://musik.deine-gemeinde.de/assets/index-XXXX.js" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+'
+```
+
+Der **Dateiname des Bundles ändert sich mit jeder Fassung** – bleibt er gleich, läuft noch der alte
+Container. Ebenso verräterisch: `curl -sI …/` zeigt unter `Last-Modified` die **Bauzeit des Images**.
+
+> **Zwei Fallen, beide am 21.09.2026 selbst hineingetappt:** Ein `curl` auf eine **Asset-Adresse,
+> die es nicht gibt**, antwortet mit **200** und liefert die Startseite (SPA-Rückfall) – ein 200 auf
+> einen Bundle-Namen beweist also nichts. Und eine **alte Startseite** verweist auf Bundles, die es
+> nicht mehr gibt; deshalb die Startseite immer frisch holen und den Namen von dort nehmen.
 
 ## Hinweise / Troubleshooting
 

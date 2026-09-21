@@ -175,7 +175,7 @@ churchtools-musik-app/
 │       ├── services/        # Geschäftslogik (ct*.ts, #280) – HTTP-unabhängig
 │       ├── middleware/      # errorHandler, Auth, Rate-Limit
 │       ├── types/           # server-spezifische Typen
-│       └── utils/           # Hilfsfunktionen
+│       └── utils/           # Hilfsfunktionen (u. a. isoTag.ts = die eine Datums-Formatierung)
 └── shared/types/            # geteilte Typen (Service, SetlistSong, Setlist, …)
 ```
 
@@ -1044,7 +1044,9 @@ Vollständige Endpunkt-Referenz: `docs/entwicklung/api-referenz.md`.
   einem mehrtägigen Zeitraum fragt über `components/ZeitraumFrage.tsx` (löschen vormerken / anpassen). Das
   runde Plus öffnet `components/AbsenceSheet.tsx` („Zeitraum eintragen", Schnellwahl); „Einträge" zeigt
   Anstehend/Früher, Vergangenes mit `nurLesen`. Der Wochenstreifen (`WochenStreifen.tsx`, `wochenAb`) ist
-  weg; `utils/wochen.ts` behält nur Tages-Helfer. Server: `GET /api/absences/events?to=` (Tag statt
+  weg; `utils/wochen.ts` behält nur Tages-Helfer (UTC-Rechnen), während **„welcher Tag ist heute"**
+  seit v2.25.1 in `utils/heute.ts` steht und **lokal** rechnet – UTC lieferte zwischen 0 und 2 Uhr den
+  Vortag. Server: `GET /api/absences/events?to=` (Tag statt
   Wochen). Tour `verfuegbarkeit-v5` (v5 = Schritt „Nur bestimmte Termine", #400), Testfälle TF-VERF-01…06.
   **Kein Excel im App-Code** – der ECG-Sync ist ein eigener Dienst (`excel-sync/`, PR 2).
 

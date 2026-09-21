@@ -479,7 +479,10 @@ würde Tonart, Tempo und Länge löschen, und das ließe sich über die App nich
    grau**. Eine **Quelle** wählen → der Hinweis ist weg, Speichern geht. Danach steht in ChurchTools
    beides.
 4. **Länge** auf `4` : `05` setzen, speichern. ChurchTools zeigt **4:05** – nicht 4 Sekunden und
-   nicht 245 Minuten.
+   nicht 245 Minuten. Dann **Tempo** auf `5` setzen: Unter dem Feld steht, dass das Tempo zwischen
+   20 und 300 liegen muss, und **„Speichern" bleibt grau** – dasselbe bei `400`. Mit `120` ist der
+   Hinweis weg und Speichern geht. (Vorher nahm das Fenster 1 bis 999 an; gespeichert wurde es, aber
+   Metronom und Tempo-Puls spielten es dann nicht, ohne ein Wort dazu.)
 5. Ein Arrangement öffnen, das **nicht** der Standard ist → **„Zum Standard machen"**. In der Liste
    wandert die Marke, und in ChurchTools ist es ebenfalls der Standard. Beim Standard-Arrangement
    selbst gibt es diesen Knopf **nicht**.
@@ -495,7 +498,7 @@ würde Tonart, Tempo und Länge löschen, und das ließe sich über die App nich
 
 - **Priorität:** hoch
 - **Betrifft:** `client/src/components/ArrangementSheet.tsx`, `client/src/components/ArrangementListe.tsx`, `client/src/utils/arrangementFormular.ts`, `client/src/components/EditSongSheet.tsx`, `server/src/services/arrangementVerwaltung.ts`, `server/src/services/arrangementPayload.ts`, `server/src/services/ctSongSources.ts`, `server/src/services/ctWrite.ts`
-- **Automatisiert:** teilweise – `server/src/services/arrangementVerwaltung.test.ts` (beide Löschsperren, Quelle unbekannt, Liednummer ohne Quelle, Standardwechsel wird nachgesehen), `server/src/services/arrangementPayload.test.ts` (nichts nebenbei löschen, alle acht Felder), `client/src/utils/arrangementFormular.test.ts` (Länge hin und zurück, nur Geändertes schicken), `client/src/components/ArrangementSheet.test.tsx` und `EditSongSheet.test.tsx` (welche Knöpfe wann); von Hand bleibt, dass ChurchTools die Werte wirklich so übernimmt und beim Schreiben nichts verliert
-- **Historie:** #396 (20.09.2026), gemessen mit `server/scripts/probe-arrangements.ts` und `-alt.ts`
+- **Automatisiert:** teilweise – `server/src/services/arrangementVerwaltung.test.ts` (beide Löschsperren, Quelle unbekannt, Liednummer ohne Quelle, Standardwechsel wird nachgesehen, unsinniges Tempo wird `null` statt `NaN`), `server/src/services/arrangementPayload.test.ts` (nichts nebenbei löschen, alle acht Felder, aus unsinnigem `bpm` gar kein Tempo), `client/src/utils/arrangementFormular.test.ts` (Länge hin und zurück, nur Geändertes schicken, Tempo-Bereich gegen `@shared/tempo`), `client/src/components/ArrangementSheet.test.tsx` und `EditSongSheet.test.tsx` (welche Knöpfe wann); von Hand bleibt, dass ChurchTools die Werte wirklich so übernimmt und beim Schreiben nichts verliert
+- **Historie:** #396 (20.09.2026), gemessen mit `server/scripts/probe-arrangements.ts` und `-alt.ts`; Schritt 4b aus dem Code-Check (v2.25.1, 21.09.2026)
 
 </details>

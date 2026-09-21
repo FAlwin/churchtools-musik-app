@@ -38,7 +38,9 @@
 - `GET  /api/site-config` → öffentlich `{ appName, description, orgName, links }` plus leere `musicianGroupIds`/`noteRoles`; **angemeldet die vollständige Konfiguration** (die internen Gruppen-/Rollen-IDs gelangen so nicht unauthentifiziert nach außen)
 - `PUT  /api/site-config` → Gemeinde-Name/Anmerkungs-Zuweisungen speichern (nur Admin, Zod-validiert) Seit #400 auch `terminArten` –
   `{id, name, suchwort}[]` für den Filter im Tab „Abwesenheiten" (Admin: Mehr → Verwaltung →
-  „Abwesenheiten: Termin-Arten"); Name/Suchwort getrimmt, je 1–40/1–60 Zeichen, IDs eindeutig
+  „Abwesenheiten: Termin-Arten"); Name/Suchwort getrimmt, Längen aus `SITE_CONFIG_GRENZEN`
+  (`@shared/types`, seit v2.25.1 eine Quelle für Formular und Schema – vorher vierfach von Hand),
+  IDs eindeutig
 
 - `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt signiertes Session-Cookie
 - `POST /api/auth/logout` → Session + ChurchTools-Session beenden
@@ -140,7 +142,10 @@
   **Nie als Standard** – das ist ein eigener, sichtbarer Schritt
 - `PUT  /api/songs/:songId/arrangements/:arrangementId` {…} → ändern → `ArrangementAnsicht`.
   **Nur die geänderten Felder schicken**; `null` heißt „leeren", ein fehlendes Feld „unverändert".
-  Der Server macht daraus lesen–ändern–schreiben, weil ein Teil-`PUT` den Rest löscht
+  Der Server macht daraus lesen–ändern–schreiben, weil ein Teil-`PUT` den Rest löscht.
+  Längen und Bereiche kommen aus `ARRANGEMENT_GRENZEN`; **das Tempo ist auf 20–300 begrenzt** – seit
+  v2.25.1 derselbe Bereich, den Metronom und Tipp-Tempo kennen (`@shared/tempo`). Vorher galten hier
+  1–999, und ein so gespeichertes Tempo verwarf jeder Puls stillschweigend
 - `PATCH /api/songs/:songId/arrangements/:arrangementId/default` → zum Standard machen → die **ganze**
   Liste (der Wechsel betrifft immer zwei Einträge). **Dieser Weg und kein anderer:**
   `PUT {isDefault: true}` antwortet 200 und ändert nichts, `POST …/default` und `PATCH` auf das
