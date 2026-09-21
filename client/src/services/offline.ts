@@ -1,5 +1,6 @@
 import type { AgendaItem } from '@shared/types/index';
 import { saveOfflineNow } from '../queryClient';
+import { heuteIso } from '../utils/heute';
 
 /** Führt `fn` über alle Einträge aus, aber höchstens `limit` gleichzeitig (schont Gerät/Netz). */
 async function mapLimit<T>(
@@ -60,7 +61,7 @@ export function clearOfflineRegistry(): void {
 
 /** Vergangene Gottesdienste aus dem Verzeichnis räumen (ihr Datei-Cache läuft separat ab). */
 export function pruneOfflineRegistry(): void {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = heuteIso();
   const reg = getOfflineRegistry();
   let changed = false;
   for (const [id, e] of Object.entries(reg)) {

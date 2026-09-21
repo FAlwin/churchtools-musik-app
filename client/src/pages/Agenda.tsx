@@ -11,6 +11,7 @@ import { useToast } from '../hooks/useToast';
 import { usePastServices } from '../hooks/useServices';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useOfflineServices } from '../hooks/useOfflineServices';
+import { heuteIso } from '../utils/heute';
 import { saveServiceOffline } from '../services/offline';
 import { liedAnzahl } from '../utils/songFilter';
 import { queryClient } from '../queryClient';
@@ -84,7 +85,7 @@ export function Agenda({
     if (!online && tab === 'past') setTab('upcoming');
   }, [online, tab]);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = heuteIso();
   const pastQuery = usePastServices(monthsBack, tab === 'past' && online);
   const upcoming = services
     .filter((s) => s.date >= today)

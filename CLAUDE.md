@@ -539,6 +539,22 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
+- **Code-Check nach v2.25.0 (21.09.2026, Branch `chore/code-check-2026-09`):** zwei Prüf-Agenten
+  (Qualität, Sicherheit), jeder Fund selbst nachgelesen. **Kein kritischer oder hoher Sicherheitsfund.**
+  Behoben: doppelter Tempo-Bereich (`ARRANGEMENT_GRENZEN.tempo` kommt aus `@shared/tempo`), dreifache
+  Tempo-Umrechnung (jetzt `arrangementTempo` in `ctTypes.ts`, samt `NaN`-Fehler im Schreib-Payload),
+  „heute" in zwei Zeitzonen (Client: `utils/heute.ts`, LOKAL; Server: `utils/isoTag.ts`, UTC – die
+  Trennung ist Absicht und in beiden Dateien begründet), Typ-Dopplung `ArrangementOverrides`,
+  handgeschriebene Feldgrenzen (`SITE_CONFIG_GRENZEN`), kopiertes `genId` (`utils/ids.ts`),
+  `SESSION_SECRET`-Prüfung (Länge + Platzhalter, nur in Produktion), `.dockerignore` für `.env.*`,
+  vier hohe `npm audit`-Meldungen. **Zwei Lehren:** (1) Ein Compile-Wächter nach dem Muster der
+  Anmerkungen taugt **nicht** für Typen mit ausschließlich optionalen Feldern – er kann nicht
+  fehlschlagen (ausprobiert); es braucht einen Test über die Schlüsselmenge mit `Required<…>`.
+  (2) Eine meiner Diagnosen war falsch: Die Arrangement-Ansicht schrieb **kein** `NaN`, sie hatte
+  sechs Zeilen weiter einen zweiten Schutz – der Test blieb ohne den Fix grün und hat das gezeigt.
+  Offen als Issues angeboten: Express 5 / vitest 4, drei stehende Lint-Warnungen, `jsonStore` in zwei
+  Ablagen ungenutzt, Geräte-Aufräumen nur bei erfolgreichem Logout.
+
 - **v2.25.0 (21.09.2026): sechs Squash-Merges seit v2.24.1** – #391 „Neues Lied" auch in „Lied
   verknüpfen" (PR #392), #393 Design-Tokens im Look der ChurchTools-App (#394), #398 Editor in der
   Tonart des Blatts + `SongVersion.writtenKey` (#399), #177 Phase 1 Tab „Abwesenheiten" inkl. #395

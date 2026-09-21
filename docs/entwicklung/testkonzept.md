@@ -163,6 +163,24 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
     erste der Liste) und die Rückfrage vor dem Löschen fremder Einträge. Von Hand bleibt, dass die
     Abwesenheit wirklich in ChurchTools steht, nach dem Ändern genau EIN Eintrag übrig ist und der
     Grund dabei nicht kippt (TF-VERF-01…06).
+  - **Code-Check-Runde (21.09.2026) – die Tests, die eine Regel an EINER Stelle festnageln:**
+    `utils/heute.test` (Client) stellt die Zeitzone auf **Europe/Berlin** und prüft, dass 22:30 UTC
+    schon der nächste Tag ist – in UTC wären lokaler und UTC-Weg gleich, der Test wäre auf der CI
+    wertlos. `utils/ids.test` prüft den Rückfall ohne `crypto.randomUUID` (LAN über HTTP).
+    `utils/arrangementFormular.test` hält den Tempo-Bereich gegen `@shared/tempo` statt gegen
+    Literale und prüft, dass der Speichern-Knopf bei einem unspielbaren Tempo gesperrt bleibt.
+    `components/TerminArtenManager.test` vergleicht die `maxLength` der Felder mit
+    `SITE_CONFIG_GRENZEN`, `services/siteConfig.test` das Zod-Schema mit derselben Konstante – beide
+    Seiten am Erzeuger, nicht an der Zahl. `services/ctTypes.test` deckt die eine Tempo-Umrechnung ab
+    (Leerstring darf nicht `0` werden, Unfug nicht `NaN`), und `services/arrangementPayload.test`
+    prüft am Schreib-Payload, dass aus unsinnigem `bpm` **gar kein** Tempo geschickt wird.
+    `controllers/setlistController.arrangement.test` hält die Zod-Form gegen `ArrangementAuftrag`
+    über die **Schlüsselmenge** eines `Required<…>`-Auftrags. **Lehre:** Ein Compile-Wächter wie bei
+    den Anmerkungen (#115) taugt hier nicht – bei ausschließlich optionalen Feldern ist die Zuweisung
+    in beide Richtungen gültig, der Wächter kann nicht fehlschlagen (ausprobiert, ein entferntes
+    Feld fiel ihm nicht auf). `config.secret.test` prüft die Geheimnis-Regel (Länge, Platzhalter,
+    und dass außerhalb der Produktion nichts geprüft wird).
+
   - **Release v2.25.0 (20./21.09.2026):** `utils/terminFilter.test` (#400: `artVon` = erste passende
     Art, sonst „Sonstige"; `knoepfeAus`; `wirksameAuswahl` verwirft unbekannte IDs und nimmt höchstens
     eine; `filtereTermine`; `umschalten` = eins oder alles) und `components/TerminArtenManager.test`

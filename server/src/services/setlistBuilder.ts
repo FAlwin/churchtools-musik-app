@@ -13,6 +13,8 @@ import type {
 } from '@shared/types/index';
 import { downloadFileText, fileIdFromUrl } from './ctFiles.js';
 import { CtOverloadedError, isCtOverloaded } from './ctHttp.js';
+// Die eine Tempo-Umrechnung (Zahl oder Zeichenkette) liegt beim Typ, dessen Eigenheit sie ausbügelt.
+import { alsTempoZahl } from './ctTypes.js';
 import { createGebuendelterLauf } from './gebuendelterLauf.js';
 import { mapLimit } from './mapLimit.js';
 import {
@@ -41,28 +43,8 @@ import { metaValue } from './chordproMeta.js';
 import { setlistFingerprint, agendaSignatureList, diffAgendaItems } from './agendaDiff.js';
 import { isHeaderType, formatBerlinTime, responsibleEntries } from './agendaFormat.js';
 import { HttpError } from '../middleware/errorHandler.js';
+import { isoTag } from '../utils/isoTag.js';
 import { mapEventToService } from '../utils/mapEvent.js';
-
-/**
- * Tempo aus ChurchTools in eine Zahl bringen – oder `null`.
- *
- * ChurchTools liefert `bpm` je nach Endpunkt als Zahl ODER als Zeichenkette (`"120"`); der Typ
- * behauptete bisher `number`. Ohne Umrechnung stünde in `SetlistSong.bpm` zur Laufzeit ein Text,
- * obwohl dort `number` steht – und alles, was mit `typeof === 'number'` prüft, hielte das Lied
- * für tempolos. Genau das trifft den Tempo-Puls (#145): Der Knopf wäre schlicht nicht erschienen.
- *
- * Aufgefallen, weil der Typ beim Erweitern von `CtArrangement` ehrlich gemacht wurde und der
- * Compiler daraufhin ZWEI Stellen zeigte. Die Umrechnung steht deshalb einmal hier, nicht zweimal
- * daneben.
- */
-function alsTempoZahl(wert: number | string | null | undefined): number | null {
-  if (typeof wert === 'number') return Number.isFinite(wert) ? wert : null;
-  if (typeof wert === 'string') {
-    const n = Number(wert.trim());
-    return wert.trim() !== '' && Number.isFinite(n) ? n : null;
-  }
-  return null;
-}
 
 /**
  * Beim Sammeln über viele Termine ist ein fehlender Ablaufplan (404) normal und wird still
@@ -412,10 +394,10 @@ export async function getSongUsageMap(cookie: string): Promise<Record<number, So
 async function runSongUsage(cookie: string): Promise<Record<number, SongUsage>> {
   const started = Date.now();
   const today = new Date();
-  const to = today.toISOString().slice(0, 10);
+  const to = isoTag(today);
   const fromD = new Date(today);
   fromD.setFullYear(fromD.getFullYear() - USAGE_LOOKBACK_YEARS);
-  const from = fromD.toISOString().slice(0, 10);
+  const from = isoTag(fromD);
 
   /** Bei Drosselung/Zeitüberschreitung sofort aufhören (#300) – siehe `bailOut` unten. */
   let overloaded = false;

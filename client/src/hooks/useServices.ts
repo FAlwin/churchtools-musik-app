@@ -8,6 +8,7 @@ import {
   type SongSelectSuchergebnis,
 } from '@shared/types/index';
 import { sucheArt } from '../utils/liedFormular';
+import { heuteIso } from '../utils/heute';
 import * as api from '../services/churchtoolsApi';
 import { ApiError } from '../services/api';
 
@@ -108,11 +109,11 @@ export function useSetlistVersion(eventId: number | null, enabled: boolean) {
   });
 }
 
-/** Datum vor `monthsBack` Monaten als ISO-Datum (YYYY-MM-DD). */
+/** Datum vor `monthsBack` Monaten als ISO-Datum (YYYY-MM-DD) – lokal, wie `heuteIso`. */
 function monthsAgoIso(monthsBack: number): string {
   const d = new Date();
   d.setMonth(d.getMonth() - monthsBack);
-  return d.toISOString().slice(0, 10);
+  return heuteIso(d);
 }
 
 /** Lädt vergangene Gottesdienste der letzten `monthsBack` Monate (lazy, nur wenn enabled). */
@@ -122,7 +123,7 @@ export function usePastServices(monthsBack: number, enabled: boolean) {
     queryFn: () =>
       api.getServices({
         from: monthsAgoIso(monthsBack),
-        to: new Date().toISOString().slice(0, 10),
+        to: heuteIso(),
       }),
     enabled,
     staleTime: 1000 * 60 * 5,

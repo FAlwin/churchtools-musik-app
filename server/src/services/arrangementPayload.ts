@@ -1,4 +1,5 @@
-import type { CtArrangement } from './ctTypes.js';
+import type { ArrangementAuftrag } from '@shared/types/index';
+import { arrangementTempo, type CtArrangement } from './ctTypes.js';
 
 /**
  * Schreib-Payload für ein Arrangement in ChurchTools – die zweite riskante reine Funktion des
@@ -31,23 +32,14 @@ import type { CtArrangement } from './ctTypes.js';
  * Ein Formular, das nur den Namen ändert, schickt für die Tonart `undefined` – sie muss erhalten
  * bleiben. Wer die Tonart löschen will, schickt `null`, und dann darf sie NICHT aus dem Ist-Zustand
  * zurückkommen. Ohne diese Unterscheidung ließe sich kein Feld je wieder leeren.
+ *
+ * **Kein eigener Typ, sondern derselbe wie an der Schnittstelle** (`ArrangementAuftrag`): Bis zum
+ * 21.09.2026 stand hier eine feldgleiche zweite Aufzählung derselben acht Felder. Wer ChurchTools
+ * ein Feld hinzufügt, hätte es an beiden Stellen nachtragen müssen – und der Compiler hätte
+ * geschwiegen, weil beide Typen für sich gültig blieben (Code-Check). Der Name bleibt, weil er im
+ * Server die Rolle beschreibt: der Wunsch des Aufrufers, nicht der Rumpf für ChurchTools.
  */
-export interface ArrangementOverrides {
-  name?: string;
-  /** Tonart. */
-  key?: string | null;
-  /** Tempo in Schlägen je Minute. */
-  tempo?: number | null;
-  /** Taktart, als Text („4/4"). */
-  beat?: string | null;
-  /** Länge in **Sekunden** – so führt ChurchTools sie (gemessen: 245 → 4:05). */
-  duration?: number | null;
-  description?: string | null;
-  /** Die Quelle (Liederbuch) als ID aus `getSongSources`. */
-  sourceId?: number | null;
-  /** Die Liednummer in dieser Quelle – ohne Quelle unmöglich, siehe `quelleAufloesen`. */
-  sourceReference?: string | null;
-}
+export type ArrangementOverrides = ArrangementAuftrag;
 
 /**
  * Die Felder, die beim Schreiben erhalten bleiben MÜSSEN.
@@ -143,9 +135,10 @@ export function arrangementWritePayload(
   }
 
   // Das bestehende Tempo mitschicken, damit es nicht verloren geht; `tempo` schlägt es.
-  const bestehend = arr.tempo ?? arr.bpm;
-  if (typeof bestehend === 'number') body.tempo = bestehend;
-  else if (typeof bestehend === 'string' && bestehend.trim() !== '') body.tempo = Number(bestehend);
+  // `arrangementTempo` ist die eine Umrechnung (Zahl, Zeichenkette, leer, Unfug) – vorher stand sie
+  // hier als dritte Kopie und hätte aus einem unsinnigen `bpm` ein `NaN` nach ChurchTools geschrieben.
+  const bestehend = arrangementTempo(arr);
+  if (bestehend !== null) body.tempo = bestehend;
 
   /**
    * Die gewünschten Änderungen darüber – **eine Schleife, kein Feld einzeln von Hand.** Als

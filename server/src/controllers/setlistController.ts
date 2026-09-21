@@ -24,6 +24,7 @@ import { getUserId } from '../services/ctAuth.js';
 import { getCapabilities } from '../services/ctCapabilities.js';
 import { fetchFileBytes } from '../services/ctFiles.js';
 import { getCtServices, getSong } from '../services/ctRead.js';
+import { isoTag } from '../utils/isoTag.js';
 import { getEditableSongCategories } from '../services/ctSongCategories.js';
 import { getSongSources } from '../services/ctSongSources.js';
 import {
@@ -64,8 +65,8 @@ import { accountKey } from '../middleware/session.js';
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
   const now = new Date();
-  const from = new Date(now.getTime() - 7 * 86400000).toISOString().slice(0, 10);
-  const to = new Date(now.getTime() + 42 * 86400000).toISOString().slice(0, 10);
+  const from = isoTag(new Date(now.getTime() - 7 * 86400000));
+  const to = isoTag(new Date(now.getTime() + 42 * 86400000));
   return { from, to };
 }
 
@@ -467,7 +468,17 @@ const neuesArrangementSchema = z.object({
   ...arrangementFelderSchema,
 });
 
-const arrangementAendernSchema = z
+/**
+ * Die Form des Änderungs-Auftrags – **exportiert, weil ein Test sie gegen den geteilten Typ
+ * `ArrangementAuftrag` hält** (`setlistController.arrangement.test.ts`).
+ *
+ * Warum ein Test und kein Compile-Wächter wie bei den Anmerkungen: Dort sind die Felder Pflicht, ein
+ * fehlendes fällt dem Compiler auf. Hier ist **jedes** Feld optional – eine Zuweisung in beide
+ * Richtungen bleibt auch dann gültig, wenn dem Schema ein Feld fehlt. Am 21.09.2026 ausprobiert: Ein
+ * Wächter in der Bauart der Anmerkungen ließ das entfernte `beat` anstandslos durch. Der Test prüft
+ * deshalb die **Schlüsselmenge** eines vollständig ausgefüllten Auftrags.
+ */
+export const arrangementAendernSchema = z
   .object({ name: arrangementNameSchema.optional(), ...arrangementFelderSchema })
   .refine((d) => Object.values(d).some((v) => v !== undefined), {
     message: 'Es wurde keine Änderung mitgeschickt.',

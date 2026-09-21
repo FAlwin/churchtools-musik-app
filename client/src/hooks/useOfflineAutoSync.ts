@@ -4,6 +4,7 @@ import { queryClient } from '../queryClient';
 import * as api from '../services/churchtoolsApi';
 import { getOfflineRegistry, saveServiceOffline } from '../services/offline';
 import { isOfflineAutoEnabled } from '../services/offlineAuto';
+import { heuteIso } from '../utils/heute';
 
 /**
  * Hält Gottesdienste automatisch offline bereit (#32): den NÄCHSTEN kommenden immer (sofern der
@@ -16,7 +17,7 @@ export function useOfflineAutoSync(services: Service[] | undefined): void {
   useEffect(() => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     if (!services || services.length === 0) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = heuteIso();
     const upcoming = services
       .filter((s) => s.date >= today)
       .sort((a, b) => a.start.localeCompare(b.start));

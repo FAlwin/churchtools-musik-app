@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { SiteConfig, TerminArt } from '@shared/types/index';
+import { SITE_CONFIG_GRENZEN, type SiteConfig, type TerminArt } from '@shared/types/index';
 import { Spinner } from './Spinner';
 import { Icon } from './icons';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
+import { neueId } from '../utils/ids';
 // Dieselben Stile wie der Links-Editor – bewusst geteilt, nicht kopiert: zwei Listen-Editoren im
 // selben Verwaltungsbereich sollen gleich aussehen, und eine Korrektur soll beide treffen.
 import styles from './LinksManager.module.scss';
@@ -19,14 +20,8 @@ import styles from './LinksManager.module.scss';
  * Nach dem Vorbild von `LinksManager`, ohne Ziehen zum Sortieren: Zwei bis fünf Arten sortiert man
  * durch Löschen und Neu-Anlegen schneller, als man den Griff findet.
  */
-function genId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-    return crypto.randomUUID();
-  return `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-}
-
 function neueArt(): TerminArt {
-  return { id: genId(), name: '', suchwort: '' };
+  return { id: neueId('t'), name: '', suchwort: '' };
 }
 
 export function TerminArtenManager({ site, onClose }: { site: SiteConfig; onClose: () => void }) {
@@ -65,7 +60,7 @@ export function TerminArtenManager({ site, onClose }: { site: SiteConfig; onClos
               <input
                 className={styles.labelInput}
                 value={a.name}
-                maxLength={40}
+                maxLength={SITE_CONFIG_GRENZEN.terminArtName}
                 placeholder="Name des Knopfs (z. B. Gottesdienst)"
                 aria-label="Name"
                 onChange={(e) => aendere({ ...a, name: e.target.value })}
@@ -81,7 +76,7 @@ export function TerminArtenManager({ site, onClose }: { site: SiteConfig; onClos
             <input
               className={styles.urlInput}
               value={a.suchwort}
-              maxLength={60}
+              maxLength={SITE_CONFIG_GRENZEN.terminArtSuchwort}
               placeholder="Suchwort im Terminnamen (z. B. Gottesdienst)"
               aria-label="Suchwort"
               autoCapitalize="off"

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
+import { SITE_CONFIG_GRENZEN } from '@shared/types/index';
 import { tempDatei } from '../testHilfen/tempAblage.js';
 
 /**
@@ -13,6 +14,39 @@ type Mod = typeof import('./siteConfig.js');
 let mod: Mod;
 beforeAll(async () => {
   mod = await import('./siteConfig.js');
+});
+
+describe('siteConfigSchema – Grenzen kommen aus @shared/types', () => {
+  /**
+   * Dieselben Zahlen wie im Formular (`SITE_CONFIG_GRENZEN`) – geprüft am Erzeuger, nicht an
+   * Literalen. Wer im Schema wieder `.max(40)` von Hand hinschreibt und die Konstante weitet,
+   * lässt diesen Test fallen (Code-Check 21.09.2026).
+   */
+  it('nimmt einen Namen bis zur Grenze an und lehnt ein Zeichen mehr ab', () => {
+    const art = (laenge: number) => ({
+      orgName: 'ECG',
+      terminArten: [{ id: 'x', name: 'n'.repeat(laenge), suchwort: 'gd' }],
+    });
+    expect(mod.siteConfigSchema.safeParse(art(SITE_CONFIG_GRENZEN.terminArtName)).success).toBe(
+      true,
+    );
+    expect(mod.siteConfigSchema.safeParse(art(SITE_CONFIG_GRENZEN.terminArtName + 1)).success).toBe(
+      false,
+    );
+  });
+
+  it('begrenzt das Suchwort ebenso', () => {
+    const mitWort = (laenge: number) => ({
+      orgName: 'ECG',
+      terminArten: [{ id: 'x', name: 'Gottesdienst', suchwort: 'w'.repeat(laenge) }],
+    });
+    expect(
+      mod.siteConfigSchema.safeParse(mitWort(SITE_CONFIG_GRENZEN.terminArtSuchwort)).success,
+    ).toBe(true);
+    expect(
+      mod.siteConfigSchema.safeParse(mitWort(SITE_CONFIG_GRENZEN.terminArtSuchwort + 1)).success,
+    ).toBe(false);
+  });
 });
 
 describe('siteConfigSchema – Termin-Arten', () => {

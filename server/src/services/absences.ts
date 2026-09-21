@@ -17,6 +17,7 @@ import { grundLesbar, istMarkerEintrag, markerFreitext, mitMarker } from '@share
 import { ctId } from '../utils/ctId.js';
 import { config } from '../config.js';
 import { HttpError } from '../middleware/errorHandler.js';
+import { isoTag } from '../utils/isoTag.js';
 import { ctAjax } from './ctAjax.js';
 import { getAbsences, getEvents } from './ctRead.js';
 import { gruendeMemo } from './ctSessionMemos.js';
@@ -117,10 +118,11 @@ export function zuEvents(events: CtEvent[]): AbsenceEvent[] {
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
 }
 
-/** ISO-Tag (`YYYY-MM-DD`) eines Zeitpunkts in UTC – für Standard-Zeitfenster. */
-export function isoTag(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
+// ISO-Tag (`YYYY-MM-DD`) in UTC – liegt in `utils/isoTag.ts`, weil drei Stellen ihn brauchen.
+// Der Re-Export bleibt, damit `absencesController` und die Tests ihn weiter von hier holen können.
+// Ein reines `export { … } from` genügt NICHT: Dieses Modul benutzt `isoTag` auch selbst, und ein
+// Re-Export bringt den Namen nicht in den eigenen Gültigkeitsbereich (der Compiler sagte es sofort).
+export { isoTag };
 
 /* ------------------------------------------------------------------ Orchestrierung (mit Netz) */
 
