@@ -60,6 +60,21 @@ image: ghcr.io/falwin/churchtools-musik-app:2
 Ein Sprung auf eine größere Version (z. B. von `:2` auf `:3`) ist damit immer eine **bewusste**
 Entscheidung – Tag ändern, vorher kurz ins [CHANGELOG.md](CHANGELOG.md) schauen, dann aktualisieren.
 
+## Einmalig bei v2.25.1: Sitzungs-Geheimnis prüfen
+
+Ab dieser Fassung **startet die App nicht mehr** mit einem schwachen `SESSION_SECRET`: Der
+Beispielwert aus `.env.example` und alles unter 32 Zeichen werden abgelehnt (die Meldung steht im
+Container-Log). Vorher wurde nur geprüft, ob überhaupt etwas eingetragen ist.
+
+Vor dem Update kurz nachsehen – der Befehl zeigt nur die **Länge**, nicht den Wert:
+
+```bash
+awk -F= '/^SESSION_SECRET=/{print length($2) " Zeichen"}' .env
+```
+
+Sind es weniger als 32, ein neues Geheimnis erzeugen (`openssl rand -hex 32`) und in die `.env`
+eintragen. Folge: Alle sind einmal abgemeldet und melden sich neu an – sonst ändert sich nichts.
+
 ## Was ist neu?
 
 Die Änderungen je Version stehen im **[CHANGELOG.md](CHANGELOG.md)**. Versionierung nach SemVer:

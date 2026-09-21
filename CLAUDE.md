@@ -539,7 +539,7 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 
 ## Stand & nächster Schritt
 
-- **Code-Check nach v2.25.0 (21.09.2026, Branch `chore/code-check-2026-09`):** zwei Prüf-Agenten
+- **v2.25.1 (21.09.2026) = Code-Check nach v2.25.0** (PR #402, `1b573ea`; Staging als `staging-1b573ea` verifiziert): zwei Prüf-Agenten
   (Qualität, Sicherheit), jeder Fund selbst nachgelesen. **Kein kritischer oder hoher Sicherheitsfund.**
   Behoben: doppelter Tempo-Bereich (`ARRANGEMENT_GRENZEN.tempo` kommt aus `@shared/tempo`), dreifache
   Tempo-Umrechnung (jetzt `arrangementTempo` in `ctTypes.ts`, samt `NaN`-Fehler im Schreib-Payload),
@@ -552,8 +552,11 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
   fehlschlagen (ausprobiert); es braucht einen Test über die Schlüsselmenge mit `Required<…>`.
   (2) Eine meiner Diagnosen war falsch: Die Arrangement-Ansicht schrieb **kein** `NaN`, sie hatte
   sechs Zeilen weiter einen zweiten Schutz – der Test blieb ohne den Fix grün und hat das gezeigt.
-  Offen als Issues angeboten: Express 5 / vitest 4, drei stehende Lint-Warnungen, `jsonStore` in zwei
-  Ablagen ungenutzt, Geräte-Aufräumen nur bei erfolgreichem Logout.
+  Offen als Issues: #403 (Geräte-Aufräumen nur bei erfolgreichem Logout), #404 (`jsonStore` in zwei
+  Ablagen ungenutzt), #405 (Express 5 / vitest 4), #406 (drei stehende Lint-Warnungen).
+  **Beim Prod-Deploy dieser Fassung zuerst die Länge des `SESSION_SECRET` prüfen** – unter 32 Zeichen
+  startet der Container bewusst nicht mehr (`awk -F= '/^SESSION_SECRET=/{print length($2)}' .env`).
+  Für fremde Gemeinden steht derselbe Hinweis in `UPDATE.md`.
 
 - **v2.25.0 (21.09.2026): sechs Squash-Merges seit v2.24.1** – #391 „Neues Lied" auch in „Lied
   verknüpfen" (PR #392), #393 Design-Tokens im Look der ChurchTools-App (#394), #398 Editor in der

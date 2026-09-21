@@ -5,7 +5,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
-## [Unreleased]
+## [2.25.1] – 2026-09-21
 
 ### Behoben
 
@@ -32,7 +32,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   `.env.example` ist 36 Zeichen lang und wäre damit in Produktion durchgegangen – aus ihm werden die
   Signatur des Sitzungs-Cookies **und** der Schlüssel für das darin verschlüsselte
   ChurchTools-Cookie abgeleitet. In Produktion verlangt die App jetzt 32 Zeichen und lehnt die
-  bekannten Platzhalter ab; in der Entwicklung bleibt der Komfort-Rückfall.
+  bekannten Platzhalter ab; in der Entwicklung bleibt der Komfort-Rückfall. **Für Gemeinden mit
+  einem kurzen Geheimnis heißt das: Die App startet nach dem Update nicht, bis ein neues eingetragen
+  ist** – der Weg dazu steht in `UPDATE.md`.
 
 - **Sicherheit: `.dockerignore` deckte nur `.env`, nicht `.env.*`.** Bei einem lokalen Build hätte
   `COPY . .` die Zugangsdaten der Test-Instanz in einen Image-Layer gelegt. Dieselbe Lehre stand in

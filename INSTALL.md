@@ -88,6 +88,11 @@ openssl rand -hex 32
 
 Das Ergebnis kopieren und eintragen.
 
+> **Die App startet nicht mit einem schwachen Geheimnis** (seit v2.25.1): Der Beispielwert aus
+> `.env.example` und alles unter 32 Zeichen werden abgelehnt, mit einer Meldung im Log. Der Befehl
+> oben liefert 64 Zeichen. Grund: Aus diesem Wert entstehen die Signatur des Login-Cookies **und**
+> der Schlüssel, mit dem die ChurchTools-Anmeldung darin verschlüsselt liegt.
+
 ### 4. App starten
 
 Terminal öffnen, in den Ordner navigieren:
