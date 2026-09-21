@@ -1,6 +1,8 @@
 /**
- * Tages-Helfer der Abwesenheiten (#177). Alles auf `YYYY-MM-DD`-Zeichenketten und UTC gerechnet,
- * damit kein Gerät um Mitternacht einen anderen Tag sieht als ein anderes (siehe `absenceDatum.ts`).
+ * Tages-Helfer der Abwesenheiten (#177). **Rechnen** mit Tagen läuft auf `YYYY-MM-DD`-Zeichenketten
+ * und in UTC, damit eine Tagesverschiebung nirgends an einer Sommerzeit hängt (siehe
+ * `absenceDatum.ts`). **Welcher Tag „heute" ist**, sagt dagegen `utils/heute.ts` – das ist eine
+ * Frage der Zeitzone des Geräts und keine Rechenfrage (Code-Check 21.09.2026).
  *
  * Bis zum 19.09.2026 lebte hier auch der Wochenstreifen (`wochenAb`, `wocheTage`, `wocheLabel`); mit
  * dem Umbau auf Monate (`monate.ts`) ist er samt Helfern weg. `wochenStart` bleibt für die
@@ -16,14 +18,6 @@ function utc(iso: string): number {
 
 function iso(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
-}
-
-/** Heute als `YYYY-MM-DD` in der Zeitzone des Geräts. */
-export function heuteIso(now = new Date()): string {
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 export function plusTage(tag: string, n: number): string {

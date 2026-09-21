@@ -4,18 +4,18 @@
  * Fehlt die Datei, gelten die Standardwerte.
  */
 import { z } from 'zod';
-import { DEFAULT_SITE_CONFIG, type SiteConfig } from '@shared/types/index';
+import { DEFAULT_SITE_CONFIG, SITE_CONFIG_GRENZEN, type SiteConfig } from '@shared/types/index';
 import { config } from '../config.js';
 import { readJsonStore, writeJsonStore } from './jsonStore.js';
 
 /** Nur echte Web-Links zulassen – verhindert `javascript:`/`data:`-XSS in gerenderten Links. */
 const linkSchema = z.object({
-  id: z.string().trim().min(1).max(64),
-  label: z.string().trim().min(1).max(60),
+  id: z.string().trim().min(1).max(SITE_CONFIG_GRENZEN.id),
+  label: z.string().trim().min(1).max(SITE_CONFIG_GRENZEN.linkLabel),
   url: z
     .string()
     .trim()
-    .max(2000)
+    .max(SITE_CONFIG_GRENZEN.linkUrl)
     .refine((u) => /^https?:\/\//i.test(u), 'Nur http(s)-Adressen sind erlaubt.'),
   showOnLogin: z.boolean(),
 });
@@ -36,13 +36,21 @@ const noteRoleSchema = z
   }));
 
 /**
- * Termin-Arten für den Filter im Tab „Abwesenheiten" (#400). Grenzen sind Missbrauchs-Bremsen, keine
- * Fachregeln: 40 Zeichen Knopf, 60 Zeichen Suchwort, 50 Arten.
+ * Termin-Arten für den Filter im Tab „Abwesenheiten" (#400). Die Grenzen sind Missbrauchs-Bremsen,
+ * keine Fachregeln – und sie kommen aus `SITE_CONFIG_GRENZEN`, damit das Formular dieselben kennt.
  */
 const terminArtSchema = z.object({
-  id: z.string().trim().min(1).max(64),
-  name: z.string().trim().min(1, 'Jede Termin-Art braucht einen Namen.').max(40),
-  suchwort: z.string().trim().min(1, 'Jede Termin-Art braucht ein Suchwort.').max(60),
+  id: z.string().trim().min(1).max(SITE_CONFIG_GRENZEN.id),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Jede Termin-Art braucht einen Namen.')
+    .max(SITE_CONFIG_GRENZEN.terminArtName),
+  suchwort: z
+    .string()
+    .trim()
+    .min(1, 'Jede Termin-Art braucht ein Suchwort.')
+    .max(SITE_CONFIG_GRENZEN.terminArtSuchwort),
 });
 
 // Tolerant gegenüber Altfeldern (bestehende site.json aus der White-Label-Phase),
@@ -51,7 +59,7 @@ export const siteConfigSchema = z
   .object({
     orgName: z.string().trim().min(1).max(80),
     // Obergrenze als reine Missbrauchs-Bremse, weit über realer Nutzung.
-    links: z.array(linkSchema).max(50).optional().default([]),
+    links: z.array(linkSchema).max(SITE_CONFIG_GRENZEN.maxEintraege).optional().default([]),
     // ChurchTools-Gruppen-IDs für „globale" Anmerkungen; leer = Funktion aus.
     musicianGroupIds: z.array(z.number().int().positive()).max(50).optional().default([]),
     // Abwärtskompatibel: frühere Einzel-ID (wird beim Einlesen in das Array überführt).
@@ -59,7 +67,11 @@ export const siteConfigSchema = z
     // Rollen-Freigabe je Gruppe (Sehen/Verwalten).
     noteRoles: z.array(noteRoleSchema).max(50).optional().default([]),
     // Termin-Arten für den Abwesenheiten-Filter (#400); leer = kein Filter.
-    terminArten: z.array(terminArtSchema).max(50).optional().default([]),
+    terminArten: z
+      .array(terminArtSchema)
+      .max(SITE_CONFIG_GRENZEN.maxEintraege)
+      .optional()
+      .default([]),
   })
   .passthrough();
 

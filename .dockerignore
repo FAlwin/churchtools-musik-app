@@ -3,8 +3,21 @@ node_modules
 client/dist
 server/dist
 .git
+# ALLE .env-Varianten, nur die Vorlagen nicht – dieselbe Lehre wie in `.gitignore` (dort steht sie
+# seit einer neuen Variante `.env.churchtools-test`, die von `.env` allein nicht erfasst war).
+# Wichtig, weil `Dockerfile` mit `COPY . .` arbeitet: Bei einem LOKALEN Build (docker-compose.dev.yml)
+# lägen die Zugangsdaten sonst in einem Image-Layer. Ergänzt im Code-Check am 21.09.2026.
 .env
+.env.*
+!.env.example
+!.env.*.example
 *.log
 .scratch
 .DS_Store
 .claude
+# Arbeits- und Testreste gehören nicht ins Image (und blähen den Build-Kontext auf).
+.e2e-data
+.entwuerfe
+test-results
+playwright-report
+data

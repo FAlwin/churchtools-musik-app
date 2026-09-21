@@ -83,6 +83,35 @@ export interface CtArrangementFile {
   size?: number | string | null;
 }
 
+/**
+ * **Die eine Tempo-Umrechnung** für ChurchTools-Arrangements.
+ *
+ * ChurchTools liefert das Tempo je nach Endpunkt als Zahl ODER als Zeichenkette (`"120"`), manchmal
+ * als leere Zeichenkette. `Number('')` ist aber `0`, und `0` heißt für den Tempo-Puls „tempolos" –
+ * er wäre schlicht nicht erschienen (#145).
+ *
+ * Bis zum 21.09.2026 stand diese Rechnung an **drei** Stellen (`setlistBuilder`, die Arrangement-
+ * Ansicht und der Schreib-Payload). Nachgemessen im Code-Check: Aus `"abc"` machte der
+ * **Schreib-Payload** ein `NaN` – über JSON ein `null`, also ein für das ganze Team gelöschtes
+ * Tempo. Die Ansicht hatte dieselbe fehlerhafte Kopie, fing sie aber sechs Zeilen weiter mit einem
+ * zweiten `Number.isFinite` wieder auf; `setlistBuilder` rechnete von Anfang an richtig. Genau so
+ * sieht diese Fehlerklasse aus: dieselbe Regel dreimal, an einer Stelle falsch, an einer zweiten
+ * zufällig abgefangen. Sie steht deshalb jetzt hier, bei dem Typ, dessen Eigenheit sie ausbügelt.
+ */
+export function alsTempoZahl(wert: number | string | null | undefined): number | null {
+  if (typeof wert === 'number') return Number.isFinite(wert) ? wert : null;
+  if (typeof wert === 'string') {
+    const n = Number(wert.trim());
+    return wert.trim() !== '' && Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+/** Das Tempo eines Arrangements: `tempo` (beschreibbar) schlägt `bpm` (abgeleitet). */
+export function arrangementTempo(arr: Pick<CtArrangement, 'tempo' | 'bpm'>): number | null {
+  return alsTempoZahl(arr.tempo ?? arr.bpm);
+}
+
 export interface CtArrangement {
   id: number;
   name: string;

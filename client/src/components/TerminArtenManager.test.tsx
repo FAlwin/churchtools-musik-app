@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { DEFAULT_SITE_CONFIG, type SiteConfig } from '@shared/types/index';
+import { DEFAULT_SITE_CONFIG, SITE_CONFIG_GRENZEN, type SiteConfig } from '@shared/types/index';
 
 /**
  * Der Admin-Editor der Termin-Arten (#400) – gegen die echte Komponente, nur die Speicher-Mutation als
@@ -29,6 +29,21 @@ function zeige(site: SiteConfig = SITE) {
 }
 
 describe('TerminArtenManager', () => {
+  /**
+   * Die Eingabefelder dürfen **nicht mehr** zulassen, als das Zod-Schema des Servers annimmt – sonst
+   * tippt jemand 45 Zeichen und bekommt beim Speichern einen Fehler. Geprüft wird deshalb gegen
+   * `SITE_CONFIG_GRENZEN`, nicht gegen hingeschriebene 40 und 60: Bis zum 21.09.2026 standen die
+   * Zahlen hier und im Server von Hand (Code-Check), und ein Test mit denselben Literalen wäre
+   * genau bei diesem Fehler grün geblieben.
+   */
+  it('begrenzt die Felder nach SITE_CONFIG_GRENZEN – wie der Server', () => {
+    zeige();
+    const name = screen.getAllByLabelText('Name')[0] as HTMLInputElement;
+    const wort = screen.getAllByLabelText('Suchwort')[0] as HTMLInputElement;
+    expect(name.maxLength).toBe(SITE_CONFIG_GRENZEN.terminArtName);
+    expect(wort.maxLength).toBe(SITE_CONFIG_GRENZEN.terminArtSuchwort);
+  });
+
   it('zeigt die vorhandenen Arten', () => {
     zeige();
     // Name UND Suchwort tragen hier denselben Wert – beide Felder müssen ihn zeigen.

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { SiteConfig, SiteLink } from '@shared/types/index';
+import { SITE_CONFIG_GRENZEN, type SiteConfig, type SiteLink } from '@shared/types/index';
 import {
   DndContext,
   closestCenter,
@@ -21,17 +21,11 @@ import { innerScrollOnly } from '../utils/dndAutoScroll';
 import { Spinner } from './Spinner';
 import { Icon } from './icons';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
+import { neueId } from '../utils/ids';
 import styles from './LinksManager.module.scss';
 
-/** Eindeutige ID – mit Fallback, da crypto.randomUUID nur im sicheren Kontext (HTTPS) existiert. */
-function genId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-    return crypto.randomUUID();
-  return `l${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-}
-
 function newLink(): SiteLink {
-  return { id: genId(), label: '', url: '', showOnLogin: false };
+  return { id: neueId('l'), label: '', url: '', showOnLogin: false };
 }
 
 /** Eine sortierbare Link-Karte (Text, Adresse, Login-Schalter, Löschen). */
@@ -62,7 +56,7 @@ function SortableLink({
         <input
           className={styles.labelInput}
           value={link.label}
-          maxLength={60}
+          maxLength={SITE_CONFIG_GRENZEN.linkLabel}
           placeholder="Button-Text"
           onChange={(e) => onChange({ ...link, label: e.target.value })}
         />

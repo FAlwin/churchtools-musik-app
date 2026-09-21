@@ -5,6 +5,55 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Behoben
+
+- **Ein unsinniges Tempo aus ChurchTools hätte beim Speichern eines Arrangements das Tempo für das
+  ganze Team gelöscht.** Stand in `bpm` etwas, das keine Zahl ist, rechnete der Schreib-Payload
+  daraus ein `NaN` – über JSON wird daraus `null`. Gefunden im Code-Check am 21.09.2026: Dieselbe
+  Umrechnung stand an **drei** Stellen, eine war falsch, eine zweite fing den Fehler sechs Zeilen
+  weiter zufällig wieder auf. Jetzt gibt es sie einmal (`arrangementTempo`), und der Doppelschutz
+  daneben ist weg – er hätte die nächste Kopie wieder unauffindbar gemacht.
+
+- **Zwischen Mitternacht und 2 Uhr galt der Vortag als „heute".** Sechs Stellen im Client rechneten
+  „heute" in UTC (`toISOString`), die Abwesenheiten dagegen lokal. Wer um 0:30 Uhr die Termine
+  öffnete, sah den gerade zu Ende gegangenen Gottesdienst noch als anstehend, und das Aufräumen der
+  Offline-Reserve ließ ihn stehen. Es gibt jetzt eine Stelle dafür (`utils/heute.ts`, lokal), und ein
+  Test stellt die Zeitzone dafür ausdrücklich auf Europe/Berlin – in UTC wären beide Rechenwege
+  gleich, und der Fehler wäre auf der CI unsichtbar geblieben.
+
+- **Das Formular nahm ein Tempo an, das danach kein Puls spielen konnte.** Das Arrangement-Fenster
+  erlaubte 1 bis 999 Schläge, Metronom, Tipp-Tempo und der Tempo-Endpunkt aber nur 20 bis 300 – zwei
+  Bereiche für dieselbe Sache, beide im geteilten Verzeichnis. Der Bereich kommt jetzt aus
+  `@shared/tempo`, und das Fenster sagt es **vor** dem Speichern.
+
+- **Sicherheit: `SESSION_SECRET` wurde nur auf „nicht leer" geprüft.** Der Beispielwert aus
+  `.env.example` ist 36 Zeichen lang und wäre damit in Produktion durchgegangen – aus ihm werden die
+  Signatur des Sitzungs-Cookies **und** der Schlüssel für das darin verschlüsselte
+  ChurchTools-Cookie abgeleitet. In Produktion verlangt die App jetzt 32 Zeichen und lehnt die
+  bekannten Platzhalter ab; in der Entwicklung bleibt der Komfort-Rückfall.
+
+- **Sicherheit: `.dockerignore` deckte nur `.env`, nicht `.env.*`.** Bei einem lokalen Build hätte
+  `COPY . .` die Zugangsdaten der Test-Instanz in einen Image-Layer gelegt. Dieselbe Lehre stand in
+  `.gitignore` schon, samt Begründung – nur nebenan nicht. Mit aufgenommen: `.e2e-data`,
+  `.entwuerfe`, `test-results`, `data`.
+
+- **Abhängigkeiten: vier hohe Meldungen aus `npm audit` sind weg** (`browserslist`, `fast-uri`,
+  `js-yaml`, `nanoid` – alle in Build- und Entwicklungsketten, aber im ausgelieferten Image
+  enthalten). `express` ist auf dem neuesten Stand der 4er-Reihe. Offen bleiben sechs mittlere, die
+  einen Hauptversionssprung brauchen (`express` 5, `vitest` 4) – eigene Runde.
+
+### Geändert
+
+- **Aufräumen nach dem Code-Check (21.09.2026), lauter Stellen, an denen dieselbe Regel zweimal
+  stand:** `ArrangementOverrides` ist jetzt derselbe Typ wie `ArrangementAuftrag` statt einer
+  feldgleichen zweiten Aufzählung (ein Test hält die Zod-Form dagegen); die Grenzen der Termin-Arten
+  und Links kommen aus `SITE_CONFIG_GRENZEN` statt aus vier handgeschriebenen Zahlen; `genId` war in
+  zwei Managern wortgleich kopiert und heißt jetzt `neueId`; die Datums-Formatierung des Servers
+  stand dreifach und liegt jetzt in `utils/isoTag.ts`. Verhalten unverändert, aber die nächste
+  Änderung trifft nur noch eine Stelle.
+
 ## [2.25.0] – 2026-09-21
 
 ### Neu

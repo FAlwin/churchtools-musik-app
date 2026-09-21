@@ -1,3 +1,5 @@
+import { MAX_BPM, MIN_BPM } from '../tempo/index';
+
 /**
  * Geteilte Typen zwischen Client und Server.
  * Diese Typen bilden die Daten ab, wie sie zwischen App und Backend ausgetauscht werden –
@@ -176,20 +178,52 @@ export const LIED_GRENZEN = {
 } as const;
 
 /**
+ * Die Feldgrenzen der **einstellbaren Listen** im Verwaltungs-Bereich – Links im „Mehr"-Tab und
+ * Termin-Arten des Abwesenheiten-Filters (#400).
+ *
+ * Es sind Missbrauchs-Bremsen, keine Fachregeln. Sie stehen hier, weil sie an **zwei** Stellen
+ * gebraucht werden: im Formular als `maxLength` und im Zod-Schema des Servers. Bis zum 21.09.2026
+ * waren sie an beiden Stellen von Hand hingeschrieben (40/60/2000) – wer eine davon geändert
+ * hätte, hätte ein Feld bekommen, das man ausfüllen kann und das der Server dann ablehnt. Direkt
+ * daneben macht `ARRANGEMENT_GRENZEN` es seit #396 richtig vor (Code-Check).
+ */
+export const SITE_CONFIG_GRENZEN = {
+  /** Erzeugte IDs sind UUIDs (36 Zeichen); der Rest ist Luft für Altbestände. */
+  id: 64,
+  /** Beschriftung eines Links („Button-Text"). */
+  linkLabel: 60,
+  linkUrl: 2000,
+  /** Name der Termin-Art – das ist die Knopf-Beschriftung im Filter. */
+  terminArtName: 40,
+  /** Suchwort, das im Terminnamen vorkommen muss. */
+  terminArtSuchwort: 60,
+  /** Höchstzahl Einträge je Liste. */
+  maxEintraege: 50,
+} as const;
+
+/**
  * Die Feldgrenzen eines Arrangements (#396) – **eine Quelle für Formular und Zod-Schema**, wie
  * `LIED_GRENZEN` es für das Lied ist.
  *
  * Die Zahlen stammen aus dem ChurchTools-Dialog selbst (abgelesen in `cs_songview.js`,
  * `editArrangement`): Name `maxlength:50`, Liednummer `maxlength:30`. Tempo und Länge begrenzt
  * ChurchTools nicht sichtbar; die Werte hier halten offensichtlichen Unsinn fern, ohne zu gängeln –
- * 999 Schläge je Minute spielt niemand, und ein Lied über zwei Stunden ist kein Arrangement.
+ * das Tempo kommt aus `@shared/tempo` (20–300, derselbe Bereich wie Metronom und Tipp-Tempo), und
+ * ein Lied über zwei Stunden ist kein Arrangement.
  */
 export const ARRANGEMENT_GRENZEN = {
   name: { min: 1, max: 50 },
   key: 10,
   beat: 20,
-  /** Schläge je Minute. */
-  tempo: { min: 1, max: 999 },
+  /**
+   * Schläge je Minute – **derselbe Bereich, den das Metronom kennt** (`@shared/tempo`).
+   *
+   * Vorher stand hier 1–999, während Puls, Tipp-Tempo und der Tempo-Endpunkt 20–300 prüften: Ein
+   * über dieses Formular gespeichertes Tempo von 5 wurde angenommen und danach von jedem Puls
+   * stillschweigend verworfen. Gefunden im Code-Check am 21.09.2026 – genau die Regel-Dopplung,
+   * gegen die `@shared/tempo` gebaut wurde („die Zahlen stehen bewusst nur EINMAL").
+   */
+  tempo: { min: MIN_BPM, max: MAX_BPM },
   /** Länge in SEKUNDEN (so führt ChurchTools sie); 2 Stunden als obere Schranke. */
   duration: { min: 1, max: 7200 },
   description: 2000,

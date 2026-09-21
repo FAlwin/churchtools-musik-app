@@ -78,6 +78,17 @@ describe('arrangementWritePayload – nichts nebenbei löschen', () => {
     expect(arrangementWritePayload(arrangement({ bpm: '134' })).tempo).toBe(134);
   });
 
+  /**
+   * Unfug in `bpm` darf **kein `NaN`** in den Payload bringen: `JSON.stringify(NaN)` ist `null`,
+   * das Tempo wäre für das ganze Team gelöscht. Bis zum 21.09.2026 tat diese Stelle genau das (eine
+   * von drei Kopien der Umrechnung); jetzt geht sie über `arrangementTempo`.
+   */
+  it('schreibt aus einem unsinnigen `bpm` gar kein Tempo – niemals `NaN`', () => {
+    const body = arrangementWritePayload(arrangement({ bpm: 'irgendwas', tempo: null }));
+    expect(body.tempo).toBeUndefined();
+    expect(Number.isNaN(body.tempo as number)).toBe(false);
+  });
+
   it('bevorzugt `tempo` gegenüber `bpm`, wenn beide da sind', () => {
     expect(arrangementWritePayload(arrangement({ bpm: '120', tempo: 118 })).tempo).toBe(118);
   });

@@ -132,13 +132,23 @@ export function arrangementBereit(f: ArrangementFormular): boolean {
 /**
  * Was der Nutzer sehen soll, **bevor** er speichert – oder `null`, wenn alles stimmt.
  *
- * Bisher genau ein Fall: eine Liednummer ohne Quelle. ChurchTools nimmt sie an und wirft sie weg
- * (gemessen); der Server lehnt sie deshalb ab. Hier steht der Hinweis, damit niemand erst nach dem
- * Speichern erfährt, was fehlt.
+ * Zwei Fälle:
+ *  1. Eine **Liednummer ohne Quelle**. ChurchTools nimmt sie an und wirft sie weg (gemessen); der
+ *     Server lehnt sie deshalb ab.
+ *  2. Ein **Tempo außerhalb von `ARRANGEMENT_GRENZEN.tempo`** – demselben Bereich, den Metronom und
+ *     Tipp-Tempo kennen. Ohne diesen Hinweis ließ sich ein Tempo von 5 speichern, das danach jeder
+ *     Puls stillschweigend verwarf (Code-Check 21.09.2026).
+ *
+ * Beides steht hier und nicht in der Komponente, damit `bereit` es sperrt statt erst der Server.
  */
 export function arrangementHinweis(f: ArrangementFormular): string | null {
   if (f.sourceReference.trim() !== '' && f.sourceId === null) {
     return 'Eine Liednummer speichert ChurchTools nur zusammen mit einer Quelle.';
+  }
+  const tempo = f.tempo.trim() === '' ? null : Number(f.tempo);
+  const { min, max } = ARRANGEMENT_GRENZEN.tempo;
+  if (tempo !== null && Number.isFinite(tempo) && (tempo < min || tempo > max)) {
+    return `Das Tempo muss zwischen ${min} und ${max} Schlägen je Minute liegen.`;
   }
   return null;
 }

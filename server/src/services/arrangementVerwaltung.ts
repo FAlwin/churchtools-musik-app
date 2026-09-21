@@ -34,22 +34,22 @@ import {
 } from './ctWrite.js';
 import { getSongSources } from './ctSongSources.js';
 import { pruefeKategorie } from './songVerwaltung.js';
-import type { CtArrangement, CtSong } from './ctTypes.js';
+import { arrangementTempo, type CtArrangement, type CtSong } from './ctTypes.js';
 
 /**
  * Ein Arrangement für die App – **eine Abbildung, für alle Antworten dieses Dienstes.**
  *
  * Die Zahlen kommen aus ChurchTools mal als Zahl, mal als Zeichenkette (`bpm` ist der bekannte Fall,
- * siehe `CtArrangement`). Umgerechnet wird deshalb genau hier, nicht bei jedem Aufrufer.
+ * siehe `CtArrangement`). Umgerechnet wird mit `arrangementTempo` – **der einen Stelle dafür**
+ * (zusammengeführt im Code-Check am 21.09.2026, vorher drei Kopien).
+ *
+ * Dass `arrangementTempo` bei Unfug `null` liefert und nie `NaN`, ist dessen **Zusage**. Deshalb
+ * steht hier kein zweites `Number.isFinite` mehr: Es stand direkt neben der Umrechnung und hat den
+ * Fehler dieser Stelle aufgefangen – so bleibt eine Kopie dieser Regel harmlos und unauffindbar,
+ * während dieselbe Kopie im Schreib-Payload ein `NaN` nach ChurchTools geschickt hätte.
  */
 function ansicht(arr: CtArrangement): ArrangementAnsicht {
-  const tempoRoh = arr.tempo ?? arr.bpm;
-  const tempo =
-    typeof tempoRoh === 'number'
-      ? tempoRoh
-      : typeof tempoRoh === 'string' && tempoRoh.trim() !== ''
-        ? Number(tempoRoh)
-        : null;
+  const tempo = arrangementTempo(arr);
 
   const quelle = arr.source ?? null;
   return {
@@ -57,7 +57,7 @@ function ansicht(arr: CtArrangement): ArrangementAnsicht {
     name: arr.name,
     isDefault: arr.isDefault === true,
     key: arr.key ?? arr.keyOfArrangement ?? null,
-    tempo: tempo !== null && Number.isFinite(tempo) ? tempo : null,
+    tempo,
     beat: arr.beat ?? null,
     duration: typeof arr.duration === 'number' ? arr.duration : null,
     // `note` ist ChurchTools' alter Name für dasselbe Feld – siehe `arrangementPayload.ts`.

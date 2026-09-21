@@ -4,6 +4,7 @@ import { Sheet } from './Sheet';
 import { CenterMessage } from './CenterMessage';
 import { Icon } from './icons';
 import { useSongArrangements, useAddSongToService } from '../hooks/useServices';
+import { heuteIso } from '../utils/heute';
 import styles from './AddToAgendaSheet.module.scss';
 
 interface AddToAgendaSheetProps {
@@ -23,7 +24,7 @@ export function AddToAgendaSheet({ song, services, onClose }: AddToAgendaSheetPr
   const arrangements = useSongArrangements(service ? song.songId : null);
   const add = useAddSongToService();
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = heuteIso();
   const upcoming = services
     .filter((s) => s.date >= todayIso)
     .sort((a, b) => a.start.localeCompare(b.start));

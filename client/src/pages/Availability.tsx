@@ -25,7 +25,8 @@ import {
   wochentagLang,
   zeitraumKurz,
 } from '../utils/absenceDatum';
-import { heuteIso, plusTage, tagImMonat } from '../utils/wochen';
+import { heuteIso } from '../utils/heute';
+import { plusTage, tagImMonat } from '../utils/wochen';
 import { getAbwesenheitenFilter, setAbwesenheitenFilter } from '../utils/devicePrefs';
 import { filtereTermine, knoepfeAus, umschalten, wirksameAuswahl } from '../utils/terminFilter';
 import { useSiteConfig } from '../hooks/useSiteConfig';

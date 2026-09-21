@@ -175,6 +175,22 @@ describe('arrangementsLesen', () => {
     expect((await arrangementsLesen(COOKIE, 7))[0].tempo).toBe(134);
   });
 
+  /**
+   * Ein unsinniges `bpm` darf **kein `NaN`** in die App-Form bringen: Über JSON wird daraus `null`.
+   *
+   * Dieser Test bewacht die **Zusage von `arrangementTempo`**, nicht mehr einen zweiten Prüfschritt
+   * daneben: Bis zum 21.09.2026 fing ein eigenes `Number.isFinite` in der Rückgabe den Fehler der
+   * hiesigen Kopie auf. Beim Zusammenführen fiel auf, dass dieser Test ohne die Zusammenführung
+   * grün blieb – die Diagnose „auch diese Stelle schreibt NaN" war falsch. Mit dem entfernten
+   * Doppelschutz fällt er, wenn jemand die Umrechnung wieder von Hand hinschreibt.
+   */
+  it('liefert bei unsinnigem Tempo `null` statt `NaN`', async () => {
+    mockCt({ arrangements: [arr({ id: 70, name: 'Standard', bpm: 'irgendwas', tempo: null })] });
+    const tempo = (await arrangementsLesen(COOKIE, 7))[0].tempo;
+    expect(tempo).toBeNull();
+    expect(Number.isNaN(tempo as number)).toBe(false);
+  });
+
   it('liest eine Beschreibung auch unter dem alten Namen `note`', async () => {
     mockCt({
       arrangements: [arr({ id: 70, name: 'Standard', description: null, note: 'Kapo 2' })],

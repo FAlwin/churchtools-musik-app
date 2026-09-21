@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ArrangementAnsicht } from '@shared/types/index';
+import { ARRANGEMENT_GRENZEN, type ArrangementAnsicht } from '@shared/types/index';
+import { MAX_BPM, MIN_BPM } from '@shared/tempo/index';
 import {
   LEERES_ARRANGEMENT,
   arrangementBereit,
@@ -128,6 +129,30 @@ describe('arrangementBereit und der Hinweis', () => {
     expect(
       arrangementHinweis({ ...LEERES_ARRANGEMENT, sourceId: 2, sourceReference: '142' }),
     ).toBeNull();
+  });
+
+  /**
+   * Gegen die Regel-Dopplung geprüft, nicht gegen abgeschriebene Zahlen: Wer 1–999 zurückschreibt,
+   * lässt diesen Test fallen. Vor dem 21.09.2026 galten hier zwei verschiedene Bereiche (Code-Check).
+   */
+  it('kennt denselben Tempo-Bereich wie Metronom und Tipp-Tempo', () => {
+    expect(ARRANGEMENT_GRENZEN.tempo).toEqual({ min: MIN_BPM, max: MAX_BPM });
+  });
+
+  it('warnt vor einem Tempo, das kein Puls mehr spielen kann', () => {
+    const zuLangsam = { ...LEERES_ARRANGEMENT, name: 'Akustik', tempo: String(MIN_BPM - 1) };
+    const zuSchnell = { ...LEERES_ARRANGEMENT, name: 'Akustik', tempo: String(MAX_BPM + 1) };
+    expect(arrangementHinweis(zuLangsam)).toMatch(/Schlägen je Minute/);
+    expect(arrangementHinweis(zuSchnell)).toMatch(/Schlägen je Minute/);
+    // Und der Knopf bleibt gesperrt – der Hinweis allein wäre nur Zierde.
+    expect(arrangementBereit(zuLangsam) && arrangementHinweis(zuLangsam) === null).toBe(false);
+  });
+
+  it('schweigt bei einem gängigen Tempo und bei leerem Feld', () => {
+    expect(arrangementHinweis({ ...LEERES_ARRANGEMENT, tempo: '120' })).toBeNull();
+    expect(arrangementHinweis({ ...LEERES_ARRANGEMENT, tempo: String(MIN_BPM) })).toBeNull();
+    expect(arrangementHinweis({ ...LEERES_ARRANGEMENT, tempo: String(MAX_BPM) })).toBeNull();
+    expect(arrangementHinweis({ ...LEERES_ARRANGEMENT, tempo: '' })).toBeNull();
   });
 });
 
