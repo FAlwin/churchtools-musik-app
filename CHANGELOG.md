@@ -20,8 +20,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   **Wer die App schon auf dem Home-Bildschirm hat, sieht die Änderung erst nach Löschen und
   Neu-Hinzufügen** – iOS liest die Angabe beim Installieren. Dasselbe Problem haben in diesen Wochen
   viele Web-Apps behoben (u. a. dozzle#5222, vcsudoku#38, ioBroker.aura#662); der Weg ist der gleiche.
-  Ein erster Versuch, die eigene Milchglas-Optik der Leisten zu entfernen, war eine Fehldiagnose und
-  ist zurückgenommen – die Leisten sehen aus wie in v2.25.1.
+  Danach blieb ein **feiner Strich** quer über den Schirm: iOS malt den Streifen oben in der
+  `theme-color`, unsere halbdurchsichtige Leiste darunter ergab einen minimal anderen Ton (#fdfefe
+  statt #ffffff), und ihre Unschärfe verschob ihn beim Scrollen zusätzlich. Die Leisten sind deshalb
+  jetzt **deckend und exakt in der `theme-color`** – Kopfzeile, Tab-Leiste sowie Kopf und Fuß der
+  Chart-Ansicht. Die Milchglas-Optik der Leisten entfällt damit; die leichte Abdunklung hinter
+  Dialogen bleibt.
 
 ## [2.25.1] – 2026-09-21
 
