@@ -436,3 +436,68 @@ describe('Abwesenheiten – Termin-Filter (#400)', () => {
     expect(kasten(/04\.10\./).getAttribute('aria-pressed')).toBe('true');
   });
 });
+
+/**
+ * **Runterziehen zum Aktualisieren** (Alwin, 22.09.2026: „bei Abwesenheit und Termine ist das
+ * Neuladen nicht richtig. Bei Lied stimmt es.").
+ *
+ * Die Seite lädt ZWEI Dinge – die eigenen Einträge und die Termine. Vorher warf sie beide Abrufe mit
+ * `void` weg und gab selbst nichts zurück; die Ladeanzeige war deshalb sofort wieder da und wieder
+ * weg, während die Daten noch unterwegs waren. Hier dauern die Abrufe absichtlich deutlich länger
+ * als die Untergrenze der Anzeige (450 ms) – sonst wäre der Test auch ohne den Fix grün.
+ */
+describe('Abwesenheiten – Runterziehen zum Aktualisieren', () => {
+  const band = (container: HTMLElement) => {
+    const scroller = container.querySelector('[class*="scroll"]');
+    return {
+      scroller: scroller as HTMLElement,
+      anzeige: scroller!.firstElementChild as HTMLElement,
+    };
+  };
+
+  it('lässt die Ladeanzeige stehen, bis Einträge UND Termine da sind', async () => {
+    vi.useFakeTimers();
+    let eintraegeFertig!: () => void;
+    let termineFertig!: () => void;
+    absences.mockReturnValue({
+      data: [EIGENE, URLAUB, FRUEHER],
+      isLoading: false,
+      isError: false,
+      refetch: () => new Promise((f) => (eintraegeFertig = f as () => void)),
+    });
+    events.mockReturnValue({
+      data: EVENTS,
+      isLoading: false,
+      isError: false,
+      refetch: () => new Promise((f) => (termineFertig = f as () => void)),
+    });
+
+    const { container } = render(<Availability online onToast={vi.fn()} heute={HEUTE} />);
+    const { scroller, anzeige } = band(container);
+
+    fireEvent.touchStart(scroller, { touches: [{ clientY: 0 }] });
+    fireEvent.touchMove(scroller, { touches: [{ clientY: 200 }] });
+    await act(async () => {
+      fireEvent.touchEnd(scroller);
+    });
+
+    // Lange nach der Untergrenze – die Anzeige steht, weil noch geladen wird.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(anzeige.style.height).toBe('48px');
+
+    await act(async () => {
+      eintraegeFertig();
+      await vi.advanceTimersByTimeAsync(600);
+    });
+    expect(anzeige.style.height).toBe('48px'); // die Termine fehlen noch
+
+    await act(async () => {
+      termineFertig();
+      await vi.advanceTimersByTimeAsync(600);
+    });
+    expect(anzeige.style.height).toBe('0px');
+    vi.useRealTimers();
+  });
+});

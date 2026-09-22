@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Service } from '@shared/types/index';
-import { Screen, Scroll } from '../components/Screen';
+import { SeitenGeruest } from '../components/SeitenGeruest';
 import { CenterMessage } from '../components/CenterMessage';
 import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
@@ -10,7 +10,6 @@ import { useToast } from '../hooks/useToast';
 import { usePastServices } from '../hooks/useServices';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useOfflineServices } from '../hooks/useOfflineServices';
-import { GrosseUeberschrift } from '../components/GrosseUeberschrift';
 import { heuteIso } from '../utils/heute';
 import { saveServiceOffline } from '../services/offline';
 import { liedAnzahl } from '../utils/songFilter';
@@ -22,7 +21,11 @@ interface AgendaProps {
   services: Service[];
   isLoading?: boolean;
   isError?: boolean;
-  onRetry?: () => void;
+  /**
+   * Neu laden. Gibt das Versprechen des Abrufs zurück, damit die Ladeanzeige beim Runterziehen
+   * so lange steht, bis die Termine wirklich da sind (22.09.2026).
+   */
+  onRetry?: () => Promise<unknown>;
   onSelect: (service: Service) => void;
   /** Öffnet direkt das „Liederheft" (Lieder-Charts) des Gottesdienstes. */
   onOpenSongs: (service: Service) => void;
@@ -212,68 +215,68 @@ export function Agenda({
   }
 
   return (
-    <Screen>
-      <Scroll onRefresh={tab === 'upcoming' ? onRetry : () => pastQuery.refetch()}>
-        <GrosseUeberschrift>Termine</GrosseUeberschrift>
-        <Segment
-          className={styles.segWrap}
-          value={tab}
-          options={[
-            { value: 'upcoming', label: 'Kommende' },
-            { value: 'past', label: 'Vergangene' },
-          ]}
-          dimmed={online ? [] : ['past']}
-          onChange={(v) => {
-            if (!online && v === 'past') {
-              showToast('Vergangene Gottesdienste sind offline nicht verfügbar.');
-              return;
-            }
-            setTab(v);
-          }}
-        />
-        {tab === 'upcoming' ? (
-          isLoading ? (
-            <CenterMessage loading text="Gottesdienste werden geladen…" />
-          ) : isError ? (
-            <CenterMessage
-              icon="⚠️"
-              text="Gottesdienste konnten nicht geladen werden."
-              onRetry={onRetry}
-            />
-          ) : upcoming.length === 0 ? (
-            <CenterMessage icon="📅" text="Keine kommenden Gottesdienste." />
-          ) : (
-            groups(upcoming)
-          )
-        ) : !online ? (
-          <CenterMessage icon="📴" text="Vergangene Gottesdienste sind offline nicht verfügbar." />
-        ) : pastQuery.isLoading ? (
-          <CenterMessage loading text="Vergangene werden geladen…" />
-        ) : pastQuery.isError ? (
+    <SeitenGeruest
+      titel="Termine"
+      onNeuLaden={tab === 'upcoming' ? onRetry : () => pastQuery.refetch()}
+      ueberlagerung={<Toast message={toast} />}
+    >
+      <Segment
+        className={styles.segWrap}
+        value={tab}
+        options={[
+          { value: 'upcoming', label: 'Kommende' },
+          { value: 'past', label: 'Vergangene' },
+        ]}
+        dimmed={online ? [] : ['past']}
+        onChange={(v) => {
+          if (!online && v === 'past') {
+            showToast('Vergangene Gottesdienste sind offline nicht verfügbar.');
+            return;
+          }
+          setTab(v);
+        }}
+      />
+      {tab === 'upcoming' ? (
+        isLoading ? (
+          <CenterMessage loading text="Gottesdienste werden geladen…" />
+        ) : isError ? (
           <CenterMessage
             icon="⚠️"
-            text="Vergangene konnten nicht geladen werden."
-            onRetry={() => pastQuery.refetch()}
+            text="Gottesdienste konnten nicht geladen werden."
+            onRetry={onRetry}
           />
+        ) : upcoming.length === 0 ? (
+          <CenterMessage icon="📅" text="Keine kommenden Gottesdienste." />
         ) : (
-          <>
-            {past.length === 0 ? (
-              <CenterMessage icon="📅" text="Keine vergangenen Gottesdienste im Zeitraum." />
-            ) : (
-              groups(past)
-            )}
-            <button
-              className={styles.loadMore}
-              disabled={pastQuery.isFetching}
-              onClick={() => setMonthsBack((m) => m + 1)}
-            >
-              {pastQuery.isFetching ? 'Lädt…' : 'Mehr laden'}
-            </button>
-          </>
-        )}
-        <div style={{ height: 16 }} />
-      </Scroll>
-      <Toast message={toast} />
-    </Screen>
+          groups(upcoming)
+        )
+      ) : !online ? (
+        <CenterMessage icon="📴" text="Vergangene Gottesdienste sind offline nicht verfügbar." />
+      ) : pastQuery.isLoading ? (
+        <CenterMessage loading text="Vergangene werden geladen…" />
+      ) : pastQuery.isError ? (
+        <CenterMessage
+          icon="⚠️"
+          text="Vergangene konnten nicht geladen werden."
+          onRetry={() => pastQuery.refetch()}
+        />
+      ) : (
+        <>
+          {past.length === 0 ? (
+            <CenterMessage icon="📅" text="Keine vergangenen Gottesdienste im Zeitraum." />
+          ) : (
+            groups(past)
+          )}
+          <button
+            className={styles.loadMore}
+            disabled={pastQuery.isFetching}
+            onClick={() => setMonthsBack((m) => m + 1)}
+          >
+            {pastQuery.isFetching ? 'Lädt…' : 'Mehr laden'}
+          </button>
+        </>
+      )}
+      <div style={{ height: 16 }} />
+    </SeitenGeruest>
   );
 }

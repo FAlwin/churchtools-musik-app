@@ -69,6 +69,23 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   niemanden erraten, dass man dort einen Zeitraum eingibt. Über den Feldern stehen jetzt „Von" und
   „Bis".
 
+- **Runterziehen zum Aktualisieren lud bei „Abwesenheiten" und „Termine" nicht sichtbar neu.** Alwin
+  am 22.09.2026: „bei Abwesenheit und Termine ist das Neuladen nicht richtig. Bei Lied stimmt es."
+  Zwei Ursachen, beide behoben. Erstens gab das Neuladen der **Abwesenheiten** gar nichts zurück: Es
+  startete die beiden Abrufe (eigene Einträge, Termine) und warf sie weg – die Ladeanzeige war damit
+  sofort wieder verschwunden, während die Daten noch unterwegs waren. Zweitens **blitzte** die
+  Anzeige auf, wenn eine Antwort aus einem warmen Zwischenspeicher kam; sie bleibt jetzt kurz stehen,
+  ohne etwas zu verzögern. Bei „Lieder" fiel beides nicht auf, weil die Liedersammlung groß ist und
+  der Abruf ohnehin dauert.
+
+  **Damit das nicht wiederkommt, gibt es den Kopf jetzt nur noch einmal:** `SeitenGeruest` setzt
+  Leiste, große Überschrift, Scrollbereich und Neuladen zusammen, und alle fünf Bildschirme (Termine,
+  Lieder, Abwesenheiten, Mehr, Ablauf) nutzen es. Vorher baute jede Seite dasselbe Muster selbst –
+  genau die Stelle, an der sie auseinanderliefen. Das Neuladen **muss** dabei sein Versprechen
+  zurückgeben; eine Funktion ohne Rückgabe lehnt der Compiler jetzt ab (nachgestellt: der Build
+  scheitert). Nebenbei fällt damit auch der Tipp auf den aktiven Tab („ganz nach oben") überall
+  gleich aus – vorher hing er daran, dass jede Seite den Scrollbereich richtig einbaut.
+
   Der Hinweis **„Zum Aktualisieren nach unten ziehen"** stand bisher dauerhaft am Listenanfang und
   lag damit als Einziges noch im Band. Er erscheint jetzt **nur während der Geste**, zusammen mit dem
   Pfeil, und wechselt am Auslösepunkt zu „Loslassen zum Aktualisieren". Das gilt für alle Listen mit

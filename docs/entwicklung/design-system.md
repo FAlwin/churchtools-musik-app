@@ -57,8 +57,9 @@ nutzt bewusst Monospace (`'JetBrains Mono', monospace`) für die Roh-Bearbeitung
   „Lied hinzufügen"-Blatt, deshalb geteilt). In Modulen:
   `@use '../styles/mixins' as m;` → `@include m.card-list;`.
 - **Komponenten:** `Segment` (Auswahl 2–3 Optionen), `NoteTile` (Noten-Kachel),
-  `Icon` (`components/icons.tsx`, Line-Icons – keine Emojis in der UI), `NavBar` (seit 22.09.2026 nur
-  noch in Detailansichten, Titel optional), `GrosseUeberschrift` (Titel im Inhalt), `TabBar`,
+  `Icon` (`components/icons.tsx`, Line-Icons – keine Emojis in der UI), **`SeitenGeruest`** (das
+  Gerüst JEDES Bildschirms: Leiste, Überschrift, Scrollen, Neuladen – seit 22.09.2026 der Normalweg,
+  `Screen`/`Scroll`/`NavBar`/`GrosseUeberschrift` sind seine Bausteine), `TabBar`,
   `Sheet`, `ConfirmDialog`, `SongFields` (die Stammdaten-Felder eines Liedes – von „Neues Lied" und
   „Stammdaten ändern" gemeinsam genutzt, damit es die fünf Felder nur einmal gibt).
 - **Lied suchen – ein Feld, eine Zeile, ein Angebot** (#378): `LiedSucheKopf` (nur das Suchfeld, Lupe

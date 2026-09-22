@@ -4,6 +4,16 @@ import { useRef, useState } from 'react';
 const THRESHOLD = 70;
 /** Maximale sichtbare Zugstrecke. */
 const MAX_PULL = 95;
+/**
+ * So lange bleibt die Ladeanzeige mindestens stehen (22.09.2026).
+ *
+ * Alwin: „bei Abwesenheit und Termine ist das Neuladen nicht richtig. Bei Lied stimmt es." Kommt
+ * die Antwort aus einem warmen Cache, ist sie nach wenigen Millisekunden da – der Kreisel blitzt
+ * dann nur auf und man hält es für einen Fehlgriff. Die Liedersammlung ist groß und braucht ohnehin
+ * länger, deshalb fiel es dort nicht auf. Die Untergrenze macht das Neuladen **sichtbar**, ohne es
+ * zu verzögern: Dauert der Abruf länger, wartet hier niemand.
+ */
+const MIN_ANZEIGE_MS = 450;
 
 /**
  * „Runterziehen zum Aktualisieren" für einen scrollbaren Container.
@@ -40,9 +50,12 @@ export function usePullToRefresh(onRefresh: () => Promise<unknown> | void) {
     if (pull >= THRESHOLD) {
       setRefreshing(true);
       setPull(THRESHOLD);
+      const start = Date.now();
       try {
         await onRefresh();
       } finally {
+        const rest = MIN_ANZEIGE_MS - (Date.now() - start);
+        if (rest > 0) await new Promise((fertig) => setTimeout(fertig, rest));
         setRefreshing(false);
         setPull(0);
       }

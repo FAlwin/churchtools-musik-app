@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Absence, AbsenceEvent, NeueAbsence } from '@shared/types/index';
-import { Screen, Scroll } from '../components/Screen';
-import { GrosseUeberschrift } from '../components/GrosseUeberschrift';
+import { SeitenGeruest } from '../components/SeitenGeruest';
 import { CenterMessage } from '../components/CenterMessage';
 import { Icon } from '../components/icons';
 import { Coachmarks } from '../components/Coachmarks';
@@ -256,10 +255,14 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
 
   const laedt = absences.isLoading || events.isLoading;
   const fehler = absences.isError || events.isError;
-  const neuLaden = (): void => {
-    void absences.refetch();
-    void events.refetch();
-  };
+  /**
+   * Neu laden – und zwar so, dass der Aufrufer **warten kann** (Alwin, 22.09.2026: „bei Abwesenheit
+   * und Termine ist das Neuladen nicht richtig"). Hier standen zwei mit `void` weggeworfene Abrufe,
+   * und die Funktion gab selbst nichts zurück: Beim Runterziehen war die Ladeanzeige deshalb sofort
+   * wieder weg, während Termine und Einträge noch unterwegs waren. `Promise.all` hält beide
+   * zusammen – die Anzeige steht, bis das Letzte da ist.
+   */
+  const neuLaden = (): Promise<unknown> => Promise.all([absences.refetch(), events.refetch()]);
 
   /* ---------------------------------------------------------------- Zeilen */
 
@@ -458,38 +461,13 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
     </>
   );
 
-  return (
-    <Screen>
-      <Scroll onRefresh={neuLaden}>
-        <GrosseUeberschrift>Abwesenheiten</GrosseUeberschrift>
-        {laedt ? (
-          <CenterMessage loading text="Wird geladen…" />
-        ) : fehler ? (
-          <CenterMessage icon="⚠️" text="Konnte nicht geladen werden." onRetry={neuLaden} />
-        ) : (
-          <div className={styles.wrap}>
-            <div className={styles.seg} role="group" aria-label="Ansicht">
-              <button
-                className={`${styles.segBtn}${seite === 'termine' ? ' ' + styles.segAn : ''}`}
-                aria-pressed={seite === 'termine'}
-                onClick={() => setSeite('termine')}
-              >
-                Termine
-              </button>
-              <button
-                className={`${styles.segBtn}${seite === 'eintraege' ? ' ' + styles.segAn : ''}`}
-                aria-pressed={seite === 'eintraege'}
-                onClick={() => setSeite('eintraege')}
-              >
-                Einträge
-                {anstehend.length > 0 && <span className={styles.zaehler}>{anstehend.length}</span>}
-              </button>
-            </div>
-            {seite === 'termine' ? termineSeite : eintraegeSeite}
-          </div>
-        )}
-      </Scroll>
-
+  /**
+   * Was über dem Inhalt schwebt: die Speichern-Leiste (sobald etwas vorgemerkt ist) oder das Plus,
+   * dazu die Fenster und die Einführung. Es scrollt nicht mit, deshalb steht es neben dem Inhalt
+   * und nicht darin.
+   */
+  const ueberlagerung = (
+    <>
       {anzahl > 0 ? (
         <div className={styles.leiste} role="status">
           <button className={styles.verwerfen} onClick={verwerfen} disabled={sichern.isPending}>
@@ -561,6 +539,37 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
           }}
         />
       )}
-    </Screen>
+    </>
+  );
+
+  return (
+    <SeitenGeruest titel="Abwesenheiten" onNeuLaden={neuLaden} ueberlagerung={ueberlagerung}>
+      {laedt ? (
+        <CenterMessage loading text="Wird geladen…" />
+      ) : fehler ? (
+        <CenterMessage icon="⚠️" text="Konnte nicht geladen werden." onRetry={neuLaden} />
+      ) : (
+        <div className={styles.wrap}>
+          <div className={styles.seg} role="group" aria-label="Ansicht">
+            <button
+              className={`${styles.segBtn}${seite === 'termine' ? ' ' + styles.segAn : ''}`}
+              aria-pressed={seite === 'termine'}
+              onClick={() => setSeite('termine')}
+            >
+              Termine
+            </button>
+            <button
+              className={`${styles.segBtn}${seite === 'eintraege' ? ' ' + styles.segAn : ''}`}
+              aria-pressed={seite === 'eintraege'}
+              onClick={() => setSeite('eintraege')}
+            >
+              Einträge
+              {anstehend.length > 0 && <span className={styles.zaehler}>{anstehend.length}</span>}
+            </button>
+          </div>
+          {seite === 'termine' ? termineSeite : eintraegeSeite}
+        </div>
+      )}
+    </SeitenGeruest>
   );
 }

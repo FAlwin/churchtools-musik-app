@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Scroll } from './Screen';
 
 /**
@@ -68,5 +68,75 @@ describe('Scroll mit onRefresh – der Hinweis zum Ziehen', () => {
       </Scroll>,
     );
     expect(hinweis()).toBeNull();
+  });
+});
+
+/**
+ * **Die Ladeanzeige muss zum Neuladen passen** (Alwin, 22.09.2026: „bei Abwesenheit und Termine ist
+ * das Neuladen nicht richtig. Bei Lied stimmt es.").
+ *
+ * Zwei Regeln, zwei Tests – bewusst getrennt, denn sie decken einander sonst zu:
+ *  1. Dauert der Abruf lange, steht die Anzeige so lange. Das fängt den Fehler der Abwesenheiten,
+ *     deren Neuladen zwei Abrufe wegwarf und sofort zurückkam. Der Abruf hier braucht deutlich
+ *     länger als die Untergrenze – sonst wäre der Test auch ohne den Fix grün.
+ *  2. Kommt die Antwort aus dem Cache, blitzt die Anzeige nicht nur auf, sondern bleibt kurz stehen.
+ *
+ * Gemessen wird die Höhe des Anzeigebands (48 px, solange geladen wird) – unabhängig von den
+ * Klassennamen der CSS-Module.
+ */
+const band = (container: HTMLElement) =>
+  (container.firstElementChild as HTMLElement).firstElementChild as HTMLElement;
+
+describe('Scroll mit onRefresh – wie lange die Ladeanzeige steht', () => {
+  afterEach(() => vi.useRealTimers());
+
+  async function ziehenUndLoslassen(onRefresh: () => Promise<unknown>) {
+    vi.useFakeTimers();
+    const { container } = render(
+      <Scroll onRefresh={onRefresh}>
+        <div>Inhalt</div>
+      </Scroll>,
+    );
+    const scroller = container.firstElementChild as HTMLElement;
+    ziehen(scroller, 160);
+    await act(async () => {
+      fireEvent.touchEnd(scroller);
+    });
+    return container;
+  }
+
+  it('bleibt sichtbar, solange der Abruf läuft', async () => {
+    let fertig!: () => void;
+    const container = await ziehenUndLoslassen(
+      () =>
+        new Promise<void>((aufloesen) => {
+          fertig = aufloesen;
+        }),
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(band(container).style.height).toBe('48px');
+
+    await act(async () => {
+      fertig();
+      await vi.advanceTimersByTimeAsync(600);
+    });
+    expect(band(container).style.height).toBe('0px');
+  });
+
+  it('blitzt bei einer sofortigen Antwort nicht nur auf', async () => {
+    const container = await ziehenUndLoslassen(() => Promise.resolve());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    expect(band(container).style.height).toBe('48px');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(band(container).style.height).toBe('0px');
   });
 });
