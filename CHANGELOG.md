@@ -59,6 +59,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   des Gottesdienstes stehen groß darunter im Inhalt. Symbole verträgt das Band, Text nicht. Noch
   nicht umgebaut ist die Chart-Ansicht – dort hängt am Titel das Lied-Menü.
 
+  **Ein Tipp auf den bereits aktiven Tab scrollt die Liste nach oben** – wie in iOS-Apps. Der Tipp
+  auf die Uhrzeit, den Alwin erwartet hatte, erreicht eine Web-App nicht: iOS reicht ihn nur an den
+  Haupt-Scroller des Dokuments weiter, und diese App scrollt in einem inneren Bereich, damit die
+  Tab-Leiste steht und das Runterziehen funktioniert. Der aktive Tab ist der Ersatz dafür.
+
+  **Die Datumsfelder bei „Häufigkeit" und „Zuletzt" sagen jetzt, was sie sind.** Ein leeres
+  Datumsfeld zeigt auf iOS **nichts** an – zwei leere Kästen mit einem Strich dazwischen ließen
+  niemanden erraten, dass man dort einen Zeitraum eingibt. Über den Feldern stehen jetzt „Von" und
+  „Bis".
+
   Der Hinweis **„Zum Aktualisieren nach unten ziehen"** stand bisher dauerhaft am Listenanfang und
   lag damit als Einziges noch im Band. Er erscheint jetzt **nur während der Geste**, zusammen mit dem
   Pfeil, und wechselt am Auslösepunkt zu „Loslassen zum Aktualisieren". Das gilt für alle Listen mit

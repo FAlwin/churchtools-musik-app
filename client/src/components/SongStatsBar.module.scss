@@ -5,10 +5,29 @@
 // Zeitfilter-Leiste (nur bei Häufigkeit/Zuletzt): Von–Bis-Datum + „Alle"-Umschalter.
 .rangeBar {
   display: flex;
-  align-items: center;
+  // An der Grundlinie der Felder ausrichten, nicht mittig: Über den Feldern steht jetzt eine
+  // Beschriftung, der Strich und „Alle" sollen trotzdem auf Höhe der Felder sitzen.
+  align-items: flex-end;
   gap: 6px;
   margin-top: 8px;
 }
+// Feld mit Beschriftung darüber.
+.dateFeld {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+// Sagt, was ins Feld gehört – auf iOS bleibt ein leeres Datumsfeld sonst stumm.
+.dateLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  padding-left: 2px;
+}
+
 .dateInput {
   flex: 1;
   min-width: 0;
@@ -30,6 +49,7 @@
 .rangeDash {
   color: var(--text3);
   flex-shrink: 0;
+  padding-bottom: 8px;
 }
 .allBtn {
   flex-shrink: 0;

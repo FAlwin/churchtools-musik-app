@@ -1,4 +1,5 @@
 import { Icon, type IconName } from './icons';
+import { scrolleZumAnfang } from './Screen';
 import styles from './TabBar.module.scss';
 
 export type TabId = 'termine' | 'lieder' | 'verfuegbarkeit' | 'mehr';
@@ -34,7 +35,12 @@ export function TabBar({ active, tabs, dimmed = [], onChange }: TabBarProps) {
           <button
             key={id}
             className={`${styles.tab}${on ? ' ' + styles.on : ''}${off ? ' ' + styles.off : ''}`}
-            onClick={() => onChange(id)}
+            onClick={() => {
+              // Schon aktiv? Dann nach oben scrollen – wie in iOS-Apps. Der Tipp auf die Statusleiste
+              // erreicht eine Web-App nicht (siehe `Screen.tsx`), dies ist der Ersatz dafür.
+              if (on) scrolleZumAnfang();
+              else onChange(id);
+            }}
           >
             <Icon name={meta.icon} size={24} stroke={1.9} />
             <span>{meta.label}</span>
