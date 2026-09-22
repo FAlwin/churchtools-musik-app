@@ -9,8 +9,8 @@ import styles from './GrosseUeberschrift.module.scss';
  * wird dort weich – das ist der native Look, kein Fehler. Welcher Bildschirm gerade offen ist, sagt
  * die Tab-Leiste unten.
  *
- * Der Abstand nach oben (`--inhalt-pad-top`) hält die Überschrift im Ruhezustand unter dem Band;
- * er gehört zum Inhalt und scrollt mit weg.
+ * Der Abstand nach oben (`--inhalt-pad-top`, in der iOS-App Safe-Area + 36 px) hält die Überschrift
+ * im Ruhezustand unter Uhr und Band; er gehört zum Inhalt und scrollt mit weg.
  */
 export function GrosseUeberschrift({ children }: { children: string }) {
   return <h1 className={styles.gross}>{children}</h1>;

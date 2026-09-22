@@ -38,10 +38,8 @@ window.addEventListener('pageshow', syncAppHeight);
 requestAnimationFrame(syncAppHeight);
 setTimeout(syncAppHeight, 250);
 
-// iOS-Safe-Area stabil halten (#187). Seit 22.09.2026 misst das in der INSTALLIERTEN App 0 (die
-// Statusleiste liegt außerhalb der Web-Ansicht, siehe index.html) – die Messung bleibt für den
-// Safari-Tab, das Querformat und ältere Fassungen, an denen die Safe-Area noch >0 sein kann.
-// Ursprüngliche Begründung: iOS setzt `env(safe-area-inset-top)` beim Schließen eines
+// iOS-Safe-Area stabil halten (#187). Seit 22.09.2026 hängt daran auch `--inhalt-pad-top`
+// (Überschrift unter dem Unschärfe-Band, _variables.scss). iOS setzt `env(safe-area-inset-top)` beim Schließen eines
 // modalen Dialogs kurz auf 0 zurück → Kopfleisten mit `max(20px, env(...))` schrumpfen im Transient
 // und die ganze Leiste springt sichtbar. Wir messen den echten Wert über ein Probe-Element und
 // halten ihn in der CSS-Variable `--sat` fest. Der gemerkte Wert kollabiert NICHT mit dem Transient;

@@ -46,6 +46,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Hochschieben unter das Band, wo iOS ihn weichzeichnet – so, wie es native Apps auch tun. Welcher
   Bildschirm offen ist, sagt die Tab-Leiste unten. Null Punkte dauerhaft belegt.
 
+  Und der weiße Streifen hinter der Uhrzeit ist weg: Die App zeichnet **wieder bis ganz nach
+  oben** („komplett transparent"). Der Zwischenschritt, sie unter einer deckenden Statusleiste
+  beginnen zu lassen, hatte den Titel aus dem Band geholt – aber nur um den Preis eines Streifens
+  oder von Platz. Jetzt, wo oben kein Text mehr steht, braucht es ihn nicht mehr: Der Inhalt läuft
+  unter Uhr und Band durch, die Überschrift hält ihren Abstand über die Safe-Area.
+
   Der Hinweis **„Zum Aktualisieren nach unten ziehen"** stand bisher dauerhaft am Listenanfang und
   lag damit als Einziges noch im Band. Er erscheint jetzt **nur während der Geste**, zusammen mit dem
   Pfeil, und wechselt am Auslösepunkt zu „Loslassen zum Aktualisieren". Das gilt für alle Listen mit

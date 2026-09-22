@@ -90,35 +90,28 @@ html[data-theme='dark'] {
   // Leisten (Kopfzeile, Chart-Kopf): mindestens 20px, sonst die Safe-Area. Eine Stelle für beide.
   --bar-pad-top: max(20px, var(--sat, env(safe-area-inset-top, 0px)));
   // Bildschirme OHNE Leiste (große Überschrift im Inhalt): Abstand der Überschrift nach oben.
-  // Im Safari-Tab reicht wenig, dort gibt es kein Band.
+  // Im Safari-Tab reicht wenig (kein Band, keine Safe-Area).
   --inhalt-pad-top: 12px;
 }
 
 /**
  * **Nur in der installierten App auf iOS.**
  *
- * iOS 26/27 legt über den oberen Bildschirmrand den Scroll-Edge-Effekt von Liquid Glass – ein
- * Unschärfe-Band bis etwa 95 Punkte ab Oberkante. Text darin wird weich, und es gibt keinen
- * Schalter dagegen (index.html). Vier Anläufe am 22.09.2026 haben gezeigt: Jede LEISTE, die dem
- * Band ausweicht, kostet Platz (Alwin: „klaut zu viel Platz"). Die Antwort ist deshalb keine Leiste
- * mehr, wo es geht: Der Titel steht groß im Inhalt (`GrosseUeberschrift`), beginnt unter dem Band
- * und scrollt mit weg; der Inhalt läuft unter das Band und wird dort weich – wie in nativen Apps.
+ * Die App zeichnet hinter der Statusleiste (`black-translucent`, index.html) – „komplett
+ * transparent", kein Streifen hinter der Uhr. iOS legt über die oberen ~95 pt sein Unschärfe-Band;
+ * Text darin wird weich. Auf Bildschirmen ohne Leiste steht deshalb nichts als die Fläche im Band:
+ * Die Überschrift beginnt unterhalb, Safe-Area (~59) + 36 → Text ab ~100 pt. Beim Scrollen läuft der
+ * Inhalt unter Uhr und Band durch und wird dort weich – native Optik, kein Fehler.
  *
- * `--inhalt-pad-top`: Die Web-Ansicht beginnt unter der Statusleiste (59 pt), das Band endet bei
- * ~95 → 36 px bringen die Oberkante der Überschrift auf ~95 pt, mit ihrer Zeilenhöhe liegt der
- * Text dann knapp darunter.
+ * Leisten (`--bar-pad-top`) folgen der Grundregel oben: Safe-Area, mindestens 20px. Ihr Titel liegt
+ * damit im Band und ist weich wie in v2.25.1 – bis der jeweilige Bildschirm umgebaut ist.
  *
- * `--bar-pad-top`: Bildschirme, die noch eine Leiste mit Titel tragen, rücken dicht unter die
- * Statusleiste (8 px). Ihr Titel liegt im Band und ist weich wie in v2.25.1 – kein Rückschritt,
- * aber bis zu ihrem Umbau nicht das Ziel.
- *
- * `display-mode: standalone` + `-webkit-touch-callout` grenzen beides auf die iOS-App ein.
+ * `display-mode: standalone` + `-webkit-touch-callout` grenzen es auf die iOS-App ein.
  */
 @media (display-mode: standalone) {
   @supports (-webkit-touch-callout: none) {
     :root {
-      --bar-pad-top: 8px;
-      --inhalt-pad-top: 36px;
+      --inhalt-pad-top: calc(var(--sat, env(safe-area-inset-top, 0px)) + 36px);
     }
   }
 }
