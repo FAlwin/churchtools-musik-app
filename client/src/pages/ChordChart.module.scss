@@ -11,6 +11,8 @@
   // Min. 20px oben (siehe NavBar): fängt Safari-Tab (env=0) + kurzzeitiges Safe-Area-Zurücksetzen ab.
   padding-top: max(20px, var(--sat, env(safe-area-inset-top, 0px)));
   background: var(--nav-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--hair);
   flex-shrink: 0;
 }
@@ -751,6 +753,8 @@
   // 42px auf Geräten ohne Strich. (Wert beim Feinschliff festgelegt.)
   padding-bottom: max(42px, calc(env(safe-area-inset-bottom) + 28px));
   background: var(--nav-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid var(--hair);
   flex-shrink: 0;
 }

@@ -2,6 +2,8 @@
   display: flex;
   align-items: stretch;
   background: var(--nav-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid var(--hair);
   flex-shrink: 0;
   // Abstand der Symbole über dem Home-Strich. ~54px auf dem iPhone (Safe-Area 34px + 20px),

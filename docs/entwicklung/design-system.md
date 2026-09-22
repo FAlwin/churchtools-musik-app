@@ -32,7 +32,7 @@ am Ende dieses Dokuments.
 | `--r-card` / `--r-tile` / `--r-ctrl` / `--r-dialog` | **Rundungen** (12 / 10 / 8 / 14 px): Karten, Kacheln, Bedienelemente, Dialoge – keine nackten Pixelwerte in neuen Komponenten                               |
 | `--seg-on` / `--track-off`                          | aktives Segment / Toggle-Schiene                                                                                                                            |
 | `--scrim`                                           | Overlay hinter Sheets/Dialogen                                                                                                                              |
-| `--nav-bg` / `--shadow`                             | Leisten (deckend, seit 21.09.2026 ohne Blur) / Karten-Schatten                                                                                              |
+| `--nav-bg` / `--shadow`                             | Leisten (Blur) / Karten-Schatten                                                                                                                            |
 | `--ui`                                              | System-Schriftfamilie (kein Web-Font)                                                                                                                       |
 | `--kb`                                              | **Höhe der iOS-Tastatur** – wird von `hooks/useOverlayKeyboardInset` am `visualViewport` gemessen (nur auf Dialog-Overlays gesetzt, siehe Regel unten)      |
 | `--sat`                                             | **stabile iOS-Safe-Area oben** – Ausnahme: wird in `client/src/main.tsx` per verstecktem Probe-Element **in JS gemessen**, steht NICHT in `_variables.scss` |

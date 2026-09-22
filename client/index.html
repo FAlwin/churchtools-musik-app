@@ -9,19 +9,27 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#2563EB" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
     <!--
-      VERSUCH (21.09.2026, iOS 27): Bis hierher stand `black-translucent` – die App zeichnete also
-      HINTER der Statusleiste, und die Safe-Area oben hielt den Titel frei. Unter iOS 27 legt das
-      System genau über diesen überlappenden Bereich eine Glasfläche: Die Kopfleiste sieht milchig
-      aus, obwohl bei uns keine Unschärfe mehr im Spiel ist (alle `backdrop-filter` der Leisten sind
-      raus, gemeldet blieb es trotzdem). Mit `default` behält iOS den Streifen oben selbst und unser
-      Inhalt beginnt darunter – dann gibt es nichts mehr zu überlagern.
-      Nebenwirkung: `env(safe-area-inset-top)` wird damit 0, die Kopfleiste fällt auf ihre
-      Mindesthöhe von 20 px zurück (dafür ist sie gebaut, siehe NavBar.module.scss).
-      Wenn das nichts bringt, ist der nächste Kandidat die `theme-color` – zurückstellen ist eine Zeile.
+      iOS 26/27 und die Kopfzeile (21./22.09.2026, gemeldet von Alwin mit Screenshots):
+      Seit iOS 26 legt das System über den Bereich HINTER der Statusleiste den „Scroll-Edge-Effekt"
+      von Liquid Glass – ein Unschärfe-Band, das ein, zwei Zeilen unter der Statusleiste ausläuft;
+      iOS 27 hat es deutlich kräftiger gemacht. Jede Web-App, die mit `black-translucent` +
+      `viewport-fit=cover` unter der Statusleiste zeichnet, bekommt dort verschmierten Text. Es gibt
+      keinen Schalter dagegen (kein CSS, kein Meta), und `env(safe-area-inset-top)` wächst nicht mit.
+      Der einzige Hebel: dort nichts mehr hinzeichnen. Mit `default` rückt iOS die Web-Ansicht unter
+      eine deckende Statusleiste, die es aus `theme-color` färbt – deshalb steht die je Farbschema in
+      der Farbe unserer Kopfleiste (hell: Weiß; dunkel: die Kartenfarbe, die die Leiste über dem
+      Seitenhintergrund ergibt), sonst säße ein blauer Balken über einer grauen Leiste.
+      `viewport-fit=cover` bleibt: Es wird für den unteren Rand (Home-Indikator) weiter gebraucht.
+      Folge: `env(safe-area-inset-top)` ist in der installierten App jetzt 0, die Kopfzeile fällt auf
+      ihre Mindesthöhe (20 px, NavBar.module.scss) zurück. Die Angabe wird beim Hinzufügen zum
+      Home-Bildschirm gelesen – eine bestehende Verknüpfung zeigt die Änderung erst nach Löschen und
+      Neu-Hinzufügen, und der Service Worker muss vorher die neue Startseite haben.
+      Quellen: dozzle#5222, vcsudoku#38, hypersweeper#145, ioBroker.aura#662 (alle 2026).
     -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1e2a35" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!-- Name, den iOS beim „Zum Home-Bildschirm" vorschlägt -->
     <meta name="apple-mobile-web-app-title" content="Churchtools Musik App" />

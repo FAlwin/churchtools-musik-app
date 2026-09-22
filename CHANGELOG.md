@@ -7,16 +7,21 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
-### Geändert
+### Behoben
 
-- **Die Leisten sind deckend statt milchig.** Kopfzeile, Tab-Leiste sowie Kopf und Fuß der
-  Chart-Ansicht waren halbdurchsichtig und überließen den Rest der Unschärfe des Betriebssystems.
-  Unter **iOS 27** sah das fahl aus (Alwin am 21.09.2026 mit Screenshots gemeldet, aus der
-  installierten App heraus). Unsere Stile hatten sich seit v2.24.1 nicht geändert – die Änderung kam
-  von außen. Der neue Farbwert ist genau das, was die alte Leiste über dem Seitenhintergrund ergab,
-  im Dunkelmodus praktisch die Kartenfarbe: Die Anmutung bleibt, die Abhängigkeit von der
-  System-Darstellung ist weg. Die leichte Abdunklung **hinter** Dialogen und Fenstern bleibt, die ist
-  davon nicht betroffen.
+- **Verschmierte Kopfzeile in der installierten App unter iOS 26/27.** Titel und Knöpfe im oberen
+  Bereich wirkten weich und doppelt, der Rest der Seite war scharf (Alwin, 21./22.09.2026, mit
+  Screenshots; nur unsere App, andere nicht). Ursache ist nicht unser Stil, sondern das System: Seit
+  iOS 26 legt Liquid Glass ein Unschärfe-Band über den Bereich hinter der Statusleiste, unter iOS 27
+  deutlich kräftiger – und unsere App zeichnete dort ihre Kopfzeile hin (`black-translucent` +
+  `viewport-fit=cover`). Einen Schalter dagegen gibt es nicht. Die App beginnt jetzt **unter** einer
+  deckenden Statusleiste, die iOS in der Farbe unserer Kopfzeile färbt (je Farbschema); der Titel
+  rückt damit aus dem Band heraus. Die Themenfarbe im Manifest folgt derselben Farbe statt Blau.
+  **Wer die App schon auf dem Home-Bildschirm hat, sieht die Änderung erst nach Löschen und
+  Neu-Hinzufügen** – iOS liest die Angabe beim Installieren. Dasselbe Problem haben in diesen Wochen
+  viele Web-Apps behoben (u. a. dozzle#5222, vcsudoku#38, ioBroker.aura#662); der Weg ist der gleiche.
+  Ein erster Versuch, die eigene Milchglas-Optik der Leisten zu entfernen, war eine Fehldiagnose und
+  ist zurückgenommen – die Leisten sehen aus wie in v2.25.1.
 
 ## [2.25.1] – 2026-09-21
 
