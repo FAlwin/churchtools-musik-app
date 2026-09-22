@@ -5,6 +5,19 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+### Geändert
+
+- **Die Leisten sind deckend statt milchig.** Kopfzeile, Tab-Leiste sowie Kopf und Fuß der
+  Chart-Ansicht waren halbdurchsichtig und überließen den Rest der Unschärfe des Betriebssystems.
+  Unter **iOS 27** sah das fahl aus (Alwin am 21.09.2026 mit Screenshots gemeldet, aus der
+  installierten App heraus). Unsere Stile hatten sich seit v2.24.1 nicht geändert – die Änderung kam
+  von außen. Der neue Farbwert ist genau das, was die alte Leiste über dem Seitenhintergrund ergab,
+  im Dunkelmodus praktisch die Kartenfarbe: Die Anmutung bleibt, die Abhängigkeit von der
+  System-Darstellung ist weg. Die leichte Abdunklung **hinter** Dialogen und Fenstern bleibt, die ist
+  davon nicht betroffen.
+
 ## [2.25.1] – 2026-09-21
 
 ### Behoben

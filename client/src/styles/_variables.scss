@@ -34,7 +34,13 @@
   --track-off: #d1d5db; // Toggle-Schiene (aus)
   --scrim: rgba(15, 22, 28, 0.5); // Overlay hinter Sheets/Dialogen
 
-  --nav-bg: rgba(255, 255, 255, 0.9); // Header / Tab-Bar / Footer (mit Blur)
+  // Header / Tab-Bar / Chart-Kopf und -Fuß. **Deckend, kein Milchglas** (21.09.2026): Die Leisten
+  // waren halbdurchsichtig und überließen den Rest der Unschärfe des Betriebssystems. Unter iOS 27
+  // sah das fahl aus – gemeldet von Alwin, mit Screenshots, und unsere Stile hatten sich seit
+  // v2.24.1 nicht geändert. Was das System zeichnet, können wir nicht prüfen; deckend schon.
+  // Der Wert ist genau das, was die alte Leiste über dem Seitenhintergrund ergab (0,9 × Weiß +
+  // 0,1 × #eef1f6 = #fdfefe) – also dieselbe Anmutung, nur ohne Abhängigkeit von iOS.
+  --nav-bg: #ffffff;
   --shadow: 0 1px 2px rgba(17, 24, 39, 0.04); // Karten: kaum Schatten, der Rand trägt
   --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
@@ -70,7 +76,10 @@ html[data-theme='dark'] {
   --seg-on: #3a4d5e;
   --track-off: #3a4856;
 
-  --nav-bg: rgba(32, 45, 58, 0.85); // Leisten heller als die Basis → klar abgesetzt
+  // Leisten heller als die Basis → klar abgesetzt. Deckend, siehe hell.
+  // 0,85 × rgb(32,45,58) + 0,15 × #0f1822 ergibt #1d2a36 – praktisch die Kartenfarbe `--surface2`,
+  // deshalb genau die. Die Leisten sitzen damit auf demselben Ton wie Karten und Listen.
+  --nav-bg: #1e2a35;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 

@@ -12,8 +12,6 @@
   // env() bleibt als Fallback, solange `--sat` noch nicht gesetzt ist.
   padding-top: max(20px, var(--sat, env(safe-area-inset-top, 0px)));
   background: var(--nav-bg);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--hair);
   flex-shrink: 0;
   position: relative;
