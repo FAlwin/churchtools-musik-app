@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Service } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
-import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
 import { Segment } from '../components/Segment';
 import { Icon } from '../components/icons';
@@ -11,7 +10,6 @@ import { useToast } from '../hooks/useToast';
 import { usePastServices } from '../hooks/useServices';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useOfflineServices } from '../hooks/useOfflineServices';
-import { useEinklappenderTitel } from '../hooks/useEinklappenderTitel';
 import { GrosseUeberschrift } from '../components/GrosseUeberschrift';
 import { heuteIso } from '../utils/heute';
 import { saveServiceOffline } from '../services/offline';
@@ -80,8 +78,6 @@ export function Agenda({
   const online = useOnlineStatus();
   const offlineReg = useOfflineServices();
   const { toast, showToast } = useToast();
-  // Große Überschrift im Inhalt, die beim Hochschieben in die Leiste klappt (iOS-Muster).
-  const { refUeberschrift, eingeklappt } = useEinklappenderTitel();
 
   // Vergangene Gottesdienste werden live geladen → ohne Netz nicht verfügbar. War man auf
   // „Vergangene" und geht offline, zurück auf „Kommende" (das Segment graut „Vergangene" aus).
@@ -217,10 +213,8 @@ export function Agenda({
 
   return (
     <Screen>
-      <NavBar title="Termine" titelSichtbar={eingeklappt} />
-
       <Scroll onRefresh={tab === 'upcoming' ? onRetry : () => pastQuery.refetch()}>
-        <GrosseUeberschrift innerRef={refUeberschrift}>Termine</GrosseUeberschrift>
+        <GrosseUeberschrift>Termine</GrosseUeberschrift>
         <Segment
           className={styles.segWrap}
           value={tab}

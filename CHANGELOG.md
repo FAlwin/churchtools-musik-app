@@ -38,24 +38,18 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   eine Quelle**, abgesichert durch Tests.
 
   Weil das Band rund 35 Punkte unter die Statusleiste ausläuft, lag die **Oberkante des Titels**
-  auch danach noch knapp darin. Mehr Abstand half, kostete aber 36 Punkte Höhe – „viel zu tief,
-  nimmt zu viel Platz weg". Deshalb gehen die Termine jetzt den Weg, den iOS selbst geht und den
-  Alwin aus WhatsApp kennt: **Der Titel steht groß im Inhalt und klappt beim Hochschieben klein in
-  die Leiste.** Im Band liegen dann nur noch die ruhige Fläche der Leiste und ihre Symbole, der
-  Titel darunter ist scharf, und weil er zum Inhalt gehört, gibt er seinen Platz beim Scrollen
-  zurück. Die Leiste rückt dafür in der iOS-App dicht unter die Statusleiste. Umschalter
-  „Kommende / Vergangene" ist mit in den Inhalt gewandert und scrollt ebenfalls weg.
-
-  Der **eingeklappte** Titel lag zunächst selbst noch mit der Oberkante im Band („am oberen Rand
-  immer noch unscharf"). Deshalb wächst die Leiste in der iOS-App beim Einklappen um 24 Punkte und
-  rückt den kleinen Titel an ihren unteren Rand – gemessen liegt seine Oberkante damit zehn Punkte
-  unter der Bandkante. Im Ruhezustand bleibt die Leiste flach; die Punkte kommen nur beim Scrollen
-  dazu, wie es iOS-Apps auch tun. Damit das Wachsen nicht flattert (Leiste wächst, Inhalt rutscht,
-  Überschrift taucht auf, klappt aus, Leiste schrumpft …), klappt der Titel erst aus, wenn die
-  Überschrift zu 70 Prozent wieder zu sehen ist – dieser Weg ist länger als das Wachstum.
+  auch danach noch knapp darin. Jeder Versuch, dem Band mit einer Leiste auszuweichen – mehr Abstand,
+  große Überschrift plus einklappender Titel, wachsende Leiste beim Scrollen – kostete Platz („klaut
+  zu viel Platz"). Die Termine gehen deshalb den Weg, den Alwin vorgeschlagen hat: **oben gar keine
+  Leiste mehr.** Der Titel steht groß im Inhalt und beginnt unter dem Band; der Umschalter
+  „Kommende / Vergangene" steht darunter; beides scrollt mit weg, und der Inhalt läuft beim
+  Hochschieben unter das Band, wo iOS ihn weichzeichnet – so, wie es native Apps auch tun. Welcher
+  Bildschirm offen ist, sagt die Tab-Leiste unten. Null Punkte dauerhaft belegt.
 
   Noch offen und bewusst so: Die **anderen Bildschirme** tragen ihren Titel weiterhin fest in der
-  Leiste und sind dort weich wie in v2.25.1. Sie folgen, wenn das Muster bei den Terminen gefällt.
+  Leiste und sind dort weich wie in v2.25.1. Bildschirme mit Knöpfen oben (Lieder, Detailansichten)
+  brauchen für den Umbau einen Platz für diese Knöpfe – das entscheidet sich, wenn die Termine so
+  gefallen.
 
 ## [2.25.1] – 2026-09-21
 

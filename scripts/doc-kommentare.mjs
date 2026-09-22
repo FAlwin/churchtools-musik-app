@@ -13,12 +13,16 @@
  *
  * Aufruf: `npm run doc-check` – Exit 1, wenn etwas gefunden wird.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 
 const dateien = execSync("git ls-files '*.ts' '*.tsx'", { encoding: 'utf8' })
   .split('\n')
-  .filter(Boolean);
+  .filter(Boolean)
+  // `git ls-files` kennt auch Dateien, die schon gelöscht, aber noch nicht aus dem Index genommen
+  // sind – dann stürzte der Scan mit ENOENT ab und meldete einen Node-Fehler statt eines Befunds
+  // (22.09.2026, nach dem Ausbau eines Hooks). Was auf der Platte fehlt, ist kein Doc-Kommentar.
+  .filter((datei) => existsSync(datei));
 
 const funde = [];
 for (const datei of dateien) {

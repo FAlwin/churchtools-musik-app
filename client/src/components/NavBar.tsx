@@ -38,12 +38,6 @@ interface NavBarProps {
   /** Rückwärtskompatibel: eigener Inhalt links/rechts. */
   left?: ReactNode;
   right?: ReactNode;
-  /**
-   * Für Bildschirme mit **großer Überschrift im Inhalt** (`useEinklappenderTitel`): Der Titel in der
-   * Leiste ist dann nur sichtbar, wenn die Überschrift hochgeschoben wurde. `undefined` = der Titel
-   * steht wie bisher immer da.
-   */
-  titelSichtbar?: boolean;
 }
 
 /** Obere Navigationsleiste im ChurchTools-Stil (weiß/blur, zentrierter Titel). */
@@ -56,10 +50,9 @@ export function NavBar({
   titleChevron,
   left,
   right,
-  titelSichtbar,
 }: NavBarProps) {
   return (
-    <div className={`${styles.nav}${titelSichtbar === true ? ' ' + styles.eingeklappt : ''}`}>
+    <div className={styles.nav}>
       <div className={`${styles.side} ${styles.left}`}>
         {back ? (
           <button className={styles.back} onClick={back}>
@@ -70,12 +63,7 @@ export function NavBar({
           left
         )}
       </div>
-      <div
-        className={`${styles.titles}${titelSichtbar === false ? ' ' + styles.titelVersteckt : ''}`}
-        // Beim Einklappen nur optisch ausblenden: Vorlesen soll der Titel weiterhin, und die
-        // Leiste darf ihre Höhe nicht ändern (sonst ruckelt der Inhalt beim Scrollen).
-        aria-hidden={undefined}
-      >
+      <div className={styles.titles}>
         {titleTap ? (
           <button className={styles.titleBtn} onClick={titleTap}>
             <span className={styles.title}>{title}</span>
