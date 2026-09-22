@@ -320,6 +320,17 @@ kommen aus `--inhalt-pad-top` / `--bar-pad-top` (`styles/_variables.scss`), die 
 der Statusleiste (`black-translucent`, `client/index.html`). Der Chart-Kopf (`ChartHeader`) ist noch
 nicht umgebaut. Routing in `App.tsx` über `tab` + `view` (rechteabhängig).
 
+**Abwesenheiten sind terminfein, nicht tagesfein (22.09.2026).** Ein Haken an einem Termin trägt in
+ChurchTools das **Zeitfenster dieses Termins** ein (`startTime`/`endTime`, ISO-Zeitpunkte) – nur so
+lassen sich zwei Termine am selben Tag einzeln abhaken. Ganztägig (`null`) gilt weiter für jeden
+Termin des Tages und ist das, was das Plus (Zeitraum, Urlaub) schreibt. Die Regel steht **einmal**
+in `shared/absences/index.ts` (`decktTermin`, `zeitfensterFuer`), weil App und Server sie beide
+brauchen: die App für die Häkchen, der Server für die Doppel-Erkennung. **Wer ein Feld an
+`NeueAbsence` ergänzt, muss es auch in `neueAbsenceSchema` (`absencesController.ts`) eintragen** –
+zod entfernt Unbekanntes stillschweigend, genau daran ist die Uhrzeit beim ersten Anlauf gescheitert.
+Der Schlüsselmengen-Wächter dort schlägt jetzt an (der frühere konnte bei optionalen Feldern nicht
+fehlschlagen).
+
 **Ein Gerüst für alle Bildschirme: `components/SeitenGeruest.tsx`.** Es setzt `Screen` + optionale
 `NavBar` + `Scroll` + `GrosseUeberschrift` zusammen; `Agenda`, `AllSongs`, `Availability`, `Settings`
 und `Setlist` rendern nur noch Inhalt (`children`) und Schwebendes (`ueberlagerung` – Plus-Knopf,

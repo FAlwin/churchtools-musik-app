@@ -17,13 +17,14 @@ import {
   useUpdateAbsence,
 } from '../hooks/useAvailability';
 import {
-  abwesenheitFuer,
-  deckt,
+  abwesenheitFuerTermin,
   tagKurz,
   uhrzeit,
   wochentagLang,
+  zeitfensterKurz,
   zeitraumKurz,
 } from '../utils/absenceDatum';
+import { decktTermin, zeitfensterFuer } from '@shared/absences/index';
 import { heuteIso } from '../utils/heute';
 import { plusTage, tagImMonat } from '../utils/wochen';
 import { getAbwesenheitenFilter, setAbwesenheitenFilter } from '../utils/devicePrefs';
@@ -98,8 +99,13 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   const [seite, setSeite] = useState<Seite>('termine');
   const [monat, setMonat] = useState(laufend);
   const [frueher, setFrueher] = useState(false);
-  /** Vorgemerkte Häkchen: Tag → gewünschter Zustand (true = abwesend). */
-  const [pending, setPending] = useState<Record<string, boolean>>({});
+  /**
+   * Vorgemerkte Häkchen: **Termin-ID** → gewünschter Zustand (true = abwesend).
+   *
+   * Bis zum 22.09.2026 stand hier der Tag. Damit hingen zwei Termine am selben Tag zusammen – genau
+   * das, was Alwin gestört hat („manchmal hab ich morgens keine Zeit kann aber nachmittags").
+   */
+  const [pending, setPending] = useState<Record<number, boolean>>({});
   /** Vorgemerkt zu löschende Zeiträume (IDs). */
   const [loeschen, setLoeschen] = useState<number[]>([]);
   const [entwurf, setEntwurf] = useState<Entwurf | null>(null);
@@ -157,28 +163,28 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
 
   /* ---------------------------------------------------------------- Häkchen (vorgemerkt) */
 
-  const kasten = (tag: string): Kasten => {
-    const absence = abwesenheitFuer(liste, tag);
+  const kasten = (ev: AbsenceEvent): Kasten => {
+    const absence = abwesenheitFuerTermin(liste, ev);
     const weg = absence !== undefined && loeschen.includes(absence.id);
-    const soll = weg ? false : tag in pending ? pending[tag] : absence !== undefined;
-    return { absence, soll, vorgemerkt: tag in pending || weg };
+    const soll = weg ? false : ev.id in pending ? pending[ev.id] : absence !== undefined;
+    return { absence, soll, vorgemerkt: ev.id in pending || weg };
   };
 
-  const haken = (tag: string): void => {
+  const haken = (ev: AbsenceEvent): void => {
     if (!online) return onToast('Zum Ändern brauchst du Netz.');
-    const a = abwesenheitFuer(liste, tag);
+    const a = abwesenheitFuerTermin(liste, ev);
     if (a && a.startDate !== a.endDate) {
       // Teil eines Zeitraums: entweder die vorgemerkte Löschung zurücknehmen – oder nachfragen.
       if (loeschen.includes(a.id)) setLoeschen((l) => l.filter((id) => id !== a.id));
-      else setFrage({ tag, absence: a });
+      else setFrage({ tag: ev.date, absence: a });
       return;
     }
     const ist = a !== undefined;
-    const soll = tag in pending ? !pending[tag] : !ist;
+    const soll = ev.id in pending ? !pending[ev.id] : !ist;
     setPending((p) => {
       const n = { ...p };
-      if (soll === ist) delete n[tag];
-      else n[tag] = soll;
+      if (soll === ist) delete n[ev.id];
+      else n[ev.id] = soll;
       return n;
     });
   };
@@ -189,14 +195,26 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   };
 
   const speichernAlles = (): void => {
+    /** Zu einer vorgemerkten Termin-ID den Termin selbst – ohne ihn gäbe es kein Zeitfenster. */
+    const terminZu = (id: string): AbsenceEvent | undefined =>
+      alleEvents.find((e) => e.id === Number(id));
     const eintragen = Object.entries(pending)
       .filter(([, soll]) => soll)
-      .map(([tag]) => tag);
+      .map(([id]) => terminZu(id))
+      .filter((ev): ev is AbsenceEvent => ev !== undefined)
+      .map((ev) => {
+        // Ein Haken trägt das Zeitfenster GENAU dieses Termins ein; ohne bekanntes Ende den Tag.
+        const fenster = zeitfensterFuer(ev);
+        return { startDate: ev.date, endDate: ev.date, ...(fenster ?? {}) };
+      });
     const weg = [
       ...loeschen,
       ...Object.entries(pending)
         .filter(([, soll]) => !soll)
-        .map(([tag]) => abwesenheitFuer(liste, tag)?.id)
+        .map(([id]) => {
+          const ev = terminZu(id);
+          return ev && abwesenheitFuerTermin(liste, ev)?.id;
+        })
         .filter((id): id is number => id !== undefined),
     ];
     sichern.mutate(
@@ -278,7 +296,7 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   );
 
   const terminZeile = (ev: AbsenceEvent) => {
-    const k = kasten(ev.date);
+    const k = kasten(ev);
     const a = k.absence;
     const ct = a !== undefined && !a.vonApp;
     const teil = a !== undefined && a.startDate !== a.endDate;
@@ -290,7 +308,9 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
           <span className={styles.sub}>
             {wochentagLang(ev.date)}
             {a && k.soll
-              ? ` · ${a.reason ?? 'Abwesend'}${teil ? ` · ${zeitraumKurz(a)}` : ''}`
+              ? ` · ${a.reason ?? 'Abwesend'}${teil ? ` · ${zeitraumKurz(a)}` : ''}${
+                  zeitfensterKurz(a) ? ` · ${zeitfensterKurz(a)}` : ''
+                }`
               : ''}
           </span>
         </div>
@@ -299,7 +319,7 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
           aria-pressed={k.soll}
           aria-label={`Abwesend – ${ev.name}, ${tagKurz(ev.date)}`}
           disabled={!online || sichern.isPending}
-          onClick={() => haken(ev.date)}
+          onClick={() => haken(ev)}
         >
           <span className={styles.box}>{k.soll ? '✓' : ''}</span>
           Abwesend
@@ -309,7 +329,7 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   };
 
   const abwesenheitZeile = (a: Absence, vergangen: boolean) => {
-    const trifft = vergangen ? [] : alleEvents.filter((e) => deckt(a, e.date));
+    const trifft = vergangen ? [] : alleEvents.filter((e) => decktTermin(a, e));
     return (
       <button
         key={`ab-${a.id}`}
@@ -318,11 +338,22 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
         onClick={() => setEntwurf({ art: 'aendern', absence: a })}
         aria-label={`Abwesenheit ${zeitraumKurz(a)} ${vergangen ? 'ansehen' : 'ändern'}`}
       >
-        {datumKachel(a.startDate, tagKurz(a.startDate).slice(0, 2), a.vonApp ? 'rot' : 'grau')}
+        {/*
+          Die dritte Zeile der Kachel zeigt die Uhrzeit, sobald der Eintrag ein Zeitfenster hat –
+          sonst den Wochentag wie bisher. Seit ein Haken das Fenster des Termins einträgt
+          (22.09.2026), können an einem Tag mehrere Einträge stehen; ohne die Uhrzeit sähen sie
+          gleich aus.
+        */}
+        {datumKachel(
+          a.startDate,
+          zeitfensterKurz(a) ? uhrzeit(a.startTime ?? '') : tagKurz(a.startDate).slice(0, 2),
+          a.vonApp ? 'rot' : 'grau',
+        )}
         <div className={styles.text}>
           <span className={styles.titel}>
             {a.reason ?? 'Abwesend'}
             {a.startDate !== a.endDate ? ` · ${zeitraumKurz(a)}` : ''}
+            {zeitfensterKurz(a) ? ` · ${zeitfensterKurz(a)}` : ''}
           </span>
           <span className={styles.sub}>
             {[

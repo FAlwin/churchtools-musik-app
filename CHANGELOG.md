@@ -7,6 +7,28 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **Mehrere Termine an einem Tag lassen sich einzeln als abwesend markieren.** Alwin am 22.09.2026:
+  „manchmal hab ich morgens keine Zeit kann aber nachmittags und umgekehrt." Bisher trug ein Haken
+  den **ganzen Tag** ein – zwei Termine desselben Tages hingen dadurch zusammen. Jetzt trägt ein
+  Haken das **Zeitfenster genau dieses Termins** ein. ChurchTools kann das: An der Test-Instanz
+  gemessen nimmt es `startTime`/`endTime` an und liefert sie unverändert zurück; ohne sie bleibt ein
+  Eintrag ganztägig. **Bestehendes bleibt gültig** – ganztägige Einträge (Urlaub, alles von früher,
+  alles über das Plus) decken weiterhin jeden Termin des Tages ab. Unter „Einträge" steht die
+  Uhrzeit jetzt mit dabei („Abwesend · 10:00 – 12:00"), sonst sähen zwei Einträge am selben Tag
+  gleich aus.
+
+  Drei Stellen, die dabei aufgefallen sind: Die **Doppel-Erkennung** hätte den zweiten Termin
+  desselben Tages als „schon vorhanden" verschluckt – sie vergleicht jetzt das Zeitfenster mit.
+  Beim **Ändern** eines Eintrags („Abwesenheit ändern") wäre die Uhrzeit verlorengegangen und der
+  Eintrag wieder ganztägig geworden; sie bleibt jetzt erhalten, solange die Tage gleich bleiben. Und
+  die **Eingangsprüfung des Servers** kannte die neuen Felder nicht – zod entfernt Unbekanntes
+  stillschweigend, die App schickte die Uhrzeit also umsonst. Das fiel erst beim Durchklicken auf:
+  Die Tests auf beiden Seiten waren grün, der Bruch lag genau dazwischen. Ein schärferer
+  Compile-Wächter fängt das künftig (der alte konnte bei optionalen Feldern gar nicht anschlagen –
+  nachgestellt und behoben).
+
 ### Behoben
 
 - **Verschmierte Kopfzeile in der installierten App unter iOS 26/27.** Titel und Knöpfe im oberen

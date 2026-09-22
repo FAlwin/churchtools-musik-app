@@ -11,9 +11,9 @@ Termin, **Speichern-Leiste** – nichts wird ohne „Speichern" geschrieben.
 Gruppen-Zuweisung" gewählten Gruppe ist (ECG: Musikteam). Zugriff auf ChurchTools, um nachzusehen.
 
 **Das muss passieren:** Der Tab **Abwesenheiten** ist da (Person mit Schrägstrich). Ein Haken bei einem
-Termin ist nur **vorgemerkt** (blauer Ring) – erst **Speichern** legt in ChurchTools je Tag eine
-Abwesenheit mit Kommentar `[Musikteam]` an, alle Häkchen auf einmal. Ein zweiter Tipp nimmt einen
-Haken zurück.
+Termin ist nur **vorgemerkt** (blauer Ring) – erst **Speichern** legt in ChurchTools **je Termin**
+eine Abwesenheit mit dessen **Uhrzeit** und dem Kommentar `[Musikteam]` an, alle Häkchen auf einmal
+(seit 22.09.2026; vorher ganztägig je Tag). Ein zweiter Tipp nimmt einen Haken zurück.
 
 1. Anmelden, unten auf **Abwesenheiten**. Beim ersten Öffnen erscheint die Einführung (drei Blasen) –
    schließen. Oben der Schalter **Termine | Einträge**, darunter die Monatsleiste mit **Heute**
@@ -185,5 +185,37 @@ noch so.
 - **Betrifft:** `client/src/pages/Availability.tsx`, `client/src/utils/terminFilter.ts`, `client/src/components/TerminArtenManager.tsx`, `client/src/pages/Settings.tsx`, `client/src/utils/devicePrefs.ts`, `server/src/services/siteConfig.ts`
 - **Automatisiert:** überwiegend – `client/src/utils/terminFilter.test.ts` (Suchwort, Reihenfolge, Sonstige, eins-oder-alles, verwaiste Wahl), `client/src/pages/Availability.test.tsx` (Knöpfe, Zahl, eins-oder-alles, Sonstige, Merken, Häkchen übersteht den Wechsel, keine Knöpfe ohne Arten), `client/src/components/TerminArtenManager.test.tsx` (trimmen, halbe Zeile, löschen), `server/src/services/siteConfig.test.ts` (Schema, Rundlauf, doppelte IDs); von Hand bleibt der Weg über den echten Admin-Bereich
 - **Historie:** #400 (20.09.2026), Wunsch Alwin; erster Bau nach Kalender verworfen (bei der ECG ein Kalender für alles)
+
+</details>
+
+### TF-VERF-07 · Zwei Termine an einem Tag einzeln abhaken
+
+**Das brauchst du:** Einen Tag mit **zwei** Terminen in ChurchTools (z. B. Gottesdienst 10:00 und
+Jugendtreff 16:00) und Zugriff auf ChurchTools zum Nachsehen.
+
+**Das muss passieren:** Die beiden Termine sind unabhängig. Ein Haken am Vormittagstermin lässt den
+Nachmittag frei – in ChurchTools steht eine Abwesenheit **mit Uhrzeit**, nicht für den ganzen Tag
+(Wunsch Alwin, 22.09.2026: „manchmal hab ich morgens keine Zeit kann aber nachmittags").
+
+1. Tab **Abwesenheiten**, den Monat mit den beiden Terminen wählen. Beide stehen untereinander, die
+   Datumskachel zeigt links die Uhrzeit.
+2. Beim **ersten** Termin **Abwesend** abhaken → nur dieser bekommt den Haken, der zweite bleibt
+   leer. Unten die Leiste, **Speichern**.
+3. Nach dem Speichern: Der erste Termin ist rot, der zweite **unverändert frei**.
+4. In ChurchTools nachsehen (Personen → dein Profil → Abwesenheiten): Der Eintrag trägt die
+   **Uhrzeit des Termins**, nicht „ganztägig".
+5. Jetzt auch den **zweiten** Termin abhaken und speichern → **zwei** Einträge am selben Tag.
+6. Unter **Einträge** stehen beide getrennt, jeder mit seiner Uhrzeit („Abwesend · 10:00 – 12:00").
+7. **Ganztägig bleibt ganztägig:** Über das **Plus** einen Zeitraum eintragen, der diesen Tag
+   enthält → **beide** Termine zeigen den Haken (ein Urlaub gilt für den ganzen Tag).
+8. Einen Eintrag mit Uhrzeit antippen, nur den **Kommentar** ändern, speichern → die Uhrzeit bleibt
+   erhalten, der zweite Termin ist weiterhin frei.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `shared/absences/index.ts`, `client/src/pages/Availability.tsx`, `client/src/utils/absenceDatum.ts`, `client/src/hooks/useAvailability.ts`, `server/src/services/absences.ts`, `server/src/controllers/absencesController.ts`
+- **Automatisiert:** teilweise – `client/src/utils/absenceDatum.test.ts` (Fenster trennt Vormittag/Nachmittag, ganztägig deckt beides, Grenzen offen), `client/src/pages/Availability.test.tsx` (Haken lässt den zweiten Termin frei), `server/src/services/absences.test.ts` (Doppel-Erkennung mit Fenster, Uhrzeit überlebt eine Änderung); von Hand bleibt, dass ChurchTools die Uhrzeit wirklich speichert und anzeigt
+- **Historie:** Alwin 22.09.2026 („das muss in der logik geändert werden")
 
 </details>

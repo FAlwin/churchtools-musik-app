@@ -51,24 +51,28 @@ const EVENTS: AbsenceEvent[] = [
     name: 'Gottesdienst',
     date: '2026-10-04',
     startDate: '2026-10-04T10:00:00Z',
+    endDate: '2026-10-04T12:00:00Z',
   },
   {
     id: 2,
     name: 'Gottesdienst',
     date: '2026-10-11',
     startDate: '2026-10-11T10:00:00Z',
+    endDate: '2026-10-11T12:00:00Z',
   },
   {
     id: 3,
     name: 'Jugendabend',
     date: '2026-10-16',
     startDate: '2026-10-16T18:00:00Z',
+    endDate: '2026-10-16T20:00:00Z',
   },
   {
     id: 4,
     name: 'Gottesdienst',
     date: '2026-11-01',
     startDate: '2026-11-01T10:00:00Z',
+    endDate: '2026-11-01T12:00:00Z',
   },
 ];
 /** Die Termin-Arten des Admins (#400) – „Jugend" trifft „Jugendabend" über das Suchwort. */
@@ -80,6 +84,8 @@ const EIGENE: Absence = {
   id: 10,
   startDate: '2026-10-11',
   endDate: '2026-10-11',
+  startTime: null,
+  endTime: null,
   comment: 'Reise',
   reason: 'Abwesend',
   reasonId: 1,
@@ -89,6 +95,8 @@ const URLAUB: Absence = {
   id: 11,
   startDate: '2026-10-14',
   endDate: '2026-10-20',
+  startTime: null,
+  endTime: null,
   comment: 'Herbstferien',
   reason: 'Urlaub',
   reasonId: 2,
@@ -98,6 +106,8 @@ const FRUEHER: Absence = {
   id: 12,
   startDate: '2026-07-20',
   endDate: '2026-08-03',
+  startTime: null,
+  endTime: null,
   comment: 'Sommer',
   reason: 'Urlaub',
   reasonId: 2,
@@ -157,7 +167,7 @@ describe('Abwesenheiten – Kopf und Monat', () => {
 });
 
 describe('Abwesenheiten – Häkchen sind vorgemerkt, Speichern schreibt alle', () => {
-  it('ein Haken zeigt die Leiste, schreibt aber noch nichts; Speichern trägt den Tag ein', () => {
+  it('ein Haken zeigt die Leiste, schreibt aber noch nichts; Speichern trägt den Termin ein', () => {
     const { onToast } = zeige();
     expect(leiste()).toBeNull();
     const k = kasten(/Abwesend – Gottesdienst, So, 04\.10\./);
@@ -169,7 +179,19 @@ describe('Abwesenheiten – Häkchen sind vorgemerkt, Speichern schreibt alle', 
 
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
     expect(sichern).toHaveBeenCalledTimes(1);
-    expect(sichern.mock.calls[0][0]).toEqual({ eintragen: ['2026-10-04'], loeschen: [] });
+    // Mit dem ZEITFENSTER des Termins (22.09.2026) – nur so lassen sich zwei Termine am selben Tag
+    // einzeln abhaken.
+    expect(sichern.mock.calls[0][0]).toEqual({
+      eintragen: [
+        {
+          startDate: '2026-10-04',
+          endDate: '2026-10-04',
+          startTime: '2026-10-04T10:00:00Z',
+          endTime: '2026-10-04T12:00:00Z',
+        },
+      ],
+      loeschen: [],
+    });
     // Erfolg meldet die Zahl und räumt auf (der Rückruf kommt von außen → act)
     void act(() => sichern.mock.calls[0][1].onSuccess(1));
     expect(onToast).toHaveBeenCalledWith(expect.stringContaining('1 Änderung gespeichert'));
@@ -497,5 +519,115 @@ describe('Abwesenheiten – Runterziehen zum Aktualisieren', () => {
     });
     expect(anzeigerDeckkraft(container)).toBe('0');
     vi.useRealTimers();
+  });
+});
+
+/**
+ * **Zwei Termine an einem Tag – einzeln abhaken** (Alwin, 22.09.2026: „manchmal hab ich morgens
+ * keine Zeit kann aber nachmittags und umgekehrt. das muss in der logik geändert werden").
+ *
+ * Vorher hing der Haken am TAG: Ein Kästchen abhaken setzte beide Termine des Tages auf abwesend,
+ * weil die Abwesenheit ganztägig war. Jetzt trägt ein Haken das Zeitfenster genau dieses Termins
+ * ein, und nur der zugehörige Termin zeigt den Haken.
+ */
+describe('Abwesenheiten – mehrere Termine am selben Tag', () => {
+  const VORMITTAGS: AbsenceEvent = {
+    id: 21,
+    name: 'Gottesdienst',
+    date: '2026-10-04',
+    startDate: '2026-10-04T10:00:00Z',
+    endDate: '2026-10-04T12:00:00Z',
+  };
+  const NACHMITTAGS: AbsenceEvent = {
+    id: 22,
+    name: 'Jugendtreff',
+    date: '2026-10-04',
+    startDate: '2026-10-04T16:00:00Z',
+    endDate: '2026-10-04T18:00:00Z',
+  };
+
+  beforeEach(() => {
+    events.mockReturnValue({
+      data: [VORMITTAGS, NACHMITTAGS],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+  });
+
+  it('ein Haken am Vormittagstermin lässt den Nachmittag frei', () => {
+    absences.mockReturnValue({ data: [], isLoading: false, isError: false, refetch: vi.fn() });
+    zeige();
+    const vormittags = kasten(/Abwesend – Gottesdienst/);
+    const nachmittags = kasten(/Abwesend – Jugendtreff/);
+
+    fireEvent.click(vormittags);
+
+    expect(vormittags.getAttribute('aria-pressed')).toBe('true');
+    expect(nachmittags.getAttribute('aria-pressed')).toBe('false');
+    expect(leiste()?.textContent).toContain('1 Änderung vorgemerkt');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(sichern.mock.calls[0][0]).toEqual({
+      eintragen: [
+        {
+          startDate: '2026-10-04',
+          endDate: '2026-10-04',
+          startTime: '2026-10-04T10:00:00Z',
+          endTime: '2026-10-04T12:00:00Z',
+        },
+      ],
+      loeschen: [],
+    });
+  });
+
+  it('ein vorhandener Eintrag mit Uhrzeit hakt nur seinen Termin ab', () => {
+    absences.mockReturnValue({
+      data: [
+        {
+          id: 30,
+          startDate: '2026-10-04',
+          endDate: '2026-10-04',
+          startTime: '2026-10-04T16:00:00Z',
+          endTime: '2026-10-04T18:00:00Z',
+          comment: '',
+          reason: 'Abwesend',
+          reasonId: 1,
+          vonApp: true,
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    zeige();
+
+    expect(kasten(/Abwesend – Jugendtreff/).getAttribute('aria-pressed')).toBe('true');
+    expect(kasten(/Abwesend – Gottesdienst/).getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('ein ganztägiger Eintrag gilt weiterhin für beide Termine des Tages', () => {
+    absences.mockReturnValue({
+      data: [
+        {
+          id: 31,
+          startDate: '2026-10-04',
+          endDate: '2026-10-04',
+          startTime: null,
+          endTime: null,
+          comment: '',
+          reason: 'Urlaub',
+          reasonId: 2,
+          vonApp: true,
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    zeige();
+
+    expect(kasten(/Abwesend – Gottesdienst/).getAttribute('aria-pressed')).toBe('true');
+    expect(kasten(/Abwesend – Jugendtreff/).getAttribute('aria-pressed')).toBe('true');
   });
 });

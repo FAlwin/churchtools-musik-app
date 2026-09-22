@@ -136,6 +136,7 @@ const events = [
   {
     id: EVENT_ID,
     startDate: isoInDays(2),
+    endDate: isoInDays(2, 12),
     name: 'Gottesdienst (Stub)',
     // `title` wie bei ChurchTools gemessen (20.09.2026). Der Termin-Filter im Tab „Abwesenheiten"
     // (#400) hängt NICHT daran – er liest den Namen –, aber so sieht die echte Antwort aus.
@@ -150,8 +151,23 @@ const events = [
   {
     id: EVENT_ID + 1,
     startDate: isoInDays(4),
+    endDate: isoInDays(4, 12),
     name: 'Gebetsabend (Stub)',
     calendar: { domainIdentifier: '2', title: 'Gebetsabend' },
+    appointmentId: null,
+  },
+  /**
+   * **Ein zweiter Termin am SELBEN Tag** (22.09.2026). Seit ein Haken im Tab „Abwesenheiten" das
+   * Zeitfenster des Termins einträgt, ist genau das der interessante Fall: morgens absagen, nachmittags
+   * zusagen. Auch dieser Termin hat bewusst keinen Ablauf, damit die bestehenden E2E-Wege unberührt
+   * bleiben.
+   */
+  {
+    id: EVENT_ID + 2,
+    startDate: isoInDays(4, 16),
+    endDate: isoInDays(4, 18),
+    name: 'Jugendtreff (Stub)',
+    calendar: { domainIdentifier: '3', title: 'Jugend' },
     appointmentId: null,
   },
 ];
@@ -181,10 +197,10 @@ const agenda = {
  * Datum RELATIV zu heute. Die App fragt Termine im Fenster -7d…+42d ab – ein festes Datum fiele je
  * nach Testzeitpunkt heraus und der Termin würde nie erscheinen (genau das ist beim Bauen passiert).
  */
-function isoInDays(days) {
+function isoInDays(days, stunde = 10) {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  d.setHours(10, 0, 0, 0);
+  d.setHours(stunde, 0, 0, 0);
   return d.toISOString();
 }
 
@@ -401,6 +417,9 @@ const server = createServer((req, res) => {
           personId,
           startDate: neu.startDate,
           endDate: neu.endDate,
+          // Uhrzeiten wie ChurchTools: null = ganztägig (an der Test-Instanz gemessen, 22.09.2026).
+          startTime: neu.startTime ?? null,
+          endTime: neu.endTime ?? null,
           comment: neu.comment ?? null,
           absenceReason: grundZu(neu.absenceReasonId),
         };

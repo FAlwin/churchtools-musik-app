@@ -17,6 +17,16 @@ const isoTag = z.string().regex(absences.ISO_TAG, 'Datum als JJJJ-MM-TT.');
 const neueAbsenceSchema = z.object({
   startDate: isoTag,
   endDate: isoTag,
+  /**
+   * **Zeitfenster** (22.09.2026) – ISO-Zeitpunkte, wie ChurchTools sie erwartet.
+   *
+   * Sie haben hier gefehlt, und zod **entfernt** unbekannte Felder stillschweigend: Die App schickte
+   * die Uhrzeit des Termins, der Eintrag wurde trotzdem ganztägig, und beide Termine des Tages
+   * hingen wieder zusammen. Aufgefallen ist das erst beim Durchklicken – Tests auf beiden Seiten
+   * waren grün, weil der Bruch genau dazwischen lag.
+   */
+  startTime: z.string().datetime().optional(),
+  endTime: z.string().datetime().optional(),
   comment: z.string().trim().max(200).optional(),
   /** Grund aus `GET /api/absences/reasons`; ChurchTools lehnt eine unbekannte ID selbst ab. */
   reasonId: z.coerce.number().int().positive().optional(),
@@ -26,6 +36,30 @@ const _zodSubsetOfType = (a: z.infer<typeof neueAbsenceSchema>): NeueAbsence => 
 const _typeSubsetOfZod = (n: NeueAbsence): z.infer<typeof neueAbsenceSchema> => n;
 void _zodSubsetOfType;
 void _typeSubsetOfZod;
+/**
+ * **Und ein Wächter, der auch bei OPTIONALEN Feldern anschlägt** (22.09.2026).
+ *
+ * Die beiden Zuweisungen oben können ein neues optionales Feld nicht bemerken: Ein Typ mit einem
+ * zusätzlichen `feld?: x` bleibt in beide Richtungen zuweisbar. Genau so sind `startTime`/`endTime`
+ * durchgerutscht. `Required<…>` macht alle Felder verbindlich – dann ist die Schlüsselmenge beider
+ * Seiten vergleichbar, und ein vergessenes Feld ist ein Übersetzungsfehler.
+ */
+type NurInTyp = Exclude<
+  keyof Required<NeueAbsence>,
+  keyof Required<z.infer<typeof neueAbsenceSchema>>
+>;
+type NurInSchema = Exclude<
+  keyof Required<z.infer<typeof neueAbsenceSchema>>,
+  keyof Required<NeueAbsence>
+>;
+/**
+ * Die Constraint ist der eigentliche Wächter: Bleibt ein Feldname übrig, verletzt er `extends never`
+ * und der Übersetzer bricht ab. (Erster Versuch war eine Zuweisung an ein Tupel – wertlos, weil
+ * `undefined as never` in jeden Typ passt. Nachgestellt: ein entferntes Feld blieb unbemerkt.)
+ */
+type OhneLuecke<T extends never> = T;
+const _luecken: [OhneLuecke<NurInTyp>, OhneLuecke<NurInSchema>] = [] as never;
+void _luecken;
 
 const fensterSchema = z.object({ from: isoTag.optional(), to: isoTag.optional() });
 /** Termine: nur ein `to` – wie weit voraus, entscheidet die Monatsansicht der App; der Service deckelt auf ein Jahr. */
