@@ -30,6 +30,19 @@ export function useSettings() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    // Die `theme-color` mitziehen – sie färbt unter iOS den Streifen, den das System über der App
+    // malt (Statusleiste; siehe index.html). Sie MUSS dem tatsächlich angewandten Theme folgen und
+    // darf NICHT an `prefers-color-scheme` hängen: Wer die App auf Hell stellt, während das Telefon
+    // dunkel ist, bekäme sonst einen dunklen Streifen über einer weißen App – genau die Kante, um
+    // die es hier geht (gemessen am 22.09.2026, bevor es jemandem auffiel).
+    // Der Wert wird aus `--nav-bg` GELESEN statt hier noch einmal hingeschrieben: eine Farbe, eine
+    // Quelle. Wer die Leisten umfärbt, ändert den Streifen automatisch mit.
+    const balken = getComputedStyle(document.documentElement).getPropertyValue('--nav-bg').trim();
+    if (balken) {
+      document
+        .querySelectorAll('meta[name="theme-color"]')
+        .forEach((m) => m.setAttribute('content', balken));
+    }
   }, [theme]);
 
   const toggleWake = () => setWakePref((v) => !v);

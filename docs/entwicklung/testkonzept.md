@@ -163,6 +163,13 @@ Genau in diesem Bereich lagen die teuersten Fehler dieses Projekts – #186, #21
     erste der Liste) und die Rückfrage vor dem Löschen fremder Einträge. Von Hand bleibt, dass die
     Abwesenheit wirklich in ChurchTools steht, nach dem Ändern genau EIN Eintrag übrig ist und der
     Grund dabei nicht kippt (TF-VERF-01…06).
+  - **iOS-Systemleiste (22.09.2026):** `hooks/useSettings.test` hält die Farbe der Systemleiste am
+    **Theme der App** fest, nicht am Gerät. Der geprüfte Fall ist bewusst der unbequeme: App auf
+    Hell, Gerät auf Dunkel – eine `prefers-color-scheme`-Medienabfrage hätte dort einen dunklen
+    Balken über eine weiße App gemalt. Geprüft wird außerdem, dass der Wert aus `--nav-bg` GELESEN
+    wird (eine Quelle) und beim Umschalten mitzieht. Gegenproben: ohne das Nachziehen fallen alle
+    drei Fälle, mit dem alten Weg über das Gerät ebenfalls.
+
   - **Code-Check-Runde (21.09.2026) – die Tests, die eine Regel an EINER Stelle festnageln:**
     `utils/heute.test` (Client) stellt die Zeitzone auf **Europe/Berlin** und prüft, dass 22:30 UTC
     schon der nächste Tag ist – in UTC wären lokaler und UTC-Weg gleich, der Test wäre auf der CI

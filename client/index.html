@@ -25,10 +25,15 @@
       ihre Mindesthöhe (20 px, NavBar.module.scss) zurück. Die Angabe wird beim Hinzufügen zum
       Home-Bildschirm gelesen – eine bestehende Verknüpfung zeigt die Änderung erst nach Löschen und
       Neu-Hinzufügen, und der Service Worker muss vorher die neue Startseite haben.
+      Der Wert hier ist nur der STARTWERT für den ersten Bildaufbau. Danach zieht ihn
+      `hooks/useSettings.ts` bei jedem Themenwechsel aus `--nav-bg` nach – bewusst KEINE
+      `prefers-color-scheme`-Medienabfrage: Die App hat eine eigene Themenwahl (Hell/Dunkel/System),
+      und wer sie auf Hell stellt, während das Telefon dunkel ist, bekäme sonst einen dunklen
+      Streifen über einer weißen App. Die Farbe selbst steht einmal, in `--nav-bg`; die Grundfläche
+      `html, body` (main.scss) nutzt dieselbe Variable.
       Quellen: dozzle#5222, vcsudoku#38, hypersweeper#145, ioBroker.aura#662 (alle 2026).
     -->
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1e2a35" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!-- Name, den iOS beim „Zum Home-Bildschirm" vorschlägt -->
@@ -88,7 +93,8 @@
         var msg = document.getElementById('boot-msg');
         var btn = document.getElementById('boot-reload');
         if (!msg || !btn) return; // App läuft längst
-        msg.textContent = 'Das dauert länger als üblich. Bei bestehender Verbindung hilft Neu laden.';
+        msg.textContent =
+          'Das dauert länger als üblich. Bei bestehender Verbindung hilft Neu laden.';
         btn.style.display = '';
         btn.addEventListener('click', function () {
           location.reload();

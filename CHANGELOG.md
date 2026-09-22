@@ -27,6 +27,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Chart-Ansicht. Die Milchglas-Optik der Leisten entfällt damit; die leichte Abdunklung hinter
   Dialogen bleibt.
 
+  Danach blieb noch ein **Farbwechsel mit weichem Verlauf** direkt unter der Dynamic Island: Der
+  Streifen, den iOS über der App malt, zeigte die Grundfläche des Dokuments – und die trug den
+  **grauen Seitenhintergrund**, während die Kopfleiste darunter weiß ist. Die Grundfläche trägt
+  jetzt dieselbe Farbe wie die Leisten; im Inneren der App ändert das nichts, weil jeder Bildschirm
+  seinen Hintergrund selbst setzt. **Dabei fiel ein zweiter Fehler auf, bevor er jemandem begegnet
+  ist:** Die Farbe für die Systemleiste hing an der Einstellung des GERÄTS. Wer die App auf Hell
+  stellt, während das Telefon dunkel steht, hätte einen dunklen Balken über einer weißen App
+  bekommen. Sie folgt jetzt dem Theme der App und wird aus der Leistenfarbe gelesen – **eine Farbe,
+  eine Quelle**, abgesichert durch Tests.
+
 ## [2.25.1] – 2026-09-21
 
 ### Behoben

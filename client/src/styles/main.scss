@@ -12,7 +12,21 @@
 html,
 body {
   height: 100%;
-  background: var(--bg);
+  /**
+   * **Die Grundfläche trägt die LEISTEN-Farbe, nicht den Seitenhintergrund.**
+   *
+   * Sichtbar ist sie im Inneren der App nie: Jeder `.screen` liegt mit `inset: 0` darüber und setzt
+   * `var(--bg)` selbst (Screen.module.scss). Wo sie aber sehr wohl zu sehen ist: in den Bereichen
+   * AUSSERHALB der Web-Ansicht, die iOS malt – oben der Statusleisten-Streifen, unten der Rand am
+   * Home-Strich. Dort grenzen unsere Leisten an, und beide sind `--nav-bg`.
+   *
+   * Vorher stand hier `--bg` (grau). Unter iOS 26/27 ergab das direkt unter der Dynamic Island einen
+   * **Farbwechsel mit weichem Verlauf**: iOS zeigte oben das Grau der Grundfläche, unsere Kopfleiste
+   * darunter war weiß (Alwin, 22.09.2026, mit Screenshot – der dritte Anlauf an dieser Kante).
+   * Zusammen mit `theme-color` (index.html) und `--nav-bg` sind das jetzt drei Stellen mit
+   * **derselben Farbe** – wer eine ändert, ändert alle drei.
+   */
+  background: var(--nav-bg);
   color: var(--text);
   font-family: var(--ui);
   overflow: hidden;

@@ -40,7 +40,9 @@
   // #fdfefe statt #ffffff: zwei Stufen daneben, sichtbar als feiner Strich quer über den Schirm
   // (Alwin, 22.09.2026). Die Unschärfe kam dazu, weil sie den Inhalt hinter der Leiste abtastet –
   // beim Scrollen wanderte der Ton der Leiste, der iOS-Streifen blieb stehen.
-  // **Wer diesen Wert ändert, ändert die `theme-color` in `client/index.html` mit.**
+  // **Dies ist die eine Quelle der Farbe.** Die Grundfläche `html, body` (main.scss) nutzt dieselbe
+  // Variable, und die `theme-color` für iOS wird in `hooks/useSettings.ts` daraus GELESEN – hier
+  // ändern genügt also.
   --nav-bg: #ffffff;
   --shadow: 0 1px 2px rgba(17, 24, 39, 0.04); // Karten: kaum Schatten, der Rand trägt
   --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
