@@ -11,7 +11,18 @@
     />
     <meta name="theme-color" content="#2563EB" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!--
+      VERSUCH (21.09.2026, iOS 27): Bis hierher stand `black-translucent` – die App zeichnete also
+      HINTER der Statusleiste, und die Safe-Area oben hielt den Titel frei. Unter iOS 27 legt das
+      System genau über diesen überlappenden Bereich eine Glasfläche: Die Kopfleiste sieht milchig
+      aus, obwohl bei uns keine Unschärfe mehr im Spiel ist (alle `backdrop-filter` der Leisten sind
+      raus, gemeldet blieb es trotzdem). Mit `default` behält iOS den Streifen oben selbst und unser
+      Inhalt beginnt darunter – dann gibt es nichts mehr zu überlagern.
+      Nebenwirkung: `env(safe-area-inset-top)` wird damit 0, die Kopfleiste fällt auf ihre
+      Mindesthöhe von 20 px zurück (dafür ist sie gebaut, siehe NavBar.module.scss).
+      Wenn das nichts bringt, ist der nächste Kandidat die `theme-color` – zurückstellen ist eine Zeile.
+    -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!-- Name, den iOS beim „Zum Home-Bildschirm" vorschlägt -->
     <meta name="apple-mobile-web-app-title" content="Churchtools Musik App" />
     <title>Churchtools Musik App</title>
