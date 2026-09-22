@@ -78,6 +78,17 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   ohne etwas zu verzögern. Bei „Lieder" fiel beides nicht auf, weil die Liedersammlung groß ist und
   der Abruf ohnehin dauert.
 
+  **Der Hinweis zum Ziehen lag außerdem im Unschärfe-Band** – aber nur auf manchen Bildschirmen.
+  Alwin am 22.09.2026 mit zwei Screenshots: „bei termine ist es falsch und bei lieder richtig." Der
+  Anzeiger war das erste Element im Scroll-Bereich und so hoch wie die Zugstrecke, saß also am
+  oberen Bildschirmrand. Dass er bei den Liedern trotzdem gut aussah, war Zufall: Diese Liste ist
+  lang genug zum Scrollen, deshalb legt iOS beim Ziehen sein **eigenes** Gummiband darüber und schob
+  ihn aus dem Band heraus. Bei den Terminen mit einem einzigen Eintrag gibt es nichts zu scrollen,
+  das Gummiband bleibt aus – und der Hinweis klebte oben in der Unschärfe. Er hängt jetzt über dem
+  Scroll-Bereich an **fester Stelle**, im selben Abstand wie die Überschrift (gemessen: 95–143 px
+  statt 0–95 px), und wird erst voll sichtbar, wenn die Überschrift weit genug weggeschoben ist.
+  Verschoben wird nur noch der Inhalt – so machen es native Apps auch.
+
   **Damit das nicht wiederkommt, gibt es den Kopf jetzt nur noch einmal:** `SeitenGeruest` setzt
   Leiste, große Überschrift, Scrollbereich und Neuladen zusammen, und alle fünf Bildschirme (Termine,
   Lieder, Abwesenheiten, Mehr, Ablauf) nutzen es. Vorher baute jede Seite dasselbe Muster selbst –

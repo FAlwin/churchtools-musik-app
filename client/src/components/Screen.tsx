@@ -21,6 +21,12 @@ export function Screen({ children, className, style }: ScreenProps) {
 interface ScrollProps {
   children: ReactNode;
   /**
+   * Sitzt über diesem Bereich eine Leiste (Detailansichten mit Zurück-Pfeil)? Dann hält die Leiste
+   * den Abstand zum Unschärfe-Band schon, und der Zug-Anzeiger rückt dicht an den Inhalt – sonst
+   * läge er mitten in der Leiste.
+   */
+  unterLeiste?: boolean;
+  /**
    * Optional: aktiviert „Runterziehen zum Aktualisieren".
    *
    * **Muss das Versprechen des Abrufs zurückgeben** – daran hängt, wie lange die Ladeanzeige steht.
@@ -44,6 +50,9 @@ interface ScrollProps {
  * kennt sich selbst, die Tab-Leiste weiß nichts von ihm.
  */
 const ZUM_ANFANG = 'app:zum-anfang';
+
+/** Höhe des Zug-Anzeigers – so weit rückt der Inhalt während des Ladens nach unten. */
+const PULL_HOEHE = 48;
 
 /** Von der Tab-Leiste gerufen, wenn der schon aktive Tab noch einmal getippt wird. */
 export function scrolleZumAnfang(): void {
@@ -75,7 +84,7 @@ function useZumAnfang(ref: React.RefObject<HTMLDivElement | null>) {
 }
 
 /** Scrollbarer Bereich innerhalb eines Screens. Mit onRefresh: Pull-to-Refresh. */
-export function Scroll({ children, onRefresh }: ScrollProps) {
+export function Scroll({ children, onRefresh, unterLeiste }: ScrollProps) {
   const eigenerRef = useRef<HTMLDivElement | null>(null);
   useZumAnfang(eigenerRef);
   if (!onRefresh) {
@@ -85,29 +94,52 @@ export function Scroll({ children, onRefresh }: ScrollProps) {
       </div>
     );
   }
-  return <PullScroll onRefresh={onRefresh}>{children}</PullScroll>;
+  return (
+    <PullScroll onRefresh={onRefresh} unterLeiste={unterLeiste}>
+      {children}
+    </PullScroll>
+  );
 }
 
 function PullScroll({
   children,
   onRefresh,
+  unterLeiste,
 }: {
   children: ReactNode;
   onRefresh: () => Promise<unknown>;
+  unterLeiste?: boolean;
 }) {
   const { ref, pull, refreshing, isTriggered, handlers } = usePullToRefresh(onRefresh);
   useZumAnfang(ref);
   return (
-    <div
-      ref={ref}
-      className={styles.scroll}
-      onTouchStart={handlers.onTouchStart}
-      onTouchMove={handlers.onTouchMove}
-      onTouchEnd={handlers.onTouchEnd}
-    >
+    <div className={styles.pullWrap}>
+      {/*
+        **Der Zug-Anzeiger steht fest, der Inhalt wandert** (Alwin, 22.09.2026, mit Screenshots:
+        „bei termine ist es falsch und bei lieder richtig").
+
+        Vorher war er das erste Kind des Scroll-Bereichs, und seine Höhe war die Zugstrecke – er saß
+        also am oberen Bildschirmrand, mitten im Unschärfe-Band von iOS 26/27, und war dort weich und
+        unleserlich. Bei den Liedern fiel das nicht auf: Diese Liste ist lang genug zum Scrollen,
+        deshalb legt iOS beim Ziehen sein EIGENES Gummiband darüber und schob den Anzeiger zufällig
+        aus dem Band heraus. Bei den Terminen mit einem einzigen Eintrag gibt es nichts zu scrollen,
+        das Gummiband bleibt aus – und der Hinweis klebte oben.
+
+        Jetzt hängt er über dem Scroll-Bereich an einer festen Stelle: demselben Abstand, den auch die
+        Überschrift hält (`--inhalt-pad-top`, in der App Safe-Area + 36 px). Damit sitzt er auf jedem
+        Bildschirm gleich und immer unter dem Band – unabhängig davon, wie lang die Liste ist und ob
+        iOS zusätzlich schiebt. So machen es native Apps auch: Der Anzeiger steht, der Inhalt schiebt
+        sich darunter weg.
+      */}
       <div
-        className={styles.pullIndicator}
-        style={{ height: refreshing ? 48 : pull, opacity: pull > 8 || refreshing ? 1 : 0 }}
+        className={`${styles.pullIndicator}${unterLeiste ? ' ' + styles.pullDicht : ''}`}
+        /*
+         * Die Deckkraft wächst mit dem Zug, statt bei einer festen Schwelle umzuspringen. Grund ist
+         * die feste Position: Bei ganz kurzem Zug liegt der Anzeiger noch über der Überschrift
+         * (gemessen: bis etwa 48 px Zug), und genau dort ist er jetzt noch blass.
+         */
+        style={{ opacity: refreshing ? 1 : Math.min(pull / PULL_HOEHE, 1) }}
+        aria-hidden={pull > 8 || refreshing ? undefined : true}
       >
         {refreshing ? (
           <Spinner />
@@ -121,9 +153,8 @@ function PullScroll({
             </span>
             {/*
               Der Hinweis steht NUR während der Geste (Alwin, 22.09.2026): Als dauerhafte Zeile am
-              Listenanfang lag er in Bildschirmen ohne Kopfleiste im Unschärfe-Band von iOS 26/27 und
-              wirkte verschwommen. Während man zieht, darf er dort liegen – man sieht ohnehin auf die
-              eigene Hand. Der Wortlaut wechselt am Auslösepunkt, damit klar ist, wann man loslassen kann.
+              Listenanfang lag er im Unschärfe-Band und wirkte verschwommen. Der Wortlaut wechselt am
+              Auslösepunkt, damit klar ist, wann man loslassen kann.
             */}
             <span className={styles.pullText} style={{ opacity: pull > 28 ? 1 : 0 }}>
               {isTriggered ? 'Loslassen zum Aktualisieren' : 'Zum Aktualisieren nach unten ziehen'}
@@ -132,12 +163,22 @@ function PullScroll({
         )}
       </div>
       <div
-        style={{
-          transform: refreshing ? 'translateY(0)' : `translateY(${pull}px)`,
-          transition: pull === 0 ? 'transform .2s' : 'none',
-        }}
+        ref={ref}
+        className={styles.scroll}
+        onTouchStart={handlers.onTouchStart}
+        onTouchMove={handlers.onTouchMove}
+        onTouchEnd={handlers.onTouchEnd}
       >
-        {children}
+        <div
+          style={{
+            // Der Inhalt macht dem Anzeiger Platz: beim Ziehen um die Zugstrecke, während des
+            // Ladens um die Höhe des Anzeigers.
+            transform: `translateY(${refreshing ? PULL_HOEHE : pull}px)`,
+            transition: pull === 0 ? 'transform .2s' : 'none',
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

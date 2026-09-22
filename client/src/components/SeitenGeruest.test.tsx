@@ -64,7 +64,10 @@ describe('SeitenGeruest', () => {
         Inhalt
       </SeitenGeruest>,
     );
-    // Der Zug-Anzeiger ist das erste Kind – ohne onNeuLaden gäbe es ihn nicht.
-    expect(scrollBereich(container).querySelector('[class*="pullIndicator"]')).not.toBeNull();
+    // Der Zug-Anzeiger hängt NEBEN dem Scroll-Bereich (feste Stelle, unter dem Unschärfe-Band von
+    // iOS) – ohne onNeuLaden gäbe es ihn gar nicht.
+    const zug = container.querySelector('[class*="pullIndicator"]');
+    expect(zug).not.toBeNull();
+    expect(scrollBereich(container).contains(zug)).toBe(false);
   });
 });

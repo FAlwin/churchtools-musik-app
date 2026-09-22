@@ -447,13 +447,11 @@ describe('Abwesenheiten – Termin-Filter (#400)', () => {
  * als die Untergrenze der Anzeige (450 ms) – sonst wäre der Test auch ohne den Fix grün.
  */
 describe('Abwesenheiten – Runterziehen zum Aktualisieren', () => {
-  const band = (container: HTMLElement) => {
-    const scroller = container.querySelector('[class*="scroll"]');
-    return {
-      scroller: scroller as HTMLElement,
-      anzeige: scroller!.firstElementChild as HTMLElement,
-    };
-  };
+  const scroller = (c: HTMLElement) => c.querySelector('[class*="scroll"]') as HTMLElement;
+  // Bei jeder Prüfung frisch holen: React tauscht den Teilbaum beim Zustandswechsel aus, eine
+  // gemerkte Referenz zeigt danach auf ein Element, das nicht mehr im Dokument hängt.
+  const anzeigerDeckkraft = (c: HTMLElement) =>
+    (c.querySelector('[class*="pullIndicator"]') as HTMLElement).style.opacity;
 
   it('lässt die Ladeanzeige stehen, bis Einträge UND Termine da sind', async () => {
     vi.useFakeTimers();
@@ -473,31 +471,31 @@ describe('Abwesenheiten – Runterziehen zum Aktualisieren', () => {
     });
 
     const { container } = render(<Availability online onToast={vi.fn()} heute={HEUTE} />);
-    const { scroller, anzeige } = band(container);
+    const bereich = scroller(container);
 
-    fireEvent.touchStart(scroller, { touches: [{ clientY: 0 }] });
-    fireEvent.touchMove(scroller, { touches: [{ clientY: 200 }] });
+    fireEvent.touchStart(bereich, { touches: [{ clientY: 0 }] });
+    fireEvent.touchMove(bereich, { touches: [{ clientY: 200 }] });
     await act(async () => {
-      fireEvent.touchEnd(scroller);
+      fireEvent.touchEnd(bereich);
     });
 
     // Lange nach der Untergrenze – die Anzeige steht, weil noch geladen wird.
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000);
     });
-    expect(anzeige.style.height).toBe('48px');
+    expect(anzeigerDeckkraft(container)).toBe('1');
 
     await act(async () => {
       eintraegeFertig();
       await vi.advanceTimersByTimeAsync(600);
     });
-    expect(anzeige.style.height).toBe('48px'); // die Termine fehlen noch
+    expect(anzeigerDeckkraft(container)).toBe('1'); // die Termine fehlen noch
 
     await act(async () => {
       termineFertig();
       await vi.advanceTimersByTimeAsync(600);
     });
-    expect(anzeige.style.height).toBe('0px');
+    expect(anzeigerDeckkraft(container)).toBe('0');
     vi.useRealTimers();
   });
 });

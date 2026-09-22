@@ -61,7 +61,7 @@ export function SeitenGeruest({
   return (
     <Screen>
       {mitLeiste && <NavBar back={zurueck} backLabel={zurueckLabel} right={aktionen} />}
-      <Scroll onRefresh={onNeuLaden}>
+      <Scroll onRefresh={onNeuLaden} unterLeiste={mitLeiste}>
         <GrosseUeberschrift unterzeile={unterzeile} ohneAbstand={mitLeiste}>
           {titel}
         </GrosseUeberschrift>
