@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Absence, AbsenceEvent, NeueAbsence } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
-import { NavBar } from '../components/NavBar';
+import { GrosseUeberschrift } from '../components/GrosseUeberschrift';
 import { CenterMessage } from '../components/CenterMessage';
 import { Icon } from '../components/icons';
 import { Coachmarks } from '../components/Coachmarks';
@@ -460,8 +460,8 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
 
   return (
     <Screen>
-      <NavBar title="Abwesenheiten" />
       <Scroll onRefresh={neuLaden}>
+        <GrosseUeberschrift>Abwesenheiten</GrosseUeberschrift>
         {laedt ? (
           <CenterMessage loading text="Wird geladen…" />
         ) : fehler ? (

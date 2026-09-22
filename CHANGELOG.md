@@ -52,6 +52,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   oder von Platz. Jetzt, wo oben kein Text mehr steht, braucht es ihn nicht mehr: Der Inhalt läuft
   unter Uhr und Band durch, die Überschrift hält ihren Abstand über die Safe-Area.
 
+  **Alle Bildschirme folgen jetzt diesem Muster.** „Abwesenheiten" und „Mehr" bekommen wie die
+  Termine ihre große Überschrift im Inhalt; bei „Lieder" rückt stattdessen das Suchfeld nach oben –
+  es sagt so gut wie eine Überschrift, welcher Bildschirm offen ist, und nutzt den Platz besser. Die
+  Ablauf-Ansicht behält oben den Zurück-Pfeil und ihre Knöpfe, **aber ohne Titel**: Name und Datum
+  des Gottesdienstes stehen groß darunter im Inhalt. Symbole verträgt das Band, Text nicht. Noch
+  nicht umgebaut ist die Chart-Ansicht – dort hängt am Titel das Lied-Menü.
+
   Der Hinweis **„Zum Aktualisieren nach unten ziehen"** stand bisher dauerhaft am Listenanfang und
   lag damit als Einziges noch im Band. Er erscheint jetzt **nur während der Geste**, zusammen mit dem
   Pfeil, und wechselt am Auslösepunkt zu „Loslassen zum Aktualisieren". Das gilt für alle Listen mit

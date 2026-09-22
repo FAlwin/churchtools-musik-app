@@ -3,7 +3,7 @@ import type { SiteConfig, NoteRolePerm } from '@shared/types/index';
 import { sameIdSet, sameRolePerms } from '../utils/adminDrafts';
 import type { Theme, ThemePref } from '../types/index';
 import { Screen, Scroll } from '../components/Screen';
-import { NavBar } from '../components/NavBar';
+import { GrosseUeberschrift } from '../components/GrosseUeberschrift';
 import { Sheet } from '../components/Sheet';
 import { Spinner } from '../components/Spinner';
 import { Segment } from '../components/Segment';
@@ -145,8 +145,8 @@ export function Settings({
 
   return (
     <Screen>
-      <NavBar title="Mehr" />
       <Scroll>
+        <GrosseUeberschrift>Mehr</GrosseUeberschrift>
         {/* Profil */}
         <div className={styles.profileCard}>
           <img className={styles.profileLogo} src={logo} alt="" />

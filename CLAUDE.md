@@ -310,7 +310,16 @@ im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site
 
 **Navigation:** untere Tab-Bar `Termine`/`Lieder`/`Abwesenheiten`/`Mehr` (`components/TabBar.tsx`; der
 Abwesenheiten-Tab trägt die ID `verfuegbarkeit` und erscheint nur für Mitglieder der `musicianGroupIds`), Detailseiten
-(Setlist, Chart) als Vollbild-Push. Routing in `App.tsx` über `tab` + `view` (rechteabhängig).
+(Setlist, Chart) als Vollbild-Push.
+
+**Keine Kopfleiste mit Titel mehr (22.09.2026).** Die vier Tabs haben oben gar keine Leiste; ihr Titel
+steht als `components/GrosseUeberschrift` im Scroll-Inhalt und scrollt mit weg (bei `Lieder` übernimmt
+das Suchfeld diese Rolle). Die Setlist behält die `NavBar` für Zurück und Aktionen, aber **ohne Titel**
+(`title` ist optional) – Titel und Datum stehen darunter im Inhalt. Grund: iOS 26/27 legt über die
+oberen ~95 pt ein Unschärfe-Band (Liquid Glass), Text darin wird weich; Symbole verträgt es. Die
+Abstände kommen aus `--inhalt-pad-top` / `--bar-pad-top` (`styles/_variables.scss`), die App zeichnet
+hinter der Statusleiste (`black-translucent`, `client/index.html`). Der Chart-Kopf (`ChartHeader`) ist
+noch nicht umgebaut. Routing in `App.tsx` über `tab` + `view` (rechteabhängig).
 
 **Design-Regeln (verbindlich):** `docs/entwicklung/design-system.md` – Farben nur über Tokens (es gibt **kein**
 `--orange`/`--teal`/`--chord`; Akzent = Blau, Destruktiv = Rot), System-Font, gemeinsame Bausteine

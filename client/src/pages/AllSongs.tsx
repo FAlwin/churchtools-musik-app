@@ -2,7 +2,6 @@ import type { SongSelectTreffer } from '@shared/types/index';
 import { useState } from 'react';
 import { type Service, type SongLibraryEntry } from '@shared/types/index';
 import { Screen, Scroll } from '../components/Screen';
-import { NavBar } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
@@ -110,12 +109,14 @@ export function AllSongs({
 
   return (
     <Screen>
-      {/* Die Kopfzeile bleibt bewusst leer (Entscheidung Alwin, 13.08.2026): „Neues Lied" stand hier
-          zuerst als Symbol – es wirkte fremd, und ein Aktions-Knopf machte diese Leiste 10px höher als
-          die von „Termine" und „Mehr", was beim Durchklicken sichtbar sprang. Die Höhe ist inzwischen
-          in `NavBar.module.scss` festgenagelt, der Einstieg sitzt trotzdem unten am Listenkopf. */}
-      <NavBar title="Lieder" />
-
+      {/**
+       * **Keine Kopfleiste und keine große Überschrift** (22.09.2026). Die Leiste war schon vorher
+       * leer (Entscheidung Alwin, 13.08.2026: „Neues Lied" als Symbol wirkte fremd); unter iOS 26/27
+       * kostet eine leere Leiste nur noch Platz im Unschärfe-Band (siehe `client/index.html`). Hier
+       * steht deshalb das **Suchfeld ganz oben** – es sagt so gut wie eine Überschrift, welcher
+       * Bildschirm offen ist, und nutzt den Platz besser. Welcher Tab aktiv ist, zeigt die Leiste
+       * unten. `searchWrap` hält über `--inhalt-pad-top` den Abstand zum Band.
+       */}
       <div className={styles.searchWrap}>
         {/* Dasselbe Suchfeld wie im Einfüge-Dialog – ohne SongSelect-Weg, deshalb tut Enter hier nichts. */}
         <LiedSucheKopf eingabe={f.q} onEingabe={f.setQ} />

@@ -18,6 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Screen, Scroll } from '../components/Screen';
 import { NavBar, IconButton } from '../components/NavBar';
+import { GrosseUeberschrift } from '../components/GrosseUeberschrift';
 import { CenterMessage } from '../components/CenterMessage';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddItemSheet } from '../components/AddItemSheet';
@@ -240,9 +241,12 @@ export function Setlist({
 
   return (
     <Screen>
+      {/*
+        Titel und Datum stehen im Inhalt, nicht in der Leiste: Unter iOS 26/27 liegt die Leiste im
+        Unschärfe-Band des Systems (index.html). Zurück-Pfeil und Aktionen bleiben oben – Symbole
+        verträgt das Band, Text nicht. Dieselbe Linie wie in den Tabs (22.09.2026).
+      */}
       <NavBar
-        title={service.name}
-        subtitle={`${service.weekday}, ${service.day}. ${service.month} · ${service.time}`}
         back={onBack}
         backLabel="Termine"
         right={
@@ -274,6 +278,12 @@ export function Setlist({
         }
       />
       <Scroll onRefresh={editMode ? undefined : onRetry}>
+        <GrosseUeberschrift
+          unterzeile={`${service.weekday}, ${service.day}. ${service.month} · ${service.time}`}
+          ohneAbstand
+        >
+          {service.name}
+        </GrosseUeberschrift>
         {isLoading ? (
           <CenterMessage loading text="Ablauf wird geladen…" />
         ) : isError ? (
