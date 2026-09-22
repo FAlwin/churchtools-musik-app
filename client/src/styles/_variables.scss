@@ -89,6 +89,9 @@ html[data-theme='dark'] {
 // **Eine Stelle für beide Leisten.** Der Normalfall: mindestens 20px, sonst die Safe-Area.
 :root {
   --bar-pad-top: max(20px, var(--sat, env(safe-area-inset-top, 0px)));
+  // Um so viel wächst die Leiste, wenn der Titel eingeklappt darin steht (NavBar `.eingeklappt`).
+  // Normalfall 0: Im Safari-Tab und auf Android gibt es kein Band, dem man ausweichen müsste.
+  --bar-wachstum-eingeklappt: 0px;
 }
 
 /**
@@ -115,6 +118,11 @@ html[data-theme='dark'] {
   @supports (-webkit-touch-callout: none) {
     :root {
       --bar-pad-top: 8px;
+      // Eingeklappt: im Browser mit iOS-Werten GEMESSEN (22.09.2026): mit 16 px Wachstum lag die
+      // Oberkante des kleinen Titels bei 97 pt – zwei Punkte unter der Bandkante (95), zu knapp,
+      // genau dort waren vorher „die Spitzen weich". Mit 24 px liegt sie bei ~105 pt. Gilt nur,
+      // während der Titel eingeklappt ist; im Ruhezustand bleibt es bei 8 px.
+      --bar-wachstum-eingeklappt: 24px;
     }
   }
 }

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
-import { useEinklappenderTitel } from './useEinklappenderTitel';
+import { AUSKLAPPEN_AB, useEinklappenderTitel } from './useEinklappenderTitel';
 import { GrosseUeberschrift } from '../components/GrosseUeberschrift';
 import { NavBar } from '../components/NavBar';
 
@@ -13,7 +13,7 @@ import { NavBar } from '../components/NavBar';
  * die ganze Kette bis in die Leiste: Wer den Hook auskoppelt oder `titelSichtbar` ignoriert, lässt
  * diese Tests fallen.
  */
-type Rueckruf = (eintraege: Array<{ isIntersecting: boolean }>) => void;
+type Rueckruf = (eintraege: Array<{ isIntersecting: boolean; intersectionRatio: number }>) => void;
 let rueckruf: Rueckruf | null = null;
 let beobachtet: Element[] = [];
 let getrennt = 0;
@@ -72,14 +72,27 @@ describe('useEinklappenderTitel', () => {
 
   it('verschwindet die Überschrift nach oben, erscheint der Titel in der Leiste', () => {
     render(<Seite />);
-    act(() => rueckruf!([{ isIntersecting: false }]));
+    act(() => rueckruf!([{ isIntersecting: false, intersectionRatio: 0 }]));
     expect(leistenTitel().className).not.toMatch(/titelVersteckt/);
+  });
+
+  /**
+   * **Hysterese.** Die Leiste wächst beim Einklappen und schiebt den Inhalt nach unten – die
+   * Überschrift käme dadurch wieder ein Stück ins Bild. Klappte der Titel dann sofort aus, flatterte
+   * es hin und her. Deshalb bleibt er eingeklappt, solange die Überschrift nur teilweise zu sehen ist.
+   */
+  it('bleibt eingeklappt, solange die Überschrift nur zum Teil wieder sichtbar ist', () => {
+    render(<Seite />);
+    act(() => rueckruf!([{ isIntersecting: false, intersectionRatio: 0 }]));
+    act(() => rueckruf!([{ isIntersecting: true, intersectionRatio: AUSKLAPPEN_AB - 0.1 }]));
+    expect(leistenTitel().className).not.toMatch(/titelVersteckt/);
+    expect(optionen?.threshold).toEqual([0, AUSKLAPPEN_AB]);
   });
 
   it('kommt die Überschrift zurück, verschwindet der Leistentitel wieder', () => {
     render(<Seite />);
-    act(() => rueckruf!([{ isIntersecting: false }]));
-    act(() => rueckruf!([{ isIntersecting: true }]));
+    act(() => rueckruf!([{ isIntersecting: false, intersectionRatio: 0 }]));
+    act(() => rueckruf!([{ isIntersecting: true, intersectionRatio: 1 }]));
     expect(leistenTitel().className).toMatch(/titelVersteckt/);
   });
 

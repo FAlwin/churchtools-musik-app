@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+/** Ab diesem sichtbaren Anteil der Überschrift klappt der Titel wieder aus (siehe Hysterese unten). */
+export const AUSKLAPPEN_AB = 0.7;
+
 /**
  * **Große Überschrift im Inhalt, die beim Scrollen in die Leiste einklappt.**
  *
@@ -43,11 +46,22 @@ export function useEinklappenderTitel(leistenhoehe = 56) {
         return;
       }
       beobachter.current = new IntersectionObserver(
-        ([eintrag]) => setEingeklappt(!eintrag.isIntersecting),
+        ([eintrag]) => {
+          // **Hysterese, kein Kippschalter.** Die Leiste wächst beim Einklappen um einige Punkte
+          // (NavBar.module.scss, damit der kleine Titel unter dem Unschärfe-Band von iOS liegt).
+          // Dadurch rutscht der Inhalt nach unten – und die Überschrift käme wieder ins Bild. Mit
+          // einer einzigen Schwelle flatterte das: ein, aus, ein, aus. Deshalb zwei Schwellen:
+          // eingeklappt wird erst, wenn die Überschrift GANZ verschwunden ist; ausgeklappt erst,
+          // wenn sie wieder zu 70 % zu sehen ist. Der Abstand dazwischen (~32 px bei 46 px Höhe) ist
+          // größer als das Wachstum der Leiste (24 px, `--bar-wachstum-eingeklappt`) – das Wachstum
+          // kann also nicht zurückkippen. **Wer das Wachstum erhöht, prüft diese Rechnung neu.**
+          if (!eintrag.isIntersecting) setEingeklappt(true);
+          else if (eintrag.intersectionRatio >= AUSKLAPPEN_AB) setEingeklappt(false);
+        },
         // Die oberen `leistenhoehe` Punkte zählen nicht als sichtbar: Dort liegt die Leiste über dem
         // Inhalt. Ohne diesen Rand klappte der Titel erst ein, wenn die Überschrift schon halb
         // hinter der Leiste verschwunden wäre.
-        { rootMargin: `-${leistenhoehe}px 0px 0px 0px`, threshold: 0 },
+        { rootMargin: `-${leistenhoehe}px 0px 0px 0px`, threshold: [0, AUSKLAPPEN_AB] },
       );
       beobachter.current.observe(el);
     },

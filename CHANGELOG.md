@@ -46,10 +46,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   zurück. Die Leiste rückt dafür in der iOS-App dicht unter die Statusleiste. Umschalter
   „Kommende / Vergangene" ist mit in den Inhalt gewandert und scrollt ebenfalls weg.
 
-  Zwei Dinge sind noch offen und bewusst so: Die **anderen Bildschirme** tragen ihren Titel noch in
-  der Leiste und sind dort weich wie in v2.25.1 – sie folgen, wenn das Muster bei den Terminen
-  gefällt. Und der **eingeklappte** Titel in der Leiste liegt selbst im Band und kann leicht weich
-  wirken; native Apps wie WhatsApp bekommen dort eine Ausnahme vom System, eine Web-App nicht.
+  Der **eingeklappte** Titel lag zunächst selbst noch mit der Oberkante im Band („am oberen Rand
+  immer noch unscharf"). Deshalb wächst die Leiste in der iOS-App beim Einklappen um 24 Punkte und
+  rückt den kleinen Titel an ihren unteren Rand – gemessen liegt seine Oberkante damit zehn Punkte
+  unter der Bandkante. Im Ruhezustand bleibt die Leiste flach; die Punkte kommen nur beim Scrollen
+  dazu, wie es iOS-Apps auch tun. Damit das Wachsen nicht flattert (Leiste wächst, Inhalt rutscht,
+  Überschrift taucht auf, klappt aus, Leiste schrumpft …), klappt der Titel erst aus, wenn die
+  Überschrift zu 70 Prozent wieder zu sehen ist – dieser Weg ist länger als das Wachstum.
+
+  Noch offen und bewusst so: Die **anderen Bildschirme** tragen ihren Titel weiterhin fest in der
+  Leiste und sind dort weich wie in v2.25.1. Sie folgen, wenn das Muster bei den Terminen gefällt.
 
 ## [2.25.1] – 2026-09-21
 

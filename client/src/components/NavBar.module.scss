@@ -14,6 +14,7 @@
   // env() bleibt als Fallback, solange `--sat` noch nicht gesetzt ist.
   // Wert und Begründung stehen in `styles/_variables.scss` – eine Stelle für beide Leisten.
   padding-top: var(--bar-pad-top);
+  transition: padding-top 0.18s ease;
   background: var(--nav-bg);
   border-bottom: 1px solid var(--hair);
   flex-shrink: 0;
@@ -68,6 +69,21 @@
   pointer-events: none;
 }
 
+/**
+ * Eingeklappter Zustand mit sichtbarem Titel: Die Leiste wächst um `--bar-wachstum-eingeklappt`
+ * (nur in der iOS-App > 0, siehe _variables.scss), und der Titel rückt an den UNTEREN Rand seiner
+ * Zone. Beides zusammen schiebt seine Oberkante unter das Unschärfe-Band von iOS (~95 pt, gemessen:
+ * ~105 pt mit 24 px Wachstum), ohne dass
+ * die Leiste im Ruhezustand einen Punkt höher wäre. Alwin, 22.09.2026: „wenn der Titel im Header
+ * steht, ist er am oberen Rand immer noch unscharf" – das hier ist die Antwort darauf.
+ */
+.eingeklappt {
+  padding-top: calc(var(--bar-pad-top) + var(--bar-wachstum-eingeklappt, 0px));
+}
+.eingeklappt .titles {
+  justify-content: flex-end;
+}
+
 .titles {
   transition:
     opacity 0.18s ease,
@@ -75,7 +91,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .titles {
+  .titles,
+  .nav {
     transition: none;
   }
 }

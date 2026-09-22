@@ -59,7 +59,7 @@ export function NavBar({
   titelSichtbar,
 }: NavBarProps) {
   return (
-    <div className={styles.nav}>
+    <div className={`${styles.nav}${titelSichtbar === true ? ' ' + styles.eingeklappt : ''}`}>
       <div className={`${styles.side} ${styles.left}`}>
         {back ? (
           <button className={styles.back} onClick={back}>
