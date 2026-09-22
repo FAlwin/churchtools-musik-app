@@ -11,6 +11,7 @@ import { EditSongSheet } from '../components/EditSongSheet';
 import { SongStatsBar } from '../components/SongStatsBar';
 import { LiedtextTrefferListe } from '../components/LiedtextTrefferListe';
 import { LiedSucheKopf } from '../components/LiedSucheKopf';
+import { GrosseUeberschrift } from '../components/GrosseUeberschrift';
 import { Sheet } from '../components/Sheet';
 import { SongPicker } from '../components/SongPicker';
 import { SucheAngebot } from '../components/SucheAngebot';
@@ -109,46 +110,40 @@ export function AllSongs({
 
   return (
     <Screen>
-      {/**
-       * **Keine Kopfleiste und keine große Überschrift** (22.09.2026). Die Leiste war schon vorher
-       * leer (Entscheidung Alwin, 13.08.2026: „Neues Lied" als Symbol wirkte fremd); unter iOS 26/27
-       * kostet eine leere Leiste nur noch Platz im Unschärfe-Band (siehe `client/index.html`). Hier
-       * steht deshalb das **Suchfeld ganz oben** – es sagt so gut wie eine Überschrift, welcher
-       * Bildschirm offen ist, und nutzt den Platz besser. Welcher Tab aktiv ist, zeigt die Leiste
-       * unten. `searchWrap` hält über `--inhalt-pad-top` den Abstand zum Band.
-       */}
-      <div className={styles.searchWrap}>
-        {/* Dasselbe Suchfeld wie im Einfüge-Dialog – ohne SongSelect-Weg, deshalb tut Enter hier nichts. */}
-        <LiedSucheKopf eingabe={f.q} onEingabe={f.setQ} />
-        {showStats && <SongStatsBar {...f} />}
-
-        {/**
-         * Listenkopf: **Anzahl links, „Neues Lied" rechts – auf einer Höhe** (Wunsch Alwin,
-         * 13.08.2026).
-         *
-         * Die Zeile steht **über dem Scroll-Bereich**, nicht darin. Das hat zwei Gründe: Sie bleibt beim
-         * Blättern sichtbar, und sie ist auch dann da, wenn die Suche **keinen** Treffer hat – also
-         * genau in dem Moment, in dem ein Lied fehlt und angelegt werden soll. Innerhalb der Liste
-         * würde sie mit ihr verschwinden.
-         *
-         * Die Anzahl zeigt die gefilterte Bibliotheksliste – die Liedtext-Treffer zählen sich selbst.
-         */}
-        {(f.list.length > 0 || kannAnlegen) && (
-          <div className={styles.listHdr}>
-            <span className={styles.listCount}>
-              {f.list.length > 0 && !isLoading && !isError ? liedAnzahl(f.list.length) : ''}
-            </span>
-            {kannAnlegen && (
-              <button className={styles.newSongBtn} onClick={() => setSucheOffen(true)}>
-                <Icon name="plus" size={16} stroke={2.4} />
-                Neues Lied
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
       <Scroll onRefresh={onRetry}>
+        <GrosseUeberschrift>Lieder</GrosseUeberschrift>
+        <div className={styles.searchWrap}>
+          {/* Dasselbe Suchfeld wie im Einfüge-Dialog – ohne SongSelect-Weg, deshalb tut Enter hier nichts. */}
+          <LiedSucheKopf eingabe={f.q} onEingabe={f.setQ} />
+          {showStats && <SongStatsBar {...f} />}
+
+          {/**
+           * Listenkopf: **Anzahl links, „Neues Lied" rechts – auf einer Höhe** (Wunsch Alwin,
+           * 13.08.2026).
+           *
+           * Die Zeile stand bis zum 22.09.2026 **über** dem Scroll-Bereich, damit sie beim Blättern
+           * sichtbar bleibt. Seit die Kopfleiste weg ist, liegt sie mit Überschrift und Suchfeld IM
+           * Scroll-Bereich: Ein festes Element ganz oben läge im Unschärfe-Band von iOS und wäre weich
+           * (siehe `client/index.html`). Der wichtigere Teil der alten Begründung gilt weiter – **hat
+           * die Suche keinen Treffer, gibt es nichts zu scrollen**, und die Zeile mit „Neues Lied"
+           * steht genau dann da, wenn ein Lied fehlt.
+           *
+           * Die Anzahl zeigt die gefilterte Bibliotheksliste – die Liedtext-Treffer zählen sich selbst.
+           */}
+          {(f.list.length > 0 || kannAnlegen) && (
+            <div className={styles.listHdr}>
+              <span className={styles.listCount}>
+                {f.list.length > 0 && !isLoading && !isError ? liedAnzahl(f.list.length) : ''}
+              </span>
+              {kannAnlegen && (
+                <button className={styles.newSongBtn} onClick={() => setSucheOffen(true)}>
+                  <Icon name="plus" size={16} stroke={2.4} />
+                  Neues Lied
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         {isLoading ? (
           <CenterMessage loading text="Lieder werden geladen…" />
         ) : isError ? (

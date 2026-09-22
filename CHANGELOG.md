@@ -53,8 +53,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   unter Uhr und Band durch, die Überschrift hält ihren Abstand über die Safe-Area.
 
   **Alle Bildschirme folgen jetzt diesem Muster.** „Abwesenheiten" und „Mehr" bekommen wie die
-  Termine ihre große Überschrift im Inhalt; bei „Lieder" rückt stattdessen das Suchfeld nach oben –
-  es sagt so gut wie eine Überschrift, welcher Bildschirm offen ist, und nutzt den Platz besser. Die
+  Termine ihre große Überschrift im Inhalt, „Lieder" ebenso – dort stehen Suchfeld, Sortierung und
+  die Zeile mit „Neues Lied" nun mit im Scroll-Bereich und wandern beim Blättern mit weg. Die
   Ablauf-Ansicht behält oben den Zurück-Pfeil und ihre Knöpfe, **aber ohne Titel**: Name und Datum
   des Gottesdienstes stehen groß darunter im Inhalt. Symbole verträgt das Band, Text nicht. Noch
   nicht umgebaut ist die Chart-Ansicht – dort hängt am Titel das Lied-Menü.

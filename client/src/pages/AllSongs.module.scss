@@ -1,11 +1,9 @@
 @use '../styles/mixins' as m;
 
 .searchWrap {
-  // Ohne Kopfleiste beginnt hier der Bildschirm: Abstand zum Unschärfe-Band von iOS, dieselbe
-  // Variable wie bei der großen Überschrift (`styles/_variables.scss`). **In EINER Kurzschreibweise**,
-  // sonst setzt ein nachfolgendes `padding` den Wert wieder auf 14px zurück – genau so passiert und
-  // im Browser aufgefallen (22.09.2026).
-  padding: var(--inhalt-pad-top) 16px 2px;
+  // Den Abstand zum Unschärfe-Band hält die `GrosseUeberschrift` darüber; hier reicht der normale
+  // Innenabstand. (Kurz stand hier `--inhalt-pad-top` – als das Suchfeld noch das oberste Element war.)
+  padding: 4px 16px 2px;
   flex-shrink: 0;
 }
 
