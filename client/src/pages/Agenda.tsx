@@ -11,6 +11,8 @@ import { useToast } from '../hooks/useToast';
 import { usePastServices } from '../hooks/useServices';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useOfflineServices } from '../hooks/useOfflineServices';
+import { useEinklappenderTitel } from '../hooks/useEinklappenderTitel';
+import { GrosseUeberschrift } from '../components/GrosseUeberschrift';
 import { heuteIso } from '../utils/heute';
 import { saveServiceOffline } from '../services/offline';
 import { liedAnzahl } from '../utils/songFilter';
@@ -78,6 +80,8 @@ export function Agenda({
   const online = useOnlineStatus();
   const offlineReg = useOfflineServices();
   const { toast, showToast } = useToast();
+  // Große Überschrift im Inhalt, die beim Hochschieben in die Leiste klappt (iOS-Muster).
+  const { refUeberschrift, eingeklappt } = useEinklappenderTitel();
 
   // Vergangene Gottesdienste werden live geladen → ohne Netz nicht verfügbar. War man auf
   // „Vergangene" und geht offline, zurück auf „Kommende" (das Segment graut „Vergangene" aus).
@@ -213,26 +217,26 @@ export function Agenda({
 
   return (
     <Screen>
-      <NavBar title="Termine" />
-
-      <Segment
-        className={styles.segWrap}
-        value={tab}
-        options={[
-          { value: 'upcoming', label: 'Kommende' },
-          { value: 'past', label: 'Vergangene' },
-        ]}
-        dimmed={online ? [] : ['past']}
-        onChange={(v) => {
-          if (!online && v === 'past') {
-            showToast('Vergangene Gottesdienste sind offline nicht verfügbar.');
-            return;
-          }
-          setTab(v);
-        }}
-      />
+      <NavBar title="Termine" titelSichtbar={eingeklappt} />
 
       <Scroll onRefresh={tab === 'upcoming' ? onRetry : () => pastQuery.refetch()}>
+        <GrosseUeberschrift innerRef={refUeberschrift}>Termine</GrosseUeberschrift>
+        <Segment
+          className={styles.segWrap}
+          value={tab}
+          options={[
+            { value: 'upcoming', label: 'Kommende' },
+            { value: 'past', label: 'Vergangene' },
+          ]}
+          dimmed={online ? [] : ['past']}
+          onChange={(v) => {
+            if (!online && v === 'past') {
+              showToast('Vergangene Gottesdienste sind offline nicht verfügbar.');
+              return;
+            }
+            setTab(v);
+          }}
+        />
         {tab === 'upcoming' ? (
           isLoading ? (
             <CenterMessage loading text="Gottesdienste werden geladen…" />

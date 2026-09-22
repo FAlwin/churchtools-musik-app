@@ -57,6 +57,29 @@
   min-height: 34px;
 }
 
+/**
+ * Eingeklappter Zustand: Der Titel ist da, aber unsichtbar – er sinkt leicht nach unten weg.
+ * **Nicht `display: none`:** Die Leiste behält so ihre Höhe, und der Wechsel bleibt weich.
+ * Beim Zurückscrollen taucht er von unten wieder auf, wie in iOS-Apps.
+ */
+.titelVersteckt {
+  opacity: 0;
+  transform: translateY(7px);
+  pointer-events: none;
+}
+
+.titles {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .titles {
+    transition: none;
+  }
+}
+
 .title {
   font-size: 17px;
   font-weight: 700;

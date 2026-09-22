@@ -38,11 +38,18 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   eine Quelle**, abgesichert durch Tests.
 
   Weil das Band rund 35 Punkte unter die Statusleiste ausläuft, lag die **Oberkante des Titels**
-  auch danach noch knapp darin („ein paar Buchstaben oben an den Spitzen"). Die Leisten bekommen
-  deshalb **in der installierten App auf iOS** etwas mehr Luft nach oben; im Browser und auf Android
-  bleibt alles wie gehabt. **Sichtbare Folge: Der Titel sitzt in der iOS-App tiefer als früher.**
-  Das ist kein Versehen, sondern der Preis: Die alte Position liegt mitten im Band, scharf und an
-  der alten Stelle gibt es zusammen nicht.
+  auch danach noch knapp darin. Mehr Abstand half, kostete aber 36 Punkte Höhe – „viel zu tief,
+  nimmt zu viel Platz weg". Deshalb gehen die Termine jetzt den Weg, den iOS selbst geht und den
+  Alwin aus WhatsApp kennt: **Der Titel steht groß im Inhalt und klappt beim Hochschieben klein in
+  die Leiste.** Im Band liegen dann nur noch die ruhige Fläche der Leiste und ihre Symbole, der
+  Titel darunter ist scharf, und weil er zum Inhalt gehört, gibt er seinen Platz beim Scrollen
+  zurück. Die Leiste rückt dafür in der iOS-App dicht unter die Statusleiste. Umschalter
+  „Kommende / Vergangene" ist mit in den Inhalt gewandert und scrollt ebenfalls weg.
+
+  Zwei Dinge sind noch offen und bewusst so: Die **anderen Bildschirme** tragen ihren Titel noch in
+  der Leiste und sind dort weich wie in v2.25.1 – sie folgen, wenn das Muster bei den Terminen
+  gefällt. Und der **eingeklappte** Titel in der Leiste liegt selbst im Band und kann leicht weich
+  wirken; native Apps wie WhatsApp bekommen dort eine Ausnahme vom System, eine Web-App nicht.
 
 ## [2.25.1] – 2026-09-21
 

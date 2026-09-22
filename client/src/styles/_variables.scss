@@ -92,28 +92,29 @@ html[data-theme='dark'] {
 }
 
 /**
- * **Nur in der installierten App auf iOS: mehr Luft nach oben.**
+ * **Nur in der installierten App auf iOS: die Leiste rückt dicht unter die Statusleiste.**
  *
- * iOS 26/27 legt über den oberen Bildschirmrand den Scroll-Edge-Effekt von Liquid Glass – ein
- * Unschärfe-Band, das rund 35 Punkte unter die Statusleiste ausläuft. Seit die App unter einer
- * deckenden Statusleiste beginnt (index.html), liegt der Titel zwar unter der Statusleiste, mit
- * 20px Abstand aber immer noch mit seiner OBERKANTE im Band: Alwin sah am 22.09.2026 „ein paar
- * Buchstaben oben an den Spitzen" weich, während der Rest scharf war.
+ * iOS 26/27 legt über den oberen Bildschirnrand den Scroll-Edge-Effekt von Liquid Glass – ein
+ * Unschärfe-Band bis etwa 95 Punkte ab Oberkante. Text darin wird weich. Die Antwort darauf ist
+ * NICHT mehr Abstand (das kostete 36 Punkte, Alwin: „viel zu tief, nimmt zu viel Platz weg"),
+ * sondern: **kein Text mehr ins Band.** Der Titel steht als große Überschrift im Inhalt
+ * (`GrosseUeberschrift` + `useEinklappenderTitel`) und klappt beim Scrollen klein in die Leiste.
+ * Im Ruhezustand liegen im Band nur die ruhige Fläche der Leiste und ihre Symbole.
  *
- * Die zusätzlichen Punkte holen den Text ganz heraus. Bewusst eng eingegrenzt:
- *  - `display-mode: standalone` → nur die installierte App, nicht der Safari-Tab.
- *  - `-webkit-touch-callout` → nur WebKit/iOS, damit eine Android-Installation nicht unnötig
- *    Platz verliert (dort gibt es das Band nicht).
+ * Deshalb hier nur 8px statt der 20px, die der Safari-Tab braucht: Die Web-Ansicht beginnt in der
+ * installierten App bereits unter der Statusleiste (`default` in index.html), da ist nichts, wovor
+ * der Titel geschützt werden müsste. `display-mode: standalone` + `-webkit-touch-callout` grenzen
+ * es auf die iOS-App ein; im Safari-Tab und auf Android bleibt der Normalfall.
  *
- * **Kosten: Die Kopfzeile ist in der iOS-App etwa 16px höher als früher** – der Titel sitzt damit
- * tiefer als vor dem 22.09.2026. Das ist keine Geschmacksfrage, sondern Geometrie: Die alte
- * Position liegt mitten im Band, scharf UND an der alten Stelle geht nicht (Alwin weiß es, die
- * Entscheidung steht noch aus).
+ * Bewusst hingenommen: Der EINGEKLAPPTE Titel (klein, fett, nur beim Scrollen) liegt im Band und
+ * kann leicht weich wirken – native Apps bekommen dort eine Ausnahme vom System, Web-Apps nicht.
+ * Bildschirme, die noch den festen Titel in der Leiste tragen, sind bis zu ihrem Umbau ebenso weich
+ * wie vor dem 22.09.2026 (Stand v2.25.1) – kein Rückschritt, aber noch nicht das Ziel.
  */
 @media (display-mode: standalone) {
   @supports (-webkit-touch-callout: none) {
     :root {
-      --bar-pad-top: 36px;
+      --bar-pad-top: 8px;
     }
   }
 }
