@@ -85,6 +85,39 @@ html[data-theme='dark'] {
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
+// ── Abstand oben in den Leisten (Kopfzeile, Chart-Kopf) ─────────────
+// **Eine Stelle für beide Leisten.** Der Normalfall: mindestens 20px, sonst die Safe-Area.
+:root {
+  --bar-pad-top: max(20px, var(--sat, env(safe-area-inset-top, 0px)));
+}
+
+/**
+ * **Nur in der installierten App auf iOS: mehr Luft nach oben.**
+ *
+ * iOS 26/27 legt über den oberen Bildschirmrand den Scroll-Edge-Effekt von Liquid Glass – ein
+ * Unschärfe-Band, das rund 35 Punkte unter die Statusleiste ausläuft. Seit die App unter einer
+ * deckenden Statusleiste beginnt (index.html), liegt der Titel zwar unter der Statusleiste, mit
+ * 20px Abstand aber immer noch mit seiner OBERKANTE im Band: Alwin sah am 22.09.2026 „ein paar
+ * Buchstaben oben an den Spitzen" weich, während der Rest scharf war.
+ *
+ * Die zusätzlichen Punkte holen den Text ganz heraus. Bewusst eng eingegrenzt:
+ *  - `display-mode: standalone` → nur die installierte App, nicht der Safari-Tab.
+ *  - `-webkit-touch-callout` → nur WebKit/iOS, damit eine Android-Installation nicht unnötig
+ *    Platz verliert (dort gibt es das Band nicht).
+ *
+ * **Kosten: Die Kopfzeile ist in der iOS-App etwa 16px höher als früher** – der Titel sitzt damit
+ * tiefer als vor dem 22.09.2026. Das ist keine Geschmacksfrage, sondern Geometrie: Die alte
+ * Position liegt mitten im Band, scharf UND an der alten Stelle geht nicht (Alwin weiß es, die
+ * Entscheidung steht noch aus).
+ */
+@media (display-mode: standalone) {
+  @supports (-webkit-touch-callout: none) {
+    :root {
+      --bar-pad-top: 36px;
+    }
+  }
+}
+
 // SCHRIFTEN
 // UI ist der System-Font (bewusst wie ChurchTools). $font-sans = Spiegelung als SCSS-Konstante.
 $font-sans:

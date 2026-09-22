@@ -37,6 +37,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   bekommen. Sie folgt jetzt dem Theme der App und wird aus der Leistenfarbe gelesen – **eine Farbe,
   eine Quelle**, abgesichert durch Tests.
 
+  Weil das Band rund 35 Punkte unter die Statusleiste ausläuft, lag die **Oberkante des Titels**
+  auch danach noch knapp darin („ein paar Buchstaben oben an den Spitzen"). Die Leisten bekommen
+  deshalb **in der installierten App auf iOS** etwas mehr Luft nach oben; im Browser und auf Android
+  bleibt alles wie gehabt. **Sichtbare Folge: Der Titel sitzt in der iOS-App tiefer als früher.**
+  Das ist kein Versehen, sondern der Preis: Die alte Position liegt mitten im Band, scharf und an
+  der alten Stelle gibt es zusammen nicht.
+
 ## [2.25.1] – 2026-09-21
 
 ### Behoben

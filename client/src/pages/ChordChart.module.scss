@@ -9,7 +9,8 @@
   gap: 6px;
   padding: 8px 10px;
   // Min. 20px oben (siehe NavBar): fängt Safari-Tab (env=0) + kurzzeitiges Safe-Area-Zurücksetzen ab.
-  padding-top: max(20px, var(--sat, env(safe-area-inset-top, 0px)));
+  // Wert und Begründung stehen in `styles/_variables.scss` – eine Stelle für beide Leisten.
+  padding-top: var(--bar-pad-top);
   background: var(--nav-bg);
   border-bottom: 1px solid var(--hair);
   flex-shrink: 0;

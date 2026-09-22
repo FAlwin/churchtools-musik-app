@@ -12,7 +12,8 @@
   // 20px sind damit der Regelfall, nicht mehr der Notfall. `--sat` ist der in JS gemerkte, stabile Safe-Area-Wert (main.tsx): er
   // kollabiert nicht, wenn iOS env(...) beim Schließen eines Dialogs kurz auf 0 zurücksetzt (#187);
   // env() bleibt als Fallback, solange `--sat` noch nicht gesetzt ist.
-  padding-top: max(20px, var(--sat, env(safe-area-inset-top, 0px)));
+  // Wert und Begründung stehen in `styles/_variables.scss` – eine Stelle für beide Leisten.
+  padding-top: var(--bar-pad-top);
   background: var(--nav-bg);
   border-bottom: 1px solid var(--hair);
   flex-shrink: 0;
