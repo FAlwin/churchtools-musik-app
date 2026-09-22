@@ -46,6 +46,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Hochschieben unter das Band, wo iOS ihn weichzeichnet – so, wie es native Apps auch tun. Welcher
   Bildschirm offen ist, sagt die Tab-Leiste unten. Null Punkte dauerhaft belegt.
 
+  Der Hinweis **„Zum Aktualisieren nach unten ziehen"** stand bisher dauerhaft am Listenanfang und
+  lag damit als Einziges noch im Band. Er erscheint jetzt **nur während der Geste**, zusammen mit dem
+  Pfeil, und wechselt am Auslösepunkt zu „Loslassen zum Aktualisieren". Das gilt für alle Listen mit
+  dieser Geste, nicht nur für die Termine.
+
   Noch offen und bewusst so: Die **anderen Bildschirme** tragen ihren Titel weiterhin fest in der
   Leiste und sind dort weich wie in v2.25.1. Bildschirme mit Knöpfen oben (Lieder, Detailansichten)
   brauchen für den Umbau einen Platz für diese Knöpfe – das entscheidet sich, wenn die Termine so

@@ -55,12 +55,23 @@ function PullScroll({
         {refreshing ? (
           <Spinner />
         ) : (
-          <span
-            className={styles.pullArrow}
-            style={{ transform: `rotate(${isTriggered ? 180 : 0}deg)` }}
-          >
-            ↓
-          </span>
+          <>
+            <span
+              className={styles.pullArrow}
+              style={{ transform: `rotate(${isTriggered ? 180 : 0}deg)` }}
+            >
+              ↓
+            </span>
+            {/*
+              Der Hinweis steht NUR während der Geste (Alwin, 22.09.2026): Als dauerhafte Zeile am
+              Listenanfang lag er in Bildschirmen ohne Kopfleiste im Unschärfe-Band von iOS 26/27 und
+              wirkte verschwommen. Während man zieht, darf er dort liegen – man sieht ohnehin auf die
+              eigene Hand. Der Wortlaut wechselt am Auslösepunkt, damit klar ist, wann man loslassen kann.
+            */}
+            <span className={styles.pullText} style={{ opacity: pull > 28 ? 1 : 0 }}>
+              {isTriggered ? 'Loslassen zum Aktualisieren' : 'Zum Aktualisieren nach unten ziehen'}
+            </span>
+          </>
         )}
       </div>
       <div
@@ -69,7 +80,6 @@ function PullScroll({
           transition: pull === 0 ? 'transform .2s' : 'none',
         }}
       >
-        <div className={styles.refreshHint}>↓ Zum Aktualisieren nach unten ziehen</div>
         {children}
       </div>
     </div>
