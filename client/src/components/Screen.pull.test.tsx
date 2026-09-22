@@ -26,7 +26,7 @@ const sichtbar = (el: HTMLElement | null) => el !== null && getComputedStyle(el)
 describe('Scroll mit onRefresh – der Hinweis zum Ziehen', () => {
   it('zeigt in Ruhe keinen Hinweis', () => {
     render(
-      <Scroll onRefresh={() => {}}>
+      <Scroll onRefresh={() => Promise.resolve()}>
         <div>Inhalt</div>
       </Scroll>,
     );
@@ -36,7 +36,7 @@ describe('Scroll mit onRefresh – der Hinweis zum Ziehen', () => {
 
   it('blendet den Hinweis ein, sobald man deutlich zieht', () => {
     const { container } = render(
-      <Scroll onRefresh={() => {}}>
+      <Scroll onRefresh={() => Promise.resolve()}>
         <div>Inhalt</div>
       </Scroll>,
     );

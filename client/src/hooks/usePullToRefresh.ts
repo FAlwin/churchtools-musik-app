@@ -19,7 +19,7 @@ const MIN_ANZEIGE_MS = 450;
  * „Runterziehen zum Aktualisieren" für einen scrollbaren Container.
  * Nur aktiv, wenn ganz oben gescrollt ist. Gibt Refs/Handler + Zugzustand zurück.
  */
-export function usePullToRefresh(onRefresh: () => Promise<unknown> | void) {
+export function usePullToRefresh(onRefresh: () => Promise<unknown>) {
   const ref = useRef<HTMLDivElement | null>(null);
   const startY = useRef<number | null>(null);
   const [pull, setPull] = useState(0);

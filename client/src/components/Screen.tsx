@@ -20,8 +20,14 @@ export function Screen({ children, className, style }: ScreenProps) {
 
 interface ScrollProps {
   children: ReactNode;
-  /** Optional: aktiviert „Runterziehen zum Aktualisieren". */
-  onRefresh?: () => Promise<unknown> | void;
+  /**
+   * Optional: aktiviert „Runterziehen zum Aktualisieren".
+   *
+   * **Muss das Versprechen des Abrufs zurückgeben** – daran hängt, wie lange die Ladeanzeige steht.
+   * Eine Funktion ohne Rückgabe lehnt der Compiler ab; genau die hatte bei den Abwesenheiten dazu
+   * geführt, dass die Anzeige sofort wieder weg war (22.09.2026). Mehrere Abrufe: `Promise.all`.
+   */
+  onRefresh?: () => Promise<unknown>;
 }
 
 /**
@@ -87,7 +93,7 @@ function PullScroll({
   onRefresh,
 }: {
   children: ReactNode;
-  onRefresh: () => Promise<unknown> | void;
+  onRefresh: () => Promise<unknown>;
 }) {
   const { ref, pull, refreshing, isTriggered, handlers } = usePullToRefresh(onRefresh);
   useZumAnfang(ref);
