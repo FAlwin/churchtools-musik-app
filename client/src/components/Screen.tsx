@@ -28,11 +28,8 @@ interface ScrollProps {
    */
   unterLeiste?: boolean;
   /**
-   * Optional: aktiviert „Runterziehen zum Aktualisieren".
-   *
-   * **Muss das Versprechen des Abrufs zurückgeben** – daran hängt, wie lange die Ladeanzeige steht.
-   * Eine Funktion ohne Rückgabe lehnt der Compiler ab; genau die hatte bei den Abwesenheiten dazu
-   * geführt, dass die Anzeige sofort wieder weg war (22.09.2026). Mehrere Abrufe: `Promise.all`.
+   * Optional: aktiviert „Runterziehen zum Aktualisieren". Muss das Versprechen des Abrufs zurückgeben
+   * – warum, steht an `onNeuLaden` in `SeitenGeruest.tsx`.
    */
   onRefresh?: () => Promise<unknown>;
 }

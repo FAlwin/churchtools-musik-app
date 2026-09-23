@@ -18,6 +18,7 @@ import { useSharing } from '../hooks/useSharing';
 import { usePwaInstall } from '../hooks/usePwaInstall';
 import { promptInstall } from '../services/pwaInstall';
 import styles from './Settings.module.scss';
+import { standKurz } from '../utils/zeitstempel';
 
 interface SettingsProps {
   site: SiteConfig;
@@ -556,14 +557,7 @@ export function Settings({
         {offline && (offline.records > 0 || offline.files > 0) && (
           <div className={styles.offlineStat}>
             Offline bereit ✓
-            {offline.savedAt != null &&
-              ` · zuletzt gespeichert ${new Date(offline.savedAt).toLocaleString('de-DE', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}`}
+            {offline.savedAt != null && ` · zuletzt gespeichert ${standKurz(offline.savedAt)}`}
           </div>
         )}
       </div>

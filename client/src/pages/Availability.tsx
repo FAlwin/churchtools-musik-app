@@ -290,11 +290,9 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   const laedt = absences.isLoading || events.isLoading;
   const fehler = absences.isError || events.isError;
   /**
-   * Neu laden – und zwar so, dass der Aufrufer **warten kann** (Alwin, 22.09.2026: „bei Abwesenheit
-   * und Termine ist das Neuladen nicht richtig"). Hier standen zwei mit `void` weggeworfene Abrufe,
-   * und die Funktion gab selbst nichts zurück: Beim Runterziehen war die Ladeanzeige deshalb sofort
-   * wieder weg, während Termine und Einträge noch unterwegs waren. `Promise.all` hält beide
-   * zusammen – die Anzeige steht, bis das Letzte da ist.
+   * Neu laden: Einträge UND Termine – `Promise.all` hält beide zusammen, die Ladeanzeige steht, bis
+   * das Letzte da ist. Warum ein Versprechen zurückkommen muss, steht an `onNeuLaden` in
+   * `SeitenGeruest.tsx` (hier fing es an: zwei mit `void` weggeworfene Abrufe, 22.09.2026).
    */
   const neuLaden = (): Promise<unknown> => Promise.all([absences.refetch(), events.refetch()]);
 

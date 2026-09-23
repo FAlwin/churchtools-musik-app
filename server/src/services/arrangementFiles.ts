@@ -156,5 +156,11 @@ function dateiLabel(f: CtArrangementFile): string {
  * dabei der wichtigste: Ein Name wie `../../geheim` darf nicht entstehen.
  */
 export function safeFileName(name: string): string {
-  return name.replace(/[\\/:*?"<>|]/g, '').trim();
+  // Zeilenumbrüche und Tabulatoren fallen mit weg (#410): Heute landet der Name in einem nativen
+  // `FormData`, das CR/LF spezifikationsgemäß maskiert. Ein Umbau auf handgebautes Multipart wäre
+  // aber genau der Moment, in dem ein Umbruch im Namen einen Kopfzeilen-Einschub erlaubt.
+  return name
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/[\r\n\t]+/g, ' ')
+    .trim();
 }

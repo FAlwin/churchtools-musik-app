@@ -1,5 +1,6 @@
 import type { Service } from '@shared/types/index';
 import type { CtEvent } from '../services/ctTypes.js';
+import { tagAusIso } from './isoTag.js';
 
 const TZ = 'Europe/Berlin';
 const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
@@ -33,7 +34,7 @@ export function mapEventToService(
     weekday: p.weekday,
     name: ev.name,
     subtitle,
-    date: ev.startDate.slice(0, 10),
+    date: tagAusIso(ev.startDate),
     start: ev.startDate,
     time: p.time,
     location: ev.calendar?.title ?? '',

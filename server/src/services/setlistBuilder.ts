@@ -43,7 +43,7 @@ import { metaValue } from './chordproMeta.js';
 import { setlistFingerprint, agendaSignatureList, diffAgendaItems } from './agendaDiff.js';
 import { isHeaderType, formatBerlinTime, responsibleEntries } from './agendaFormat.js';
 import { HttpError } from '../middleware/errorHandler.js';
-import { isoTag } from '../utils/isoTag.js';
+import { isoTag, tagAusIso } from '../utils/isoTag.js';
 import { mapEventToService } from '../utils/mapEvent.js';
 
 /**
@@ -422,7 +422,7 @@ async function runSongUsage(cookie: string): Promise<Record<number, SongUsage>> 
     // höchstens noch die 8 begonnenen aus – statt weiterer ~240 in ein erschöpftes Limit.
     if (overloaded) return;
     try {
-      const date = ev.startDate.slice(0, 10);
+      const date = tagAusIso(ev.startDate);
       if (date > to) return; // Sicherheitsnetz: keine Zukunftstermine mitzählen
       const agenda = await getAgenda(cookie, ev.id);
       eventIds.add(ev.id); // hat beigetragen → nur DIESE Termine dürfen den Stand invalidieren
