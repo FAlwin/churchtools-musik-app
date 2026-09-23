@@ -51,14 +51,16 @@ export function useArrangementVorladen(
   const schluessel = arrangementIds.join(',');
   useEffect(() => {
     if (!aktiv) return;
-    for (const id of arrangementIds) {
+    // Die IDs kommen aus dem SCHLÜSSEL, nicht aus dem Array: Ein neues Array mit denselben Zahlen darf
+    // nicht erneut laden. Früher stand hier das Array selbst, mit einer Dauerwarnung von
+    // `exhaustive-deps` (#406) – so hängt der Effekt nur noch an dem, was er wirklich liest.
+    for (const id of schluessel.split(',').filter(Boolean).map(Number)) {
       void qc.prefetchQuery({
         queryKey: chartQueryKey(songId, id),
         queryFn: () => api.getSongChart(songId, id),
         staleTime: 1000 * 60 * 5,
       });
     }
-    // `schluessel` statt des Arrays: Ein neues Array mit denselben Zahlen darf nicht erneut laden.
   }, [aktiv, songId, schluessel, qc]);
 }
 

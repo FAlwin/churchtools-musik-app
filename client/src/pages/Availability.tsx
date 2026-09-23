@@ -137,7 +137,9 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
    * UND auf die Zahl daneben; die vorgemerkten Häkchen hängen am Tag, nicht an der Liste, und
    * überstehen jeden Filterwechsel. Die Regeln stehen in `terminFilter.ts`.
    */
-  const arten = site.data.terminArten ?? [];
+  // Eigenes `useMemo`: `?? []` erzeugte bei fehlenden Arten in jedem Rendern ein NEUES Array, und
+  // `knoepfe` darunter wurde dadurch jedes Mal neu berechnet (#406).
+  const arten = useMemo(() => site.data.terminArten ?? [], [site.data.terminArten]);
   const knoepfe = useMemo(() => knoepfeAus(arten, alleEvents), [arten, alleEvents]);
   const auswahl = wirksameAuswahl(filter, knoepfe);
   const waehleArt = (id: string | null): void => {

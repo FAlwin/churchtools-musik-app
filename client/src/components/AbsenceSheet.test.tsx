@@ -2,7 +2,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { Absence } from '@shared/types/index';
-import { AbsenceSheet, schnellwahlZeitraum } from './AbsenceSheet';
+import { AbsenceSheet } from './AbsenceSheet';
+import { schnellwahlZeitraum } from '../utils/schnellwahl';
 
 /**
  * Das eine Fenster für Eintragen UND Ändern (#177, 05.09.2026). Geprüft wird, was Alwin an den

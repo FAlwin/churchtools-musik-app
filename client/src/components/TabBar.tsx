@@ -1,5 +1,5 @@
 import { Icon, type IconName } from './icons';
-import { scrolleZumAnfang } from './Screen';
+import { scrolleZumAnfang } from '../hooks/useZumAnfang';
 import styles from './TabBar.module.scss';
 
 export type TabId = 'termine' | 'lieder' | 'verfuegbarkeit' | 'mehr';
