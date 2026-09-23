@@ -198,6 +198,9 @@ churchtools-musik-app/
   vier fast identische `.eslintrc.cjs` in `client/`, `server/`, `shared/` und `e2e/`; `no-explicit-any`
   stand viermal da. `npm run lint` = `eslint .` prüft jetzt **alles**, auch `shared/`, `e2e/` und
   `scripts/` (die fielen vorher stillschweigend heraus). Zu wissen:
+  - **Null Warnungen, erzwungen** (#406): `npm run lint` läuft mit `--max-warnings 0`, die CI ruft genau
+    dieses Skript. Eine Warnung ist damit ein Fehler. Kein `eslint-disable` als Ausweg – die vier
+    Warnungen, die dauerhaft leuchteten, ließen sich alle an der Ursache beheben.
   - **Typbewusste Regeln sind an** (`recommendedTypeChecked`). Damit greifen `no-floating-promises`
     und `no-misused-promises` – ein vergessenes `void`/`await` ist ein Fehler, keine Stilfrage.
   - **`no-console` gilt im Server** (`warn`/`error` erlaubt, `console.log` pro Stelle freizugeben).
@@ -439,6 +442,11 @@ Neue Nutzer bekommen beim ersten Mal eine geführte Einführung mit Hinweisblase
   `tsc` typprüft die **Testdateien mit**. Ein Tippfehler im Typ eines Tests lässt alle Tests grün
   durchlaufen und bricht trotzdem den Build (und damit die CI). Vor dem Push immer auch
   `npm run build`.
+- **vitest 4, Spione frisch je Test** (#405): Beide Testkonfigurationen setzen `restoreMocks: true`.
+  vitest 4 ÜBERNIMMT bei einem zweiten `vi.spyOn` auf dieselbe Methode den bestehenden Spion samt
+  Aufrufen – ohne die Einstellung liest ein Test womöglich die Logzeile des vorigen. Typen: ein bloßes
+  `vi.fn()` ist nicht mehr als Rückruf zuweisbar (`vi.fn<() => void>()`), und die Node-Typen kommen im
+  Client nicht mehr mit (`/// <reference types="node" />` in der Testdatei, die sie braucht).
 - **Umgebung je Testdatei:** Standard ist `node` (reine Logik). Tests, die DOM/localStorage/jsPDF
   brauchen, setzen selbst `// @vitest-environment jsdom` als ERSTE Zeile – fehlt sie, scheitern sie
   mit „window is not defined".
