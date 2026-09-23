@@ -7,6 +7,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.25.3] – 2026-09-23
+
+**Beim Update ist nichts zu tun.** Gemeinden, die die App über HTTPS betreiben, sollten prüfen, ob
+`COOKIE_SECURE=true` gesetzt ist – fehlt es, steht seit dieser Version eine Warnung im Container-Log.
+
 ### Behoben
 
 - **Abmelden räumt das Gerät auch ohne Netz** (#403). Bisher blieben Abläufe samt Personennamen und

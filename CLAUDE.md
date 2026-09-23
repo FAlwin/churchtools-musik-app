@@ -20,7 +20,7 @@
   extern unter `https://musik.ecg-donrath.de` live.
 
   **Stand 23.09.2026: Produktiv läuft `v2.25.1`** – am 21.09.2026 **gemessen**, nicht aus der Doku
-  übernommen. **v2.25.2 ist getaggt, der Prod-Deploy liegt bei Alwin.** So misst man die laufende
+  übernommen. **v2.25.2 und v2.25.3 sind getaggt, der Prod-Deploy liegt bei Alwin.** So misst man die laufende
   Version: Der Versionsstring steckt im ausgelieferten Bundle
   (`curl -s https://musik.ecg-donrath.de/ | grep -oE 'assets/index-[^"]+\.js'`, dann diese Datei holen
   und nach `v2.` greppen). `/api/health` nennt **keine** Version und taugt dafür nicht. Getestet wird
@@ -577,6 +577,15 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
+
+- **v2.25.3 (23.09.2026) = die acht Issues aus den Code-Checks** (PR #412, Squash `43e0bf5`; Staging
+  als `staging-43e0bf5` verifiziert, von Alwin getestet). #403 Abmelden ohne Netz (Merker
+  `worship:abmelden-ausstehend`, Nachholen beim Start – das httpOnly-Cookie hätte sonst die nächste
+  Person als die vorige angemeldet), #404 alle sechs Ablagen über `jsonStore`, #405 vitest 4.1.11 +
+  Patch-Updates → `npm audit` 0, **ohne** Express 5, #406 Lint mit `--max-warnings 0`, #407
+  `Settings.tsx` in Bausteine (Tests vorher gegen den alten Stand), #408 ein Abstand am Listenende,
+  #409 COOKIE_SECURE-Warnung, #410 Kleinkram. Neu offen: #413 (ein Schalter-Baustein), #414 (Termine
+  nach Mitternacht auf dem Vortag), #415 (Express 5 als Wartung).
 
 - **v2.25.2 (23.09.2026) = iOS-27-Kopfzeile, Seiten-Gerüst, Abwesenheiten mit Uhrzeit** (Zweig
   `fix/kopfleisten-deckend`, als ein Squash-Commit gemergt; Staging zuletzt als `staging-aee2ccd`
