@@ -109,7 +109,12 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   /** Vorgemerkt zu löschende Zeiträume (IDs). */
   const [loeschen, setLoeschen] = useState<number[]>([]);
   const [entwurf, setEntwurf] = useState<Entwurf | null>(null);
-  const [frage, setFrage] = useState<{ tag: string; absence: Absence } | null>(null);
+  const [frage, setFrage] = useState<{
+    tag: string;
+    absence: Absence;
+    /** Die anderen Termine, die derselbe Eintrag abdeckt – leer bei einem reinen Zeitraum. */
+    weitere: string[];
+  } | null>(null);
   const [tour, setTour] = useState(false);
   /** Gewählte Termin-Art (#400) – vom Gerät gelesen, dorthin geschrieben; leer = alle. */
   const [filter, setFilter] = useState<string[]>(getAbwesenheitenFilter);
@@ -173,10 +178,19 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
   const haken = (ev: AbsenceEvent): void => {
     if (!online) return onToast('Zum Ändern brauchst du Netz.');
     const a = abwesenheitFuerTermin(liste, ev);
-    if (a && a.startDate !== a.endDate) {
-      // Teil eines Zeitraums: entweder die vorgemerkte Löschung zurücknehmen – oder nachfragen.
+    /**
+     * **Deckt der Eintrag mehr ab als diesen einen Termin?** Dann wird gefragt statt stumm gelöscht.
+     *
+     * Bis zum 23.09.2026 stand hier nur „mehrtägig" – ein **ganztägiger** Eintrag deckt aber ebenso
+     * jeden Termin des Tages. Wer bei einem Termin den Haken wegnahm, löschte ihn damit auch für den
+     * anderen, ohne Warnung und ohne sichtbare Vormerkung. Das traf JEDEN Bestandseintrag, denn die
+     * sind alle ganztägig (Fund im Code-Check vor v2.25.2).
+     */
+    const weitere = a ? alleEvents.filter((e) => e.id !== ev.id && decktTermin(a, e)) : [];
+    if (a && (a.startDate !== a.endDate || weitere.length > 0)) {
+      // Entweder die vorgemerkte Löschung zurücknehmen – oder nachfragen.
       if (loeschen.includes(a.id)) setLoeschen((l) => l.filter((id) => id !== a.id));
-      else setFrage({ tag: ev.date, absence: a });
+      else setFrage({ tag: ev.date, absence: a, weitere: weitere.map((e) => e.name) });
       return;
     }
     const ist = a !== undefined;
@@ -549,6 +563,7 @@ export function Availability({ online, onToast, heute = heuteIso() }: Availabili
         <ZeitraumFrage
           tag={frage.tag}
           absence={frage.absence}
+          weitereTermine={frage.weitere}
           onLoeschen={() => {
             setLoeschen((l) => (l.includes(frage.absence.id) ? l : [...l, frage.absence.id]));
             setFrage(null);

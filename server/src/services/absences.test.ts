@@ -141,6 +141,16 @@ describe('absenceBody – Zeitfenster', () => {
       }),
     ).toThrow(/Anfang und Ende/);
   });
+  it('eine Uhrzeit an einem anderen Tag → 400', () => {
+    expect(() =>
+      a.absenceBody({
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2030-05-05T10:00:00Z',
+        endTime: '2030-05-05T12:00:00Z',
+      }),
+    ).toThrow(/gehört nicht zum gewählten Tag/);
+  });
   it('Uhrzeit-Ende vor Anfang → 400', () => {
     expect(() =>
       a.absenceBody({
@@ -328,6 +338,30 @@ describe('abwesenheitAendern – neu anlegen, dann alten entfernen (#177)', () =
         endTime: '2026-10-04T12:00:00Z',
       }),
     );
+  });
+
+  it('die Antwort trägt das Zeitfenster – wie beim Anlegen (Code-Check 23.09.2026)', async () => {
+    vi.mocked(getAbsences).mockResolvedValue([
+      {
+        id: 5,
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2026-10-04T10:00:00Z',
+        endTime: '2026-10-04T12:00:00Z',
+        comment: '[Musikteam] alt',
+      },
+    ]);
+    vi.mocked(createAbsence).mockResolvedValue(90);
+    vi.mocked(deleteAbsence).mockResolvedValue(undefined);
+
+    const antwort = await a.abwesenheitAendern('c', 4711, 5, {
+      startDate: '2026-10-04',
+      endDate: '2026-10-04',
+      comment: 'neu',
+    });
+
+    expect(antwort.startTime).toBe('2026-10-04T10:00:00Z');
+    expect(antwort.endTime).toBe('2026-10-04T12:00:00Z');
   });
 
   it('wandert der Eintrag auf andere Tage, entfällt die Uhrzeit', async () => {

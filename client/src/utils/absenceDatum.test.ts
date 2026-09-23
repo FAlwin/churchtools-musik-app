@@ -77,6 +77,25 @@ describe('absenceDatum', () => {
     ).toBe(8);
   });
 
+  /**
+   * Zeitpunkte, nicht Text (Code-Check 23.09.2026). Der Termin um 13:00+02:00 ist 11:00 UTC und liegt
+   * damit im Fenster 10–12 UTC. Als Zeichenkette verglichen käme „13:00…" aber NACH „12:00Z" – der
+   * Haken erschiene nicht. (Der erste Testfall dazu traf zufällig auch mit Textvergleich; erst die
+   * Gegenprobe zeigte das.)
+   */
+  it('vergleicht Uhrzeiten als Zeitpunkte – ein Offset ändert nichts', () => {
+    const termin = ev({
+      startDate: '2026-10-04T13:00:00+02:00',
+      endDate: '2026-10-04T14:00:00+02:00',
+    });
+    const fenster = ab({
+      id: 11,
+      startTime: '2026-10-04T10:00:00Z',
+      endTime: '2026-10-04T12:00:00Z',
+    });
+    expect(abwesenheitFuerTermin([fenster], termin)?.id).toBe(11);
+  });
+
   it('das Fenster eines Termins deckt den unmittelbar folgenden NICHT mit ab', () => {
     const erster = ev({
       id: 1,

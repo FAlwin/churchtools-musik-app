@@ -51,7 +51,11 @@ interface ScrollProps {
  */
 const ZUM_ANFANG = 'app:zum-anfang';
 
-/** Höhe des Zug-Anzeigers – so weit rückt der Inhalt während des Ladens nach unten. */
+/**
+ * Höhe des Zug-Anzeigers – so weit rückt der Inhalt während des Ladens nach unten. Die EINE Quelle:
+ * Sie wird als Stil gesetzt, nicht zusätzlich im SCSS (dort stand sie bis zum Code-Check am
+ * 23.09.2026 ein zweites Mal, und nichts hätte die beiden Zahlen gleich gehalten).
+ */
 const PULL_HOEHE = 48;
 
 /** Von der Tab-Leiste gerufen, wenn der schon aktive Tab noch einmal getippt wird. */
@@ -83,21 +87,29 @@ function useZumAnfang(ref: React.RefObject<HTMLDivElement | null>) {
   }, [ref]);
 }
 
-/** Scrollbarer Bereich innerhalb eines Screens. Mit onRefresh: Pull-to-Refresh. */
+/**
+ * Scrollbarer Bereich innerhalb eines Screens. Mit onRefresh: Pull-to-Refresh.
+ *
+ * Beide Varianten sind eigene Komponenten, damit jede genau EINMAL auf „nach oben" hört. Vorher rief
+ * `Scroll` selbst `useZumAnfang` auf einen Ref, der im Pull-Zweig nie an ein Element kam – ein
+ * zweiter, toter Listener neben dem in `PullScroll` (Code-Check 23.09.2026).
+ */
 export function Scroll({ children, onRefresh, unterLeiste }: ScrollProps) {
-  const eigenerRef = useRef<HTMLDivElement | null>(null);
-  useZumAnfang(eigenerRef);
-  if (!onRefresh) {
-    return (
-      <div className={styles.scroll} ref={eigenerRef}>
-        {children}
-      </div>
-    );
-  }
+  if (!onRefresh) return <EinfachScroll>{children}</EinfachScroll>;
   return (
     <PullScroll onRefresh={onRefresh} unterLeiste={unterLeiste}>
       {children}
     </PullScroll>
+  );
+}
+
+function EinfachScroll({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useZumAnfang(ref);
+  return (
+    <div className={styles.scroll} ref={ref}>
+      {children}
+    </div>
   );
 }
 
@@ -138,7 +150,7 @@ function PullScroll({
          * die feste Position: Bei ganz kurzem Zug liegt der Anzeiger noch über der Überschrift
          * (gemessen: bis etwa 48 px Zug), und genau dort ist er jetzt noch blass.
          */
-        style={{ opacity: refreshing ? 1 : Math.min(pull / PULL_HOEHE, 1) }}
+        style={{ height: PULL_HOEHE, opacity: refreshing ? 1 : Math.min(pull / PULL_HOEHE, 1) }}
         aria-hidden={pull > 8 || refreshing ? undefined : true}
       >
         {refreshing ? (

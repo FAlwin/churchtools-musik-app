@@ -99,10 +99,18 @@ export function decktTermin(
   if (a.startDate > ev.date || ev.date > a.endDate) return false;
   // Ganztägig (Urlaub, alles von früher, alles über das Plus) gilt für jeden Termin des Tages.
   if (!a.startTime || !a.endTime) return true;
+  /**
+   * **Als Zeitpunkte vergleichen, nicht als Text** (Code-Check 23.09.2026). Die Tage (`YYYY-MM-DD`)
+   * dürfen textuell verglichen werden, die Uhrzeiten nicht: Sie stammen aus zwei verschiedenen
+   * ChurchTools-Endpunkten, und sobald einer davon `+02:00` statt `Z` schreibt, wäre der
+   * Textvergleich falsch, obwohl es derselbe Moment ist.
+   */
+  const aVon = Date.parse(a.startTime);
+  const aBis = Date.parse(a.endTime);
+  const evVon = Date.parse(ev.startDate);
+  const evBis = Date.parse(ev.endDate);
   // Grenzen offen behandeln, sonst deckte das Fenster eines Termins den unmittelbar folgenden mit
   // ab (10–12 Uhr und 12–14 Uhr sind zwei verschiedene Termine).
-  if (ev.endDate <= ev.startDate) {
-    return a.startTime <= ev.startDate && ev.startDate < a.endTime;
-  }
-  return a.startTime < ev.endDate && ev.startDate < a.endTime;
+  if (!(evBis > evVon)) return aVon <= evVon && evVon < aBis;
+  return aVon < evBis && evVon < aBis;
 }

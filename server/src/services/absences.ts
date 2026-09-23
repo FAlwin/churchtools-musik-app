@@ -80,8 +80,13 @@ export function absenceBody(
   if (Boolean(neu.startTime) !== Boolean(neu.endTime)) {
     throw new HttpError(400, 'Zu einer Uhrzeit gehören Anfang und Ende.');
   }
-  if (neu.startTime && neu.endTime && neu.endTime <= neu.startTime) {
+  if (neu.startTime && neu.endTime && Date.parse(neu.endTime) <= Date.parse(neu.startTime)) {
     throw new HttpError(400, 'Das Ende liegt vor dem Anfang.');
+  }
+  // Das Fenster muss zu den Tagen passen – sonst entstünde ein Eintrag, der in ChurchTools etwas
+  // anderes behauptet, als er meint (Code-Check 23.09.2026).
+  if (neu.startTime && !neu.startTime.startsWith(neu.startDate)) {
+    throw new HttpError(400, 'Die Uhrzeit gehört nicht zum gewählten Tag.');
   }
   return {
     startDate: neu.startDate,
@@ -94,6 +99,25 @@ export function absenceBody(
     // fremden Eintrags darf er NICHT dazukommen – sonst würde der Excel-Sync ihn anfassen.
     comment: herkunft.mitMarker === false ? (neu.comment ?? '').trim() : mitMarker(neu.comment),
   };
+}
+
+/**
+ * Der frisch geschriebene Eintrag als App-Sicht – **die eine Stelle** (23.09.2026, Code-Check).
+ *
+ * Anlegen und Ändern bauten diese Antwort getrennt zusammen, und beim Ändern fehlten `startTime`/
+ * `endTime`: Die Antwort meldete „ganztägig", obwohl das Fenster in ChurchTools stand. Folgenlos nur,
+ * weil die App nach jeder Änderung neu lädt – für den nächsten Aufrufer eine Falle. Genau die halb
+ * umgesetzte Regel, gegen die dieses Projekt seine Arbeitsregeln geschrieben hat.
+ */
+function alsAbsence(id: number, body: ReturnType<typeof absenceBody>): Absence {
+  return zuAbsence({
+    id,
+    startDate: body.startDate,
+    endDate: body.endDate,
+    startTime: body.startTime ?? null,
+    endTime: body.endTime ?? null,
+    comment: body.comment,
+  });
 }
 
 /**
@@ -178,17 +202,7 @@ export async function abwesenheitAnlegen(
   const doppel = gleicherZeitraum(vorhanden, body);
   if (doppel) return { absence: doppel, neu: false };
   const id = await createAbsence(cookie, userId, body);
-  return {
-    absence: zuAbsence({
-      id,
-      startDate: body.startDate,
-      endDate: body.endDate,
-      startTime: body.startTime ?? null,
-      endTime: body.endTime ?? null,
-      comment: body.comment,
-    }),
-    neu: true,
-  };
+  return { absence: alsAbsence(id, body), neu: true };
 }
 
 /**
@@ -325,12 +339,7 @@ export async function abwesenheitAendern(
       'Die Änderung wurde eingetragen, der alte Eintrag ließ sich aber nicht entfernen. Bitte in ChurchTools nachsehen.',
     );
   }
-  return zuAbsence({
-    id,
-    startDate: body.startDate,
-    endDate: body.endDate,
-    comment: body.comment,
-  });
+  return alsAbsence(id, body);
 }
 
 /* ------------------------------------------------------------------ Abwesenheitsgründe */

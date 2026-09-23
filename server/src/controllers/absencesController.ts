@@ -25,8 +25,11 @@ const neueAbsenceSchema = z.object({
    * hingen wieder zusammen. Aufgefallen ist das erst beim Durchklicken – Tests auf beiden Seiten
    * waren grün, weil der Bruch genau dazwischen lag.
    */
-  startTime: z.string().datetime().optional(),
-  endTime: z.string().datetime().optional(),
+  // `offset: true` ist Absicht: Ohne das lehnt zod `2026-10-04T10:00:00+02:00` ab. Die ECG-Instanz
+  // liefert `…Z` (gemessen), aber die App wird an andere Gemeinden verteilt – dort dürfte sonst
+  // jeder Haken mit 400 scheitern (Code-Check 23.09.2026, empirisch nachgestellt).
+  startTime: z.string().datetime({ offset: true }).optional(),
+  endTime: z.string().datetime({ offset: true }).optional(),
   comment: z.string().trim().max(200).optional(),
   /** Grund aus `GET /api/absences/reasons`; ChurchTools lehnt eine unbekannte ID selbst ab. */
   reasonId: z.coerce.number().int().positive().optional(),

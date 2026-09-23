@@ -29,6 +29,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   Compile-Wächter fängt das künftig (der alte konnte bei optionalen Feldern gar nicht anschlagen –
   nachgestellt und behoben).
 
+  **Der Code-Check vor dem Release fand noch eine ernste Lücke** (23.09.2026): Ein **ganztägiger**
+  Eintrag gilt für beide Termine des Tages – nahm man bei einem den Haken weg, wurde er stumm für
+  beide gelöscht, ohne Warnung. Die Rückfrage gab es bis dahin nur für mehrtägige Zeiträume. Weil
+  während der Umstellung **jeder** Bestandseintrag ganztägig ist, hätte das im Alltag sofort
+  zugeschlagen. Jetzt fragt die App: „Gilt für den ganzen Tag – und damit auch für …", mit „Eintrag
+  löschen" oder „Eintrag anpassen". Außerdem: Die Antwort beim Ändern trägt die Uhrzeit (Anlegen und
+  Ändern bauen sie jetzt über **eine** Funktion), Uhrzeiten werden als Zeitpunkte statt als Text
+  verglichen (ein `+02:00` hätte sonst falsch sortiert), Zeitzonen-Angaben werden angenommen, und
+  eine Uhrzeit an einem anderen Tag als dem eingetragenen wird abgewiesen.
+
 ### Behoben
 
 - **Verschmierte Kopfzeile in der installierten App unter iOS 26/27.** Titel und Knöpfe im oberen

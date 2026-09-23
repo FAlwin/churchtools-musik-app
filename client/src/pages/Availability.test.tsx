@@ -631,3 +631,70 @@ describe('Abwesenheiten – mehrere Termine am selben Tag', () => {
     expect(kasten(/Abwesend – Jugendtreff/).getAttribute('aria-pressed')).toBe('true');
   });
 });
+
+/**
+ * **Ein ganztägiger Eintrag darf nicht stumm verschwinden** (Code-Check vor v2.25.2, 23.09.2026).
+ *
+ * Die Rückfrage griff nur bei MEHRTÄGIGEN Einträgen. Ein ganztägiger Ein-Tages-Eintrag deckt aber
+ * ebenfalls beide Termine des Tages – nimmt man bei einem den Haken weg, wurde die ganze Abwesenheit
+ * zum Löschen vorgemerkt und der zweite Termin verlor seinen Haken mit, ohne Warnung und ohne
+ * sichtbare Vormerkung. Das trifft während der Umstellung JEDEN Bestandseintrag, denn die sind alle
+ * ganztägig.
+ */
+describe('Abwesenheiten – ganztägiger Eintrag bei zwei Terminen am Tag', () => {
+  const VORMITTAGS: AbsenceEvent = {
+    id: 41,
+    name: 'Gottesdienst',
+    date: '2026-10-04',
+    startDate: '2026-10-04T10:00:00Z',
+    endDate: '2026-10-04T12:00:00Z',
+  };
+  const NACHMITTAGS: AbsenceEvent = {
+    id: 42,
+    name: 'Jugendtreff',
+    date: '2026-10-04',
+    startDate: '2026-10-04T16:00:00Z',
+    endDate: '2026-10-04T18:00:00Z',
+  };
+  const GANZTAGS = {
+    id: 50,
+    startDate: '2026-10-04',
+    endDate: '2026-10-04',
+    startTime: null,
+    endTime: null,
+    comment: '',
+    reason: 'Abwesend',
+    reasonId: 1,
+    vonApp: true,
+  };
+
+  beforeEach(() => {
+    events.mockReturnValue({
+      data: [VORMITTAGS, NACHMITTAGS],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    absences.mockReturnValue({
+      data: [GANZTAGS],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+  });
+
+  it('fragt nach, statt den Eintrag für beide Termine stumm zu löschen', () => {
+    zeige();
+    // Beide Termine tragen den Haken – der Eintrag gilt für den ganzen Tag.
+    expect(kasten(/Abwesend – Gottesdienst/).getAttribute('aria-pressed')).toBe('true');
+    expect(kasten(/Abwesend – Jugendtreff/).getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(kasten(/Abwesend – Gottesdienst/));
+
+    // Es MUSS eine Rückfrage kommen; der Nachmittag darf seinen Haken nicht stumm verlieren.
+    // Geprüft am Titel des Fensters und am Knopf – der Fließtext ist über mehrere Elemente verteilt.
+    expect(screen.queryByText('Gilt für den ganzen Tag')).not.toBeNull();
+    expect(screen.queryByRole('button', { name: /Eintrag löschen/ })).not.toBeNull();
+    expect(kasten(/Abwesend – Jugendtreff/).getAttribute('aria-pressed')).toBe('true');
+  });
+});

@@ -82,10 +82,13 @@ describe('Scroll mit onRefresh – der Hinweis zum Ziehen', () => {
  * das Neuladen nicht richtig. Bei Lied stimmt es.").
  *
  * Zwei Regeln, zwei Tests – bewusst getrennt, denn sie decken einander sonst zu:
- *  1. Dauert der Abruf lange, steht die Anzeige so lange. Das fängt den Fehler der Abwesenheiten,
- *     deren Neuladen zwei Abrufe wegwarf und sofort zurückkam. Der Abruf hier braucht deutlich
- *     länger als die Untergrenze – sonst wäre der Test auch ohne den Fix grün.
+ *  1. Dauert der Abruf lange, steht die Anzeige so lange (das Warten auf das Versprechen).
  *  2. Kommt die Antwort aus dem Cache, blitzt die Anzeige nicht nur auf, sondern bleibt kurz stehen.
+ *
+ * **Was diese Tests NICHT bewachen** (Code-Check 23.09.2026): den Fehler der Abwesenheiten, deren
+ * Neuladen gar kein Versprechen zurückgab. Hier wird `Scroll` direkt mit einem echten Versprechen
+ * gerendert – das ging schon vorher. Diese Hälfte bewachen der Rückgabetyp von `onNeuLaden`
+ * (Compiler) und `Availability.test.tsx` („Runterziehen zum Aktualisieren").
  *
  * Gemessen wird die Sichtbarkeit des Anzeigers (`opacity`) – unabhängig von den Klassennamen der
  * CSS-Module.
@@ -151,20 +154,23 @@ describe('Scroll mit onRefresh – wie lange die Ladeanzeige steht', () => {
  *
  * Vorher war die Höhe des Anzeigers die Zugstrecke – er saß damit am oberen Bildschirmrand, im
  * Unschärfe-Band von iOS, und wie weit er daraus herausrutschte, hing davon ab, ob die Liste lang
- * genug für das native Gummiband ist. Jetzt hat er seine Höhe aus dem Stil (keine im Stilattribut)
- * und sitzt an fester Stelle; verschoben wird nur der Inhalt.
+ * genug für das native Gummiband ist. Jetzt hat er eine feste Höhe und sitzt an fester Stelle;
+ * verschoben wird nur der Inhalt.
  */
 describe('Scroll mit onRefresh – wo der Anzeiger sitzt', () => {
-  it('gibt dem Anzeiger keine Höhe aus der Zugstrecke und schiebt nur den Inhalt', () => {
+  it('gibt dem Anzeiger eine feste Höhe, egal wie weit man zieht – nur der Inhalt wandert', () => {
     const { container } = render(
       <Scroll onRefresh={() => Promise.resolve()}>
         <div>Inhalt</div>
       </Scroll>,
     );
     const scroller = scrollBereich(container);
-    ziehen(scroller, 160); // gedämpft 80 px
 
-    expect(anzeiger(container).style.height).toBe('');
+    ziehen(scroller, 40); // gedämpft 20 px
+    expect(anzeiger(container).style.height).toBe('48px');
+
+    ziehen(scroller, 160); // gedämpft 80 px
+    expect(anzeiger(container).style.height).toBe('48px');
     expect((scroller.firstElementChild as HTMLElement).style.transform).toBe('translateY(80px)');
   });
 });
