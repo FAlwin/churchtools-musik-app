@@ -70,8 +70,12 @@ export function useDeleteAbsence() {
 
 /** Was die Terminliste beim Speichern gesammelt schreibt: neue Eintages-Abwesenheiten und zu löschende Einträge. */
 export interface AbsenceAenderungen {
-  /** Tage (`YYYY-MM-DD`), an denen ein neuer Haken sitzt – je Tag eine Abwesenheit mit Standardgrund. */
-  eintragen: string[];
+  /**
+   * Was neu eingetragen wird – je Haken ein Eintrag mit dem **Zeitfenster des Termins**
+   * (22.09.2026). Vorher stand hier eine Liste von Tagen; damit ließen sich zwei Termine am selben
+   * Tag nicht einzeln abhaken.
+   */
+  eintragen: NeueAbsence[];
   /** IDs, deren Haken entfernt wurde – Eintages-Einträge und ganze Zeiträume gleichermaßen. */
   loeschen: number[];
 }
@@ -89,7 +93,7 @@ export function useSaveAbsenceChanges() {
   const refresh = useAbsencesRefresh();
   return useMutation({
     mutationFn: async ({ eintragen, loeschen }: AbsenceAenderungen) => {
-      for (const tag of eintragen) await api.createAbsence({ startDate: tag, endDate: tag });
+      for (const eintrag of eintragen) await api.createAbsence(eintrag);
       for (const id of loeschen) await api.deleteAbsence(id);
       return eintragen.length + loeschen.length;
     },

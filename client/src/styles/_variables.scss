@@ -34,7 +34,16 @@
   --track-off: #d1d5db; // Toggle-Schiene (aus)
   --scrim: rgba(15, 22, 28, 0.5); // Overlay hinter Sheets/Dialogen
 
-  --nav-bg: rgba(255, 255, 255, 0.9); // Header / Tab-Bar / Footer (mit Blur)
+  // Header / Tab-Bar / Chart-Kopf und -Fuß. **Deckend und exakt die `theme-color` aus index.html.**
+  // Seit die App unter einer deckenden Statusleiste beginnt (22.09.2026, iOS 26/27), malt iOS den
+  // Streifen darüber selbst – in genau dieser Farbe. War die Leiste halbdurchsichtig, ergab sie
+  // #fdfefe statt #ffffff: zwei Stufen daneben, sichtbar als feiner Strich quer über den Schirm
+  // (Alwin, 22.09.2026). Die Unschärfe kam dazu, weil sie den Inhalt hinter der Leiste abtastet –
+  // beim Scrollen wanderte der Ton der Leiste, der iOS-Streifen blieb stehen.
+  // **Dies ist die eine Quelle der Farbe.** Die Grundfläche `html, body` (main.scss) nutzt dieselbe
+  // Variable, und die `theme-color` für iOS wird in `hooks/useSettings.ts` daraus GELESEN – hier
+  // ändern genügt also.
+  --nav-bg: #ffffff;
   --shadow: 0 1px 2px rgba(17, 24, 39, 0.04); // Karten: kaum Schatten, der Rand trägt
   --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
@@ -70,8 +79,41 @@ html[data-theme='dark'] {
   --seg-on: #3a4d5e;
   --track-off: #3a4856;
 
-  --nav-bg: rgba(32, 45, 58, 0.85); // Leisten heller als die Basis → klar abgesetzt
+  // Leisten heller als die Basis → klar abgesetzt. Deckend und gleich der dunklen `theme-color`
+  // (siehe hell). Halbdurchsichtig ergab die Leiste #1d2a36 statt #1e2a35 – dieselbe Naht.
+  --nav-bg: #1e2a35;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+// ── Abstand oben: Leisten und Inhalt ohne Leiste ────────────────────
+:root {
+  // Leisten (Kopfzeile, Chart-Kopf): mindestens 20px, sonst die Safe-Area. Eine Stelle für beide.
+  --bar-pad-top: max(20px, var(--sat, env(safe-area-inset-top, 0px)));
+  // Bildschirme OHNE Leiste (große Überschrift im Inhalt): Abstand der Überschrift nach oben.
+  // Im Safari-Tab reicht wenig (kein Band, keine Safe-Area).
+  --inhalt-pad-top: 12px;
+}
+
+/**
+ * **Nur in der installierten App auf iOS.**
+ *
+ * Die App zeichnet hinter der Statusleiste (`black-translucent`, index.html) – „komplett
+ * transparent", kein Streifen hinter der Uhr. iOS legt über die oberen ~95 pt sein Unschärfe-Band;
+ * Text darin wird weich. Auf Bildschirmen ohne Leiste steht deshalb nichts als die Fläche im Band:
+ * Die Überschrift beginnt unterhalb, Safe-Area (~59) + 36 → Text ab ~100 pt. Beim Scrollen läuft der
+ * Inhalt unter Uhr und Band durch und wird dort weich – native Optik, kein Fehler.
+ *
+ * Leisten (`--bar-pad-top`) folgen der Grundregel oben: Safe-Area, mindestens 20px. Ihr Titel liegt
+ * damit im Band und ist weich wie in v2.25.1 – bis der jeweilige Bildschirm umgebaut ist.
+ *
+ * `display-mode: standalone` + `-webkit-touch-callout` grenzen es auf die iOS-App ein.
+ */
+@media (display-mode: standalone) {
+  @supports (-webkit-touch-callout: none) {
+    :root {
+      --inhalt-pad-top: calc(var(--sat, env(safe-area-inset-top, 0px)) + 36px);
+    }
+  }
 }
 
 // SCHRIFTEN

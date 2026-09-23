@@ -1,0 +1,27 @@
+.block {
+  // Der Abstand oben hält die Überschrift im Ruhezustand unter dem Unschärfe-Band von iOS; er ist
+  // Teil des Inhalts und scrollt mit weg. Wert je Umgebung in `styles/_variables.scss`.
+  padding: var(--inhalt-pad-top) 16px 10px;
+}
+
+// Detailansichten: Die Leiste darüber hält den Abstand schon.
+.blockOhneAbstand {
+  padding: 4px 16px 10px;
+}
+
+.gross {
+  // Die Maße folgen der ChurchTools-App und iOS: groß, fett, eng gesetzt.
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  line-height: 1.15;
+  color: var(--text);
+  text-wrap: balance;
+}
+
+.unterzeile {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text2);
+}

@@ -16,8 +16,8 @@ import {
   arrayMove,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { Screen, Scroll } from '../components/Screen';
-import { NavBar, IconButton } from '../components/NavBar';
+import { SeitenGeruest } from '../components/SeitenGeruest';
+import { IconButton } from '../components/NavBar';
 import { CenterMessage } from '../components/CenterMessage';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddItemSheet } from '../components/AddItemSheet';
@@ -74,7 +74,8 @@ interface SetlistProps {
   items: AgendaItem[];
   isLoading?: boolean;
   isError?: boolean;
-  onRetry?: () => void;
+  /** Neu laden – gibt das Versprechen zurück, damit die Ladeanzeige darauf warten kann. */
+  onRetry?: () => Promise<unknown>;
   /** Wird mit dem Index des Lieds (nur Lieder gezählt) aufgerufen. */
   onSelect: (songIndex: number) => void;
   onBack: () => void;
@@ -238,89 +239,41 @@ export function Setlist({
     void sharePdf(doc, service.name || 'Ablauf');
   }
 
-  return (
-    <Screen>
-      <NavBar
-        title={service.name}
-        subtitle={`${service.weekday}, ${service.day}. ${service.month} · ${service.time}`}
-        back={onBack}
-        backLabel="Termine"
-        right={
-          !isLoading && !isError && items.length > 0 ? (
-            <>
-              {exportableSongs.length > 0 && !editMode && (
-                <IconButton
-                  onClick={() => void handleExportPdf()}
-                  title="Alle Lieder als PDF teilen"
-                  dataTour="setlist-share"
-                >
-                  <Icon name="share" size={20} stroke={2.2} />
-                </IconButton>
-              )}
-              {canEdit && (
-                <IconButton
-                  onClick={() => {
-                    setErr(null);
-                    setEditMode((v) => !v);
-                  }}
-                  title={editMode ? 'Fertig' : 'Ablauf bearbeiten'}
-                  dataTour="setlist-edit"
-                >
-                  <Icon name={editMode ? 'check' : 'pencil'} size={20} stroke={2.2} />
-                </IconButton>
-              )}
-            </>
-          ) : undefined
-        }
-      />
-      <Scroll onRefresh={editMode ? undefined : onRetry}>
-        {isLoading ? (
-          <CenterMessage loading text="Ablauf wird geladen…" />
-        ) : isError ? (
-          <CenterMessage icon="⚠️" text="Ablauf konnte nicht geladen werden." onRetry={onRetry} />
-        ) : items.length === 0 ? (
-          <CenterMessage icon="📋" text="Dieser Ablauf enthält noch keine Punkte." />
-        ) : editMode ? (
-          <>
-            <div className={styles.editHint}>
-              {isReordering ? (
-                'Speichere…'
-              ) : (
-                <>
-                  Ziehen <Icon name="grip" size={14} className={styles.hintIcon} /> zum Sortieren ·
-                  Eintrag antippen zum Bearbeiten.
-                </>
-              )}
-            </div>
-            {err && <div className={styles.editError}>{err}</div>}
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              onDragCancel={resetViewportAfterDrag}
-              autoScroll={innerScrollOnly}
-            >
-              <SortableContext
-                items={localItems.map((i) => i.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className={styles.list}>
-                  {localItems.map((item) => (
-                    <SortableRow key={item.id} item={item} onOpenActions={setActionItem} />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-            <button className={styles.addBtn} data-tour="edit-add" onClick={() => setShowAdd(true)}>
-              ＋ Eintrag hinzufügen
-            </button>
-          </>
-        ) : (
-          <AgendaFullView items={items} eventId={service.id} onSelect={onSelect} />
+  /**
+   * Die Knöpfe rechts in der Leiste. Titel und Datum stehen NICHT dort, sondern groß im Inhalt:
+   * Unter iOS 26/27 liegt die Leiste im Unschärfe-Band des Systems (siehe `client/index.html`) –
+   * Symbole verträgt das Band, Text nicht. Dieselbe Linie wie in den Tabs (22.09.2026).
+   */
+  const aktionen =
+    !isLoading && !isError && items.length > 0 ? (
+      <>
+        {exportableSongs.length > 0 && !editMode && (
+          <IconButton
+            onClick={() => void handleExportPdf()}
+            title="Alle Lieder als PDF teilen"
+            dataTour="setlist-share"
+          >
+            <Icon name="share" size={20} stroke={2.2} />
+          </IconButton>
         )}
-        <div style={{ height: 20 }} />
-      </Scroll>
+        {canEdit && (
+          <IconButton
+            onClick={() => {
+              setErr(null);
+              setEditMode((v) => !v);
+            }}
+            title={editMode ? 'Fertig' : 'Ablauf bearbeiten'}
+            dataTour="setlist-edit"
+          >
+            <Icon name={editMode ? 'check' : 'pencil'} size={20} stroke={2.2} />
+          </IconButton>
+        )}
+      </>
+    ) : undefined;
 
+  /** Dialoge und Fenster schweben über dem Inhalt – sie scrollen nicht mit. */
+  const ueberlagerung = (
+    <>
       {pendingDelete && (
         <ConfirmDialog
           title="Eintrag löschen?"
@@ -373,6 +326,64 @@ export function Setlist({
           }}
         />
       )}
-    </Screen>
+    </>
+  );
+
+  return (
+    <SeitenGeruest
+      titel={service.name}
+      unterzeile={`${service.weekday}, ${service.day}. ${service.month} · ${service.time}`}
+      zurueck={onBack}
+      zurueckLabel="Termine"
+      aktionen={aktionen}
+      onNeuLaden={editMode ? undefined : onRetry}
+      ueberlagerung={ueberlagerung}
+    >
+      {isLoading ? (
+        <CenterMessage loading text="Ablauf wird geladen…" />
+      ) : isError ? (
+        <CenterMessage icon="⚠️" text="Ablauf konnte nicht geladen werden." onRetry={onRetry} />
+      ) : items.length === 0 ? (
+        <CenterMessage icon="📋" text="Dieser Ablauf enthält noch keine Punkte." />
+      ) : editMode ? (
+        <>
+          <div className={styles.editHint}>
+            {isReordering ? (
+              'Speichere…'
+            ) : (
+              <>
+                Ziehen <Icon name="grip" size={14} className={styles.hintIcon} /> zum Sortieren ·
+                Eintrag antippen zum Bearbeiten.
+              </>
+            )}
+          </div>
+          {err && <div className={styles.editError}>{err}</div>}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            onDragCancel={resetViewportAfterDrag}
+            autoScroll={innerScrollOnly}
+          >
+            <SortableContext
+              items={localItems.map((i) => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className={styles.list}>
+                {localItems.map((item) => (
+                  <SortableRow key={item.id} item={item} onOpenActions={setActionItem} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+          <button className={styles.addBtn} data-tour="edit-add" onClick={() => setShowAdd(true)}>
+            ＋ Eintrag hinzufügen
+          </button>
+        </>
+      ) : (
+        <AgendaFullView items={items} eventId={service.id} onSelect={onSelect} />
+      )}
+      <div style={{ height: 20 }} />
+    </SeitenGeruest>
   );
 }

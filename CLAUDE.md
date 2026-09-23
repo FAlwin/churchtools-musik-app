@@ -19,18 +19,20 @@
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
   extern unter `https://musik.ecg-donrath.de` live.
 
-  **Stand 13.08.2026: Produktiv läuft `v2.20.0`** – **gemessen**, nicht aus der Doku übernommen: Der
-  Versionsstring steckt im ausgelieferten Bundle
-  (`curl -s https://musik.ecg-donrath.de/ | grep -oE 'assets/index-[^"]+\.js'`, dann diese Datei
-  holen und nach `v2.` greppen). Diese Datei behauptete bis dahin `v2.16.3`; dieselbe überholte Zahl
-  stand in der Memory und in einem Code-Kommentar (`onboarding.ts`) – ein Lehrstück zur
-  Regel-Dopplung in der Doku. `/api/health` nennt **keine** Version und taugt dafür nicht.
-
-  Nicht ausgeliefert ist damit noch **v2.21.0** – der Prod-Deploy liegt bei Alwin. Getestet wird auf
-  Staging (`musik-test.ecg-donrath.de`); dort läuft immer der Stand von `main` (`staging-<sha>`).
+  **Stand 23.09.2026: Produktiv läuft `v2.25.1`** – am 21.09.2026 **gemessen**, nicht aus der Doku
+  übernommen. **v2.25.2 ist getaggt, der Prod-Deploy liegt bei Alwin.** So misst man die laufende
+  Version: Der Versionsstring steckt im ausgelieferten Bundle
+  (`curl -s https://musik.ecg-donrath.de/ | grep -oE 'assets/index-[^"]+\.js'`, dann diese Datei holen
+  und nach `v2.` greppen). `/api/health` nennt **keine** Version und taugt dafür nicht. Getestet wird
+  auf Staging (`musik-test.ecg-donrath.de`); dort läuft der zuletzt gepushte Stand (`staging-<sha>`).
   **v2.16.2 wurde übersprungen**, siehe unten.
 
-  Seit v2.21.0 liegt zusätzlich **ungetaggt** in `main`:
+  (Bis zum 23.09.2026 stand hier „Produktiv läuft v2.20.0, nicht ausgeliefert v2.21.0" – seit dem
+  13.08. nicht mehr nachgezogen. Beim Release-Abgleich aufgefallen: genau die Doku-Dopplung, vor der
+  der Absatz selbst warnte.)
+
+  **Technische Hintergründe aus der Zeit nach v2.21.0** – alles inzwischen ausgeliefert, die
+  Release-Notes stehen im CHANGELOG. Hier bleibt, was man beim Weiterbauen wissen muss:
   - die **Dateiverwaltung** eines Arrangements (#321) und die **CCLI-SongSelect-Anbindung**
     (#322, Suche/Abfrage/Notenblatt holen) – beides von Alwin auf Staging geprüft;
   - die **Liedverwaltung KOMPLETT** (#322, Schritte 6–11): Lied-Kategorien samt Rechte-Schnitt
@@ -310,7 +312,36 @@ im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site
 
 **Navigation:** untere Tab-Bar `Termine`/`Lieder`/`Abwesenheiten`/`Mehr` (`components/TabBar.tsx`; der
 Abwesenheiten-Tab trägt die ID `verfuegbarkeit` und erscheint nur für Mitglieder der `musicianGroupIds`), Detailseiten
-(Setlist, Chart) als Vollbild-Push. Routing in `App.tsx` über `tab` + `view` (rechteabhängig).
+(Setlist, Chart) als Vollbild-Push.
+
+**Keine Kopfleiste mit Titel mehr (22.09.2026).** Die vier Tabs haben oben gar keine Leiste; ihr Titel
+steht im Scroll-Inhalt und scrollt mit weg. Die Setlist behält die Leiste für Zurück und Aktionen, aber
+**ohne Titel** – Titel und Datum stehen darunter im Inhalt. Grund: iOS 26/27 legt über die oberen
+~95 pt ein Unschärfe-Band (Liquid Glass), Text darin wird weich; Symbole verträgt es. Die Abstände
+kommen aus `--inhalt-pad-top` / `--bar-pad-top` (`styles/_variables.scss`), die App zeichnet hinter
+der Statusleiste (`black-translucent`, `client/index.html`). Der Chart-Kopf (`ChartHeader`) ist noch
+nicht umgebaut. Routing in `App.tsx` über `tab` + `view` (rechteabhängig).
+
+**Abwesenheiten sind terminfein, nicht tagesfein (22.09.2026).** Ein Haken an einem Termin trägt in
+ChurchTools das **Zeitfenster dieses Termins** ein (`startTime`/`endTime`, ISO-Zeitpunkte) – nur so
+lassen sich zwei Termine am selben Tag einzeln abhaken. Ganztägig (`null`) gilt weiter für jeden
+Termin des Tages und ist das, was das Plus (Zeitraum, Urlaub) schreibt. Die Regel steht **einmal**
+in `shared/absences/index.ts` (`decktTermin`, `zeitfensterFuer`), weil App und Server sie beide
+brauchen: die App für die Häkchen, der Server für die Doppel-Erkennung. **Wer ein Feld an
+`NeueAbsence` ergänzt, muss es auch in `neueAbsenceSchema` (`absencesController.ts`) eintragen** –
+zod entfernt Unbekanntes stillschweigend, genau daran ist die Uhrzeit beim ersten Anlauf gescheitert.
+Der Schlüsselmengen-Wächter dort schlägt jetzt an (der frühere konnte bei optionalen Feldern nicht
+fehlschlagen).
+
+**Ein Gerüst für alle Bildschirme: `components/SeitenGeruest.tsx`.** Es setzt `Screen` + optionale
+`NavBar` + `Scroll` + `GrosseUeberschrift` zusammen; `Agenda`, `AllSongs`, `Availability`, `Settings`
+und `Setlist` rendern nur noch Inhalt (`children`) und Schwebendes (`ueberlagerung` – Plus-Knopf,
+Speichern-Leiste, Fenster, Meldungen; steht NEBEN dem Scroll-Bereich, sonst scrollt es mit weg).
+Vorher setzte jede Seite dasselbe Muster selbst zusammen – und genau dort liefen sie auseinander
+(Alwin, 22.09.2026: „bei Abwesenheit und Termine ist das Neuladen nicht richtig"). **`onNeuLaden`
+ist mit Absicht `() => Promise<unknown>`**: Eine Funktion ohne Rückgabe lehnt der Compiler ab, damit
+niemand wieder ein `void`-Neuladen einhängt, dessen Ladeanzeige sofort verschwindet. Neue Bildschirme
+nutzen das Gerüst – wer `Screen` direkt verwendet, braucht einen Grund (Login, Chart, Ladeschirme).
 
 **Design-Regeln (verbindlich):** `docs/entwicklung/design-system.md` – Farben nur über Tokens (es gibt **kein**
 `--orange`/`--teal`/`--chord`; Akzent = Blau, Destruktiv = Rot), System-Font, gemeinsame Bausteine
@@ -538,6 +569,25 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
+
+- **v2.25.2 (23.09.2026) = iOS-27-Kopfzeile, Seiten-Gerüst, Abwesenheiten mit Uhrzeit** (Zweig
+  `fix/kopfleisten-deckend`, als ein Squash-Commit gemergt; Staging zuletzt als `staging-aee2ccd`
+  verifiziert, von Alwin getestet). Keine Kopfleiste mehr mit Titel, große Überschrift im Inhalt;
+  alle Bildschirme über `components/SeitenGeruest.tsx`; Pull-to-Refresh mit festem Anzeiger unter dem
+  Unschärfe-Band; aktiver Tab scrollt nach oben; Abwesenheiten terminfein (Zeitfenster), ganztägige
+  Einträge mit Rückfrage. **Beim Update nichts zu tun** – `apple-mobile-web-app-status-bar-style` ist
+  unverändert `black-translucent`, geändert hat sich nur die `theme-color` (live gelesen). **Vor dem
+  Tag Code-Check** mit zwei Agenten: ein hoher Fund (ganztägiger Eintrag verschwand stumm für beide
+  Termine eines Tages – hätte jeden Bestandseintrag getroffen), dazu elf mittlere/niedrige, alle
+  behoben; #407–#410 offen. **Drei Lehren:** (1) Der CHANGELOG-Eintrag war über viele Runden
+  fortgeschrieben und behauptete drei Dinge, die zwischendurch galten, im Endstand aber nicht (u. a.
+  „erst nach Neu-Hinzufügen sichtbar") – beim Release gegen den Code aus dem Diff zum letzten Tag
+  neu geschrieben. (2) Der Zod-Compile-Wächter der Anmerkungen hätte #115 selbst nicht gefangen; die
+  Schwäche war am 21.09. bei den Arrangements erkannt, aber mit der falschen Begründung „dort sind
+  die Felder Pflicht" nicht übertragen worden. Jetzt ein Baustein (`utils/schemaSpiegel.ts`) an allen
+  drei Stellen. (3) Beim Durchklicken sahen zweimal Umgebungsfehler wie Codefehler aus: ein alter
+  Server-Prozess (`pkill -f "workspace=server"` erwischt das Kind `tsx src/index.ts` nicht) und
+  Termine ohne Endzeit aus dem Zwischenspeicher der App.
 
 - **v2.25.1 (21.09.2026) = Code-Check nach v2.25.0** (PR #402, `1b573ea`; Staging als `staging-1b573ea` verifiziert): zwei Prüf-Agenten
   (Qualität, Sicherheit), jeder Fund selbst nachgelesen. **Kein kritischer oder hoher Sicherheitsfund.**

@@ -38,6 +38,9 @@ describe('zuAbsence – Marker entscheidet, was „eigene" ist', () => {
       id: 1,
       startDate: '2026-10-04',
       endDate: '2026-10-04',
+      // Ohne Uhrzeit in ChurchTools = ganztägig (22.09.2026).
+      startTime: null,
+      endTime: null,
       comment: 'Urlaub',
       reason: null,
       reasonId: null,
@@ -88,6 +91,120 @@ describe('zuEvents – Schnellauswahl', () => {
       { id: 1, name: 'Gottesdienst', startDate: '2026-10-04T10:00:00Z', endDate: '' },
     ]);
     expect(out.map((e) => e.date)).toEqual(['2026-10-04', '2026-10-11']);
+  });
+
+  /**
+   * Das Ende braucht die App, seit ein Haken das Zeitfenster des Termins einträgt (22.09.2026).
+   * Fehlt es in ChurchTools, steht der Start dort – der Eintrag wird dann ganztägig.
+   */
+  it('reicht das Ende des Termins durch; ohne Ende steht der Start', () => {
+    const out = a.zuEvents([
+      {
+        id: 1,
+        name: 'Vormittags',
+        startDate: '2026-10-04T10:00:00Z',
+        endDate: '2026-10-04T12:00:00Z',
+      },
+      { id: 2, name: 'Ohne Ende', startDate: '2026-10-04T16:00:00Z', endDate: '' },
+    ]);
+    expect(out[0].endDate).toBe('2026-10-04T12:00:00Z');
+    expect(out[1].endDate).toBe('2026-10-04T16:00:00Z');
+  });
+});
+
+/**
+ * **Zeitfenster** (Alwin, 22.09.2026: mehrere Termine an einem Tag einzeln abhaken). ChurchTools
+ * kann Abwesenheiten mit Uhrzeit – an der Test-Instanz gemessen. Hier die drei Regeln dazu.
+ */
+describe('absenceBody – Zeitfenster', () => {
+  it('übernimmt Anfang und Ende der Uhrzeit', () => {
+    expect(
+      a.absenceBody({
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2026-10-04T10:00:00Z',
+        endTime: '2026-10-04T12:00:00Z',
+      }),
+    ).toMatchObject({ startTime: '2026-10-04T10:00:00Z', endTime: '2026-10-04T12:00:00Z' });
+  });
+  it('ohne Uhrzeit bleibt es ganztägig – die Felder fehlen ganz', () => {
+    const body = a.absenceBody({ startDate: '2026-10-04', endDate: '2026-10-04' });
+    expect('startTime' in body).toBe(false);
+    expect('endTime' in body).toBe(false);
+  });
+  it('halbes Fenster → 400', () => {
+    expect(() =>
+      a.absenceBody({
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2026-10-04T10:00:00Z',
+      }),
+    ).toThrow(/Anfang und Ende/);
+  });
+  it('eine Uhrzeit an einem anderen Tag → 400', () => {
+    expect(() =>
+      a.absenceBody({
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2030-05-05T10:00:00Z',
+        endTime: '2030-05-05T12:00:00Z',
+      }),
+    ).toThrow(/gehört nicht zum gewählten Tag/);
+  });
+  it('Uhrzeit-Ende vor Anfang → 400', () => {
+    expect(() =>
+      a.absenceBody({
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2026-10-04T12:00:00Z',
+        endTime: '2026-10-04T10:00:00Z',
+      }),
+    ).toThrow(/Ende liegt vor dem Anfang/);
+  });
+});
+
+describe('gleicherZeitraum – das Zeitfenster gehört zum Vergleich', () => {
+  const vorhanden = [
+    {
+      id: 1,
+      startDate: '2026-10-04',
+      endDate: '2026-10-04',
+      startTime: '2026-10-04T10:00:00Z',
+      endTime: '2026-10-04T12:00:00Z',
+      comment: '',
+      reason: null,
+      reasonId: null,
+      vonApp: true,
+    },
+  ];
+
+  it('derselbe Tag mit ANDEREM Fenster ist kein Doppel', () => {
+    // Genau der Fall, für den die Uhrzeiten eingeführt wurden: der zweite Termin desselben Tages.
+    expect(
+      a.gleicherZeitraum(vorhanden, {
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2026-10-04T16:00:00Z',
+        endTime: '2026-10-04T18:00:00Z',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('gleiches Fenster ist ein Doppel', () => {
+    expect(
+      a.gleicherZeitraum(vorhanden, {
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2026-10-04T10:00:00Z',
+        endTime: '2026-10-04T12:00:00Z',
+      })?.id,
+    ).toBe(1);
+  });
+
+  it('ganztägig und ein Fenster sind verschiedene Einträge', () => {
+    expect(
+      a.gleicherZeitraum(vorhanden, { startDate: '2026-10-04', endDate: '2026-10-04' }),
+    ).toBeUndefined();
   });
 });
 
@@ -187,6 +304,89 @@ void _keinExcel;
  * eigenen Eintrag ausnehmen muss.
  */
 describe('abwesenheitAendern – neu anlegen, dann alten entfernen (#177)', () => {
+  /**
+   * **Das Zeitfenster überlebt eine Änderung** (22.09.2026). Das Fenster „Abwesenheit ändern" kennt
+   * nur Datum, Grund und Kommentar – ohne diese Regel würde aus einem Eintrag für den Vormittags-
+   * termin beim bloßen Ändern des Kommentars ein ganztägiger, und der zweite Termin des Tages wäre
+   * mit abgemeldet.
+   */
+  it('behält Anfang und Ende der Uhrzeit, wenn die Tage gleich bleiben', async () => {
+    vi.mocked(getAbsences).mockResolvedValue([
+      {
+        id: 5,
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2026-10-04T10:00:00Z',
+        endTime: '2026-10-04T12:00:00Z',
+        comment: '[Musikteam] alt',
+      },
+    ]);
+    vi.mocked(createAbsence).mockResolvedValue(88);
+    vi.mocked(deleteAbsence).mockResolvedValue(undefined);
+
+    await a.abwesenheitAendern('c', 4711, 5, {
+      startDate: '2026-10-04',
+      endDate: '2026-10-04',
+      comment: 'neuer Text',
+    });
+
+    expect(createAbsence).toHaveBeenCalledWith(
+      'c',
+      4711,
+      expect.objectContaining({
+        startTime: '2026-10-04T10:00:00Z',
+        endTime: '2026-10-04T12:00:00Z',
+      }),
+    );
+  });
+
+  it('die Antwort trägt das Zeitfenster – wie beim Anlegen (Code-Check 23.09.2026)', async () => {
+    vi.mocked(getAbsences).mockResolvedValue([
+      {
+        id: 5,
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2026-10-04T10:00:00Z',
+        endTime: '2026-10-04T12:00:00Z',
+        comment: '[Musikteam] alt',
+      },
+    ]);
+    vi.mocked(createAbsence).mockResolvedValue(90);
+    vi.mocked(deleteAbsence).mockResolvedValue(undefined);
+
+    const antwort = await a.abwesenheitAendern('c', 4711, 5, {
+      startDate: '2026-10-04',
+      endDate: '2026-10-04',
+      comment: 'neu',
+    });
+
+    expect(antwort.startTime).toBe('2026-10-04T10:00:00Z');
+    expect(antwort.endTime).toBe('2026-10-04T12:00:00Z');
+  });
+
+  it('wandert der Eintrag auf andere Tage, entfällt die Uhrzeit', async () => {
+    vi.mocked(getAbsences).mockResolvedValue([
+      {
+        id: 5,
+        startDate: '2026-10-04',
+        endDate: '2026-10-04',
+        startTime: '2026-10-04T10:00:00Z',
+        endTime: '2026-10-04T12:00:00Z',
+        comment: '[Musikteam] alt',
+      },
+    ]);
+    vi.mocked(createAbsence).mockResolvedValue(89);
+    vi.mocked(deleteAbsence).mockResolvedValue(undefined);
+
+    await a.abwesenheitAendern('c', 4711, 5, {
+      startDate: '2026-10-04',
+      endDate: '2026-10-06',
+    });
+
+    const body = vi.mocked(createAbsence).mock.calls.at(-1)?.[2] as Record<string, unknown>;
+    expect('startTime' in body).toBe(false);
+  });
+
   const NEU = { startDate: '2026-10-05', endDate: '2026-10-06', comment: 'Kurzreise' };
 
   it('legt zuerst an und löscht erst danach – die Reihenfolge ist der Schutz', async () => {

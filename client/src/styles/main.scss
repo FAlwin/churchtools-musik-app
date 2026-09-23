@@ -12,6 +12,14 @@
 html,
 body {
   height: 100%;
+  /**
+   * Die Grundfläche ist im Inneren der App nie zu sehen: Jeder `.screen` liegt mit `inset: 0`
+   * darüber und setzt `var(--bg)` selbst (Screen.module.scss). Sie trägt dieselbe Farbe, damit kein
+   * Rand je anders aussieht als der Bildschirm darüber.
+   * (Am 22.09.2026 stand hier kurz `--nav-bg`, weil iOS unter `status-bar-style=default` einen
+   * Streifen aus der Grundfläche malte; seit die App wieder hinter der Statusleiste zeichnet,
+   * gibt es diesen Streifen nicht mehr.)
+   */
   background: var(--bg);
   color: var(--text);
   font-family: var(--ui);

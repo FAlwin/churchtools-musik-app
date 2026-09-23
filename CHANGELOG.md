@@ -5,6 +5,63 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/):
 `MAJOR.MINOR.PATCH` – z. B. `v2.1.0` = Feature, `v2.1.1` = Bugfix, `v3.0.0` = größere Umstellung.
 
+## [Unreleased]
+
+## [2.25.2] – 2026-09-23
+
+**Beim Update ist nichts zu tun:** keine neue Variable, kein Neu-Hinzufügen zum Home-Bildschirm. Die
+Statusleisten-Einstellung der App ist dieselbe wie in v2.25.1; alles andere liest iOS beim Start.
+
+### Geändert
+
+- **Oben gibt es keinen Titel-Balken mehr – der Titel steht groß im Inhalt.** Unter iOS 26/27 legt
+  das System hinter der Statusleiste ein Unschärfe-Band über jede App (Liquid Glass), und dort
+  wirkte unser Titel verschmiert und doppelt; einen Schalter dagegen gibt es nicht (Alwin,
+  21./22.09.2026, mit Screenshots). Termine, Lieder, Abwesenheiten und Mehr beginnen jetzt mit
+  ihrer großen Überschrift, die beim Blättern mitwandert – wie in WhatsApp oder den Apple-Apps. Die
+  Ablauf-Ansicht behält oben Zurück-Pfeil und Knöpfe, Name und Datum stehen darunter. Unverändert
+  ist die Lied-Anzeige: An ihrem Titel hängt das Lied-Menü.
+- **Die Leisten sind deckend statt milchig.** Kopf- und Tab-Leiste sowie Kopf und Fuß der
+  Lied-Anzeige haben genau die Farbe, mit der iOS den Streifen hinter der Uhr färbt – vorher lag
+  dort ein feiner Strich. Diese Farbe folgt jetzt dem **Farbschema der App**, nicht dem des Geräts:
+  Wer die App auf Hell stellt, während das Telefon dunkel ist, bekommt keinen dunklen Balken mehr.
+- **Ein Tipp auf den Tab, in dem man schon ist, scrollt nach oben.** Der Tipp auf die Uhrzeit, den
+  iOS-Apps kennen, erreicht eine Web-App nicht; der aktive Tab ist der Ersatz dafür.
+- **Termine am selben Tag lassen sich einzeln als abwesend markieren** (Alwin: „manchmal hab ich
+  morgens keine Zeit, kann aber nachmittags"). Ein Haken trägt in ChurchTools jetzt die **Uhrzeit
+  des Termins** ein statt des ganzen Tages. Ganztägige Einträge – Urlaub über das Plus, alles von
+  früher, alles direkt in ChurchTools Eingetragene – gelten weiterhin für jeden Termin des Tages;
+  nimmt man bei einem Termin einen solchen Eintrag weg, fragt die App nach und nennt die anderen
+  Termine, die er ebenfalls abdeckt. Unter „Einträge" steht die Uhrzeit mit dabei.
+- **Die Datumsfelder bei „Häufigkeit" und „Zuletzt" sind beschriftet** („Von", „Bis") – leer
+  zeigte iOS dort nur zwei Kästen mit einem Strich.
+
+### Behoben
+
+- **Runterziehen zum Aktualisieren** verhielt sich auf den Bildschirmen verschieden (Alwin:
+  „bei Abwesenheit und Termine ist das Neuladen nicht richtig, bei Lied stimmt es"). Bei den
+  Abwesenheiten verschwand der Kreisel, bevor die Daten da waren; bei einer schnellen Antwort
+  blitzte er nur auf; und bei kurzen Listen klebte der Hinweis oben im Unschärfe-Band, während er
+  bei langen Listen zufällig herausrutschte. Jetzt steht der Hinweis auf jedem Bildschirm an
+  derselben festen Stelle, erscheint nur während man zieht, und der Kreisel bleibt, bis geladen ist.
+
+### Intern
+
+- Alle Bildschirme bauen Kopf, Scrollen und Neuladen über **ein** Gerüst
+  (`components/SeitenGeruest.tsx`) statt jeder für sich – genau dort waren sie auseinandergelaufen.
+  Das Neuladen muss sein Versprechen zurückgeben; eine Funktion ohne Rückgabe lehnt der Compiler ab.
+- Die Regel „deckt diese Abwesenheit diesen Termin?" steht einmal in `shared/absences` und wird von
+  App (Häkchen) und Server (Doppel-Erkennung) geteilt. Uhrzeiten werden als Zeitpunkte verglichen,
+  Zeitzonen-Angaben angenommen.
+- **Ein Wächter, der auch bei optionalen Feldern anschlägt** (`server/src/utils/schemaSpiegel.ts`):
+  Er bricht den Build, wenn ein Zod-Eingangsschema ein Feld des geteilten Typs nicht kennt – sonst
+  entfernt Zod es beim Speichern stillschweigend. Der ältere Wächter konnte das bei optionalen
+  Feldern nicht; so war die Uhrzeit der Abwesenheiten beim ersten Anlauf verlorengegangen.
+  Nachgestellt zeigte sich, dass auch der ursprüngliche Wächter bei den Anmerkungen **genau den
+  Fehler nicht gefangen hätte, gegen den er geschrieben wurde** (#115, `bold`). Anmerkungen,
+  Arrangements und Abwesenheiten nutzen jetzt denselben Baustein; jede Stelle bricht nachweislich.
+- Code-Check vor dem Release: zwölf Funde behoben, vier als Issues festgehalten (#407–#410).
+
 ## [2.25.1] – 2026-09-21
 
 ### Behoben

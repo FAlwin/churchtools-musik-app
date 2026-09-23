@@ -1,7 +1,9 @@
 @use '../styles/mixins' as m;
 
 .searchWrap {
-  padding: 14px 16px 2px;
+  // Den Abstand zum Unschärfe-Band hält die `GrosseUeberschrift` darüber; hier reicht der normale
+  // Innenabstand. (Kurz stand hier `--inhalt-pad-top` – als das Suchfeld noch das oberste Element war.)
+  padding: 4px 16px 2px;
   flex-shrink: 0;
 }
 

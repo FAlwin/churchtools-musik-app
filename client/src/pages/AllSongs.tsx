@@ -1,8 +1,7 @@
 import type { SongSelectTreffer } from '@shared/types/index';
 import { useState } from 'react';
 import { type Service, type SongLibraryEntry } from '@shared/types/index';
-import { Screen, Scroll } from '../components/Screen';
-import { NavBar } from '../components/NavBar';
+import { SeitenGeruest } from '../components/SeitenGeruest';
 import { CenterMessage } from '../components/CenterMessage';
 import { Icon } from '../components/icons';
 import { NoteTile } from '../components/NoteTile';
@@ -30,7 +29,8 @@ interface AllSongsProps {
   showStats?: boolean;
   isLoading?: boolean;
   isError?: boolean;
-  onRetry?: () => void;
+  /** Neu laden – gibt das Versprechen zurück, damit die Ladeanzeige darauf warten kann. */
+  onRetry?: () => Promise<unknown>;
   onSelect: (entry: SongLibraryEntry) => void;
   /** Wenn true: pro Lied eine „+"-Aktion „Zu Ablauf hinzufügen". */
   canAddToAgenda?: boolean;
@@ -108,145 +108,9 @@ export function AllSongs({
     />
   ) : null;
 
-  return (
-    <Screen>
-      {/* Die Kopfzeile bleibt bewusst leer (Entscheidung Alwin, 13.08.2026): „Neues Lied" stand hier
-          zuerst als Symbol – es wirkte fremd, und ein Aktions-Knopf machte diese Leiste 10px höher als
-          die von „Termine" und „Mehr", was beim Durchklicken sichtbar sprang. Die Höhe ist inzwischen
-          in `NavBar.module.scss` festgenagelt, der Einstieg sitzt trotzdem unten am Listenkopf. */}
-      <NavBar title="Lieder" />
-
-      <div className={styles.searchWrap}>
-        {/* Dasselbe Suchfeld wie im Einfüge-Dialog – ohne SongSelect-Weg, deshalb tut Enter hier nichts. */}
-        <LiedSucheKopf eingabe={f.q} onEingabe={f.setQ} />
-        {showStats && <SongStatsBar {...f} />}
-
-        {/**
-         * Listenkopf: **Anzahl links, „Neues Lied" rechts – auf einer Höhe** (Wunsch Alwin,
-         * 13.08.2026).
-         *
-         * Die Zeile steht **über dem Scroll-Bereich**, nicht darin. Das hat zwei Gründe: Sie bleibt beim
-         * Blättern sichtbar, und sie ist auch dann da, wenn die Suche **keinen** Treffer hat – also
-         * genau in dem Moment, in dem ein Lied fehlt und angelegt werden soll. Innerhalb der Liste
-         * würde sie mit ihr verschwinden.
-         *
-         * Die Anzahl zeigt die gefilterte Bibliotheksliste – die Liedtext-Treffer zählen sich selbst.
-         */}
-        {(f.list.length > 0 || kannAnlegen) && (
-          <div className={styles.listHdr}>
-            <span className={styles.listCount}>
-              {f.list.length > 0 && !isLoading && !isError ? liedAnzahl(f.list.length) : ''}
-            </span>
-            {kannAnlegen && (
-              <button className={styles.newSongBtn} onClick={() => setSucheOffen(true)}>
-                <Icon name="plus" size={16} stroke={2.4} />
-                Neues Lied
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      <Scroll onRefresh={onRetry}>
-        {isLoading ? (
-          <CenterMessage loading text="Lieder werden geladen…" />
-        ) : isError ? (
-          <CenterMessage icon="⚠️" text="Lieder konnten nicht geladen werden." onRetry={onRetry} />
-        ) : f.list.length === 0 ? (
-          <>
-            <CenterMessage
-              icon="🎵"
-              text={
-                query
-                  ? `Keine Treffer für „${query}"`
-                  : f.statMode && !f.allRange
-                    ? 'In diesem Zeitraum wurde kein Lied gespielt.'
-                    : 'Keine Lieder gefunden.'
-              }
-            />
-            {/* Genau hier gehört der Weg zu den Liedtexten hin: Der Titel hat nichts gefunden –
-                vielleicht kennt man ihn nicht genau, sondern nur eine Zeile. */}
-            {zuLiedtexten}
-            {suche.liedtextBegriff !== '' && (
-              <div className={styles.group}>
-                <LiedtextTrefferListe
-                  begriff={suche.liedtextBegriff}
-                  songs={songs}
-                  onPick={onSelect}
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          <div className={styles.group}>
-            {/* Die Anzahl steht oben im festen Listenkopf – auf einer Höhe mit „Neues Lied". */}
-            <div className={styles.cardList}>
-              {f.list.map((s) => {
-                const st = f.stats.get(s.songId);
-                return (
-                  /* Ohne Vorschau: Im Liederheft schlägt man nach; die Vorschau gehört in den
-                     Einfüge-Dialog (#378, Entscheidung Alwin). */
-                  <div key={s.songId} className={styles.rowWrap}>
-                    <button className={styles.row} onClick={() => onSelect(s)}>
-                      <NoteTile />
-                      <div className={styles.info}>
-                        <div className={styles.name}>{s.name}</div>
-                        {s.author && <div className={styles.sub}>{s.author}</div>}
-                        {showStats && f.sort !== 'name' && (
-                          <span className={styles.stat}>
-                            {statLabel(
-                              f.sort,
-                              st,
-                              usageError ? 'error' : usageLoading ? 'loading' : 'ok',
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      {s.key && <span className={styles.keyPill}>{s.key}</span>}
-                      <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
-                    </button>
-                    {canAddToAgenda && (
-                      <button
-                        className={styles.addBtn}
-                        onClick={() => setAddSong(s)}
-                        aria-label={`„${s.name}" zu einem Ablauf hinzufügen`}
-                        title="Zu Ablauf hinzufügen"
-                      >
-                        <Icon name="plus" size={20} stroke={2.4} />
-                      </button>
-                    )}
-                    {/* Stammdaten ändern (#322, Schritt 11) – hier in der Liste, weil man den
-                        fehlenden Autor beim Durchsehen bemerkt, nicht erst im geöffneten Blatt.
-                        Dasselbe Recht wie das Anlegen. */}
-                    {canCreateSong && (
-                      <button
-                        className={styles.addBtn}
-                        onClick={() => setEditSong(s)}
-                        aria-label={`Stammdaten von „${s.name}" ändern`}
-                        title="Stammdaten ändern"
-                      >
-                        <Icon name="pencil" size={18} stroke={2.2} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {/* Auch bei Titel-Treffern anbieten: „Gnade" findet zwei Titel, das gesuchte Lied kann
-                trotzdem ein anderes sein, das das Wort nur im Text hat. */}
-            {zuLiedtexten}
-            {suche.liedtextBegriff !== '' && (
-              <LiedtextTrefferListe
-                begriff={suche.liedtextBegriff}
-                songs={songs}
-                onPick={onSelect}
-              />
-            )}
-          </div>
-        )}
-        <div style={{ height: 16 }} />
-      </Scroll>
-
+  /** Fenster und Meldungen schweben über dem Inhalt – sie scrollen nicht mit. */
+  const ueberlagerung = (
+    <>
       {addSong && (
         <AddToAgendaSheet song={addSong} services={services} onClose={() => setAddSong(null)} />
       )}
@@ -305,6 +169,136 @@ export function AllSongs({
           onClose={() => setFormular(null)}
         />
       )}
-    </Screen>
+    </>
+  );
+
+  return (
+    <SeitenGeruest titel="Lieder" onNeuLaden={onRetry} ueberlagerung={ueberlagerung}>
+      <div className={styles.searchWrap}>
+        {/* Dasselbe Suchfeld wie im Einfüge-Dialog – ohne SongSelect-Weg, deshalb tut Enter hier nichts. */}
+        <LiedSucheKopf eingabe={f.q} onEingabe={f.setQ} />
+        {showStats && <SongStatsBar {...f} />}
+
+        {/**
+         * Listenkopf: **Anzahl links, „Neues Lied" rechts – auf einer Höhe** (Wunsch Alwin,
+         * 13.08.2026).
+         *
+         * Die Zeile stand bis zum 22.09.2026 **über** dem Scroll-Bereich, damit sie beim Blättern
+         * sichtbar bleibt. Seit die Kopfleiste weg ist, liegt sie mit Überschrift und Suchfeld IM
+         * Scroll-Bereich: Ein festes Element ganz oben läge im Unschärfe-Band von iOS und wäre weich
+         * (siehe `client/index.html`). Der wichtigere Teil der alten Begründung gilt weiter – **hat
+         * die Suche keinen Treffer, gibt es nichts zu scrollen**, und die Zeile mit „Neues Lied"
+         * steht genau dann da, wenn ein Lied fehlt.
+         *
+         * Die Anzahl zeigt die gefilterte Bibliotheksliste – die Liedtext-Treffer zählen sich selbst.
+         */}
+        {(f.list.length > 0 || kannAnlegen) && (
+          <div className={styles.listHdr}>
+            <span className={styles.listCount}>
+              {f.list.length > 0 && !isLoading && !isError ? liedAnzahl(f.list.length) : ''}
+            </span>
+            {kannAnlegen && (
+              <button className={styles.newSongBtn} onClick={() => setSucheOffen(true)}>
+                <Icon name="plus" size={16} stroke={2.4} />
+                Neues Lied
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {isLoading ? (
+        <CenterMessage loading text="Lieder werden geladen…" />
+      ) : isError ? (
+        <CenterMessage icon="⚠️" text="Lieder konnten nicht geladen werden." onRetry={onRetry} />
+      ) : f.list.length === 0 ? (
+        <>
+          <CenterMessage
+            icon="🎵"
+            text={
+              query
+                ? `Keine Treffer für „${query}"`
+                : f.statMode && !f.allRange
+                  ? 'In diesem Zeitraum wurde kein Lied gespielt.'
+                  : 'Keine Lieder gefunden.'
+            }
+          />
+          {/* Genau hier gehört der Weg zu den Liedtexten hin: Der Titel hat nichts gefunden –
+                vielleicht kennt man ihn nicht genau, sondern nur eine Zeile. */}
+          {zuLiedtexten}
+          {suche.liedtextBegriff !== '' && (
+            <div className={styles.group}>
+              <LiedtextTrefferListe
+                begriff={suche.liedtextBegriff}
+                songs={songs}
+                onPick={onSelect}
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <div className={styles.group}>
+          {/* Die Anzahl steht oben im festen Listenkopf – auf einer Höhe mit „Neues Lied". */}
+          <div className={styles.cardList}>
+            {f.list.map((s) => {
+              const st = f.stats.get(s.songId);
+              return (
+                /* Ohne Vorschau: Im Liederheft schlägt man nach; die Vorschau gehört in den
+                     Einfüge-Dialog (#378, Entscheidung Alwin). */
+                <div key={s.songId} className={styles.rowWrap}>
+                  <button className={styles.row} onClick={() => onSelect(s)}>
+                    <NoteTile />
+                    <div className={styles.info}>
+                      <div className={styles.name}>{s.name}</div>
+                      {s.author && <div className={styles.sub}>{s.author}</div>}
+                      {showStats && f.sort !== 'name' && (
+                        <span className={styles.stat}>
+                          {statLabel(
+                            f.sort,
+                            st,
+                            usageError ? 'error' : usageLoading ? 'loading' : 'ok',
+                          )}
+                        </span>
+                      )}
+                    </div>
+                    {s.key && <span className={styles.keyPill}>{s.key}</span>}
+                    <Icon name="chev-right" size={18} stroke={2.2} className={styles.chev} />
+                  </button>
+                  {canAddToAgenda && (
+                    <button
+                      className={styles.addBtn}
+                      onClick={() => setAddSong(s)}
+                      aria-label={`„${s.name}" zu einem Ablauf hinzufügen`}
+                      title="Zu Ablauf hinzufügen"
+                    >
+                      <Icon name="plus" size={20} stroke={2.4} />
+                    </button>
+                  )}
+                  {/* Stammdaten ändern (#322, Schritt 11) – hier in der Liste, weil man den
+                        fehlenden Autor beim Durchsehen bemerkt, nicht erst im geöffneten Blatt.
+                        Dasselbe Recht wie das Anlegen. */}
+                  {canCreateSong && (
+                    <button
+                      className={styles.addBtn}
+                      onClick={() => setEditSong(s)}
+                      aria-label={`Stammdaten von „${s.name}" ändern`}
+                      title="Stammdaten ändern"
+                    >
+                      <Icon name="pencil" size={18} stroke={2.2} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* Auch bei Titel-Treffern anbieten: „Gnade" findet zwei Titel, das gesuchte Lied kann
+                trotzdem ein anderes sein, das das Wort nur im Text hat. */}
+          {zuLiedtexten}
+          {suche.liedtextBegriff !== '' && (
+            <LiedtextTrefferListe begriff={suche.liedtextBegriff} songs={songs} onPick={onSelect} />
+          )}
+        </div>
+      )}
+      <div style={{ height: 16 }} />
+    </SeitenGeruest>
   );
 }

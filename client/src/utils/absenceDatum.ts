@@ -1,4 +1,5 @@
-import type { Absence } from '@shared/types/index';
+import type { Absence, AbsenceEvent } from '@shared/types/index';
+import { decktTermin } from '@shared/absences/index';
 import { wochentagKurz } from './wochen';
 
 /**
@@ -7,14 +8,17 @@ import { wochentagKurz } from './wochen';
  * UTC-Mitternacht und in Deutschland der Vorabend.
  */
 
-/** Liegt der Tag innerhalb der Abwesenheit (einschließlich)? */
-export function deckt(a: Absence, tag: string): boolean {
-  return a.startDate <= tag && tag <= a.endDate;
-}
-
-/** Die Abwesenheit, die den Tag abdeckt – eigene zuerst, damit „Abmelden zurücknehmen" sie trifft. */
-export function abwesenheitFuer(alle: Absence[], tag: string): Absence | undefined {
-  return alle.find((a) => a.vonApp && deckt(a, tag)) ?? alle.find((a) => deckt(a, tag));
+/**
+ * Die Abwesenheit, die **diesen Termin** abdeckt – eigene zuerst, damit „Abmelden zurücknehmen" sie
+ * trifft.
+ *
+ * Bis zum 22.09.2026 fragte die Seite nach dem **Tag**. Damit hingen zwei Termine am selben Tag
+ * zusammen, und Alwin konnte sich nicht für den Vormittag abmelden und für den Nachmittag zusagen.
+ * Welche Abwesenheit einen Termin abdeckt, entscheidet jetzt `decktTermin` (in `@shared/absences`,
+ * weil der Server dieselbe Regel für die Doppel-Erkennung braucht).
+ */
+export function abwesenheitFuerTermin(alle: Absence[], ev: AbsenceEvent): Absence | undefined {
+  return alle.find((a) => a.vonApp && decktTermin(a, ev)) ?? alle.find((a) => decktTermin(a, ev));
 }
 
 /**
@@ -53,4 +57,17 @@ export function uhrzeit(isoZeitpunkt: string): string {
   const d = new Date(isoZeitpunkt);
   if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+
+/**
+ * Das Zeitfenster lesbar – „10:00 – 11:30" – oder `null` bei ganztägig (22.09.2026).
+ *
+ * Ohne diese Zeile sähen zwei Einträge am selben Tag in der Liste „Einträge" gleich aus; seit ein
+ * Haken das Zeitfenster des Termins einträgt, kann genau das vorkommen.
+ */
+export function zeitfensterKurz(a: Pick<Absence, 'startTime' | 'endTime'>): string | null {
+  if (!a.startTime || !a.endTime) return null;
+  const von = uhrzeit(a.startTime);
+  const bis = uhrzeit(a.endTime);
+  return von && bis ? `${von} – ${bis}` : null;
 }

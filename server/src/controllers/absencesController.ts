@@ -4,6 +4,7 @@ import { getUserId } from '../services/ctAuth.js';
 import { ctCookie } from '../utils/ctCookie.js';
 import * as absences from '../services/absences.js';
 import type { NeueAbsence } from '@shared/types/index';
+import type { GleicheSchluessel } from '../utils/schemaSpiegel.js';
 
 /** Eigene Konto-ID – wie im Anmerkungs-Controller: aus der Sitzung, sonst per whoami. */
 async function myUserId(req: Request): Promise<number> {
@@ -17,6 +18,19 @@ const isoTag = z.string().regex(absences.ISO_TAG, 'Datum als JJJJ-MM-TT.');
 const neueAbsenceSchema = z.object({
   startDate: isoTag,
   endDate: isoTag,
+  /**
+   * **Zeitfenster** (22.09.2026) – ISO-Zeitpunkte, wie ChurchTools sie erwartet.
+   *
+   * Sie haben hier gefehlt, und zod **entfernt** unbekannte Felder stillschweigend: Die App schickte
+   * die Uhrzeit des Termins, der Eintrag wurde trotzdem ganztägig, und beide Termine des Tages
+   * hingen wieder zusammen. Aufgefallen ist das erst beim Durchklicken – Tests auf beiden Seiten
+   * waren grün, weil der Bruch genau dazwischen lag.
+   */
+  // `offset: true` ist Absicht: Ohne das lehnt zod `2026-10-04T10:00:00+02:00` ab. Die ECG-Instanz
+  // liefert `…Z` (gemessen), aber die App wird an andere Gemeinden verteilt – dort dürfte sonst
+  // jeder Haken mit 400 scheitern (Code-Check 23.09.2026, empirisch nachgestellt).
+  startTime: z.string().datetime({ offset: true }).optional(),
+  endTime: z.string().datetime({ offset: true }).optional(),
   comment: z.string().trim().max(200).optional(),
   /** Grund aus `GET /api/absences/reasons`; ChurchTools lehnt eine unbekannte ID selbst ab. */
   reasonId: z.coerce.number().int().positive().optional(),
@@ -26,6 +40,10 @@ const _zodSubsetOfType = (a: z.infer<typeof neueAbsenceSchema>): NeueAbsence => 
 const _typeSubsetOfZod = (n: NeueAbsence): z.infer<typeof neueAbsenceSchema> => n;
 void _zodSubsetOfType;
 void _typeSubsetOfZod;
+// Der eigentliche Wächter: Er schlägt auch bei OPTIONALEN Feldern an – die beiden Zuweisungen oben
+// können das nicht, und genau so sind `startTime`/`endTime` am 22.09.2026 durchgerutscht.
+const _schluessel: GleicheSchluessel<NeueAbsence, z.infer<typeof neueAbsenceSchema>> = true;
+void _schluessel;
 
 const fensterSchema = z.object({ from: isoTag.optional(), to: isoTag.optional() });
 /** Termine: nur ein `to` – wie weit voraus, entscheidet die Monatsansicht der App; der Service deckelt auf ein Jahr. */

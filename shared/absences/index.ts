@@ -55,3 +55,62 @@ export function grundLesbar(name: string | null | undefined): string | null {
     .trim();
   return rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : null;
 }
+
+/* ------------------------------------------------------------- Termine und Zeitfenster (22.09.2026) */
+
+/**
+ * **Mehrere Termine an einem Tag – einzeln** (Alwin, 22.09.2026: „manchmal hab ich morgens keine
+ * Zeit kann aber nachmittags und umgekehrt").
+ *
+ * Bis dahin trug ein Haken den ganzen **Tag** ein; zwei Termine am selben Tag hingen dadurch
+ * zusammen. Jetzt schreibt ein Haken das **Zeitfenster des Termins**. ChurchTools kann das – an der
+ * Test-Instanz gemessen (22.09.2026): Ein Eintrag mit `startTime`/`endTime` wird angenommen und
+ * unverändert zurückgeliefert, ohne sie bleibt er ganztägig.
+ *
+ * Die beiden Funktionen hier stehen bewusst im geteilten Teil: Die App braucht sie für die Häkchen,
+ * der Server für die Doppel-Erkennung. Zweimal geschrieben wären sie genau die Dopplung, die dieses
+ * Projekt am teuersten zu stehen kam.
+ */
+export interface TerminZeit {
+  /** ISO-Startzeitpunkt. */
+  startDate: string;
+  /** ISO-Endzeitpunkt; ohne bekanntes Ende gleich dem Start. */
+  endDate: string;
+  /** `YYYY-MM-DD` des Termintags. */
+  date: string;
+}
+
+/**
+ * Das Zeitfenster, das ein Haken an diesem Termin einträgt – oder `null` für „ganztägig".
+ *
+ * Ohne bekanntes Ende gibt es kein sinnvolles Fenster: Dann bleibt es beim ganzen Tag, wie vorher.
+ * Lieber ein Eintrag, der zu viel abdeckt, als einer, der eine Minute lang gilt.
+ */
+export function zeitfensterFuer(ev: TerminZeit): { startTime: string; endTime: string } | null {
+  if (!ev.endDate || ev.endDate <= ev.startDate) return null;
+  return { startTime: ev.startDate, endTime: ev.endDate };
+}
+
+/** Deckt die Abwesenheit diesen Termin ab? Ganztägig deckt alles, sonst zählt die Überschneidung. */
+export function decktTermin(
+  a: { startDate: string; endDate: string; startTime: string | null; endTime: string | null },
+  ev: TerminZeit,
+): boolean {
+  if (a.startDate > ev.date || ev.date > a.endDate) return false;
+  // Ganztägig (Urlaub, alles von früher, alles über das Plus) gilt für jeden Termin des Tages.
+  if (!a.startTime || !a.endTime) return true;
+  /**
+   * **Als Zeitpunkte vergleichen, nicht als Text** (Code-Check 23.09.2026). Die Tage (`YYYY-MM-DD`)
+   * dürfen textuell verglichen werden, die Uhrzeiten nicht: Sie stammen aus zwei verschiedenen
+   * ChurchTools-Endpunkten, und sobald einer davon `+02:00` statt `Z` schreibt, wäre der
+   * Textvergleich falsch, obwohl es derselbe Moment ist.
+   */
+  const aVon = Date.parse(a.startTime);
+  const aBis = Date.parse(a.endTime);
+  const evVon = Date.parse(ev.startDate);
+  const evBis = Date.parse(ev.endDate);
+  // Grenzen offen behandeln, sonst deckte das Fenster eines Termins den unmittelbar folgenden mit
+  // ab (10–12 Uhr und 12–14 Uhr sind zwei verschiedene Termine).
+  if (!(evBis > evVon)) return aVon <= evVon && evVon < aBis;
+  return aVon < evBis && evVon < aBis;
+}

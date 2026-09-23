@@ -609,6 +609,20 @@ export interface Absence {
   /** `YYYY-MM-DD`, einschließlich. */
   startDate: string;
   endDate: string;
+  /**
+   * **Uhrzeit-Fenster** als ISO-Zeitpunkte, oder `null` für „ganztägig" (22.09.2026).
+   *
+   * Alwin: „Wenn an einem Tag mehrere Termine sind, müssen sie einzeln als abwesend markiert werden
+   * können … manchmal hab ich morgens keine Zeit kann aber nachmittags." Tagesgenau ging das nicht.
+   * ChurchTools kann beides – an der Test-Instanz gemessen: Ein Eintrag mit `startTime`/`endTime`
+   * wird angenommen und unverändert zurückgeliefert, ohne sie bleibt es ganztägig.
+   *
+   * Ein Haken an einem Termin schreibt genau dessen Zeitfenster. Ganztägige Einträge (Urlaub, alles
+   * von früher, alles über das Plus) haben hier `null` und decken weiterhin **jeden** Termin des
+   * Tages ab.
+   */
+  startTime: string | null;
+  endTime: string | null;
   /** Freitext ohne Marker – für die Anzeige. */
   comment: string;
   /** Grund in lesbarer Form („Abwesend", „Urlaub", …) – siehe `grundLesbar` in `@shared/absences`. */
@@ -643,6 +657,12 @@ export interface AbsenceReason {
 export interface NeueAbsence {
   startDate: string;
   endDate: string;
+  /**
+   * Zeitfenster als ISO-Zeitpunkte. Beide oder keins – ein halbes Fenster weist der Server ab.
+   * Fehlen sie, ist der Eintrag ganztägig (Plus-Knopf, Urlaub).
+   */
+  startTime?: string;
+  endTime?: string;
   comment?: string;
   /**
    * Gewünschter Grund (aus `GET /api/absences/reasons`). Fehlt er, nimmt der Server beim Anlegen den
@@ -659,6 +679,12 @@ export interface AbsenceEvent {
   date: string;
   /** ISO-Startzeitpunkt (für Uhrzeit und Sortierung). */
   startDate: string;
+  /**
+   * ISO-Endzeitpunkt. Braucht die App, seit ein Haken das **Zeitfenster des Termins** einträgt
+   * (22.09.2026) – sonst wüsste sie nicht, bis wann man fehlt. Liefert ChurchTools kein Ende, steht
+   * hier der Startzeitpunkt; der Eintrag wird dann ganztägig (siehe `zeitfensterFuer`).
+   */
+  endDate: string;
 }
 
 /** Antwort des Login-Endpunkts. */

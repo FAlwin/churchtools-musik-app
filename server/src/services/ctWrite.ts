@@ -601,7 +601,18 @@ export async function updateArrangementTempo(
 export async function createAbsence(
   cookie: string,
   personId: number,
-  body: { startDate: string; endDate: string; absenceReasonId: number; comment: string },
+  /**
+   * `startTime`/`endTime` gehören dazu (23.09.2026): Zur Laufzeit gingen sie schon durch, der Typ
+   * kannte sie nicht – ein späteres Umbauen an dieser Stelle hätte die Uhrzeit still verloren.
+   */
+  body: {
+    startDate: string;
+    endDate: string;
+    startTime?: string;
+    endTime?: string;
+    absenceReasonId: number;
+    comment: string;
+  },
 ): Promise<number> {
   const res = await schreibe(cookie, `/api/persons/${personId}/absences`, {
     method: 'POST',

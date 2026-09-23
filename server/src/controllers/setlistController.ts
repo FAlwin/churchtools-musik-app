@@ -54,6 +54,7 @@ import { MAX_BPM, MIN_BPM } from '@shared/tempo/index';
 import { ARRANGEMENT_GRENZEN, LIED_GRENZEN } from '@shared/types/index';
 import type {
   AgendaServiceOption,
+  ArrangementAuftrag,
   LiedStammdatenAnsicht,
   SongArrangementOption,
 } from '@shared/types/index';
@@ -61,6 +62,7 @@ import type { CtSong } from '../services/ctTypes.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { ctCookie } from '../utils/ctCookie.js';
 import { accountKey } from '../middleware/session.js';
+import type { GleicheSchluessel } from '../utils/schemaSpiegel.js';
 
 /** Standard-Zeitfenster: 1 Woche zurück bis 6 Wochen voraus. */
 function defaultWindow(): { from: string; to: string } {
@@ -472,17 +474,26 @@ const neuesArrangementSchema = z.object({
  * Die Form des Änderungs-Auftrags – **exportiert, weil ein Test sie gegen den geteilten Typ
  * `ArrangementAuftrag` hält** (`setlistController.arrangement.test.ts`).
  *
- * Warum ein Test und kein Compile-Wächter wie bei den Anmerkungen: Dort sind die Felder Pflicht, ein
- * fehlendes fällt dem Compiler auf. Hier ist **jedes** Feld optional – eine Zuweisung in beide
- * Richtungen bleibt auch dann gültig, wenn dem Schema ein Feld fehlt. Am 21.09.2026 ausprobiert: Ein
- * Wächter in der Bauart der Anmerkungen ließ das entfernte `beat` anstandslos durch. Der Test prüft
- * deshalb die **Schlüsselmenge** eines vollständig ausgefüllten Auftrags.
+ * Hier ist **jedes** Feld optional – eine Zuweisung in beide Richtungen bleibt auch dann gültig, wenn
+ * dem Schema ein Feld fehlt. Am 21.09.2026 ausprobiert: Ein Wächter in der Bauart der Anmerkungen
+ * ließ das entfernte `beat` anstandslos durch. Der Test prüft deshalb die **Schlüsselmenge** eines
+ * vollständig ausgefüllten Auftrags, und `GleicheSchluessel` unten bricht schon den Build.
+ *
+ * ⚠️ Hier stand bis zum 23.09.2026, bei den Anmerkungen seien „die Felder Pflicht, ein fehlendes fällt
+ * dem Compiler auf". **Das war falsch** – auch dort ist alles optional, und der Wächter ließ `bold`
+ * (den Anlass #115!) durch. Die falsche Annahme ist der Grund, warum die Lehre von hier nicht dorthin
+ * übertragen wurde. Seitdem nutzen alle drei Stellen denselben Baustein (`utils/schemaSpiegel.ts`).
  */
 export const arrangementAendernSchema = z
   .object({ name: arrangementNameSchema.optional(), ...arrangementFelderSchema })
   .refine((d) => Object.values(d).some((v) => v !== undefined), {
     message: 'Es wurde keine Änderung mitgeschickt.',
   });
+const _arrangementSchluessel: GleicheSchluessel<
+  ArrangementAuftrag,
+  z.infer<typeof arrangementAendernSchema>
+> = true;
+void _arrangementSchluessel;
 
 /** GET /api/song-sources – die Liedquellen (Liederbücher) der Gemeinde (#396). */
 export async function getSongSourcesCtrl(req: Request, res: Response): Promise<void> {

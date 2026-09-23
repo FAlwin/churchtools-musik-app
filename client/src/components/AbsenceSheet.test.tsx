@@ -22,6 +22,8 @@ const EIGENE: Absence = {
   id: 7,
   startDate: '2026-11-02',
   endDate: '2026-11-04',
+  startTime: null,
+  endTime: null,
   comment: 'Reise',
   reason: null,
   reasonId: null,

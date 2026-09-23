@@ -199,7 +199,9 @@ Namens-Matching + „nicht auflösbar"-Pfad. Client-Hook-Optimismus. Lint 0, Tes
   Offen: läuft der Alt-Container überhaupt noch? `ecgd-musik.ecg-donrath.de` löst seit spätestens
   05.09.2026 nicht mehr auf (NXDOMAIN) – Alwin prüft auf dem NAS.
 - Marker-Präfix final (`[Musikteam]`).
-- Ganztägig vs. Uhrzeit (Phase 1: ganztägig).
+- ~~Ganztägig vs. Uhrzeit (Phase 1: ganztägig).~~ **Erledigt am 22.09.2026:** Ein Haken trägt das
+  Zeitfenster des Termins ein, damit mehrere Termine an einem Tag einzeln abgehakt werden können.
+  Ganztägig bleibt für Zeiträume über das Plus (Urlaub) und deckt weiterhin jeden Termin des Tages.
 - Sync-Intervall + Umgang mit Excel-Sperrzeiten (usedRange, gesperrte Monate).
 - CT-Rechte-Nebenbefund (§4).
 - Namens-Matching-Fehler (Excel-Namen ≠ CT) – Log statt Raten.

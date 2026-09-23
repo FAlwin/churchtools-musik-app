@@ -7,13 +7,14 @@
   // Mindestens 20px oben: Im Safari-Tab ist env(safe-area-inset-top)=0, und mit viewport-fit=cover
   // rückt der Titel sonst bis unter Safaris Leiste/Statusleiste (oben angeschnitten). Der 20px-Boden
   // fängt das ab – im installierten Modus liefert die Safe-Area meist ≥20px, dann bleibt alles wie
-  // gehabt (max gewinnt). `--sat` ist der in JS gemerkte, stabile Safe-Area-Wert (main.tsx): er
+  // gehabt (max gewinnt). Unter iOS 26/27 liegt der Titel damit im Unschärfe-Band des Systems und
+  // ist weich (index.html); Bildschirme, die das stört, geben die Leiste auf und setzen den Titel
+  // groß in den Inhalt (`GrosseUeberschrift`, zuerst die Termine, 22.09.2026). `--sat` ist der in JS gemerkte, stabile Safe-Area-Wert (main.tsx): er
   // kollabiert nicht, wenn iOS env(...) beim Schließen eines Dialogs kurz auf 0 zurücksetzt (#187);
   // env() bleibt als Fallback, solange `--sat` noch nicht gesetzt ist.
-  padding-top: max(20px, var(--sat, env(safe-area-inset-top, 0px)));
+  // Wert und Begründung stehen in `styles/_variables.scss` – eine Stelle für beide Leisten.
+  padding-top: var(--bar-pad-top);
   background: var(--nav-bg);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--hair);
   flex-shrink: 0;
   position: relative;

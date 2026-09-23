@@ -32,7 +32,7 @@ am Ende dieses Dokuments.
 | `--r-card` / `--r-tile` / `--r-ctrl` / `--r-dialog` | **Rundungen** (12 / 10 / 8 / 14 px): Karten, Kacheln, Bedienelemente, Dialoge – keine nackten Pixelwerte in neuen Komponenten                               |
 | `--seg-on` / `--track-off`                          | aktives Segment / Toggle-Schiene                                                                                                                            |
 | `--scrim`                                           | Overlay hinter Sheets/Dialogen                                                                                                                              |
-| `--nav-bg` / `--shadow`                             | Leisten (Blur) / Karten-Schatten                                                                                                                            |
+| `--nav-bg` / `--shadow`                             | Leisten (deckend, = `theme-color`) / Karten-Schatten                                                                                                        |
 | `--ui`                                              | System-Schriftfamilie (kein Web-Font)                                                                                                                       |
 | `--kb`                                              | **Höhe der iOS-Tastatur** – wird von `hooks/useOverlayKeyboardInset` am `visualViewport` gemessen (nur auf Dialog-Overlays gesetzt, siehe Regel unten)      |
 | `--sat`                                             | **stabile iOS-Safe-Area oben** – Ausnahme: wird in `client/src/main.tsx` per verstecktem Probe-Element **in JS gemessen**, steht NICHT in `_variables.scss` |
@@ -57,7 +57,9 @@ nutzt bewusst Monospace (`'JetBrains Mono', monospace`) für die Roh-Bearbeitung
   „Lied hinzufügen"-Blatt, deshalb geteilt). In Modulen:
   `@use '../styles/mixins' as m;` → `@include m.card-list;`.
 - **Komponenten:** `Segment` (Auswahl 2–3 Optionen), `NoteTile` (Noten-Kachel),
-  `Icon` (`components/icons.tsx`, Line-Icons – keine Emojis in der UI), `NavBar`, `TabBar`,
+  `Icon` (`components/icons.tsx`, Line-Icons – keine Emojis in der UI), **`SeitenGeruest`** (das
+  Gerüst JEDES Bildschirms: Leiste, Überschrift, Scrollen, Neuladen – seit 22.09.2026 der Normalweg,
+  `Screen`/`Scroll`/`NavBar`/`GrosseUeberschrift` sind seine Bausteine), `TabBar`,
   `Sheet`, `ConfirmDialog`, `SongFields` (die Stammdaten-Felder eines Liedes – von „Neues Lied" und
   „Stammdaten ändern" gemeinsam genutzt, damit es die fünf Felder nur einmal gibt).
 - **Lied suchen – ein Feld, eine Zeile, ein Angebot** (#378): `LiedSucheKopf` (nur das Suchfeld, Lupe

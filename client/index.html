@@ -9,7 +9,25 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#2563EB" />
+    <!--
+      iOS 26/27 und der obere Rand (21./22.09.2026, mit Alwin am Gerät ausgefochten):
+      Seit iOS 26 legt das System über die oberen ~95 pt ein Unschärfe-Band (Liquid Glass,
+      Scroll-Edge-Effekt); iOS 27 hat es kräftiger gemacht. Text darin wird weich, es gibt keinen
+      Schalter dagegen, und Web-Apps bekommen für ihre Leiste keine Ausnahme wie native Apps.
+      Ein Zwischenstand hatte `default` (App beginnt unter einer deckenden Statusleiste), um den
+      Titel aus dem Band zu holen – das kostete Platz oder einen farbigen Streifen hinter der Uhr.
+      Der Weg, der blieb: KEIN Text mehr im Band. Der Titel steht groß im Inhalt und beginnt unter
+      dem Band (`--inhalt-pad-top`), der Inhalt läuft beim Scrollen unter Uhr und Band durch und wird
+      dort weich – so sieht es in nativen Apps aus. Deshalb wieder `black-translucent`: die App
+      zeichnet bis ganz nach oben, kein Streifen („komplett transparent", Alwin).
+      Die Themenfarbe bleibt aus `--nav-bg` gespeist (useSettings.ts) – für die Fälle, in denen iOS
+      eine Fläche tönt (Safari-Tab, Multitasking-Vorschau); ein Startwert steht hier.
+      Die Angabe wird beim Hinzufügen zum Home-Bildschirm gelesen: bestehende Verknüpfung löschen,
+      Safari-Website-Daten leeren, in Safari die neue Version sehen, dann neu hinzufügen.
+      Bildschirme, die noch eine Kopfleiste mit Titel tragen, sind dort weich wie in v2.25.1, bis
+      sie umgebaut sind. Quellen: dozzle#5222, vcsudoku#38, mORA#77, ioBroker.aura#662 (2026).
+    -->
+    <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <!-- Name, den iOS beim „Zum Home-Bildschirm" vorschlägt -->
@@ -69,7 +87,8 @@
         var msg = document.getElementById('boot-msg');
         var btn = document.getElementById('boot-reload');
         if (!msg || !btn) return; // App läuft längst
-        msg.textContent = 'Das dauert länger als üblich. Bei bestehender Verbindung hilft Neu laden.';
+        msg.textContent =
+          'Das dauert länger als üblich. Bei bestehender Verbindung hilft Neu laden.';
         btn.style.display = '';
         btn.addEventListener('click', function () {
           location.reload();

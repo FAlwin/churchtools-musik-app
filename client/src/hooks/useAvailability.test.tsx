@@ -38,6 +38,8 @@ describe('useAvailability – Schreibvorgänge verwerfen die eigene Liste', () =
       id: 5,
       startDate: '2026-10-04',
       endDate: '2026-10-04',
+      startTime: null,
+      endTime: null,
       comment: '',
       reason: null,
       reasonId: null,
@@ -79,6 +81,8 @@ describe('useSaveAbsenceChanges – alle Häkchen auf einmal', () => {
         id: 1,
         startDate: n.startDate,
         endDate: n.endDate,
+        startTime: n.startTime ?? null,
+        endTime: n.endTime ?? null,
         comment: '',
         reason: null,
         reasonId: null,
@@ -93,15 +97,27 @@ describe('useSaveAbsenceChanges – alle Häkchen auf einmal', () => {
     let anzahl = 0;
     await act(async () => {
       anzahl = await result.current.mutateAsync({
-        eintragen: ['2026-10-04', '2026-10-11'],
+        eintragen: [
+          {
+            startDate: '2026-10-04',
+            endDate: '2026-10-04',
+            startTime: '2026-10-04T10:00:00Z',
+            endTime: '2026-10-04T11:30:00Z',
+          },
+          { startDate: '2026-10-11', endDate: '2026-10-11' },
+        ],
         loeschen: [7],
       });
     });
     expect(folge).toEqual(['neu 2026-10-04', 'neu 2026-10-11', 'weg 7']);
     expect(anzahl).toBe(3);
+    // Das Zeitfenster des Termins geht mit (22.09.2026) – nur so lassen sich zwei Termine am
+    // selben Tag einzeln abhaken.
     expect(api.createAbsence).toHaveBeenCalledWith({
       startDate: '2026-10-04',
       endDate: '2026-10-04',
+      startTime: '2026-10-04T10:00:00Z',
+      endTime: '2026-10-04T11:30:00Z',
     });
     await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: [...ABSENCES_KEY, 'mine'] }));
   });
@@ -112,7 +128,10 @@ describe('useSaveAbsenceChanges – alle Häkchen auf einmal', () => {
     const { result } = renderHook(() => useSaveAbsenceChanges(), { wrapper });
     await act(async () => {
       await expect(
-        result.current.mutateAsync({ eintragen: ['2026-10-04'], loeschen: [7] }),
+        result.current.mutateAsync({
+          eintragen: [{ startDate: '2026-10-04', endDate: '2026-10-04' }],
+          loeschen: [7],
+        }),
       ).rejects.toThrow();
     });
     expect(api.deleteAbsence).not.toHaveBeenCalled();

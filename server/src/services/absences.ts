@@ -35,6 +35,9 @@ export function zuAbsence(a: CtAbsence): Absence {
     id: a.id,
     startDate: a.startDate,
     endDate: a.endDate,
+    // Zeitfenster (22.09.2026): null heißt ganztägig – so liefert ChurchTools es auch.
+    startTime: a.startTime ?? null,
+    endTime: a.endTime ?? null,
     comment: markerFreitext(a.comment),
     reason: grundLesbar(a.absenceReason?.name),
     reasonId: ctId(a.absenceReason?.id),
@@ -58,6 +61,8 @@ export function absenceBody(
 ): {
   startDate: string;
   endDate: string;
+  startTime?: string;
+  endTime?: string;
   absenceReasonId: number;
   comment: string;
 } {
@@ -70,9 +75,23 @@ export function absenceBody(
   if (tageInklusive(neu.startDate, neu.endDate) > MAX_TAGE) {
     throw new HttpError(400, 'Ein Zeitraum darf höchstens ein Jahr lang sein.');
   }
+  // Zeitfenster: beide oder keins. Ein halbes Fenster wäre ein Eintrag, der in ChurchTools anders
+  // aussieht als gemeint – lieber früh und mit einem verständlichen Satz ablehnen.
+  if (Boolean(neu.startTime) !== Boolean(neu.endTime)) {
+    throw new HttpError(400, 'Zu einer Uhrzeit gehören Anfang und Ende.');
+  }
+  if (neu.startTime && neu.endTime && Date.parse(neu.endTime) <= Date.parse(neu.startTime)) {
+    throw new HttpError(400, 'Das Ende liegt vor dem Anfang.');
+  }
+  // Das Fenster muss zu den Tagen passen – sonst entstünde ein Eintrag, der in ChurchTools etwas
+  // anderes behauptet, als er meint (Code-Check 23.09.2026).
+  if (neu.startTime && !neu.startTime.startsWith(neu.startDate)) {
+    throw new HttpError(400, 'Die Uhrzeit gehört nicht zum gewählten Tag.');
+  }
   return {
     startDate: neu.startDate,
     endDate: neu.endDate,
+    ...(neu.startTime && neu.endTime ? { startTime: neu.startTime, endTime: neu.endTime } : {}),
     // Reihenfolge: was die App schickt, sonst der Grund des Eintrags, sonst der konfigurierte
     // Standard. Beim Ändern eines „Urlaub" bleibt es damit Urlaub, wenn der Nutzer nichts umstellt.
     absenceReasonId: neu.reasonId ?? herkunft.reasonId ?? config.absenceReasonId,
@@ -82,10 +101,40 @@ export function absenceBody(
   };
 }
 
-/** Gibt es schon einen eigenen Eintrag mit genau diesem Zeitraum? */
+/**
+ * Der frisch geschriebene Eintrag als App-Sicht – **die eine Stelle** (23.09.2026, Code-Check).
+ *
+ * Anlegen und Ändern bauten diese Antwort getrennt zusammen, und beim Ändern fehlten `startTime`/
+ * `endTime`: Die Antwort meldete „ganztägig", obwohl das Fenster in ChurchTools stand. Folgenlos nur,
+ * weil die App nach jeder Änderung neu lädt – für den nächsten Aufrufer eine Falle. Genau die halb
+ * umgesetzte Regel, gegen die dieses Projekt seine Arbeitsregeln geschrieben hat.
+ */
+function alsAbsence(id: number, body: ReturnType<typeof absenceBody>): Absence {
+  return zuAbsence({
+    id,
+    startDate: body.startDate,
+    endDate: body.endDate,
+    startTime: body.startTime ?? null,
+    endTime: body.endTime ?? null,
+    comment: body.comment,
+  });
+}
+
+/**
+ * Gibt es schon einen eigenen Eintrag mit genau diesem Zeitraum?
+ *
+ * **Das Zeitfenster gehört zum Vergleich** (22.09.2026). Ohne es wäre der zweite Termin desselben
+ * Tages ein „Doppel" und würde stillschweigend verschluckt – genau der Fall, für den die Uhrzeiten
+ * überhaupt eingeführt wurden. Ganztägig (`null`) und ein Fenster sind damit verschiedene Einträge.
+ */
 export function gleicherZeitraum(vorhanden: Absence[], neu: NeueAbsence): Absence | undefined {
   return vorhanden.find(
-    (a) => a.vonApp && a.startDate === neu.startDate && a.endDate === neu.endDate,
+    (a) =>
+      a.vonApp &&
+      a.startDate === neu.startDate &&
+      a.endDate === neu.endDate &&
+      (a.startTime ?? null) === (neu.startTime ?? null) &&
+      (a.endTime ?? null) === (neu.endTime ?? null),
   );
 }
 
@@ -114,6 +163,9 @@ export function zuEvents(events: CtEvent[]): AbsenceEvent[] {
       name: e.name,
       date: e.startDate.slice(0, 10),
       startDate: e.startDate,
+      // Das Ende braucht die App, seit ein Haken das Zeitfenster des Termins einträgt. Fehlt es,
+      // steht hier der Start – dann wird der Eintrag ganztägig (siehe `zeitfensterFuer`).
+      endDate: typeof e.endDate === 'string' && e.endDate ? e.endDate : e.startDate,
     }))
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
 }
@@ -150,15 +202,7 @@ export async function abwesenheitAnlegen(
   const doppel = gleicherZeitraum(vorhanden, body);
   if (doppel) return { absence: doppel, neu: false };
   const id = await createAbsence(cookie, userId, body);
-  return {
-    absence: zuAbsence({
-      id,
-      startDate: body.startDate,
-      endDate: body.endDate,
-      comment: body.comment,
-    }),
-    neu: true,
-  };
+  return { absence: alsAbsence(id, body), neu: true };
 }
 
 /**
@@ -257,10 +301,31 @@ export async function abwesenheitAendern(
    * fasst nur Marker-Einträge an, ein markierter Urlaub wäre also plötzlich Sync-Material und
    * verschwände beim nächsten Lauf, weil er in der Excel nicht steht.
    */
-  const body = absenceBody(neu, {
-    reasonId: alt.reasonId,
-    mitMarker: alt.vonApp,
-  });
+  const body = absenceBody(
+    {
+      ...neu,
+      /**
+       * **Das Zeitfenster überlebt eine Änderung** (22.09.2026, gefunden bei der Dopplungs-Suche).
+       *
+       * Das Fenster-Fenster kommt aus dem Termin, das Änderungs-Fenster („Abwesenheit ändern")
+       * kennt nur Datum, Grund und Kommentar. Ohne diese Zeilen würde aus einem Eintrag für den
+       * Vormittagstermin beim bloßen Ändern des Kommentars ein **ganztägiger** – und der zweite
+       * Termin des Tages wäre plötzlich mit abgemeldet. Bleiben die Tage gleich, bleiben also auch
+       * die Uhrzeiten. Wandert der Eintrag auf andere Tage, ergibt das Fenster keinen Sinn mehr und
+       * entfällt.
+       */
+      ...(neu.startTime ||
+      neu.endTime ||
+      neu.startDate !== alt.startDate ||
+      neu.endDate !== alt.endDate
+        ? {}
+        : { startTime: alt.startTime ?? undefined, endTime: alt.endTime ?? undefined }),
+    },
+    {
+      reasonId: alt.reasonId,
+      mitMarker: alt.vonApp,
+    },
+  );
   const vorhanden = await meineAbwesenheiten(cookie, userId, body.startDate, body.endDate);
   if (gleicherZeitraumAusser(vorhanden, body, absenceId)) {
     throw new HttpError(409, 'Für diesen Zeitraum gibt es schon einen Eintrag.');
@@ -274,12 +339,7 @@ export async function abwesenheitAendern(
       'Die Änderung wurde eingetragen, der alte Eintrag ließ sich aber nicht entfernen. Bitte in ChurchTools nachsehen.',
     );
   }
-  return zuAbsence({
-    id,
-    startDate: body.startDate,
-    endDate: body.endDate,
-    comment: body.comment,
-  });
+  return alsAbsence(id, body);
 }
 
 /* ------------------------------------------------------------------ Abwesenheitsgründe */

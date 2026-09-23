@@ -21,6 +21,7 @@ const ev = (id: number, name: string): AbsenceEvent => ({
   name,
   date: '2026-10-04',
   startDate: '2026-10-04T10:00:00Z',
+  endDate: '2026-10-04T11:30:00Z',
 });
 const GD: TerminArt = { id: 'gd', name: 'Gottesdienst', suchwort: 'Gottesdienst' };
 const GA: TerminArt = { id: 'ga', name: 'Gebetsabend', suchwort: 'gebetsabend' };

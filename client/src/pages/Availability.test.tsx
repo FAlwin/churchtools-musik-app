@@ -51,24 +51,28 @@ const EVENTS: AbsenceEvent[] = [
     name: 'Gottesdienst',
     date: '2026-10-04',
     startDate: '2026-10-04T10:00:00Z',
+    endDate: '2026-10-04T12:00:00Z',
   },
   {
     id: 2,
     name: 'Gottesdienst',
     date: '2026-10-11',
     startDate: '2026-10-11T10:00:00Z',
+    endDate: '2026-10-11T12:00:00Z',
   },
   {
     id: 3,
     name: 'Jugendabend',
     date: '2026-10-16',
     startDate: '2026-10-16T18:00:00Z',
+    endDate: '2026-10-16T20:00:00Z',
   },
   {
     id: 4,
     name: 'Gottesdienst',
     date: '2026-11-01',
     startDate: '2026-11-01T10:00:00Z',
+    endDate: '2026-11-01T12:00:00Z',
   },
 ];
 /** Die Termin-Arten des Admins (#400) – „Jugend" trifft „Jugendabend" über das Suchwort. */
@@ -80,6 +84,8 @@ const EIGENE: Absence = {
   id: 10,
   startDate: '2026-10-11',
   endDate: '2026-10-11',
+  startTime: null,
+  endTime: null,
   comment: 'Reise',
   reason: 'Abwesend',
   reasonId: 1,
@@ -89,6 +95,8 @@ const URLAUB: Absence = {
   id: 11,
   startDate: '2026-10-14',
   endDate: '2026-10-20',
+  startTime: null,
+  endTime: null,
   comment: 'Herbstferien',
   reason: 'Urlaub',
   reasonId: 2,
@@ -98,6 +106,8 @@ const FRUEHER: Absence = {
   id: 12,
   startDate: '2026-07-20',
   endDate: '2026-08-03',
+  startTime: null,
+  endTime: null,
   comment: 'Sommer',
   reason: 'Urlaub',
   reasonId: 2,
@@ -157,7 +167,7 @@ describe('Abwesenheiten – Kopf und Monat', () => {
 });
 
 describe('Abwesenheiten – Häkchen sind vorgemerkt, Speichern schreibt alle', () => {
-  it('ein Haken zeigt die Leiste, schreibt aber noch nichts; Speichern trägt den Tag ein', () => {
+  it('ein Haken zeigt die Leiste, schreibt aber noch nichts; Speichern trägt den Termin ein', () => {
     const { onToast } = zeige();
     expect(leiste()).toBeNull();
     const k = kasten(/Abwesend – Gottesdienst, So, 04\.10\./);
@@ -169,7 +179,19 @@ describe('Abwesenheiten – Häkchen sind vorgemerkt, Speichern schreibt alle', 
 
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
     expect(sichern).toHaveBeenCalledTimes(1);
-    expect(sichern.mock.calls[0][0]).toEqual({ eintragen: ['2026-10-04'], loeschen: [] });
+    // Mit dem ZEITFENSTER des Termins (22.09.2026) – nur so lassen sich zwei Termine am selben Tag
+    // einzeln abhaken.
+    expect(sichern.mock.calls[0][0]).toEqual({
+      eintragen: [
+        {
+          startDate: '2026-10-04',
+          endDate: '2026-10-04',
+          startTime: '2026-10-04T10:00:00Z',
+          endTime: '2026-10-04T12:00:00Z',
+        },
+      ],
+      loeschen: [],
+    });
     // Erfolg meldet die Zahl und räumt auf (der Rückruf kommt von außen → act)
     void act(() => sichern.mock.calls[0][1].onSuccess(1));
     expect(onToast).toHaveBeenCalledWith(expect.stringContaining('1 Änderung gespeichert'));
@@ -434,5 +456,245 @@ describe('Abwesenheiten – Termin-Filter (#400)', () => {
     expect(leiste()).not.toBeNull(); // die Vormerkung bleibt
     fireEvent.click(knopf('Alle'));
     expect(kasten(/04\.10\./).getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+/**
+ * **Runterziehen zum Aktualisieren** (Alwin, 22.09.2026: „bei Abwesenheit und Termine ist das
+ * Neuladen nicht richtig. Bei Lied stimmt es.").
+ *
+ * Die Seite lädt ZWEI Dinge – die eigenen Einträge und die Termine. Vorher warf sie beide Abrufe mit
+ * `void` weg und gab selbst nichts zurück; die Ladeanzeige war deshalb sofort wieder da und wieder
+ * weg, während die Daten noch unterwegs waren. Hier dauern die Abrufe absichtlich deutlich länger
+ * als die Untergrenze der Anzeige (450 ms) – sonst wäre der Test auch ohne den Fix grün.
+ */
+describe('Abwesenheiten – Runterziehen zum Aktualisieren', () => {
+  const scroller = (c: HTMLElement) => c.querySelector('[class*="scroll"]') as HTMLElement;
+  // Bei jeder Prüfung frisch holen: React tauscht den Teilbaum beim Zustandswechsel aus, eine
+  // gemerkte Referenz zeigt danach auf ein Element, das nicht mehr im Dokument hängt.
+  const anzeigerDeckkraft = (c: HTMLElement) =>
+    (c.querySelector('[class*="pullIndicator"]') as HTMLElement).style.opacity;
+
+  it('lässt die Ladeanzeige stehen, bis Einträge UND Termine da sind', async () => {
+    vi.useFakeTimers();
+    let eintraegeFertig!: () => void;
+    let termineFertig!: () => void;
+    absences.mockReturnValue({
+      data: [EIGENE, URLAUB, FRUEHER],
+      isLoading: false,
+      isError: false,
+      refetch: () => new Promise((f) => (eintraegeFertig = f as () => void)),
+    });
+    events.mockReturnValue({
+      data: EVENTS,
+      isLoading: false,
+      isError: false,
+      refetch: () => new Promise((f) => (termineFertig = f as () => void)),
+    });
+
+    const { container } = render(<Availability online onToast={vi.fn()} heute={HEUTE} />);
+    const bereich = scroller(container);
+
+    fireEvent.touchStart(bereich, { touches: [{ clientY: 0 }] });
+    fireEvent.touchMove(bereich, { touches: [{ clientY: 200 }] });
+    await act(async () => {
+      fireEvent.touchEnd(bereich);
+    });
+
+    // Lange nach der Untergrenze – die Anzeige steht, weil noch geladen wird.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(anzeigerDeckkraft(container)).toBe('1');
+
+    await act(async () => {
+      eintraegeFertig();
+      await vi.advanceTimersByTimeAsync(600);
+    });
+    expect(anzeigerDeckkraft(container)).toBe('1'); // die Termine fehlen noch
+
+    await act(async () => {
+      termineFertig();
+      await vi.advanceTimersByTimeAsync(600);
+    });
+    expect(anzeigerDeckkraft(container)).toBe('0');
+    vi.useRealTimers();
+  });
+});
+
+/**
+ * **Zwei Termine an einem Tag – einzeln abhaken** (Alwin, 22.09.2026: „manchmal hab ich morgens
+ * keine Zeit kann aber nachmittags und umgekehrt. das muss in der logik geändert werden").
+ *
+ * Vorher hing der Haken am TAG: Ein Kästchen abhaken setzte beide Termine des Tages auf abwesend,
+ * weil die Abwesenheit ganztägig war. Jetzt trägt ein Haken das Zeitfenster genau dieses Termins
+ * ein, und nur der zugehörige Termin zeigt den Haken.
+ */
+describe('Abwesenheiten – mehrere Termine am selben Tag', () => {
+  const VORMITTAGS: AbsenceEvent = {
+    id: 21,
+    name: 'Gottesdienst',
+    date: '2026-10-04',
+    startDate: '2026-10-04T10:00:00Z',
+    endDate: '2026-10-04T12:00:00Z',
+  };
+  const NACHMITTAGS: AbsenceEvent = {
+    id: 22,
+    name: 'Jugendtreff',
+    date: '2026-10-04',
+    startDate: '2026-10-04T16:00:00Z',
+    endDate: '2026-10-04T18:00:00Z',
+  };
+
+  beforeEach(() => {
+    events.mockReturnValue({
+      data: [VORMITTAGS, NACHMITTAGS],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+  });
+
+  it('ein Haken am Vormittagstermin lässt den Nachmittag frei', () => {
+    absences.mockReturnValue({ data: [], isLoading: false, isError: false, refetch: vi.fn() });
+    zeige();
+    const vormittags = kasten(/Abwesend – Gottesdienst/);
+    const nachmittags = kasten(/Abwesend – Jugendtreff/);
+
+    fireEvent.click(vormittags);
+
+    expect(vormittags.getAttribute('aria-pressed')).toBe('true');
+    expect(nachmittags.getAttribute('aria-pressed')).toBe('false');
+    expect(leiste()?.textContent).toContain('1 Änderung vorgemerkt');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(sichern.mock.calls[0][0]).toEqual({
+      eintragen: [
+        {
+          startDate: '2026-10-04',
+          endDate: '2026-10-04',
+          startTime: '2026-10-04T10:00:00Z',
+          endTime: '2026-10-04T12:00:00Z',
+        },
+      ],
+      loeschen: [],
+    });
+  });
+
+  it('ein vorhandener Eintrag mit Uhrzeit hakt nur seinen Termin ab', () => {
+    absences.mockReturnValue({
+      data: [
+        {
+          id: 30,
+          startDate: '2026-10-04',
+          endDate: '2026-10-04',
+          startTime: '2026-10-04T16:00:00Z',
+          endTime: '2026-10-04T18:00:00Z',
+          comment: '',
+          reason: 'Abwesend',
+          reasonId: 1,
+          vonApp: true,
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    zeige();
+
+    expect(kasten(/Abwesend – Jugendtreff/).getAttribute('aria-pressed')).toBe('true');
+    expect(kasten(/Abwesend – Gottesdienst/).getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('ein ganztägiger Eintrag gilt weiterhin für beide Termine des Tages', () => {
+    absences.mockReturnValue({
+      data: [
+        {
+          id: 31,
+          startDate: '2026-10-04',
+          endDate: '2026-10-04',
+          startTime: null,
+          endTime: null,
+          comment: '',
+          reason: 'Urlaub',
+          reasonId: 2,
+          vonApp: true,
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    zeige();
+
+    expect(kasten(/Abwesend – Gottesdienst/).getAttribute('aria-pressed')).toBe('true');
+    expect(kasten(/Abwesend – Jugendtreff/).getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+/**
+ * **Ein ganztägiger Eintrag darf nicht stumm verschwinden** (Code-Check vor v2.25.2, 23.09.2026).
+ *
+ * Die Rückfrage griff nur bei MEHRTÄGIGEN Einträgen. Ein ganztägiger Ein-Tages-Eintrag deckt aber
+ * ebenfalls beide Termine des Tages – nimmt man bei einem den Haken weg, wurde die ganze Abwesenheit
+ * zum Löschen vorgemerkt und der zweite Termin verlor seinen Haken mit, ohne Warnung und ohne
+ * sichtbare Vormerkung. Das trifft während der Umstellung JEDEN Bestandseintrag, denn die sind alle
+ * ganztägig.
+ */
+describe('Abwesenheiten – ganztägiger Eintrag bei zwei Terminen am Tag', () => {
+  const VORMITTAGS: AbsenceEvent = {
+    id: 41,
+    name: 'Gottesdienst',
+    date: '2026-10-04',
+    startDate: '2026-10-04T10:00:00Z',
+    endDate: '2026-10-04T12:00:00Z',
+  };
+  const NACHMITTAGS: AbsenceEvent = {
+    id: 42,
+    name: 'Jugendtreff',
+    date: '2026-10-04',
+    startDate: '2026-10-04T16:00:00Z',
+    endDate: '2026-10-04T18:00:00Z',
+  };
+  const GANZTAGS = {
+    id: 50,
+    startDate: '2026-10-04',
+    endDate: '2026-10-04',
+    startTime: null,
+    endTime: null,
+    comment: '',
+    reason: 'Abwesend',
+    reasonId: 1,
+    vonApp: true,
+  };
+
+  beforeEach(() => {
+    events.mockReturnValue({
+      data: [VORMITTAGS, NACHMITTAGS],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    absences.mockReturnValue({
+      data: [GANZTAGS],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+  });
+
+  it('fragt nach, statt den Eintrag für beide Termine stumm zu löschen', () => {
+    zeige();
+    // Beide Termine tragen den Haken – der Eintrag gilt für den ganzen Tag.
+    expect(kasten(/Abwesend – Gottesdienst/).getAttribute('aria-pressed')).toBe('true');
+    expect(kasten(/Abwesend – Jugendtreff/).getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(kasten(/Abwesend – Gottesdienst/));
+
+    // Es MUSS eine Rückfrage kommen; der Nachmittag darf seinen Haken nicht stumm verlieren.
+    // Geprüft am Titel des Fensters und am Knopf – der Fließtext ist über mehrere Elemente verteilt.
+    expect(screen.queryByText('Gilt für den ganzen Tag')).not.toBeNull();
+    expect(screen.queryByRole('button', { name: /Eintrag löschen/ })).not.toBeNull();
+    expect(kasten(/Abwesend – Jugendtreff/).getAttribute('aria-pressed')).toBe('true');
   });
 });

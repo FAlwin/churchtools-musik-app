@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import type { SiteConfig, NoteRolePerm } from '@shared/types/index';
 import { sameIdSet, sameRolePerms } from '../utils/adminDrafts';
 import type { Theme, ThemePref } from '../types/index';
-import { Screen, Scroll } from '../components/Screen';
-import { NavBar } from '../components/NavBar';
+import { SeitenGeruest } from '../components/SeitenGeruest';
 import { Sheet } from '../components/Sheet';
 import { Spinner } from '../components/Spinner';
 import { Segment } from '../components/Segment';
@@ -143,278 +142,9 @@ export function Settings({
     );
   }
 
-  return (
-    <Screen>
-      <NavBar title="Mehr" />
-      <Scroll>
-        {/* Profil */}
-        <div className={styles.profileCard}>
-          <img className={styles.profileLogo} src={logo} alt="" />
-          <div>
-            <div className={styles.profileName}>{site.orgName}</div>
-            {userName && <div className={styles.profileSub}>Angemeldet als {userName}</div>}
-          </div>
-        </div>
-
-        {/* Als App installieren – nur solange die App NICHT bereits als PWA läuft */}
-        {!pwa.standalone && (
-          <div className={styles.group}>
-            <div className={styles.groupHdr}>Als App installieren</div>
-            <div className={styles.cardList}>
-              {pwa.canPrompt ? (
-                // Chrome/Edge (Android + Desktop, HTTPS): echter Installations-Dialog
-                <button
-                  className={`${styles.setRow} ${styles.tappable}`}
-                  onClick={() => void promptInstall()}
-                >
-                  <span className={styles.setLabel}>Auf dem Startbildschirm installieren</span>
-                  <Icon name="download" size={18} className={styles.extIcon} />
-                </button>
-              ) : pwa.platform === 'ios' ? (
-                // iPhone/iPad-Safari: Teilen → „Zum Home-Bildschirm"
-                <p className={styles.installHint}>
-                  Tippe in Safari unten auf das Teilen-Symbol{' '}
-                  <Icon name="share" size={15} className={styles.hintIcon} /> und dann auf{' '}
-                  <strong>„Zum Home-Bildschirm"</strong> – so liegt die App wie eine echte App auf
-                  deinem Startbildschirm.
-                </p>
-              ) : pwa.platform === 'macSafari' ? (
-                // macOS-Safari: Teilen → „Zum Dock hinzufügen"
-                <p className={styles.installHint}>
-                  Klicke in Safari oben auf das Teilen-Symbol{' '}
-                  <Icon name="share" size={15} className={styles.hintIcon} /> und dann auf{' '}
-                  <strong>„Zum Dock hinzufügen"</strong> – so liegt die App wie ein Programm im
-                  Dock.
-                </p>
-              ) : pwa.platform === 'android' ? (
-                // Android ohne nativen Prompt (z. B. Firefox/Samsung Internet)
-                <p className={styles.installHint}>
-                  Öffne das Browser-Menü (<strong>⋮</strong>) und wähle{' '}
-                  <Icon name="plus" size={15} className={styles.hintIcon} />{' '}
-                  <strong>„App installieren"</strong> bzw.{' '}
-                  <strong>„Zum Startbildschirm hinzufügen"</strong>.
-                </p>
-              ) : (
-                // Sonstige Desktop-Browser ohne nativen Prompt (Chrome/Edge über HTTP, Firefox …)
-                <p className={styles.installHint}>
-                  Über das <strong>Browser-Menü</strong> kannst du die App wie ein Programm ablegen
-                  – in Chrome/Edge unter <strong>„Streamen, speichern und teilen"</strong> →{' '}
-                  <strong>„Seite als App installieren"</strong>, in anderen Browsern über{' '}
-                  <strong>„Zum Startbildschirm hinzufügen"</strong>.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Darstellung */}
-        <div className={styles.group}>
-          <div className={styles.groupHdr}>Darstellung</div>
-          <div className={styles.cardList}>
-            <div className={styles.setRow}>
-              <span className={styles.setLabel}>Erscheinungsbild</span>
-              <Segment
-                className={styles.themeSeg}
-                value={themePref}
-                options={THEME_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                onChange={setThemePref}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Während des Spielens */}
-        <div className={styles.group}>
-          <div className={styles.groupHdr}>Während des Spielens</div>
-          <div className={styles.cardList}>
-            <div className={`${styles.setRow} ${styles.tappable}`} onClick={onToggleWake}>
-              <span className={styles.setLabel}>Display aktiv halten</span>
-              <button
-                className={`${styles.tog}${wakePref ? ' ' + styles.togOn : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleWake();
-                }}
-                aria-label="Display aktiv halten"
-              >
-                <span className={styles.togThumb} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Offline-Reserve */}
-        <div className={styles.group}>
-          <div className={styles.groupHdr}>Offline</div>
-          <div className={styles.cardList}>
-            <div className={`${styles.setRow} ${styles.tappable}`} onClick={toggleAutoOffline}>
-              <span className={styles.setLabel}>Kommende Gottesdienste offline halten</span>
-              <button
-                className={`${styles.tog}${autoOffline ? ' ' + styles.togOn : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleAutoOffline();
-                }}
-                aria-label="Kommende Gottesdienste offline halten"
-              >
-                <span className={styles.togThumb} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Weitere Angebote: frei konfigurierbare externe Links (für alle sichtbar) */}
-        {site.links.length > 0 && (
-          <div className={styles.group}>
-            <div className={styles.groupHdr}>Weitere Angebote</div>
-            <div className={styles.cardList}>
-              {site.links.map((link) => (
-                <a
-                  key={link.id}
-                  className={`${styles.setRow} ${styles.tappable} ${styles.linkRow}`}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span className={styles.setLabel}>{link.label}</span>
-                  <Icon name="external" size={18} className={styles.extIcon} />
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Organisation (nur Admin) */}
-        {/* Team-Notizen: eigenes Teilen (nur für berechtigte Teammitglieder sichtbar) */}
-        {canUseGlobalNotes && (
-          <div className={styles.group}>
-            <div className={styles.groupHdr}>Team-Notizen</div>
-            <div className={styles.cardList}>
-              <div className={`${styles.setRow} ${styles.tappable}`} onClick={toggleSharing}>
-                <span className={styles.setLabel}>Meine Anmerkungen teilen</span>
-                <button
-                  className={`${styles.tog}${sharing ? ' ' + styles.togOn : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleSharing();
-                  }}
-                  aria-label="Meine Anmerkungen teilen"
-                >
-                  <span className={styles.togThumb} />
-                </button>
-              </div>
-              {sharingError && <p className={styles.sharingError}>{sharingError}</p>}
-              <p className={styles.installHint}>
-                Berechtigte Teammitglieder können deine Anmerkungen dann im Lied unter „Notizen von
-                …" ansehen und übernehmen.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {isAdmin && (
-          <div className={styles.group}>
-            <div className={styles.groupHdr}>Verwaltung</div>
-            <div className={styles.cardList}>
-              <button
-                className={`${styles.setRow} ${styles.tappable}`}
-                onClick={() => {
-                  setOrgDraft(site.orgName);
-                  setShowOrg(true);
-                }}
-              >
-                <span className={styles.setLabel}>Organisation / Name</span>
-                <span className={styles.setValue}>{site.orgName}</span>
-              </button>
-              <button
-                className={`${styles.setRow} ${styles.tappable}`}
-                onClick={() => setShowLinks(true)}
-              >
-                <span className={styles.setLabel}>Links verwalten</span>
-                <span className={styles.setValue}>
-                  {site.links.length === 0
-                    ? 'keine'
-                    : `${site.links.length} ${site.links.length === 1 ? 'Link' : 'Links'}`}
-                </span>
-              </button>
-              <button
-                className={`${styles.setRow} ${styles.tappable}`}
-                onClick={() => setShowTerminArten(true)}
-              >
-                <span className={styles.setLabel}>Abwesenheiten: Termin-Arten</span>
-                <span className={styles.setValue}>
-                  {(site.terminArten ?? []).length === 0
-                    ? 'kein Filter'
-                    : `${(site.terminArten ?? []).length} ${(site.terminArten ?? []).length === 1 ? 'Art' : 'Arten'}`}
-                </span>
-              </button>
-              <button
-                className={`${styles.setRow} ${styles.tappable}`}
-                onClick={() => setShowNotes(true)}
-              >
-                <span className={styles.setLabel}>Anmerkungen</span>
-                <span className={styles.setValue}>
-                  {site.musicianGroupIds.length === 0
-                    ? 'aus'
-                    : `${site.musicianGroupIds.length} ${site.musicianGroupIds.length === 1 ? 'Gruppe' : 'Gruppen'}`}
-                </span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Hilfe */}
-        <div className={styles.group}>
-          <div className={styles.groupHdr}>Hilfe</div>
-          <div className={styles.cardList}>
-            <button className={`${styles.setRow} ${styles.tappable}`} onClick={onReplayIntro}>
-              <span className={styles.setLabel}>Einführung nochmal ansehen</span>
-              <Icon name="chev-right" size={18} className={styles.extIcon} />
-            </button>
-          </div>
-        </div>
-
-        {/* Konto */}
-        <div className={styles.group}>
-          <div className={styles.cardList}>
-            <button className={`${styles.setRow} ${styles.tappable}`} onClick={onLogout}>
-              <span className={`${styles.setLabel} ${styles.danger}`}>Abmelden</span>
-              <Icon name="logout" size={18} className={styles.dangerIcon} />
-            </button>
-          </div>
-        </div>
-
-        {/* Freiwillige Unterstützung – dezent, ganz unten */}
-        <SupportBox />
-
-        <div className={styles.version}>
-          Churchtools Musik App · {import.meta.env.VITE_APP_VERSION || 'dev'}
-          {updateCheck.available && updateCheck.latest && (
-            <a
-              className={styles.updateNote}
-              href={updateCheck.url ?? undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Neue Version {updateCheck.latest} verfügbar – Was ist neu
-            </a>
-          )}
-          {offline && (offline.records > 0 || offline.files > 0) && (
-            <div className={styles.offlineStat}>
-              Offline bereit ✓
-              {offline.savedAt != null &&
-                ` · zuletzt gespeichert ${new Date(offline.savedAt).toLocaleString('de-DE', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}`}
-            </div>
-          )}
-        </div>
-      </Scroll>
-
+  /** Fenster und Meldungen schweben über dem Inhalt – sie scrollen nicht mit. */
+  const ueberlagerung = (
+    <>
       {showOrg && (
         <Sheet title="Organisation / Name" onClose={() => setShowOrg(false)}>
           <input
@@ -567,7 +297,277 @@ export function Settings({
           )}
         </Sheet>
       )}
-    </Screen>
+    </>
+  );
+
+  return (
+    <SeitenGeruest titel="Mehr" ueberlagerung={ueberlagerung}>
+      {/* Profil */}
+      <div className={styles.profileCard}>
+        <img className={styles.profileLogo} src={logo} alt="" />
+        <div>
+          <div className={styles.profileName}>{site.orgName}</div>
+          {userName && <div className={styles.profileSub}>Angemeldet als {userName}</div>}
+        </div>
+      </div>
+
+      {/* Als App installieren – nur solange die App NICHT bereits als PWA läuft */}
+      {!pwa.standalone && (
+        <div className={styles.group}>
+          <div className={styles.groupHdr}>Als App installieren</div>
+          <div className={styles.cardList}>
+            {pwa.canPrompt ? (
+              // Chrome/Edge (Android + Desktop, HTTPS): echter Installations-Dialog
+              <button
+                className={`${styles.setRow} ${styles.tappable}`}
+                onClick={() => void promptInstall()}
+              >
+                <span className={styles.setLabel}>Auf dem Startbildschirm installieren</span>
+                <Icon name="download" size={18} className={styles.extIcon} />
+              </button>
+            ) : pwa.platform === 'ios' ? (
+              // iPhone/iPad-Safari: Teilen → „Zum Home-Bildschirm"
+              <p className={styles.installHint}>
+                Tippe in Safari unten auf das Teilen-Symbol{' '}
+                <Icon name="share" size={15} className={styles.hintIcon} /> und dann auf{' '}
+                <strong>„Zum Home-Bildschirm"</strong> – so liegt die App wie eine echte App auf
+                deinem Startbildschirm.
+              </p>
+            ) : pwa.platform === 'macSafari' ? (
+              // macOS-Safari: Teilen → „Zum Dock hinzufügen"
+              <p className={styles.installHint}>
+                Klicke in Safari oben auf das Teilen-Symbol{' '}
+                <Icon name="share" size={15} className={styles.hintIcon} /> und dann auf{' '}
+                <strong>„Zum Dock hinzufügen"</strong> – so liegt die App wie ein Programm im Dock.
+              </p>
+            ) : pwa.platform === 'android' ? (
+              // Android ohne nativen Prompt (z. B. Firefox/Samsung Internet)
+              <p className={styles.installHint}>
+                Öffne das Browser-Menü (<strong>⋮</strong>) und wähle{' '}
+                <Icon name="plus" size={15} className={styles.hintIcon} />{' '}
+                <strong>„App installieren"</strong> bzw.{' '}
+                <strong>„Zum Startbildschirm hinzufügen"</strong>.
+              </p>
+            ) : (
+              // Sonstige Desktop-Browser ohne nativen Prompt (Chrome/Edge über HTTP, Firefox …)
+              <p className={styles.installHint}>
+                Über das <strong>Browser-Menü</strong> kannst du die App wie ein Programm ablegen –
+                in Chrome/Edge unter <strong>„Streamen, speichern und teilen"</strong> →{' '}
+                <strong>„Seite als App installieren"</strong>, in anderen Browsern über{' '}
+                <strong>„Zum Startbildschirm hinzufügen"</strong>.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Darstellung */}
+      <div className={styles.group}>
+        <div className={styles.groupHdr}>Darstellung</div>
+        <div className={styles.cardList}>
+          <div className={styles.setRow}>
+            <span className={styles.setLabel}>Erscheinungsbild</span>
+            <Segment
+              className={styles.themeSeg}
+              value={themePref}
+              options={THEME_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              onChange={setThemePref}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Während des Spielens */}
+      <div className={styles.group}>
+        <div className={styles.groupHdr}>Während des Spielens</div>
+        <div className={styles.cardList}>
+          <div className={`${styles.setRow} ${styles.tappable}`} onClick={onToggleWake}>
+            <span className={styles.setLabel}>Display aktiv halten</span>
+            <button
+              className={`${styles.tog}${wakePref ? ' ' + styles.togOn : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWake();
+              }}
+              aria-label="Display aktiv halten"
+            >
+              <span className={styles.togThumb} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Offline-Reserve */}
+      <div className={styles.group}>
+        <div className={styles.groupHdr}>Offline</div>
+        <div className={styles.cardList}>
+          <div className={`${styles.setRow} ${styles.tappable}`} onClick={toggleAutoOffline}>
+            <span className={styles.setLabel}>Kommende Gottesdienste offline halten</span>
+            <button
+              className={`${styles.tog}${autoOffline ? ' ' + styles.togOn : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleAutoOffline();
+              }}
+              aria-label="Kommende Gottesdienste offline halten"
+            >
+              <span className={styles.togThumb} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Weitere Angebote: frei konfigurierbare externe Links (für alle sichtbar) */}
+      {site.links.length > 0 && (
+        <div className={styles.group}>
+          <div className={styles.groupHdr}>Weitere Angebote</div>
+          <div className={styles.cardList}>
+            {site.links.map((link) => (
+              <a
+                key={link.id}
+                className={`${styles.setRow} ${styles.tappable} ${styles.linkRow}`}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className={styles.setLabel}>{link.label}</span>
+                <Icon name="external" size={18} className={styles.extIcon} />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Organisation (nur Admin) */}
+      {/* Team-Notizen: eigenes Teilen (nur für berechtigte Teammitglieder sichtbar) */}
+      {canUseGlobalNotes && (
+        <div className={styles.group}>
+          <div className={styles.groupHdr}>Team-Notizen</div>
+          <div className={styles.cardList}>
+            <div className={`${styles.setRow} ${styles.tappable}`} onClick={toggleSharing}>
+              <span className={styles.setLabel}>Meine Anmerkungen teilen</span>
+              <button
+                className={`${styles.tog}${sharing ? ' ' + styles.togOn : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSharing();
+                }}
+                aria-label="Meine Anmerkungen teilen"
+              >
+                <span className={styles.togThumb} />
+              </button>
+            </div>
+            {sharingError && <p className={styles.sharingError}>{sharingError}</p>}
+            <p className={styles.installHint}>
+              Berechtigte Teammitglieder können deine Anmerkungen dann im Lied unter „Notizen von …"
+              ansehen und übernehmen.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className={styles.group}>
+          <div className={styles.groupHdr}>Verwaltung</div>
+          <div className={styles.cardList}>
+            <button
+              className={`${styles.setRow} ${styles.tappable}`}
+              onClick={() => {
+                setOrgDraft(site.orgName);
+                setShowOrg(true);
+              }}
+            >
+              <span className={styles.setLabel}>Organisation / Name</span>
+              <span className={styles.setValue}>{site.orgName}</span>
+            </button>
+            <button
+              className={`${styles.setRow} ${styles.tappable}`}
+              onClick={() => setShowLinks(true)}
+            >
+              <span className={styles.setLabel}>Links verwalten</span>
+              <span className={styles.setValue}>
+                {site.links.length === 0
+                  ? 'keine'
+                  : `${site.links.length} ${site.links.length === 1 ? 'Link' : 'Links'}`}
+              </span>
+            </button>
+            <button
+              className={`${styles.setRow} ${styles.tappable}`}
+              onClick={() => setShowTerminArten(true)}
+            >
+              <span className={styles.setLabel}>Abwesenheiten: Termin-Arten</span>
+              <span className={styles.setValue}>
+                {(site.terminArten ?? []).length === 0
+                  ? 'kein Filter'
+                  : `${(site.terminArten ?? []).length} ${(site.terminArten ?? []).length === 1 ? 'Art' : 'Arten'}`}
+              </span>
+            </button>
+            <button
+              className={`${styles.setRow} ${styles.tappable}`}
+              onClick={() => setShowNotes(true)}
+            >
+              <span className={styles.setLabel}>Anmerkungen</span>
+              <span className={styles.setValue}>
+                {site.musicianGroupIds.length === 0
+                  ? 'aus'
+                  : `${site.musicianGroupIds.length} ${site.musicianGroupIds.length === 1 ? 'Gruppe' : 'Gruppen'}`}
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hilfe */}
+      <div className={styles.group}>
+        <div className={styles.groupHdr}>Hilfe</div>
+        <div className={styles.cardList}>
+          <button className={`${styles.setRow} ${styles.tappable}`} onClick={onReplayIntro}>
+            <span className={styles.setLabel}>Einführung nochmal ansehen</span>
+            <Icon name="chev-right" size={18} className={styles.extIcon} />
+          </button>
+        </div>
+      </div>
+
+      {/* Konto */}
+      <div className={styles.group}>
+        <div className={styles.cardList}>
+          <button className={`${styles.setRow} ${styles.tappable}`} onClick={onLogout}>
+            <span className={`${styles.setLabel} ${styles.danger}`}>Abmelden</span>
+            <Icon name="logout" size={18} className={styles.dangerIcon} />
+          </button>
+        </div>
+      </div>
+
+      {/* Freiwillige Unterstützung – dezent, ganz unten */}
+      <SupportBox />
+
+      <div className={styles.version}>
+        Churchtools Musik App · {import.meta.env.VITE_APP_VERSION || 'dev'}
+        {updateCheck.available && updateCheck.latest && (
+          <a
+            className={styles.updateNote}
+            href={updateCheck.url ?? undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Neue Version {updateCheck.latest} verfügbar – Was ist neu
+          </a>
+        )}
+        {offline && (offline.records > 0 || offline.files > 0) && (
+          <div className={styles.offlineStat}>
+            Offline bereit ✓
+            {offline.savedAt != null &&
+              ` · zuletzt gespeichert ${new Date(offline.savedAt).toLocaleString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}`}
+          </div>
+        )}
+      </div>
+    </SeitenGeruest>
   );
 }
 

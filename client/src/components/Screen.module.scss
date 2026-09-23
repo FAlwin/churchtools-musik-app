@@ -25,27 +25,55 @@
   }
 }
 
-// Pull-to-Refresh-Anzeige (oberhalb des Inhalts)
-.pullIndicator {
+// Pull-to-Refresh-Anzeige: liegt ÜBER dem Scroll-Bereich an fester Stelle, nicht darin.
+//
+// `top` ist derselbe Abstand, den die Überschrift hält – damit sitzt der Anzeiger unter dem
+// Unschärfe-Band von iOS 26/27 (siehe `client/index.html`) statt darin. Läge er wie früher am
+// oberen Rand, wäre er dort weich; wie weit ihn das Ziehen verschiebt, hing außerdem davon ab, ob
+// die Liste lang genug für das native Gummiband von iOS ist (22.09.2026).
+// Der Bezugsrahmen des Anzeigers: der Inhaltsbereich (unter einer etwaigen Leiste), nicht der ganze
+// Bildschirm. Nur so heißt „oben" in Detailansichten auch „unter der Leiste".
+.pullWrap {
+  position: relative;
+  flex: 1;
   display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pullIndicator {
+  position: absolute;
+  top: var(--inhalt-pad-top);
+  left: 0;
+  right: 0;
+  // Die Höhe setzt `Screen.tsx` (`PULL_HOEHE`) – eine Quelle, nicht zwei.
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  gap: 2px;
   transition: opacity 0.15s;
   color: var(--blue);
+  // Der Anzeiger ist reine Anzeige – Tippen und Ziehen gehören dem Inhalt darunter.
+  pointer-events: none;
+}
+
+// Detailansichten: Die Leiste darüber hält den Abstand zum Band schon.
+.pullDicht {
+  top: 4px;
+}
+
+// Der Hinweistext im Indikator – sichtbar erst, wenn genug Platz gezogen ist (Deckkraft im TSX).
+.pullText {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  white-space: nowrap;
+  transition: opacity 0.15s;
 }
 
 .pullArrow {
   font-size: 20px;
   font-weight: 700;
   transition: transform 0.15s;
-}
-
-// dezenter Hinweis am Listenanfang
-.refreshHint {
-  text-align: center;
-  font-size: 11px;
-  color: var(--text3);
-  padding: 8px 12px 2px;
-  font-weight: 500;
 }

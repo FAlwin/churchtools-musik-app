@@ -27,7 +27,12 @@ export function IconButton({ onClick, title, children, style, dataTour }: IconBu
 }
 
 interface NavBarProps {
-  title: string;
+  /**
+   * Ohne Titel trägt die Leiste nur Zurück und Aktionen – für Bildschirme, die ihren Titel als
+   * `GrosseUeberschrift` in den Inhalt setzen (22.09.2026, wegen des Unschärfe-Bands von iOS 26/27,
+   * siehe `client/index.html`). Symbole vertragen das Band, Text nicht.
+   */
+  title?: string;
   subtitle?: string;
   /** Blaue Zurück-Aktion links (ChurchTools-Stil). */
   back?: () => void;
@@ -64,7 +69,7 @@ export function NavBar({
         )}
       </div>
       <div className={styles.titles}>
-        {titleTap ? (
+        {!title ? null : titleTap ? (
           <button className={styles.titleBtn} onClick={titleTap}>
             <span className={styles.title}>{title}</span>
             {titleChevron && <Icon name="chev-down" size={15} stroke={2.6} />}
