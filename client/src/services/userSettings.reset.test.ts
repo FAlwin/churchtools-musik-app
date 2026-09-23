@@ -27,28 +27,46 @@ afterEach(() => {
   resetSync();
 });
 
+/**
+ * Seit dem 23.09.2026 fragt `apiFetch` nach einem 401 einmal bei `/api/auth/me` nach, ob sich die
+ * Sitzung still erneuern lässt. Diese Attrappe antwortet dort „abgemeldet" – so, wie der Server es
+ * ohne Anmelde-Schlüssel täte – und alle übrigen Anfragen mit `status`.
+ */
+function ctAntwortet(status: number) {
+  return vi.fn((url: string | URL) =>
+    Promise.resolve(
+      String(url).includes('/api/auth/me')
+        ? jsonResponse(200, { authenticated: false })
+        : jsonResponse(status, {}),
+    ),
+  );
+}
+/** Nur die Aufrufe zum Sync zählen – die Rückfrage bei `/api/auth/me` ist nicht gemeint. */
+const syncAufrufe = (f: ReturnType<typeof vi.fn>) =>
+  f.mock.calls.filter((c) => !String(c[0]).includes('/api/auth/')).length;
+
 describe('userSettings – Sync-Schalter (#211)', () => {
   it('schaltet nach einem 401 ab und funkt danach nicht mehr', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(401));
+    const fetchMock = ctAntwortet(401);
     vi.stubGlobal('fetch', fetchMock);
 
     await pullSettings([1]); // 401 → disabled
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(syncAufrufe(fetchMock)).toBe(1);
 
     await pullSettings([1]); // darf nicht erneut funken
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(syncAufrufe(fetchMock)).toBe(1);
   });
 
   it('nach resetSync() läuft der Sync wieder (Neu-Anmeldung)', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(401));
+    const fetchMock = ctAntwortet(401);
     vi.stubGlobal('fetch', fetchMock);
     await pullSettings([1]);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(syncAufrufe(fetchMock)).toBe(1);
 
     // Nutzer meldet sich neu an → useAuth ruft resetSync()
     resetSync();
-    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse(200, {})));
     await pullSettings([1]);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(syncAufrufe(fetchMock)).toBe(2);
   });
 });

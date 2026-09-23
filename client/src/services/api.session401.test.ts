@@ -15,6 +15,26 @@ function jsonResponse(status: number, body: unknown = {}): Response {
 }
 
 // Ausdrücklicher Typ: Seit vitest 4 ist ein bloßes `vi.fn()` nicht mehr als Rückruf zuweisbar.
+/**
+ * Die Gegenstelle: `/api/auth/me` antwortet mit `me` (Standard „abgemeldet" – wie der Server ohne
+ * Anmelde-Schlüssel), alle anderen Anfragen der Reihe nach mit `stati` (der letzte gilt danach weiter).
+ * Seit dem 23.09.2026 fragt `apiFetch` nach einem 401 dort einmal nach, bevor es abmeldet.
+ */
+function antwortet(
+  stati: number | number[],
+  me: { status: number; body?: unknown } = { status: 200, body: { authenticated: false } },
+) {
+  const liste = Array.isArray(stati) ? [...stati] : [stati];
+  return vi.fn((url: string | URL) => {
+    if (String(url).includes('/api/auth/me'))
+      return Promise.resolve(jsonResponse(me.status, me.body));
+    const status = liste.length > 1 ? liste.shift()! : liste[0];
+    return Promise.resolve(jsonResponse(status, status === 200 ? { ok: true } : { error: 'x' }));
+  });
+}
+const meAufrufe = (f: ReturnType<typeof vi.fn>) =>
+  f.mock.calls.filter((c) => String(c[0]).includes('/api/auth/me')).length;
+
 let onExpired: Mock<() => void>;
 
 beforeEach(() => {
@@ -29,19 +49,13 @@ afterEach(() => {
 
 describe('apiFetch – Sitzung-abgelaufen-Melder', () => {
   it('meldet bei 401 auf einer normalen Route', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(401, { error: 'abgelaufen' }))),
-    );
+    vi.stubGlobal('fetch', antwortet(401));
     await expect(apiFetch('/api/services')).rejects.toMatchObject({ status: 401 });
     expect(onExpired).toHaveBeenCalledTimes(1);
   });
 
   it('meldet auch für die Sync-Dienste, die an TanStack Query vorbeigehen (#211)', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(401))),
-    );
+    vi.stubGlobal('fetch', antwortet(401));
     await expect(apiFetch('/api/annotations?songs=1')).rejects.toMatchObject({ status: 401 });
     await expect(apiFetch('/api/settings', { method: 'PUT', body: '{}' })).rejects.toMatchObject({
       status: 401,
@@ -98,5 +112,46 @@ describe('apiFetch – Sitzung-abgelaufen-Melder', () => {
     );
     await expect(apiFetch('/api/services')).resolves.toEqual({ ok: true });
     expect(onExpired).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * **Vor dem Abmelden einmal still erneuern** (23.09.2026). ChurchTools beendet seine Sitzung nach rund
+ * einem Tag; ein 401 heißt deshalb meist nur das. `/api/auth/me` holt dann mit dem Anmelde-Schlüssel
+ * eine neue – erst wenn das nicht geht, ist man abgemeldet.
+ */
+describe('apiFetch – still erneuern vor dem Abmelden', () => {
+  it('erneuert, wiederholt die Anfrage und meldet NICHT ab', async () => {
+    const f = antwortet([401, 200], { status: 200, body: { authenticated: true } });
+    vi.stubGlobal('fetch', f);
+
+    await expect(apiFetch('/api/services')).resolves.toEqual({ ok: true });
+    expect(onExpired).not.toHaveBeenCalled();
+    expect(meAufrufe(f)).toBe(1);
+  });
+
+  it('versucht es nur EINMAL – scheitert auch die Wiederholung, wird abgemeldet', async () => {
+    const f = antwortet(401, { status: 200, body: { authenticated: true } });
+    vi.stubGlobal('fetch', f);
+
+    await expect(apiFetch('/api/services')).rejects.toMatchObject({ status: 401 });
+    expect(onExpired).toHaveBeenCalledTimes(1);
+    expect(f).toHaveBeenCalledTimes(3); // Anfrage, Rückfrage, Wiederholung – keine Schleife
+  });
+
+  it('meldet NICHT ab, wenn die Rückfrage nur gerade nicht antwortet (vorübergehend ≠ ungültig)', async () => {
+    const f = antwortet(401, { status: 503, body: {} });
+    vi.stubGlobal('fetch', f);
+
+    await expect(apiFetch('/api/services')).rejects.toMatchObject({ status: 401 });
+    expect(onExpired).not.toHaveBeenCalled();
+  });
+
+  it('fünf gleichzeitige 401 teilen sich EINE Rückfrage', async () => {
+    const f = antwortet(401);
+    vi.stubGlobal('fetch', f);
+
+    await Promise.allSettled(Array.from({ length: 5 }, () => apiFetch('/api/services')));
+    expect(meAufrufe(f)).toBe(1);
   });
 });

@@ -18,6 +18,8 @@ vi.mock('../services/ctAuth.js', () => ({
   whoami: vi.fn(),
   logout: vi.fn(),
   login: vi.fn(),
+  holeAnmeldeSchluessel: vi.fn(),
+  sitzungAusSchluessel: vi.fn(),
 }));
 
 const ct = await import('../services/ctAuth.js');

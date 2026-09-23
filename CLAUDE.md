@@ -239,6 +239,19 @@ churchtools-musik-app/
   ⚠️ **Ausnahme `/api/auth/…`** (`isAuthPath`): Dort ist 401 = „falsches Passwort", nicht
   „Sitzung abgelaufen". Ohne die Ausnahme löste ein Tippfehler beim Login das Abmelden samt
   Geräte-Aufräumen aus und **löschte die Offline-Reserve** (#210).
+  **Seit dem 23.09.2026 kommt davor ein stilles Erneuern** (Alwin: „Warum muss man sich nach jedem
+  Update neu anmelden?"). Die App bewahrte nur die ChurchTools-Sitzung auf, und die lebt **rund einen
+  Tag** (gemessen: `Max-Age=86399`) – unsere 30 Tage halfen nichts. Jetzt holt `postLogin` den
+  persönlichen **Anmelde-Schlüssel** (`GET /persons/{id}/logintoken`, liefert den vorhandenen, erzeugt
+  keinen neuen) und legt ihn verschlüsselt ins Cookie (`Sitzung.loginToken`). `getMe` holt damit bei
+  einem ChurchTools-401 still eine neue Sitzung (`sitzungAusSchluessel`: `whoami` mit
+  `Authorization: Login …`), und `apiFetch` fragt bei jedem 401 EINMAL `/api/auth/me`, bevor es
+  abmeldet (eine Rückfrage für alle gleichzeitigen 401; „unklar" meldet nicht ab). Regeln: Schlüssel
+  nie im Log, nie auf dem Server gespeichert, **nie widerrufen** (kein `DELETE …/logintoken` – ihn
+  gibt es je Person nur einmal); die 30/90 Tage gelten weiter, `issuedAt` wandert beim Erneuern mit.
+  Konten, die ihren Schlüssel nicht abrufen dürfen, laufen wie bisher. **Folge:** Ein Abmelden in
+  ChurchTools meldet die App NICHT mehr ab – nur „Abmelden" in der App oder ein neu erzeugter
+  Schlüssel.
 - API-Calls ausschließlich über `services/` + TanStack Query
 - Keine Geschäftslogik in Komponenten (→ in `hooks/`)
 - Keine Inline-Styles, außer für dynamische Laufzeitwerte

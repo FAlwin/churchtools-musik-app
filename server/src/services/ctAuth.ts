@@ -82,6 +82,22 @@ export async function login(
   if (res.status === 400 || res.status === 401 || res.status === 403) {
     throw new HttpError(401, 'E-Mail oder Passwort falsch.');
   }
+  return sitzungAusAntwort(res, 'login');
+}
+
+/**
+ * **Aus einer Anmelde-Antwort von ChurchTools eine geprüfte Sitzung machen** – die eine Stelle für
+ * beide Wege (23.09.2026): Passwort (`login`) und Anmelde-Schlüssel (`sitzungAusSchluessel`).
+ *
+ * Herausgelöst, als der zweite Weg dazukam. Drosselung (429), Serverfehler, fehlendes Cookie und ein
+ * Cookie, das ChurchTools selbst nicht wiedererkennt, sind für beide dieselbe Frage – zwei Kopien
+ * wären genau die Stelle, an der eine Lehre (#381) nur in einer ankommt. Was je Weg verschieden ist
+ * (falsches Passwort bzw. ungültiger Schlüssel), prüft der Aufrufer VORHER.
+ */
+async function sitzungAusAntwort(
+  res: Response,
+  wofuer: 'login' | 'anmeldeschluessel',
+): Promise<{ cookie: string; user: ChurchToolsUser }> {
   // **429 ist eine Drosselung, kein Serverfehler** – die VIERTE Stelle dieser Regel (#381).
   // `ctGet` (#300), der Datei-Download und `ctWrite` (13.08.2026) unterscheiden das; der
   // Anmeldepfad machte daraus einen 502 und damit „am Passwort liegt es nicht" statt „bitte einen
@@ -94,7 +110,7 @@ export async function login(
     // nicht-`HttpError`, ein Request-Log gibt es nicht. Ein fehlgeschlagener Login – die häufigste
     // Störung überhaupt – hinterließ damit keine Spur im Container-Log, und der Vorfall vom
     // 03.09.2026 war deshalb nicht aufklärbar. `ctCsrf.ts` hat dieselbe Lehre seit #296.
-    console.error(`[churchtools] login → HTTP ${res.status}`);
+    console.error(`[churchtools] ${wofuer} → HTTP ${res.status}`);
     throw new HttpError(502, `ChurchTools-Anmeldung fehlgeschlagen (HTTP ${res.status}).`);
   }
 
@@ -103,7 +119,7 @@ export async function login(
     // Ebenfalls stumm gewesen (#381). Tritt auf, wenn ChurchTools mit 200 antwortet, aber kein
     // `ChurchTools_*`-Cookie mitschickt – ohne diese Zeile ist das von einem echten Serverfehler
     // nicht zu unterscheiden.
-    console.error('[churchtools] login → 200, aber kein ChurchTools_*-Cookie in der Antwort');
+    console.error(`[churchtools] ${wofuer} → 200, aber kein ChurchTools_*-Cookie in der Antwort`);
     throw new HttpError(502, 'Keine Session von ChurchTools erhalten.');
   }
 
@@ -127,12 +143,65 @@ export async function login(
     user = await whoami(cookie);
   } catch (e) {
     if (e instanceof HttpError && e.status === 401) {
-      console.error('[churchtools] login → Cookie erhalten, aber whoami erkennt es nicht an');
+      console.error(`[churchtools] ${wofuer} → Cookie erhalten, aber whoami erkennt es nicht an`);
       throw new HttpError(502, 'ChurchTools hat keine gültige Sitzung geliefert.');
     }
     throw e;
   }
   return { cookie, user };
+}
+
+/**
+ * **Den persönlichen Anmelde-Schlüssel abrufen** (23.09.2026) – direkt nach der Passwort-Anmeldung,
+ * mit der frischen Sitzung. Damit kann der Server später still eine neue ChurchTools-Sitzung holen.
+ *
+ * Gemessen an der Test-Instanz: `GET /persons/{id}/logintoken` liefert den VORHANDENEN Schlüssel und
+ * legt nur einen an, wenn es noch keinen gibt – andere Dienste, die denselben Schlüssel nutzen,
+ * bleiben unberührt. (`DELETE` auf denselben Pfad widerriefe ihn für alle; die App ruft es nie auf.)
+ *
+ * **Bestes Bemühen, wirft nie:** Darf ein Konto seinen Schlüssel nicht abrufen oder antwortet
+ * ChurchTools nicht, gilt einfach das alte Verhalten – die Anmeldung selbst darf daran nicht
+ * scheitern. Der Schlüssel erscheint in keiner Logzeile, nur der Statuscode.
+ */
+export async function holeAnmeldeSchluessel(
+  cookie: string,
+  personId: number,
+): Promise<string | null> {
+  try {
+    const token = await ctGet<unknown>(cookie, `/api/persons/${personId}/logintoken`);
+    if (typeof token === 'string' && token.length >= 20) return token;
+    console.warn('[churchtools] anmeldeschluessel → Antwort ohne verwendbaren Schlüssel');
+    return null;
+  } catch (e) {
+    const status = e instanceof HttpError ? e.status : 'Netz';
+    console.warn(
+      `[churchtools] anmeldeschluessel → ${status}: dauerhaft angemeldet bleiben ist für dieses Konto nicht möglich`,
+    );
+    return null;
+  }
+}
+
+/**
+ * **Mit dem Anmelde-Schlüssel eine neue ChurchTools-Sitzung holen** (23.09.2026).
+ *
+ * Gemessen an der Test-Instanz: `whoami` mit `Authorization: Login <Schlüssel>` antwortet mit einer
+ * vollwertigen Sitzung (Cookie der höchsten Fassung) – Termine, Schreiben und CSRF gehen damit.
+ *
+ * 401/403 heißt: Der Schlüssel gilt nicht mehr (neu erzeugt, Konto gesperrt) → 401, und der Aufrufer
+ * meldet ab. Alles andere – Drosselung, Zeitüberschreitung, Serverfehler – ist VORÜBERGEHEND und
+ * wird so weitergereicht; die Anmeldung darf daran nicht zerbrechen.
+ */
+export async function sitzungAusSchluessel(
+  loginToken: string,
+): Promise<{ cookie: string; user: ChurchToolsUser }> {
+  const res = await fetch(`${BASE}/api/whoami`, {
+    signal: ctSignal(),
+    headers: { Authorization: `Login ${loginToken}`, Accept: 'application/json' },
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new HttpError(401, 'Der Anmelde-Schlüssel gilt nicht mehr. Bitte neu anmelden.');
+  }
+  return sitzungAusAntwort(res, 'anmeldeschluessel');
 }
 
 /**

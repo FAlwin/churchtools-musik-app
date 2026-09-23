@@ -7,6 +7,19 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **Man bleibt angemeldet – auch nach einem Update oder einer Pause.** Alwin am 23.09.2026: „Warum
+  muss man sich nach jedem Update neu anmelden? Für die User wäre das schwierig, sie vergessen ihre
+  Passwörter." Das lag nicht am Update, sondern an ChurchTools: Die App bewahrte nur die
+  ChurchTools-Sitzung auf, und die endet nach rund **einem Tag** (gemessen). Wer die App länger nicht
+  öffnete, sah deshalb den Login – nach einem Update eben meistens. Jetzt holt sich die App beim
+  Anmelden den persönlichen **Anmelde-Schlüssel** des ChurchTools-Kontos und damit still eine neue
+  Sitzung, wenn ChurchTools die alte beendet. Unsere Grenzen bleiben: 30 Tage ohne Nutzung, spätestens
+  90 Tage nach dem Anmelden. **Neu ist auch:** Ein Abmelden in ChurchTools im Browser meldet die App
+  nicht mehr ab – dafür „Mehr → Abmelden" in der App. Konten, die ihren Schlüssel nicht abrufen
+  dürfen, verhalten sich wie bisher.
+
 ## [2.25.3] – 2026-09-23
 
 **Beim Update ist nichts zu tun.** Gemeinden, die die App über HTTPS betreiben, sollten prüfen, ob

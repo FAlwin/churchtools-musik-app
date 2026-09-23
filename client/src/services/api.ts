@@ -37,7 +37,47 @@ function isAuthPath(path: string): boolean {
   return path.startsWith('/api/auth/');
 }
 
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+/**
+ * **Vor dem Abmelden einmal still erneuern** (23.09.2026).
+ *
+ * ChurchTools beendet seine Sitzung nach rund einem Tag (gemessen: `Max-Age=86399`), unsere eigene
+ * gilt 30 Tage. Bekommt eine Anfrage 401, heißt das deshalb meist nur „die ChurchTools-Sitzung ist
+ * abgelaufen" – und `/api/auth/me` holt mit dem Anmelde-Schlüssel still eine neue (siehe
+ * `authController.getMe`). Erst wenn das nicht geht, ist man wirklich abgemeldet.
+ *
+ * - **Eine Erneuerung für alle:** Laufen beim Öffnen fünf Anfragen gleichzeitig in 401, warten alle
+ *   auf DENSELBEN Aufruf – sonst holte jede eine eigene ChurchTools-Sitzung.
+ * - **„unklar" ist nicht „abgemeldet":** Antwortet `/api/auth/me` gar nicht (Netz, 5xx), wird NICHT
+ *   abgemeldet – vorübergehend ist nicht ungültig. Die Anfrage scheitert, der nächste Versuch fragt neu.
+ */
+type Erneuerung = 'erneuert' | 'abgemeldet' | 'unklar';
+let laufendeErneuerung: Promise<Erneuerung> | null = null;
+
+function sitzungErneuern(): Promise<Erneuerung> {
+  laufendeErneuerung ??= (async (): Promise<Erneuerung> => {
+    try {
+      const res = await fetch(`${BASE}/api/auth/me`, {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return 'unklar';
+      const status = (await res.json()) as { authenticated?: boolean };
+      return status.authenticated === true ? 'erneuert' : 'abgemeldet';
+    } catch {
+      return 'unklar';
+    }
+  })().finally(() => {
+    laufendeErneuerung = null;
+  });
+  return laufendeErneuerung;
+}
+
+export async function apiFetch<T>(
+  path: string,
+  options: RequestInit = {},
+  /** Intern: Das ist schon die Wiederholung nach einer Erneuerung – kein zweiter Versuch. */
+  wiederholt = false,
+): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
@@ -80,9 +120,13 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string'
         ? body.error
         : null) ?? `Fehler ${res.status}`;
-    // Sitzung abgelaufen → einmal zentral melden (führt zum Login). Auth-Endpunkte ausgenommen:
-    // dort ist 401 = „falsche Zugangsdaten", kein Sitzungsverlust (#210).
-    if (res.status === 401 && !isAuthPath(path)) sessionExpiredHandler?.();
+    // Sitzung abgelaufen → erst still erneuern, dann erst zentral melden (führt zum Login).
+    // Auth-Endpunkte ausgenommen: dort ist 401 = „falsche Zugangsdaten", kein Sitzungsverlust (#210).
+    if (res.status === 401 && !isAuthPath(path)) {
+      const erneuerung = wiederholt ? 'abgemeldet' : await sitzungErneuern();
+      if (erneuerung === 'erneuert') return apiFetch<T>(path, options, true);
+      if (erneuerung === 'abgemeldet') sessionExpiredHandler?.();
+    }
     throw new ApiError(res.status, message);
   }
 
