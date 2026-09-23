@@ -28,11 +28,14 @@ des Bandes.
 5. **Ganz nach oben:** In einer langen Liste (z. B. Mehr) weit nach unten scrollen, dann unten auf
    den **Tab tippen, in dem du schon bist** → die Ansicht springt an den Anfang. (Der Tipp auf die
    Uhrzeit oben tut in einer Web-App nichts – das kann iOS nicht weitergeben.)
+6. **Ganz nach unten (#408):** In Termine, Lieder, Abwesenheiten, Mehr und im Ablauf bis ans Ende
+   scrollen. Der letzte Eintrag steht überall mit **derselben** Luft über der Tab-Leiste bzw. dem
+   Home-Strich; bei den Abwesenheiten verdeckt das Plus ihn nicht.
 
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `client/src/components/SeitenGeruest.tsx`, `client/src/components/GrosseUeberschrift.tsx`, `client/src/components/Screen.tsx`, `client/src/components/TabBar.tsx`, `client/index.html`, `client/src/styles/_variables.scss`
+- **Betrifft:** `client/src/components/SeitenGeruest.tsx`, `client/src/components/GrosseUeberschrift.tsx`, `client/src/components/Screen.tsx`, `client/src/components/Screen.module.scss`, `client/src/components/TabBar.tsx`, `client/index.html`, `client/src/styles/_variables.scss`
 - **Automatisiert:** teilweise – `client/src/components/SeitenGeruest.test.tsx` (Überschrift im Inhalt, Leiste nur mit Zurück/Aktionen, Überlagerung außerhalb des Scroll-Bereichs), `client/src/components/Screen.zumAnfang.test.tsx` (aktiver Tab scrollt nach oben); von Hand bleibt, wie es unter dem echten Unschärfe-Band aussieht
 - **Historie:** Kopfzeilen-Umbau 21./22.09.2026
 
@@ -64,5 +67,31 @@ nicht bloß auf. Der Hinweistext erscheint nur, solange man zieht.
 - **Betrifft:** `client/src/hooks/usePullToRefresh.ts`, `client/src/components/Screen.tsx`, `client/src/components/SeitenGeruest.tsx`, `client/src/pages/Availability.tsx`, `client/src/pages/Agenda.tsx`, `client/src/pages/AllSongs.tsx`, `client/src/pages/Setlist.tsx`
 - **Automatisiert:** teilweise – `client/src/components/Screen.pull.test.tsx` (Hinweis nur während der Geste, Anzeige wartet auf den Abruf, blitzt nicht auf), `client/src/pages/Availability.test.tsx` (wartet auf Einträge UND Termine); von Hand bleibt die Geste selbst und dass ChurchTools wirklich frische Daten liefert
 - **Historie:** Alwin 22.09.2026 („bei Abwesenheit und Termine ist das Neuladen nicht richtig")
+
+</details>
+
+### TF-KOPF-03 · Schalter im Tab „Mehr" schalten mit einem Tipp
+
+**Das brauchst du:** Ein Gerät mit der App; für den dritten Schalter ein Konto mit Team-Notizen.
+
+**Das muss passieren:** Jeder Schalter springt bei **einem** Tipp um – egal ob auf die Beschriftung
+oder auf den Schalter selbst. Die Zeilen sehen aus wie vorher (Umbau #407, 23.09.2026: die Seite ist
+in Bausteine geteilt, die Schalter sind jetzt je ein einziger Knopf).
+
+1. Tab **Mehr**. Auf den **Text** „Display aktiv halten" tippen → der Schalter springt um. Noch einmal
+   auf den **Schalter** tippen → er springt zurück.
+2. Dasselbe mit „Kommende Gottesdienste offline halten".
+3. Mit Team-Notizen-Recht: dasselbe mit „Meine Anmerkungen teilen".
+4. Als Admin: Unter **Verwaltung** jede Zeile einmal öffnen und schließen – Organisation / Name,
+   Links, Termin-Arten, Anmerkungen (darin Gruppen- und Rollen-Zuweisung).
+5. Mit VoiceOver (optional): Ein Schalter wird als „Taste, ausgewählt" bzw. „nicht ausgewählt"
+   angesagt.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/pages/Settings.tsx`, `client/src/components/SchalterZeile.tsx`, `client/src/components/VerwaltungZeilen.tsx`, `client/src/components/VerwaltungFenster.tsx`, `client/src/hooks/useVerwaltung.ts`, `client/src/components/InstallierenHinweis.tsx`, `client/src/components/VersionsFuss.tsx`
+- **Automatisiert:** teilweise – `client/src/pages/Settings.test.tsx` (vor dem Aufteilen geschrieben: Bereiche je Recht, ein Tipp = ein Umschalten, Fenster öffnen mit dem gespeicherten Stand, „Speichern" nur nach einer Änderung); von Hand bleibt das Aussehen und das Antippen am Gerät
+- **Historie:** #407
 
 </details>

@@ -298,7 +298,6 @@ export function AllSongs({
           )}
         </div>
       )}
-      <div style={{ height: 16 }} />
     </SeitenGeruest>
   );
 }

@@ -10,6 +10,15 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    /**
+     * **Jeder Test beginnt mit frischen Spionen** (#405, beim Wechsel auf vitest 4). vitest 4
+     * ÜBERNIMMT bei einem zweiten `vi.spyOn` auf dieselbe Methode den bestehenden Spion samt seiner
+     * Aufrufe (vitest 3 legte einen neuen an). Ein Test, der seine Spione nicht selbst aufräumt, las
+     * dadurch die Logzeile des VORIGEN Tests – `songUsage.test.ts` fiel so auf. Schlimmer wäre der
+     * andere Fall: eine fremde Zeile, die zufällig passt, und ein Test, der fälschlich grün ist.
+     * Hier einmal für alle geregelt, statt es jeder Testdatei zu überlassen.
+     */
+    restoreMocks: true,
     include: ['src/**/*.test.ts'],
     // Pflicht-Env setzen, bevor config.ts beim Import ausgewertet wird (sonst wirft es).
     env: {

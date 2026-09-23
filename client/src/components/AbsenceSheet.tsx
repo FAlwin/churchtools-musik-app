@@ -1,38 +1,12 @@
 import { useState } from 'react';
 import type { Absence, AbsenceReason, NeueAbsence } from '@shared/types/index';
 import { Sheet } from './Sheet';
-import { anzahlTage, plusTage, wochenStart } from '../utils/wochen';
+import { anzahlTage } from '../utils/wochen';
+import { SCHNELLWAHL, schnellwahlZeitraum, type SchnellwahlId } from '../utils/schnellwahl';
 import styles from '../pages/Availability.module.scss';
 
 /** Was das Fenster gerade tut: neu eintragen (mit Starttag) oder einen eigenen Eintrag ändern. */
 export type Entwurf = { art: 'neu'; tag: string } | { art: 'aendern'; absence: Absence };
-
-/** Die Schnellwahl über den Feldern – die vier Fälle, die es im Musikteam wirklich gibt. */
-export const SCHNELLWAHL = [
-  { id: 'tag', label: 'Nur dieser Tag' },
-  { id: 'we', label: 'Wochenende' },
-  { id: 'w1', label: '1 Woche' },
-  { id: 'w2', label: '2 Wochen' },
-] as const;
-
-export type SchnellwahlId = (typeof SCHNELLWAHL)[number]['id'];
-
-/**
- * Was eine Schnellwahl aus einem Starttag macht. Reine Funktion – ohne Netz und ohne Oberfläche
- * prüfbar. „Wochenende" ist der Samstag+Sonntag der Woche, in der der Starttag liegt; liegt er
- * schon dahinter, das nächste.
- */
-export function schnellwahlZeitraum(
-  id: SchnellwahlId,
-  tag: string,
-): { startDate: string; endDate: string } {
-  if (id === 'tag') return { startDate: tag, endDate: tag };
-  if (id === 'w1') return { startDate: tag, endDate: plusTage(tag, 6) };
-  if (id === 'w2') return { startDate: tag, endDate: plusTage(tag, 13) };
-  const samstag = plusTage(wochenStart(tag), 5);
-  const start = samstag >= tag ? samstag : plusTage(samstag, 7);
-  return { startDate: start, endDate: plusTage(start, 1) };
-}
 
 interface AbsenceSheetProps {
   entwurf: Entwurf;

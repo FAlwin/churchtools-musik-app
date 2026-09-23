@@ -182,7 +182,7 @@ noch so.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/pages/Availability.tsx`, `client/src/utils/terminFilter.ts`, `client/src/components/TerminArtenManager.tsx`, `client/src/pages/Settings.tsx`, `client/src/utils/devicePrefs.ts`, `server/src/services/siteConfig.ts`
+- **Betrifft:** `client/src/pages/Availability.tsx`, `client/src/utils/terminFilter.ts`, `client/src/components/TerminArtenManager.tsx`, `client/src/pages/Settings.tsx`, `client/src/components/VerwaltungFenster.tsx`, `client/src/components/VerwaltungZeilen.tsx`, `client/src/hooks/useVerwaltung.ts`, `client/src/utils/devicePrefs.ts`, `server/src/services/siteConfig.ts`
 - **Automatisiert:** überwiegend – `client/src/utils/terminFilter.test.ts` (Suchwort, Reihenfolge, Sonstige, eins-oder-alles, verwaiste Wahl), `client/src/pages/Availability.test.tsx` (Knöpfe, Zahl, eins-oder-alles, Sonstige, Merken, Häkchen übersteht den Wechsel, keine Knöpfe ohne Arten), `client/src/components/TerminArtenManager.test.tsx` (trimmen, halbe Zeile, löschen), `server/src/services/siteConfig.test.ts` (Schema, Rundlauf, doppelte IDs); von Hand bleibt der Weg über den echten Admin-Bereich
 - **Historie:** #400 (20.09.2026), Wunsch Alwin; erster Bau nach Kalender verworfen (bei der ECG ein Kalender für alles)
 

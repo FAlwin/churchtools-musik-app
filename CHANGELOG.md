@@ -7,6 +7,37 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **Abmelden räumt das Gerät auch ohne Netz** (#403). Bisher blieben Abläufe samt Personennamen und
+  die Anmerkungen liegen, wenn der Server beim Abmelden nicht erreichbar war – ausgerechnet auf den
+  geteilten Gemeindegeräten. Schwerer wog das Anmelde-Cookie, das nur der Server löschen kann: Die
+  nächste Person wäre als die vorige angemeldet gewesen. Jetzt wird das Gerät immer geräumt; hat der
+  Server nicht geantwortet, holt die App das Abmelden beim nächsten Start nach, bevor sie irgendwem
+  ein Konto zeigt.
+- **Rechte-Zwischenspeicher und „gesehene Abläufe" können bei einem Lesefehler nicht mehr gelöscht
+  werden** (#404). Ein beschädigter oder unlesbarer Speicher galt bisher als „leer" und wurde beim
+  nächsten Schreiben so zurückgeschrieben – die Einträge aller Konten waren weg. Beide nutzen jetzt
+  den gehärteten gemeinsamen Speicher, wie alle anderen Ablagen.
+
+### Geändert
+
+- **Für Gemeinden mit HTTPS:** Fehlt `COOKIE_SECURE=true`, steht jetzt **einmalig** eine Warnung im
+  Container-Log (#409), und `INSTALL.md` nennt die Einstellung im Kapitel „Externer Zugriff" – dort
+  fehlte sie bisher ganz. Für die ECG ist sie gesetzt.
+- **Der Abstand am Ende jeder Liste ist überall gleich** (#408) – bisher 16, 32 oder 36 px je nach
+  Bildschirm. Unter den Abwesenheiten ist damit auch mehr Luft, bevor das Plus darüber schwebt.
+- **Die Schalter im Tab „Mehr"** sind je ein einziger Knopf, den Screenreader mit seinem Zustand
+  ansagen (#407).
+
+### Intern
+
+- `Settings.tsx` (623 Zeilen) in Bausteine geteilt, abgesichert durch Tests, die vor dem Umbau
+  gegen den alten Stand geschrieben wurden (#407).
+- Lint mit null Warnungen, erzwungen (#406); vier kleine Dopplungen zusammengeführt (#410).
+- Abhängigkeiten: vitest 4.1.11, body-parser, qs und dompurify gehoben – `npm audit` meldet
+  **keine** Lücke mehr (#405). Express 5 war dafür nicht mehr nötig.
+
 ## [2.25.2] – 2026-09-23
 
 **Beim Update ist nichts zu tun:** keine neue Variable, kein Neu-Hinzufügen zum Home-Bildschirm. Die

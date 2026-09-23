@@ -17,7 +17,7 @@ import { grundLesbar, istMarkerEintrag, markerFreitext, mitMarker } from '@share
 import { ctId } from '../utils/ctId.js';
 import { config } from '../config.js';
 import { HttpError } from '../middleware/errorHandler.js';
-import { isoTag } from '../utils/isoTag.js';
+import { isoTag, tagAusIso } from '../utils/isoTag.js';
 import { ctAjax } from './ctAjax.js';
 import { getAbsences, getEvents } from './ctRead.js';
 import { gruendeMemo } from './ctSessionMemos.js';
@@ -161,7 +161,7 @@ export function zuEvents(events: CtEvent[]): AbsenceEvent[] {
     .map((e) => ({
       id: e.id,
       name: e.name,
-      date: e.startDate.slice(0, 10),
+      date: tagAusIso(e.startDate),
       startDate: e.startDate,
       // Das Ende braucht die App, seit ein Haken das Zeitfenster des Termins einträgt. Fehlt es,
       // steht hier der Start – dann wird der Eintrag ganztägig (siehe `zeitfensterFuer`).

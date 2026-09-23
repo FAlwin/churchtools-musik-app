@@ -9,9 +9,8 @@
  *
  * Ohne DB: eine gemeinsame JSON-Datei auf dem Volume, atomar geschrieben (wie capabilities-cache).
  */
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
 import { config } from '../config.js';
+import { readJsonStore, writeJsonStore } from './jsonStore.js';
 
 interface SeenEntry {
   /** Fingerabdruck der Setlist beim letzten Ansehen. */
@@ -35,19 +34,25 @@ let writeChain: Promise<unknown> = Promise.resolve();
 /** Nur EINMAL warnen, wenn Schreiben dauerhaft scheitert (z. B. Pfad nicht beschreibbar). */
 let warnedWriteError = false;
 
+/**
+ * Liest die Ablage über `jsonStore` (#404) – dieselbe Regel wie beim Rechte-Cache: Nur „Datei gibt es
+ * nicht" heißt leer; ein anderer Lesefehler wirft, und dann wird nichts zwischengespeichert. Sonst
+ * schriebe das nächste „gesehen" einen leeren Stand zurück, und die Änderungs-Punkte aller Konten
+ * wären weg.
+ */
 async function load(): Promise<Store> {
   if (store) return store;
-  try {
-    store = JSON.parse(await fs.readFile(config.seenSetlistsPath, 'utf-8')) as Store;
-  } catch {
-    store = {};
-  }
+  store = (await readJsonStore<Store>(config.seenSetlistsPath, 'Gesehene Abläufe')) ?? {};
   return store;
 }
 
 /** Gesehene Stände eines Kontos (eventId → Eintrag). Leeres Objekt, wenn nichts gemerkt. */
 export async function getSeenSetlists(userId: number): Promise<EventMap> {
-  return (await load())[String(userId)] ?? {};
+  try {
+    return (await load())[String(userId)] ?? {};
+  } catch {
+    return {}; // Ablage nicht lesbar → keine Änderungs-Punkte, aber auch kein Fehler in der Terminliste
+  }
 }
 
 /**
@@ -62,7 +67,12 @@ export async function markSeenSetlist(
   items?: { id: number; sig: string }[],
   now: number = Date.now(),
 ): Promise<void> {
-  const s = await load();
+  let s: Store;
+  try {
+    s = await load();
+  } catch {
+    return; // NICHT schreiben – ein Stand aus einem gescheiterten Lesen löschte alle anderen Konten (#404)
+  }
   const uid = String(userId);
   const events: EventMap = s[uid] ?? {};
   // Alters-Bereinigung, damit die Datei über Jahre nicht unbegrenzt wächst.
@@ -71,12 +81,7 @@ export async function markSeenSetlist(
   }
   events[String(eventId)] = { hash, seenAt: now, items };
   s[uid] = events;
-  const write = async (): Promise<void> => {
-    await fs.mkdir(path.dirname(config.seenSetlistsPath), { recursive: true });
-    const tmp = `${config.seenSetlistsPath}.tmp`;
-    await fs.writeFile(tmp, JSON.stringify(s), 'utf-8');
-    await fs.rename(tmp, config.seenSetlistsPath);
-  };
+  const write = (): Promise<void> => writeJsonStore(config.seenSetlistsPath, JSON.stringify(s));
   writeChain = writeChain.then(write, write);
   return writeChain.then(
     () => {},

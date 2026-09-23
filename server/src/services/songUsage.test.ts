@@ -241,7 +241,8 @@ describe('Teilergebnis wird nicht zur Wahrheit (#300)', () => {
  */
 describe('404 ist kein Mangel, sondern der Normalfall (#300)', () => {
   /** Die Abschluss-Zeile des Laufs herausfischen – sie ist das einzige Beobachtbare. */
-  function laufZeile(spy: ReturnType<typeof vi.spyOn>): string {
+  // Ausdrücklicher Typ: Seit vitest 4 trägt `ReturnType<typeof vi.spyOn>` keine Aufruftypen mehr.
+  function laufZeile(spy: { mock: { calls: unknown[][] } }): string {
     const call = spy.mock.calls.find((c) => String(c[0]).includes('[songUsage] Lauf beendet'));
     return String(call?.[0] ?? '');
   }

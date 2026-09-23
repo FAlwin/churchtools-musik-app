@@ -1,6 +1,7 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useRef, type CSSProperties, type ReactNode } from 'react';
 import { Spinner } from './Spinner';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import { useZumAnfang } from '../hooks/useZumAnfang';
 import styles from './Screen.module.scss';
 
 interface ScreenProps {
@@ -27,29 +28,11 @@ interface ScrollProps {
    */
   unterLeiste?: boolean;
   /**
-   * Optional: aktiviert „Runterziehen zum Aktualisieren".
-   *
-   * **Muss das Versprechen des Abrufs zurückgeben** – daran hängt, wie lange die Ladeanzeige steht.
-   * Eine Funktion ohne Rückgabe lehnt der Compiler ab; genau die hatte bei den Abwesenheiten dazu
-   * geführt, dass die Anzeige sofort wieder weg war (22.09.2026). Mehrere Abrufe: `Promise.all`.
+   * Optional: aktiviert „Runterziehen zum Aktualisieren". Muss das Versprechen des Abrufs zurückgeben
+   * – warum, steht an `onNeuLaden` in `SeitenGeruest.tsx`.
    */
   onRefresh?: () => Promise<unknown>;
 }
-
-/**
- * **„Nach oben" von außen anstoßen** (22.09.2026).
- *
- * Alwin: „Warum funktioniert es nicht, dass ganz nach oben gescrollt wird, wenn ich auf die Uhrzeit
- * tippe?" – iOS scrollt beim Tipp auf die Statusleiste nur den **Haupt-Scroller des Dokuments**
- * nach oben. Diese App scrollt in einem inneren Bereich (damit die Tab-Leiste steht und das
- * Runterziehen funktioniert), und ein Tipp auf die Statusleiste erreicht die Web-App gar nicht –
- * es gibt dafür kein Ereignis. Nachbauen lässt sich nur der zweite Weg, den native Apps haben:
- * ein Tipp auf den **bereits aktiven Tab**. Der meldet sich hier.
- *
- * Bewusst ein Modul-weites Ereignis statt einer Prop-Kette durch alle Seiten: Der Scroll-Bereich
- * kennt sich selbst, die Tab-Leiste weiß nichts von ihm.
- */
-const ZUM_ANFANG = 'app:zum-anfang';
 
 /**
  * Höhe des Zug-Anzeigers – so weit rückt der Inhalt während des Ladens nach unten. Die EINE Quelle:
@@ -57,35 +40,6 @@ const ZUM_ANFANG = 'app:zum-anfang';
  * 23.09.2026 ein zweites Mal, und nichts hätte die beiden Zahlen gleich gehalten).
  */
 const PULL_HOEHE = 48;
-
-/** Von der Tab-Leiste gerufen, wenn der schon aktive Tab noch einmal getippt wird. */
-export function scrolleZumAnfang(): void {
-  window.dispatchEvent(new Event(ZUM_ANFANG));
-}
-
-function useZumAnfang(ref: React.RefObject<HTMLDivElement | null>) {
-  useEffect(() => {
-    const hoch = () => {
-      const el = ref.current;
-      if (!el || el.scrollTop === 0) return;
-      const ruhig = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      el.scrollTo?.({ top: 0, behavior: ruhig ? 'auto' : 'smooth' });
-      /**
-       * **Absicherung, kein Beiwerk.** Beim Durchklicken am 22.09.2026 zeigte sich: Auf diesem
-       * inneren Scroll-Bereich führte der Browser `behavior: 'smooth'` **gar nicht** aus – der
-       * Inhalt blieb einfach stehen, während ein harter Sprung sofort wirkte. Wo die Animation
-       * läuft, ist sie nach 400 ms längst fertig und `scrollTop` schon 0; wo sie ausbleibt, springt
-       * es hier. So ist das Ergebnis überall dasselbe, und in Umgebungen ohne `scrollTo` (Tests)
-       * funktioniert es ebenfalls.
-       */
-      window.setTimeout(() => {
-        if (el.scrollTop > 0) el.scrollTop = 0;
-      }, 400);
-    };
-    window.addEventListener(ZUM_ANFANG, hoch);
-    return () => window.removeEventListener(ZUM_ANFANG, hoch);
-  }, [ref]);
-}
 
 /**
  * Scrollbarer Bereich innerhalb eines Screens. Mit onRefresh: Pull-to-Refresh.

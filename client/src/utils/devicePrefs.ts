@@ -18,6 +18,8 @@ const KEYS = {
   drawbarOffsetY: 'worship:drawbar-y',
   /** Gewählte Termin-Art im Tab „Abwesenheiten" (#400) – JSON-Liste mit höchstens einer ID, leer = alle. */
   abwesenheitenFilter: 'worship:abwesenheiten-filter',
+  /** Ein Abmelden konnte den Server nicht erreichen und muss beim nächsten Start nachgeholt werden (#403). */
+  abmeldenAusstehend: 'worship:abmelden-ausstehend',
 } as const;
 
 type PrefKey = keyof typeof KEYS;
@@ -75,4 +77,30 @@ export function getAbwesenheitenFilter(): string[] {
 
 export function setAbwesenheitenFilter(ids: string[]): void {
   write('abwesenheitenFilter', JSON.stringify(ids));
+}
+
+/**
+ * **Abmelden steht noch aus** (#403). Kein Oberflächen-Wunsch, sondern Gerätezustand – deshalb aber
+ * genau hier richtig: Der Doppelpunkt-Namensraum `worship:…` überlebt das Aufräumen beim Abmelden
+ * (`clearDeviceData` löscht nur `worship_…`), und genau das muss dieser Merker.
+ *
+ * Warum es ihn gibt: Das Anmelde-Cookie ist `httpOnly`, nur der Server kann es löschen. Ist er beim
+ * Abmelden nicht erreichbar (Flugmodus, WLAN weg), bliebe das Cookie liegen – und die nächste Person,
+ * die das geteilte Gemeindegerät öffnet, wäre als die vorige angemeldet. Mit dem Merker holt die App
+ * das Abmelden beim nächsten Start nach, bevor sie irgendwem ein Konto zeigt.
+ */
+export function getAbmeldenAusstehend(): boolean {
+  return read('abmeldenAusstehend') === '1';
+}
+
+export function setAbmeldenAusstehend(ausstehend: boolean): void {
+  if (ausstehend) {
+    write('abmeldenAusstehend', '1');
+    return;
+  }
+  try {
+    localStorage.removeItem(KEYS.abmeldenAusstehend);
+  } catch {
+    /* Speicher gesperrt – dann war auch nichts gemerkt */
+  }
 }

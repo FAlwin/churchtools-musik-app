@@ -16,6 +16,7 @@ import { liedAnzahl } from '../utils/songFilter';
 import { queryClient } from '../queryClient';
 import * as api from '../services/churchtoolsApi';
 import styles from './Agenda.module.scss';
+import { standKurz } from '../utils/zeitstempel';
 
 interface AgendaProps {
   services: Service[];
@@ -164,7 +165,7 @@ export function Agenda({
             <span
               className={styles.offBadge}
               data-tour="offline"
-              title={`Offline verfügbar (Stand ${new Date(offlineReg[s.id].savedAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})`}
+              title={`Offline verfügbar (Stand ${standKurz(offlineReg[s.id].savedAt)})`}
               aria-label="Offline verfügbar"
             >
               <Icon name="cloud-check" size={18} stroke={2} />
@@ -276,7 +277,6 @@ export function Agenda({
           </button>
         </>
       )}
-      <div style={{ height: 16 }} />
     </SeitenGeruest>
   );
 }

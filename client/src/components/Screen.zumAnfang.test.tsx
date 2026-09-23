@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { Scroll, scrolleZumAnfang } from './Screen';
+import { Scroll } from './Screen';
+import { scrolleZumAnfang } from '../hooks/useZumAnfang';
 import { TabBar } from './TabBar';
 
 /**

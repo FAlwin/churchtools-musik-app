@@ -383,7 +383,6 @@ export function Setlist({
       ) : (
         <AgendaFullView items={items} eventId={service.id} onSelect={onSelect} />
       )}
-      <div style={{ height: 20 }} />
     </SeitenGeruest>
   );
 }

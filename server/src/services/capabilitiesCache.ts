@@ -11,10 +11,9 @@
  * bewusst NUR, wenn der Nutzer echten Zugriff hatte (siehe `getCapabilities`) – ein „darf nichts"
  * landet nie im Cache, damit echte Nicht-Berechtigte nie fälschlich Zugriff aus dem Cache bekommen.
  */
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
 import { config } from '../config.js';
 import type { UserCapabilities } from '@shared/types/index';
+import { readJsonStore, writeJsonStore } from './jsonStore.js';
 
 /**
  * Wie lange ein gemerkter Rechtestand als vertrauenswürdig gilt. Danach wird er nicht mehr zum
@@ -43,13 +42,16 @@ let store: Store | null = null;
 // Schreibzugriffe serialisieren (eine gemeinsame Datei) – kein Clobbern bei parallelen Anmeldungen.
 let writeChain: Promise<unknown> = Promise.resolve();
 
+/**
+ * Liest die Ablage über `jsonStore` (#404). Nur „Datei gibt es nicht" heißt leer; jeder andere
+ * Lesefehler WIRFT – und dann wird hier nichts zwischengespeichert. Vorher wurde „leer" als Wahrheit
+ * übernommen und beim nächsten Merken zurückgeschrieben: Der Rechte-Cache ALLER Konten war weg.
+ * Genau dagegen wurde `jsonStore` gebaut (#273), und sein Kopfkommentar nannte diese Ablage schon –
+ * umgestellt war sie trotzdem nie.
+ */
 async function load(): Promise<Store> {
   if (store) return store;
-  try {
-    store = JSON.parse(await fs.readFile(config.capabilitiesCachePath, 'utf-8')) as Store;
-  } catch {
-    store = {};
-  }
+  store = (await readJsonStore<Store>(config.capabilitiesCachePath, 'Rechte-Cache')) ?? {};
   return store;
 }
 
@@ -81,7 +83,13 @@ export async function getCachedCapabilities(
   userId: number,
   now = Date.now(),
 ): Promise<UserCapabilities | null> {
-  const entry = (await load())[String(userId)];
+  let s: Store;
+  try {
+    s = await load();
+  } catch {
+    return null; // Ablage nicht lesbar → nichts zu überbrücken; die Anfrage läuft ohne Cache weiter
+  }
+  const entry = s[String(userId)];
   if (!entry || !isCacheFresh(entry.savedAt, now)) return null;
   return { ...entry.caps, ...NEVER_BRIDGED };
 }
@@ -92,14 +100,17 @@ export async function rememberCapabilities(
   caps: UserCapabilities,
   now = Date.now(),
 ): Promise<void> {
-  const s = await load();
+  let s: Store;
+  try {
+    s = await load();
+  } catch {
+    // NICHT schreiben: Ein Stand aus einem gescheiterten Lesen enthielte nur dieses eine Konto und
+    // überschriebe die Rechte aller anderen (#404). Die Datei bleibt, wie sie ist.
+    return;
+  }
   s[String(userId)] = { caps, savedAt: now };
-  const write = async (): Promise<void> => {
-    await fs.mkdir(path.dirname(config.capabilitiesCachePath), { recursive: true });
-    const tmp = `${config.capabilitiesCachePath}.tmp`;
-    await fs.writeFile(tmp, JSON.stringify(s), 'utf-8');
-    await fs.rename(tmp, config.capabilitiesCachePath);
-  };
+  const write = (): Promise<void> =>
+    writeJsonStore(config.capabilitiesCachePath, JSON.stringify(s));
   writeChain = writeChain.then(write, write);
   return writeChain.then(
     () => {},

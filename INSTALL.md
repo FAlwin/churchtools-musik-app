@@ -156,6 +156,14 @@ Browser: **http://nas-ip-adresse:3001** (nur im lokalen Netz).
 Damit die App sicher aus dem Internet erreichbar ist, braucht ihr eine eigene (Sub-)Domain
 und HTTPS. Zwei Wege:
 
+> **Wichtig bei HTTPS: `COOKIE_SECURE=true` setzen.** Steht die Variable auf `false` (der
+> Standard, damit die App im LAN per HTTP läuft), geht das Anmelde-Cookie auch über HTTPS ohne
+> „secure"-Kennzeichen. Also in der `.env` bzw. Compose-Datei `COOKIE_SECURE=true` eintragen und
+> den Container **neu erstellen** – ein reiner Neustart übernimmt geänderte Variablen nicht. Wer es
+> vergisst, findet seit v2.25.3 einmalig eine Warnung im Container-Log. Der Haken: Danach ist die
+> App **nur noch über HTTPS** nutzbar, der direkte Zugriff per `http://nas-ip:3001` meldet nicht
+> mehr an.
+
 ---
 
 ### Weg 1: Cloudflare Tunnel (empfohlen)
