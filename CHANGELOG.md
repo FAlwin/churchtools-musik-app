@@ -7,137 +7,60 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.25.2] – 2026-09-23
+
+**Beim Update ist nichts zu tun:** keine neue Variable, kein Neu-Hinzufügen zum Home-Bildschirm. Die
+Statusleisten-Einstellung der App ist dieselbe wie in v2.25.1; alles andere liest iOS beim Start.
+
 ### Geändert
 
-- **Mehrere Termine an einem Tag lassen sich einzeln als abwesend markieren.** Alwin am 22.09.2026:
-  „manchmal hab ich morgens keine Zeit kann aber nachmittags und umgekehrt." Bisher trug ein Haken
-  den **ganzen Tag** ein – zwei Termine desselben Tages hingen dadurch zusammen. Jetzt trägt ein
-  Haken das **Zeitfenster genau dieses Termins** ein. ChurchTools kann das: An der Test-Instanz
-  gemessen nimmt es `startTime`/`endTime` an und liefert sie unverändert zurück; ohne sie bleibt ein
-  Eintrag ganztägig. **Bestehendes bleibt gültig** – ganztägige Einträge (Urlaub, alles von früher,
-  alles über das Plus) decken weiterhin jeden Termin des Tages ab. Unter „Einträge" steht die
-  Uhrzeit jetzt mit dabei („Abwesend · 10:00 – 12:00"), sonst sähen zwei Einträge am selben Tag
-  gleich aus.
-
-  Drei Stellen, die dabei aufgefallen sind: Die **Doppel-Erkennung** hätte den zweiten Termin
-  desselben Tages als „schon vorhanden" verschluckt – sie vergleicht jetzt das Zeitfenster mit.
-  Beim **Ändern** eines Eintrags („Abwesenheit ändern") wäre die Uhrzeit verlorengegangen und der
-  Eintrag wieder ganztägig geworden; sie bleibt jetzt erhalten, solange die Tage gleich bleiben. Und
-  die **Eingangsprüfung des Servers** kannte die neuen Felder nicht – zod entfernt Unbekanntes
-  stillschweigend, die App schickte die Uhrzeit also umsonst. Das fiel erst beim Durchklicken auf:
-  Die Tests auf beiden Seiten waren grün, der Bruch lag genau dazwischen. Ein schärferer
-  Compile-Wächter fängt das künftig (der alte konnte bei optionalen Feldern gar nicht anschlagen –
-  nachgestellt und behoben).
-
-  **Der Code-Check vor dem Release fand noch eine ernste Lücke** (23.09.2026): Ein **ganztägiger**
-  Eintrag gilt für beide Termine des Tages – nahm man bei einem den Haken weg, wurde er stumm für
-  beide gelöscht, ohne Warnung. Die Rückfrage gab es bis dahin nur für mehrtägige Zeiträume. Weil
-  während der Umstellung **jeder** Bestandseintrag ganztägig ist, hätte das im Alltag sofort
-  zugeschlagen. Jetzt fragt die App: „Gilt für den ganzen Tag – und damit auch für …", mit „Eintrag
-  löschen" oder „Eintrag anpassen". Außerdem: Die Antwort beim Ändern trägt die Uhrzeit (Anlegen und
-  Ändern bauen sie jetzt über **eine** Funktion), Uhrzeiten werden als Zeitpunkte statt als Text
-  verglichen (ein `+02:00` hätte sonst falsch sortiert), Zeitzonen-Angaben werden angenommen, und
-  eine Uhrzeit an einem anderen Tag als dem eingetragenen wird abgewiesen.
+- **Oben gibt es keinen Titel-Balken mehr – der Titel steht groß im Inhalt.** Unter iOS 26/27 legt
+  das System hinter der Statusleiste ein Unschärfe-Band über jede App (Liquid Glass), und dort
+  wirkte unser Titel verschmiert und doppelt; einen Schalter dagegen gibt es nicht (Alwin,
+  21./22.09.2026, mit Screenshots). Termine, Lieder, Abwesenheiten und Mehr beginnen jetzt mit
+  ihrer großen Überschrift, die beim Blättern mitwandert – wie in WhatsApp oder den Apple-Apps. Die
+  Ablauf-Ansicht behält oben Zurück-Pfeil und Knöpfe, Name und Datum stehen darunter. Unverändert
+  ist die Lied-Anzeige: An ihrem Titel hängt das Lied-Menü.
+- **Die Leisten sind deckend statt milchig.** Kopf- und Tab-Leiste sowie Kopf und Fuß der
+  Lied-Anzeige haben genau die Farbe, mit der iOS den Streifen hinter der Uhr färbt – vorher lag
+  dort ein feiner Strich. Diese Farbe folgt jetzt dem **Farbschema der App**, nicht dem des Geräts:
+  Wer die App auf Hell stellt, während das Telefon dunkel ist, bekommt keinen dunklen Balken mehr.
+- **Ein Tipp auf den Tab, in dem man schon ist, scrollt nach oben.** Der Tipp auf die Uhrzeit, den
+  iOS-Apps kennen, erreicht eine Web-App nicht; der aktive Tab ist der Ersatz dafür.
+- **Termine am selben Tag lassen sich einzeln als abwesend markieren** (Alwin: „manchmal hab ich
+  morgens keine Zeit, kann aber nachmittags"). Ein Haken trägt in ChurchTools jetzt die **Uhrzeit
+  des Termins** ein statt des ganzen Tages. Ganztägige Einträge – Urlaub über das Plus, alles von
+  früher, alles direkt in ChurchTools Eingetragene – gelten weiterhin für jeden Termin des Tages;
+  nimmt man bei einem Termin einen solchen Eintrag weg, fragt die App nach und nennt die anderen
+  Termine, die er ebenfalls abdeckt. Unter „Einträge" steht die Uhrzeit mit dabei.
+- **Die Datumsfelder bei „Häufigkeit" und „Zuletzt" sind beschriftet** („Von", „Bis") – leer
+  zeigte iOS dort nur zwei Kästen mit einem Strich.
 
 ### Behoben
 
-- **Verschmierte Kopfzeile in der installierten App unter iOS 26/27.** Titel und Knöpfe im oberen
-  Bereich wirkten weich und doppelt, der Rest der Seite war scharf (Alwin, 21./22.09.2026, mit
-  Screenshots; nur unsere App, andere nicht). Ursache ist nicht unser Stil, sondern das System: Seit
-  iOS 26 legt Liquid Glass ein Unschärfe-Band über den Bereich hinter der Statusleiste, unter iOS 27
-  deutlich kräftiger – und unsere App zeichnete dort ihre Kopfzeile hin (`black-translucent` +
-  `viewport-fit=cover`). Einen Schalter dagegen gibt es nicht. Die App beginnt jetzt **unter** einer
-  deckenden Statusleiste, die iOS in der Farbe unserer Kopfzeile färbt (je Farbschema); der Titel
-  rückt damit aus dem Band heraus. Die Themenfarbe im Manifest folgt derselben Farbe statt Blau.
-  **Wer die App schon auf dem Home-Bildschirm hat, sieht die Änderung erst nach Löschen und
-  Neu-Hinzufügen** – iOS liest die Angabe beim Installieren. Dasselbe Problem haben in diesen Wochen
-  viele Web-Apps behoben (u. a. dozzle#5222, vcsudoku#38, ioBroker.aura#662); der Weg ist der gleiche.
-  Danach blieb ein **feiner Strich** quer über den Schirm: iOS malt den Streifen oben in der
-  `theme-color`, unsere halbdurchsichtige Leiste darunter ergab einen minimal anderen Ton (#fdfefe
-  statt #ffffff), und ihre Unschärfe verschob ihn beim Scrollen zusätzlich. Die Leisten sind deshalb
-  jetzt **deckend und exakt in der `theme-color`** – Kopfzeile, Tab-Leiste sowie Kopf und Fuß der
-  Chart-Ansicht. Die Milchglas-Optik der Leisten entfällt damit; die leichte Abdunklung hinter
-  Dialogen bleibt.
+- **Runterziehen zum Aktualisieren** verhielt sich auf den Bildschirmen verschieden (Alwin:
+  „bei Abwesenheit und Termine ist das Neuladen nicht richtig, bei Lied stimmt es"). Bei den
+  Abwesenheiten verschwand der Kreisel, bevor die Daten da waren; bei einer schnellen Antwort
+  blitzte er nur auf; und bei kurzen Listen klebte der Hinweis oben im Unschärfe-Band, während er
+  bei langen Listen zufällig herausrutschte. Jetzt steht der Hinweis auf jedem Bildschirm an
+  derselben festen Stelle, erscheint nur während man zieht, und der Kreisel bleibt, bis geladen ist.
 
-  Danach blieb noch ein **Farbwechsel mit weichem Verlauf** direkt unter der Dynamic Island: Der
-  Streifen, den iOS über der App malt, zeigte die Grundfläche des Dokuments – und die trug den
-  **grauen Seitenhintergrund**, während die Kopfleiste darunter weiß ist. Die Grundfläche trägt
-  jetzt dieselbe Farbe wie die Leisten; im Inneren der App ändert das nichts, weil jeder Bildschirm
-  seinen Hintergrund selbst setzt. **Dabei fiel ein zweiter Fehler auf, bevor er jemandem begegnet
-  ist:** Die Farbe für die Systemleiste hing an der Einstellung des GERÄTS. Wer die App auf Hell
-  stellt, während das Telefon dunkel steht, hätte einen dunklen Balken über einer weißen App
-  bekommen. Sie folgt jetzt dem Theme der App und wird aus der Leistenfarbe gelesen – **eine Farbe,
-  eine Quelle**, abgesichert durch Tests.
+### Intern
 
-  Weil das Band rund 35 Punkte unter die Statusleiste ausläuft, lag die **Oberkante des Titels**
-  auch danach noch knapp darin. Jeder Versuch, dem Band mit einer Leiste auszuweichen – mehr Abstand,
-  große Überschrift plus einklappender Titel, wachsende Leiste beim Scrollen – kostete Platz („klaut
-  zu viel Platz"). Die Termine gehen deshalb den Weg, den Alwin vorgeschlagen hat: **oben gar keine
-  Leiste mehr.** Der Titel steht groß im Inhalt und beginnt unter dem Band; der Umschalter
-  „Kommende / Vergangene" steht darunter; beides scrollt mit weg, und der Inhalt läuft beim
-  Hochschieben unter das Band, wo iOS ihn weichzeichnet – so, wie es native Apps auch tun. Welcher
-  Bildschirm offen ist, sagt die Tab-Leiste unten. Null Punkte dauerhaft belegt.
-
-  Und der weiße Streifen hinter der Uhrzeit ist weg: Die App zeichnet **wieder bis ganz nach
-  oben** („komplett transparent"). Der Zwischenschritt, sie unter einer deckenden Statusleiste
-  beginnen zu lassen, hatte den Titel aus dem Band geholt – aber nur um den Preis eines Streifens
-  oder von Platz. Jetzt, wo oben kein Text mehr steht, braucht es ihn nicht mehr: Der Inhalt läuft
-  unter Uhr und Band durch, die Überschrift hält ihren Abstand über die Safe-Area.
-
-  **Alle Bildschirme folgen jetzt diesem Muster.** „Abwesenheiten" und „Mehr" bekommen wie die
-  Termine ihre große Überschrift im Inhalt, „Lieder" ebenso – dort stehen Suchfeld, Sortierung und
-  die Zeile mit „Neues Lied" nun mit im Scroll-Bereich und wandern beim Blättern mit weg. Die
-  Ablauf-Ansicht behält oben den Zurück-Pfeil und ihre Knöpfe, **aber ohne Titel**: Name und Datum
-  des Gottesdienstes stehen groß darunter im Inhalt. Symbole verträgt das Band, Text nicht. Noch
-  nicht umgebaut ist die Chart-Ansicht – dort hängt am Titel das Lied-Menü.
-
-  **Ein Tipp auf den bereits aktiven Tab scrollt die Liste nach oben** – wie in iOS-Apps. Der Tipp
-  auf die Uhrzeit, den Alwin erwartet hatte, erreicht eine Web-App nicht: iOS reicht ihn nur an den
-  Haupt-Scroller des Dokuments weiter, und diese App scrollt in einem inneren Bereich, damit die
-  Tab-Leiste steht und das Runterziehen funktioniert. Der aktive Tab ist der Ersatz dafür.
-
-  **Die Datumsfelder bei „Häufigkeit" und „Zuletzt" sagen jetzt, was sie sind.** Ein leeres
-  Datumsfeld zeigt auf iOS **nichts** an – zwei leere Kästen mit einem Strich dazwischen ließen
-  niemanden erraten, dass man dort einen Zeitraum eingibt. Über den Feldern stehen jetzt „Von" und
-  „Bis".
-
-- **Runterziehen zum Aktualisieren lud bei „Abwesenheiten" und „Termine" nicht sichtbar neu.** Alwin
-  am 22.09.2026: „bei Abwesenheit und Termine ist das Neuladen nicht richtig. Bei Lied stimmt es."
-  Zwei Ursachen, beide behoben. Erstens gab das Neuladen der **Abwesenheiten** gar nichts zurück: Es
-  startete die beiden Abrufe (eigene Einträge, Termine) und warf sie weg – die Ladeanzeige war damit
-  sofort wieder verschwunden, während die Daten noch unterwegs waren. Zweitens **blitzte** die
-  Anzeige auf, wenn eine Antwort aus einem warmen Zwischenspeicher kam; sie bleibt jetzt kurz stehen,
-  ohne etwas zu verzögern. Bei „Lieder" fiel beides nicht auf, weil die Liedersammlung groß ist und
-  der Abruf ohnehin dauert.
-
-  **Der Hinweis zum Ziehen lag außerdem im Unschärfe-Band** – aber nur auf manchen Bildschirmen.
-  Alwin am 22.09.2026 mit zwei Screenshots: „bei termine ist es falsch und bei lieder richtig." Der
-  Anzeiger war das erste Element im Scroll-Bereich und so hoch wie die Zugstrecke, saß also am
-  oberen Bildschirmrand. Dass er bei den Liedern trotzdem gut aussah, war Zufall: Diese Liste ist
-  lang genug zum Scrollen, deshalb legt iOS beim Ziehen sein **eigenes** Gummiband darüber und schob
-  ihn aus dem Band heraus. Bei den Terminen mit einem einzigen Eintrag gibt es nichts zu scrollen,
-  das Gummiband bleibt aus – und der Hinweis klebte oben in der Unschärfe. Er hängt jetzt über dem
-  Scroll-Bereich an **fester Stelle**, im selben Abstand wie die Überschrift (gemessen: 95–143 px
-  statt 0–95 px), und wird erst voll sichtbar, wenn die Überschrift weit genug weggeschoben ist.
-  Verschoben wird nur noch der Inhalt – so machen es native Apps auch.
-
-  **Damit das nicht wiederkommt, gibt es den Kopf jetzt nur noch einmal:** `SeitenGeruest` setzt
-  Leiste, große Überschrift, Scrollbereich und Neuladen zusammen, und alle fünf Bildschirme (Termine,
-  Lieder, Abwesenheiten, Mehr, Ablauf) nutzen es. Vorher baute jede Seite dasselbe Muster selbst –
-  genau die Stelle, an der sie auseinanderliefen. Das Neuladen **muss** dabei sein Versprechen
-  zurückgeben; eine Funktion ohne Rückgabe lehnt der Compiler jetzt ab (nachgestellt: der Build
-  scheitert). Nebenbei fällt damit auch der Tipp auf den aktiven Tab („ganz nach oben") überall
-  gleich aus – vorher hing er daran, dass jede Seite den Scrollbereich richtig einbaut.
-
-  Der Hinweis **„Zum Aktualisieren nach unten ziehen"** stand bisher dauerhaft am Listenanfang und
-  lag damit als Einziges noch im Band. Er erscheint jetzt **nur während der Geste**, zusammen mit dem
-  Pfeil, und wechselt am Auslösepunkt zu „Loslassen zum Aktualisieren". Das gilt für alle Listen mit
-  dieser Geste, nicht nur für die Termine.
-
-  Noch offen und bewusst so: Die **anderen Bildschirme** tragen ihren Titel weiterhin fest in der
-  Leiste und sind dort weich wie in v2.25.1. Bildschirme mit Knöpfen oben (Lieder, Detailansichten)
-  brauchen für den Umbau einen Platz für diese Knöpfe – das entscheidet sich, wenn die Termine so
-  gefallen.
+- Alle Bildschirme bauen Kopf, Scrollen und Neuladen über **ein** Gerüst
+  (`components/SeitenGeruest.tsx`) statt jeder für sich – genau dort waren sie auseinandergelaufen.
+  Das Neuladen muss sein Versprechen zurückgeben; eine Funktion ohne Rückgabe lehnt der Compiler ab.
+- Die Regel „deckt diese Abwesenheit diesen Termin?" steht einmal in `shared/absences` und wird von
+  App (Häkchen) und Server (Doppel-Erkennung) geteilt. Uhrzeiten werden als Zeitpunkte verglichen,
+  Zeitzonen-Angaben angenommen.
+- **Ein Wächter, der auch bei optionalen Feldern anschlägt** (`server/src/utils/schemaSpiegel.ts`):
+  Er bricht den Build, wenn ein Zod-Eingangsschema ein Feld des geteilten Typs nicht kennt – sonst
+  entfernt Zod es beim Speichern stillschweigend. Der ältere Wächter konnte das bei optionalen
+  Feldern nicht; so war die Uhrzeit der Abwesenheiten beim ersten Anlauf verlorengegangen.
+  Nachgestellt zeigte sich, dass auch der ursprüngliche Wächter bei den Anmerkungen **genau den
+  Fehler nicht gefangen hätte, gegen den er geschrieben wurde** (#115, `bold`). Anmerkungen,
+  Arrangements und Abwesenheiten nutzen jetzt denselben Baustein; jede Stelle bricht nachweislich.
+- Code-Check vor dem Release: zwölf Funde behoben, vier als Issues festgehalten (#407–#410).
 
 ## [2.25.1] – 2026-09-21
 

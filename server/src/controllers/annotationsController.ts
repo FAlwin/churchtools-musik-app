@@ -11,10 +11,11 @@ async function myUserId(req: Request): Promise<number> {
   return req.ctUserId ?? (await getUserId(ctCookie(req)));
 }
 import * as store from '../services/annotations.js';
-import type { PageAnnotation } from '@shared/types/index';
+import type { AnnotationText, PageAnnotation } from '@shared/types/index';
 import { ANNO_KEY_RE } from '@shared/keys/index';
 import { ctCookie } from '../utils/ctCookie.js';
 import { songIdsFromQuery } from '../utils/songIdsQuery.js';
+import type { GleicheSchluessel } from '../utils/schemaSpiegel.js';
 
 const textSchema = z.object({
   id: z.number(),
@@ -42,11 +43,20 @@ const annoSchema = z.object({
 // Compile-Wächter: Zod-Schema und geteilter Typ PageAnnotation müssen deckungsgleich sein.
 // Fehlt hier ein Feld, das der Typ (Client/Server) kennt, schneidet Zod es beim Speichern
 // stillschweigend weg (Ursache von #115); umgekehrt fiele ein Zod-Feld auf, das der Typ nicht
-// kennt. Divergiert eines, bricht dieser Build – zur Laufzeit kostet der Wächter nichts.
+// kennt. Zur Laufzeit kostet der Wächter nichts.
+//
+// ⚠️ Die beiden Zuweisungen allein halten das NICHT: Sie bemerken kein fehlendes OPTIONALES Feld –
+// und `bold`, der Anlass für diesen Wächter, ist optional. Nachgestellt am 23.09.2026: `bold` aus
+// dem Schema entfernt, Build grün. Die Typprüfung übernehmen deshalb die `GleicheSchluessel`-Zeilen,
+// je Ebene eine (die Texte stecken verschachtelt in der Anmerkung).
 const _annoZodSubsetOfType = (a: z.infer<typeof annoSchema>): PageAnnotation => a;
 const _annoTypeSubsetOfZod = (p: PageAnnotation): z.infer<typeof annoSchema> => p;
 void _annoZodSubsetOfType;
 void _annoTypeSubsetOfZod;
+const _annoSchluessel: GleicheSchluessel<PageAnnotation, z.infer<typeof annoSchema>> = true;
+const _textSchluessel: GleicheSchluessel<AnnotationText, z.infer<typeof textSchema>> = true;
+void _annoSchluessel;
+void _textSchluessel;
 
 // Die Schlüsselform kommt aus @shared/keys (#250) – dieselbe Konstante wie im Client. Vorher stand
 // dieselbe Regex hier wortgleich ein zweites Mal; wäre eine der beiden gedriftet, hätte der Server

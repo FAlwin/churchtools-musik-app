@@ -4,6 +4,7 @@ import { getUserId } from '../services/ctAuth.js';
 import { ctCookie } from '../utils/ctCookie.js';
 import * as absences from '../services/absences.js';
 import type { NeueAbsence } from '@shared/types/index';
+import type { GleicheSchluessel } from '../utils/schemaSpiegel.js';
 
 /** Eigene Konto-ID – wie im Anmerkungs-Controller: aus der Sitzung, sonst per whoami. */
 async function myUserId(req: Request): Promise<number> {
@@ -39,30 +40,10 @@ const _zodSubsetOfType = (a: z.infer<typeof neueAbsenceSchema>): NeueAbsence => 
 const _typeSubsetOfZod = (n: NeueAbsence): z.infer<typeof neueAbsenceSchema> => n;
 void _zodSubsetOfType;
 void _typeSubsetOfZod;
-/**
- * **Und ein Wächter, der auch bei OPTIONALEN Feldern anschlägt** (22.09.2026).
- *
- * Die beiden Zuweisungen oben können ein neues optionales Feld nicht bemerken: Ein Typ mit einem
- * zusätzlichen `feld?: x` bleibt in beide Richtungen zuweisbar. Genau so sind `startTime`/`endTime`
- * durchgerutscht. `Required<…>` macht alle Felder verbindlich – dann ist die Schlüsselmenge beider
- * Seiten vergleichbar, und ein vergessenes Feld ist ein Übersetzungsfehler.
- */
-type NurInTyp = Exclude<
-  keyof Required<NeueAbsence>,
-  keyof Required<z.infer<typeof neueAbsenceSchema>>
->;
-type NurInSchema = Exclude<
-  keyof Required<z.infer<typeof neueAbsenceSchema>>,
-  keyof Required<NeueAbsence>
->;
-/**
- * Die Constraint ist der eigentliche Wächter: Bleibt ein Feldname übrig, verletzt er `extends never`
- * und der Übersetzer bricht ab. (Erster Versuch war eine Zuweisung an ein Tupel – wertlos, weil
- * `undefined as never` in jeden Typ passt. Nachgestellt: ein entferntes Feld blieb unbemerkt.)
- */
-type OhneLuecke<T extends never> = T;
-const _luecken: [OhneLuecke<NurInTyp>, OhneLuecke<NurInSchema>] = [] as never;
-void _luecken;
+// Der eigentliche Wächter: Er schlägt auch bei OPTIONALEN Feldern an – die beiden Zuweisungen oben
+// können das nicht, und genau so sind `startTime`/`endTime` am 22.09.2026 durchgerutscht.
+const _schluessel: GleicheSchluessel<NeueAbsence, z.infer<typeof neueAbsenceSchema>> = true;
+void _schluessel;
 
 const fensterSchema = z.object({ from: isoTag.optional(), to: isoTag.optional() });
 /** Termine: nur ein `to` – wie weit voraus, entscheidet die Monatsansicht der App; der Service deckelt auf ein Jahr. */
