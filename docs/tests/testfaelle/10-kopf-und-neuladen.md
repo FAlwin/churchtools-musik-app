@@ -69,3 +69,29 @@ nicht bloß auf. Der Hinweistext erscheint nur, solange man zieht.
 - **Historie:** Alwin 22.09.2026 („bei Abwesenheit und Termine ist das Neuladen nicht richtig")
 
 </details>
+
+### TF-KOPF-03 · Schalter im Tab „Mehr" schalten mit einem Tipp
+
+**Das brauchst du:** Ein Gerät mit der App; für den dritten Schalter ein Konto mit Team-Notizen.
+
+**Das muss passieren:** Jeder Schalter springt bei **einem** Tipp um – egal ob auf die Beschriftung
+oder auf den Schalter selbst. Die Zeilen sehen aus wie vorher (Umbau #407, 23.09.2026: die Seite ist
+in Bausteine geteilt, die Schalter sind jetzt je ein einziger Knopf).
+
+1. Tab **Mehr**. Auf den **Text** „Display aktiv halten" tippen → der Schalter springt um. Noch einmal
+   auf den **Schalter** tippen → er springt zurück.
+2. Dasselbe mit „Kommende Gottesdienste offline halten".
+3. Mit Team-Notizen-Recht: dasselbe mit „Meine Anmerkungen teilen".
+4. Als Admin: Unter **Verwaltung** jede Zeile einmal öffnen und schließen – Organisation / Name,
+   Links, Termin-Arten, Anmerkungen (darin Gruppen- und Rollen-Zuweisung).
+5. Mit VoiceOver (optional): Ein Schalter wird als „Taste, ausgewählt" bzw. „nicht ausgewählt"
+   angesagt.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `client/src/pages/Settings.tsx`, `client/src/components/SchalterZeile.tsx`, `client/src/components/VerwaltungZeilen.tsx`, `client/src/components/VerwaltungFenster.tsx`, `client/src/hooks/useVerwaltung.ts`, `client/src/components/InstallierenHinweis.tsx`, `client/src/components/VersionsFuss.tsx`
+- **Automatisiert:** teilweise – `client/src/pages/Settings.test.tsx` (vor dem Aufteilen geschrieben: Bereiche je Recht, ein Tipp = ein Umschalten, Fenster öffnen mit dem gespeicherten Stand, „Speichern" nur nach einer Änderung); von Hand bleibt das Aussehen und das Antippen am Gerät
+- **Historie:** #407
+
+</details>

@@ -348,7 +348,7 @@ Konto sind sie gar nicht sichtbar – nicht ausgegraut, sondern weg.
 <details><summary>Technisches</summary>
 
 - **Priorität:** normal
-- **Betrifft:** `client/src/pages/Settings.tsx`, `server/src/controllers/siteConfigController.ts`, `server/src/routes/siteConfig.ts`
+- **Betrifft:** `client/src/pages/Settings.tsx`, `client/src/components/VerwaltungFenster.tsx`, `client/src/components/VerwaltungZeilen.tsx`, `client/src/hooks/useVerwaltung.ts`, `server/src/controllers/siteConfigController.ts`, `server/src/routes/siteConfig.ts`
 - **Automatisiert:** teilweise – `server/src/controllers/siteConfigController.trim.test.ts`
 - **Historie:** #152
 

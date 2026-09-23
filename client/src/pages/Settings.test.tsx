@@ -51,7 +51,7 @@ const { Settings } = await import('./Settings');
 const SITE: SiteConfig = {
   ...DEFAULT_SITE_CONFIG,
   orgName: 'ECG Donrath',
-  links: [{ id: 'a', label: 'Liederliste', url: 'https://example.org' }],
+  links: [{ id: 'a', label: 'Liederliste', url: 'https://example.org', showOnLogin: false }],
   musicianGroupIds: [1],
   noteRoles: [],
 };
@@ -103,6 +103,13 @@ describe('Mehr – Aufbau', () => {
 });
 
 describe('Mehr – Schalter-Zeilen schalten genau einmal, über Zeile ODER Schalter', () => {
+  it('sagt den Zustand an – ein Knopf mit aria-pressed, kein Knopf im Knopf', () => {
+    zeige();
+    const schalter = screen.getByRole('button', { name: 'Display aktiv halten' });
+    expect(schalter.getAttribute('aria-pressed')).toBe('false');
+    expect(schalter.querySelector('button')).toBeNull();
+  });
+
   it('Display aktiv halten', () => {
     const { onToggleWake } = zeige();
     fireEvent.click(screen.getByText('Display aktiv halten'));

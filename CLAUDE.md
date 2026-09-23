@@ -306,7 +306,7 @@ Light/Dark). Alle Design-Tokens in `styles/_variables.scss` (Single Source); `ap
 `icon-192/512.png`, `favicon.svg`); PWA-Manifest ist **statisch** (`public/manifest.webmanifest`).
 
 **Einziger anpassbarer Wert:** der **Gemeinde-Name** (`orgName`) – ein ChurchTools-**Admin** ändert ihn
-im Mehr-Tab (`pages/Settings.tsx`, `PUT /api/site-config`); persistiert in `site.json` (Volume,
+im Mehr-Tab (`pages/Settings.tsx` → Verwaltung: `hooks/useVerwaltung.ts`, `components/VerwaltungFenster.tsx`; `PUT /api/site-config`); persistiert in `site.json` (Volume,
 `SITE_CONFIG_PATH`). Admin-Recht über `ADMIN_PERMISSION` (Default `churchcore:administer persons`).
 `SiteConfig` (`shared/types`) hat sieben Felder: `appName`(fest), `description`(fest), `orgName`, `links`, `musicianGroupIds`, `noteRoles?` und `terminArten?` (#400). Nur die ersten drei sind reine Anzeige-Werte.
 
