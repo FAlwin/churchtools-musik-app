@@ -14,7 +14,13 @@
   -webkit-overflow-scrolling: touch;
   // Platz am Ende, damit der letzte Eintrag über den Home-Strich hinaus gescrollt werden kann
   // (sonst klebt er in Detailansichten ohne Leiste hinter der unteren Safe-Area).
-  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+  //
+  // **Die eine Stelle für den Abstand am Listenende** (#408). Bis zum 23.09.2026 kamen auf diese
+  // 16 px noch eingestreute Abstandshalter in drei Seiten – 16, 16 und 20 px, zwei Seiten ohne –, also
+  // drei verschiedene Enden für dieselbe Regel. Jetzt gilt hier ein Wert für alle Bildschirme; er
+  // entspricht dem, was Termine und Lieder schon hatten. Abwesenheiten bekommen damit auch mehr Luft
+  // unter dem letzten Termin, bevor das Plus darüber schwebt.
+  padding-bottom: calc(env(safe-area-inset-bottom) + 32px);
 
   &::-webkit-scrollbar {
     width: 3px;

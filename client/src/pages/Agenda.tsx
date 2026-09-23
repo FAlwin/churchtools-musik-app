@@ -277,7 +277,6 @@ export function Agenda({
           </button>
         </>
       )}
-      <div style={{ height: 16 }} />
     </SeitenGeruest>
   );
 }
