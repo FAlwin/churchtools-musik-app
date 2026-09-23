@@ -1,3 +1,6 @@
+/// <reference types="node" />
+// Die Node-Typen fordert diese Datei selbst an: Sie stellt bewusst `process.env.TZ` um. Bis vitest 3
+// kamen sie stillschweigend mit, seit vitest 4 nicht mehr (#405) – der Client selbst braucht sie nicht.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { heuteIso } from './heute';
 

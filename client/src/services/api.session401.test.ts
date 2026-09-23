@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { apiFetch, setSessionExpiredHandler } from './api';
 
 /**
@@ -13,10 +14,11 @@ function jsonResponse(status: number, body: unknown = {}): Response {
   });
 }
 
-let onExpired: ReturnType<typeof vi.fn>;
+// Ausdrücklicher Typ: Seit vitest 4 ist ein bloßes `vi.fn()` nicht mehr als Rückruf zuweisbar.
+let onExpired: Mock<() => void>;
 
 beforeEach(() => {
-  onExpired = vi.fn();
+  onExpired = vi.fn<() => void>();
   setSessionExpiredHandler(onExpired);
 });
 
