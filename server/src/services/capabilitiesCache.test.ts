@@ -1,4 +1,6 @@
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 import { leeren, tempDatei } from '../testHilfen/tempAblage.js';
 import type { UserCapabilities } from '@shared/types/index';
 
@@ -111,5 +113,26 @@ describe('Überbrückung ist konservativ (#249)', () => {
     const stunden = mod.CACHE_MAX_AGE_MS / (60 * 60 * 1000);
     expect(stunden).toBeGreaterThanOrEqual(1);
     expect(stunden).toBeLessThanOrEqual(24);
+  });
+});
+
+/**
+ * **Eine unlesbare Ablage wird nicht überschrieben** (#404). Vorher wurde jeder Lesefehler als „leer"
+ * übernommen und beim nächsten Schreiben zurückgeschrieben – die Daten ALLER Konten waren weg.
+ * Geprüft mit einer beschädigten Datei statt mit entzogenen Rechten: Das trifft genau den Fall und
+ * hängt nicht davon ab, unter welchem Benutzer die Tests laufen (als root griffe `chmod 000` nicht).
+ */
+describe('Rechte-Cache – beschädigte Datei (#404)', () => {
+  it('überschreibt sie nicht und liefert beim Lesen „nichts gemerkt" statt eines Fehlers', async () => {
+    await fs.mkdir(path.dirname(cacheFile), { recursive: true });
+    await fs.writeFile(cacheFile, '{"kaputt": ', 'utf-8');
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await mod.rememberCapabilities(7, CAPS);
+    expect(await mod.getCachedCapabilities(7)).toBeNull();
+
+    expect(await fs.readFile(cacheFile, 'utf-8')).toBe('{"kaputt": ');
+    expect(errors).toHaveBeenCalled(); // laut – ein Blick aufs Volume ist nötig
+    errors.mockRestore();
   });
 });
