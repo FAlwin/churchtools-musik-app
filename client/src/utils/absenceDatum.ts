@@ -9,17 +9,6 @@ import { wochentagKurz } from './wochen';
  */
 
 /**
- * Liegt der Tag innerhalb der Abwesenheit (einschließlich)?
- *
- * ⚠️ Für die Frage „ist man bei DIESEM Termin abwesend?" ist `abwesenheitFuerTermin` zuständig –
- * seit dem 22.09.2026 kann eine Abwesenheit ein Zeitfenster haben, und dann deckt sie eben nicht
- * mehr den ganzen Tag ab. Diese Funktion vergleicht nur Tage (Monatsraster, Zeiträume).
- */
-export function deckt(a: Absence, tag: string): boolean {
-  return a.startDate <= tag && tag <= a.endDate;
-}
-
-/**
  * Die Abwesenheit, die **diesen Termin** abdeckt – eigene zuerst, damit „Abmelden zurücknehmen" sie
  * trifft.
  *

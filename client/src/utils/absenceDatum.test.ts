@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Absence, AbsenceEvent } from '@shared/types/index';
-import { abwesenheitFuerTermin, deckt, tagKurz, zeitraumKurz } from './absenceDatum';
+import { abwesenheitFuerTermin, tagKurz, zeitraumKurz } from './absenceDatum';
 
 const ab = (p: Partial<Absence>): Absence => ({
   id: 1,
@@ -26,13 +26,6 @@ const ev = (p: Partial<AbsenceEvent> = {}): AbsenceEvent => ({
 });
 
 describe('absenceDatum', () => {
-  it('deckt vergleicht Tage einschließlich – als Text, nicht als Zeitpunkt', () => {
-    const a = ab({ startDate: '2026-10-03', endDate: '2026-10-11' });
-    expect(deckt(a, '2026-10-03')).toBe(true);
-    expect(deckt(a, '2026-10-11')).toBe(true);
-    expect(deckt(a, '2026-10-12')).toBe(false);
-  });
-
   it('abwesenheitFuerTermin nimmt die eigene vor der manuellen', () => {
     const manuell = ab({ id: 2, vonApp: false });
     const eigene = ab({ id: 3 });
