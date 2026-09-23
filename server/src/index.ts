@@ -16,6 +16,7 @@ import siteConfigRoutes from './routes/siteConfig.js';
 import annotationsRoutes from './routes/annotations.js';
 import absencesRoutes from './routes/absences.js';
 import updateRoutes from './routes/update.js';
+import { cookieSecureWarnung } from './middleware/cookieSecureWarnung.js';
 
 const app = express();
 
@@ -92,6 +93,10 @@ if (config.isProduction) {
   app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 }
 // Limit höher: Logo (base64) + Anmerkungs-Striche einer Seite (PNG-DataURL) müssen hineinpassen.
+// Einmal ins Log, wenn HTTPS ankommt, das Sitzungs-Cookie aber ohne `secure` ginge (#409).
+app.use(
+  cookieSecureWarnung({ produktion: config.isProduction, cookieSecure: config.cookieSecure }),
+);
 app.use(express.json({ limit: '8mb' }));
 app.use(cookieParser(config.sessionSecret));
 // Direkt nach dem Cookie-Lesen: ein unbrauchbares Session-Cookie (falsche Signatur oder nicht
