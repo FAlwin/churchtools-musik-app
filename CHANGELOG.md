@@ -7,6 +7,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Geändert
+
+- **Der Server läuft auf Express 5** (#415). Reine Wartung, damit Express 4 nicht irgendwann unter
+  Zeitdruck ersetzt werden muss – für Nutzer ändert sich nichts. Drei Stellen mussten angepasst
+  werden, alle vorher an Express 5 nachgestellt: die Rückfall-Route, die jede Adresse der Web-App auf
+  die Startseite leitet (neue Schreibweise `/{*splat}`), der Start (bei belegtem Port meldete der
+  Server sonst „läuft", obwohl er nicht lief – jetzt bricht er mit einer Meldung ab) und ein Test.
+  Nebenbei liest Express 5 Adress-Parameter einfacher: Aus `?a[b]=1` wird kein Objekt mehr.
+
 ## [2.25.4] – 2026-09-24
 
 **Beim Update ist nichts zu tun.** Jede Person meldet sich nach dem Update **noch ein letztes Mal**

@@ -138,8 +138,10 @@ app.use('/api', absencesRoutes);
 // ── Im Produktionsbetrieb: die gebaute Web-App ausliefern ───
 if (config.isProduction) {
   app.use(express.static(clientDist));
-  // SPA-Fallback: alle Nicht-API-Pfade auf index.html
-  app.get('*', (req, res, next) => {
+  // SPA-Fallback: alle Nicht-API-Pfade auf index.html. `/{*splat}` statt `*` (Express 5,
+  // path-to-regexp 8: ein Platzhalter braucht einen Namen; die geschweiften Klammern machen ihn
+  // optional, damit auch die Wurzel `/` trifft – nachgestellt am 24.09.2026, #415).
+  app.get('/{*splat}', (req, res, next) => {
     if (req.path.startsWith('/api/')) return next();
     res.sendFile(path.join(clientDist, 'index.html'));
   });
@@ -149,7 +151,17 @@ if (config.isProduction) {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-const server = app.listen(config.port, () => {
+/**
+ * **Express 5 ruft diesen Rückruf auch bei einem Fehler auf** (#415, nachgestellt am 24.09.2026):
+ * Bei belegtem Port kommt er mit `EADDRINUSE`. Ohne die Prüfung stünde „Server läuft" im Log,
+ * obwohl nichts läuft – und der Prozess bliebe womöglich ohne offenen Port stehen. Also abbrechen,
+ * damit Docker den Container als gescheitert sieht und neu startet.
+ */
+const server = app.listen(config.port, (err?: Error) => {
+  if (err) {
+    console.error(`Server konnte nicht starten (Port ${config.port}):`, err.message);
+    process.exit(1);
+  }
   // eslint-disable-next-line no-console
   console.log(`Server läuft auf http://localhost:${config.port} (${config.nodeEnv})`);
 });

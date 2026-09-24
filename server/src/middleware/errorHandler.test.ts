@@ -19,8 +19,10 @@ function fakeRes(): {
   return { res: { status, json, setHeader } as unknown as Response, status, json, setHeader };
 }
 
-const lauf = (err: unknown, r: Response): void =>
-  errorHandler(err, {} as Request, r, (() => {}) as NextFunction);
+// Express 5 typisiert Fehler-Handler als `void | Promise<void>` (#415); unserer läuft synchron.
+const lauf = (err: unknown, r: Response): void => {
+  void errorHandler(err, {} as Request, r, (() => {}) as NextFunction);
+};
 
 describe('errorHandler – Retry-After (#300)', () => {
   it('setzt den Kopf in SEKUNDEN, aufgerundet', () => {
