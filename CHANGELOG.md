@@ -7,6 +7,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+## [2.25.4] – 2026-09-24
+
+**Beim Update ist nichts zu tun.** Jede Person meldet sich nach dem Update **noch ein letztes Mal**
+an, sobald ihre bisherige ChurchTools-Sitzung abläuft – den Anmelde-Schlüssel holt die App erst beim
+Anmelden. Danach bleibt man angemeldet. Die neue Einstellung `ZEITZONE` ist optional (Standard
+`Europe/Berlin`) und nur außerhalb Deutschlands nötig.
+
 ### Behoben
 
 - **Einzelne Termine ließen sich nicht mehr als abwesend eintragen.** Seit dem 24.09.2026 lehnt

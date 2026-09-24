@@ -232,15 +232,16 @@ Die App ist nun unter `https://musik.eure-domain.de` erreichbar.
 
 ## Typische Probleme
 
-| Problem                         | Ursache & Lösung                                                                     |
-| ------------------------------- | ------------------------------------------------------------------------------------ |
-| macOS blockiert `setup.command` | „Nicht verifizierter Entwickler" – Rechtsklick → „Öffnen" → „Öffnen"                 |
-| Windows blockiert `setup.bat`   | SmartScreen – „Weitere Informationen" → „Trotzdem ausführen"                         |
-| „Docker wurde nicht gefunden"   | Docker Desktop ist nicht installiert oder nicht gestartet                            |
-| „Nicht angemeldet" trotz Login  | Cookie-Problem – nur über HTTPS (Reverse Proxy/Cloudflare) lösen                     |
-| Keine Lieder/Abläufe sichtbar   | Fehlende ChurchTools-Rechte für diese Person                                         |
-| Admin-Funktionen fehlen         | `ADMIN_PERMISSION` in `.env` passt nicht – Wert anpassen                             |
-| Einstellungen nach Update weg   | Daten-Volume wurde gelöscht – beim Update Volume behalten (→ [UPDATE.md](UPDATE.md)) |
+| Problem                         | Ursache & Lösung                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| macOS blockiert `setup.command` | „Nicht verifizierter Entwickler" – Rechtsklick → „Öffnen" → „Öffnen"                  |
+| Windows blockiert `setup.bat`   | SmartScreen – „Weitere Informationen" → „Trotzdem ausführen"                          |
+| „Docker wurde nicht gefunden"   | Docker Desktop ist nicht installiert oder nicht gestartet                             |
+| „Nicht angemeldet" trotz Login  | Cookie-Problem – nur über HTTPS (Reverse Proxy/Cloudflare) lösen                      |
+| Keine Lieder/Abläufe sichtbar   | Fehlende ChurchTools-Rechte für diese Person                                          |
+| Admin-Funktionen fehlen         | `ADMIN_PERMISSION` in `.env` passt nicht – Wert anpassen                              |
+| Termine am falschen Tag         | Gemeinde außerhalb Deutschlands – `ZEITZONE` in `.env` setzen (z. B. `Europe/Zurich`) |
+| Einstellungen nach Update weg   | Daten-Volume wurde gelöscht – beim Update Volume behalten (→ [UPDATE.md](UPDATE.md))  |
 
 Ausführliche Hilfe mit Schritt-für-Schritt-Lösungen: [docs/betrieb/troubleshooting.md](docs/betrieb/troubleshooting.md).
 

@@ -19,8 +19,8 @@
 - **Status:** Fertig & produktiv – auf dem Synology-NAS deployt, intern im WLAN **und**
   extern unter `https://musik.ecg-donrath.de` live.
 
-  **Stand 23.09.2026: Produktiv läuft `v2.25.1`** – am 21.09.2026 **gemessen**, nicht aus der Doku
-  übernommen. **v2.25.2 und v2.25.3 sind getaggt, der Prod-Deploy liegt bei Alwin.** So misst man die laufende
+  **Stand 24.09.2026: Produktiv läuft `v2.25.3`** – am 23.09.2026 abends am Bundle **gemessen**, nicht
+  aus der Doku übernommen. **v2.25.4 ist getaggt, der Prod-Deploy liegt bei Alwin.** So misst man die laufende
   Version: Der Versionsstring steckt im ausgelieferten Bundle
   (`curl -s https://musik.ecg-donrath.de/ | grep -oE 'assets/index-[^"]+\.js'`, dann diese Datei holen
   und nach `v2.` greppen). `/api/health` nennt **keine** Version und taugt dafür nicht. Getestet wird
@@ -600,6 +600,19 @@ npm run dev:server # Backend (Health-Endpoint) -> http://localhost:3001
 ```
 
 ## Stand & nächster Schritt
+
+- **v2.25.4 (24.09.2026) = angemeldet bleiben + Abwesenheiten mit Uhrzeit wieder möglich + #413/#414**
+  (PR #416 Squash `7538cb9`, PR #417 Squash `77349bb`; Staging `staging-a60fbeb` von Alwin getestet,
+  der Baum von `main` ist identisch mit `a60fbeb`). **Anlass für die Eile:** ChurchTools lehnt seit dem
+  24.09.2026 jede Abwesenheit mit Uhrzeit und reinem `endDate` ab – ohne neue Versionsnummer (3.136.2,
+  Build 32882); am 22.09. ging derselbe Aufruf noch durch. Das Abhaken einzelner Termine war damit
+  auf Prod kaputt. Gefunden zufällig beim Messen für #414, direkt nach einem Totalausfall des
+  ChurchTools-Hostings (503 für alle Instanzen, ca. 12:00–12:29). **Lehre:** Ein Fremdsystem kann sein
+  Verhalten unter derselben Versionsnummer ändern – eine alte Messung ist kein Beleg für heute; das
+  Probe-Skript noch einmal laufen zu lassen, hat den Unterschied in einer Minute gezeigt. Offen: #415
+  (Express 5, eigener PR), Zweig `test/schreiber-token-vollstaendig` (Token-Test um die sieben Lied-
+  und Arrangement-Schreiber, lokal, Konflikt mit den Abwesenheits-Schreibern beim Aufsetzen auf main
+  auflösen), dann #177.
 
 - **v2.25.3 (23.09.2026) = die acht Issues aus den Code-Checks** (PR #412, Squash `43e0bf5`; Staging
   als `staging-43e0bf5` verifiziert, von Alwin getestet). #403 Abmelden ohne Netz (Merker
