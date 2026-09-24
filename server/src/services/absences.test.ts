@@ -151,6 +151,42 @@ describe('absenceBody – Zeitfenster', () => {
       }),
     ).toThrow(/gehört nicht zum gewählten Tag/);
   });
+  /**
+   * **Termine um Mitternacht** (#414). ChurchTools liefert UTC, der Tag des Termins ist aber der in
+   * der Gemeinde. Bis zum 24.09.2026 verglich die Prüfung den Text – ein Termin um 0:30 Uhr am 04.12.
+   * (`2026-12-03T23:30:00Z`) wäre abgelehnt worden, sobald er am richtigen Tag steht.
+   */
+  it('0:30 Uhr deutscher Zeit gehört zum deutschen Tag', () => {
+    expect(
+      a.absenceBody({
+        startDate: '2026-12-04',
+        endDate: '2026-12-04',
+        startTime: '2026-12-03T23:30:00Z',
+        endTime: '2026-12-04T01:00:00Z',
+      }),
+    ).toMatchObject({ startDate: '2026-12-04', endDate: '2026-12-04' });
+  });
+  it('…und nicht mehr zum UTC-Tag', () => {
+    expect(() =>
+      a.absenceBody({
+        startDate: '2026-12-03',
+        endDate: '2026-12-03',
+        startTime: '2026-12-03T23:30:00Z',
+        endTime: '2026-12-04T01:00:00Z',
+      }),
+    ).toThrow(/gehört nicht zum gewählten Tag/);
+  });
+  it('ein Termin über Mitternacht endet am Folgetag – so legt ChurchTools ihn an', () => {
+    // Gemessen 24.09.2026: 23–1 Uhr am 05.12. → ChurchTools speichert 05.12. bis 06.12.
+    expect(
+      a.absenceBody({
+        startDate: '2026-12-05',
+        endDate: '2026-12-05',
+        startTime: '2026-12-05T22:00:00Z',
+        endTime: '2026-12-06T00:00:00Z',
+      }),
+    ).toMatchObject({ startDate: '2026-12-05', endDate: '2026-12-06' });
+  });
   it('Uhrzeit-Ende vor Anfang → 400', () => {
     expect(() =>
       a.absenceBody({

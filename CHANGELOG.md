@@ -7,6 +7,23 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
 
 ## [Unreleased]
 
+### Behoben
+
+- **Einzelne Termine ließen sich nicht mehr als abwesend eintragen.** Seit dem 24.09.2026 lehnt
+  ChurchTools jeden Abwesenheits-Eintrag mit Uhrzeit ab, den die App schickt – ohne neue
+  Versionsnummer; am 22.09. nahm dieselbe Instanz genau diesen Aufruf noch an. Wer einen Termin
+  abhakte, bekam beim Speichern eine Fehlermeldung. Die App schickt die Tage jetzt in der Form, die
+  ChurchTools annimmt. Ganztägige Einträge (Urlaub über das Plus) waren nicht betroffen.
+- **Termine kurz nach Mitternacht standen am Vortag** (#414). Ein Termin um 0:30 Uhr erschien in der
+  Terminliste, im Ablauf und bei den Abwesenheiten am Tag davor, weil ChurchTools die Zeiten in UTC
+  liefert. Jetzt zählt der Tag in der Gemeinde – so, wie ChurchTools selbst ihn anlegt.
+
+### Neu
+
+- **Einstellung `ZEITZONE`** (optional, Standard `Europe/Berlin`): die Zeitzone der Gemeinde. Nur
+  außerhalb Deutschlands nötig; ein Tippfehler verhindert den Start, mit einer Meldung, was gemeint
+  ist.
+
 ### Geändert
 
 - **Man bleibt angemeldet – auch nach einem Update oder einer Pause.** Alwin am 23.09.2026: „Warum
@@ -19,6 +36,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/):
   90 Tage nach dem Anmelden. **Neu ist auch:** Ein Abmelden in ChurchTools im Browser meldet die App
   nicht mehr ab – dafür „Mehr → Abmelden" in der App. Konten, die ihren Schlüssel nicht abrufen
   dürfen, verhalten sich wie bisher.
+- **Ein Schalter für die ganze App** (#413). Die Schalter in „Mehr", bei den Links („Auch auf
+  Login-Seite zeigen") und in „Uhrzeit ausblenden" waren drei verschieden große, mit zwei
+  verschiedenen Farben für „aus". Jetzt ist es überall derselbe (48 × 29 wie bisher in „Mehr").
+  Nebenbei meldet der Links-Schalter Screenreadern jetzt, ob er an oder aus ist.
 
 ## [2.25.3] – 2026-09-23
 

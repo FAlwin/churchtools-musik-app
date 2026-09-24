@@ -8,6 +8,7 @@ import { useCapabilities } from '../hooks/useServices';
 import { ResponsibleField } from './ResponsibleField';
 import { Icon } from './icons';
 import { useOverlayKeyboardInset } from '../hooks/useOverlayKeyboardInset';
+import { Schalter } from './Schalter';
 import styles from './ItemActionSheet.module.scss';
 
 interface ItemActionSheetProps {
@@ -264,11 +265,14 @@ export function ItemActionSheet({
                 />
               </div>
 
-              <button className={styles.toggleRow} onClick={toggleHidden} aria-pressed={hidden}>
+              <button
+                type="button"
+                className={styles.toggleRow}
+                onClick={toggleHidden}
+                aria-pressed={hidden}
+              >
                 <span className={styles.label}>Uhrzeit ausblenden</span>
-                <span className={`${styles.tog}${hidden ? ' ' + styles.togOn : ''}`}>
-                  <span className={styles.togThumb} />
-                </span>
+                <Schalter an={hidden} />
               </button>
             </>
           )}

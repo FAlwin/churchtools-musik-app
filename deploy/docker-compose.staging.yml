@@ -38,6 +38,8 @@ services:
       ADMIN_PERMISSION: ${ADMIN_PERMISSION:-churchcore:administer persons}
       # Abwesenheitsgrund für den Tab „Abwesenheiten" (#177); Standard 1 = „Abwesend", andere Instanzen können abweichen.
       CHURCHTOOLS_ABSENCE_REASON_ID: ${CHURCHTOOLS_ABSENCE_REASON_ID:-1}
+      # Zeitzone der Gemeinde (#414): an welchem Tag ein Termin stattfindet. Standard Europe/Berlin.
+      ZEITZONE: ${ZEITZONE:-Europe/Berlin}
       # Sicher als Standard (#196): Das Cookie darf nur über HTTPS übertragen werden. Setzt den
       # Reverse Proxy voraus (siehe Einrichtung unten) – ohne HTTPS speichert der Browser das Cookie
       # nicht und die Anmeldung schlägt fehl. Nur für einen bewussten Test ohne Proxy:

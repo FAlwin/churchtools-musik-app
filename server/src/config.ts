@@ -58,6 +58,28 @@ export function pruefeSessionSecret(wert: string, produktion: boolean): string {
   return wert;
 }
 
+/** Zeitzone, wenn `ZEITZONE` nicht gesetzt ist – die der ECG und aller deutschen Gemeinden. */
+export const STANDARD_ZEITZONE = 'Europe/Berlin';
+
+/**
+ * Prüft die Zeitzone der Gemeinde (#414) – beim Start und mit Abbruch.
+ *
+ * Ein Tippfehler (`Europe/Berln`) ließe `Intl` erst beim ersten Termin werfen, also mitten im
+ * Betrieb und bei jedem Aufruf. Beim Start fällt er dagegen sofort auf, und die Meldung sagt, was
+ * gemeint ist.
+ */
+export function pruefeZeitzone(wert: string | undefined): string {
+  const zone = (wert ?? '').trim() || STANDARD_ZEITZONE;
+  try {
+    new Intl.DateTimeFormat('de-DE', { timeZone: zone });
+  } catch {
+    throw new Error(
+      `ZEITZONE „${zone}" ist keine gültige Zeitzone. Beispiel: ${STANDARD_ZEITZONE}.`,
+    );
+  }
+  return zone;
+}
+
 export const config = {
   port: Number(process.env.PORT ?? 3001),
   nodeEnv: process.env.NODE_ENV ?? 'development',
@@ -81,6 +103,12 @@ export const config = {
    * „Abwesend" (gemessen). Andere Instanzen können die Gründe anders nummeriert haben – deshalb Env.
    */
   absenceReasonId: Number(process.env.CHURCHTOOLS_ABSENCE_REASON_ID ?? 1),
+  /**
+   * **Zeitzone der Gemeinde** (#414): Nach ihr bestimmt der Server, an welchem TAG ein Termin
+   * stattfindet. ChurchTools liefert Zeitpunkte in UTC (`…Z`); ein Gottesdienst um 0:30 Uhr stünde
+   * sonst am Vortag. Ohne Eintrag gilt Europe/Berlin.
+   */
+  zeitzone: pruefeZeitzone(process.env.ZEITZONE),
   /** Ablageort der Laufzeit-Branding-Datei (persistentes Docker-Volume). */
   siteConfigPath: process.env.SITE_CONFIG_PATH ?? './data/site.json',
   /** Ablageordner der kontobezogenen Anmerkungen (eine JSON-Datei je ChurchTools-Konto). */

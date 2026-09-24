@@ -18,6 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { innerScrollOnly } from '../utils/dndAutoScroll';
+import { Schalter } from './Schalter';
 import { Spinner } from './Spinner';
 import { Icon } from './icons';
 import { useUpdateSiteConfig } from '../hooks/useSiteConfig';
@@ -76,12 +77,11 @@ function SortableLink({
       <button
         type="button"
         className={styles.loginRow}
+        aria-pressed={link.showOnLogin}
         onClick={() => onChange({ ...link, showOnLogin: !link.showOnLogin })}
       >
         <span className={styles.loginLbl}>Auch auf Login-Seite zeigen</span>
-        <span className={`${styles.tog}${link.showOnLogin ? ' ' + styles.togOn : ''}`}>
-          <span className={styles.togThumb} />
-        </span>
+        <Schalter an={link.showOnLogin} />
       </button>
     </div>
   );

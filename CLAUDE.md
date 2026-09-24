@@ -349,6 +349,16 @@ zod entfernt Unbekanntes stillschweigend, genau daran ist die Uhrzeit beim erste
 Der Schlüsselmengen-Wächter dort schlägt jetzt an (der frühere konnte bei optionalen Feldern nicht
 fehlschlagen).
 
+**Der Tag eines Termins ist der Tag IN DER GEMEINDE (#414, 24.09.2026).** ChurchTools liefert
+Zeitpunkte in UTC; `tagAusIso` (`server/src/utils/isoTag.ts`, die eine Stelle) rechnet sie in die
+Zeitzone aus `ZEITZONE` um (Standard `Europe/Berlin`, ein Tippfehler bricht den Start ab). ChurchTools
+selbst rechnet genauso – gemessen: eine Abwesenheit ab `23:30Z` legt es am Folgetag an. **Mit Uhrzeit
+gehen die Tage einer Abwesenheit als Zeitpunkte an ChurchTools** (`fuerChurchTools` in `ctWrite.ts`):
+Seit dem 24.09.2026 lehnt ChurchTools `endDate: YYYY-MM-DD` neben einer `startTime` ab („'endDate'
+darf nicht vor 'startTime' liegen") – ohne neue Versionsnummer; am 22.09. ging derselbe Aufruf noch
+durch. Unser Rumpf (`absenceBody`) behält die Tage, weil Doppel-Erkennung und Antwort sie brauchen;
+nur die Leitung ist anders.
+
 **Ein Gerüst für alle Bildschirme: `components/SeitenGeruest.tsx`.** Es setzt `Screen` + optionale
 `NavBar` + `Scroll` + `GrosseUeberschrift` zusammen; `Agenda`, `AllSongs`, `Availability`, `Settings`
 und `Setlist` rendern nur noch Inhalt (`children`) und Schwebendes (`ueberlagerung` – Plus-Knopf,

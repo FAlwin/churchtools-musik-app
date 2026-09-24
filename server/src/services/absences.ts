@@ -84,13 +84,22 @@ export function absenceBody(
     throw new HttpError(400, 'Das Ende liegt vor dem Anfang.');
   }
   // Das Fenster muss zu den Tagen passen – sonst entstünde ein Eintrag, der in ChurchTools etwas
-  // anderes behauptet, als er meint (Code-Check 23.09.2026).
-  if (neu.startTime && !neu.startTime.startsWith(neu.startDate)) {
+  // anderes behauptet, als er meint (Code-Check 23.09.2026). Verglichen wird der Tag IN DER GEMEINDE
+  // (#414): Bis zum 24.09.2026 stand hier ein Textvergleich, und der hätte einen Termin um 0:30 Uhr
+  // (`22:30Z` des Vortags) abgelehnt, sobald der Termin am richtigen Tag steht.
+  const mitFenster = Boolean(neu.startTime && neu.endTime);
+  if (neu.startTime && tagAusIso(neu.startTime) !== neu.startDate) {
     throw new HttpError(400, 'Die Uhrzeit gehört nicht zum gewählten Tag.');
   }
   return {
     startDate: neu.startDate,
-    endDate: neu.endDate,
+    /**
+     * **Mit Uhrzeit ist der Endtag der Tag des Endes** – so rechnet ChurchTools selbst (gemessen an
+     * der Test-Instanz, 24.09.2026): Ein geschickter Endtag wird dort durch den Tag von `endTime` in
+     * deutscher Zeit ersetzt. Ein Termin von 23 bis 1 Uhr endet also am Folgetag. Rechneten wir
+     * anders, fände die Doppel-Erkennung (`gleicherZeitraum`) den eigenen Eintrag nicht wieder.
+     */
+    endDate: mitFenster && neu.endTime ? tagAusIso(neu.endTime) : neu.endDate,
     ...(neu.startTime && neu.endTime ? { startTime: neu.startTime, endTime: neu.endTime } : {}),
     // Reihenfolge: was die App schickt, sonst der Grund des Eintrags, sonst der konfigurierte
     // Standard. Beim Ändern eines „Urlaub" bleibt es damit Urlaub, wenn der Nutzer nichts umstellt.

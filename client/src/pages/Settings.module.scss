@@ -121,36 +121,6 @@
   flex-shrink: 0;
 }
 
-// Toggle-Switch
-.tog {
-  width: 48px;
-  height: 29px;
-  border-radius: 15px;
-  border: none;
-  padding: 3px;
-  cursor: pointer;
-  transition: background 0.22s;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  background: var(--track-off);
-}
-.togOn {
-  background: var(--blue);
-}
-.togThumb {
-  width: 23px;
-  height: 23px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-  transition: transform 0.22s;
-  pointer-events: none;
-}
-.togOn .togThumb {
-  transform: translateX(19px);
-}
-
 // Org-Name-Edit (im Sheet)
 .orgInput {
   height: 48px;
