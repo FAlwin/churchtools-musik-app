@@ -58,6 +58,12 @@ Offline-Lieder nicht löschen.
 **Das brauchst du:** Die Anmeldung muss ungültig werden. Am einfachsten: dich in ChurchTools (im
 Browser) mit demselben Konto abmelden, während die App offen bleibt.
 
+> ⚠️ **Seit dem Anmelde-Schlüssel (23.09.2026) gilt das nur noch für Konten OHNE Schlüssel.** Mit
+> Schlüssel holt sich die App still eine neue Sitzung und **bleibt angemeldet** – dann ist das
+> Verhalten aus TF-AUTH-06 richtig, nicht der Login. Für diesen Fall also ein Konto nehmen, das seinen
+> Schlüssel nicht abrufen darf (im Container-Log steht beim Anmelden dann „anmeldeschluessel → 403"),
+> oder in ChurchTools den Anmelde-Schlüssel des Kontos neu erzeugen – danach muss der Login kommen.
+
 **Das muss passieren:** Die App zeigt die **Anmeldemaske**. Es darf **kein** Knopf „Erneut versuchen"
 erscheinen, der immer wieder fehlschlägt – aus dieser Sackgasse kam man früher nur mit Ab- und
 Neuanmelden raus.
@@ -125,5 +131,33 @@ schon wieder nur „Passwort falsch". Nach ein paar Minuten geht die Anmeldung w
 - **Betrifft:** `server/src/routes/auth.ts`, `server/src/utils/ipKey.ts`, `client/src/utils/loginError.ts`
 - **Automatisiert:** teilweise – `server/src/utils/ipKey.test.ts` (Schlüsselbildung), Sperre selbst nicht
 - **Historie:** #146
+
+</details>
+
+### TF-AUTH-06 · Angemeldet bleiben, auch wenn ChurchTools seine Sitzung beendet
+
+**Das brauchst du:** Ein **normales** Konto (kein Admin) und einen Tag Geduld – oder Staging, das bei
+jedem Push neu ausgerollt wird. Zugriff auf das Container-Log hilft.
+
+**Das muss passieren:** Man bleibt angemeldet, auch wenn man die App länger als einen Tag nicht
+öffnet oder ein Update dazwischenlag (Alwin, 23.09.2026: „Warum muss man sich nach jedem Update neu
+anmelden?"). ChurchTools beendet seine Sitzung nach rund einem Tag; die App holt sich dann mit dem
+persönlichen Anmelde-Schlüssel still eine neue.
+
+1. Mit dem **normalen** Konto in der App anmelden. Im Container-Log darf dabei **keine** Zeile
+   „anmeldeschluessel → 403" stehen – sonst darf dieses Konto seinen Schlüssel nicht abrufen, und es
+   gilt das alte Verhalten (dann den Admin fragen).
+2. Die App **mehr als 24 Stunden** nicht öffnen – oder auf Staging ein, zwei Updates abwarten.
+3. App öffnen: **kein** Login, die Termine erscheinen direkt.
+4. Gegenprobe Abmelden: In der App **Mehr → Abmelden** → Login erscheint. Wieder anmelden geht.
+5. Gegenprobe Schlüssel: In ChurchTools beim Konto den Anmelde-Schlüssel **neu erzeugen** (macht
+   jeden alten ungültig). Beim nächsten Öffnen nach Ablauf der ChurchTools-Sitzung kommt der Login.
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** hoch
+- **Betrifft:** `server/src/controllers/authController.ts`, `server/src/services/ctAuth.ts`, `server/src/middleware/session.ts`, `client/src/services/api.ts`
+- **Automatisiert:** teilweise – `server/src/controllers/authController.erneuern.test.ts` (erneuert, ungültiger Schlüssel meldet ab, Aussetzer behält die Anmeldung, ohne Schlüssel altes Verhalten, Login nimmt den Schlüssel mit), `server/src/middleware/session.rolling.test.ts` (Rollieren behält den Schlüssel), `server/src/services/ctAuth.test.ts`, `client/src/services/api.session401.test.ts` (Rückfrage vor dem Abmelden, eine für alle, „unklar" meldet nicht ab); von Hand bleibt, ob ein normales Konto seinen Schlüssel abrufen darf
+- **Historie:** Alwin 23.09.2026
 
 </details>

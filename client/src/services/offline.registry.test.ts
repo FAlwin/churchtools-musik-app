@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getOfflineRegistry, pruneOfflineRegistry } from './offline';
+import { heuteIso } from '../utils/heute';
 
 const REG_KEY = 'worship:offline-services';
 
@@ -17,7 +18,12 @@ describe('Offline-Verzeichnis (#32)', () => {
   });
 
   it('räumt vergangene Gottesdienste auf, behält heutige und kommende', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    // „Heute" über dieselbe Funktion wie der Code (`heuteIso`, LOKAL). Hier stand bis zum 24.09.2026
+    // `toISOString().slice(0, 10)` – der UTC-Tag. Zwischen 0 und 2 Uhr deutscher Zeit ist das noch
+    // gestern, und der Test fiel genau dann um (nachts beim Durchlauf aufgefallen). Dieselbe Falle,
+    // die v2.25.1 im Code behoben hatte; der Test baute die alte Rechnung nach, statt den Erzeuger
+    // zu nutzen.
+    const today = heuteIso();
     localStorage.setItem(
       REG_KEY,
       JSON.stringify({

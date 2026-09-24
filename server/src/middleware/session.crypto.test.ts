@@ -34,7 +34,7 @@ const reqWith = (value: string): Request =>
 describe('Session-Cookie – der CT-Anteil ist verschlüsselt (#194)', () => {
   it('im gesetzten Cookie steht das ChurchTools-Cookie NICHT im Klartext', () => {
     const { res, cookie } = fakeRes();
-    setSession(res, CT, 1_750_000_000_000, 42);
+    setSession(res, { ctCookie: CT, issuedAt: 1_750_000_000_000, userId: 42, loginToken: null });
 
     const value = String(cookie.mock.calls[0][1]);
     expect(value).not.toContain(CT);
@@ -46,7 +46,7 @@ describe('Session-Cookie – der CT-Anteil ist verschlüsselt (#194)', () => {
 
   it('Hin- und Rückweg ergibt dasselbe ChurchTools-Cookie', () => {
     const { res, cookie } = fakeRes();
-    setSession(res, CT, 1_750_000_000_000, 42);
+    setSession(res, { ctCookie: CT, issuedAt: 1_750_000_000_000, userId: 42, loginToken: null });
     const session = readSession(reqWith(String(cookie.mock.calls[0][1])));
 
     expect(session).not.toBeNull();
@@ -58,14 +58,14 @@ describe('Session-Cookie – der CT-Anteil ist verschlüsselt (#194)', () => {
   it('jedes Setzen erzeugt einen ANDEREN Wert (frischer Zufalls-IV)', () => {
     const a = fakeRes();
     const b = fakeRes();
-    setSession(a.res, CT, 1_750_000_000_000, 42);
-    setSession(b.res, CT, 1_750_000_000_000, 42);
+    setSession(a.res, { ctCookie: CT, issuedAt: 1_750_000_000_000, userId: 42, loginToken: null });
+    setSession(b.res, { ctCookie: CT, issuedAt: 1_750_000_000_000, userId: 42, loginToken: null });
     expect(String(a.cookie.mock.calls[0][1])).not.toBe(String(b.cookie.mock.calls[0][1]));
   });
 
   it('ein manipulierter Wert gilt als KEINE Session (nicht als Klartext missdeutet)', () => {
     const { res, cookie } = fakeRes();
-    setSession(res, CT, 1_750_000_000_000, 42);
+    setSession(res, { ctCookie: CT, issuedAt: 1_750_000_000_000, userId: 42, loginToken: null });
     const value = String(cookie.mock.calls[0][1]);
     // Ein Zeichen im verschlüsselten Teil kippen – GCM erkennt das.
     const kaputt = value.slice(0, -3) + (value.slice(-3) === 'AAA' ? 'BBB' : 'AAA');
@@ -103,8 +103,8 @@ describe('sessionRateKey – stabil trotz wechselnder Verschlüsselung (#194/N1)
     // ein neu verschlüsseltes Cookie zurückbekommt.
     const a = fakeRes();
     const b = fakeRes();
-    setSession(a.res, CT, 1_750_000_000_000, 42);
-    setSession(b.res, CT, 1_750_000_000_000, 42);
+    setSession(a.res, { ctCookie: CT, issuedAt: 1_750_000_000_000, userId: 42, loginToken: null });
+    setSession(b.res, { ctCookie: CT, issuedAt: 1_750_000_000_000, userId: 42, loginToken: null });
     const keyA = sessionRateKey(reqWith(String(a.cookie.mock.calls[0][1])));
     const keyB = sessionRateKey(reqWith(String(b.cookie.mock.calls[0][1])));
 
@@ -115,8 +115,8 @@ describe('sessionRateKey – stabil trotz wechselnder Verschlüsselung (#194/N1)
   it('verschiedene Konten bekommen verschiedene Schlüssel', () => {
     const a = fakeRes();
     const b = fakeRes();
-    setSession(a.res, CT, 1_750_000_000_000, 42);
-    setSession(b.res, CT, 1_750_000_000_000, 43);
+    setSession(a.res, { ctCookie: CT, issuedAt: 1_750_000_000_000, userId: 42, loginToken: null });
+    setSession(b.res, { ctCookie: CT, issuedAt: 1_750_000_000_000, userId: 43, loginToken: null });
     expect(sessionRateKey(reqWith(String(a.cookie.mock.calls[0][1])))).not.toBe(
       sessionRateKey(reqWith(String(b.cookie.mock.calls[0][1]))),
     );
@@ -180,7 +180,7 @@ describe('dropUnusableSessionCookie – totes Cookie einmal loswerden (#268, #28
 
   it('lässt ein gültiges Cookie in Ruhe', () => {
     const { res, cookie } = fakeRes();
-    setSession(res, CT, Date.now(), 42);
+    setSession(res, { ctCookie: CT, issuedAt: Date.now(), userId: 42, loginToken: null });
     const { clearCookie } = chain({ ct_session: String(cookie.mock.calls[0][1]) });
     expect(clearCookie).not.toHaveBeenCalled();
   });

@@ -42,9 +42,9 @@
   (`@shared/types`, seit v2.25.1 eine Quelle für Formular und Schema – vorher vierfach von Hand),
   IDs eindeutig
 
-- `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt signiertes Session-Cookie
-- `POST /api/auth/logout` → Session + ChurchTools-Session beenden
-- `GET  /api/auth/me` → `{authenticated, user?}`
+- `POST /api/auth/login` {email, password} → `{authenticated, user}` + setzt signiertes Session-Cookie; holt dabei den persönlichen ChurchTools-Anmelde-Schlüssel (bestes Bemühen) und legt ihn verschlüsselt mit ins Cookie
+- `POST /api/auth/logout` → Session + ChurchTools-Session beenden (den Anmelde-Schlüssel widerruft er bewusst NICHT)
+- `GET  /api/auth/me` → `{authenticated, user?}`; meldet ChurchTools die Sitzung als tot und liegt ein Schlüssel vor, holt der Server still eine neue und setzt das Cookie neu (Login-Zeitpunkt unverändert). Ungültiger Schlüssel → abgemeldet; ChurchTools-Aussetzer → Fehler, Anmeldung bleibt. Der Client ruft diesen Endpunkt nach jedem 401 einmal auf, bevor er abmeldet
 - `GET  /api/capabilities` → Rechte des Nutzers (view/edit agenda, view/edit songcategory, canUseGlobalNotes, **canUseCcli** aus `use ccli`) → steuert UI
 
 ## Termine / Ablauf

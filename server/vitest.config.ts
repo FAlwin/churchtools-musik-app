@@ -19,6 +19,11 @@ export default defineConfig({
      * Hier einmal für alle geregelt, statt es jeder Testdatei zu überlassen.
      */
     restoreMocks: true,
+    // …und mit leerer Aufrufliste aller Attrappen: `restoreMocks` setzt in vitest 4 nur Spione zurück,
+    // die Aufrufe von `vi.fn()` aus `vi.mock` zählten über Testgrenzen weiter (beim Schreiben der
+    // Anmelde-Schlüssel-Tests am 23.09.2026 aufgefallen: „nicht aufgerufen" scheiterte an den
+    // Aufrufen des vorigen Tests). Dieselbe Fehlerklasse, dieselbe Antwort: einmal hier.
+    clearMocks: true,
     include: ['src/**/*.test.ts'],
     // Pflicht-Env setzen, bevor config.ts beim Import ausgewertet wird (sonst wirft es).
     env: {

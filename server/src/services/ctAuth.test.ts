@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CtOverloadedError } from './ctHttp.js';
+import { HttpError } from '../middleware/errorHandler.js';
 
 /**
  * #381: Eine tote ChurchTools-Session muss als 401 erkannt werden.
@@ -20,7 +21,8 @@ vi.mock('./ctHttp.js', async () => {
 });
 
 const { ctGet } = await import('./ctHttp.js');
-const { whoami, login, extractSessionCookie } = await import('./ctAuth.js');
+const { whoami, login, extractSessionCookie, holeAnmeldeSchluessel, sitzungAusSchluessel } =
+  await import('./ctAuth.js');
 
 beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.unstubAllGlobals());
@@ -195,5 +197,64 @@ describe('login – die stummen Fehlschläge sind jetzt im Log (#381)', () => {
     await expect(login('a@b.de', 'falsch')).rejects.toMatchObject({ status: 401 });
     expect(log).not.toHaveBeenCalled();
     log.mockRestore();
+  });
+});
+
+/**
+ * **Der Anmelde-Schlüssel** (23.09.2026) – damit bleibt man angemeldet, auch wenn ChurchTools seine
+ * Sitzung beendet. Gemessen an der Test-Instanz; hier die Regeln drumherum.
+ */
+describe('sitzungAusSchluessel – eine neue Sitzung aus dem Schlüssel', () => {
+  it('schickt den Schlüssel als „Login"-Kopfzeile an whoami und nimmt das Cookie der höchsten Fassung', async () => {
+    const f = vi.fn().mockResolvedValue(antwort(200, V2_GUELTIG));
+    vi.stubGlobal('fetch', f);
+    vi.mocked(ctGet).mockResolvedValue({ id: 42, firstName: 'A', lastName: 'F' });
+
+    const erg = await sitzungAusSchluessel('SCHLUESSEL123');
+
+    expect(String(f.mock.calls[0][0])).toContain('/api/whoami');
+    expect(f.mock.calls[0][1].headers.Authorization).toBe('Login SCHLUESSEL123');
+    expect(erg.cookie).toBe('ChurchToolsV2_ct_gemeinde=beispielwert123');
+    expect(erg.user.id).toBe(42);
+  });
+
+  it('ein nicht mehr gültiger Schlüssel (401/403) wird zu 401 – dann meldet der Aufrufer ab', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(antwort(401)));
+    await expect(sitzungAusSchluessel('x')).rejects.toMatchObject({ status: 401 });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(antwort(403)));
+    await expect(sitzungAusSchluessel('x')).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('eine Drosselung bleibt eine Drosselung – vorübergehend, kein Abmelden', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(antwort(429)));
+    await expect(sitzungAusSchluessel('x')).rejects.toBeInstanceOf(CtOverloadedError);
+  });
+
+  it('ein Serverfehler wird 502 – ebenfalls vorübergehend, und die Logzeile nennt den Weg', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(antwort(503)));
+    await expect(sitzungAusSchluessel('x')).rejects.toMatchObject({ status: 502 });
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('anmeldeschluessel'));
+  });
+});
+
+describe('holeAnmeldeSchluessel – bestes Bemühen, wirft nie', () => {
+  it('liefert den Schlüssel des eigenen Kontos', async () => {
+    vi.mocked(ctGet).mockResolvedValue('S'.repeat(40));
+    expect(await holeAnmeldeSchluessel('ChurchToolsV2_x=y', 42)).toBe('S'.repeat(40));
+    expect(ctGet).toHaveBeenCalledWith('ChurchToolsV2_x=y', '/api/persons/42/logintoken');
+  });
+
+  it('darf ein Konto es nicht (403), bleibt es beim alten Verhalten – ohne Schlüssel im Log', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(ctGet).mockRejectedValue(new HttpError(403, 'Kein Zugriff.'));
+    expect(await holeAnmeldeSchluessel('c', 42)).toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('403'));
+  });
+
+  it('eine unbrauchbare Antwort ergibt keinen Schlüssel', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(ctGet).mockResolvedValue({ unerwartet: true });
+    expect(await holeAnmeldeSchluessel('c', 42)).toBeNull();
   });
 });

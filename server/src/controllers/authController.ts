@@ -1,6 +1,12 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { login, logout, whoami } from '../services/ctAuth.js';
+import {
+  holeAnmeldeSchluessel,
+  login,
+  logout,
+  sitzungAusSchluessel,
+  whoami,
+} from '../services/ctAuth.js';
 import { setSession, clearSession, readSession, isSessionExpired } from '../middleware/session.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import type { AuthStatus } from '@shared/types/index';
@@ -16,9 +22,13 @@ const loginSchema = z.object({
 export async function postLogin(req: Request, res: Response): Promise<void> {
   const { email, password } = loginSchema.parse(req.body);
   const { cookie, user } = await login(email, password);
+  // Den persönlichen Anmelde-Schlüssel gleich mitnehmen (23.09.2026): Damit holt `getMe` später still
+  // eine neue ChurchTools-Sitzung, statt den Login zu zeigen. Bestes Bemühen – ohne Schlüssel gilt das
+  // alte Verhalten, die Anmeldung selbst scheitert daran nie.
+  const loginToken = await holeAnmeldeSchluessel(cookie, user.id);
   // Konto-ID wandert mit ins signierte Cookie (#149): Der Rechte-Cache kann damit auch
   // überbrücken, wenn `whoami` während eines ChurchTools-Aussetzers nicht antwortet.
-  setSession(res, cookie, Date.now(), user.id);
+  setSession(res, { ctCookie: cookie, issuedAt: Date.now(), userId: user.id, loginToken });
   const status: AuthStatus = { authenticated: true, user };
   res.json(status);
 }
@@ -27,6 +37,10 @@ export async function postLogin(req: Request, res: Response): Promise<void> {
  * POST /api/auth/logout – verwirft die Session. Beendet dabei auch die dahinterliegende
  * ChurchTools-Session (best effort): Nur das eigene Cookie zu löschen würde ein je
  * abgegriffenes Cookie weiter nutzbar lassen.
+ *
+ * ⚠️ Den **Anmelde-Schlüssel** widerruft der Logout bewusst NICHT (kein `DELETE …/logintoken`): Es
+ * gibt ihn je Person nur einmal, und andere Dienste der Person nutzen ihn womöglich mit. Er lag nur
+ * in unserem Cookie – mit dem Cookie ist er für uns weg.
  */
 export async function postLogout(req: Request, res: Response): Promise<void> {
   const session = readSession(req);
@@ -47,6 +61,17 @@ export async function getMe(req: Request, res: Response): Promise<void> {
     const user = await whoami(session.ctCookie);
     res.json({ authenticated: true, user } satisfies AuthStatus);
   } catch (e) {
+    // **Still erneuern, statt abzumelden** (23.09.2026): ChurchTools hat seine Sitzung beendet, unsere
+    // gilt noch. Mit dem Anmelde-Schlüssel eine neue holen – Login-Zeitpunkt und damit die 90-Tage-
+    // Grenze bleiben dabei unverändert. Der Client fragt hier nach jedem 401 einmal nach (`apiFetch`).
+    if (e instanceof HttpError && e.status === 401 && session.loginToken) {
+      const erneuert = await erneuereMitSchluessel(session.loginToken);
+      if (erneuert) {
+        setSession(res, { ...session, ctCookie: erneuert.cookie, userId: erneuert.user.id });
+        res.json({ authenticated: true, user: erneuert.user } satisfies AuthStatus);
+        return;
+      }
+    }
     // NUR ein ausdrückliches 401 von ChurchTools heißt „diese Anmeldung ist tot" → Cookie verwerfen.
     //
     // Vorher flog die Anmeldung bei JEDEM Fehler weg (#270). Ein kurzer ChurchTools-Aussetzer, eine
@@ -63,5 +88,22 @@ export async function getMe(req: Request, res: Response): Promise<void> {
       return;
     }
     throw e; // vorübergehend → Fehler durchreichen, Anmeldung BEHALTEN
+  }
+}
+
+/**
+ * Eine neue ChurchTools-Sitzung aus dem Anmelde-Schlüssel – oder `null`, wenn der Schlüssel nicht
+ * mehr gilt. **Vorübergehende Fehler werfen weiter** (Drosselung, Zeitüberschreitung, 5xx): Dann bleibt
+ * die Anmeldung stehen und der Client zeigt „ChurchTools antwortet nicht" statt des Logins – dieselbe
+ * Regel wie im `catch` von `getMe` (#270).
+ */
+async function erneuereMitSchluessel(
+  loginToken: string,
+): Promise<Awaited<ReturnType<typeof sitzungAusSchluessel>> | null> {
+  try {
+    return await sitzungAusSchluessel(loginToken);
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 401) return null;
+    throw e;
   }
 }

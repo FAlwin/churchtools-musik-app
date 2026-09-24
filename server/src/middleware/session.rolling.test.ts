@@ -41,7 +41,7 @@ describe('requireSession – Rollieren trägt userId weiter (#152)', () => {
     // weil der Wert seit #194 verschlüsselt ist)
     const written = cookie.mock.calls[0]?.[1] as string;
     const wieder = readSession(reqWith(written));
-    expect(wieder).toEqual({ ctCookie: CT_COOKIE, issuedAt, userId: 42 });
+    expect(wieder).toEqual({ ctCookie: CT_COOKIE, issuedAt, userId: 42, loginToken: null });
     expect(written).not.toContain(CT_COOKIE); // nicht im Klartext (#194)
   });
 
@@ -61,13 +61,19 @@ describe('requireSession – Rollieren trägt userId weiter (#152)', () => {
       ctCookie: CT_COOKIE,
       issuedAt,
       userId: null,
+      loginToken: null,
     });
     expect(written).not.toContain(CT_COOKIE);
   });
 
   it('setSession schreibt Zeitstempel und Konto-ID lesbar, das CT-Cookie aber nicht', () => {
     const { res, cookie } = resSpy();
-    setSession(res, CT_COOKIE, 1_750_000_000_000, 7);
+    setSession(res, {
+      ctCookie: CT_COOKIE,
+      issuedAt: 1_750_000_000_000,
+      userId: 7,
+      loginToken: null,
+    });
     const written = cookie.mock.calls[0]?.[1] as string;
     // Zeitstempel + ID müssen im Klartext bleiben: daran hängen Ablauf-Prüfung und Rechte-Cache.
     expect(written.startsWith('1750000000000|u7|')).toBe(true);
@@ -79,5 +85,40 @@ describe('requireSession – Rollieren trägt userId weiter (#152)', () => {
     expect(() =>
       requireSession(req, resSpy().res, vi.fn() as unknown as NextFunction),
     ).toThrowError();
+  });
+});
+
+/**
+ * **Der Anmelde-Schlüssel überlebt das Rollieren** (23.09.2026). `requireSession` schreibt das Cookie
+ * bei JEDER Anfrage neu – ginge der Schlüssel dabei verloren, wäre er nach dem ersten Klick weg und
+ * das stille Erneuern wirkungslos. Genau dafür nimmt `setSession` die ganze Sitzung als Objekt.
+ */
+describe('requireSession – Rollieren trägt den Anmelde-Schlüssel weiter', () => {
+  it('schreibt den Schlüssel verschlüsselt zurück und liest ihn wieder', () => {
+    const TOKEN = 'a'.repeat(40) + 'geheim';
+    const issuedAt = Date.now() - 60_000;
+    const erst = resSpy();
+    setSession(erst.res, { ctCookie: CT_COOKIE, issuedAt, userId: 42, loginToken: TOKEN });
+    const gesetzt = erst.cookie.mock.calls[0]?.[1] as string;
+    expect(gesetzt).not.toContain(TOKEN); // nie im Klartext
+
+    const req = reqWith(gesetzt);
+    const zweit = resSpy();
+    requireSession(req, zweit.res, vi.fn());
+
+    const gerollt = zweit.cookie.mock.calls[0]?.[1] as string;
+    expect(readSession(reqWith(gerollt))).toEqual({
+      ctCookie: CT_COOKIE,
+      issuedAt,
+      userId: 42,
+      loginToken: TOKEN,
+    });
+  });
+
+  it('nimmt einen UNverschlüsselten Schlüssel nicht an', () => {
+    const issuedAt = Date.now() - 60_000;
+    const sitzung = readSession(reqWith(`${issuedAt}|u42|kKlartextSchluessel|${CT_COOKIE}`));
+    expect(sitzung?.loginToken).toBeNull();
+    expect(sitzung?.ctCookie).toBe(CT_COOKIE); // die Sitzung selbst bleibt gültig
   });
 });

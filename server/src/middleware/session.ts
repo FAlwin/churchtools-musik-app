@@ -146,23 +146,62 @@ declare global {
 }
 
 /**
- * Cookie-Wert = `<Login-Zeitstempel-ms>|u<userId>|<ChurchTools-Cookie>`. Der Zeitstempel entsteht
+ * **Eine Sitzung, wie sie im Cookie steht** – als EIN Objekt (23.09.2026).
+ *
+ * `setSession` nimmt seit dem Anmelde-Schlüssel (`loginToken`) keine Einzelwerte mehr, sondern dieses
+ * Objekt: Das rollierende Verlängern in `requireSession` schreibt das Cookie bei JEDER Anfrage neu,
+ * und eine Stelle, die das neue Feld vergäße, würfe den Schlüssel still weg. Mit dem Objekt meldet
+ * der Compiler jede Stelle, die nicht alle Felder setzt.
+ */
+export interface Sitzung {
+  ctCookie: string;
+  /** Login-Zeitpunkt (ms) – wird beim Rollieren und beim Erneuern UNVERÄNDERT weitergetragen. */
+  issuedAt: number;
+  userId: number | null;
+  /**
+   * Persönlicher ChurchTools-Anmeldeschlüssel (Login-Token) oder `null`.
+   *
+   * Damit holt der Server still eine neue ChurchTools-Sitzung, wenn ChurchTools die alte beendet hat
+   * (Alwin, 23.09.2026: „Warum muss man sich nach jedem Update neu anmelden?"). Die App meldet sich
+   * mit E-Mail und Passwort an und bekam dafür bisher nur die kurze ChurchTools-Sitzung – unsere 30
+   * Tage halfen nichts, sobald ChurchTools früher Schluss machte. Liegt **verschlüsselt** im Cookie,
+   * nie im Log, nie auf dem Server gespeichert. `null` bei Alt-Cookies und bei Konten, die ihren
+   * Schlüssel nicht abrufen dürfen – dann gilt das alte Verhalten.
+   */
+  loginToken: string | null;
+}
+
+/**
+ * Cookie-Wert = `<Login-Zeitstempel-ms>|u<userId>|<ChurchTools-Cookie>`, seit dem 23.09.2026 mit
+ * Schlüssel `<ts>|u<userId>|k<verschlüsselter Schlüssel>|<CT-Cookie>`. Der Zeitstempel entsteht
  * beim Login und wird beim Rollieren UNVERÄNDERT weitergetragen → die absolute Obergrenze bleibt
  * prüfbar. Die Konto-ID wandert seit #149 mit in den signierten Wert: Der Rechte-Cache kann damit
  * auch überbrücken, wenn ChurchTools' `whoami` während eines Aussetzers nicht antwortet. Ältere
  * Formate (`<ts>|<ct-cookie>` bzw. reines CT-Cookie) werden weiter akzeptiert – niemand wird durch
  * ein Update ausgeloggt; die Konto-ID ist dann bis zum nächsten Login unbekannt (null).
  */
-export function parseSessionValue(
-  raw: string,
-  now = Date.now(),
-): { ctCookie: string; issuedAt: number; userId: number | null } {
+export function parseSessionValue(raw: string, now = Date.now()): Sitzung {
+  // Der Schlüssel-Anteil ist verschlüsselt (`e1:` + base64url) und enthält damit nie ein `|`.
+  const mitSchluessel = raw.match(/^(\d{10,})\|u(\d+)\|k([^|]+)\|([\s\S]+)$/);
+  if (mitSchluessel)
+    return {
+      ctCookie: mitSchluessel[4],
+      issuedAt: Number(mitSchluessel[1]),
+      userId: Number(mitSchluessel[2]),
+      loginToken: mitSchluessel[3],
+    };
   const withId = raw.match(/^(\d{10,})\|u(\d+)\|([\s\S]+)$/);
   if (withId)
-    return { ctCookie: withId[3], issuedAt: Number(withId[1]), userId: Number(withId[2]) };
+    return {
+      ctCookie: withId[3],
+      issuedAt: Number(withId[1]),
+      userId: Number(withId[2]),
+      loginToken: null,
+    };
   const m = raw.match(/^(\d{10,})\|([\s\S]+)$/);
-  if (m) return { ctCookie: m[2], issuedAt: Number(m[1]), userId: null };
-  return { ctCookie: raw, issuedAt: now, userId: null }; // Altformat → Lebensdauer zählt ab jetzt
+  if (m) return { ctCookie: m[2], issuedAt: Number(m[1]), userId: null, loginToken: null };
+  // Altformat → Lebensdauer zählt ab jetzt
+  return { ctCookie: raw, issuedAt: now, userId: null, loginToken: null };
 }
 
 /** True, wenn die Session ihre absolute Lebensdauer (90 Tage seit Login) überschritten hat. */
@@ -171,9 +210,7 @@ export function isSessionExpired(issuedAt: number, now = Date.now()): boolean {
 }
 
 /** Liest das signierte Session-Cookie aus dem Request (oder null, wenn keins/ungültig). */
-export function readSession(
-  req: Request,
-): { ctCookie: string; issuedAt: number; userId: number | null } | null {
+export function readSession(req: Request): Sitzung | null {
   // Bewusst `unknown`: `signedCookies` ist untypisiert (`any`) – der Guard darunter macht daraus
   // einen String, statt das `any` weiterzureichen (#279).
   const raw: unknown = req.signedCookies?.[COOKIE_NAME];
@@ -182,7 +219,13 @@ export function readSession(
   // `parseSessionValue` zerlegt nur (rein und ohne Schlüssel); entschlüsselt wird hier (#194).
   const ctCookie = decryptCtCookie(parsed.ctCookie);
   if (ctCookie === null) return null; // sah verschlüsselt aus, passt aber nicht → wie keine Session
-  return { ...parsed, ctCookie };
+  // Ein Schlüssel, der sich nicht entschlüsseln lässt, kostet nur das stille Erneuern – die Sitzung
+  // selbst bleibt gültig. Unverschlüsselt wird er nie akzeptiert: Er muss mit `e1:` beginnen.
+  const loginToken =
+    parsed.loginToken && parsed.loginToken.startsWith(ENC_PREFIX)
+      ? decryptCtCookie(parsed.loginToken)
+      : null;
+  return { ...parsed, ctCookie, loginToken };
 }
 
 /**
@@ -191,15 +234,14 @@ export function readSession(
  * nicht). Wer ausschließlich über HTTPS läuft (Reverse Proxy/Cloudflare), setzt `COOKIE_SECURE=true`
  * und erhält damit die strengere Variante. httpOnly + signiert + SameSite=Lax bleiben immer aktiv.
  */
-export function setSession(
-  res: Response,
-  churchToolsCookie: string,
-  issuedAt = Date.now(),
-  userId: number | null = null,
-): void {
-  const idPart = userId != null ? `u${userId}|` : '';
+export function setSession(res: Response, sitzung: Sitzung): void {
+  const idPart = sitzung.userId != null ? `u${sitzung.userId}|` : '';
+  // Der Schlüssel braucht die Konto-ID davor (Formatregel in `parseSessionValue`).
+  const schluesselPart =
+    sitzung.userId != null && sitzung.loginToken ? `k${encryptCtCookie(sitzung.loginToken)}|` : '';
   // Der CT-Anteil wird verschlüsselt (#194) – im Cookie steht danach kein nutzbares CT-Cookie mehr.
-  res.cookie(COOKIE_NAME, `${issuedAt}|${idPart}${encryptCtCookie(churchToolsCookie)}`, {
+  const wert = `${sitzung.issuedAt}|${idPart}${schluesselPart}${encryptCtCookie(sitzung.ctCookie)}`;
+  res.cookie(COOKIE_NAME, wert, {
     httpOnly: true,
     secure: config.cookieSecure,
     sameSite: 'lax',
@@ -236,8 +278,8 @@ export function requireSession(req: Request, res: Response, next: NextFunction):
   }
   req.ctCookie = session.ctCookie;
   req.ctUserId = session.userId;
-  // rollierend; Zeitstempel UND Konto-ID bleiben erhalten
-  setSession(res, session.ctCookie, session.issuedAt, session.userId);
+  // rollierend; Zeitstempel, Konto-ID UND Anmelde-Schlüssel bleiben erhalten (ganze Sitzung weiter)
+  setSession(res, session);
   next();
 }
 
