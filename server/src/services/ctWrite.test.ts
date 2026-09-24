@@ -9,6 +9,9 @@ import {
   setAgendaItemHidden,
   deleteFile,
   updateArrangementTempo,
+  createAbsence,
+  deleteAbsence,
+  fuerChurchTools,
 } from './ctWrite.js';
 import { __resetSessionMemosForTests } from './ctSessionMemos.js';
 
@@ -16,6 +19,8 @@ import { __resetSessionMemosForTests } from './ctSessionMemos.js';
  * #280: Alle Schreiboperationen teilen sich seit dem Aufteilen EINEN Helfer (`schreibe`). Vorher stand
  * das Ritual – Token holen, mitschicken, bei 401/403 über `csrfWriteDenied` melden – **siebenmal
  * wortgleich** im Code. Seit #321 sind es acht – `uploadFile` kam als allgemeiner Datei-Upload hinzu.
+ * Am 24.09.2026 kamen die beiden Abwesenheits-Schreiber dazu (#177), die hier bis dahin fehlten –
+ * ausgerechnet in dem Test, der vor genau dieser Lücke warnt.
  *
  * Dieser Test prüft die Regel für **jede einzelne** dieser Funktionen, nicht für eine
  * stellvertretend. Genau darum geht es: Die Fehlerklasse dieses Projekts ist „die Regel gilt für A, B,
@@ -58,7 +63,7 @@ function mockMitAblehnung() {
   return zaehler;
 }
 
-/** Die acht Schreiboperationen, jede mit gültigen Argumenten. */
+/** Die Schreiboperationen, jede mit gültigen Argumenten. */
 const SCHREIBER: Array<[string, () => Promise<void>]> = [
   ['uploadChordpro', () => uploadChordpro(COOKIE, 5, 'lied.cho', 'inhalt')],
   [
@@ -71,6 +76,18 @@ const SCHREIBER: Array<[string, () => Promise<void>]> = [
   ['deleteAgendaItem', () => deleteAgendaItem(COOKIE, 9, 1)],
   ['setAgendaItemHidden', () => setAgendaItemHidden(COOKIE, 9, 1, true)],
   ['deleteFile', () => deleteFile(COOKIE, 42)],
+  [
+    'createAbsence',
+    async () => {
+      await createAbsence(COOKIE, 5, {
+        startDate: '2026-10-08',
+        endDate: '2026-10-08',
+        absenceReasonId: 1,
+        comment: '',
+      });
+    },
+  ],
+  ['deleteAbsence', () => deleteAbsence(COOKIE, 5, 9)],
 ];
 
 beforeEach(() => __resetSessionMemosForTests());
@@ -102,7 +119,8 @@ describe('Ohne Ablehnung bleibt das Token liegen – sonst spart der Speicher ni
       if (method === 'GET' && u.includes('/agenda')) {
         return Promise.resolve(jsonRes({ items: [PUNKT] }));
       }
-      return Promise.resolve(jsonRes(null, 200));
+      // Mit ID: Die Anlege-Funktionen verlangen sie (`neueId`), die übrigen übergehen sie.
+      return Promise.resolve(jsonRes({ id: 1 }, 200));
     });
 
     await aufrufen();
@@ -242,5 +260,63 @@ describe('updateArrangementTempo – der Wert kommt wirklich an', () => {
     expect(rumpf.beat).toBe('4/4');
     expect(rumpf.duration).toBe(300);
     expect(rumpf.description).toBe('Kapo 2');
+  });
+});
+
+/**
+ * **Abwesenheiten mit Uhrzeit: die Tage gehen als Zeitpunkte hinaus** (24.09.2026). ChurchTools
+ * lehnt seitdem `endDate: 2026-10-08` + `startTime: 2026-10-08T09:00:00Z` ab („'endDate' darf nicht
+ * vor 'startTime' liegen"), nimmt die Tage als Zeitpunkte aber an – gemessen an der Test-Instanz.
+ */
+describe('createAbsence – was an ChurchTools geht', () => {
+  function mockCt(): { rumpf: () => Record<string, unknown> } {
+    let gesendet = '{}';
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
+      if (String(url).includes('/api/csrftoken')) return Promise.resolve(jsonRes('token'));
+      gesendet = String(init?.body ?? '{}');
+      return Promise.resolve(jsonRes({ id: 77 }, 201));
+    });
+    return { rumpf: () => JSON.parse(gesendet) as Record<string, unknown> };
+  }
+
+  it('mit Uhrzeit: Anfangs- und Endtag sind die Zeitpunkte', async () => {
+    const ct = mockCt();
+    await createAbsence(COOKIE, 5, {
+      startDate: '2026-10-08',
+      endDate: '2026-10-08',
+      startTime: '2026-10-08T09:00:00Z',
+      endTime: '2026-10-08T12:00:00Z',
+      absenceReasonId: 1,
+      comment: '',
+    });
+    expect(ct.rumpf()).toMatchObject({
+      startDate: '2026-10-08T09:00:00Z',
+      endDate: '2026-10-08T12:00:00Z',
+      startTime: '2026-10-08T09:00:00Z',
+      endTime: '2026-10-08T12:00:00Z',
+    });
+  });
+
+  it('ganztägig: die Tage bleiben reine Tage', async () => {
+    const ct = mockCt();
+    await createAbsence(COOKIE, 5, {
+      startDate: '2026-10-08',
+      endDate: '2026-10-09',
+      absenceReasonId: 1,
+      comment: '',
+    });
+    expect(ct.rumpf()).toMatchObject({ startDate: '2026-10-08', endDate: '2026-10-09' });
+    expect('startTime' in ct.rumpf()).toBe(false);
+  });
+
+  it('fuerChurchTools lässt den Rumpf der App unangetastet', () => {
+    const body = {
+      startDate: '2026-10-08',
+      endDate: '2026-10-08',
+      startTime: '2026-10-08T09:00:00Z',
+      endTime: '2026-10-08T12:00:00Z',
+    };
+    fuerChurchTools(body);
+    expect(body.startDate).toBe('2026-10-08');
   });
 });

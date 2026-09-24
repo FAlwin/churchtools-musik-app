@@ -214,8 +214,32 @@ Nachmittag frei – in ChurchTools steht eine Abwesenheit **mit Uhrzeit**, nicht
 <details><summary>Technisches</summary>
 
 - **Priorität:** hoch
-- **Betrifft:** `shared/absences/index.ts`, `client/src/pages/Availability.tsx`, `client/src/utils/absenceDatum.ts`, `client/src/hooks/useAvailability.ts`, `server/src/services/absences.ts`, `server/src/controllers/absencesController.ts`
+- **Betrifft:** `shared/absences/index.ts`, `client/src/pages/Availability.tsx`, `client/src/utils/absenceDatum.ts`, `client/src/hooks/useAvailability.ts`, `server/src/services/absences.ts`, `server/src/services/ctWrite.ts`, `server/src/controllers/absencesController.ts`
 - **Automatisiert:** teilweise – `client/src/utils/absenceDatum.test.ts` (Fenster trennt Vormittag/Nachmittag, ganztägig deckt beides, Grenzen offen), `client/src/pages/Availability.test.tsx` (Haken lässt den zweiten Termin frei), `server/src/services/absences.test.ts` (Doppel-Erkennung mit Fenster, Uhrzeit überlebt eine Änderung); von Hand bleibt, dass ChurchTools die Uhrzeit wirklich speichert und anzeigt
-- **Historie:** Alwin 22.09.2026 („das muss in der logik geändert werden")
+- **Historie:** Alwin 22.09.2026 („das muss in der logik geändert werden"). Am 24.09.2026 lehnte ChurchTools jeden Eintrag mit Uhrzeit ab (Schritt 2 → Fehlermeldung), ohne neue Versionsnummer – seitdem gehen die Tage als Zeitpunkte hinaus (`fuerChurchTools`). **Schritt 4 ist deshalb der wichtigste:** Er bemerkt, wenn ChurchTools sein Verhalten wieder ändert.
+
+</details>
+
+### TF-VERF-08 · Ein Termin kurz nach Mitternacht steht am richtigen Tag
+
+**Das brauchst du:** Einen Termin in ChurchTools, der **zwischen 0 und 2 Uhr** beginnt (z. B. eine
+Silvester-Andacht am 01.01. um 0:30), und Zugriff auf ChurchTools zum Nachsehen.
+
+**Das muss passieren:** Der Termin steht an **seinem** Tag – nicht am Vortag. ChurchTools rechnet
+Zeiten intern in UTC, und 0:30 Uhr deutscher Zeit ist dort noch der Vortag (#414).
+
+1. Tab **Termine** → der Termin steht am **01.01.**, nicht am 31.12.
+2. Tab **Abwesenheiten**, den Monat wählen → der Termin steht ebenfalls am **01.01.**
+3. **Abwesend** abhaken, **Speichern** → keine Fehlermeldung, der Termin ist rot.
+4. In ChurchTools nachsehen (Personen → dein Profil → Abwesenheiten): Der Eintrag steht am **01.01.**
+   mit der Uhrzeit des Termins.
+5. Die App neu laden → der Haken ist noch da (Eintrag und Termin passen zusammen).
+
+<details><summary>Technisches</summary>
+
+- **Priorität:** normal
+- **Betrifft:** `server/src/utils/isoTag.ts`, `server/src/config.ts`, `server/src/services/absences.ts`, `server/src/services/ctWrite.ts`, `server/src/utils/mapEvent.ts`, `server/src/services/setlistBuilder.ts`
+- **Automatisiert:** überwiegend – `server/src/utils/isoTag.test.ts` (Winter-/Sommerzeit, 23:59, Versatz, andere Zeitzone), `server/src/services/absences.test.ts` (0:30 Uhr gehört zum deutschen Tag, Termin über Mitternacht endet am Folgetag), `server/src/config.zeitzone.test.ts`; von Hand bleibt, dass ChurchTools den Eintrag am selben Tag anlegt
+- **Historie:** #414 (24.09.2026). An der Test-Instanz gemessen: ChurchTools legt eine Abwesenheit ab `2026-12-03T23:30:00Z` selbst am **04.12.** an – es rechnet also in deutscher Zeit, genau wie die App jetzt
 
 </details>

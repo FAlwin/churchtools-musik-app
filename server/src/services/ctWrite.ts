@@ -594,6 +594,29 @@ export async function updateArrangementTempo(
 }
 
 /**
+ * **Die Tage einer Abwesenheit mit Uhrzeit als Zeitpunkte schicken** (24.09.2026).
+ *
+ * ChurchTools lehnt seit dem 24.09.2026 jeden Eintrag mit Uhrzeit ab, der die Tage als reines
+ * Datum trägt: „'endDate' darf nicht vor 'startTime' liegen" – es liest `endDate: 2026-10-08` als
+ * Mitternacht, und die liegt vor `startTime: 2026-10-08T09:00:00Z`. Am 22.09.2026 nahm dieselbe
+ * Instanz genau diesen Aufruf noch mit 201 an, unter derselben Versionsnummer (3.136.2, Build
+ * 32882). Gemessen an der Test-Instanz, mit dem unveränderten Probe-Skript vom 22.09.
+ *
+ * Angenommen werden die Tage als Zeitpunkte (`startDate` = `startTime`, `endDate` = `endTime`).
+ * ChurchTools legt daraus selbst die Tage in deutscher Zeit an und liefert sie als `YYYY-MM-DD`
+ * zurück – dieselben, die `absenceBody` rechnet. Ganztägige Einträge gehen unverändert hinaus.
+ *
+ * Hier und nicht in `absenceBody`: Der Rumpf dort ist zugleich die App-Sicht (Doppel-Erkennung,
+ * Antwort an die App) und muss Tage enthalten. Nur das, was über die Leitung geht, ist anders.
+ */
+export function fuerChurchTools<
+  T extends { startDate: string; endDate: string; startTime?: string; endTime?: string },
+>(body: T): T {
+  if (!body.startTime || !body.endTime) return body;
+  return { ...body, startDate: body.startTime, endDate: body.endTime };
+}
+
+/**
  * Legt eine Abwesenheit an (#177). Der Rumpf kommt fertig aus `absences.ts` (Marker, Grund) – hier
  * nur der Schreibvorgang über `schreibe`, wie bei allen anderen. Antwort `201 {data:{id}}` wie beim
  * Lied-Anlegen; die ID wird gebraucht, damit die App den Eintrag ohne Neuladen zeigen kann.
@@ -616,7 +639,7 @@ export async function createAbsence(
 ): Promise<number> {
   const res = await schreibe(cookie, `/api/persons/${personId}/absences`, {
     method: 'POST',
-    json: body,
+    json: fuerChurchTools(body),
     verweigert: 'Keine Berechtigung, Abwesenheiten in ChurchTools einzutragen.',
     fehler: 'Abwesenheit eintragen fehlgeschlagen',
   });
