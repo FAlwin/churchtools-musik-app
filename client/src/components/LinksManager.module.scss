@@ -94,32 +94,6 @@
   color: var(--text2);
 }
 
-.tog {
-  width: 42px;
-  height: 25px;
-  border-radius: 13px;
-  padding: 3px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  background: var(--track-off);
-  transition: background 0.22s;
-}
-.togOn {
-  background: var(--blue);
-}
-.togThumb {
-  width: 19px;
-  height: 19px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  transition: transform 0.22s;
-}
-.togOn .togThumb {
-  transform: translateX(17px);
-}
-
 .add {
   margin-top: 12px;
   border: 1.5px dashed var(--blue);

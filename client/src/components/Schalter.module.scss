@@ -1,0 +1,36 @@
+// Der eine Schalter der App (#413). 48 × 29 wie bisher in „Mehr" – am nächsten am iOS-Standard
+// (51 × 31). Bis zum 24.09.2026 stand er dreimal im CSS, in drei Größen und mit zwei Farben für „aus".
+.schalter {
+  width: 48px;
+  height: 29px;
+  border-radius: 15px;
+  padding: 3px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background: var(--track-off);
+  transition: background 0.22s;
+  pointer-events: none;
+}
+.an {
+  background: var(--blue);
+}
+.knopf {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.22s;
+
+  .an & {
+    transform: translateX(19px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .schalter,
+  .knopf {
+    transition: none;
+  }
+}
